@@ -1,0 +1,21 @@
+HKCR
+{
+	VPinball.HitTarget.1 = s 'HitTarget Class'
+	{
+		CLSID = s '{7770B875-0F54-4187-81E3-389742D97BAF}'
+	}
+	VPinball.HitTarget = s 'HitTarget Class'
+	{
+		CLSID = s '{7770B875-0F54-4187-81E3-389742D97BAF}'
+	}
+	NoRemove CLSID
+	{
+		ForceRemove {7770B875-0F54-4187-81E3-389742D97BAF} = s 'HitTarget Class'
+		{
+			ProgID = s 'VPinball.HitTarget.1'
+			VersionIndependentProgID = s 'VPinball.HitTarget'
+			val AppID = s '{62843C46-5699-4DF7-80C3-D82827FC0363}'
+			LocalServer32 = s '%Module%'
+		}
+	}
+}

@@ -1,0 +1,116 @@
+////FRAGMENT
+
+uniform vec4 lightColor_intensity;
+uniform vec4 lightColor2_falloff_power;
+uniform vec4 lightCenter_maxRange;
+uniform vec2 imageBackglassMode; // actually bool2
+
+uniform bool hdrTexture0;
+
+////vs_light_main
+
+in vec3 vPosition;
+in vec3 vNormal;
+in vec2 tc;
+
+out vec2 tex0; 
+out vec3 worldPos;
+out vec3 tablePos; 
+out vec3 normal;
+
+void main()
+{ 
+   // trafo all into worldview space (as most of the weird trafos happen in view, world is identity so far)
+   vec3 P = mul(vec4(vPosition,1.0), matWorldView).xyz;
+   vec3 N = normalize(mul(vNormal, matWorldViewInverseTranspose).xyz);
+
+   gl_Position = mul(vec4(vPosition,1.0), matWorldViewProj);
+   tex0 = tc;
+   tablePos = vPosition.xyz;
+   worldPos = P;
+   normal = N;
+}
+
+////PS_LightWithTexel
+
+in vec2 tex0; 
+in vec3 worldPos;
+in vec3 tablePos; 
+in vec3 normal;
+
+void main()
+{
+    vec4 pixel = texture(Texture0, tex0); //!! IN.tex0 abused in backglass mode
+    if(!hdrTexture0)
+        pixel.xyz = InvGamma(pixel.xyz);
+
+    // no lighting if HUD vertices or passthrough mode
+    if(imageBackglassMode.x != 0. || imageBackglassMode.y != 0.)
+        color = pixel;
+    else
+    {
+        pixel.xyz = clamp(pixel.xyz,0.0,1.0); // could be HDR
+        vec3 diffuse  = pixel.xyz*cBase_Alpha.xyz;
+        vec3 glossy   = %PARAM0% ? diffuse : pixel.xyz*cGlossy_ImageLerp.xyz*0.08; //!! use AO for glossy? specular?
+        vec3 specular = cClearcoat_EdgeAlpha.xyz*0.08;
+        float  edge     = %PARAM0% ? 1.0 : Roughness_WrapL_Edge_Thickness.z;
+
+        color.xyz = lightLoop(worldPos, normalize(normal), normalize(/*camera=0,0,0,1*/-worldPos), diffuse, glossy, specular, edge, true, %PARAM0%); //!! have a "real" view vector instead that mustn't assume that viewer is directly in front of monitor? (e.g. cab setup) -> viewer is always relative to playfield and/or user definable
+        color.a = pixel.a;
+    }
+    color.a *= cBase_Alpha.a;
+
+	if(lightColor_intensity.w != 0.0)
+    {
+        float len = length(lightCenter_maxRange.xyz - (imageBackglassMode.y == 0. ? tablePos : vec3(tex0,0.0))) * lightCenter_maxRange.w;
+        float atten = pow(1.0 - clamp(len,0.0,1.0), lightColor2_falloff_power.w);
+        vec3 lcolor = mix(lightColor2_falloff_power.xyz, lightColor_intensity.xyz, sqrt(len));
+        color = color + vec4(lcolor*(atten*lightColor_intensity.w),
+                        clamp(atten*lightColor_intensity.w,0.0,1.0));
+        color = OverlayHDR(pixel, color); // could be HDR //!! have mode to choose: if simple mode picked and surface images match then can skip lighting texel above and JUST alpha blend with this here
+        color = ScreenHDR(pixel, color);
+    }
+}
+
+////PS_LightWithoutTexel
+
+in vec2 tex0; 
+in vec3 worldPos;
+in vec3 tablePos; 
+in vec3 normal;
+
+void main()
+{
+    vec4 result = vec4(0.0, 0.0, 0.0, 0.0);
+    if (lightColor_intensity.w != 0.0)
+    {
+        float len = length(lightCenter_maxRange.xyz - (imageBackglassMode.y == 0. ? tablePos : vec3(tex0,0.0))) * lightCenter_maxRange.w;
+        float atten = pow(1.0 - clamp(len,0.0,1.0), lightColor2_falloff_power.w);
+        vec3 lcolor = mix(lightColor2_falloff_power.xyz, lightColor_intensity.xyz, sqrt(len));
+        result.xyz = lcolor*(atten*lightColor_intensity.w);
+        result.a = clamp(atten*lightColor_intensity.w,0.0,1.0);
+    }
+
+    // no lighting if HUD vertices or passthrough mode
+    if(imageBackglassMode.x != 0. || imageBackglassMode.y != 0.)
+        color.xyz = lightColor_intensity.xyz;
+    else
+    {
+        vec3 diffuse  = lightColor_intensity.xyz*cBase_Alpha.xyz;
+        vec3 glossy   = %PARAM0% ? diffuse : lightColor_intensity.xyz*cGlossy_ImageLerp.xyz*0.08;
+        vec3 specular = cClearcoat_EdgeAlpha.xyz*0.08;
+        float  edge     = %PARAM0% ? 1.0 : Roughness_WrapL_Edge_Thickness.z;
+
+        color.xyz = lightLoop(worldPos, normalize(normal), normalize(/*camera=0,0,0,1*/-worldPos), diffuse, glossy, specular, edge, true, %PARAM0%); //!! have a "real" view vector instead that mustn't assume that viewer is directly in front of monitor? (e.g. cab setup) -> viewer is always relative to playfield and/or user definable
+    }
+    color.a = cBase_Alpha.a;
+    
+    color = color + result;
+}
+
+////TECHNIQUES
+
+light_with_texture_isMetal:P0:vs_light_main():PS_LightWithTexel(true)
+light_with_texture_isNotMetal:P0:vs_light_main():PS_LightWithTexel(false)
+light_without_texture_isMetal:P0:vs_light_main():PS_LightWithoutTexel(true)
+light_without_texture_isNotMetal:P0:vs_light_main():PS_LightWithoutTexel(false)

@@ -1,0 +1,291 @@
+////GLOBAL
+#version 330
+
+//!! have switch to choose if texture is weighted by diffuse/glossy or is just used raw?
+
+#define NUM_BALL_LIGHTS 0 // just to avoid having too much constant mem allocated
+
+#include "Helpers.fxh"
+
+uniform mat4 matView;
+
+////VERTEX
+
+// transformation matrices
+uniform mat4 matWorldViewProj;
+uniform mat4 matWorldView;
+uniform mat3x4 matWorldViewInverseTranspose;
+//mat4 matViewInverseInverseTranspose; // matView used instead and multiplied from other side
+
+////FRAGMENT
+
+uniform sampler2D Texture0; // base texture
+uniform sampler2D Texture1; // envmap
+uniform sampler2D Texture2; // envmap radiance
+uniform sampler2D Texture3; // bulb light buffer
+uniform sampler2D Texture4; // normal map
+
+uniform bool hdrEnvTextures;
+
+#include "Material.fxh"
+
+uniform vec4 cClearcoat_EdgeAlpha;
+uniform vec4 cGlossy_ImageLerp;
+//!! No value is under 0.02
+//!! Non-metals value are un-intuitively low: 0.02-0.08
+//!! Gemstones are 0.05-0.17
+//!! Metals have high specular reflectance: 0.5-1.0
+
+uniform float fAlphaTestValue;
+
+out vec4 color;
+
+mat3 TBN_trafo(vec3 N, vec3 V, vec2 uv)
+{
+	// derivatives: edge vectors for tri-pos and tri-uv
+	vec3 dpx = dFdx(V);
+	vec3 dpy = dFdy(V);
+	vec2 duvx = dFdx(uv);
+	vec2 duvy = dFdy(uv);
+
+	// solve linear system
+	vec3 dp2perp = cross(N, dpy);
+	vec3 dp1perp = cross(dpx, N);
+	vec3 T = dp2perp * duvx.x + dp1perp * duvy.x;
+	vec3 B = dp2perp * duvx.y + dp1perp * duvy.y;
+
+	// construct scale-invariant transformation
+	return mat3(T, B, N * sqrt( max(dot(T,T), dot(B,B)) )); // inverse scale, as will be normalized anyhow later-on (to save some mul's)
+}
+
+vec3 normal_map(vec3 N, vec3 V, vec2 uv)
+{
+    return normalize( mul(TBN_trafo(N, V, uv),
+                          texture(Texture4, uv).xyz * (255./127.) - (128./127.)) );
+}
+
+//------------------------------------
+//
+// Standard Materials
+//
+
+////vs_main
+
+in vec3 vPosition;
+in vec3 vNormal;
+in vec2 tc;
+
+out vec4 tex01; // pack tex0 and tex1 into one vec4
+out vec3 worldPos;
+out vec3 normal;
+
+void main()
+{ 
+   // trafo all into worldview space (as most of the weird trafos happen in view, world is identity so far)
+   vec3 P = (matWorldView*vec4(vPosition, 1.0)).xyz;
+   vec3 N = normalize((matWorldViewInverseTranspose*vNormal).xyz);
+
+   gl_Position = (matWorldViewProj*vec4(vPosition, 1.0));
+   tex01 = vec4(tc, /*(cBase_Alpha.a < 1.0) ?*/gl_Position.xy/gl_Position.w);
+   worldPos = P;
+   normal = N;
+}
+
+////vs_notex_main
+
+in vec3 vPosition;
+in vec3 vNormal;
+in vec2 tc;
+
+out vec4 worldPos_t1x;
+out vec4 normal_t1y;
+
+void main()
+{ 
+   // trafo all into worldview space (as most of the weird trafos happen in view, world is identity so far)
+   vec3 P = (matWorldView*vec4(vPosition, 1.0)).xyz;
+   vec3 N = normalize((matWorldViewInverseTranspose*vNormal).xyz);
+
+   gl_Position = (matWorldViewProj*vec4(vPosition, 1.0));
+   //if(cBase_Alpha.a < 1.0)
+   {
+      worldPos_t1x.w = gl_Position.x/gl_Position.w;
+      normal_t1y.w = gl_Position.y/gl_Position.w;
+   }
+   worldPos_t1x.xyz = P;
+   normal_t1y.xyz = N;
+}
+
+////vs_depth_only_main_without_texture
+
+in vec3 vPosition;
+
+void main()
+{ 
+   gl_Position = (matWorldViewProj*vec4(vPosition, 1.0));
+}
+
+////vs_depth_only_main_with_texture
+
+in vec3 vPosition;
+in vec2 tc;
+
+out vec2 tex0;
+
+void main()
+{
+   gl_Position = (matWorldViewProj*vec4(vPosition, 1.0));
+   tex0 = tc;
+}
+
+////ps_main
+
+in vec4 worldPos_t1x;
+in vec4 normal_t1y;
+
+void main() {
+   vec3 diffuse  = cBase_Alpha.xyz;
+   vec3 glossy   = %PARAM0% ? cBase_Alpha.xyz : cGlossy_ImageLerp.xyz*0.08;
+   vec3 specular = cClearcoat_EdgeAlpha.xyz*0.08;
+   float  edge     = %PARAM0% ? 1.0 : Roughness_WrapL_Edge_Thickness.z;
+   
+   vec3 V = normalize(/*camera=0,0,0,1*/-worldPos_t1x.xyz);
+   vec3 N = normalize(normal_t1y.xyz);
+
+   //return vec4((N+1.0)*0.5,1.0); // visualize normals
+
+   color.xyz = lightLoop(worldPos_t1x.xyz, N, V, diffuse, glossy, specular, edge, true, %PARAM0%); //!! have a "real" view vector instead that mustn't assume that viewer is directly in front of monitor? (e.g. cab setup) -> viewer is always relative to playfield and/or user definable
+   color.a = cBase_Alpha.a;
+
+   if(cBase_Alpha.a < 1.0) {
+      color.a = GeometricOpacity(dot(N,V),color.a,cClearcoat_EdgeAlpha.w,Roughness_WrapL_Edge_Thickness.w);
+
+      if (fDisableLighting_top_below.y < 1.0)
+          // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
+          color.xyz += mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*worldPos_t1x.w,-0.5*normal_t1y.w)+0.5, 0.0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
+   }
+}
+
+////ps_main_texture
+
+in vec4 tex01; // pack tex0 and tex1 into one float4
+in vec3 worldPos;
+in vec3 normal;
+
+void main() {
+   vec4 pixel = texture(Texture0, tex01.xy);
+
+      if (pixel.a <= fAlphaTestValue)
+         discard;           //stop the pixel shader if alpha test should reject pixel
+
+   pixel.a *= cBase_Alpha.a;
+   vec3 t = InvGamma(pixel.xyz);
+
+   // early out if no normal set (e.g. decal vertices)
+   if (dot(normal,normal)<0.0005) {
+      color = vec4(InvToneMap(t*cBase_Alpha.xyz), pixel.a);
+   } else {
+
+	   vec3 diffuse  = t*cBase_Alpha.xyz;
+	   vec3 glossy   = %PARAM0% ? diffuse : (t*cGlossy_ImageLerp.w + (1.0-cGlossy_ImageLerp.w))*cGlossy_ImageLerp.xyz*0.08; //!! use AO for glossy? specular?
+	   vec3 specular = cClearcoat_EdgeAlpha.xyz*0.08;
+	   float  edge     = %PARAM0% ? 1.0 : Roughness_WrapL_Edge_Thickness.z;
+
+	   vec3 V = normalize(/*camera=0,0,0,1*/-worldPos);
+	   vec3 N = normalize(normal);
+
+	   if (%PARAM1%)
+		  N = normal_map(N, V, tex01.xy);
+	   
+	   //return vec4((N+1.0)*0.5,1.0); // visualize normals
+
+	   color.xyz = lightLoop(worldPos, N, V, diffuse, glossy, specular, edge, !%PARAM1%, %PARAM0%);
+	   color.a = pixel.a;
+
+	   if (cBase_Alpha.a < 1.0 && color.a < 1.0) {
+		  color.a = GeometricOpacity(dot(N,V),color.a,cClearcoat_EdgeAlpha.w,Roughness_WrapL_Edge_Thickness.w);
+
+		  if (fDisableLighting_top_below.y < 1.0)
+			  // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
+			  color.xyz += mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex01.z,-0.5*tex01.w)+0.5, 0.).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
+	   }
+	}
+}
+
+////ps_main_depth_only_without_texture
+
+void main() {
+    color =  vec4(0.,0.,0.,1.);
+}
+
+////ps_main_depth_only_with_texture
+
+in vec2 tex0;
+
+void main() {
+   if (texture(Texture0, tex0).a <= fAlphaTestValue)
+      discard;           //stop the pixel shader if alpha test should reject pixel
+
+   color = vec4(0., 0., 0., 1.);
+}
+
+//------------------------------------------
+// Kicker boolean vertex shader
+
+////vs_kicker
+
+in vec3 vPosition;
+in vec3 vNormal;
+in vec2 tc;
+
+out vec4 worldPos_t1x; // pack tex1 into w component of the float4s
+out vec4 normal_t1y;
+
+void main() {
+	vec4 vPosition4 = vec4(vPosition,1.0);
+	float fKickerScale = 1.;
+    vec3 P = (matWorldView * vPosition4).xyz;
+    vec3 N = normalize((matWorldViewInverseTranspose*vNormal).xyz);
+
+    gl_Position.xyw = (matWorldViewProj*vPosition4).xyw;
+    vec4 P2 = vPosition4;
+    P2.z -= 30.0f*fKickerScale;
+    gl_Position.z = (matWorldViewProj*P2).z;
+    //if(cBase_Alpha.a < 1.0)
+    {
+        worldPos_t1x.w = gl_Position.x/gl_Position.w; //!! not necessary
+        normal_t1y.w = gl_Position.y/gl_Position.w; //!! not necessary
+    }
+    worldPos_t1x.xyz = P;
+    normal_t1y.xyz = N;
+}
+
+//------------------------------------
+// Techniques
+//
+
+//
+// Standard Materials
+//
+////TECHNIQUES
+
+basic_without_texture_isMetal:P0:vs_notex_main():ps_main(true)
+basic_without_texture_isNotMetal:P0:vs_notex_main():ps_main(false)
+
+basic_with_texture_isMetal:P0:vs_main():ps_main_texture(true,false)
+basic_with_texture_isNotMetal:P0:vs_main():ps_main_texture(false,false)
+
+basic_with_texture_normal_isMetal:P0:vs_main():ps_main_texture(true,true)
+basic_with_texture_normal_isNotMetal:P0:vs_main():ps_main_texture(false,true)
+
+basic_depth_only_without_texture:P0:vs_depth_only_main_without_texture():ps_main_depth_only_without_texture()
+basic_depth_only_with_texture:P0:vs_depth_only_main_with_texture():ps_main_depth_only_with_texture()
+
+//
+// Kicker
+//
+
+kickerBoolean_isMetal:P0:vs_kicker():ps_main(true)
+kickerBoolean_isNotMetal:P0:vs_kicker():ps_main(false)
+
+#include "ClassicLightShader.glfx"

@@ -1,0 +1,146 @@
+////GLOBAL
+#version 330
+
+//!! split into pure sprite & pure DMD?
+
+#include "Helpers.fxh"
+
+////VERTEX
+
+uniform vec4 quadOffsetScale;//.xy =>Offset from center .wz =>Scale (1.0 is fullscreen)
+uniform vec4 quadOffsetScaleTex;//.xy =>Offset from center .wz =>Scale (1.0 is fullscreen)
+
+////FRAGMENT
+
+uniform vec4 vColor_Intensity;
+uniform vec3 vRes_Alpha;
+
+uniform sampler2D Texture0; // base texture
+
+out vec4 color;
+
+//
+// VS function output structures 
+//
+
+////vs_main
+
+in vec3 vPosition;
+in vec2 tc;
+
+out vec2 tex0;
+
+void main()
+{ 
+   gl_Position = vec4((vPosition.x*quadOffsetScale.z+quadOffsetScale.x)*2.0-1.0,
+							 1.0-(vPosition.y*quadOffsetScale.w+quadOffsetScale.y)*2.0, 0.0,1.0);
+   tex0 = vec2(tc.x,1.0-tc.y)*quadOffsetScaleTex.zw+quadOffsetScaleTex.xy;
+}
+
+////vs_simple_main
+
+// transformation matrices (only used for flashers so far)
+uniform mat4 matWorldViewProj;
+
+in vec3 vPosition;
+in vec2 tc;
+
+out vec2 tex0;
+
+void main()
+{
+    gl_Position = mul(vec4((vPosition.x*quadOffsetScale.z+quadOffsetScale.x)*2.0-1.0,
+							 1.0-(vPosition.y*quadOffsetScale.w+quadOffsetScale.y)*2.0,0.0,1.0), matWorldViewProj);
+    tex0 = vec2(tc.x,1.0-tc.y)*quadOffsetScaleTex.zw+quadOffsetScaleTex.xy;
+}
+
+//
+// PS functions (DMD and "sprites")
+//
+
+#if 0 // raw pixelated output
+vec4 ps_main_DMD_no(in VS_OUTPUT IN) : COLOR
+{
+   vec4 rgba = textureLod(Texture0, tex0, 0.);
+   color.rgb = vColor_Intensity.xyz * vColor_Intensity.w; //!! create function that resembles LUT from VPM?
+   if(rgba.a != 0.0)
+      color.rgb *= rgba.bgr;
+   else
+      color.rgb *= rgba.b * (255.9 / 100.);
+
+   color.rgb = vec4(InvToneMap(InvGamma(color.rgb)), 1.); //!! meh, this sucks a bit performance-wise, but how to avoid this when doing fullscreen-tonemap/gamma without stencil and depth read?
+}
+#endif
+
+////ps_main_DMD
+
+in float2 tex0;
+
+void main()
+{
+   float2 ddxs = ddx(tex0)*0.4; // use ddx and ddy to help the oversampling below/make filtering radius dependent on projected 'dot'/texel
+   float2 ddys = ddy(tex0)*0.4;
+
+   // brute force oversampling of DMD-texture and especially the dot-function (using 25 samples)
+   float3 color2 = float3(0., 0., 0.);
+   for(int j = -2; j <= 2; ++j)
+   {
+   float2 uvj = tex0 + float(j)*ddys; 
+   for(int i = -2; i <= 2; ++i)
+   {
+      float2 uv = uvj + float(i)*ddxs;
+
+      float4 rgba = tex2Dlod(Texture0, float4(uv, 0., 0.)); //!! lots of tex access by doing this all the time, but (tex) cache should be able to catch all of it
+      color.rgb = vColor_Intensity.xyz * vColor_Intensity.w; //!! create function that resembles LUT from VPM?
+      if (rgba.a != 0.0)
+         color.rgb *= rgba.bgr;
+      else
+         color.rgb *= rgba.b * (255.9 / 100.);
+
+      // simulate dot within the sampled texel
+      float2 dist = frac(uv*vRes_Alpha.xy)*2.2 - 1.1;
+      float d = dist.x*dist.x + dist.y*dist.y;
+
+      color2 += color.rgb*smoothstep(0., 1., 1.0 - d*d);
+   }
+   }
+   color2 *= 1./25.;
+
+   /*float3 colorg = float3(0,0,0);
+   for(int j = -1; j <= 1; ++j)
+   for(int i = -1; i <= 1; ++i)
+   {
+      //collect glow from neighbors
+   }*/
+
+   //if (rgba.b > 200.0)
+   //   return float4(InvToneMap(InvGamma(min(color2,float3(1.5,1.5,1.5))/*+colorg*/)), 0.5);
+   //else
+   color = float4(InvToneMap(InvGamma(color2/*+colorg*/)), vRes_Alpha.z); //!! meh, this sucks a bit performance-wise, but how to avoid this when doing fullscreen-tonemap/gamma without stencil and depth read?
+}
+
+////ps_main_noDMD
+
+in vec2 tex0;
+
+void main()
+{
+   vec4 l = texture(Texture0, tex0);
+
+   color = vec4(InvToneMap(InvGamma(l.xyz * vColor_Intensity.xyz * vColor_Intensity.w)), l.w); //!! meh, this sucks a bit performance-wise, but how to avoid this when doing fullscreen-tonemap/gamma without stencil and depth read?
+}
+
+////ps_main_noDMD_notex
+
+void main()
+{
+   color = vec4(InvToneMap(InvGamma(vColor_Intensity.xyz * vColor_Intensity.w)), 1.0f); //!! meh, this sucks a bit performance-wise, but how to avoid this when doing fullscreen-tonemap/gamma without stencil and depth read?
+}
+
+////TECHNIQUES
+
+basic_DMD:P0:vs_main():ps_main_DMD()
+basic_DMD_world:P0:vs_simple_main()ps_main_DMD()
+basic_noDMD:P0:vs_main():ps_main_noDMD()
+basic_noDMD_notex:P0:vs_main():ps_main_noDMD_notex()
+

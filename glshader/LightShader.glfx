@@ -1,0 +1,49 @@
+////GLOBAL
+#version 330
+
+#include "Helpers.fxh"
+
+////VERTEX
+
+uniform float4x4 matWorldViewProj;
+
+////FRAGMENT
+
+uniform float4 lightColor_intensity;
+uniform float4 lightColor2_falloff_power;
+uniform float4 lightCenter_maxRange;
+uniform float blend_modulate_vs_add;
+
+out vec4 color;
+
+////vs_lightbulb_main
+
+in vec3 vPosition;
+in vec2 tc;
+
+out vec3 tablePos;
+
+void main()									   
+{
+   gl_Position = mul(vec4(vPosition,1.0), matWorldViewProj);
+   gl_Position.z = max(gl_Position.z, 0.00001); // clamp lights to near clip plane to avoid them being partially clipped
+   tablePos = vPosition.xyz;
+}
+
+////PS_BulbLight
+
+in vec3 tablePos;
+
+void main()
+{
+	float len = length(lightCenter_maxRange.xyz - tablePos) * lightCenter_maxRange.w;
+    float atten = pow(1.0 - saturate(len), lightColor2_falloff_power.w);
+	float3 lcolor = lerp(lightColor2_falloff_power.xyz, lightColor_intensity.xyz, sqrt(len));
+	float4 result;
+	color.xyz = lcolor*(-blend_modulate_vs_add*atten*lightColor_intensity.w); // negative as it will be blended with '1.0-thisvalue' (the 1.0 is needed to modulate the underlying elements correctly, but not wanted for the term below)
+	color.a = 1.0/blend_modulate_vs_add - 1.0; //saturate(atten*lightColor_intensity.w);
+}
+
+////TECHNIQUES
+
+bulb_light:P0:vs_lightbulb_main():PS_BulbLight()

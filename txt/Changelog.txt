@@ -1,0 +1,1348 @@
+SDL2 / VR Changelog
+------------------------
+
+NOTE: Several changes in this version increases CPU and GPU load, even if you don't use VR or stereo support. Also this is just an early
+	TechDemo / AlphaVersion / Proof of Concept that contain many bugs, the code quality is rather low and chaotic, and not everything is
+	working yet. Main reasons for the problems are the change of the rendering API from DX9 to OpenGL/SDL2 (since OpenVR does not support 
+	DX9), changing the rendering pipeline from static camera and semi-static rendering to fully dynamic rendering. Also some code for the
+	DX9 build was reworked. Also this project was forked from VPX 10.4.0, but I've tried to apply all commits until R3590. If I've messed
+	up somewhere, feel free to report a bug.
+
+How to compile: At the moment only the VS2017 project is up to date, so either get Visual Studio 2017 or update the older project files.
+	Select either Debug_SDL (for debugging) or Release_SDL (for playing) and x86. The normal Debug and Release projects are still using 
+	the DX9 API. This is very helpful for debugging, but there is no VR support. Do not forget to set the correct folders in the project.
+	
+How to run: Get the normal version of VPX to work properly first. There are several good tutorials available. If your setup
+	is running fine, just copy the VisualPinballX_GL.exe, the .dll files and the glshader folder to your Visual Pinball folder and run 
+	Steam VR before executing VisualPinballX_SDL2.exe. In VPX go to the Prefences->Video Options Menu and select on the bottom left
+	in the 3D Stereo Output Menu Steam VR. If you have performance issues, disable stuff like Ambient Occlusion, Anti-Aliasing and Bloom.
+	You can still select a normal Display Window that shows the VR rendering on the screen as Side-By-Side.
+	
+	Set the VR slope to the visual slope (e.g. 6.5 degrees). This does not affect physics, only visual apperance.
+	Set the VR Table orientation to rotate the table in the room. 0 is the default heading of the OpenVR Chaperone, the table is rotated
+	clockwise. The rotation center is the far left corner of the playfield.
+	Set the VR Table X/Y values. Positive X values moves the table to the right when looking in the default heading direction of the Chaperone.
+	Positive Y values moves the table forward. Negative X to the left, Negative Y backward. Always aligned to the default orientation, not
+	the table orientation. Maybe later I make this more intuitive and also configurable while playing.
+	The VR table height is the playfield height on the far left edge above the ground. 
+	Note: All units are in degree or centimeters. (one inch is 2.54 centimeters).
+	
+- Added SDL2 and OpenGL as new Render Pipeline. Switching between DX9 and OpenGL is only possible at compile time.
+
+- Several changes to the DX9 rendering pipeline. I've also added SDL2, SDL2_ttf, glew and glad to the project. Licenses should all be
+	added to the license.txt
+	
+- added support for SteamVR (OpenGL only). To use VR you need a SteamVR compatible HMD, a Steam account, the Steam client with SteamVR 
+	client installed. More information on OpenVR and SteamVR can be found on http://steamvr.com Documentation for the API is available on 
+	https://github.com/ValveSoftware/openvr/wiki/API-Documentation Also check if your VR setup is working. There are some nice free games
+	available: https://store.steampowered.com/search/?vrsupport=402
+
+- removed all static rendering for all rendering modes. At the moment this increases CPU and GPU load for all render modes, but only VR 
+  support benefits from this.
+
+- stereo is no longer computed from depth buffer. If any stereo mode is enabled it is always rendered to two independent buffers. This 
+  increases CPU and GPU load for all stereo modes, but this can increase the image quality for stereo rendering. Also AA can be enabled for 
+  all stereo modes.
+  
+- Known Bugs:
+	- Mirroring of the playfield is broken. (I will fix it as soon as the performance problem is solved...)
+	- Memory leak when closing and restarting a table (DX9 and SDL)
+	- Severe Memory leak (not freeing any textures) when opening another table
+	- Enviromental mapping on metal and balls looks ugly.
+	- The TAF 1.4 from Sliderpoint has no working lights (might happen on other tables, too) => reason unclear to me
+	- Performance sucks. Best thing is to disable all image enhancements. I'm working on this issue.
+	- The room is black and the cabinet does not exist. Will be added later. If you have some nice meshes with textures as a cabinet or
+	  a room feel free to share (please only stuff with a free to share license).
+	- No DMDs or Backglasses at all. Maybe I'll integrate B2S or similar later.
+	- At the moment this is only tested with my HTC Vive and a Nvidia GPU, since I only own this hardware. If you have problems with 
+	  an AMD card or another HMD (Oculus Rift, Microsoft Mixed VR), I'm trying to do my best, but it's always hard to debug without
+	  the hardware. The SDL2 port was shortly tested on a Intel UHD 620. Yes it "runs", but it's unplayable slow.
+	- Some issues with Rendering of Quads (sprites or whatever they are called).
+	- DX9 The SRGB change from r3590 is disabled since it produces some strange issues with insert lights
+	- Sometimes there themes to be a ball below the floor.
+	
+- If you find new Bugs:
+	- Short checklist before you submit a bug:
+		- Is your normal VPX version working properly?
+		- Is OpenVR working? There are several free games available on steam to test.
+		- Is the table working properly in your normal VPX version?
+		- If you have compiled/changed the code yourself, check if the problem also exists with the DX9 build and send me your 
+		  changes, if possible.
+	- Long checklist when you submit a bug:
+		- How can the bug be reproduced?
+		- Try to describe what is going wrong. Does the game crash, does the rendering look wrong, your mother-in-law became an alien...
+		- When does it happen? Only in VR, always on stereo rendering, only if you enable/disable specific settings
+		- Is it table specific or does it happen on all tables?
+		- Check the glshader/log folder. If there are any (recent) files in this folder, please add them to your bug report.
+		- What Hardware and Software (GPU, GPU drivers, CPU, Windows version, SteamVR Version, gamepad, what goggles...) are you using?
+		- If it is table specific: what table, what ROM, which VPinMAME version
+		- Add a screenshot or a video if it makes sense. Also add one from the normal VPX version, if it shows how it should look like.
+		- If you are working on the source code: Any debug information can help. Also if you find a way to fix it: Just add it to the bug report.
+		- Altough it is a good idea to add a lot of data, keep the size of the mail as small as possible.
+		
+You can still send me any other VPX related bug or feature requests, but I will try to focus on OpenGL and VR specific issues. Also I'm not 
+sure if my code will ever be backported to the main VPX branch.
+		
+Next steps:
+	1. Fix bugs
+	2. Optimize performance
+	3. Clean up code
+	4. Add new features
+	5. Go back to step 1 because of step 2,3 and 4
+		
+  
+VP 10.6.0 Changelog (trunk R3590)
+------------------------
+
+- add checkbox to 'user customizations'->'overwrite physics by global set' to optionally change all flipper settings, too
+
+- fix some regressions from VPX 10.3+ within the physics options dialog, especially with some of its flipper settings and when importing settings
+
+- fix ball through bumper issue
+
+- add apply button to the dimensions manager to apply the selected dimension to the active table
+
+- add support for up to 9 custom start parameters (range 1-9). Usage: "VPinballX.exe -c1 param1 -c2 param2" sets two custom parameters "param1" and "param2".
+  To access these in the script use: GetCustomParam(1) to get "param1" and GetCustomParam(2) to get "param2"
+
+- add strength parameter for the (optional) legacy/VP9-like keyboard nudging code, can be set in the 'Keys, Nudge and DOF' preferences dialog
+
+- add support for showing the image of a primitve mesh in the editor. However this feature is far from perfect because Windows GDI, that draws the elements in the editor, can't handle meshes well.
+
+- re-use existing sound settings if re-importing a sound file
+
+- fix crash in collection manager if a collection is moved up/down
+
+- fix ball decal splotches if only a global ball image was set in the video preferences
+
+- new table-script manipulation features:
+  '-extractvbs' parameter: "VPinballX.exe -extractvbs tablename.vpx" extracts the script and exits
+  VPX will automatically replace the table-script with a vbs file named the same as the table file (similar to the existing pov file functionality)
+
+- add support for using a primitive as playfield instead of the build-in one:
+    o to create a mesh playfield create a new blank table and export it as obj file
+    o open the obj file in Blender and edit the playfield mesh (mesh name is "Table1")
+    o cut holes into the playfield where you want to place kickers, VUKs and so on
+    o export the modified playfield mesh as a separate obj file and import it to VPX
+    o in VPX rename the playfield primitive to "playfield_mesh"
+    o the playfield primitive doesn't need an image and a material. VPX will use the texture and material from the playfield properties
+
+    Note: VP can only handle a simple mesh plate (with optional holes) as a playfield. Adding other complicated meshes to the playfield (e.g. merge kicker meshes with the playfield) is not supported.
+          The "playfield_mesh" is also handled as a special primitive type: its physics settings are copied from the table physics properties, but in addition you can also set "Has Hit Event" and set a "Hit Threshold"
+          if you want to be informed that the ball has hit the playfield. Settings like "Toy", "Collidable" or "Overwrite Material Settings" won't work for the "playfield_mesh".
+    See example table (File -> New -> Example Table) how to use it.
+
+- add checkbox to sound- and image-manager to use internal name as filename for exporting
+
+- fix "all sounds to rear channels" bug
+
+- add missing implementation for -pov command line option
+
+- remove all table encryption, old locked tables automatically unlock now
+
+- add buttons to video preferences to easily setup defaults for low- or high-end PCs
+- add 'Force Bloom Filter off' to video preferences to increase performance on extremely low-end graphics cards (like on tablets)
+
+- see core scripts (header of core.vbs) for the respective changelog (version 3.57)
+- see CommandReference.txt for the changelog of all the scripting properties/interface changes
+
+- updated to latest FreeImage.dll (3.18.0) (currently disabled)
+- DirectX 8 port for input handling (currently disabled)
+
+VP 10.5.0 Changelog
+------------------------
+
+- add ScreenSpace Reflections to the global video and table user properties, strength can be changed in the table lighting panel
+   This adds very fake, but also very fast local reflection effects to all table elements
+- make exclusive fullscreen the new default when using Windows 10 build 1803 and above
+- add option to the global video preferences to disable reflections of dynamic elements on the playfield (to help lower end PC systems)
+
+- static table elements are now over-sampled/better anti-aliased and always rendered at highest detail level (latter only applicable for rubbers and ramps)
+
+- improve quality of internal DMD shader, now it's almost resolution independent, especially when using it via flashers (e.g. FSS tables and the like)
+
+- fix issue with optimized dynamic group rendering of primitives, in general note that
+   1. if all elements in a group are dynamic primitives/meshes and all these use the same texture and same material, they will be grouped into
+      one big render buffer/single render call to speed up the rendering of transparent meshes on the table (like the plastics for example)
+   2. if elements are grouped together they will be treated as a group in the editor. Click on it and all elements in that group are selected at once
+   3. if you group primitives you can't animate or move/rotate them dynamically via script!
+
+- throw balls in player: add support to change the default ball mass when throwing a ball. The user can also set the default ball mass in the editor options (menu: preferences)
+- built-in ball control: Enable in debug window (or via "ball control always on" in the global options)
+   - left mouse click directs the ball towards the mouse cursor, left flipper key releases control
+   - can also double click to make the active ball jump to the cursor
+   - can hold left mouse button down to guide the ball
+   - if "throw" and "ball control" are both checked, one can use the throwing action on the ball control instead of making a new ball
+
+- increase usable UI layers from 8 to 11
+
+- script button can now both open and close the script editor
+- optionally make View->Script always show the script (see new option in Preferences->Editor Options)
+
+- add copy/paste feature for control points. Select a control point, press the "Copy" button or CTRL+C to copy the coordinates.
+   Then select another control point of another element and press the "Paste" button or leave the mouse cursor over the control point and press CTRL+V.
+   ATTENTION: you can also copy/paste control points of the same element but this can lead to bad shapes of the selected element
+- add units conversion feature from VPUnits -> inches/millimeters in the status bar for control points.
+   If you select two control points of a wall/ramp the status bar shows the distance of X/Y in the selected unit.
+   The unit used for the conversion can be set in the editor options dialog.
+
+- make the Edit->Search/Select Element un-minimize if minimized when selected
+
+- fix detection of used materials (bumpers, triggers & kickers were missing) and used images (color grading LUT was missing)
+- fix sound device selection/mapping for music (i.e. usually the backglass device)
+- add 'Set Defaults' button to the editor properties to reset editor changes and position/size of the script window
+
+- configurable global flipper physics sets: setting a negative value for a flipper physics setting in there will ignore that value and use the respective table flipper value instead
+- fix immediate player shutdown if global physics sets not setup/initialized by the user in the global options
+- fix wrong initialization order for global physics sets, leading to uninitialized physics parameters on the first run of a table (including potential crashes due to strange values)
+- fix EOS Torque and EOS Torque Angle not overriding the table flipper settings when used via the global (flipper) physics sets
+
+- rubbers now fully respect the element detail level slider, plus their hit shapes feature less triangles (=faster physics/collisions)
+- fix rubber triangulation issue leading to visual artifacts (especially in the editor) and rarely also weird physics behavior
+
+- fix ramp collision/internal walls reaching below and above the actual visible walls or wires, which was mainly an issue for rather straight and/or very steep ramps
+
+- improve gate swing physics, correct backwards initial swing, and expose new gravity factor parameter.
+  Also add some "bounce back" for 1-way gates. Currently set up to use as-is defaults, but Wrd1972 recommends the following settings:
+   Ideal setting for GATE motion:
+    Elasticity = .4 (default)
+    Friction = .02 (default)
+    Dampening = .85
+    Gravity = 3
+   Ideal for SWITCH ACTUATOR motion:
+    Elasticity = .4 (default)
+    Friction = .02 (default)
+    Dampening = .9
+    Gravity = 1
+
+- animate bumper skirts depending on ball impact
+- add RingDropOffset to the bumper element
+- fix rendering of bumper base/skirt if ring is disabled
+- update bumper base, ring and skirt with better meshes provided by flupper1
+
+- allow reels and textboxes to be moved via the script (and textboxes can also be placed at floating point precision level)
+
+- add 'Disable Lighting from below' functionality for Targets and Walls (0..1) to optionally disable light coming from below (e.g. from light elements)
+
+- handle corner case if a timer is disabled and then re-enabled within its own handler to prevent falsifying the timer interval
+
+- fix flipper element's EOS Torque and EOS Torque Angle and Elasticity and ElasticityFalloff and RampUp to be able to be changed by the script
+- draw also flipper thickness in the editor
+
+- fix triggers getting "stuck" when the ball is moving fast
+
+- fix kicker export bug
+
+- update builtin tables with 3 different sling arms (thanks bord and BorgDog)
+- fix obscure bug where starting the blank/built-in tables with the options pane closed causes the ball to levitate off the table
+
+- allow ESC-key to resume table if pause dialog is up
+
+- add -EnableTrueFullscreen (force enables/overrides the true fullscreen video preference) to command line
+
+- improve table exit performance (particularly when using Windows 10 build 1803)
+
+- log message in debug window when PlaySound is called for a sound that's missing in the sound manager
+
+- add VPTableStart broadcast message for frontends as notification that playfield should be shown
+
+- update BASS library to 2.4.13.8
+
+- see core scripts (header of core.vbs) for the respective changelog (version 3.56)
+- see CommandReference.txt for the changelog of all the scripting properties/interface changes
+
+VP 10.4.0 Changelog
+------------------------
+
+- add support for loading POV/backdrop settings automatically: One can define an extra POV(.pov) file for each table, named like the VPX file.
+  Example: you have some custom POV settings for the table "QBerts Quest (Gottlieb 1983).vpx". Save the POV settings into the file
+           "QBerts Quest (Gottlieb 1983).pov" and place it in the same directory as the VPX file. VPX will then also load the POV settings
+           automatically when loading the "QBerts Quest (Gottlieb 1983).vpx" (in the editor/player).
+  Or if you like to have default POV settings that are used for any other tables, save it as "autopov.pov".
+- in addition, there is also -Pov [filename] to load, export POV settings and then close VPX (via the command line)
+
+- change context menu behavior of add/remove to collection: it's now possible to add/remove one or multiple elements to other collections. 
+  If you selected multiple elements but they are not part of the same collection/or are not part of any collection
+  the context menu is greyed out and the check marks tell you which collections were found for these selected elements.
+  
+- add Rotate/Scale around origin option to the rotate/scale dialog.
+  Simply uncheck "Rotate around origin" or "Scale around origin" to rotate/scale around the mouse position.
+  To use the current mouse position as rotate/scale reference use the following workflow:
+  1) select the element you want to rotate/scale
+  2) place the mouse cursor where the origin should be
+  3) press the context menu key on your keyboard (the one between "Alt Gr" and right "Ctrl") and select "Rotate" or "Scale"
+  4) uncheck the "Rotate/Scale around origin" and start the operation
+
+- a selected element can be added/removed to/from a collection via the context menu
+
+- add a new "In Use" column to the material manager dialog
+- add a new column for the image manager to show the raw size in bytes for each image
+
+- let user change the scatter angle for bumpers in the editor UI
+
+- add additional thickness parameter to (transparent) materials,
+  which interacts with the standard amount (and/or alpha channel of the image) and edge opacity to provide a more natural look
+
+- add (optional) legacy/VP9-like keyboard nudging code, can be enabled in the 'Keys, Nudge and DOF' preferences dialog
+
+- add internal/rudimentary GPU & table element profiling functionality (accessed as usual via the F11 statistics/debug info display variants)
+  the normal statistics/debug info display now features multiple modes, the first mode works as before,
+  the second features additional timings for each main rendering block (like timings for Ambient Occlusion, pure rendering of the table elements, playfield reflection, etc),
+  the third one shows separate timings for each table element type(s), which is only approximate though, as it can not render the table in exactly the same way
+
+- extend 'Disable Lighting' functionality for HitTarget, Primitive and Wall from simple dis/enable to a blend value 0..1
+- add 'Disable Lighting from below' functionality for Primitives (0..1) to optionally disable light coming from below (e.g. from light elements)
+
+- add new kicker meshes (KickerCup2, KickerWilliams, KickerGottlieb)
+
+- add surround sound options/configurations:
+  1) Basic 2CH audio - this should operate exactly as it did before. Forward/rear panning is ignored.
+  2) All effects to rear - Moves the table sounds to the back audio channels. This allows one to move the sounds into the cab like one was able before, but without needing a second sound card.
+  3) Surround, front is front - This is the best setting when using a dedicated card for the surround sound table sounds. It makes the front channels the front of the cab (closest to the player). This way if one uses older versions of VP, the old legacy output still works well.
+  4) Surround, front is rear - This is a pretty "vanilla" surround setup.  If you were to play on a home theater or with virtual 3D headphones, it's the most appropriate. The "front" speakers are in the rear of the cab (furthest from you). If VPinmame also uses the same soundcard, it will share the audio with these front channels. 
+  5) 7.1 surround (aka 6ch audio) - If one wants to drive the backglass, and 4 channel table sounds all off of one card, this is the setting to use. It shifts all of the table audio to the side and rear channels, leaving the fronts available for VPM and backglass sounds. This might also be a good setting to try if you are using just 2 speakers in the cab and 2 in the backbox, the table sounds will pan partially towards the front in 4 speaker mode, letting the backbox provide some of the surround effect.
+
+  Please note that these modes are used in conjunction with the Windows speaker configurations. You can use any mode on any speaker system.
+  Some sound cards even have virtual surround options that would work with this setup. You could set up a full 7.1 setup and dedicate it to just the playfield if you wanted with option #3 or #4, and use a separate card for VPM.
+  The 7.1 mode was tested and it works great, but we recommend using the #3 option for now(!) as it is the most backwards compatible when also using VP9.X and VP9.X/PhysMod5.
+
+  There's also a much revamped sound manager that lets you tweak the positions without touching the table script.
+
+- add tweaked ball rolling/collision PlaySound calls to the default table, to use the new surround/front_rear_fade parameter
+- extend all other PlaySound calls of the default table to use the respective elements X and Y position (on the table) for panning and front/rear fading
+- extend some PlaySound calls with DOF/Controller.vbs commands
+
+- new table extended by an additional stripped down version of the default table and an updated example table (Thanks to BorgDog and Hauntfreaks)
+- add nudge test and calibration table (by DJRobX, modded by Sir Cheddar) to tables directory
+
+- stop playing sounds when exiting the sound dialog, or exiting position dialog, or when you pick a different sound
+
+- remove rendering of lower playfield border/quad
+
+- fix missing kicker holes at inclination values close around 0
+- drop target hit event problems fixed
+
+- fix duplicated functions in the script editor dropdown box (which also resulted in a lot of slowdown over time)
+- fix some uninitialized dialog state
+- fix some more editor crashes
+
+- see core scripts (header of core.vbs) for the respective changelog (versions 3.54 and 3.55)
+- see CommandReference.txt for the changelog of all the scripting properties/interface changes
+
+- DirectX 8 port for input handling (currently disabled)
+
+VP 10.3.1 Changelog
+------------------------
+
+- fix some editor crashes
+- fix UI rendering of alpha images on Windows XP
+
+- in interactive camera/light editing mode (e.g. launch table with F6 or the respective menu entry) navigating around the table with the arrow keys (and left alt key)
+  must now be explicitly enabled in the key preferences dialog
+
+- add Randr's rulers, plus a simple protractor and Rothbauerw's manual ball control script (slightly tweaked) to the default table
+
+VP 10.3.0 Changelog
+------------------------
+
+- add new material option for the glossy color: 'Use Image', which allows to configure how much the (optional) image that is attached
+  to a scene element is allowed to influence the glossy part of the material (0=no tinting at all from the image, up to 1=same behavior as before/older VPX versions)
+- fix 'edge shadowing' issue if a normal map image is used for a scene element
+
+- add new configurable in-game key for a lockbar/fire button (accessible via "LockbarKey" in the script)
+
+- in interactive camera/light editing mode (e.g. launch table with F6 or the respective menu entry):
+  - press the start game key (default is 1) to reset the camera and all backdrop settings (inclination, layback...)
+  - add camera rotation around Y axis
+  - navigating around the table with the arrow keys (and left alt key) is now possible
+  - show camera position
+
+- add additional parameter to primitives to allow for rendering backface triangles (if the used material features transparency)
+
+- add simple kicker hole mesh
+
+- change "AntiFriction" parameter to "Damping" for the gate and spinner elements (which also changes the input range from 0..100 to 0..1, and is inverse to before, e.g. Damping="1-AntiFriction/100")
+  (old tables will still load/save exactly the same though, as it was always used like this internally anyway)
+
+- add (optional) missing hit event to ramps
+- add missing Timer properties for ramps
+
+- VP now supports three different view modes (DESKTOP, FULLSCREEN and FULL_SINGLE_SCREEN (to be able to easily add an additional backglass to the table)). The UI was changed to select, view and change these properties via a drop down list
+- add more window resolutions to the video preferences (for new FSS/portrait setups)
+
+- using the built-in DMD (via the flasher element) now in addition will respect the 'Additive Blend' and 'Modulate' parameters to steer the blending with the table
+  (this can for example be used to simulate a reflection on the playfield glass: set 'Modulate' to 0.9 and check 'Additive Blend' as an example)
+  (note that this unfortunately can break old tables as this setting was still ignored in 10.2.X, so all tables that use a built-in DMD via the flasher element should please be re-released with these two parameters set up correctly)
+
+- slightly tweak bloom filter and light transmission filter to capture a larger radius (for very bright lights)
+
+- add NFAA post processing filter to the post-processing AA dropdown menus (sometimes more blurry, but also keeps more dynamic range of the highlights compared to FXAA, and is pretty fast)
+- add DLAA post processing filter to the post-processing AA dropdown menus (somewhere inbetween FXAA and NFAA, depending on the aliasing-pattern that is smoothed, and more costly than NFAA)
+- add SMAA post processing filter to the post-processing AA dropdown menus (comparable to Quality FXAA, depending on the aliasing-pattern that is smoothed, and more costly, but usually also a bit better)
+
+- own colors can now be defined for locked/unlocked selected elements, element fill color and editor table background, in the editor preferences
+
+- sound manager, image manager and script editor save and restore window position and size
+- image Manager: new column added to show if an image is in use
+- material/image manager dialog is resizeable
+
+- improve display of images with alpha channel in the editor (no more checkerboards)
+
+- add hotkey for toggling between table and backdrop view in the editor (ctrl+space)
+
+- fix autosave option if entering/OKing the editor options dialog
+
+- fix UI issue with the layer buttons for high desktop resolutions
+
+- add Win32++ framework to simplify UI handling (more infos under https://sourceforge.net/projects/win32-framework )
+
+- remove Visual Studio 2008 support
+- add Visual Studio 2017 support
+
+VP 10.2.1 Changelog
+------------------------
+
+- fix for camera/light tweaking mode not updating lighting parameters
+
+VP 10.2.0 Changelog
+------------------------
+
+- add -Help (displays all command line parameters) and -DisableTrueFullscreen (force disables/overrides the true fullscreen video preference) to command line
+
+- by default open file dialog to directly select and play a table (can be changed in preferences->editor options)
+
+- timers now feature a special mode (setting the interval to -1) that triggers a timer exactly once per frame (e.g. dependent on the FPS that a user gets for a table).
+  this can also be interpreted as being a callback done once per frame to update everything that is only rendering-related (e.g. to reduce overhead caused by things that will never be seen by the player in the end).
+  note that all purely script-driven animations that use a timer with its interval set to -1 should use the new script function GameTime to calculate the time passed between the previous and current frame to make animations time dependent again.
+- fix timers that dis/enable themselves in the script
+
+- disable visual touch/pen feedback to save one frame of input latency/lag (on tablets/phones)
+
+- replace old 'Maximum pre-rendered frames' video preference implementation with the official DirectX mechanism on non-XP systems,
+  so it could be worth to experiment again with this setting by using 1 or 2 to reduce lag at the price of a bit of performance
+
+- add aspect ratio to dimension manager
+
+- add show debugger hot key option to the keys preferences. If hot key is pressed it opens the debugger window without showing the pause menu.
+
+- Lights can be debugged (and also live tweaked) in the debugger. Open the debugger, click on the "Lights" button and a new dialog will appear where all dynamic values are editable. Properties like blinking/on/off are
+  based on the timing of the player but the timing is stopped while debugging. You have to click in the player window to see the changes. And beware that all light properties can be changed by 
+  the script, so these might be overwritten by the script even if you try to set them in the debugger. The changes will also affect the lights in the editor once you quit the player.
+
+- Materials can also be debugged (and also live tweaked) in the debugger. Open the debugger, click on the "Materials" button and a new dialog will appear where all properties are editable except for the physics values. 
+  By hitting enter or the "Apply" button the changes are updated. Every dynamic element on the table will show the changes immediately. The opacity active flag is an exception: This flag
+  also defines if an element is rendered dynamically or not (e.g. for walls or ramps). So if the opacity isn't already active when starting the player you won't see changes on these static elements.
+  The changes will also affect the materials in the editor once you quit the player.
+
+- hotkey for adding normal and smooth control points for walls, ramps and lights. Select a wall, ramp or light and press F10 for a normal unsmoothed control point and F11 for a smoothed one.
+
+- animation support for mesh primitives added: The animation sequence is based on multiple .obj files for each frame. Let's say we have an animation of 100 single frames, then you have to export
+  each frame into a separate .obj file with the nameing format <meshname>_x.obj where x is the frame number. When importing a mesh, check the "Import Animation sequence" in the import dialog and
+  select the .obj file of the first frame. VP will then load all other frames and, when done, will show you a short message box how many frames were imported.
+  Check the CommandReference.txt for the new primitive animation script functions.
+
+- bumper cap, base, ring, skirt can be set to invisible separately
+
+- add one-way trigger mesh (TriggerWireC type)
+
+- changes to bumper material: add separate bumper ring material and don't use a built-in texture for the bumper base and skirt anymore
+
+- add a physics setting per material to the material manager.
+  Settings are: Friction, elasticity, elasticity falloff and scatter angle.
+  This allows for tweaking all physics settings in the material manager for all 'similar' table elements (with the same material) at once.
+  (If you like you can still overwrite the settings for each element separatly though)
+
+- extend the EOSTorque effect to both entering and leaving the EOS zone and add additional EOS Torque Angle to make this range configurable
+  This allows for more flipper tricks without having to dial in unrealistic flipper settings
+
+- output table information if paused
+
+- start camera/light tweaking mode with 'F6'
+- for a quick Desktop(DT) vs Cabinet(FS) camera view testing: hold 'shift' or left flipper button during the table start to choose between the default DT or FS camera
+
+- texture size limit/downscale now respects aspect ratio.
+  Also delete outdated 512 max limit and introduce a new 3072 max limit.
+
+- enable park position also for non-mech (digital) plunger
+
+- fix dynamic bulb mesh light not rendering issue
+
+- remove some debugging script editor output messages
+
+- fixed that the ball size was not updated in the pause debugging menu
+
+- see CommandReference.txt for the changelog of all the scripting properties/interface changes
+
+- add DOF controller configuration also to the VP keys dialog
+- new core scripts by mfuegemann and controller modifications by arngrim, plus solenoid modulation by DJRobX (see core.vbs for changelog (3.51 and 3.52))
+
+VP 10.1.0 Changelog
+------------------------
+
+- add (tangent space-)normal mapping support to primitive
+
+- add EOSTorque to the flipper physics settings. This value/factor effects the way how long a flipper arm stays in the up/raised position even when you released the flipper button.
+  On real pinballs it will take some time until the flipper solenoid loses it's power until the flipper drops down or is forced to move by a hitting ball.
+
+- add DefaultBulbIntensityScale also to the table ball property to scale/dampen the intensity of the bulb lights on the ball
+
+- add abilty to show the image size in the image manager for each texture
+- add an "Update All" button to the image manager for updating all images without any further inquiry.
+  Only an error message is shown after updating, if some images can't be updated (e.g. files not found).
+
+- add support to import/export backdrop POV(Point Of View) settings to a XML file. It's under File->Import->Backdrop POV or File->Export->Backdrop POV
+- fix/extend support for different user-selectable physics presets and also save as XML file
+
+- hit shape of the rubber object refined
+- rubbers also now have an extra HitHeight property to further decouple the collision detection from the actual visible rubber height. Also the HitHeight isn't affected by the z-scaling.
+
+- spinner and gate animation reworked
+
+- add a "Raise Delay" setting to drop targets
+- drop targets (not hit targets) have an additional dropped and raised event that is fired if a drop target is really dropped or raised (after animation of the mesh). 
+  The normal hit event is also supported but decoupled from the animation, so if a hit event is fired the isdropped flag can still be false because it is set after the animation.
+
+- add DMD image connection (if enabled in script) for flashers (and also as checkbox for textboxes)
+
+- add support to assign left/right flipper button to left/right mouse buttons and middle mouse button to plunger key (this can introduce less lag for the flipper buttons, compared to using a keyboard remapper)
+
+- "Throw Balls In Player" mode can now be activated permanently in the Preferences->Editor menu, also you can define the default ball size for this mode. 
+  The ball size for this mode can also be defined in the debugger menu.
+
+- new video preferences
+  - add support to overwrite the ball image/decal texture globally
+  - optional post-processing of the internal DMD (via scaleFX algorithm, smoothes the output similar to FXAA)
+  - add SBS (Side by Side) and Interlaced 3D Stereo mode outputs
+  - resurrect exclusive fullscreen mode (note that this will not allow to let other windows show up, like VPinMAME)
+  - add 10bit output for all compatible graphics cards and monitors (non-HDR/Rec2020 for now, just plain sRGB), needs exclusive fullscreen mode for now
+  - possibility to disable desktop composition (only works on Windows Vista and Windows 7 systems, can reduce lag and/or increase performance)
+
+- combine all common user-tweakable table settings in one simple UI panel in the table options
+
+- new core scripts by mfuegemann and PROC controller modifications by arngrim
+
+- hotkeys.txt added, containing all editor shortcuts
+
+VP 10.0.0 Changelog
+------------------------
+
+- the next generation of Visual Pinball finally arrives!
+  due to this, VP10 breaks a lot of backwards compatibility for ramps, lights, physics, colors/images/materials, and more, so
+  most existing VP9 and VP8 tables will not work correctly or will even output script errors when run, -but they will load-, so you can reuse all existing work!
+
+  -> TL.DR up-front conversion hints:
+     - pull lightsource->ambient down to 0,0,0 (or at least a small value to avoid loss in fidelity of the colors)
+     - crank up lightsource->emission to 255,255,255 and tweak the color from there (to get a good contrast on the shading)
+     - tweak the lightsource->height and the two emission-scales (and try to keep the light range really really really large before tweaking the rest of the light parameters!)
+     - if doing nightmods, try to avoid manually toning down all images and materials, but rather just use the light emission settings
+       including the new night->day slider (this will allow the user to tweak the brightness of the table on his/her own afterwards)
+     - revisit all physics settings, even if you used VP9Physmod(5) before (only the re-enabled friction and scatter in the physmod5 case though)
+     - take a look into the new material editor and assign a material to each object on the table
+     - use flashers when doing special lighting effects/gi-changes/night mods (and tweak existing ones by playing with the opacity (can be >100%) and modulate options),
+       otherwise try to stick with the newly redone (bulb-)light elements (flashers and bulblights are cheaper to render than other elements)
+     - revisit CommandReference.txt for all commands that have changed names/behavior, were replaced or deleted
+
+
+- a special thanks has to go out to our awesome alpha testers/improvers: Unclewilly, JPSalas and JimmyFingers!
+
+- for all the changes regarding the core vbs script file package (like cvpmTrough,cvpmSaucer,BallMass,UseVPMDMD,UseVPMColoredDMD, the Controller abstraction (DOF,B2S,VPM,EM) and the new Coindoor key functionality)
+  look into core.vbs for the full changelog
+
+
+- physics mostly redone (also previously known as 'physmod(5)')
+  due to this it is now also possible to enable vsync without physics sideeffects like stutter or bad aiming (set FPS limiter to 1)
+
+  -> additional changes since physmod5, note that these will also -force- you to revisit existing physmod5 physics table settings:
+     - friction is no longer ignored (e.g. it was always constant at 0.3 before) on the playfield, walls, slingshots, primitives, ramps, gates (and more?!)
+     - scatter is no longer ignored for kickers and all kinds of collisions. also the global fallback behavior was changed: only if scatter < 0 then the global scatter value (=0.5) is used (before it was also used if scatter=0)
+     - elasticity, elasticity falloff and scatter are now exposed as new playfield properties (before these were fixed at elasticity=0.2 and the other two at 0)
+     - import/export of the physics options sets is fixed and can be used again
+     - flipper properties strength,mass,return are wired up correctly and can be used from the script again
+     - collision heuristics are adapted for all ball sizes (e.g. different from the default radius of 25), so it should be safer to use strange ball sizes now
+       (note: remember to always also tweak the ball mass if changing the ball radius (the kicker now supports CreateSizedBallWithMass),
+       as otherwise you will get a "floaty" ball (mass = k*radius^3)), thus (hopefully) no more ball-falling-through-playfield problem
+     - add IsBottomSolid to Walls to have Walls optionally completely closed (bottom was always open)
+
+  -> the data-format of the physics sets (*.vpp files) is basically the same, although the parameters inside are different, so unfortunately you need to set them up from scratch again
+  
+  -> kicker physics changed: The kicker bevel will influence the ball's motion and won't grab the ball like a magnet anymore.
+     The old behaviour can be set via the 'Legacy' checkbox and is recommended for 'invisible' kickers like the trough as it can be much faster.
+     Also use 'Legacy' on kickers that are (ab)used as triggers (e.g. to create balls once or 'warp' balls).
+
+- changed the plunger physics to make the launch behavior more linear and controllable, for both keyboard and mechanical 
+  plunger interfaces
+
+- added new plunger visual styles, Flat and Custom, along with new properties for more control over the appearance; it 
+  should now be possible to create a photo-realistic plunger with the precise appearance desired using the built-in
+  plunger object
+
+- Select Elements dialog improved. It shows the type of the element and if supported the used images. 
+  
+- new Camera & Light Mode added to the Table menu. This mode starts the player in a special mode where you can change backdrop & lighting settings with the following keys:
+     left flipper key = decrease value
+     right flipper key = increase value
+     left magna save key = previous backdrop/light option
+     right magna save key = next backdrop/light option
+
+- new setting in the video preferences to setup rotation for cabinet mode (or otherwise standard desktop)
+  this allows a table to be used in/setup for both DT and FS by setting the backglass options correctly for both modes
+
+- adjust cabinets: in the video options select "Cabinet anti-stretch the ball" and depending on your screen you can enter a correction offset for the
+                   aspect ratio. If you use a 16:9 screen use a correction offset of X=0.0 and Y=1.5. For a 16:10 screen use X=0.0 and Y=0.0 for best results.
+                   This option only applies to rotated and fullscreen rendered tables (cabinet mode)!
+                   Even with this option you might need to adjust the backdrop settings. The biggest problem for an egg-shaped ball is the Layback value.
+                   Values over 70-80 are way too high and should be lowered. The scaling can become a problem too.
+                   To find a better POV with a round ball over the playfield do the following:
+                   - set the min/max slope to 0 and start the table in Camera Mode (menu Table -> Camera Mode)
+                   - enter debug mode and activate "Throw balls in player"
+                   - drop balls all over the table and adjust the POV settings
+
+- new table field height setting in the "Dimension & Slope Settings":
+  Now you can define a real playfield height. If this value is raised, all elements on the table are also moved by that amount.
+  For example: "table field height"=50 means everything on the table is raised by 50 units. This allows for real ball tunnels and more.
+- objects can be placed -under- the playfield or move 'through' the playfield (think Ringmaster or Trolls)
+  and will still be visible through alpha channel/cutouts in the playfield image (note that only -dynamic- objects will show up though, due to restrictions in the engine)
+
+- new rubber element
+  rubber object can be rotated around the X/Y/Z axis and shown in the editor if the checkbox "Show In Editor" is checked
+
+- the thickness of a wire trigger can be scaled. 0 is the default thickness. To make it thicker use values like 0.5, 1, 1.5, 2... 
+
+- spinners are mesh based. If the spinner bracket isn't the right one disable the "Show Bracket" settings and you will only see the spinner plate.
+
+- introducing drop/hit target element. A drop/hit target is now a separate VP element. It is mesh based and different shapes can be selected from a drop
+  down list. A target fires a hit event and has it's own timer like walls when used as drop targets.
+  
+- kickers are mesh based. In the kicker settings you can set "Fall through" so that if a ball hits a kicker(hole) the ball will fall through the 
+  surface which is attached to it. This only works if the wall is higher than the playfield, it won't work if the hole is on the playfield.
+  
+- gates are mesh based. Another option was added to the gate element "Two Way" if set the ball can roll from both sides through the gate
+
+- flippers can now feature an image
+
+- add material editor
+  
+  -> quick and basic explanation:
+     - First of all select if you want to design a metal material (steel, gold, silver, aluminium, etc)
+       or any other one (plastic, wood, rubber, etc)
+
+     - Then select the base color of your material
+       (note that this can/will be modulated by the (optional) image on your object(s) later-on,
+        so if you need your object image to look as true to the original as possible, set the base color to full white,
+        otherwise you can also just use the base color to change the brightness or colors of the object image)
+
+     - If you selected a non-metal material you can now in addition add some subtle reflectivity via the glossy layer color
+       (otherwise simply set it to full black, but leave at grey to full white for a more natural behavior)
+
+     - Then select the shininess of your material (0.0 means very very dull reflections, 1.0 means perfect mirror-like reflections),
+       of course this only has an effect on metals or if you used the glossy layer
+
+     - For some materials it can now also be realistic to add an additional clearcoat layer on top of everything
+       (otherwise simply set it to full black)
+
+     - After testing the look of the material on an object (use a curved one if possible, e.g. the default rubber (with thickness >30) or a complex primitive),
+       you can tweak the edge brightness parameter: Usually it should just be left at 1, but if you think the edges are unnaturally bright, reduce it
+
+  -> pro tip:
+     - In nature, each object has a bit of glossy, so try to -never- set the glossy layer to full black on non-metal materials!
+
+- assign sound-,image-,material- and collection-manager to hot keys (F2,F3,F4 and F8)
+
+- new shader based inserts/lights/bulbs
+  bulbs are special in many aspects:
+   - They optionally feature a built-in mesh that "emits" light to the viewer
+   - One can use them to add a lighting effect over other elements (use the Modulate option to blend between additive (0) and multiplicative (1) behavior, try to keep this around 0.9 to best support the day->night slider)
+   - In addition they can be used to add a lighting effect from below for all transparent materials (like playfield plastics and transparent ramps) via the Transmit option
+
+- new shader based mesh ball
+
+- new shader based materials/lighting (full HDR pipeline)
+
+  -> due to the new lighting and materials the orientation of vertex normals on imported primitives is now extremely important!
+     to test if everything is correct, try to tone down the environment emission scale and see if all your objects are correctly lit -only- from above
+
+  -> always try to tweak the two lighting components (some lightsources above the table plus the environment image light surrounding the table) separately
+     by setting one of the two emission scales to 0 and then configuring the other one on its own
+
+  -> the new environment image -must- be in Latitude/Longitude format (see for example http://gl.ict.usc.edu/HDRShop/tutorial/tutorial04.php),
+     and also keep the resolution low (512x256 should be enough)
+
+  -> the night->day slider will scale these two lighting components, and in addition
+     the script now offers NightDay, which returns the range in 0..100, so that additional tweaks can be done in the script, depending on this value
+     this night->day setting can also be set automatically via the video preferences, but requires to fill in the correct latitude and longitude of your location
+      (in decimal degrees,-90..90 (North positive) and -180..180 (East positive), like openstreetmap.org does)
+
+- new (optional) playfield reflections
+  This option is a table option and can't be blindly activated on all tables. Because authors have so many different ways to build tables it's nearly impossible to handle the reflection in every case.
+  If you're building a table and you want to use this option the following rules apply:
+  - the reflection only applies on the playfield not on upper playfield areas or separate walls used as a playfield.
+  - don't overdo the reflection strength of the ball/playfield reflection. Depending on the playfield texture a value around 50-120 should be good enough. Otherwise it looks unnatural.
+  - don't use decals of the size of the playfield as an overlay or you won't see the reflection neither.
+  - the reflection effect is actually very simple. VP flips all static elements on the z-axis (z=0) and renders them into a texture. This texture is blended over the playfield. Therefore special care must be taken 
+    for mesh primitives. You have to set the pivot point of a mesh well. If you try to compensate a wrong pivot point in VP by adjusting the xyz position it could result in a wrong mirrored element. You will notice it
+    because e.g. a mirrored post isn't mirrored under the actual post instead it's rendered a bit below on the playfield and the reflection looks odd.
+  - if needed, disable certain elements from the reflection via the respective flag in its options
+  
+- Ball reflection on playfield can be enabled/disabled via script for separate balls with "ReflectionEnabled". For example when you create a new ball from a kicker then: kicker1.CreateBall.ReflectionEnabled=1 activates the reflection on the playfield
+
+- new (optional) color grading step
+  like in movies or photography, one can now add an (almost) artificial color grading step at the very end of the rendering process
+  (see https://docs.unrealengine.com/latest/INT/Engine/Rendering/PostProcessEffects/ColorGrading/index.html
+   and skip to 'Color Correction' to learn more about how this is supposed to work and for a clean 1:1 mapped 256x16 LUT texture to start with, the default table also includes one as ColorGradeLUT256x16_1to1.png)
+  you can load the 256x16 LUT texture via the Image Manager like any other image, and then select it in the Backdrop->Colors&Formatting options
+  (it can also be changed dynamically via the ColorGradeImage variable of the table in the script,
+   for example to change the look of a table completely (invert colors, make everything red/blue/whatever, etc))
+
+  -> only after -finishing- up a table completely, you should use this functionality as the very final beautification step!
+     (also make sure that there is not already a LUT selected in the backdrop settings when you take the screenshot in VP for the further tweaking)
+
+  -> do not save the new LUT texture as jpg, but rather as lossless png or bmp!
+
+- images/textures transparency is now -only- based on the alpha channel of the loaded images, no transparency color/hack support anymore
+
+- images can now feature high dynamic range (HDR), via the .exr and .hdr file formats, which is supported on:
+  - the ball image (use the Mirror Ball Map format, see http://gl.ict.usc.edu/HDRShop/tutorial/tutorial04.php),
+  - flashers and (pass-through-mode-)lights and the background image (don't know where to get useful HDR images for these though),
+  - and -especially- the environment image (use the Latitude/Longitude format, again see http://gl.ict.usc.edu/HDRShop/tutorial/tutorial04.php)
+
+- add new PlayHit() and PlaySlingshotHit() function to the bumper / wall. If called the bumper/wall will play the hit animation as if a ball hits the element but without triggering the actual hit event.
+
+- add LastCapturedBall function to the kicker element. It returns the last captured or the current captured ball. If no ball could be found or the ball is already destroyed an error message will be displayed
+
+- EM Reels do not feature raw Text/Font input anymore, only Images (this was already unsupported in 9.9.X, but is now officially discarded)
+
+- internal DMD support (access via script, input levels are 0..100 (or RGB/0..255 for DMDColoredPixels))
+  to display the DMD, use a TextBox with the magic keyword "DMD" as text
+  to be able to connect to VPM, use a recent VPM (2.6 or newer) and a recent core.vbs (3.44 or newer) and follow the instructions there
+- DMDWidth, DMDHeight, DMDPixels (or DMDColoredPixels) to steer the DMD added to Table Script methods
+
+- improved smoothness for ramps (centripetal Catmull-Rom splines)
+- ramps can now in addition use the height parameter of their control points (its used as an offset in addition to the normal ramp behaviour)
+- in the editor: control points of ramps have a new read-only "Real Height" information. The "Height Offset" is just an offset for the current height. 
+  E.g.: Top/Bottom height of the ramp is 100. If you add 25 to the "Height Offset" the "Real Height" shows 125. This is more important if you use a sloped 
+  ramp with bottom height 0 and top height 60 and add new control points on the ramp. The height information is interpolated from one control point to the 
+  next one, so the "Real Height" shows you this value and the "Height Offset" can be used to easily adjust the height.  
+- changed opacity/transparency handling for ramps (Alpha/Acrylic have been deleted, only the material opacity value is supported now)
+- the control point for the bottom ramp has a blue color to identify which side of the ramp is the bottom one
+
+- GetElement, GetElementByName, GetBalls added to Table Script methods to have simple access to the elements and all active balls on the table
+- OnBallBallCollision(ball1, ball2, velocity) can be used as a Callback in the script to handle Ball to Ball collisions
+- renaming of IsVisible properties (flasher, ramp) to Visible
+
+- a whole lot of script-editor changes:
+  Dwell Tool Tip
+   When the mouse pointer is left to "dwell" over a keyword, the Script Editor can display additional information:
+
+   e.g. for: 1056 dim scoringTimer:scoringTimer = 0 'How long DOUBLE SCORING will go on
+    
+   - The actual definition of the keyword. [dim scoringTimer]
+   - The line number of the definition of the keyword. [Line 1056]
+   - Any help/comment associated with the keyword. [How long DOUBLE SCORING will go on]
+  Dwell start time and the display of the help/comment may be adjusted in the Code View preferences.
+
+  Highlighting
+   This is done by keywords that fall into the following categories:
+    1. Visual Basic reserved words.
+    2. Table Script Subs, Functions, Dims, Consts, Properties and any member of these.
+    3. Table components.
+    4. Visual Pinball Core.vbs file.
+    5. Comments
+    6. Literals
+    7. Default Text
+   The following properties of each keyword may be adjusted in the Code View preferences:
+   Active, font, color, size, bold, italic, etc. 
+   If a keyword is already defined outside the table script it will be highlighted in the original definition color,
+   but the dwell tool tip will be of the re-defined keyword in the table script.
+
+  Auto complete    
+   Suggestions which keywords are displayed in a dropdownbox underneath your typing according to the characters you have typed.
+   The number of typed characters before suggestions are displayed can be adjusted in the Code View preferences.
+
+  Word highlighting
+   When double clicking a word it will be highlighted throughout the Table Script.
+
+- two new methods of ball decals added. If 'Logo mode' is unchecked the decal texture will be additively blended based on it's alpha values.
+  This way you can add scratches to the ball (see the default table for an example). In 'Logo mode' the decal texture is blended as an overlay 
+  (blend mode 'Screen' in Photoshop/Gimp) to apply a logo or a second image on the normal ball texture.
+
+- flasher supports custom shapes and multi texturing. You can define two separate images and define a filter to blend these two images.
+  in addition there is now a modulate option to define how the flasher blends with the underlying elements (0(=full additive)..1=(only modulate), try to stick with something like 0.9 to best support the day->night slider)
+  plus the opacity and amount parameters can be set to values > 100%
+  to fade a set of flashers in/out easily you can use the IntensityScale in the script, so that you do not need to use different opacity values
+  look into the CommandReference.txt for additional changes to the functions that can be used
+  
+- collections can now group elements together. If you enable 'Group elements together' flag and you click on one element of the group all other members 
+  of that group are selected. So you can move/scale/rotate them without multi-select element by element. If you want to select just one element of that group
+  just shift-left click on the element and you can manipulate only that element. Unchecking the 'Group elements together' flag disable this feature for this collection.
+
+- ctrl+mouse wheel zooms in/out. The old way of using ctrl+left click for zooming in and ctrl+right click for zooming out is still possible.
+
+- enable "Throw Balls in Player" mode, and by pressing the middle mouse button a ball will fall from the table glass height onto the table. This way you can place some balls on tables if a wall is used as the playfield.
+
+- extend right click behavior for multi-select to hidden items
+
+- the property menu can now be a floating window (old behavior can be restored in the editor options)
+  
+- remove old shadowing code and replace it with optional screen space ambient occlusion
+  additionally one can also enable ambient occlusion for dynamic objects (via the global video preferences and also the table options)
+
+- its not necessary anymore to manually override the texture filtering quality in the global gfx cards options (NVIDIA control panel, etc)
+  if you need HQ filtering, please only use the checkbox in the VP video preferences instead
+
+- new 4x Anti-Aliasing mode that does brute force oversampling
+  (can optionally be combined with VPs builtin FXAA or the control panel FXAA/SMAA/etc for even more smoothing)
+
+- add third mode for FXAA: extreme (and retweak the quality FXAA mode)
+
+- 3D stereo now also works on most Intel and AMD systems, not just on NVIDIA 
+- removed 3D stereo AA, its always enabled now
+- added 3D stereo offset, which can be used to offset the table "into" or "nearer to" the monitor
+
+- add flag "Alternative Depth Buffer processing" to the video options
+  use this option if you get the corresponding error message on table launch
+
+- adaptive vsync works again, it will disable vsync automatically if FPS drop below monitor refresh rate (not on windows XP though due to missing functionality there)
+  enable it by setting the FPS Limiter to 2 (1 will still be using 'real' VSync and any number above the monitor refresh rate (usually 60Hz) will just limit the FPS)
+  - additional note: remember to -not- disable Aero on Windows 7/8/10 to be able to use vsync!
+
+- optional texture compression to save some gfx video memory (at the cost of rendering quality and loading time)
+  (for now the textures have to be a multiple of 4 in both x & y resolution to make them compressable.
+   this can be abused though to 'disable' texture compression on certain critical textures by making them -not- a multiple of 4)
+
+- support primitive vertex sizes > 65535 and redo primitive drawing in the editor-UI 
+  (there is now a new setting for each primitive, set to 0 to switch to the old approximate drawing mode (usually fast),
+   1 to draw each and every triangle (usually slow) or inbetween to approximate the outlines of the object (lower values are faster))
+   
+- primitives can optionally be reduced for the use in the physics core (so that highly detailed objects do not cause stutter on collisions)
+  by setting the new 'reduce polygons' options (0=no reduction and no slowdown on loading .. 1=high reduction of polygons and slower loading)
+
+- export of the entire table to an .obj file (Menu File -> Export -> OBJ Mesh)
+
+- mesh import dialog added. The options are:
+  * "Convert coordinate system" : Converts a mesh to the left handed coordinate system used by DirectX
+  * "Center mesh to it's midpoint" : The midpoint(pivot) of a mesh is calculated and the whole mesh is moved so that the midpoint is at the origin (0,0,0)
+  * "Place at primitive's position" : The old/normal placement function. The mesh isn't moved and will be placed relative to the primitives base position
+  * "Place at mesh's absolute position (use mesh's middpoint)": The mesh is transformed so that it's midpoint(pivot) is at the origin (0,0,0) and then moved to it's absolute position
+                                                                where it was placed in the 3D editor (e.g. Blender)
+  The last option is useful for the following workflow:
+   1. export the table as one huge .obj file (File -> Export -> OBJ Mesh)
+   2. import this obj file into your 3D editor
+   3. place additional meshes on the table or replace existing objects
+   4. export each object you have added or replaced into a separate .obj file
+   5. import each .obj file and in the import dialog select "Place at mesh's absolute position (use mesh's midpoint)"
+      so that the object's pivot point will be the object's midpoint and the base position of the primitive is changed to the position from the 3D editor
+
+  * "Import mesh's material" : Loads the corresponding .mtl file and adds the first material in that file.
+                               For instance: if the mesh .obj file is called "bumper.obj", then there should be a file "bumper.mtl" in the same directory.
+							   But only some basic material settings are imported due to the limited .mtl format, for Blender the used material parameters are:
+                                Blender diffuse color -> VP base color
+                                Blender specular color -> VP glossy layer
+                                Blender specular hardness -> VP shininess value
+                                Blender transparency alpha value -> VP opacity amount
+                               When imported the primitive has the imported material automatically assigned.
+							   Note that any textures aren't imported automatically though, this must be done as usual with the help of the image manager.
+
+- add additional debug mode when pressing F11 multiple times to visualize the content of only the static buffer.
+  this can be used to optimize for performance by trying to put as many elements as possible into this buffer, for example:
+  - objects that are un-necessarily using a material with opacity enabled
+  - objects missing the static rendering flag (if there is one for this type)
+  - walls that can drop but never use this flag
+
+- reactivate old VP9.0 easter egg (and improve it :))
+
+- new external audio library for music playback (BASS)
+  this allows to use different formats than just MP3, e.g. OGG
+
+- use miniz library to compress primitives
+
+- 64bit port (handle with care, might still cause issues)
+
+- script editor updated to use custom extensions within Scintilla (based on 3.6.2)
+
+- technical compile note: make sure to install Microsoft SDK 5.0,7.0A,7.1 or 7.1A, if you compile VP and get missing header errors (optionally set the include path inc\winsdk)
+
+VP 9.9.X PM5 Plunger/Accel/Surround MOD Changelog
+----------------------------------------
+- add surround sound options/configurations:
+ 1) Basic 2CH audio - this should operate exactly as it did before. Forward/rear panning is ignored.
+ 2) All effects to rear - Moves the table sounds to the back audio channels. This allows one to move the sounds into the cab like one was able before, but without needing a second sound card.
+ 3) Surround, front is front - This is the best setting when using a dedicated card for the surround sound table sounds. It makes the front channels the front of the cab (closest to the player). This way if one uses older versions of VP, the old legacy output still works well.
+ 4) Surround, front is rear - This is a pretty "vanilla" surround setup.  If you were to play on a home theater or with virtual 3D headphones, it's the most appropriate. The "front" speakers are in the rear of the cab (furthest from you). If VPinmame also uses the same soundcard, it will share the audio with these front channels. 
+ 5) 7.1 surround (aka 6ch audio) - If one wants to drive the backglass, and 4 channel table sounds all off of one card, this is the setting to use. It shifts all of the table audio to the side and rear channels, leaving the fronts available for VPM and backglass sounds. This might also be a good setting to try if you are using just 2 speakers in the cab and 2 in the backbox, the table sounds will pan partially towards the front in 4 speaker mode, letting the backbox provide some of the surround effect.
+
+ Please note that these modes are used in conjunction with the Windows speaker configurations. You can use any mode on any speaker system.
+ Some sound cards even have virtual surround options that would work with this setup. You could set up a full 7.1 setup and dedicate it to just the playfield if you wanted with option #3 or #4, and use a separate card for VPM.
+
+VP 9.9.X PM5 Plunger/Accel MOD Changelog
+----------------------------------------
+- all PM5 physics (and additional) changes
+
+- backport plunger/accel/nudge changes from main VP
+
+- minor fixes and backports from main VP
+ - fix UI issue with the layer buttons for high desktop resolutions
+ - disable visual touch/pen feedback to save one frame of input latency/lag
+ - fix timers that dis/enable themselves in the script
+ - fix EMReel crash when image is missing and reel value is nonzero
+ - extend right click behavior for multi-select to hidden items
+ - fixed rendering of overlapping balls
+ - include optional nudge filtering (selectable in the keys dialog)
+   and remove implicit dead zone handling (if you have the dead zone setting at 0% and now experience problems, set it to at least 1%)
+ - native support for the Pinscape Controller
+ - CPU affinity setting
+
+VP 9.9.5 Changelog
+------------------------
+- add surround sound options/configurations:
+ 1) Basic 2CH audio - this should operate exactly as it did before. Forward/rear panning is ignored.
+ 2) All effects to rear - Moves the table sounds to the back audio channels. This allows one to move the sounds into the cab like one was able before, but without needing a second sound card.
+ 3) Surround, front is front - This is the best setting when using a dedicated card for the surround sound table sounds. It makes the front channels the front of the cab (closest to the player). This way if one uses older versions of VP, the old legacy output still works well.
+ 4) Surround, front is rear - This is a pretty "vanilla" surround setup.  If you were to play on a home theater or with virtual 3D headphones, it's the most appropriate. The "front" speakers are in the rear of the cab (furthest from you). If VPinmame also uses the same soundcard, it will share the audio with these front channels. 
+ 5) 7.1 surround (aka 6ch audio) - If one wants to drive the backglass, and 4 channel table sounds all off of one card, this is the setting to use. It shifts all of the table audio to the side and rear channels, leaving the fronts available for VPM and backglass sounds. This might also be a good setting to try if you are using just 2 speakers in the cab and 2 in the backbox, the table sounds will pan partially towards the front in 4 speaker mode, letting the backbox provide some of the surround effect.
+
+ Please note that these modes are used in conjunction with the Windows speaker configurations. You can use any mode on any speaker system.
+ Some sound cards even have virtual surround options that would work with this setup. You could set up a full 7.1 setup and dedicate it to just the playfield if you wanted with option #3 or #4, and use a separate card for VPM.
+
+VP 9.9.4 Changelog
+------------------------
+- fix UI issue with the layer buttons for high desktop resolutions
+
+- fix an issue with Mot-Ion / Pinball Wizard controllers that suffer from calibration drift as they warm up
+
+- backport CPU affinity setting
+
+VP 9.9.3 Changelog
+------------------------
+- disable visual touch/pen feedback to save one frame of input latency/lag
+
+- fix timers that dis/enable themselves in the script
+
+VP 9.9.2 Changelog
+------------------------
+- new plunger code (see Plunger pdf)
+
+- fix text selection if in previous selected text box a change was made
+
+- extend right click behavior for multi-select to hidden items
+
+- fix EMReel crash when image is missing and reel value is nonzero
+
+- updated to latest FreeImage.dll (3.17.0)
+- script editor updated to use latest scintilla (3.6.2)
+
+VP 9.9.1 Changelog
+------------------------
+- fixed some memory leaks
+
+- fixed rendering of overlapping balls
+
+- include optional nudge filtering (selectable in the keys dialog)
+  and remove implicit dead zone handling (if you have the dead zone setting at 0% and now experience problems, set it to at least 1%)
+
+- native support for the Pinscape Controller
+
+- script editor updated to use latest scintilla (3.5.1)
+
+VP 9.9.0 Changelog
+------------------------
+- rendering engine has been ported to DirectX 9 and now takes much better advantage of 3D hardware
+
+- Region Updates, Region Optimization, Alternate Render are not needed anymore due to the new graphics pipeline and have been removed
+
+- true fullscreen setting has been removed due to incompatibility with VPinMAME. Instead, a windowed fullscreen option has been added to the list of video modes
+
+- add options for wire ramps (define diameter and distance x/y of wires)
+- add sphere mapping to wired ramps if an image was assigned to a wired ramp
+
+- add CurrentAngle function to spinner
+
+- add depth bias option to flasher, light, primitive and ramp to fine tune depth sorting
+
+- enable NVIDIA Optimus cards by default
+
+- new video setting: Force anisotropic texture filtering. This results in higher quality results, but can affect performance on lower end cards
+
+- stereo 3D AA is now basically for free and can always be enabled if stereo 3D output is used (currently stereo 3D is limited to NVIDIA only though)
+  Note that the depth/parameters of stereo had to be changed. As a positive side effect, the two stereo parameters are the same for most tables now,
+  so there is now a global setting in the video preferences. These can still be overwritten per table though.
+
+- FXAA now has two modes: Fast (similar to old setting) and Quality
+
+- new FPS limiter field in Video Options:
+  0: disable frame limiting
+  1: enable vsync
+  If set to anything higher than the monitor refresh rate, the engine will limit the FPS to this rate (but of course without using real hardware vsync).
+  Adaptive vsync had to be disabled for now for compatibility with Windows XP.
+
+- new field "Maximum prerendered frames" in Video Options:
+  Lowering this value will reduce input lag and sometimes also stutter, but may come at a performance cost.
+
+- running as administrator is no longer required (except for tables which write high scores to system directories). UAC setting removed from executable.
+
+- updated to latest FreeImage.dll (3.16.0)
+- script editor updated to use latest scintilla (3.4.1)
+
+- technical note: the minimum version to compile VP is now visual studio 2008 (incl. feature pack)
+
+- take a look at https://github.com/c-f-h/vpinball/wiki/Table-Upgrade-Guide for some additional help with problematic VP 9.2.1 (or lower) tables (and more)
+
+VP 9.2.1 Changelog
+------------------------
+- this is the final release to be based on DirectX 7
+
+- add "To Collection" to the context menu to assign a selected element to a collection
+- add moving of single selected collection in the collection manager
+
+- add CurrentAngle() function to the gate object
+
+- add "Is Toy" checkbox to disable collision handling on mesh primitives completely. 
+
+- add collision detection to mesh primitives together with hit threshold and hit event
+
+- add Z offset to the backdrop options. With this settings you're able to zoom in/out the table without changing FOV/Inclination/Layback settings
+- add Z scale option to the backdrop options. With this setting you're able to reduce/increase the overall depth of a table.
+
+- add table dimension manager for an easy way to calculate real table dimensions into VP table units and vice versa
+
+- add a ball throwing feature to VP. To use it check "Throw Balls in Player" in the debug window (ESC -> "Debug Window") and by left clicking and holding the left mouse 
+  button you create a new ball and it throws the balls in that direction you move the mouse cursor when you release the left mouse button. If you click on a non 
+  moving ball you can reuse that ball and no new calls will be created. A right click on a ball will remove that ball from the table.
+
+- add touch support for tablets (windows 8 and upwards)
+  current mapping:
+   upper left - add credit
+   middle upper left - left magna save/2nd button
+   middle lower left - left flipper
+   lower left - start
+   upper right - quit (press for 2 seconds to exit VP completely)
+   middle upper right - right magna save/2nd button
+   middle lower right - right flipper
+   lower right - plunger 
+
+- add Alpha-Flasher element. Use this element to add (additive) alpha flashers instead of abusing the alpha ramp element. The flasher is a 'dynamic' element, that means it is not pre-rendered
+  and it'll be updated every frame.
+  Limitations:
+  If 'Display Image In Editor' option is selected and the flasher is rotated the image won't rotate due to a DX7 limitation.
+  If the flasher is not an additive alpha flasher you can colorize the image with 'Color' if you don't want that effect set the color to blank white (RGB 255,255,255).
+
+- add height offset to bumper element
+
+- add additional (optional) parameters to PlaySound to increase/decrease the frequency, apply all the settings to an already playing sample and choose if to restart this sample from the beginning or not
+  all parameters are now: PlaySound "name",loopcount,volume,pan,randompitch,pitch,useexisting,restart
+  pitch can be positive or negative and directly adds onto the standard sample frequency
+  useexisting is 0 or 1 (if no existing/playing copy of the sound is found, then a new one is created)
+  restart is 0 or 1 (only useful if useexisting is 1)
+
+- per table setting of adaptive vsync (-1 = default, 0 = off, 1 = automatic detection, anything else: refresh rate in Hz)
+- change per table settings for AA, FXAA and ball reflection (-1 takes the default from the video preferences, 0 forces off, 1 forces on)
+
+- tweak key input code to save one frame (or more?) of lag
+
+- change the old 'Physics Max.Looptime' setting to 'Physics Max. Loops'
+  it allows to specify the maximum number of iterations spent in the physics update.
+  by setting it f.e. to 1, the rendered frame updates will -always- match the physics updates, everything above 1 allows for multiple physics updates per frame
+  (2, 3 or 4 can be good values for this, as it slows down the physics temporarily if the FPS drop below 50, 33 or 25 in these cases).
+
+- import/export of global physics options sets
+- import/export of local/table physics options sets (that could then be reused globally of course and the other way round)
+  Note that for local/table export the first found flipper is used to export the flipper physics settings (and for import all flippers will be assigned with the same settings)
+
+- add optional ball trails/motion blur (also adjustable per-table)
+- add script option 'DisableLighting' for balls to disable lighting. This also allows to change the color of the ball via 'Color' directly
+
+- add enabled flag to flippers
+
+- separate/new texture maps for the lighting of lights (more details) and bumpers (brighter)
+
+- fix problem with DMD/VPinMAME window being hidden behind VP window
+
+- secondary/backglass sound output (by DJRobX)
+  if a sound effect contains 'bgout_' in the name or '* Backglass Output *' in its path then it is played via the secondary sound output (music always)
+  this can also be done with existing tables by using the new 'To BG Out' button in the sound manager
+
+- script editor updated to use latest scintilla (3.3.9)
+
+VP 9.2.0 Changelog
+------------------------
+- alpha ramps can now select to trigger region updates (also via script: Toggle via UpdateRegions or a single one via TriggerSingleUpdate) to avoid having to use the refresh-light trick
+- primitives can now select to trigger region updates (also via script: Toggle via UpdateRegions or a single one via TriggerSingleUpdate) to avoid having to use the refresh-light trick
+
+- add 'real' 3D mesh primitives, these can be loaded via .obj files (for example exported out of Blender)
+- add lighting option for primitives
+- add sphere mapping to 3D mesh primitives (useful to fake reflections)
+- add static rendering feature to primitives: if you set the 'Static Rendering' option, the primitive will be pre-rendered and you can't change any parameters from within the script. This is
+  helpful if you want to use 3D meshes for posts or toys which won't be animated at all.
+- add static rotation for primitives (ObjRotX, ObjRotY, ObjRotZ) to change the basic orientation of a primitive. The old rotation/translation settings animate the primitive. 
+  all rotation/translation settings can be used out of the script.
+- rotation/translation of primitives can be changed from within the script with the properties .RotX, .RotY, .RotZ, .TransX, .TransY, .TransZ, .ObjRotX, .ObjRotY, .ObjRotZ
+  or for backwards compatibility you can use .rotandtrans0-8
+
+- add configurable lightsources: point, directional, spot; these share the same coordinate system as the table geometry (angle/rotation/scale independent! setting the direction of a directional light to 0,0,0 restores the old behavior though)
+  note that DX7 is still vertex lighting based, thus all lit objects MUST feature reasonable triangulation, like f.e. huge walls (the playfield itself is triangulated 100x100)
+  look at the built-in default table to get a feeling for the setup of these lightsources
+- add exact lighting option to table (if you experience lighting problems with dynamic ramps, primitives or the ball, please enable this)
+- add shadow orientation. In the table options under Lightsources you can change the shadow orientation by adding a factor to X and Y. Doing that you can change the projection of the shadow on the table.
+  This is needed if you use the extra light sources to create a more real lighting/shadowing.
+- add flag to walls and gates to disable lighting and shadows (to assist in using fully artist driven lighting)
+- add flag to light objects to disable the lighting calculations when the 'On Image' is set (so that behavior is the same as when only using a color)
+- add lightmap for light objects: If option "'On Image' Is Lightmap" is checked you can define a lightmap for the on image. If the light is switched on the lightmap is rendered together with the off image.
+
+- add flag for alpha ramps to optionally use additive blending (to cope with 2D-lighting-hacks like halos/flashers)
+  note that in order to implement fake GI/lighting or flashers via alpha ramps you should follow the following guidelines:
+  1) if multiple alpha ramps overlap, then the drawing order (see below) and the height level of these ramps have to match, so that the lowest ramp gets drawn first, etc (make sure to move same height alpha ramps to slightly different heights first!)
+  2) uncheck the 'normal 3D stereo' to not have each 3D user have to do this on his/her own (please do this only for lighting or flashers!)
+  3) to go for maximum performance disable visibility or the alpha flag for turned off lights/flashers via the script
+
+- add modern plunger texture mapping support and correct coloring
+
+- add per-table sound & music volume settings (0..100% scaling of the global VP settings)
+- add per-table software FXAA setting (only works if also enabled in the video settings)
+- add per-table alpha ramp accuracy
+- add per-table region updates and region optimization (-1 takes the default from the video preferences, 0 forces off, 1 forces on)
+
+- add layering of table elements
+- add selection dialog where you can select one or more elements out of a list of all elements in the table
+- add easy selection mode if you right-click on an element in the context menu you can select those elements which are stacked under the mouse cursor
+- add drawing order (via 2 modes: Hit and Select), you can move elements up/down in a list to change the drawing order
+  Hit:    If you click on an element all elements which are over/under that clicked element are shown in the list box
+  Select: If you select a bunch of elements, then the selected elements are shown in the list box
+- add editor panning feature. In the editor hold ALT and move the mouse and the view will change in the direction the mouse was moved. 
+  It just reacts on mouse movements if you don't move the mouse nothing will happen.
+
+- add reflection option for balls (configurable per table). If you enable this option the ball is mirrored on the table. With reflection strength you can define how much the ball will reflect. 
+  If the value is too high the mirror effect will look odd.
+- add fake antialiasing(AA) as a global option in the video settings and a per table setting
+- add 8 sets of global physics options to tweak some of the table and flipper settings that can then optionally override the table settings (when enabled in the table physics options and/or the flipper physics options)
+  this enables quick changes to flipper and physics settings for a whole bunch of tables (for example to tweak for less input lag or adapt the ball simulation/'speed')
+  the 8 different sets can be used f.e. to tweak for different hardware generations or the manufacturer
+
+- add additional (optional) parameters to PlaySound to set the pan and/or randomize the pitch of the played sound effect: Instead of  PlaySound "name",loopcount,volume  one can now use  PlaySound "name",loopcount,volume,pan,randompitch
+  pan ranges from -1.0 (left) over 0.0 (both) to 1.0 (right)
+  randompitch ranges from 0.0 (no randomization) to 1.0 (vary between half speed to double speed)
+  so f.e. PlaySound "FlipperUp",0,0.5,-1.0,1.0 would play the sound not looped (0), at half the volume (0.5), only on left speaker (-1.0), with varying pitch (1.0)
+  look at the built-in default table to get a feeling for the setup of these parameters
+
+- script editor updated to use latest scintilla (3.3.6)
+- add multi comment/uncomment feature to the script editor
+- add function list to the script editor
+
+VP 9.1.5 Changelog
+------------------------
+- add flag for ramps to optionally make them not influence the 3D stereo rendering (to cope with 2D-hacks like halos/flashers/GI)
+- expose new 'Region Updates' in Video Options (disabling this can be faster on some graphicsboards, especially NVIDIA Optimus Laptops)
+- expose new 'Region Optimization' in Video Options (disabling this can help issues with NVIDIA AA, enabling this can help performance and fixes issues with NVIDIA FXAA)
+- optimize alpha ramps a bit
+- enable some caching for DirectX functions to help performance
+- fix more problems with primitive rendering
+- correct issue with adaptive vsync
+- fix some micro stuttering on multi-CPU systems
+- add purely software/CPU-based FXAA workaround (please do -not- enable FXAA in the NVIDIA driver then if you need to use this!)
+- cleanup some of the UI
+- add correct UAC setting (no more 'Run as Administrator' necessary)
+- add large address handling (no more '4GB patching' necessary)
+- replace default ball/lamp images and some of the default table settings (mainly physics related)
+- correct stylized table rendering in backdrop editor view
+- fix command line parser (problems with running tables like playboy from hyperpin, etc)
+- optimizations/small fixes
+- updated to latest FreeImage.dll (3.15.4)
+
+VP 9.1.4 Changelog
+------------------------
+- corrected primitive rendering - thanks Toxie!
+- optimizations/fixes
+- Added support for different sound device output
+
+VP 9.1.3 Changelog
+------------------------
+- Added controller button support to key options for all controllers - Koadic!
+- Added single wire ramp object type - thanks Rascal!
+- Added modern plunger type - thanks Rascal!
+- Added plunger color options
+- Added support for 3D TV rendering - Toxie!!!
+
+VP 9.1.2 Changelog
+------------------------
+Fixed bugs:
+- Set as Defaults is ensured safe - loading a table will ignore the stored defaults to ensure the table is loaded how it was saved
+- Deadzone slider is modified to reflect how deadzone worked in previous revisions
+- SSE was going to be utilized, but magnets reacted sluggish, so reverted to 'fast' code without SSE again.
+
+VP 9.1.1 Changelog
+------------------------
+Fixed bugs:
+- Copy and Paste Decals
+- Layback causing Graphic glitches with ball decals
+- Radio buttons in Video Options Dialog
+- Tabstops in Backlass Options
+- unhandled exception with script errors
+- Text Decals not showing
+- Kickers and Triggers that are in the same position caused lockups
+- transparency issue with 32bpp bmp Files
+- bumpers and slingshots were disabled at start of the game when not visible
+- Textures were cropped at MaxTexDim at very special conditions
+- Alpha Ramps were not showing with Balls created from script.
+- Textures near screen border were distorted on some tables
+- Scale Dialog default field was checkbox - changed to scaleX-value
+
+New features:
+- Added slider for Alpharamps Accuracy. If Alpharamps are causing performance problems (and they will likely do!), try setting this slider to the left. Ramps are displayed with less surfaces then.
+- New experimental feature: Ball stretching against table and monitor stretching. Three options: 1st: like before, 2nd: don't stretch ball, 3rd: don't stretch ball and take Pixel aspect ratio of monitor into consideration. Choose ( R) Monitors only if you have a rotated Windows desktop.
+- Implemented right click 'Set as Default'. This options sets the current properties of an object as the new defaults for that object type.
+- little optimizations
+
+Important:
+Tables made with 9.1.x may be incompatible with older versions due to the new features, but tables made with 9.0.x can be loaded and played in 9.1.x.
+
+VP 9.0.10 Changelog
+------------------------
+Thanks to Scrooby's help, I think we have an appropriate deadzone interface now.  It is a global setting for all tables and doesn't affect the keyboard for X and Y axis.
+HD Render and Reorder has been moved to video options
+
+You can now set maximum texture dimensions for lower powered graphic hardware without exporting images (BMPs will still need to be exported and resized if they are too big)
+*Added Kicker.CreateSizedBall (float radius) - Returns Ball
+*Added Video Option for Chipset graphics that cannot create big textures (only non BMPs supported). Redesigned dialog.
+*Added Layback feature (Should we rename this feature? I don't know a better name. Does anybody have a better description?).
+Layback is located under the field of view field on the backdrop options for the table.
+Basically it appears to change the vertical orientation of the final rendered table.  It is an alternate version of Field of View rendering, and will only be available from 9.10 and newer.
+Field of View must be greater than 0 for Layback values to be used to render a table.
+
+Items on table are now displayed in a non-kartesian world to give the viewer the imagination to stand more in front of the table instead of flying over it, when using FOV.
+
+*Fixed Near-Plane Bug with inclination set to 0.
+*Added Support for various Picture formats (*.jpg;*.jpeg;*.png;*.gif;*.ico;*.IFF;*.PCX;*.PICT;*.psd;*.tga;*.tiff;*.tif)
+*Added Alpha Support for Ramps
+
+More optimizations and testing by Toxie
+
+Cupid added PNG support using FreeImage.  VP 910 will require freeimage.dll to be located in the directory VP is being loaded from - perhaps someday we'll have PNG built into VP to eliminate this dependency
+
+As required by the FreeImage Public License:
+If it is not possible to put such notice in a particular Source Code file due to its structure, then you must include such notice in a location (such as a relevant directory file) where a user would be likely to look for such a notice. (such as this changelog file)
+"The contents of this file are subject to the FreeImage Public License Version 1.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://freeimage.sourceforge.net/freeimage-license.txt
+Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for the specific language governing rights and limitations under the License."
+No modifications were made to the freeimage.dll file, or internal freeimage source code, so that covers our use of the dll in a free capacity.
+
+
+VP 9.0.8 Changelog
+------------------------
+Corrected keyboard handler for message boxes
+implemented 10% dead zone to motion/slope/analog axis controls
+
+
+VP 9.0.7 Changelog -- 9.0.6 skipped
+------------------------
+emreel lock not loaded after save (noah)
+ball needs to be allowed outside playfield area (scapino)
+removed remaining minimum black masks for ramps, reels, images, lights, kickers, and top and side surfaces
+Corrected volume control
+
+Plunger scatter velocity requires global table difficulty to be >0
+Global table difficulty valid values from 0.0 to 1.0 - affects amount of scatter on walls as well as plunger variance
+
+
+VP 9.0.5 Changelog
+------------------------
+December 27, 2009 - updated VP9 for your playing amusement. Approved by Nanotech Entertainment.
+changelog
+
+1) Finalized PinballWizard and ushock motion controls - should be accurate for X/Y/Z axis and no more changes should need to be made to it again
+
+2) added Plunger.MotionDevice scriptable property - 0=nothing connected, 1=PinballWizard, 2=uShock Board
+
+3) Plunger.Position now returns a value from 0-25.  No scripted math calculations are required.
+
+4) Export Sound now works for all supported sound formats
+
+5) EMReels now have overlapping transparency compatible with Randy's vp8.1 implementation
+
+6) added Plunger.Visible property - this is not scriptable, but allows the plunger to not be rendered
+
+7) Corrected key mapping for Add Credit 2 - you can now remap that key
+
+8) Key Preferences screen is now properly fixed for accepting new keycodes - before if you clicked a bunch of buttons without pressing a key it looked messy with ???? in each clicked button field, now it is neater.
+
+9) corrected crash to desktop error when table name was deleted from properties window - this error had existed since the inception of visual pinball
+
+10) Reordering of table elements added - this will increase compatibility with ATI cards.  This changes the rendering order of all table objects.
+DROPWALLS
+BUMPERS
+GATES
+SPINNERS
+FLIPPERS
+LIGHTS
+/RAMPS - needs more work
+
+Textboxes are drawn first, EMReels are drawn second, Decals, Kickers, Acryllic Ramps are drawn last
+
+11) Corrected issue with control points - left mouse button held down followed by right mouse button was not firing the left button release code routine, causing the undo buffer to skip all subsequent events.
+
+12) Restored 16-bit display modes.  Windowed mode uses your desktop color depth.
+
+13) Translate now works for Textboxes and EmReels - select more than 1 item to get the option.
+
+14) Updated compiler to VS Net 2008
+
+
+
+VP 9.0.4 Changelog
+------------------------
+December 6, 2009 - updated VP9 for your playing amusement. Approved by Nanotech Entertainment.
+changelog
+
+1) worked some more on the pinball wizard plunger "Z" axis
+2) corrected attached joystick/gamepad interference with the player - For those game controllers please use software like Joy2Key
+3) removed ball blurs, as well as frame updates from spinners, gates, and moving objects will be smoother with increased framerate.
+4) restored functionality of RGB 0/0/0 for invisible gates, spinners, flippers, and bumpers
+5) Corrected unitialized/unvalidated info for loaded flipper and textbox settings.
+6) Removed requirement for msvcr71.dll
+
+
+VP 9.0.3 Changelog
+------------------------
+October 12 2009 - updated VP9 for your playing amusement. Approved by Nanotech Entertainment.
+changelog
+
+1) Edit Properties Pane status is now corrected. It has been broken since tech beta 5. It is persistent, meaning if it was visible last time vp was open, it will be visible next time you open vp. Edit/Options now works again.
+2) VP8 Colored slingshots are now available. This is fully compatible with Randy's vp8 implementation
+3) PlungerName.Position is now available to the script. This will provide a raw value of the mechanical plunger for Pinball Wizard and Cabinet users. Divide the returned value by .04 to get a number from 0-25. You can then base an emreel, wall animation, or other graphical representation on that number to custom animate the plunger object. You could also use the mechanical pinball wizard plunger as an entirely separate type of interface, with accurate pull strength - ie pool cues, balloon/rubber band/spring tension, I'm sure you can come up with more.
+4) Nudge has been reversed. A right nudge - moving the machine to the left, moves the ball to the right. A left nudge, moving the machine to the right, pushes the ball to the left.
+5) Ball decals work again.
+
+
+VP 9.0.2 Changelog
+------------------------
+1) Fixed command line options
+2) Fixed windowed mode
+3) Fixed checkboxes
+4) Corrected reversed pinball wizard plunger
+5) fixed crash bug on exiting unsaved tables
+6) corrected version display
+7) remapped ball diagnostic key from "B" to "O"
+
+VP 9.0.1 Changelog
+------------------------
+ updated VP9 for your playing amusement. Approved by Nanotech Entertainment.
+1) Fixed Crash on exit
+2) enabled blinking lights
+3) EMReels & Decals enabled by default
+
+
+VP 9.0.0 Changelog
+------------------------
+December 2 2008 - VP9 for your playing amusement. Brought to you by Nanotech Entertainment.
+FEATURES
+    * Optimized for vpm.
+    * LOTR runs close to full speed with emulated sound.
+    * Ball blurring/stutters/etc have been greatly reduced.
+    * This still has lag/issues with 26 balls in play on Johnny Mnemonic.
+    * Translate locked triggers.
+    * Plunger and all other objects can be locked in the editor.
+    * Sound/graphic exporter/table unlocker.
+    * Dual display span mode support so vp has full control over the backbox display as well as table.
+    * Table rotation - 360 degrees possible.
+    * Full physics options for slope, oblique correction, flipper settings, ball dampening, scatter angle, friction, gravity.
+    * Table scaling support X+Y.
+    * Table bottom height - set the bottom of the table lower than the playfield surface for realistic holes.
+    * Scriptable exit table to desktop method.
+    * Reduced engine crashes.
+    * Support for Pinball Wizard Input Controller.

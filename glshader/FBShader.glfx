@@ -1,0 +1,363 @@
+////GLOBAL
+#version 330
+
+#include "Helpers.fxh"
+
+////VERTEX
+
+uniform vec4 quadOffsetScale;//.xy =>Offset from center .wz =>Scale (1.0 is fullscreen)
+
+////FRAGMENT
+
+uniform float4 ms_zpd_ya_td;
+uniform float4 w_h_height; // in bloom w_h_height.z keeps strength
+
+uniform float2 AO_scale_timeblur;
+uniform float mirrorFactor;
+
+uniform bool color_grade;
+uniform bool do_bloom;
+
+uniform sampler2D Texture0; // FB
+uniform sampler2D Texture1; // Bloom
+uniform sampler2D Texture3; // AO Result & DepthBuffer
+uniform sampler2D Texture4; // AO Dither & Color grade
+
+out vec4 color;
+
+/*static float bayer_dither_pattern[8][8] = {
+    {( 0/64.0-0.5)/255.0, (32/64.0-0.5)/255.0, ( 8/64.0-0.5)/255.0, (40/64.0-0.5)/255.0, ( 2/64.0-0.5)/255.0, (34/64.0-0.5)/255.0, (10/64.0-0.5)/255.0, (42/64.0-0.5)/255.0},   
+    {(48/64.0-0.5)/255.0, (16/64.0-0.5)/255.0, (56/64.0-0.5)/255.0, (24/64.0-0.5)/255.0, (50/64.0-0.5)/255.0, (18/64.0-0.5)/255.0, (58/64.0-0.5)/255.0, (26/64.0-0.5)/255.0},   
+    {(12/64.0-0.5)/255.0, (44/64.0-0.5)/255.0, ( 4/64.0-0.5)/255.0, (36/64.0-0.5)/255.0, (14/64.0-0.5)/255.0, (46/64.0-0.5)/255.0, ( 6/64.0-0.5)/255.0, (38/64.0-0.5)/255.0},   
+    {(60/64.0-0.5)/255.0, (28/64.0-0.5)/255.0, (52/64.0-0.5)/255.0, (20/64.0-0.5)/255.0, (62/64.0-0.5)/255.0, (30/64.0-0.5)/255.0, (54/64.0-0.5)/255.0, (22/64.0-0.5)/255.0},   
+    {( 3/64.0-0.5)/255.0, (35/64.0-0.5)/255.0, (11/64.0-0.5)/255.0, (43/64.0-0.5)/255.0, ( 1/64.0-0.5)/255.0, (33/64.0-0.5)/255.0, ( 9/64.0-0.5)/255.0, (41/64.0-0.5)/255.0},   
+    {(51/64.0-0.5)/255.0, (19/64.0-0.5)/255.0, (59/64.0-0.5)/255.0, (27/64.0-0.5)/255.0, (49/64.0-0.5)/255.0, (17/64.0-0.5)/255.0, (57/64.0-0.5)/255.0, (25/64.0-0.5)/255.0},
+    {(15/64.0-0.5)/255.0, (47/64.0-0.5)/255.0, ( 7/64.0-0.5)/255.0, (39/64.0-0.5)/255.0, (13/64.0-0.5)/255.0, (45/64.0-0.5)/255.0, ( 5/64.0-0.5)/255.0, (37/64.0-0.5)/255.0},
+    {(63/64.0-0.5)/255.0, (31/64.0-0.5)/255.0, (55/64.0-0.5)/255.0, (23/64.0-0.5)/255.0, (61/64.0-0.5)/255.0, (29/64.0-0.5)/255.0, (53/64.0-0.5)/255.0, (21/64.0-0.5)/255.0} };
+
+float3 FBDither(float3 color, int2 pos)
+{
+   return color + bayer_dither_pattern[pos.x%8][pos.y%8];
+}*/
+
+float3 FBColorGrade(float3 color)
+{
+   if(!color_grade)
+       return color;
+
+   color.xy = color.xy*(15.0/16.0) + 1.0/32.0; // assumes 16x16x16 resolution flattened to 256x16 texture
+   color.z *= 15.0;
+
+   float x = (color.x + floor(color.z))/16.0;
+   float3 lut1 = tex2Dlod(Texture4, float4(x,          color.y, 0.,0.)).xyz; // two lookups to blend/lerp between blue 2D regions
+   float3 lut2 = tex2Dlod(Texture4, float4(x+1.0/16.0, color.y, 0.,0.)).xyz;
+   return lerp(lut1,lut2, frac(color.z));
+}
+
+#include "FXAAStereoAO.fxh"
+
+////vs_main_no_trafo
+
+in vec3 vPosition;
+in vec2 tc;
+
+out vec2 tex0;
+
+void main()
+{ 
+   gl_Position = float4((vPosition.x*quadOffsetScale.z+quadOffsetScale.x)*2.0-1.0,
+							 1.0-(vPosition.y*quadOffsetScale.w+quadOffsetScale.y)*2.0, 0.0,1.0);
+   tex0 = tc;
+}
+
+////ps_main_fb_tonemap
+
+in vec2 tex0;
+
+void main()
+{
+    //!! float depth0 = tex2Dlod(Texture3, float4(u, 0.,0.)).x;
+    //!! if((depth0 == 1.0) || (depth0 == 0.0)) //!! early out if depth too large (=BG) or too small (=DMD,etc -> retweak render options (depth write on), otherwise also screwup with stereo)
+    //!!   return float4(tex2Dlod(Texture0, float4(tex0, 0.,0.)).xyz, 1.0);
+
+    float3 result = FBToneMap(tex2Dlod(Texture0, float4(tex0, 0.,0.)).xyz);
+	if (do_bloom)
+		result += tex2Dlod(Texture1, float4(tex0, 0., 0.)).xyz; //!! offset?
+    color = float4(FBColorGrade(FBGamma(saturate(result))), 1.0);
+}
+
+////ps_main_fb_bloom
+
+in vec2 tex0;
+
+void main()
+{
+    // collect clipped contribution of the 3x3 texels (via box blur (offset: 0.25*pixel=w_h_height.xy*0.5), NOT gaussian, as this is wrong) from original FB
+    float3 result = (tex2Dlod(Texture0, float4(tex0-w_h_height.xy*0.5, 0.,0.)).xyz
+                        +  tex2Dlod(Texture0, float4(tex0+w_h_height.xy*2.5, 0.,0.)).xyz
+                        +  tex2Dlod(Texture0, float4(tex0+float2(w_h_height.x*2.5,-w_h_height.y*0.5), 0.,0.)).xyz
+                        +  tex2Dlod(Texture0, float4(tex0+float2(-w_h_height.x*0.5,w_h_height.y*2.5), 0.,0.)).xyz)*0.25; //!! offset for useAA?
+    color = float4(max(FBToneMap(result)-float3(1.,1.,1.), float3(0.,0.,0.)), 1.0);
+}
+
+////ps_main_fb_AO
+
+in vec2 tex0;
+
+void main()
+{
+	float3 result = float3(tex2Dlod(Texture3, float4(tex0/*-w_h_height.xy*/, 0., 0.)).x); // omitting the shift blurs over 2x2 window
+	color = float4(FBGamma(saturate(result)), 1.0);
+}
+
+////ps_main_fb_tonemap_AO
+
+in vec2 tex0;
+
+void main()
+{
+    float3 result = FBToneMap(tex2Dlod(Texture0, float4(tex0, 0.,0.)).xyz) // moving AO before tonemap does not really change the look
+           * tex2Dlod(Texture3, float4(tex0/*-w_h_height.xy*/, 0.,0.)).x; // omitting the shift blurs over 2x2 window
+    if (do_bloom)
+        result += tex2Dlod(Texture1, float4(tex0, 0., 0.)).xyz; //!! offset?
+    color = float4(FBColorGrade(FBGamma(saturate(result))), 1.0);
+}
+
+////ps_main_fb_tonemap_AO_static
+
+in vec2 tex0;
+
+void main()
+{
+	float3 result = tex2Dlod(Texture0, float4(tex0, 0., 0.)).xyz
+	* tex2Dlod(Texture3, float4(tex0/*-w_h_height.xy*/, 0., 0.)).x; // omitting the shift blurs over 2x2 window
+	color = float4(result, 1.0);
+}
+
+////ps_main_fb_tonemap_no_filter
+
+in vec2 tex0;
+
+void main()
+{
+    float3 result = FBToneMap(tex2Dlod(Texture0, float4(tex0+w_h_height.xy, 0.,0.)).xyz);
+	if (do_bloom)
+		result += tex2Dlod(Texture1, float4(tex0, 0., 0.)).xyz; //!! offset?
+    color = float4(/*FBDither(*/FBColorGrade(FBGamma(saturate(result))),/*tex0*w_h_height.zw),*/ 1.0);
+}
+
+////ps_main_fb_tonemap_no_filterRGB
+
+in vec2 tex0;
+
+void main()
+{
+    float3 result = FBToneMap(tex2Dlod(Texture0, float4(tex0+w_h_height.xy, 0.,0.)).xyz);
+    if (do_bloom)
+        result += tex2Dlod(Texture1, float4(tex0, 0., 0.)).xyz; //!! offset?
+    color = float4(/*FBDither(*/FBColorGrade(FBGamma(saturate(result))),/*tex0*w_h_height.zw),*/ 1.0);
+}
+
+////ps_main_fb_tonemap_no_filterRG
+
+in vec2 tex0;
+
+void main()
+{
+    float2 result = FBToneMap(tex2Dlod(Texture0, float4(tex0+w_h_height.xy, 0.,0.)).xyz).xy;
+    if (do_bloom)
+        result += tex2Dlod(Texture1, float4(tex0, 0., 0.)).xy; //!! offset?
+    float rg = /*FBDither(*//*FBColorGrade*/(FBGamma(vec3(saturate(dot(result,float2(0.176204+0.0108109*0.5,0.812985+0.0108109*0.5)))))).x/*,tex0*w_h_height.zw)*/;
+    color = float4(rg,rg,rg,1.0);
+}
+
+////ps_main_fb_tonemap_no_filterR
+
+in vec2 tex0;
+
+void main()
+{
+    float result = FBToneMap(tex2Dlod(Texture0, float4(tex0+w_h_height.xy, 0.,0.)).xyz).x;
+    if (do_bloom)
+        result += tex2Dlod(Texture1, float4(tex0, 0., 0.)).x; //!! offset?
+    float gray = /*FBDither(*//*FBColorGrade*/(FBGamma(vec3(saturate(result)))).x/*,tex0*w_h_height.zw)*/;
+    color = float4(gray,gray,gray,1.0);
+}
+
+////ps_main_fb_tonemap_AO_no_filter
+
+in vec2 tex0;
+
+void main()
+{
+    float3 result = FBToneMap(tex2Dlod(Texture0, float4(tex0+w_h_height.xy, 0.,0.)).xyz) // moving AO before tonemap does not really change the look
+                  * tex2Dlod(Texture3, float4(tex0/*-w_h_height.xy*/, 0.,0.)).x; // omitting the shift blurs over 2x2 window
+    if (do_bloom)
+        result += tex2Dlod(Texture1, float4(tex0, 0., 0.)).xyz;  //!! offset?
+    color = float4(FBColorGrade(FBGamma(saturate(result))), 1.0);
+}
+
+////ps_main_fb_tonemap_AO_no_filter_static
+
+in vec2 tex0;
+
+void main()
+{
+	float3 result = tex2Dlod(Texture0, float4(tex0 + w_h_height.xy, 0., 0.)).xyz
+	* tex2Dlod(Texture3, float4(tex0/*-w_h_height.xy*/, 0., 0.)).x; // omitting the shift blurs over 2x2 window
+	color = float4(result, 1.0);
+}
+
+//
+// Bloom (9x9)
+//
+
+////ps_main_fb_bloom_horiz9x9
+in vec2 tex0;
+
+void main()
+{
+    float offset9x9[3] = float[]( 0.0, 1.3846153846, 3.2307692308 );
+    float weight9x9[3] = float[]( 0.2270270270, 0.3162162162, 0.0702702703 );
+    float3 result = tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5, 0.,0.)).xyz*weight9x9[0];
+    for (int i = 1; i < 3; ++i)
+        result += (tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5+float2(w_h_height.x*offset9x9[i],0.0), 0.,0.)).xyz
+                  +tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5-float2(w_h_height.x*offset9x9[i],0.0), 0.,0.)).xyz)*weight9x9[i];
+
+    color = float4(result, 1.0);
+}
+
+////ps_main_fb_bloom_vert9x9
+in vec2 tex0;
+
+void main()
+{
+    float offset9x9[3] = float[]( 0.0, 1.3846153846, 3.2307692308 );
+    float weight9x9[3] = float[]( 0.2270270270, 0.3162162162, 0.0702702703 );
+    float3 result = tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5, 0.,0.)).xyz*weight9x9[0];
+    for (int i = 1; i < 3; ++i)
+        result += (tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5+float2(0.0,w_h_height.y*offset9x9[i]), 0.,0.)).xyz
+                  +tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5-float2(0.0,w_h_height.y*offset9x9[i]), 0.,0.)).xyz)*weight9x9[i];
+
+    color = float4(result*w_h_height.z, 1.0);
+}
+
+////ps_main_fb_bloom_horiz19x19
+in vec2 tex0;
+
+void main()
+{
+    float offset19x19[5] = float[]( 0.65323, 2.42572, 4.36847, 6.31470, 8.26547 ); //no center!
+    float weight19x19[5] = float[]( 0.19923, 0.18937, 0.08396, 0.02337, 0.00408 ); //no center!
+    float3 result = float3(0.0, 0.0, 0.0);
+    for(int i = 0; i < 5; ++i)
+        result += (tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5+float2(w_h_height.x*offset19x19[i],0.0), 0.,0.)).xyz
+                  +tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5-float2(w_h_height.x*offset19x19[i],0.0), 0.,0.)).xyz)*weight19x19[i];
+
+    color = float4(result, 1.0);
+}
+
+////ps_main_fb_bloom_vert19x19
+
+in vec2 tex0;
+
+void main()
+{
+    float offset19x19[5] = float[]( 0.65323, 2.42572, 4.36847, 6.31470, 8.26547 ); //no center!
+    float weight19x19[5] = float[]( 0.19923, 0.18937, 0.08396, 0.02337, 0.00408 ); //no center!
+    float3 result = float3(0.0, 0.0, 0.0);
+    for(int i = 0; i < 5; ++i)
+        result += (tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5+float2(0.0,w_h_height.y*offset19x19[i]), 0.,0.)).xyz
+                  +tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5-float2(0.0,w_h_height.y*offset19x19[i]), 0.,0.)).xyz)*weight19x19[i];
+
+    color = float4(result*w_h_height.z, 1.0);
+}
+
+//float offset19x19h[5] = { 0.64625, 2.38872, 4.30686, 6.23559, 8.17666 };
+//float weight19x19h[5] = { 0.23996, 0.19335, 0.05753, 0.00853, 0.00063 };
+//float offset19x19h[5] = { 0.63232, 2.31979, 4.20448, 6.12322, 8.07135 };
+//float weight19x19h[5] = { 0.29809, 0.17619, 0.02462, 0.00109, 0.00002 };
+
+////ps_main_fb_bloom_horiz19x19h
+
+in vec2 tex0;
+
+void main()
+{
+    float offset19x19h[5] = float[]( 0.63918, 2.35282, 4.25124, 6.17117, 8.11278 ); //no center!
+    float weight19x19h[5] = float[]( 0.27233, 0.18690, 0.03767, 0.00301, 0.00009 ); //no center!
+    float3 result = float3(0.0, 0.0, 0.0);
+    for(int i = 0; i < 5; ++i)
+        result += (tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5+float2(w_h_height.x*offset19x19h[i],0.0), 0.,0.)).xyz
+                  +tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5-float2(w_h_height.x*offset19x19h[i],0.0), 0.,0.)).xyz)*weight19x19h[i];
+
+    color = float4(result, 1.0);
+}
+
+////ps_main_fb_bloom_vert19x19h
+
+in vec2 tex0;
+
+void main()
+{
+    float offset19x19h[5] = float[]( 0.63918, 2.35282, 4.25124, 6.17117, 8.11278 ); //no center!
+    float weight19x19h[5] = float[]( 0.27233, 0.18690, 0.03767, 0.00301, 0.00009 ); //no center!
+    float3 result = float3(0.0, 0.0, 0.0);
+    for(int i = 0; i < 5; ++i)
+        result += (tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5+float2(0.0,w_h_height.y*offset19x19h[i]), 0.,0.)).xyz
+                  +tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5-float2(0.0,w_h_height.y*offset19x19h[i]), 0.,0.)).xyz)*weight19x19h[i];
+
+    color = float4(result*w_h_height.z, 1.0);
+}
+
+////ps_main_fb_mirror
+// mirror
+in vec2 tex0;
+
+void main()
+{
+   color = tex2D(Texture0, tex0) * mirrorFactor;
+}
+
+
+////TECHNIQUES
+
+//normals:P0:vs_main_no_trafo():ps_main_normals()
+AO:P0:vs_main_no_trafo():ps_main_ao()
+//stereo:P0:vs_main_no_trafo():ps_main_stereo()
+NFAA:P0:vs_main_no_trafo():ps_main_nfaa()
+DLAA_edge:P0:vs_main_no_trafo():ps_main_dlaa_edge()
+DLAA:P0:vs_main_no_trafo():ps_main_dlaa()
+FXAA1:P0:vs_main_no_trafo():ps_main_fxaa1()
+FXAA2:P0:vs_main_no_trafo():ps_main_fxaa2()
+FXAA3:P0:vs_main_no_trafo():ps_main_fxaa3()
+fb_tonemap:P0:vs_main_no_trafo():ps_main_fb_tonemap()
+fb_bloom:P0:vs_main_no_trafo():ps_main_fb_bloom()
+fb_AO:P0:vs_main_no_trafo():ps_main_fb_AO()
+fb_tonemap_AO:P0:vs_main_no_trafo():ps_main_fb_tonemap_AO()
+fb_tonemap_AO_static:P0:vs_main_no_trafo():ps_main_fb_tonemap_AO_static()
+
+fb_tonemap_no_filterRGB:P0:vs_main_no_trafo():ps_main_fb_tonemap_no_filterRGB()
+fb_tonemap_no_filterRG:P0:vs_main_no_trafo():ps_main_fb_tonemap_no_filterRG()
+fb_tonemap_no_filterR:P0:vs_main_no_trafo():ps_main_fb_tonemap_no_filterR()
+fb_tonemap_AO_no_filter:P0:vs_main_no_trafo():ps_main_fb_tonemap_AO_no_filter()
+
+//!! SRGBWriteEnable = true
+fb_tonemap_AO_no_filter_static:P0:vs_main_no_trafo():ps_main_fb_tonemap_AO_no_filter_static()
+// All Bloom variants:
+
+fb_bloom_horiz9x9:P0:vs_main_no_trafo():ps_main_fb_bloom_horiz9x9()
+fb_bloom_vert9x9:P0:vs_main_no_trafo():ps_main_fb_bloom_vert9x9()
+//fb_bloom_horiz9x9_4:P0:vs_main_no_trafo():ps_main_fb_bloom_horiz9x9_4()
+//fb_bloom_vert9x9_4:P0:vs_main_no_trafo():ps_main_fb_bloom_vert9x9_4()
+//fb_bloom_horiz11x11:P0:vs_main_no_trafo():ps_main_fb_bloom_horiz11x11()
+//fb_bloom_vert11x11:P0:vs_main_no_trafo():ps_main_fb_bloom_vert11x11()
+fb_bloom_horiz19x19:P0:vs_main_no_trafo():ps_main_fb_bloom_horiz19x19()
+fb_bloom_vert19x19:P0:vs_main_no_trafo():ps_main_fb_bloom_vert19x19()
+fb_bloom_horiz19x19h:P0:vs_main_no_trafo():ps_main_fb_bloom_horiz19x19h()
+fb_bloom_vert19x19h:P0:vs_main_no_trafo():ps_main_fb_bloom_vert19x19h()
+//fb_bloom_horiz27x27:P0:vs_main_no_trafo():ps_main_fb_bloom_horiz27x27()
+//fb_bloom_vert27x27:P0:vs_main_no_trafo():ps_main_fb_bloom_vert27x27()
+//
+
+fb_mirror:P0:vs_main_no_trafo():ps_main_fb_mirror()
