@@ -2005,9 +2005,11 @@ void RenderDevice::UpdateTexture(D3DTexture* tex, BaseTexture* surf, const bool 
 {
 #ifdef ENABLE_SDL
    tex->format = surf->m_format == BaseTexture::RGB_FP ? RGB32 : RGBA;
-   GLuint col_type = ((tex->format == RGBA32) || (tex->format == RGBA16)) ? GL_FLOAT : GL_BYTE;
-   GLuint col_format = (tex->format == GREY) ? GL_RED : (tex->format == GREY_ALPHA) ? GL_RG : ((tex->format == RGB) || (tex->format == RGB5) || (tex->format == RGB10)) ? GL_RGB : GL_RGBA;
+   GLuint col_type = ((tex->format == RGBA32) || (tex->format == RGBA16) || (tex->format == RGB32)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
+   GLuint col_format = (tex->format == GREY) ? GL_RED : (tex->format == GREY_ALPHA) ? GL_RG : ((tex->format == RGB) || (tex->format == RGB5) || (tex->format == RGB10) || (tex->format == RGB32)) ? GL_BGR : GL_BGRA;
+   glBindTexture(GL_TEXTURE_2D, tex->texture);
    CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, tex->format, surf->width(), surf->height(), 0, col_format, col_type, surf->data()));
+   glBindTexture(GL_TEXTURE_2D, 0);
 #else
    IDirect3DTexture9* sysTex = CreateSystemTexture(surf, linearRGB);
    m_curTextureUpdates++;
