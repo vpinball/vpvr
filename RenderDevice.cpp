@@ -303,6 +303,15 @@ void checkGLErrors(const char *file, const int line) {
 
 ////////////////////////////////////////////////////////////////////
 
+int getNumberOfDisplays()
+{
+#ifdef ENABLE_SDL
+   return SDL_GetNumVideoDisplays();
+#else
+   return 1;//TODO implement this for DX9
+#endif
+}
+
 void EnumerateDisplayModes(const int adapter, std::vector<VideoMode>& modes)
 {
    modes.clear();
@@ -549,12 +558,9 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
    else {
       m_adapter = display;
    }
-   // get display bounds for all displays
-   vector< SDL_Rect > displayBounds;
-   for (int i = 0; i < displays; i++) {
-      displayBounds.push_back(SDL_Rect());
-      SDL_GetDisplayBounds(i, &displayBounds.back());
-   }
+   // get display bounds for selected display
+   SDL_Rect displayBounds;
+   SDL_GetDisplayBounds(m_adapter, &displayBounds);
 
    bool video10bit = (colordepth == SDL_PIXELFORMAT_ARGB2101010);
 
@@ -575,7 +581,7 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
    //SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
    m_sdl_hwnd = SDL_CreateWindow(
-      "Visual Pinball Player SDL", displayBounds[m_adapter].x, displayBounds[m_adapter].y, width, height,
+      "Visual Pinball Player SDL", displayBounds.x + (displayBounds.w - width) / 2, displayBounds.y + (displayBounds.h - height) / 2, width, height,
       SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : 0) /*| SDL_WINDOW_INPUT_GRABBED*/
    );
    SDL_SysWMinfo wmInfo;

@@ -1482,7 +1482,11 @@ HRESULT Player::Init(PinTable * const ptable, const HWND hwndProgress, const HWN
 
    // colordepth & refreshrate are only defined if fullscreen is true.
 #ifdef ENABLE_SDL
-   hr = m_pin3d.InitPin3D(&m_hwnd, m_fFullScreen,0 , m_width, m_height, colordepth,
+   int display;
+   if (GetRegInt("Player", "Display", &display) != S_OK)
+      display = 0;
+
+   hr = m_pin3d.InitPin3D(&m_hwnd, m_fFullScreen, display, m_width, m_height, colordepth,
                           m_refreshrate, vsync, useAA, m_stereo3D, FXAA, !m_disableAO, ss_refl);
 #else
    hr = m_pin3d.InitPin3D(m_hwnd, m_fFullScreen, 0, m_width, m_height, colordepth,
@@ -3677,18 +3681,6 @@ void Player::Bloom(float x, float y, float tx, float ty)
    m_pin3d.m_pd3dDevice->FBShader->SetVector("quadOffsetScaleTex", tx, ty, 1.0f, 1.0f);
    for (int eye = 0;eye < ((m_stereo3D > 0) ? 2 : 1);eye++) {
       m_pin3d.m_pd3dDevice->setEye(eye);
-      if (m_ptable->m_bloom_strength <= 0.0f || m_bloomOff)
-      {
-         // need to reset content from (optional) bulb light abuse of the buffer
-         /*RenderTarget* tmpBloomSurface;
-         m_pin3d.m_pd3dDevice->GetBloomBufferTexture()->GetSurfaceLevel(0, &tmpBloomSurface);
-         m_pin3d.m_pd3dDevice->SetRenderTarget(tmpBloomSurface);
-         m_pin3d.m_pd3dDevice->Clear(0, NULL, D3DCLEAR_TARGET, 0, 1.0f, 0L);
-         SAFE_RELEASE_NO_RCC(tmpBloomSurface);*/
-
-         return;
-      }
-
       {
          // switch to 'bloom' output buffer to collect clipped framebuffer values
          m_pin3d.m_pd3dDevice->SetRenderTarget(m_pin3d.m_pd3dDevice->GetBloomBufferTexture());
@@ -4124,7 +4116,8 @@ void Player::PostProcess(const bool ambientOcclusion)
    m_pin3d.m_pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
    m_pin3d.m_pd3dDevice->SetRenderState(RenderDevice::ZENABLE, FALSE);
 
-   Bloom(m_ScreenOffset.x, m_ScreenOffset.y, (float)inv_width, (float)inv_height);
+   if (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff)
+      Bloom(m_ScreenOffset.x, m_ScreenOffset.y, (float)inv_width, (float)inv_height);
 
 #ifdef FPS
    if (ProfilingMode() == 1)

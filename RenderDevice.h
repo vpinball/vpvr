@@ -40,6 +40,7 @@ struct VideoMode
    int display;
 };
 
+int getNumberOfDisplays();
 void EnumerateDisplayModes(const int adapter, std::vector<VideoMode>& modes);
 
 

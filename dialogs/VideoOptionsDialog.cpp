@@ -151,16 +151,20 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
    SendMessage(GetDlgItem(IDC_StretchMonitor).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_StretchNo).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);
    SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_SETCURSEL, 1, 0);
+   SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_SETCURSEL, 0, 0);
 }
 
 void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes, const VideoMode* curSelMode)
 {
    const HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
    SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
+   HWND hwndDisplay = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
+   size_t display = SendMessage(hwndDisplay, CB_GETCURSEL, 0, 0);
 
    for (size_t i = 0; i < modes.size(); ++i)
    {
       char szT[128];
+      if ((modes[i].display != display) && (modes[i].display != -1)) continue;
 #ifdef ENABLE_SDL
       if (modes[i].depth != SDL_PIXELFORMAT_UNKNOWN) {
          char* bitFormat;
@@ -189,10 +193,10 @@ void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes,
             bitFormat = "HDR";
             break;
          }
-         sprintf_s(szT, "%d: %d x %d (%dHz) %s", (modes[i].display + 1), modes[i].width, modes[i].height, modes[i].refreshrate, bitFormat);
+         sprintf_s(szT, "%d x %d (%dHz) %s", modes[i].width, modes[i].height, modes[i].refreshrate, bitFormat);
       }
       else {
-         sprintf_s(szT, "%d: %d x %d", (modes[i].display + 1), modes[i].width, modes[i].height);
+         sprintf_s(szT, "%d x %d",  modes[i].width, modes[i].height);
       }
 #else
       if (modes[i].depth)
@@ -271,6 +275,8 @@ BOOL VideoOptionsDialog::OnInitDialog()
       AddToolTip("Enables brute-force 4x Anti-Aliasing (similar to DSR).\r\nThis delivers very good quality, but slows down performance significantly.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_OVERWRITE_BALL_IMAGE_CHECK).GetHwnd();
       AddToolTip("When checked it overwrites the ball image/decal image(s) for every table.", hwndDlg, toolTipHwnd, controlHwnd);
+      controlHwnd = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
+      AddToolTip("Select Display for Video output.", hwndDlg, toolTipHwnd, controlHwnd);
    }
 
    int maxTexDim;
@@ -564,8 +570,16 @@ BOOL VideoOptionsDialog::OnInitDialog()
 
    int display;
    hr = GetRegInt("Player", "Display", &display);
-   if (hr != S_OK)
+   if ((hr != S_OK) || (getNumberOfDisplays()<= display))
       display = 0; // The default
+
+   SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_RESETCONTENT, 0, 0);
+   char displayName[256];
+   for (size_t i = 0;i < getNumberOfDisplays();++i) {
+      sprintf_s(displayName, "Display %d", (i + 1));
+      SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)displayName);
+   }
+   SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_SETCURSEL, display, 0);
 
    int fullscreen;
    hr = GetRegInt("Player", "FullScreen", &fullscreen);
@@ -683,7 +697,7 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             mode.height = portrait_modes_height[i];
             mode.depth = 0;
             mode.refreshrate = 0;
-            mode.display = 0;
+            mode.display = -1;
 
             allVideoModes.push_back(mode);
             if (heightcur > widthcur)
@@ -707,7 +721,7 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             mode.height = xsize * 3 / 4;
             mode.depth = 0;
             mode.refreshrate = 0;
-            mode.display = 0;
+            mode.display = -1;
 
             allVideoModes.push_back(mode);
          }
@@ -915,10 +929,10 @@ void VideoOptionsDialog::OnOK()
    {
       SetRegValue("Player", "ColorDepth", REG_DWORD, &pvm->depth, 4);
       SetRegValue("Player", "RefreshRate", REG_DWORD, &pvm->refreshrate, 4);
-#ifdef ENABLE_SDL
-      SetRegValue("Player", "Display", REG_DWORD, &pvm->display, 4);
-#endif
    }
+   HWND hwndDisplay = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
+   size_t display = SendMessage(hwndDisplay, CB_GETCURSEL, 0, 0);
+   SetRegValue("Player", "Display", REG_DWORD, &display, 4);
 
    HWND hwnd10bit = GetDlgItem(IDC_10BIT_VIDEO).GetHwnd();
    size_t video10bit = SendMessage(hwnd10bit, BM_GETCHECK, 0, 0);
