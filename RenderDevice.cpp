@@ -621,32 +621,34 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
 
    CHECKD3D(glGetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)(&m_pBackBuffer->framebuffer)));
 
+   colorFormat renderBufferFormat = RGBA16;
+
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
-   m_pOffscreenBackBufferTextureLeft = CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, (colorFormat)colordepth, NULL);
-   m_pOffscreenBackBufferTextureRight = stereo3D ? CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, (colorFormat)colordepth, NULL) : NULL;
+   m_pOffscreenBackBufferTextureLeft = CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL);
+   m_pOffscreenBackBufferTextureRight = stereo3D ? CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL) : NULL;
 
    if (g_pplayer != NULL)
    {
       const bool drawBallReflection = ((g_pplayer->m_fReflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
       if (g_pplayer->m_ptable->m_fReflectElementsOnPlayfield || drawBallReflection)
       {
-         m_pMirrorTmpBufferTextureLeft = CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, (colorFormat)colordepth, NULL);
-         m_pMirrorTmpBufferTextureRight = stereo3D ? CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, (colorFormat)colordepth, NULL) : NULL;
+         m_pMirrorTmpBufferTextureLeft = CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL);
+         m_pMirrorTmpBufferTextureRight = stereo3D ? CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL) : NULL;
       }
    }
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
-   m_pBloomBufferTextureLeft = CreateTexture(m_Buf_width / 3, m_Buf_height / 3, 0, RENDERTARGET, (colorFormat)colordepth, NULL);
-   m_pBloomBufferTextureRight = stereo3D ? CreateTexture(m_Buf_width / 3, m_Buf_height / 3, 0, RENDERTARGET, (colorFormat)colordepth, NULL) : NULL;
+   m_pBloomBufferTextureLeft = CreateTexture(m_Buf_width / 3, m_Buf_height / 3, 0, RENDERTARGET, renderBufferFormat, NULL);
+   m_pBloomBufferTextureRight = stereo3D ? CreateTexture(m_Buf_width / 3, m_Buf_height / 3, 0, RENDERTARGET, renderBufferFormat, NULL) : NULL;
 
    // temporary buffer for gaussian blur
-   m_pBloomTmpBufferTextureLeft = CreateTexture(m_Buf_width / 3, m_Buf_height / 3, 0, RENDERTARGET, (colorFormat)colordepth, NULL);
-   m_pBloomTmpBufferTextureRight = stereo3D ? CreateTexture(m_Buf_width / 3, m_Buf_height / 3, 0, RENDERTARGET, (colorFormat)colordepth, NULL) : NULL;
+   m_pBloomTmpBufferTextureLeft = CreateTexture(m_Buf_width / 3, m_Buf_height / 3, 0, RENDERTARGET, renderBufferFormat, NULL);
+   m_pBloomTmpBufferTextureRight = stereo3D ? CreateTexture(m_Buf_width / 3, m_Buf_height / 3, 0, RENDERTARGET, renderBufferFormat, NULL) : NULL;
 
    // alloc temporary buffer for postprocessing
    if ((FXAA > 0) || (stereo3D > 0))
    {
-      m_pOffscreenBackBufferStereoTextureLeft = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET, (colorFormat)colordepth, NULL);
-      m_pOffscreenBackBufferStereoTextureRight = stereo3D ? CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET, (colorFormat)colordepth, NULL) : NULL;
+      m_pOffscreenBackBufferStereoTextureLeft = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET, RGBA, NULL);
+      m_pOffscreenBackBufferStereoTextureRight = stereo3D ? CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET, RGBA, NULL) : NULL;
    }
    else {
       m_pOffscreenBackBufferStereoTextureLeft = NULL;
@@ -656,8 +658,8 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
    // alloc one more temporary buffer for SMAA
    if (FXAA == Quality_SMAA)
    {
-      m_pOffscreenBackBufferSMAATextureLeft = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET, (colorFormat)colordepth, NULL);
-      m_pOffscreenBackBufferSMAATextureRight = stereo3D ? CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET, (colorFormat)colordepth, NULL) : NULL;
+      m_pOffscreenBackBufferSMAATextureLeft = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET, renderBufferFormat, NULL);
+      m_pOffscreenBackBufferSMAATextureRight = stereo3D ? CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET, renderBufferFormat, NULL) : NULL;
    }
    else {
       m_pOffscreenBackBufferSMAATextureLeft = NULL;
@@ -665,8 +667,8 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
    }
 
    if (ss_refl) {
-      m_pReflectionBufferTextureLeft = CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, (colorFormat)colordepth, NULL);
-      m_pReflectionBufferTextureRight = stereo3D ? CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, (colorFormat)colordepth, NULL) : NULL;
+      m_pReflectionBufferTextureLeft = CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL);
+      m_pReflectionBufferTextureRight = stereo3D ? CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL) : NULL;
    }
    else {
       m_pReflectionBufferTextureLeft = NULL;
@@ -2565,8 +2567,6 @@ void RenderDevice::GetViewport(ViewPort* p1)
 #endif
 }
 
-//Use GL Texture functions since SDL2 does not support FP formats and Grey / GreyAlpha formats
-
 D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, void* data) {
 #ifdef ENABLE_SDL
    D3DTexture* tex = new D3DTexture();
@@ -2575,33 +2575,19 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    tex->height = Height;
    tex->format = Format;
    tex->slot = -1;
-   /*   enum textureUsage {
-         RENDERTARGET = 3,
-         RENDERTARGET_DEPTH = 4,
-         MIPMAP = 2,
-         STATIC = 0,
-         DYNAMIC = 1
-
-         GREY = GL_RED,//Note: Use only R channel for color values
-         GREY_ALPHA = GL_RG8,//Note: Use R for L and G for alhpa in shader!
-         RGB = GL_RGB8,
-         RGB5 = GL_RGB5,
-         RGB8 = GL_RGB8,
-         RGB10 = GL_RGB10_A2,
-         RGBA16 = GL_RGBA16F,
-         RGBA32 = GL_RGBA32F,
-         RGBA = GL_RGBA8,
-         RGBA8 = GL_RGBA8,
-         RGBA10 = GL_RGB10_A2,
-         DXT5 = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
-   };*/
    if ((tex->usage == RENDERTARGET) || (tex->usage == RENDERTARGET_DEPTH)) {//Create Renderbuffer
       CHECKD3D(glGenFramebuffers(1, &tex->framebuffer));
       CHECKD3D(glBindFramebuffer(GL_FRAMEBUFFER, tex->framebuffer));
 
       CHECKD3D(glGenTextures(1, &tex->texture));
       CHECKD3D(glBindTexture(GL_TEXTURE_2D, tex->texture));
-      CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
+      if (Format == RGBA16 || Format == RGBA32)
+      {
+         CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, Format, Width, Height, 0, GL_RGBA, GL_FLOAT, NULL));
+      }
+      else {
+         CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
+      }
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
       //CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);

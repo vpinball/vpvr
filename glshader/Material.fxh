@@ -206,8 +206,29 @@ vec3 lightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 specula
    // 1st Layer
    if((!is_metal && (diffuseMax > 0.0)) || (glossyMax > 0.0))
    {
-      for(int i = 0; i < iLightPointNum; i++)
-         color += DoPointLight(pos, N, V, diffuse, glossy, edge, Roughness_WrapL_Edge_Thickness.x, i, is_metal); // no clearcoat needed as only pointlights so far
+//      for(int i = 0; i < iLightPointNum; i++)//Rendering issues when doing this in an loop. Weird.
+
+         color += DoPointLight(pos, N, V, diffuse, glossy, edge, Roughness_WrapL_Edge_Thickness.x, 0, is_metal); // no clearcoat needed as only pointlights so far
+         color += DoPointLight(pos, N, V, diffuse, glossy, edge, Roughness_WrapL_Edge_Thickness.x, 1, is_metal); // no clearcoat needed as only pointlights so far
+		 #if iLightPointNum >=3
+         color += DoPointLight(pos, N, V, diffuse, glossy, edge, Roughness_WrapL_Edge_Thickness.x, 2, is_metal); // no clearcoat needed as only pointlights so far
+		 #endif
+		 #if iLightPointNum >=4
+         color += DoPointLight(pos, N, V, diffuse, glossy, edge, Roughness_WrapL_Edge_Thickness.x, 3, is_metal); // no clearcoat needed as only pointlights so far
+		 #endif
+		 #if iLightPointNum >=5
+         color += DoPointLight(pos, N, V, diffuse, glossy, edge, Roughness_WrapL_Edge_Thickness.x, 4, is_metal); // no clearcoat needed as only pointlights so far
+		 #endif
+		 #if iLightPointNum >=6
+         color += DoPointLight(pos, N, V, diffuse, glossy, edge, Roughness_WrapL_Edge_Thickness.x, 5, is_metal); // no clearcoat needed as only pointlights so far
+		 #endif
+		 #if iLightPointNum >=7
+         color += DoPointLight(pos, N, V, diffuse, glossy, edge, Roughness_WrapL_Edge_Thickness.x, 6, is_metal); // no clearcoat needed as only pointlights so far
+		 #endif
+		 #if iLightPointNum >=8
+         color += DoPointLight(pos, N, V, diffuse, glossy, edge, Roughness_WrapL_Edge_Thickness.x, 7, is_metal); // no clearcoat needed as only pointlights so far
+		 #endif
+		 color = clamp(color,0.0,1.0);
    }
 
    if(!is_metal && (diffuseMax > 0.0))

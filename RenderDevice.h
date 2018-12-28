@@ -113,12 +113,15 @@ public:
       //Blending ops
       BLENDOP_MAX = GL_MAX,
       BLENDOP_ADD = GL_FUNC_ADD,
+      BLENDOP_SUB = GL_FUNC_SUBTRACT,
       BLENDOP_REVSUBTRACT = GL_FUNC_REVERSE_SUBTRACT,
       //Blending values
       ZERO = GL_ZERO,
       ONE = GL_ONE,
       SRC_ALPHA = GL_SRC_ALPHA,
       DST_ALPHA = GL_DST_ALPHA,
+      SRC_COLOR = GL_SRC_COLOR,
+      DST_COLOR = GL_DST_COLOR,
       INVSRC_ALPHA = GL_ONE_MINUS_SRC_ALPHA,
       INVSRC_COLOR = GL_ONE_MINUS_SRC_COLOR,
       //Clipping planes
