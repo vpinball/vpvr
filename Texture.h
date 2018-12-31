@@ -46,6 +46,7 @@ public:
    static BaseTexture *CreateFromHBitmap(const HBITMAP hbm);
    static BaseTexture *CreateFromFile(const char *filename);
    static BaseTexture *CreateFromFreeImage(FIBITMAP* dib);
+   static BaseTexture *CreateFromData(const void *data, size_t size);
 };
 
 class Texture : public ILoadable

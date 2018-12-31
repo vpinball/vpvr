@@ -90,6 +90,32 @@ BaseTexture* BaseTexture::CreateFromFile(const char *szfile)
       return NULL;
 }
 
+BaseTexture* BaseTexture::CreateFromData(const void *data, size_t size)
+{
+   FREE_IMAGE_FORMAT fif = FIF_UNKNOWN;
+
+   // check the file signature and deduce its format
+   FIMEMORY *dataHandle = FreeImage_OpenMemory((BYTE*)data, size);
+   fif = FreeImage_GetFileTypeFromMemory(dataHandle, size);
+
+   // check that the plugin has reading capabilities ...
+   if ((fif != FIF_UNKNOWN) && FreeImage_FIFSupportsReading(fif)) {
+      // ok, let's load the file
+      FIBITMAP *dib = FreeImage_LoadFromMemory(fif, dataHandle, 0);
+
+      BaseTexture* mySurface = BaseTexture::CreateFromFreeImage(dib);
+      FreeImage_Unload(dib);
+
+      //if (bitsPerPixel == 24)
+      //   mySurface->SetOpaque();
+
+      FreeImage_CloseMemory(dataHandle);
+      return mySurface;
+   }
+   FreeImage_CloseMemory(dataHandle);
+   return NULL;
+}
+
 void BaseTexture::CopyTo_ConvertAlpha(BYTE* const bits) // premultiplies alpha (as Win32 AlphaBlend() wants it like that) OR converts rgb_fp format to 32bits
 {
    if (m_format == RGB_FP) // Tonemap for 8bpc-Display

@@ -49,15 +49,14 @@ How to run: Get the normal version of VPX to work properly first. There are seve
 	- Memory leak when closing and restarting a table (DX9 and SDL)
 	- Severe Memory leak (not freeing any textures) when opening another table
 	- Enviromental mapping on metal and balls looks ugly.
-	- The TAF 1.4 from Sliderpoint has no working lights (might happen on other tables, too) => reason unclear to me
 	- Performance sucks. Best thing is to disable all image enhancements. I'm working on this issue.
 	- The room is black and the cabinet does not exist. Will be added later. If you have some nice meshes with textures as a cabinet or
 	  a room feel free to share (please only stuff with a free to share license).
-	- No DMDs or Backglasses at all. Maybe I'll integrate B2S or similar later.
-	- At the moment this is only tested with my HTC Vive and a Nvidia GPU, since I only own this hardware. If you have problems with 
-	  an AMD card or another HMD (Oculus Rift, Microsoft Mixed VR), I'm trying to do my best, but it's always hard to debug without
-	  the hardware. The SDL2 port was shortly tested on a Intel UHD 620. Yes it "runs", but it's unplayable slow.
-	- Some issues with Rendering of Quads (sprites or whatever they are called).
+	- DMD might be missing or missplaced. Initial support for directB2S, but only for backglass image and DMDs. No reels or 7-seg.
+	- At the moment this is only tested with my HTC Vive and a Nvidia GPU. If you have problems with an AMD card or another HMD (Oculus 
+	  Rift, Microsoft Mixed VR), I'm trying to do my best, but it's always hard to debug without the hardware. The SDL2 port was shortly
+	  tested on a Intel UHD 620. Yes it "runs", but it's unplayable slow.
+	- Some issues with Rendering of Quads (sprites or whatever they are called). Most of them should be fixed in the lates commit.
 	- DX9 The SRGB change from r3590 is disabled since it produces some strange issues with insert lights
 	- Sometimes there themes to be a ball below the floor.
 	

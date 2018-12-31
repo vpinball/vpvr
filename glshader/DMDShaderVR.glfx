@@ -7,9 +7,10 @@
 
 ////VERTEX
 
-uniform vec4 quadOffsetScale;//.xy =>Offset from center .wz =>Scale (1.0 is fullscreen)
-uniform vec4 quadOffsetScaleTex;//.xy =>Offset from center .wz =>Scale (1.0 is fullscreen)
+uniform vec4 quadOffsetScale;//.xy =>Offset from bottom left .wz =>Scale (1.0 is fullscreen)
+uniform vec4 quadOffsetScaleTex;//.xy =>Offset from top left .wz =>Scale (1.0 is fullscreen)
 uniform mat4 matWorldViewProj;
+uniform vec4 backBoxSize;//xy=backbox location relative to rear left edge of the playfield zw=size  (all values in VPin Units)
 
 ////FRAGMENT
 
@@ -33,13 +34,9 @@ out vec2 tex0;
 
 void main()
 { 
-   //Place DMDs somewhere where the backbox should be. TODO: replace with B2S
-   //Scale the DMD to a 54cm by 30cm virtual display.
-   vec3 pos = vec3(((vPosition.x*quadOffsetScale.z+quadOffsetScale.x)*2.0-1.0)*1000.0,
-					0.0,
-					(1.0-(vPosition.y*quadOffsetScale.w+quadOffsetScale.y)*2.0)*562.5+100.0);
-   gl_Position = mul(vec4(pos,1.0), matWorldViewProj);
-   tex0 = vec2(tc.x,1.0-tc.y)*quadOffsetScaleTex.zw+quadOffsetScaleTex.xy;
+    gl_Position = mul(vec4((vPosition.x*backBoxSize.z*quadOffsetScale.z+quadOffsetScale.x+backBoxSize.x),0.0,
+					       (vPosition.y*quadOffsetScale.w*backBoxSize.w+quadOffsetScale.y+backBoxSize.y),1.0), matWorldViewProj);
+   tex0 = vec2(tc.x,tc.y)*quadOffsetScaleTex.zw+quadOffsetScaleTex.xy;
 }
 
 ////vs_simple_main
@@ -53,9 +50,9 @@ out vec2 tex0;
 
 void main()
 {
-    gl_Position = mul(vec4((vPosition.x*quadOffsetScale.z+quadOffsetScale.x)*2.0-1.0,
-							 1.0-(vPosition.y*quadOffsetScale.w+quadOffsetScale.y)*2.0,0.0,1.0), matWorldViewProj);
-    tex0 = vec2(tc.x,1.0-tc.y)*quadOffsetScaleTex.zw+quadOffsetScaleTex.xy;
+    gl_Position = mul(vec4((vPosition.x*backBoxSize.z*quadOffsetScale.z+quadOffsetScale.x+backBoxSize.x),0.0,
+					       (vPosition.y*quadOffsetScale.w*backBoxSize.w+quadOffsetScale.y+backBoxSize.y),1.0), matWorldViewProj);
+    tex0 = vec2(tc.x,tc.y)*quadOffsetScaleTex.zw+quadOffsetScaleTex.xy;
 }
 
 //

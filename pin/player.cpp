@@ -3299,11 +3299,36 @@ void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwi
       m_pin3d.m_pd3dDevice->DMDShader->SetVector("vRes_Alpha", &r);
 
       m_pin3d.m_pd3dDevice->DMDShader->SetTexture("Texture0", m_pin3d.m_pd3dDevice->m_texMan.LoadTexture(m_texdmd, false), false);
-      m_pin3d.m_pd3dDevice->DMDShader->SetVector("quadOffsetScale", DMDposx, DMDposy, DMDwidth, DMDheight);
+//      m_pd3dDevice->DMDShader->SetVector("quadOffsetScale", 0.0f, -1.0f, backglass_scale, backglass_scale*(float)backglass_height / (float)backglass_width);
+      bool zDisabled = false;
+      float tableWidth;
+      g_pplayer->m_ptable->get_Width(&tableWidth);
+      tableWidth *= m_pin3d.backglass_scale;
+      float scale = 0.5f;// 0.5 => use 50% of the height of the grill.
+      if (m_pin3d.backglass_texture && m_pin3d.backglass_grill_height > 0) {
+         //DMD is centered in the Grill of the backglass
+         float dmd_height = m_pin3d.backglass_scale * scale * (float)m_pin3d.backglass_grill_height / (float)m_pin3d.backglass_width;
+         float dmd_width = dmd_height / (float)(m_texdmd->height()) * (float)(m_texdmd->width());
+         float dmd_x = tableWidth * (0.5f - dmd_width / 2.0f);
+         float dmd_y = tableWidth * (float)m_pin3d.backglass_grill_height*(0.5f - scale / 2.0f) / (float)m_pin3d.backglass_width;
+         m_pin3d.m_pd3dDevice->DMDShader->SetVector("quadOffsetScale", dmd_x, dmd_y, dmd_width, dmd_height);
+         m_pin3d.m_pd3dDevice->SetRenderState(RenderDevice::ZENABLE, FALSE);
+         zDisabled = true;
+      }
+      else if (m_stereo3D == STEREO_VR) {//Place it somewhere at the bottom
+         m_pin3d.m_pd3dDevice->SetRenderState(RenderDevice::ZENABLE, FALSE);
+         zDisabled = true;
+         m_pin3d.m_pd3dDevice->DMDShader->SetVector("quadOffsetScale", (scale/2.0f)*tableWidth, (scale/3.0f)*tableWidth, scale, scale*DMDheight / DMDwidth);
+      }
+      else//No VR, so place it where it was intended
+         m_pin3d.m_pd3dDevice->DMDShader->SetVector("quadOffsetScale", DMDposx, DMDposy, DMDwidth, DMDheight);
 
       m_pin3d.m_pd3dDevice->DMDShader->Begin(0);
       m_pin3d.m_pd3dDevice->DrawTexturedQuad();//(Vertex3D_TexelOnly*)DMDVerts
       m_pin3d.m_pd3dDevice->DMDShader->End();
+
+      if (zDisabled)
+         m_pin3d.m_pd3dDevice->SetRenderState(RenderDevice::ZENABLE, TRUE);
 
       m_pin3d.m_pd3dDevice->DMDShader->SetVector("quadOffsetScale", 0.0f, 0.0f, 1.0f, 1.0f);
    }
@@ -3442,8 +3467,10 @@ void Player::RenderDynamics(int eye)
 
    UpdateBasicShaderMatrix(eye);
 
-   if (m_stereo3D == STEREO_VR)
+   if (m_stereo3D == STEREO_VR) {
       m_pin3d.m_pd3dDevice->Clear(ZBUFFER | TARGET, 0, 1.0f, 0L);//Render Room later ?
+      m_pin3d.DrawBackglass(eye);
+   }
    else
       m_pin3d.DrawBackground(eye);
 
@@ -3509,8 +3536,8 @@ void Player::RenderDynamics(int eye)
       m_dmdstate = 2;
       // Draw non-transparent DMD's
       for (size_t i = 0; i < m_vHitNonTrans.size(); ++i)
-        if(m_vHitNonTrans[i]->IsDMD())
-          m_vHitNonTrans[i]->RenderDynamic(m_pin3d.m_pd3dDevice);
+         if (m_vHitNonTrans[i]->IsDMD())
+            m_vHitNonTrans[i]->RenderDynamic(m_pin3d.m_pd3dDevice);
 
       DrawBalls();
 

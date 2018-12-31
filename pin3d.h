@@ -75,10 +75,13 @@ public:
 
    void SetTextureFilter(const int TextureNum, const int Mode) const;
 
+   void InitBackglassVR();
+
    void EnableAlphaTestReference(const DWORD alphaRefValue) const;
    void EnableAlphaBlend(const bool additiveBlending, const bool set_dest_blend = true, const bool set_blend_op = true) const;
 
    void DrawBackground(int eye);
+   void DrawBackglass(int eye);
    void RenderPlayfieldGraphics(const bool depth_only);
 
    const Matrix3D& GetWorldTransform() const   { return m_proj.m_matWorld; }
@@ -89,8 +92,6 @@ public:
 
 private:
    void InitRenderState();
-
-   void Identity();
 
    int m_stereo3D;
 
@@ -117,6 +118,14 @@ public:
    Texture pinballEnvTexture; // loaded from Resources
    Texture envTexture; // loaded from Resources
    Texture aoDitherTexture; // loaded from Resources
+
+   D3DTexture* backglass_texture;
+   int backglass_dmd_x;
+   int backglass_dmd_y;
+   int backglass_grill_height;
+   int backglass_width;
+   int backglass_height;
+   float backglass_scale;
 
    Texture* m_envTexture;
    BaseTexture* m_envRadianceTexture;
