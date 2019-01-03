@@ -453,7 +453,7 @@ void RenderDevice::InitVR() {
       for (int j = 0;j < 4;j++)
             matProjection.m[j][i] = mat44.m[i][j];
 
-   m_matLeftProj = matProjection * matEye2Head;
+   m_matLeftProj = matEye2Head * matProjection;
 
    //Calculate right EyeProjection Matrix relative to HMD position
    mat34 = m_pHMD->GetEyeToHeadTransform(vr::Eye_Right);
@@ -470,7 +470,7 @@ void RenderDevice::InitVR() {
       for (int j = 0;j < 4;j++)
             matProjection.m[j][i] = mat44.m[i][j];
 
-   m_matRightProj = matProjection * matEye2Head;
+   m_matRightProj = matEye2Head * matProjection;
 
    if (vr::k_unMaxTrackedDeviceCount > 0) {
       m_rTrackedDevicePose = new vr::TrackedDevicePose_t[vr::k_unMaxTrackedDeviceCount];
