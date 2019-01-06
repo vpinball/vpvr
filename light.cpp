@@ -559,7 +559,8 @@ void Light::RenderBulbMesh(RenderDevice *pd3dDevice)
    mat.m_fGlossyImageLerp = 1.0f;
    mat.m_fThickness = 0.05f;
    mat.m_cClearcoat = 0;
-   pd3dDevice->basicShader->SetTechnique(mat.m_bIsMetal ? "basic_without_texture_isMetal" : "basic_without_texture_isNotMetal");
+   pd3dDevice->basicShader->SetTechnique("basic_without_texture");
+   pd3dDevice->basicShader->SetBool("is_metal", mat.m_bIsMetal);
    pd3dDevice->basicShader->SetMaterial(&mat);
 
    pd3dDevice->basicShader->Begin(0);
@@ -578,7 +579,8 @@ void Light::RenderBulbMesh(RenderDevice *pd3dDevice)
    mat.m_fGlossyImageLerp = 1.0f;
    mat.m_fThickness = 0.05f;
    mat.m_cClearcoat = 0xFFFFFF;
-   pd3dDevice->basicShader->SetTechnique(mat.m_bIsMetal ? "basic_without_texture_isMetal" : "basic_without_texture_isNotMetal");
+   pd3dDevice->basicShader->SetTechnique("basic_without_texture");
+   pd3dDevice->basicShader->SetBool("is_metal", mat.m_bIsMetal);
    pd3dDevice->basicShader->SetMaterial(&mat);
 
    pd3dDevice->basicShader->Begin(0);
@@ -692,7 +694,7 @@ void Light::RenderDynamic(RenderDevice* pd3dDevice)
       if (offTexel != NULL)
       {
          pd3dDevice->classicLightShader->SetBool("hdrTexture0", offTexel->IsHDR());
-         pd3dDevice->classicLightShader->SetTechnique(m_surfaceMaterial->m_bIsMetal ? "light_with_texture_isMetal" : "light_with_texture_isNotMetal");
+         pd3dDevice->classicLightShader->SetTechnique("light_with_texture");
          pd3dDevice->classicLightShader->SetTexture("Texture0", offTexel, false);
          if (m_ptable->m_fReflectElementsOnPlayfield && g_pplayer->m_pf_refl && !m_fBackglass)
          {
@@ -702,7 +704,8 @@ void Light::RenderDynamic(RenderDevice* pd3dDevice)
          }
       }
       else
-         pd3dDevice->classicLightShader->SetTechnique(m_surfaceMaterial->m_bIsMetal ? "light_without_texture_isMetal" : "light_without_texture_isNotMetal");
+         pd3dDevice->classicLightShader->SetTechnique("light_without_texture");
+      pd3dDevice->classicLightShader->SetBool("is_metal", m_surfaceMaterial->m_bIsMetal);
    }
    else
    {

@@ -26,6 +26,8 @@ uniform sampler2D Texture3; // bulb light buffer
 uniform sampler2D Texture4; // normal map
 
 uniform bool hdrEnvTextures;
+uniform bool is_metal;
+uniform bool doNormalMapping;
 
 #include "Material.fxh"
 
@@ -145,16 +147,16 @@ in vec4 normal_t1y;
 
 void main() {
    vec3 diffuse  = cBase_Alpha.xyz;
-   vec3 glossy   = %PARAM0% ? cBase_Alpha.xyz : cGlossy_ImageLerp.xyz*0.08;
+   vec3 glossy   = is_metal ? cBase_Alpha.xyz : cGlossy_ImageLerp.xyz*0.08;
    vec3 specular = cClearcoat_EdgeAlpha.xyz*0.08;
-   float  edge     = %PARAM0% ? 1.0 : Roughness_WrapL_Edge_Thickness.z;
+   float  edge     = is_metal ? 1.0 : Roughness_WrapL_Edge_Thickness.z;
    
    vec3 V = normalize(/*camera=0,0,0,1*/-worldPos_t1x.xyz);
    vec3 N = normalize(normal_t1y.xyz);
 
    //return vec4((N+1.0)*0.5,1.0); // visualize normals
 
-   color.xyz = lightLoop(worldPos_t1x.xyz, N, V, diffuse, glossy, specular, edge, true, %PARAM0%); //!! have a "real" view vector instead that mustn't assume that viewer is directly in front of monitor? (e.g. cab setup) -> viewer is always relative to playfield and/or user definable
+   color.xyz = lightLoop(worldPos_t1x.xyz, N, V, diffuse, glossy, specular, edge, true, is_metal); //!! have a "real" view vector instead that mustn't assume that viewer is directly in front of monitor? (e.g. cab setup) -> viewer is always relative to playfield and/or user definable
    color.a = cBase_Alpha.a;
 
    if(cBase_Alpha.a < 1.0) {
@@ -187,19 +189,19 @@ void main() {
    } else {
 
 	   vec3 diffuse  = t*cBase_Alpha.xyz;
-	   vec3 glossy   = %PARAM0% ? diffuse : (t*cGlossy_ImageLerp.w + (1.0-cGlossy_ImageLerp.w))*cGlossy_ImageLerp.xyz*0.08; //!! use AO for glossy? specular?
+	   vec3 glossy   = is_metal ? diffuse : (t*cGlossy_ImageLerp.w + (1.0-cGlossy_ImageLerp.w))*cGlossy_ImageLerp.xyz*0.08; //!! use AO for glossy? specular?
 	   vec3 specular = cClearcoat_EdgeAlpha.xyz*0.08;
-	   float  edge     = %PARAM0% ? 1.0 : Roughness_WrapL_Edge_Thickness.z;
+	   float  edge     = is_metal ? 1.0 : Roughness_WrapL_Edge_Thickness.z;
 
 	   vec3 V = normalize(/*camera=0,0,0,1*/-worldPos);
 	   vec3 N = normalize(normal);
 
-	   if (%PARAM1%)
+	   if (doNormalMapping)
 		  N = normal_map(N, V, tex01.xy);
 	   
 	   //return vec4((N+1.0)*0.5,1.0); // visualize normals
 
-	   color.xyz = lightLoop(worldPos, N, V, diffuse, glossy, specular, edge, !%PARAM1%, %PARAM0%);
+	   color.xyz = lightLoop(worldPos, N, V, diffuse, glossy, specular, edge, !doNormalMapping, is_metal);
 	   color.a = pixel.a;
 
 	   if (cBase_Alpha.a < 1.0 && color.a < 1.0) {
@@ -269,14 +271,9 @@ void main() {
 //
 ////TECHNIQUES
 
-basic_without_texture_isMetal:P0:vs_notex_main():ps_main(true)
-basic_without_texture_isNotMetal:P0:vs_notex_main():ps_main(false)
+basic_without_texture:P0:vs_notex_main():ps_main()
 
-basic_with_texture_isMetal:P0:vs_main():ps_main_texture(true,false)
-basic_with_texture_isNotMetal:P0:vs_main():ps_main_texture(false,false)
-
-basic_with_texture_normal_isMetal:P0:vs_main():ps_main_texture(true,true)
-basic_with_texture_normal_isNotMetal:P0:vs_main():ps_main_texture(false,true)
+basic_with_texture:P0:vs_main():ps_main_texture()
 
 basic_depth_only_without_texture:P0:vs_depth_only_main_without_texture():ps_main_depth_only_without_texture()
 basic_depth_only_with_texture:P0:vs_depth_only_main_with_texture():ps_main_depth_only_with_texture()
@@ -285,7 +282,6 @@ basic_depth_only_with_texture:P0:vs_depth_only_main_with_texture():ps_main_depth
 // Kicker
 //
 
-kickerBoolean_isMetal:P0:vs_kicker():ps_main(true)
-kickerBoolean_isNotMetal:P0:vs_kicker():ps_main(false)
+kickerBoolean:P0:vs_kicker():ps_main()
 
 #include "ClassicLightShader.glfx"

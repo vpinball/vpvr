@@ -69,6 +69,8 @@ sampler2D texSamplerN : TEXUNIT4 = sampler_state // normal map texture
 };
 
 bool hdrEnvTextures;
+bool is_metal;
+bool doNormalMapping;
 
 #include "Material.fxh"
 
@@ -192,7 +194,7 @@ VS_DEPTH_ONLY_TEX_OUTPUT vs_depth_only_main_with_texture(float4 vPosition : POSI
    return Out;
 }
 
-float4 ps_main(in VS_NOTEX_OUTPUT IN, uniform bool is_metal) : COLOR
+float4 ps_main(in VS_NOTEX_OUTPUT IN) : COLOR
 {
    const float3 diffuse = cBase_Alpha.xyz;
 const float3 glossy = is_metal ? cBase_Alpha.xyz : cGlossy_ImageLerp.xyz*0.08;
@@ -219,7 +221,7 @@ result.a = cBase_Alpha.a;
 return result;
 }
 
-float4 ps_main_texture(in VS_OUTPUT IN, uniform bool is_metal, uniform bool doNormalMapping) : COLOR
+float4 ps_main_texture(in VS_OUTPUT IN) : COLOR
 {
    float4 pixel = tex2D(texSampler0, IN.tex01.xy);
 
@@ -307,57 +309,21 @@ VS_NOTEX_OUTPUT vs_kicker(float4 vPosition : POSITION0,
 // Standard Materials
 //
 
-technique basic_without_texture_isMetal
+technique basic_without_texture
 {
    pass P0
    {
       VertexShader = compile vs_3_0 vs_notex_main();
-      PixelShader = compile ps_3_0 ps_main(1);
+      PixelShader = compile ps_3_0 ps_main();
    }
 }
 
-technique basic_without_texture_isNotMetal
-{
-   pass P0
-   {
-      VertexShader = compile vs_3_0 vs_notex_main();
-      PixelShader = compile ps_3_0 ps_main(0);
-   }
-}
-
-technique basic_with_texture_isMetal
+technique basic_with_texture
 {
    pass P0
    {
       VertexShader = compile vs_3_0 vs_main();
-      PixelShader = compile ps_3_0 ps_main_texture(1, 0);
-   }
-}
-
-technique basic_with_texture_isNotMetal
-{
-   pass P0
-   {
-      VertexShader = compile vs_3_0 vs_main();
-      PixelShader = compile ps_3_0 ps_main_texture(0, 0);
-   }
-}
-
-technique basic_with_texture_normal_isMetal
-{
-   pass P0
-   {
-      VertexShader = compile vs_3_0 vs_main();
-      PixelShader = compile ps_3_0 ps_main_texture(1, 1);
-   }
-}
-
-technique basic_with_texture_normal_isNotMetal
-{
-   pass P0
-   {
-      VertexShader = compile vs_3_0 vs_main();
-      PixelShader = compile ps_3_0 ps_main_texture(0, 1);
+      PixelShader = compile ps_3_0 ps_main_texture();
    }
 }
 
@@ -383,23 +349,13 @@ technique basic_depth_only_with_texture
 // Kicker
 //
 
-technique kickerBoolean_isMetal
+technique kickerBoolean
 {
    pass P0
    {
       //ZWriteEnable=TRUE;
       VertexShader = compile vs_3_0 vs_kicker();
-      PixelShader = compile ps_3_0 ps_main(1);
-   }
-}
-
-technique kickerBoolean_isNotMetal
-{
-   pass P0
-   {
-      //ZWriteEnable=TRUE;
-      VertexShader = compile vs_3_0 vs_kicker();
-      PixelShader = compile ps_3_0 ps_main(0);
+      PixelShader = compile ps_3_0 ps_main();
    }
 }
 

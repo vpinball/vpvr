@@ -546,9 +546,10 @@ void Bumper::RenderDynamic(RenderDevice* pd3dDevice)
             UpdateRing(pd3dDevice);
       }
 
-      pd3dDevice->basicShader->SetTechnique(m_ringMaterial.m_bIsMetal ? "basic_with_texture_isMetal" : "basic_with_texture_isNotMetal");
+      pd3dDevice->basicShader->SetTechnique("basic_with_texture");
       pd3dDevice->basicShader->SetTexture("Texture0", &m_ringTexture, false);
       pd3dDevice->basicShader->SetMaterial(&m_ringMaterial);
+      pd3dDevice->basicShader->SetBool("is_metal", m_ringMaterial.m_bIsMetal);
       pd3dDevice->basicShader->SetAlphaTestValue(-1.0f);
       // render ring
       pd3dDevice->basicShader->Begin(0);
@@ -581,7 +582,8 @@ void Bumper::RenderDynamic(RenderDevice* pd3dDevice)
 
       const Material *mat = m_ptable->GetMaterial(m_d.m_szSkirtMaterial);
       pd3dDevice->basicShader->SetTexture("Texture0", &m_skirtTexture, false);
-      pd3dDevice->basicShader->SetTechnique(mat->m_bIsMetal ? "basic_with_texture_isMetal" : "basic_with_texture_isNotMetal");
+      pd3dDevice->basicShader->SetTechnique("basic_with_texture");
+      pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
       pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
       RenderSocket(pd3dDevice, mat);
    }
@@ -591,7 +593,8 @@ void Bumper::RenderDynamic(RenderDevice* pd3dDevice)
       const Material *mat = m_ptable->GetMaterial(m_d.m_szBaseMaterial);
       if (mat->m_bOpacityActive)
       {
-         pd3dDevice->basicShader->SetTechnique(mat->m_bIsMetal ? "basic_with_texture_isMetal" : "basic_with_texture_isNotMetal");
+         pd3dDevice->basicShader->SetTechnique("basic_with_texture");
+         pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
          pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
          RenderBase(pd3dDevice, mat);
       }
@@ -602,7 +605,8 @@ void Bumper::RenderDynamic(RenderDevice* pd3dDevice)
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szCapMaterial);
       if (mat->m_bOpacityActive)
       {
-         pd3dDevice->basicShader->SetTechnique(mat->m_bIsMetal ? "basic_with_texture_isMetal" : "basic_with_texture_isNotMetal");
+         pd3dDevice->basicShader->SetTechnique("basic_with_texture");
+         pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
          pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
          RenderCap(pd3dDevice, mat);
       }
@@ -871,7 +875,8 @@ void Bumper::RenderStatic(RenderDevice* pd3dDevice)
       const Material *mat = m_ptable->GetMaterial(m_d.m_szBaseMaterial);
       if (!mat->m_bOpacityActive)
       {
-         pd3dDevice->basicShader->SetTechnique(mat->m_bIsMetal ? "basic_with_texture_isMetal" : "basic_with_texture_isNotMetal");
+         pd3dDevice->basicShader->SetTechnique("basic_with_texture");
+         pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
          RenderBase(pd3dDevice, mat);
       }
    }
@@ -881,7 +886,8 @@ void Bumper::RenderStatic(RenderDevice* pd3dDevice)
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szCapMaterial);
       if (!mat->m_bOpacityActive)
       {
-         pd3dDevice->basicShader->SetTechnique(mat->m_bIsMetal ? "basic_with_texture_isMetal" : "basic_with_texture_isNotMetal");
+         pd3dDevice->basicShader->SetTechnique("basic_with_texture");
+         pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
          RenderCap(pd3dDevice, mat);
       }
    }

@@ -351,7 +351,7 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
    if (techniques)
    {
       int tecCount = 0;
-      while (std::getline(techniques, technique, '\n')) {//Parse Technique e.g. basic_with_texture_normal_isMetal:P0:vs_main():ps_main_texture(1,1)
+      while (std::getline(techniques, technique, '\n')) {//Parse Technique e.g. basic_with_texture:P0:vs_main():ps_main_texture()
          if ((technique.length() > 0) && (technique.compare(0, 2, "//") != 0))//Skip empty lines and comments
          {
             std::stringstream elements(technique);
@@ -662,7 +662,7 @@ void Shader::SetTexture(const D3DXHANDLE texelName, Texture *texel, const bool l
 
 void Shader::SetTexture(const D3DXHANDLE texelName, D3DTexture *texel, const bool linearRGB)
 {
-   if (uniformTex[texelName] == texel->texture) return;
+   if (!texel || (uniformTex[texelName] == texel->texture)) return;
    if (texel)
       uniformTex[texelName] = texel->texture;
    else

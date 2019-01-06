@@ -113,7 +113,7 @@ VS_LIGHT_OUTPUT vs_light_main_without_texel(in float4 vPosition : POSITION0,
    return Out;
 }
 
-float4 PS_LightWithTexel(in VS_LIGHT_OUTPUT IN, uniform bool is_metal) : COLOR
+float4 PS_LightWithTexel(in VS_LIGHT_OUTPUT IN) : COLOR
 {
    float4 pixel = tex2D(texSampler0, IN.tex0);
    if (!hdrTexture0)
@@ -150,7 +150,7 @@ float4 PS_LightWithTexel(in VS_LIGHT_OUTPUT IN, uniform bool is_metal) : COLOR
    return color;
 }
 
-float4 PS_LightWithoutTexel(in VS_LIGHT_OUTPUT IN, uniform bool is_metal) : COLOR
+float4 PS_LightWithoutTexel(in VS_LIGHT_OUTPUT IN) : COLOR
 {
    float4 result = float4(0.0, 0.0, 0.0, 0.0);
    [branch] if (lightColor_intensity.w != 0.0)
@@ -180,7 +180,7 @@ float4 PS_LightWithoutTexel(in VS_LIGHT_OUTPUT IN, uniform bool is_metal) : COLO
    return color + result;
 }
 
-technique light_with_texture_isMetal
+technique light_with_texture
 {
    pass P0
    {
@@ -188,36 +188,15 @@ technique light_with_texture_isMetal
       //       SrcBlend = One;
       //       DestBlend = One;
       VertexShader = compile vs_3_0 vs_light_main();
-      PixelShader = compile ps_3_0 PS_LightWithTexel(1);
+      PixelShader = compile ps_3_0 PS_LightWithTexel();
    }
 }
 
-technique light_with_texture_isNotMetal
-{
-   pass P0
-   {
-      //       AlphaBlendEnable = true;
-      //       SrcBlend = One;
-      //       DestBlend = One;
-      VertexShader = compile vs_3_0 vs_light_main();
-      PixelShader = compile ps_3_0 PS_LightWithTexel(0);
-   }
-}
-
-technique light_without_texture_isMetal
+technique light_without_texture
 {
    pass P0
    {
       VertexShader = compile vs_3_0 vs_light_main_without_texel();
-      PixelShader = compile ps_3_0 PS_LightWithoutTexel(1);
-   }
-}
-
-technique light_without_texture_isNotMetal
-{
-   pass P0
-   {
-      VertexShader = compile vs_3_0 vs_light_main_without_texel();
-      PixelShader = compile ps_3_0 PS_LightWithoutTexel(0);
+      PixelShader = compile ps_3_0 PS_LightWithoutTexel();
    }
 }

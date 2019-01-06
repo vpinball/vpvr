@@ -396,12 +396,13 @@ void Spinner::RenderDynamic(RenderDevice* pd3dDevice)
    Texture * const image = m_ptable->GetImage(m_d.m_szImage);
    if (image)
    {
-      pd3dDevice->basicShader->SetTechnique(mat->m_bIsMetal ? "basic_with_texture_isMetal" : "basic_with_texture_isNotMetal");
+      pd3dDevice->basicShader->SetTechnique("basic_with_texture");
       pd3dDevice->basicShader->SetTexture("Texture0", image, false);
       pd3dDevice->basicShader->SetAlphaTestValue(image->m_alphaTestValue * (float)(1.0 / 255.0));
    }
    else // No image by that name
-      pd3dDevice->basicShader->SetTechnique(mat->m_bIsMetal ? "basic_without_texture_isMetal" : "basic_without_texture_isNotMetal");
+      pd3dDevice->basicShader->SetTechnique("basic_without_texture");
+   pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
 
    pd3dDevice->basicShader->Begin(0);
    pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, plateVertexBuffer, 0, spinnerPlateNumVertices, plateIndexBuffer, 0, spinnerPlateNumFaces);
@@ -486,7 +487,8 @@ void Spinner::RenderStatic(RenderDevice* pd3dDevice)
    mat.m_fEdge = 1.0f;
    mat.m_fEdgeAlpha = 1.0f;
    pd3dDevice->basicShader->SetMaterial(&mat);
-   pd3dDevice->basicShader->SetTechnique(mat.m_bIsMetal ? "basic_without_texture_isMetal" : "basic_without_texture_isNotMetal");
+   pd3dDevice->basicShader->SetTechnique("basic_without_texture");
+   pd3dDevice->basicShader->SetBool("is_metal", mat.m_bIsMetal);
    ppin3d->EnableAlphaBlend(false);
 
    pd3dDevice->basicShader->Begin(0);

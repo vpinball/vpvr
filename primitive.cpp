@@ -1179,18 +1179,17 @@ void Primitive::RenderObject(RenderDevice *pd3dDevice)
 
       if (pin && nMap)
       {
-         pd3dDevice->basicShader->SetTechnique(mat->m_bIsMetal ? "basic_with_texture_normal_isMetal" : "basic_with_texture_normal_isNotMetal");
+         pd3dDevice->basicShader->SetTechnique("basic_with_texture");
          pd3dDevice->basicShader->SetTexture("Texture0", pin, false);
          pd3dDevice->basicShader->SetTexture("Texture4", nMap, true);
          pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
-
          //g_pplayer->m_pin3d.SetTextureFilter(0, TEXTURE_MODE_TRILINEAR);
          // accommodate models with UV coords outside of [0,1]
          pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_WRAP);
       }
       else if (pin)
       {
-         pd3dDevice->basicShader->SetTechnique(mat->m_bIsMetal ? "basic_with_texture_isMetal" : "basic_with_texture_isNotMetal");
+         pd3dDevice->basicShader->SetTechnique("basic_with_texture");
          pd3dDevice->basicShader->SetTexture("Texture0", pin, false);
          pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
 
@@ -1199,7 +1198,10 @@ void Primitive::RenderObject(RenderDevice *pd3dDevice)
          pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_WRAP);
       }
       else
-         pd3dDevice->basicShader->SetTechnique(mat->m_bIsMetal ? "basic_without_texture_isMetal" : "basic_without_texture_isNotMetal");
+         pd3dDevice->basicShader->SetTechnique("basic_without_texture");
+
+      pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
+      pd3dDevice->basicShader->SetBool("doNormalMapping", nMap);
 
       // set transform
       g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye(), fullMatrix);
@@ -1222,7 +1224,7 @@ void Primitive::RenderObject(RenderDevice *pd3dDevice)
             pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, vertexBuffer, 0, (DWORD)m_mesh.NumVertices(), indexBuffer, 0, (DWORD)m_mesh.NumIndices());
          pd3dDevice->basicShader->End();
       }
-
+      if (nMap) pd3dDevice->basicShader->SetBool("doNormalMapping", false);//Only place where nMap is used
       // reset transform
       g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye());
 

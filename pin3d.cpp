@@ -1067,13 +1067,14 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
        if (pin)
        {
            SetTextureFilter(0, TEXTURE_MODE_ANISOTROPIC);
-           m_pd3dDevice->basicShader->SetTechnique(mat->m_bIsMetal ? "basic_with_texture_isMetal" : "basic_with_texture_isNotMetal");
+           m_pd3dDevice->basicShader->SetTechnique("basic_with_texture");
            m_pd3dDevice->basicShader->SetTexture("Texture0", pin, false);
            m_pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
        }
        else // No image by that name
-           m_pd3dDevice->basicShader->SetTechnique(mat->m_bIsMetal ? "basic_without_texture_isMetal" : "basic_without_texture_isNotMetal");
+           m_pd3dDevice->basicShader->SetTechnique("basic_without_texture");
    }
+   m_pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
 
    if (!g_pplayer->m_fMeshAsPlayfield)
    {

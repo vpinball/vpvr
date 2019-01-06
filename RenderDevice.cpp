@@ -1542,8 +1542,8 @@ void RenderDevice::Flip(const bool vsync)
 #ifdef ENABLE_SDL
    SDL_GL_SwapWindow(m_sdl_hwnd);
 #ifdef ENABLE_VR
-   glFlush();
-   glFinish();
+   //glFlush();
+   //glFinish();
 #endif
 #else
 
