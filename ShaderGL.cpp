@@ -471,6 +471,9 @@ void Shader::Begin(const unsigned int pass)
       CHECKD3D(glUseProgram(m_currentTechnique->program));
       lastShaderProgram = m_currentTechnique->program;
    }
+   else {
+      return;
+   }
    //Set all uniforms
    for (auto it = m_currentTechnique->uniformLocation->begin(); it != m_currentTechnique->uniformLocation->end(); it++)
    {
@@ -552,6 +555,12 @@ void Shader::Begin(const unsigned int pass)
          CHECKD3D(glUniformMatrix3x4fv(currentUniform.location, 1, GL_FALSE, ((valueFP != uniformFloatP.end()) && valueFP->second.data) ? valueFP->second.data : zeroData));
       }
       break;
+      case GL_FLOAT_MAT2x4:
+      {
+         auto valueFP = uniformFloatP.find(it->first);
+         CHECKD3D(glUniformMatrix2x4fv(currentUniform.location, 1, GL_FALSE, ((valueFP != uniformFloatP.end()) && valueFP->second.data) ? valueFP->second.data : zeroData));
+      }
+      break;
       case GL_FLOAT_MAT3x2:
       {
          auto valueFP = uniformFloatP.find(it->first);
@@ -611,10 +620,10 @@ void Shader::Begin(const unsigned int pass)
 }
 
 void Shader::setTextureDirty(int TextureID) {//Invalidate cache
-   auto slot = slotTextureList.find(TextureID);
+/*   auto slot = slotTextureList.find(TextureID);
    if ((slot != slotTextureList.end()) && (textureSlotList[slot->second] == TextureID)) {
       textureSlotList[slot->second] = -1;
-   }
+   }*/
 }
 
 
@@ -625,7 +634,19 @@ void Shader::End()
 }
 
 void Shader::SetTextureDepth(const D3DXHANDLE texelName, D3DTexture *texel) {
-   uniformTex[texelName] = texel->zTexture;
+   if (uniformTex[texelName] == texel->zTexture) return;
+   if (texel)
+      uniformTex[texelName] = texel->zTexture;
+   else
+      uniformTex[texelName] = 0;
+   if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
+      auto location = m_currentTechnique->uniformLocation->find(texelName);
+      if (location == m_currentTechnique->uniformLocation->end()) return;
+      CHECKD3D(glActiveTexture(GL_TEXTURE0 + nextTextureSlot));
+      CHECKD3D(glBindTexture(GL_TEXTURE_2D, texel->zTexture));
+      CHECKD3D(glUniform1i(location->second.location, nextTextureSlot));
+      nextTextureSlot = (++nextTextureSlot) % maxSlots;//TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
+   }
 }
 
 void Shader::SetTexture(const D3DXHANDLE texelName, Texture *texel, const bool linearRGB)
@@ -641,10 +662,19 @@ void Shader::SetTexture(const D3DXHANDLE texelName, Texture *texel, const bool l
 
 void Shader::SetTexture(const D3DXHANDLE texelName, D3DTexture *texel, const bool linearRGB)
 {
+   if (uniformTex[texelName] == texel->texture) return;
    if (texel)
       uniformTex[texelName] = texel->texture;
    else
       uniformTex[texelName] = 0;
+   if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
+      auto location = m_currentTechnique->uniformLocation->find(texelName);
+      if (location == m_currentTechnique->uniformLocation->end()) return;
+      CHECKD3D(glActiveTexture(GL_TEXTURE0 + nextTextureSlot));
+      CHECKD3D(glBindTexture(GL_TEXTURE_2D, texel->texture));
+      CHECKD3D(glUniform1i(location->second.location, nextTextureSlot));
+      nextTextureSlot = (++nextTextureSlot) % maxSlots;//TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
+   }
 }
 
 void Shader::SetTextureNull(const D3DXHANDLE texelName)
@@ -674,6 +704,39 @@ void Shader::SetMatrix(const D3DXHANDLE hParameter, const Matrix3D* pMatrix)
       elem = element->second;
    memcpy(elem.data, pMatrix, 16 * sizeof(float));
    uniformFloatP[hParameter] = elem;
+   if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
+      auto location = m_currentTechnique->uniformLocation->find(hParameter);
+      if (location == m_currentTechnique->uniformLocation->end()) return;
+      switch (location->second.type) {
+      case GL_FLOAT_MAT2:
+         CHECKD3D(glUniformMatrix2fv(location->second.location, 1, GL_FALSE, elem.data));
+         break;
+      case GL_FLOAT_MAT3:
+         CHECKD3D(glUniformMatrix3fv(location->second.location, 1, GL_FALSE, elem.data));
+         break;
+      case GL_FLOAT_MAT4:
+         CHECKD3D(glUniformMatrix4fv(location->second.location, 1, GL_FALSE, elem.data));
+         break;
+      case GL_FLOAT_MAT4x3:
+         CHECKD3D(glUniformMatrix4x3fv(location->second.location, 1, GL_FALSE, elem.data));
+         break;
+      case GL_FLOAT_MAT4x2:
+         CHECKD3D(glUniformMatrix4x2fv(location->second.location, 1, GL_FALSE, elem.data));
+         break;
+      case GL_FLOAT_MAT3x4:
+         CHECKD3D(glUniformMatrix3x4fv(location->second.location, 1, GL_FALSE, elem.data));
+         break;
+      case GL_FLOAT_MAT2x4:
+         CHECKD3D(glUniformMatrix2x4fv(location->second.location, 1, GL_FALSE, elem.data));
+         break;
+      case GL_FLOAT_MAT3x2:
+         CHECKD3D(glUniformMatrix3x2fv(location->second.location, 1, GL_FALSE, elem.data));
+         break;
+      case GL_FLOAT_MAT2x3:
+         CHECKD3D(glUniformMatrix2x3fv(location->second.location, 1, GL_FALSE, elem.data));
+         break;
+      }
+   }
 }
 
 void Shader::SetVector(const D3DXHANDLE hParameter, const vec4* pVector)
@@ -689,10 +752,27 @@ void Shader::SetVector(const D3DXHANDLE hParameter, const vec4* pVector)
       elem.data = (float*)malloc(4 * sizeof(float));
       elem.len = 4;
    }
-   else
+   else {
       elem = element->second;
+      if (elem.data[0] == pVector->x && elem.data[1] == pVector->y && elem.data[2] == pVector->z && elem.data[3] == pVector->w) return;
+   }
    memcpy(elem.data, pVector, 4 * sizeof(float));
    uniformFloatP[hParameter] = elem;
+   if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
+      auto location = m_currentTechnique->uniformLocation->find(hParameter);
+      if (location == m_currentTechnique->uniformLocation->end()) return;
+      switch (location->second.type) {
+      case GL_FLOAT_VEC2:
+         CHECKD3D(glUniform2fv(location->second.location, 1, elem.data));
+         break;
+      case GL_FLOAT_VEC3:
+         CHECKD3D(glUniform3fv(location->second.location, 1, elem.data));
+         break;
+      case GL_FLOAT_VEC4:
+         CHECKD3D(glUniform4fv(location->second.location, 1, elem.data));
+         break;
+      }
+   }
 }
 
 void Shader::SetVector(const D3DXHANDLE hParameter, const float x, const float y, const float z, const float w)
@@ -708,28 +788,64 @@ void Shader::SetVector(const D3DXHANDLE hParameter, const float x, const float y
       elem.data = (float*)malloc(4 * sizeof(float));
       elem.len = 4;
    }
-   else
+   else {
       elem = element->second;
+      if (elem.data[0] == x && elem.data[1] == y && elem.data[2] == z && elem.data[3] == w) return;
+   }
    elem.data[0] = x;
    elem.data[1] = y;
    elem.data[2] = z;
    elem.data[3] = w;
    uniformFloatP[hParameter] = elem;
+   if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
+      auto location = m_currentTechnique->uniformLocation->find(hParameter);
+      if (location == m_currentTechnique->uniformLocation->end()) return;
+      switch (location->second.type) {
+      case GL_FLOAT_VEC2:
+         CHECKD3D(glUniform2fv(location->second.location, 1, elem.data));
+         break;
+      case GL_FLOAT_VEC3:
+         CHECKD3D(glUniform3fv(location->second.location, 1, elem.data));
+         break;
+      case GL_FLOAT_VEC4:
+         CHECKD3D(glUniform4fv(location->second.location, 1, elem.data));
+         break;
+      }
+   }
 }
 
 void Shader::SetFloat(const D3DXHANDLE hParameter, const float f)
 {
+   if (uniformFloat[hParameter] == f) return;
    uniformFloat[hParameter] = f;
+   if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
+      auto location = m_currentTechnique->uniformLocation->find(hParameter);
+      if (location == m_currentTechnique->uniformLocation->end()) return;
+      CHECKD3D(glUniform1f(location->second.location, f));
+   }
 }
 
 void Shader::SetInt(const D3DXHANDLE hParameter, const int i)
 {
+   if (uniformInt[hParameter] == i) return;
    uniformInt[hParameter] = i;
+   if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
+      auto location = m_currentTechnique->uniformLocation->find(hParameter);
+      if (location == m_currentTechnique->uniformLocation->end()) return;
+      CHECKD3D(glUniform1i(location->second.location, i));
+   }
 }
 
 void Shader::SetBool(const D3DXHANDLE hParameter, const bool b)
 {
-   uniformInt[hParameter] = b ? 1 : 0;
+   int i = b ? 1 : 0;
+   if (uniformInt[hParameter] == i) return;
+   uniformInt[hParameter] = i;
+   if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
+      auto location = m_currentTechnique->uniformLocation->find(hParameter);
+      if (location == m_currentTechnique->uniformLocation->end()) return;
+      CHECKD3D(glUniform1i(location->second.location, i));
+   }
 }
 
 void Shader::SetFloatArray(const D3DXHANDLE hParameter, const float* pData, const unsigned int count)
@@ -745,10 +861,24 @@ void Shader::SetFloatArray(const D3DXHANDLE hParameter, const float* pData, cons
       elem.data = (float*)malloc(count * sizeof(float));
       elem.len = count;
    }
-   else
+   else {
       elem = element->second;
+      bool identical = true;
+      for (size_t i = 0;i < count;++i) {
+         if (elem.data[i] != pData[i]) {
+            identical = false;
+            break;
+         }
+      }
+      if (identical) return;
+   }
    memcpy(elem.data, pData, count * sizeof(float));
    uniformFloatP[hParameter] = elem;
+   if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
+      auto location = m_currentTechnique->uniformLocation->find(hParameter);
+      if (location == m_currentTechnique->uniformLocation->end()) return;
+      CHECKD3D(glUniform4fv(location->second.location, count, elem.data));
+   }
 }
 
 void Shader::GetTransform(const TransformStateType p1, Matrix3D* p2)
