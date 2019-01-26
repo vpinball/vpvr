@@ -10,7 +10,6 @@ Ramp::Ramp()
    m_d.m_fVisible = true;
    dynamicVertexBuffer = 0;
    dynamicIndexBuffer = 0;
-   dynamicVertexBuffer2 = 0;
    dynamicVertexBufferRegenerate = true;
    m_d.m_depthBias = 0.0f;
    m_d.m_wireDiameter = 6.0f;
@@ -30,9 +29,6 @@ Ramp::~Ramp()
 {
    if (dynamicVertexBuffer)
       dynamicVertexBuffer->release();
-
-   if (dynamicVertexBuffer2)
-      dynamicVertexBuffer2->release();
 
    if (dynamicIndexBuffer)
       dynamicIndexBuffer->release();
@@ -879,10 +875,6 @@ void Ramp::EndPlay()
       dynamicIndexBuffer->release();
       dynamicIndexBuffer = 0;
    }
-   if (dynamicVertexBuffer2) {
-      dynamicVertexBuffer2->release();
-      dynamicVertexBuffer2 = 0;
-   }
 }
 
 float Ramp::GetDepth(const Vertex3Ds& viewDir) const
@@ -922,77 +914,9 @@ void Ramp::RenderStaticHabitrail(RenderDevice* pd3dDevice, const Material * cons
    }
    pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
 
-   if (m_d.m_type == RampType2Wire)
-   {
-      Matrix3D matTrafo, matTemp;
-      matTrafo.SetIdentity();
-      matTrafo._43 = 3.0f;                // raise the wire a bit because the ball runs on a flat ramp physically
-      g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye(), matTrafo);
-      pd3dDevice->basicShader->Begin(0);
-      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, dynamicVertexBuffer, 0, m_numVertices, dynamicIndexBuffer, 0, m_numIndices);
-      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, dynamicVertexBuffer2, 0, m_numVertices, dynamicIndexBuffer, 0, m_numIndices);
-      pd3dDevice->basicShader->End();
-      g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye());
-   }
-   else if (m_d.m_type == RampType4Wire)
-   {
-      Matrix3D matTrafo, matTemp;
-      matTrafo.SetIdentity();
-      matTrafo._43 = m_d.m_wireDistanceY*0.5f;
-      g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye(), matTrafo);
-      pd3dDevice->basicShader->Begin(0);
-      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, dynamicVertexBuffer, 0, m_numVertices, dynamicIndexBuffer, 0, m_numIndices);
-      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, dynamicVertexBuffer2, 0, m_numVertices, dynamicIndexBuffer, 0, m_numIndices);
-      pd3dDevice->basicShader->End();
-      matTrafo.SetIdentity();
-      matTrafo._43 = 3.0f;                // raise the wire a bit because the ball runs on a flat ramp physically
-      g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye(), matTrafo);
-      pd3dDevice->basicShader->Begin(0);
-      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, dynamicVertexBuffer, 0, m_numVertices, dynamicIndexBuffer, 0, m_numIndices);
-      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, dynamicVertexBuffer2, 0, m_numVertices, dynamicIndexBuffer, 0, m_numIndices);
-      pd3dDevice->basicShader->End();
-      g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye());
-   }
-   else if (m_d.m_type == RampType3WireLeft)
-   {
-      Matrix3D matTrafo, matTemp;
-      matTrafo.SetIdentity();
-      matTrafo._43 = m_d.m_wireDistanceY*0.5f;
-      g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye(), matTrafo);
-      pd3dDevice->basicShader->Begin(0);
-      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, dynamicVertexBuffer2, 0, m_numVertices, dynamicIndexBuffer, 0, m_numIndices);
-      pd3dDevice->basicShader->End();
-      matTrafo.SetIdentity();
-      matTrafo._43 = 3.0f;                // raise the wire a bit because the ball runs on a flat ramp physically
-      g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye(), matTrafo);
-      pd3dDevice->basicShader->Begin(0);
-      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, dynamicVertexBuffer, 0, m_numVertices, dynamicIndexBuffer, 0, m_numIndices);
-      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, dynamicVertexBuffer2, 0, m_numVertices, dynamicIndexBuffer, 0, m_numIndices);
-      pd3dDevice->basicShader->End();
-      g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye());
-   }
-   else if (m_d.m_type == RampType3WireRight)
-   {
-      Matrix3D matTrafo, matTemp;
-      matTrafo.SetIdentity();
-      matTrafo._43 = m_d.m_wireDistanceY*0.5f;
-      g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye(), matTrafo);
-      pd3dDevice->basicShader->Begin(0);
-      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, dynamicVertexBuffer, 0, m_numVertices, dynamicIndexBuffer, 0, m_numIndices);
-      pd3dDevice->basicShader->End();
-      matTrafo.SetIdentity();
-      matTrafo._43 = 3.0f;                // raise the wire a bit because the ball runs on a flat ramp physically
-      g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye(), matTrafo);
-      pd3dDevice->basicShader->Begin(0);
-      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, dynamicVertexBuffer, 0, m_numVertices, dynamicIndexBuffer, 0, m_numIndices);
-      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, dynamicVertexBuffer2, 0, m_numVertices, dynamicIndexBuffer, 0, m_numIndices);
-      pd3dDevice->basicShader->End();
-      g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye());
-   }
-   else
    {
       pd3dDevice->basicShader->Begin(0);
-      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, dynamicVertexBuffer, 0, m_numVertices, dynamicIndexBuffer, 0, m_numIndices);
+      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, dynamicVertexBuffer, 0, m_factor * m_numVertices, dynamicIndexBuffer, 0, m_factor * m_numIndices);
       pd3dDevice->basicShader->End();
    }
 
@@ -1183,31 +1107,89 @@ void Ramp::prepareHabitrail(RenderDevice* pd3dDevice)
 
    if (dynamicVertexBuffer)
       dynamicVertexBuffer->release();
-   if (dynamicVertexBuffer2)
-      dynamicVertexBuffer2->release();
-
-   VertexBuffer::CreateVertexBuffer(m_numVertices, 0, MY_D3DFVF_NOTEX2_VERTEX, &dynamicVertexBuffer); //!! use USAGE_DYNAMIC if it would actually be "really" dynamic
-   if (m_d.m_type != RampType1Wire)
-      VertexBuffer::CreateVertexBuffer(m_numVertices, 0, MY_D3DFVF_NOTEX2_VERTEX, &dynamicVertexBuffer2); //!! use USAGE_DYNAMIC if it would actually be "really" dynamic
-
-                                                                                                        // Draw the floor of the ramp.
-   Vertex3D_NoTex2 *buf;
-   Vertex3D_NoTex2 *buf2;
-   dynamicVertexBuffer->lock(0, 0, (void**)&buf, VertexBuffer::WRITEONLY);
-   memcpy(buf, tmpBuf1, sizeof(Vertex3D_NoTex2)*m_numVertices);
-   dynamicVertexBuffer->unlock();
-
-   if (m_d.m_type != RampType1Wire)
-   {
-      dynamicVertexBuffer2->lock(0, 0, (void**)&buf2, VertexBuffer::WRITEONLY);
-      memcpy(buf2, tmpBuf2, sizeof(Vertex3D_NoTex2)*m_numVertices);
-      dynamicVertexBuffer2->unlock();
-   }
 
    if (dynamicIndexBuffer)
       dynamicIndexBuffer->release();
 
-   dynamicIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_meshIndices);
+   switch (m_d.m_type) {
+   case RampType4Wire:
+      m_factor = 4;
+      break;
+   case RampType2Wire:
+      m_factor = 2;
+      break;
+   case RampType3WireLeft:
+   case RampType3WireRight:
+      m_factor = 3;
+      break;
+   case RampType1Wire:
+   default:
+      m_factor = 1;
+      break;
+   }
+
+   VertexBuffer::CreateVertexBuffer(m_factor * m_numVertices, 0, MY_D3DFVF_NOTEX2_VERTEX, &dynamicVertexBuffer);
+
+   Vertex3D_NoTex2 *buf;
+
+   dynamicVertexBuffer->lock(0, 0, (void**)&buf, VertexBuffer::WRITEONLY);
+   if (m_factor == 1) {
+      memcpy(buf, tmpBuf1, sizeof(Vertex3D_NoTex2)*m_numVertices);
+   }
+   else {
+      //Wire 1
+      for (int i = 0;i < m_numVertices;++i) {
+         buf[i] = tmpBuf1[i];
+         buf[i].y += 3.0f;
+      }
+      int pitch = m_numVertices;
+      //Wire 2
+      for (int i = 0;i < m_numVertices;++i) {
+         buf[i + pitch] = tmpBuf2[i];
+         buf[i + pitch].y += 3.0f;
+      }
+      pitch += m_numVertices;
+      //Left Wire (3)
+      if (m_d.m_type == RampType3WireLeft || m_d.m_type == RampType4Wire) {
+         for (int i = 0;i < m_numVertices;++i) {
+            buf[i + pitch] = tmpBuf2[i];
+            buf[i + pitch].y += m_d.m_wireDistanceY*0.5f;
+         }
+         pitch += m_numVertices;
+      }
+      //Right Wire (3 or 4)
+      if (m_d.m_type == RampType3WireRight || m_d.m_type == RampType4Wire) {
+         for (int i = 0;i < m_numVertices;++i) {
+            buf[i + pitch] = tmpBuf1[i];
+            buf[i + pitch].y += m_d.m_wireDistanceY*0.5f;
+         }
+      }
+   }
+   dynamicVertexBuffer->unlock();
+
+   if (m_factor > 1) {
+      if (m_numIndices * m_factor < 65535) {
+         WORD* meshIndices = (WORD*)malloc(m_numIndices * m_factor * sizeof(WORD));
+         for (size_t i = 0;i < m_factor;++i) {
+            for (int j = 0;j < m_numIndices;++j)
+               meshIndices[i*m_numIndices + j] = m_meshIndices[j] + i * m_numVertices;
+         }
+         dynamicIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_numIndices * m_factor, meshIndices);
+         free(meshIndices);
+      }
+      else {
+         unsigned int* meshIndices = (unsigned int*)malloc(m_numIndices * m_factor * sizeof(unsigned int));
+         for (size_t i = 0;i < m_factor;++i) {
+            for (int j = 0;j < m_meshIndices.size();++j)
+               meshIndices[i*m_numIndices + j] = (unsigned int)m_meshIndices[j] + i * m_numVertices;
+         }
+         dynamicIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_numIndices * m_factor, meshIndices);
+         free(meshIndices);
+      }
+   }
+   else {
+      dynamicIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_meshIndices);
+   }
 
    delete[] m_vertBuffer;
    delete[] tmpBuf1;
@@ -2248,7 +2230,7 @@ void Ramp::ExportMesh(FILE *f)
             }
          }
          delete[] rampMesh;
-      }
+      }//todo update habitrails to new mesh code
       else
       {
          Vertex3D_NoTex2 *tmpBuf1 = NULL, *tmpBuf2 = NULL;

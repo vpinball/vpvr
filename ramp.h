@@ -146,6 +146,8 @@ private:
 
    int m_numVertices;      // this goes along with dynamicVertexBuffer
    int m_numIndices;
+   int m_factor;
+
    Vertex3D_NoTex2* m_vertBuffer;
    Vertex3D_NoTex2* m_vertBuffer2;
    std::vector<WORD> m_meshIndices;
@@ -154,7 +156,6 @@ private:
 
    VertexBuffer *dynamicVertexBuffer;
    IndexBuffer *dynamicIndexBuffer;
-   VertexBuffer *dynamicVertexBuffer2;
    bool dynamicVertexBufferRegenerate;
 
    PropertyPane *m_propPhysics;
