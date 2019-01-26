@@ -16,7 +16,6 @@ public:
       };
       float m[4][4];
    };
-   int rows = 4, counts = 4;
    D3DXMATRIX();
    D3DXMATRIX(const D3DXMATRIX &input);
    D3DXMATRIX(const D3DXMATRIX *input);

@@ -13,22 +13,54 @@ in vec3 vPosition;
 in vec3 vNormal;
 in vec2 tc;
 
-out vec2 tex0; 
-out vec3 worldPos;
-out vec3 tablePos; 
-out vec3 normal;
+out vec2 tex0_gs; 
+out vec3 worldPos_gs;
+out vec3 tablePos_gs;
+out vec3 normal_gs;
 
 void main()
 { 
+   instanceID = gl_InstanceID;
    // trafo all into worldview space (as most of the weird trafos happen in view, world is identity so far)
    vec3 P = mul(vec4(vPosition,1.0), matWorldView).xyz;
    vec3 N = normalize(mul(vNormal, matWorldViewInverseTranspose).xyz);
 
-   gl_Position = mul(vec4(vPosition,1.0), matWorldViewProj);
-   tex0 = tc;
-   tablePos = vPosition.xyz;
-   worldPos = P;
-   normal = N;
+   gl_Position = mul(vec4(vPosition,1.0), matWorldViewProj[gl_InstanceID]);
+   tex0_gs = tc;
+   tablePos_gs = vPosition.xyz;
+   worldPos_gs = P;
+   normal_gs = N;
+}
+
+////gs_light_main
+
+in vec2 tex0_gs[]; 
+out vec2 tex0;
+
+in vec3 worldPos_gs[];
+out vec3 worldPos;
+
+in vec3 tablePos_gs[];
+out vec3 tablePos;
+
+in vec3 normal_gs[];
+out vec3 normal;
+
+void main()
+{
+    gl_ViewportIndex = instanceID[0];
+	for (int i=0;i<3;i++) {
+		//Default
+		gl_Position = gl_in[i].gl_Position;
+		//Custom
+		tex0 = tex0_gs[i];
+		worldPos = worldPos_gs[i];
+		tablePos = tablePos_gs[i];
+		normal = normal_gs[i];
+		//Default
+		EmitVertex();
+	}
+    EndPrimitive();
 }
 
 ////PS_LightWithTexel
@@ -110,8 +142,8 @@ void main()
 
 ////TECHNIQUES
 
-light_with_texture:P0:vs_light_main():PS_LightWithTexel()
-light_without_texture:P0:vs_light_main():PS_LightWithoutTexel()
+light_with_texture:P0:vs_light_main():gs_light_main():PS_LightWithTexel()
+light_without_texture:P0:vs_light_main():gs_light_main():PS_LightWithoutTexel()
 
 //light_with_texture_isMetal:P0:vs_light_main():PS_LightWithTexel(true)
 //light_with_texture_isNotMetal:P0:vs_light_main():PS_LightWithTexel(false)

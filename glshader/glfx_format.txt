@@ -38,7 +38,10 @@ Since I wanted to keep it simple ans stupid, the parser itself is (unlike C, C++
 parser. All Lines starting with four slashes (e.g. //// ) changes the output generated for the glsl compiler. Lines 
 following ////GLOBAL are used for vertex and fragment shader. Lines following ////VERTEX and /////FRAGMENT are used for
 all vertex/fragment shaders. To use code only in one shader use ////vs_notex_main where vs_notex_main is the vertex/fragment
-shader you define later in the TECHNIQUES block. Every final shader must contain exactly ONE main() function
+shader you define later in the TECHNIQUES block. Every final shader must contain exactly ONE main() function. Geometry
+shaders can be defined with ////GEOMETRY
+
+To add defines into your code set Shader::Defines to a string containing your defines and insert a ////DEFINES block in your glfx file.
 
 Do not use comments starting with //// - this breaks the parser.
 
@@ -55,12 +58,19 @@ technique basic_without_texture_isMetal
    } 
 }
 
-is transformed to a single line: 
+without geometry shader is transformed to a single line:
 
 basic_without_texture_isMetal:P0:vs_notex_main():ps_main(1)
+or
+basic_without_texture_isMetal:P0:vs_notex_main()::ps_main(1)
+
+(note:you can have one or two colons between vertex shader and fragment shader, when you have no geometry shader)
+
+if you want to add a geometry shader:
+basic_without_texture_isMetal:P0:vs_main():gs_main():ps_main(1)
 
 Parameters as in ps_main(1) can be defined in the shadercode with %PARAMi% starting with %PARAM0%. Note: If a function is called
-with less parameters than defined in the code, the undefined %PARAMi% are not replaced. This will probably lead to broken code.
+with less parameters than defined in the code, the undefined %PARAMi% are not replaced. This will probably not compile.
 
 Multiple passes are possible, just use multiple lines (untested).
 

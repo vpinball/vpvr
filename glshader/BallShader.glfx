@@ -3,20 +3,29 @@
 
 #define NUM_BALL_LIGHTS 8
 
+////DEFINES
+
 #include "Helpers.fxh"
 
-uniform mat4 matView;
 uniform mat4 orientation;
-uniform mat4 matWorldViewInverse;
-uniform mat4 matWorldView;
+layout(std140) uniform matrixBlock { 
+	mat4 matView;
+	mat4 matWorldView;
+	mat4 matWorldViewInverse;
+	mat4 matWorldViewProj[eyes];
+};
 
-uniform mat3x4 matWorldViewInverseTranspose;
+//uniform mat3x4 matWorldViewInverseTranspose;
 
 ////VERTEX
 
-// transformation matrices
-uniform mat4 matWorldViewProj;
-//mat4 matViewInverseInverseTranspose; // matView used instead and multiplied from other side
+out int instanceID;
+
+////GEOMETRY
+#extension GL_ARB_viewport_array : enable
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 3) out;
+in int instanceID[];
 
 ////FRAGMENT
 
@@ -35,7 +44,7 @@ uniform vec4  invTableRes_playfield_height_reflection;
 //float    reflection_ball_playfield;
 
 
-bool     hdrTexture0;
+bool hdrTexture0;
 
 out vec4 color;
 
@@ -45,11 +54,12 @@ in vec3 vPosition;
 in vec3 vNormal;
 in vec2 tex0;
 
-out vec4 normal_t0x;
-out vec4 worldPos_t0y;
+out vec4 normal_t0x_gs;
+out vec4 worldPos_t0y_gs;
 
 void main()
 {
+	instanceID = gl_InstanceID;
 	// apply spinning and move the ball to it's actual position
 	vec4 pos = vec4(vPosition, 1.0);
 	pos.xyz = mul(pos, orientation).xyz;
@@ -60,37 +70,10 @@ void main()
 
 	vec3 p = mul_w1(pos.xyz, matWorldView);
 
-	gl_Position = mul(pos, matWorldViewProj);
-	normal_t0x = vec4(normal,tex0.x);
-	worldPos_t0y = vec4(p,tex0.y);
+	gl_Position = mul(pos, matWorldViewProj[gl_InstanceID]);
+	normal_t0x_gs = vec4(normal,tex0.x);
+	worldPos_t0y_gs = vec4(p,tex0.y);
 }
-
-#if 0
-voutReflection vsBallReflection( in vin IN )
-{
-	// apply spinning and move the ball to it's actual position
-	vec4 pos = position;
-	pos.xyz = mul_w1(pos.xyz, orientation);
-
-	// this is not a 100% ball reflection on the table due to the quirky camera setup
-	// the ball is moved a bit down and rendered again
-	pos.y += position_radius.w*(2.0*0.35);
-	pos.z = pos.z*0.5 - 10.0;
-
-	vec3 p = mul_w1(pos.xyz, matWorldView);
-
-    vec3 nspin = mul_w0(normal, orientation);
-	vec3 normal = normalize(mul(matWorldViewInverse, nspin).xyz); // actually: mul(vec4(nspin,0.), matWorldViewInverseTranspose), but optimized to save one matrix
-
-    vec3 r = reflect(normalize(/*camera=0,0,0,1*/-p), normal);
-
-	voutReflection OUT;
-	OUT.position = mul(pos, matWorldViewProj);
-	OUT.tex0	 = pos.xy;
-    OUT.r		 = r;
-	return OUT;
-}
-#endif
 
 ////vsBallTrail
 
@@ -98,12 +81,55 @@ in vec3 vPosition;
 in vec3 vNormal;
 in vec2 tex0;
 
+out vec3 tex0_alpha_gs;
+
+void main()
+{
+	instanceID = gl_InstanceID;
+    gl_Position = mul(vec4(vPosition, 1.0), matWorldViewProj[gl_InstanceID]);
+	tex0_alpha_gs = vec3(tex0, vNormal.x); //!! abuses normal for now
+}
+
+////gsBall
+
+in vec4 normal_t0x_gs[];
+out vec4 normal_t0x;
+
+in vec4 worldPos_t0y_gs[];
+out vec4 worldPos_t0y;
+
+void main()
+{
+    gl_ViewportIndex = instanceID[0];
+	for (int i=0;i<3;i++) {
+		//Default
+		gl_Position = gl_in[i].gl_Position;
+		//Custom
+		normal_t0x = normal_t0x_gs[i];
+		worldPos_t0y = worldPos_t0y_gs[i];
+		//Default
+		EmitVertex();
+	}
+    EndPrimitive();
+}
+
+////gsBallTrail
+
+in vec3 tex0_alpha_gs[];
 out vec3 tex0_alpha;
 
 void main()
 {
-    gl_Position = mul(vec4(vPosition, 1.0), matWorldViewProj);
-	tex0_alpha = vec3(tex0, vNormal.x); //!! abuses normal for now
+    gl_ViewportIndex = instanceID[0];
+	for (int i=0;i<3;i++) {
+		//Default
+		gl_Position = gl_in[i].gl_Position;
+		//Custom
+		tex0_alpha = tex0_alpha_gs[i];
+		//Default
+		EmitVertex();
+	}
+    EndPrimitive();
 }
 
 ////FRAGMENT
@@ -249,9 +275,9 @@ void main()
 
 ////TECHNIQUES
 
-RenderBall:P0:vsBall():psBall(false,false)
-RenderBall_DecalMode:P0:vsBall():psBall(false, true)
-RenderBall_CabMode:P0:vsBall():psBall(true,false)
-RenderBall_CabMode_DecalMode:P0:vsBall():psBall(true,true)
+RenderBall:P0:vsBall():gsBall():psBall(false,false)
+RenderBall_DecalMode:P0:vsBall():gsBall():psBall(false, true)
+RenderBall_CabMode:P0:vsBall():gsBall():psBall(true,false)
+RenderBall_CabMode_DecalMode:P0:vsBall():gsBall():psBall(true,true)
 //RenderBallReflection:P0:vsBallReflection():psBallReflection()
-RenderBallTrail:P0:vsBallTrail():psBallTrail()
+RenderBallTrail:P0:vsBallTrail():gsBallTrail():psBallTrail()

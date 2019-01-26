@@ -235,20 +235,18 @@ public:
    void Clear(const DWORD flags, const D3DCOLOR color, const D3DVALUE z, const DWORD stencil);
    void Flip(const bool vsync);
 
-   int getEye() { return m_eye; }
-   void setEye(int eye) { m_eye = (eye == 0) ? 0 : 1; }
-
    bool SetMaximumPreRenderedFrames(const DWORD frames);
    
-   D3DTexture* GetBackBufferTexture() const { return (m_eye == 0) ? m_pOffscreenBackBufferTextureLeft : m_pOffscreenBackBufferTextureRight; }
-   D3DTexture* GetBackBufferTmpTexture() const { return (m_eye ==0) ? m_pOffscreenBackBufferStereoTextureLeft : m_pOffscreenBackBufferStereoTextureRight; }
-   D3DTexture* GetBackBufferSMAATexture() const { return (m_eye == 0) ? m_pOffscreenBackBufferSMAATextureLeft : m_pOffscreenBackBufferSMAATextureRight; }
-   D3DTexture* GetMirrorTmpBufferTexture() const { return (m_eye == 0) ? m_pMirrorTmpBufferTextureLeft : m_pMirrorTmpBufferTextureRight; }
-   D3DTexture* GetReflectionBufferTexture() const { return (m_eye == 0) ? m_pReflectionBufferTextureLeft : m_pReflectionBufferTextureRight; }
+   D3DTexture* GetBackBufferTexture() const { return m_pOffscreenBackBufferTexture; }
+   D3DTexture* GetBackBufferTmpTexture() const { return m_pOffscreenBackBufferStereoTexture; }
+   D3DTexture* GetOffscreenVR(int eye) const { return eye == 0 ? m_pOffscreenVRLeft : m_pOffscreenVRRight;}
+   D3DTexture* GetBackBufferSMAATexture() const { return m_pOffscreenBackBufferSMAATexture; }
+   D3DTexture* GetMirrorTmpBufferTexture() const { return m_pMirrorTmpBufferTexture; }
+   D3DTexture* GetReflectionBufferTexture() const { return m_pReflectionBufferTexture; }
    RenderTarget* GetOutputBackBuffer() const { return m_pBackBuffer; }
 
-   D3DTexture* GetBloomBufferTexture() const { return (m_eye == 0) ? m_pBloomBufferTextureLeft : m_pBloomBufferTextureRight; }
-   D3DTexture* GetBloomTmpBufferTexture() const { return (m_eye == 0) ? m_pBloomTmpBufferTextureLeft : m_pBloomTmpBufferTextureRight; }
+   D3DTexture* GetBloomBufferTexture() const { return m_pBloomBufferTexture; }
+   D3DTexture* GetBloomTmpBufferTexture() const { return m_pBloomTmpBufferTexture; }
 
    RenderTarget* DuplicateRenderTarget(RenderTarget* src);
    D3DTexture* DuplicateTexture(RenderTarget* src);
@@ -260,7 +258,7 @@ public:
    void SetZBuffer(D3DTexture* surf);
    void* AttachZBufferTo(D3DTexture* surfTexture);
 #endif
-   void SetRenderTarget(D3DTexture* texture);
+   void SetRenderTarget(D3DTexture* texture, bool ignoreStereo = false);
    void SetZBuffer(RenderTarget* surf);
    void UnSetZBuffer();
 
@@ -303,7 +301,7 @@ public:
    void SetSamplerState(const DWORD Sampler, const DWORD minFilter, const DWORD magFilter, const SamplerStateValues mipFilter);
    void SetSamplerAnisotropy(const DWORD Sampler, DWORD Value);
 
-   D3DTexture* CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, void* data);
+   D3DTexture* CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, void* data, int stereo);
 //   HRESULT CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, memoryPool Pool, D3DTexture** ppTexture, HANDLE* pSharedHandle);
 
 #ifdef ENABLE_SDL
@@ -313,14 +311,15 @@ public:
 #endif
 
    void DrawTexturedQuad();
+   void DrawTexturedQuadPostProcess();
    
-   void DrawPrimitiveVB(const PrimitveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount);
+   void DrawPrimitiveVB(const PrimitveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, bool stereo);
    void DrawIndexedPrimitiveVB(const PrimitveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, IndexBuffer* ib, const DWORD startIndex, const DWORD indexCount);
 
    void SetViewport(const ViewPort*);
    void GetViewport(ViewPort*);
 
-   void SetTransformVR(int eye);
+   void SetTransformVR();
 
    void ForceAnisotropicFiltering(const bool enable) { m_force_aniso = enable; }
    void CompressTextures(const bool enable) { m_compress_textures = enable; }
@@ -355,6 +354,7 @@ private:
    void UploadAndSetSMAATextures();
    D3DTexture* m_SMAAsearchTexture;
    D3DTexture* m_SMAAareaTexture;
+   int m_stereo3D;
 
 #ifdef ENABLE_SDL
 #else
@@ -369,22 +369,17 @@ private:
 
    RenderTarget* m_pBackBuffer;
 
-   //The Left Buffer contains the Mono image if stereo is off
-   D3DTexture* m_pOffscreenBackBufferTextureLeft;
-   D3DTexture* m_pOffscreenBackBufferTextureRight;
-   D3DTexture* m_pOffscreenBackBufferStereoTextureLeft; // stereo/FXAA only
-   D3DTexture* m_pOffscreenBackBufferStereoTextureRight; // stereo
-   D3DTexture* m_pOffscreenBackBufferSMAATextureLeft;// SMAA only
-   D3DTexture* m_pOffscreenBackBufferSMAATextureRight;// stero SMAA only
+   //If stereo is enabled the right eye is the right/bottom part with 4px in between
+   D3DTexture* m_pOffscreenBackBufferTexture;
+   D3DTexture* m_pOffscreenBackBufferStereoTexture; // stereo/FXAA only
+   D3DTexture* m_pOffscreenBackBufferSMAATexture;// SMAA only
+   D3DTexture* m_pOffscreenVRLeft;
+   D3DTexture* m_pOffscreenVRRight;
 
-   D3DTexture* m_pBloomBufferTextureLeft;
-   D3DTexture* m_pBloomBufferTextureRight;
-   D3DTexture* m_pBloomTmpBufferTextureLeft;
-   D3DTexture* m_pBloomTmpBufferTextureRight;
-   D3DTexture* m_pMirrorTmpBufferTextureLeft;
-   D3DTexture* m_pMirrorTmpBufferTextureRight;
-   D3DTexture* m_pReflectionBufferTextureLeft;
-   D3DTexture* m_pReflectionBufferTextureRight;
+   D3DTexture* m_pBloomBufferTexture;
+   D3DTexture* m_pBloomTmpBufferTexture;
+   D3DTexture* m_pMirrorTmpBufferTexture;
+   D3DTexture* m_pReflectionBufferTexture;
 
    UINT m_adapter;      // index of the display adapter to use
 
@@ -413,14 +408,21 @@ private:
    bool m_dwm_was_enabled;
    bool m_dwm_enabled;
 
-   //VR/Stereo Stuff
    unsigned int m_Buf_width;
    unsigned int m_Buf_height;
-   int m_eye;
+
+   unsigned int m_Buf_widthBlur;
+   unsigned int m_Buf_heightBlur;
+
+   unsigned int m_Buf_widthSS;
+   unsigned int m_Buf_heightSS;
+
+
+   //VR/Stereo Stuff
+
 #ifdef ENABLE_VR
    vr::IVRSystem *m_pHMD;
-   Matrix3D m_matLeftProj;
-   Matrix3D m_matRightProj;
+   Matrix3D m_matProj[2];
    Matrix3D m_matView;
    Matrix3D m_tableWorld;
    vr::TrackedDevicePose_t *m_rTrackedDevicePose;

@@ -1,14 +1,24 @@
 ////GLOBAL
 #version 330
 
+////DEFINES
+
 //!! split into pure sprite & pure DMD?
 
 #include "Helpers.fxh"
 
 ////VERTEX
 
+out int instanceID;
+
 uniform vec4 quadOffsetScale;//.xy =>Offset from center .wz =>Scale (1.0 is fullscreen)
 uniform vec4 quadOffsetScaleTex;//.xy =>Offset from center .wz =>Scale (1.0 is fullscreen)
+
+////GEOMETRY
+#extension GL_ARB_viewport_array : enable
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 3) out;
+in int instanceID[];
 
 ////FRAGMENT
 
@@ -28,49 +38,55 @@ out vec4 color;
 in vec3 vPosition;
 in vec2 tc;
 
-out vec2 tex0;
+out vec2 tex0_gs;
 
 void main()
-{ 
+{
+   instanceID = gl_InstanceID;
    gl_Position = vec4((vPosition.x*quadOffsetScale.z+quadOffsetScale.x)*2.0-1.0,
 							 1.0-(vPosition.y*quadOffsetScale.w+quadOffsetScale.y)*2.0, 0.0,1.0);
-   tex0 = vec2(tc.x,1.0-tc.y)*quadOffsetScaleTex.zw+quadOffsetScaleTex.xy;
+   tex0_gs = vec2(tc.x,1.0-tc.y)*quadOffsetScaleTex.zw+quadOffsetScaleTex.xy;
 }
 
 ////vs_simple_main
 
-// transformation matrices (only used for flashers so far)
-uniform mat4 matWorldViewProj;
+layout(std140) uniform matrixBlock { mat4 matWorldViewProj[eyes];};
 
 in vec3 vPosition;
 in vec2 tc;
 
+out vec2 tex0_gs;
+
+void main()
+{
+	instanceID = gl_InstanceID;
+    gl_Position = mul(vec4((vPosition.x*quadOffsetScale.z+quadOffsetScale.x)*2.0-1.0,
+							 1.0-(vPosition.y*quadOffsetScale.w+quadOffsetScale.y)*2.0,0.0,1.0), matWorldViewProj[gl_InstanceID]);
+    tex0_gs = vec2(tc.x,1.0-tc.y)*quadOffsetScaleTex.zw+quadOffsetScaleTex.xy;
+}
+
+////gs_simple_main
+
+in vec2 tex0_gs[];
 out vec2 tex0;
 
 void main()
 {
-    gl_Position = mul(vec4((vPosition.x*quadOffsetScale.z+quadOffsetScale.x)*2.0-1.0,
-							 1.0-(vPosition.y*quadOffsetScale.w+quadOffsetScale.y)*2.0,0.0,1.0), matWorldViewProj);
-    tex0 = vec2(tc.x,1.0-tc.y)*quadOffsetScaleTex.zw+quadOffsetScaleTex.xy;
+    gl_ViewportIndex = instanceID[0];
+	for (int i=0;i<3;i++) {
+		//Default
+		gl_Position = gl_in[i].gl_Position;
+		//Custom
+		tex0 = tex0_gs[i];
+		//Default
+		EmitVertex();
+	}
+    EndPrimitive();
 }
 
 //
 // PS functions (DMD and "sprites")
 //
-
-#if 0 // raw pixelated output
-vec4 ps_main_DMD_no(in VS_OUTPUT IN) : COLOR
-{
-   vec4 rgba = textureLod(Texture0, tex0, 0.);
-   color.rgb = vColor_Intensity.xyz * vColor_Intensity.w; //!! create function that resembles LUT from VPM?
-   if(rgba.a != 0.0)
-      color.rgb *= rgba.bgr;
-   else
-      color.rgb *= rgba.b * (255.9 / 100.);
-
-   color.rgb = vec4(InvToneMap(InvGamma(color.rgb)), 1.); //!! meh, this sucks a bit performance-wise, but how to avoid this when doing fullscreen-tonemap/gamma without stencil and depth read?
-}
-#endif
 
 ////ps_main_DMD
 
@@ -139,8 +155,8 @@ void main()
 
 ////TECHNIQUES
 
-basic_DMD:P0:vs_main():ps_main_DMD()
-basic_DMD_world:P0:vs_simple_main()ps_main_DMD()
-basic_noDMD:P0:vs_main():ps_main_noDMD()
-basic_noDMD_notex:P0:vs_main():ps_main_noDMD_notex()
+basic_DMD:P0:vs_main():gs_simple_main():ps_main_DMD()
+basic_DMD_world:P0:vs_simple_main():gs_simple_main():ps_main_DMD()
+basic_noDMD:P0:vs_main():gs_simple_main():ps_main_noDMD()
+basic_noDMD_notex:P0:vs_main():gs_simple_main():ps_main_noDMD_notex()
 

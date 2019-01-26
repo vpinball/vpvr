@@ -1,6 +1,16 @@
 SDL2 / VR Changelog
 ------------------------
 
+- Big render engine update that increases the frame rate. This update is based on an article by Krzysztof Kondrak which can be
+  found at http://kondrak.info/blog/programming/rendering-in-vr-using-opengl-instancing/ Benchmarking with Nvidia NSight on the IJ table
+  shows that this update reduces the rendering time on my i5-4590 with 970GTX from 32ms (CPU) to 15ms per frame. The GPU time is increased 
+  from 3ms to 7ms. Due to additional overhead in VPVR this increases the framerate from 25fps to 45fps. That is still not satisfying, but
+  a lot better than the initial commit.
+
+- Fixed a bug for habitrail ramps. Also slightly increased performance with this fix.
+
+- Improved performance with Uniform caching and reduced number of shader program switches.
+
 NOTE: Several changes in this version increases CPU and GPU load, even if you don't use VR or stereo support. Also this is just an early
 	TechDemo / AlphaVersion / Proof of Concept that contain many bugs, the code quality is rather low and chaotic, and not everything is
 	working yet. Main reasons for the problems are the change of the rendering API from DX9 to OpenGL/SDL2 (since OpenVR does not support 

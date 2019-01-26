@@ -453,7 +453,7 @@ void RenderDevice::InitVR() {
       for (int j = 0;j < 4;j++)
             matProjection.m[j][i] = mat44.m[i][j];
 
-   m_matLeftProj = matEye2Head * matProjection;
+   m_matProj[0] = matEye2Head * matProjection;
 
    //Calculate right EyeProjection Matrix relative to HMD position
    mat34 = m_pHMD->GetEyeToHeadTransform(vr::Eye_Right);
@@ -470,7 +470,7 @@ void RenderDevice::InitVR() {
       for (int j = 0;j < 4;j++)
             matProjection.m[j][i] = mat44.m[i][j];
 
-   m_matRightProj = matEye2Head * matProjection;
+   m_matProj[1] = matEye2Head * matProjection;
 
    if (vr::k_unMaxTrackedDeviceCount > 0) {
       m_rTrackedDevicePose = new vr::TrackedDevicePose_t[vr::k_unMaxTrackedDeviceCount];
@@ -519,31 +519,7 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
    m_pHMD = NULL;
    m_rTrackedDevicePose = NULL;
 #endif
-   switch (stereo3D) {
-   case STEREO_OFF:
-      m_Buf_width = width;
-      m_Buf_height = height;
-      break;
-   case STEREO_TB:
-   case STEREO_INT:
-      m_Buf_width = width;
-      m_Buf_height = height/* / 2*/;
-      break;
-   case STEREO_SBS:
-      m_Buf_width = width;
-      m_Buf_height = height;
-      break;
-#ifdef ENABLE_VR
-   case STEREO_VR:
-      InitVR();
-      break;
-#endif
-   default:
-      char buf[1024];
-      sprintf_s(buf, sizeof(buf), "Unknown stereo Mode id: %d", stereo3D);
-      std::runtime_error unknownStereoMode(buf);
-      throw(unknownStereoMode);
-   }
+   m_stereo3D = stereo3D;
 
    m_stats_drawn_triangles = 0;
 
@@ -565,7 +541,7 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
    bool video10bit = (colordepth == SDL_PIXELFORMAT_ARGB2101010);
 
    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
 /*   SDL_GL_SetAttribute(SDL_GL_RED_SIZE, video10bit ? 10 : 8);
@@ -593,6 +569,54 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
 
    SDL_GL_MakeCurrent(m_sdl_hwnd, m_sdl_context);
 
+   GLint frameBuffer[4];
+   glGetIntegerv(GL_VIEWPORT, frameBuffer);
+   int fbWidth = frameBuffer[2];
+   int fbHeight = frameBuffer[3];
+
+   switch (stereo3D) {
+   case STEREO_OFF:
+      m_Buf_width = fbWidth;
+      m_Buf_height = fbHeight;
+      m_Buf_widthBlur = fbWidth / 3;
+      m_Buf_heightBlur = fbHeight / 3;
+      m_Buf_widthSS = fbWidth * (useAA ? 2 : 1);
+      m_Buf_heightSS = fbHeight * (useAA ? 2 : 1);
+      break;
+   case STEREO_TB:
+   case STEREO_INT:
+      m_Buf_width = fbWidth;
+      m_Buf_height = fbHeight * 2;
+      m_Buf_widthBlur = fbWidth / 3;
+      m_Buf_heightBlur = height * 2 / 3;
+      m_Buf_widthSS = fbWidth * (useAA ? 2 : 1);
+      m_Buf_heightSS = fbHeight * (useAA ? 4 : 2);
+      break;
+   case STEREO_SBS:
+      m_Buf_width = fbWidth * 2;
+      m_Buf_height = fbHeight;
+      m_Buf_widthBlur = fbWidth * 2 / 3;
+      m_Buf_heightBlur = fbHeight / 3;
+      m_Buf_widthSS = fbWidth * (useAA ? 4 : 2);
+      m_Buf_heightSS = fbHeight * (useAA ? 2 : 1);
+      break;
+#ifdef ENABLE_VR
+   case STEREO_VR:
+      InitVR();
+      m_Buf_widthBlur = m_Buf_width * 2 / 3 + 4;
+      m_Buf_heightBlur = m_Buf_height / 3;
+      m_Buf_widthSS = m_Buf_width * (useAA ? 4 : 2);
+      m_Buf_heightSS = m_Buf_height * (useAA ? 2 : 1);
+      m_Buf_width = m_Buf_width * 2;
+      break;
+#endif
+   default:
+      char buf[1024];
+      sprintf_s(buf, sizeof(buf), "Unknown stereo Mode id: %d", stereo3D);
+      std::runtime_error unknownStereoMode(buf);
+      throw(unknownStereoMode);
+   }
+
 /*   if (!gladLoadGLLoader(SDL_GL_GetProcAddress)) {
       ShowError("Glad failed");
       exit(-1);
@@ -616,64 +640,46 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
 
    // Retrieve a reference to the back buffer.
    m_pBackBuffer = new RenderTarget;
-   m_pBackBuffer->width = width;
-   m_pBackBuffer->height = height;
+   m_pBackBuffer->width = fbWidth;
+   m_pBackBuffer->height = fbHeight;
 
    CHECKD3D(glGetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)(&m_pBackBuffer->framebuffer)));
 
    colorFormat renderBufferFormat = RGBA16;
 
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
-   m_pOffscreenBackBufferTextureLeft = CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL);
-   m_pOffscreenBackBufferTextureRight = stereo3D ? CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL) : NULL;
+   m_pOffscreenBackBufferTexture = CreateTexture(m_Buf_widthSS,m_Buf_heightSS, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, stereo3D);
 
-   if (g_pplayer != NULL)
-   {
-      const bool drawBallReflection = ((g_pplayer->m_fReflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
-      if (g_pplayer->m_ptable->m_fReflectElementsOnPlayfield || drawBallReflection)
-      {
-         m_pMirrorTmpBufferTextureLeft = CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL);
-         m_pMirrorTmpBufferTextureRight = stereo3D ? CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL) : NULL;
-      }
-   }
+   if ((g_pplayer != NULL) && (g_pplayer->m_ptable->m_fReflectElementsOnPlayfield || (g_pplayer->m_fReflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1)))
+         m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_widthSS,m_Buf_heightSS, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, stereo3D);
+
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
-   m_pBloomBufferTextureLeft = CreateTexture(m_Buf_width / 3, m_Buf_height / 3, 0, RENDERTARGET, renderBufferFormat, NULL);
-   m_pBloomBufferTextureRight = stereo3D ? CreateTexture(m_Buf_width / 3, m_Buf_height / 3, 0, RENDERTARGET, renderBufferFormat, NULL) : NULL;
+   m_pBloomBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, NULL, stereo3D);
 
    // temporary buffer for gaussian blur
-   m_pBloomTmpBufferTextureLeft = CreateTexture(m_Buf_width / 3, m_Buf_height / 3, 0, RENDERTARGET, renderBufferFormat, NULL);
-   m_pBloomTmpBufferTextureRight = stereo3D ? CreateTexture(m_Buf_width / 3, m_Buf_height / 3, 0, RENDERTARGET, renderBufferFormat, NULL) : NULL;
+   m_pBloomTmpBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, NULL, stereo3D);
 
    // alloc temporary buffer for postprocessing
    if ((FXAA > 0) || (stereo3D > 0))
-   {
-      m_pOffscreenBackBufferStereoTextureLeft = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET, RGBA, NULL);
-      m_pOffscreenBackBufferStereoTextureRight = stereo3D ? CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET, RGBA, NULL) : NULL;
-   }
-   else {
-      m_pOffscreenBackBufferStereoTextureLeft = NULL;
-      m_pOffscreenBackBufferStereoTextureRight = NULL;
+      m_pOffscreenBackBufferStereoTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET, RGBA, NULL, 0);
+   else
+      m_pOffscreenBackBufferStereoTexture = NULL;
+
+   if (stereo3D == STEREO_VR) {
+      m_pOffscreenVRLeft = CreateTexture(m_Buf_width / 2 - 2, m_Buf_height, 0, RENDERTARGET, RGBA, NULL, 0);
+      m_pOffscreenVRRight = CreateTexture(m_Buf_width / 2 - 2, m_Buf_height, 0, RENDERTARGET, RGBA, NULL, 0);
    }
 
    // alloc one more temporary buffer for SMAA
    if (FXAA == Quality_SMAA)
-   {
-      m_pOffscreenBackBufferSMAATextureLeft = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET, renderBufferFormat, NULL);
-      m_pOffscreenBackBufferSMAATextureRight = stereo3D ? CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET, renderBufferFormat, NULL) : NULL;
-   }
-   else {
-      m_pOffscreenBackBufferSMAATextureLeft = NULL;
-      m_pOffscreenBackBufferSMAATextureRight = NULL;
-   }
+      m_pOffscreenBackBufferSMAATexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET, renderBufferFormat, NULL, 0);
+   else
+      m_pOffscreenBackBufferSMAATexture = NULL;
 
-   if (ss_refl) {
-      m_pReflectionBufferTextureLeft = CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL);
-      m_pReflectionBufferTextureRight = stereo3D ? CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL) : NULL;
-   }
-   else {
-      m_pReflectionBufferTextureLeft = NULL;
-      m_pReflectionBufferTextureRight = NULL;
-   }
+   if (ss_refl)
+      m_pReflectionBufferTexture = CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, 0);
+   else
+      m_pReflectionBufferTexture = NULL;
 
    if (video10bit && (FXAA == Quality_SMAA || FXAA == Standard_DLAA))
       ShowError("SMAA or DLAA post-processing AA should not be combined with 10bit-output rendering (will result in visible artifacts)!");
@@ -702,6 +708,11 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
 
    char glShaderPath[256];
    DWORD length = GetModuleFileName(NULL, glShaderPath, 256);
+
+   if (m_stereo3D == STEREO_OFF)
+      Shader::Defines = "#define eyes 1";
+   else
+      Shader::Defines = "#define eyes 2";
 
    Shader::shaderPath = string(glShaderPath);
    Shader::shaderPath = Shader::shaderPath.substr(0, Shader::shaderPath.find_last_of("\\/"));
@@ -1660,7 +1671,7 @@ void RenderDevice::CopyDepth(RenderTarget* dest, RenderTarget* src) {
 
 D3DTexture* RenderDevice::UploadTexture(BaseTexture* surf, int *pTexWidth, int *pTexHeight, const bool linearRGB)
 {
-   D3DTexture *tex = CreateTexture(surf->width(), surf->height(), 0, STATIC, surf->m_format == BaseTexture::RGB_FP ? RGB32 : RGBA, surf->m_data.data());
+   D3DTexture *tex = CreateTexture(surf->width(), surf->height(), 0, STATIC, surf->m_format == BaseTexture::RGB_FP ? RGB32 : RGBA, surf->m_data.data(), 0);
 
    if (pTexWidth) *pTexWidth = surf->width();
    if (pTexHeight) *pTexHeight = surf->height();
@@ -1669,8 +1680,8 @@ D3DTexture* RenderDevice::UploadTexture(BaseTexture* surf, int *pTexWidth, int *
 
 void RenderDevice::UploadAndSetSMAATextures()
 {
-   m_SMAAsearchTexture = CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, STATIC, GREY, (void*)&searchTexBytes[0]);
-   m_SMAAareaTexture = CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, STATIC, GREY_ALPHA, (void*)&areaTexBytes[0]);
+   m_SMAAsearchTexture = CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, STATIC, GREY, (void*)&searchTexBytes[0], 0);
+   m_SMAAareaTexture = CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, STATIC, GREY_ALPHA, (void*)&areaTexBytes[0], 0);
 
    FBShader->SetTexture("areaTex2D", m_SMAAareaTexture, true);
    FBShader->SetTexture("searchTex2D", m_SMAAsearchTexture, true);
@@ -2151,13 +2162,47 @@ void RenderDevice::SetRenderTarget(RenderTarget* surf)
 }
 #endif
 
-void RenderDevice::SetRenderTarget(D3DTexture* texture)
+void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
 {
+   static GLfloat viewPorts[] = { 0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f };
+   static int currentFrameBuffer = -1;
+   static int currentStereoMode = -1;
 #ifdef ENABLE_SDL
-   CHECKD3D(glBindFramebuffer(GL_FRAMEBUFFER, texture ? texture->framebuffer : 0));
+   if (currentFrameBuffer != (texture ? texture->framebuffer : 0)) {
+      currentFrameBuffer = texture ? texture->framebuffer : 0;
+      CHECKD3D(glBindFramebuffer(GL_FRAMEBUFFER, currentFrameBuffer));
+      currentStereoMode = -1;
+   }
    if (texture && (texture->texture) > 0) Shader::setTextureDirty(texture->texture);
+   if (((ignoreStereo && currentStereoMode == 0) || currentStereoMode == texture->stereo)) return;
+   currentStereoMode = ignoreStereo ? 0 : texture->stereo;
    if (texture) {
-      CHECKD3D(glViewport(0, 0, texture->width, texture->height));
+      if (ignoreStereo)
+      {
+         CHECKD3D(glViewport(0, 0, texture->width, texture->height));
+      }
+      else
+      switch (texture->stereo) {
+      case STEREO_OFF:
+         CHECKD3D(glViewport(0, 0, texture->width, texture->height));
+         break;
+      case STEREO_TB:
+      case STEREO_INT:
+         viewPorts[2] = viewPorts[6] = texture->width;
+         viewPorts[3] = viewPorts[7] = texture->height/2.0f;
+         viewPorts[4] = 0.0f;
+         viewPorts[5] = texture->height / 2.0f;
+         glViewportArrayv(0, 2, viewPorts);
+         break;
+      case STEREO_SBS:
+      case STEREO_VR:
+         viewPorts[2] = viewPorts[6] = texture->width / 2.0f;
+         viewPorts[3] = viewPorts[7] = texture->height;
+         viewPorts[4] = texture->width / 2.0f;
+         viewPorts[5] = 0.0f;
+         glViewportArrayv(0, 2, viewPorts);
+         break;
+      }
    }
    else {
       CHECKD3D(glViewport(0, 0, m_pBackBuffer->width, m_pBackBuffer->height));
@@ -2406,14 +2451,21 @@ void RenderDevice::DrawPrimitive(const PrimitveTypes type, const DWORD fvf, cons
    m_curDrawCalls++;
 }
 
-//Make this using the m_quadVertexBuffer from DrawFullscreenTexturedQuad and use x,y width and height as parameters
+//Use this function if you want to render a stereo object
 void RenderDevice::DrawTexturedQuad()
 {
    //TODO Somehow broken
-   DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_TEX, m_quadVertexBuffer, 0, 4);
+   DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_TEX, m_quadVertexBuffer, 0, 4, true);
 }
 
-void RenderDevice::DrawPrimitiveVB(const PrimitveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount)
+//Used for processing a Texture to the next Framebuffer with a shader.
+void RenderDevice::DrawTexturedQuadPostProcess()
+{
+   //TODO Somehow broken
+   DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_TEX, m_quadVertexBuffer, 0, 4, false);
+}
+
+void RenderDevice::DrawPrimitiveVB(const PrimitveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, bool stereo)
 {
    const unsigned int np = ComputePrimitiveCount(type, vertexCount);
    m_stats_drawn_triangles += np;
@@ -2429,7 +2481,12 @@ void RenderDevice::DrawPrimitiveVB(const PrimitveTypes type, const DWORD fvf, Ve
 
    Shader::getCurrentShader()->setAttributeFormat(fvf);
 
-   CHECKD3D(glDrawArrays(type, startVertex, vertexCount));
+   if (stereo) {
+      CHECKD3D(glDrawArraysInstanced(type, startVertex, vertexCount, m_stereo3D != STEREO_OFF ? 2 : 1));
+   }
+   else {
+      CHECKD3D(glDrawArrays(type, startVertex, vertexCount));
+   }
 #else
    VertexDeclaration * declaration = fvfToDecl(fvf);
    SetVertexDeclaration(declaration);
@@ -2470,7 +2527,8 @@ void RenderDevice::DrawIndexedPrimitiveVB(const PrimitveTypes type, const DWORD 
    Shader::getCurrentShader()->setAttributeFormat(fvf);
 
    int offset = (ib->indexFormat == IndexBuffer::FMT_INDEX16 ? 2 : 4) * startIndex;
-   CHECKD3D(glDrawElementsBaseVertex(type, indexCount, ib->indexFormat == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, startVertex));
+   //CHECKD3D(glDrawElementsBaseVertex(type, indexCount, ib->indexFormat == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, startVertex));
+   CHECKD3D(glDrawElementsInstancedBaseVertex(type, indexCount, ib->indexFormat == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, m_stereo3D != STEREO_OFF ? 2 : 1, startVertex));
 #else
    VertexDeclaration * declaration = fvfToDecl(fvf);
    SetVertexDeclaration(declaration);
@@ -2519,11 +2577,11 @@ void RenderDevice::UpdateVRPosition()
 #endif
 }
 
-void RenderDevice::SetTransformVR(int eye)
+void RenderDevice::SetTransformVR()
 {
 #ifdef ENABLE_VR
-      Shader::SetTransform(TRANSFORMSTATE_PROJECTION, (eye == 0) ? &m_matLeftProj : &m_matRightProj);
-      Shader::SetTransform(TRANSFORMSTATE_VIEW, &m_matView);
+      Shader::SetTransform(TRANSFORMSTATE_PROJECTION, m_matProj, m_stereo3D != STEREO_OFF ? 2:1);
+      Shader::SetTransform(TRANSFORMSTATE_VIEW, &m_matView, 1);
 #endif
 }
 
@@ -2567,7 +2625,7 @@ void RenderDevice::GetViewport(ViewPort* p1)
 #endif
 }
 
-D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, void* data) {
+D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, void* data, int stereo) {
 #ifdef ENABLE_SDL
    D3DTexture* tex = new D3DTexture();
    tex->usage = Usage;
@@ -2576,6 +2634,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    tex->format = Format;
    tex->slot = -1;
    if ((tex->usage == RENDERTARGET) || (tex->usage == RENDERTARGET_DEPTH)) {//Create Renderbuffer
+      tex->stereo = stereo;
       CHECKD3D(glGenFramebuffers(1, &tex->framebuffer));
       CHECKD3D(glBindFramebuffer(GL_FRAMEBUFFER, tex->framebuffer));
 
@@ -2654,6 +2713,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
 
    tex->framebuffer = 0;
    tex->zTexture = 0;
+   tex->stereo = 0;
 
    CHECKD3D(glGenTextures(1, &tex->texture));
    CHECKD3D(glBindTexture(GL_TEXTURE_2D, tex->texture));

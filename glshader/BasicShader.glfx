@@ -1,21 +1,34 @@
 ////GLOBAL
 #version 330
 
+////DEFINES
+
 //!! have switch to choose if texture is weighted by diffuse/glossy or is just used raw?
 
 #define NUM_BALL_LIGHTS 0 // just to avoid having too much constant mem allocated
 
 #include "Helpers.fxh"
 
-uniform mat4 matView;
+layout(std140) uniform matrixBlock { 
+	mat4 matView;
+	mat4 matWorldView;
+	mat3x4 matWorldViewInverseTranspose;
+	vec4 unusedFillerFormatWorldViewInverseTranspose;
+	mat4 matWorldViewProj[eyes];
+};
 
 ////VERTEX
 
+out int instanceID;
+
 // transformation matrices
-uniform mat4 matWorldViewProj;
-uniform mat4 matWorldView;
-uniform mat3x4 matWorldViewInverseTranspose;
 //mat4 matViewInverseInverseTranspose; // matView used instead and multiplied from other side
+
+////GEOMETRY
+#extension GL_ARB_viewport_array : enable
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 3) out;
+in int instanceID[];
 
 ////FRAGMENT
 
@@ -77,20 +90,21 @@ in vec3 vPosition;
 in vec3 vNormal;
 in vec2 tc;
 
-out vec4 tex01; // pack tex0 and tex1 into one vec4
-out vec3 worldPos;
-out vec3 normal;
+out vec4 tex01_gs; // pack tex0 and tex1 into one vec4
+out vec3 worldPos_gs;
+out vec3 normal_gs;
 
 void main()
 { 
+   instanceID = gl_InstanceID;
    // trafo all into worldview space (as most of the weird trafos happen in view, world is identity so far)
    vec3 P = (matWorldView*vec4(vPosition, 1.0)).xyz;
    vec3 N = normalize((matWorldViewInverseTranspose*vNormal).xyz);
 
-   gl_Position = (matWorldViewProj*vec4(vPosition, 1.0));
-   tex01 = vec4(tc, /*(cBase_Alpha.a < 1.0) ?*/gl_Position.xy/gl_Position.w);
-   worldPos = P;
-   normal = N;
+   gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition, 1.0));
+   tex01_gs = vec4(tc, /*(cBase_Alpha.a < 1.0) ?*/gl_Position.xy/gl_Position.w);
+   worldPos_gs = P;
+   normal_gs = N;
 }
 
 ////vs_notex_main
@@ -99,23 +113,24 @@ in vec3 vPosition;
 in vec3 vNormal;
 in vec2 tc;
 
-out vec4 worldPos_t1x;
-out vec4 normal_t1y;
+out vec4 worldPos_t1x_gs;
+out vec4 normal_t1y_gs;
 
 void main()
-{ 
+{
+   instanceID = gl_InstanceID;
    // trafo all into worldview space (as most of the weird trafos happen in view, world is identity so far)
    vec3 P = (matWorldView*vec4(vPosition, 1.0)).xyz;
    vec3 N = normalize((matWorldViewInverseTranspose*vNormal).xyz);
 
-   gl_Position = (matWorldViewProj*vec4(vPosition, 1.0));
+   gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition, 1.0));
    //if(cBase_Alpha.a < 1.0)
    {
-      worldPos_t1x.w = gl_Position.x/gl_Position.w;
-      normal_t1y.w = gl_Position.y/gl_Position.w;
+      worldPos_t1x_gs.w = gl_Position.x/gl_Position.w;
+      normal_t1y_gs.w = gl_Position.y/gl_Position.w;
    }
-   worldPos_t1x.xyz = P;
-   normal_t1y.xyz = N;
+   worldPos_t1x_gs.xyz = P;
+   normal_t1y_gs.xyz = N;
 }
 
 ////vs_depth_only_main_without_texture
@@ -124,7 +139,8 @@ in vec3 vPosition;
 
 void main()
 { 
-   gl_Position = (matWorldViewProj*vec4(vPosition, 1.0));
+   instanceID = gl_InstanceID;
+   gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition, 1.0));
 }
 
 ////vs_depth_only_main_with_texture
@@ -132,12 +148,97 @@ void main()
 in vec3 vPosition;
 in vec2 tc;
 
+out vec2 tex0_gs;
+
+void main()
+{
+   instanceID = gl_InstanceID;
+   gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition, 1.0));
+   tex0_gs = tc;
+}
+
+////gs_main
+
+in vec4 tex01_gs[]; // pack tex0 and tex1 into one vec4
+out vec4 tex01; // pack tex0 and tex1 into one vec4
+
+in vec3 worldPos_gs[];
+out vec3 worldPos;
+
+in vec3 normal_gs[];
+out vec3 normal;
+
+void main()
+{
+    gl_ViewportIndex = instanceID[0];
+	for (int i=0;i<3;i++) {
+		//Default
+		gl_Position = gl_in[i].gl_Position;
+		//Custom
+		tex01 = tex01_gs[i];
+		worldPos = worldPos_gs[i];
+		normal = normal_gs[i];
+		//Default
+		EmitVertex();
+	}
+    EndPrimitive();
+}
+
+////gs_notex_main
+
+in vec4 worldPos_t1x_gs[];
+out vec4 worldPos_t1x;
+
+in vec4 normal_t1y_gs[];
+out vec4 normal_t1y;
+
+void main()
+{
+    gl_ViewportIndex = instanceID[0];
+	for (int i=0;i<3;i++) {
+		//Default
+		gl_Position = gl_in[i].gl_Position;
+		//Custom
+		worldPos_t1x = worldPos_t1x_gs[i];
+		normal_t1y = normal_t1y_gs[i];
+		//Default
+		EmitVertex();
+	}
+    EndPrimitive();
+}
+
+////gs_depth_only_main_without_texture
+
+void main()
+{
+    gl_ViewportIndex = instanceID[0];
+	for (int i=0;i<3;i++) {
+		//Default
+		gl_Position = gl_in[i].gl_Position;
+		//Custom
+		//Default
+		EmitVertex();
+	}
+    EndPrimitive();
+}
+
+////gs_depth_only_main_with_texture
+
+in vec2 tex0_gs[];
 out vec2 tex0;
 
 void main()
 {
-   gl_Position = (matWorldViewProj*vec4(vPosition, 1.0));
-   tex0 = tc;
+    gl_ViewportIndex = instanceID[0];
+	for (int i=0;i<3;i++) {
+		//Default
+		gl_Position = gl_in[i].gl_Position;
+		//Custom
+		tex0 = tex0_gs[i];
+		//Default
+		EmitVertex();
+	}
+    EndPrimitive();
 }
 
 ////ps_main
@@ -240,26 +341,27 @@ in vec3 vPosition;
 in vec3 vNormal;
 in vec2 tc;
 
-out vec4 worldPos_t1x; // pack tex1 into w component of the float4s
-out vec4 normal_t1y;
+out vec4 worldPos_t1x_gs; // pack tex1 into w component of the float4s
+out vec4 normal_t1y_gs;
 
 void main() {
+	instanceID = gl_InstanceID;
 	vec4 vPosition4 = vec4(vPosition,1.0);
 	float fKickerScale = 1.;
     vec3 P = (matWorldView * vPosition4).xyz;
     vec3 N = normalize((matWorldViewInverseTranspose*vNormal).xyz);
 
-    gl_Position.xyw = (matWorldViewProj*vPosition4).xyw;
+    gl_Position.xyw = (matWorldViewProj[gl_InstanceID]*vPosition4).xyw;
     vec4 P2 = vPosition4;
     P2.z -= 30.0f*fKickerScale;
-    gl_Position.z = (matWorldViewProj*P2).z;
+    gl_Position.z = (matWorldViewProj[gl_InstanceID]*P2).z;
     //if(cBase_Alpha.a < 1.0)
     {
-        worldPos_t1x.w = gl_Position.x/gl_Position.w; //!! not necessary
-        normal_t1y.w = gl_Position.y/gl_Position.w; //!! not necessary
+        worldPos_t1x_gs.w = gl_Position.x/gl_Position.w; //!! not necessary
+        normal_t1y_gs.w = gl_Position.y/gl_Position.w; //!! not necessary
     }
-    worldPos_t1x.xyz = P;
-    normal_t1y.xyz = N;
+    worldPos_t1x_gs.xyz = P;
+    normal_t1y_gs.xyz = N;
 }
 
 //------------------------------------
@@ -271,17 +373,17 @@ void main() {
 //
 ////TECHNIQUES
 
-basic_without_texture:P0:vs_notex_main():ps_main()
+basic_without_texture:P0:vs_notex_main():gs_notex_main():ps_main()
 
-basic_with_texture:P0:vs_main():ps_main_texture()
+basic_with_texture:P0:vs_main():gs_main():ps_main_texture()
 
-basic_depth_only_without_texture:P0:vs_depth_only_main_without_texture():ps_main_depth_only_without_texture()
-basic_depth_only_with_texture:P0:vs_depth_only_main_with_texture():ps_main_depth_only_with_texture()
+basic_depth_only_without_texture:P0:vs_depth_only_main_without_texture():gs_depth_only_main_without_texture():ps_main_depth_only_without_texture()
+basic_depth_only_with_texture:P0:vs_depth_only_main_with_texture():gs_depth_only_main_with_texture():ps_main_depth_only_with_texture()
 
 //
 // Kicker
 //
 
-kickerBoolean:P0:vs_kicker():ps_main()
+kickerBoolean:P0:vs_kicker():gs_notex_main():ps_main()
 
 #include "ClassicLightShader.glfx"

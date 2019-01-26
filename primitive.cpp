@@ -1204,7 +1204,7 @@ void Primitive::RenderObject(RenderDevice *pd3dDevice)
       pd3dDevice->basicShader->SetBool("doNormalMapping", nMap);
 
       // set transform
-      g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye(), fullMatrix);
+      g_pplayer->UpdateBasicShaderMatrix(&fullMatrix);
 
       // draw the mesh
       pd3dDevice->basicShader->Begin(0);
@@ -1226,7 +1226,7 @@ void Primitive::RenderObject(RenderDevice *pd3dDevice)
       }
       if (nMap) pd3dDevice->basicShader->SetBool("doNormalMapping", false);//Only place where nMap is used
       // reset transform
-      g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye());
+      g_pplayer->UpdateBasicShaderMatrix();
 
       pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_CLAMP);
       //g_pplayer->m_pin3d.DisableAlphaBlend(); //!! not necessary anymore
@@ -1240,12 +1240,12 @@ void Primitive::RenderObject(RenderDevice *pd3dDevice)
    {
       //pd3dDevice->SetRenderState(RenderDevice::CULLMODE, D3DCULL_CCW); // don't mess with the render states when doing playfield rendering
       // set transform
-      g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye(), fullMatrix);
+      g_pplayer->UpdateBasicShaderMatrix(&fullMatrix);
       pd3dDevice->basicShader->Begin(0);
       pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, vertexBuffer, 0, (DWORD)m_mesh.NumVertices(), indexBuffer, 0, (DWORD)m_mesh.NumIndices());
       pd3dDevice->basicShader->End();
       // reset transform
-      g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye());
+      g_pplayer->UpdateBasicShaderMatrix();
    }
 }
 

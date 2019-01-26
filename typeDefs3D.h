@@ -49,7 +49,8 @@ struct RenderTarget {
    textureUsage usage;
    GLuint texture = 0, zTexture = 0, framebuffer = 0, zBuffer = 0;
    GLuint width = 0, height = 0;
-   GLint slot = -1;
+   GLint slot = -1;//Current slot for caching
+   int stereo = 0;
 };
 
 typedef RenderTarget D3DTexture;//It's easier to have them equal than saving 8 bytes and have a lot of trouble.

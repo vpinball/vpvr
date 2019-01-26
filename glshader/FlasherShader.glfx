@@ -1,6 +1,8 @@
 ////GLOBAL
 #version 330
 
+////DEFINES
+
 #include "Helpers.fxh"
 
 #define Filter_None	    0.
@@ -12,12 +14,19 @@
 ////VERTEX
 
 // transformation matrices
-uniform float4x4 matWorldViewProj;
+out int instanceID;
+layout(std140) uniform matrixBlock { mat4 matWorldViewProj[eyes];};
 
 in vec3 vPosition;
 in vec2 tc;
 
-out vec2 tex0;
+out vec2 tex0_gs;
+
+////GEOMETRY
+#extension GL_ARB_viewport_array : enable
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 3) out;
+in int instanceID[];
 
 ////FRAGMENT
 
@@ -35,8 +44,28 @@ out vec4 color;
 
 void main()
 {
-   gl_Position = mul(vec4(vPosition, 1.0), matWorldViewProj);
-   tex0 = tc;
+   instanceID = gl_InstanceID;
+   gl_Position = mul(vec4(vPosition, 1.0), matWorldViewProj[gl_InstanceID]);
+   tex0_gs = tc;
+}
+
+////gs_simple_main
+
+in vec2 tex0_gs[];
+out vec2 tex0;
+
+void main()
+{
+    gl_ViewportIndex = instanceID[0];
+	for (int i=0;i<3;i++) {
+		//Default
+		gl_Position = gl_in[i].gl_Position;
+		//Custom
+		tex0 = tex0_gs[i];
+		//Default
+		EmitVertex();
+	}
+    EndPrimitive();
 }
 
 ////ps_main_textureOne_noLight
@@ -103,6 +132,6 @@ void main()
 
 ////TECHNIQUES
 
-basic_with_textureOne_noLight:P0:vs_simple_main():ps_main_textureOne_noLight()
-basic_with_textureAB_noLight:P0:vs_simple_main():ps_main_textureAB_noLight()
-basic_with_noLight:P0:vs_simple_main():ps_main_noLight()
+basic_with_textureOne_noLight:P0:vs_simple_main():gs_simple_main():ps_main_textureOne_noLight()
+basic_with_textureAB_noLight:P0:vs_simple_main():gs_simple_main():ps_main_textureAB_noLight()
+basic_with_noLight:P0:vs_simple_main():gs_simple_main():ps_main_noLight()

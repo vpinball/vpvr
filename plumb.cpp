@@ -168,7 +168,7 @@ void plumb_draw()
    //Display_GetTextureState (g_pplayer->m_pin3d.m_pd3dDevice, &(RestoreTextureState));
 
    static const Matrix3D WorldMatrix(1.0f,0.0f,0.0f,0.0f,0.0f,1.0f,0.0f,0.0f,0.0f,0.0f,1.0f,0.0f,0.0f,0.0f,0.0f,1.0f);
-   Shader::SetTransform ( D3DTRANSFORMSTATE_WORLD, (LPD3DMATRIX)&WorldMatrix ); 
+   Shader::SetTransform ( D3DTRANSFORMSTATE_WORLD, (LPD3DMATRIX)&WorldMatrix, 1); 
 
    F32 x = sPlumbPos[0];
    F32 y = sPlumbPos[1];
@@ -186,6 +186,6 @@ void plumb_draw()
    // Restore the texture state.
    //Display_SetTextureState(g_pplayer->m_pin3d.m_pd3dDevice, &(RestoreTextureState));
    // Restore the transformation state.
-   ReturnCode = Shader::SetTransform ( D3DTRANSFORMSTATE_WORLD, &RestoreWorldMatrix ); 
+   ReturnCode = Shader::SetTransform ( D3DTRANSFORMSTATE_WORLD, &RestoreWorldMatrix, 1 ); 
 #endif
 }

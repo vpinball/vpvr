@@ -2135,8 +2135,8 @@ void PinTable::Render3DProjection(Sur * const psur)
    pinproj.m_matView.RotateXMatrix((float)M_PI);  // convert Z=out to Z=in (D3D coordinate system)
    pinproj.m_matWorld.SetIdentity();
    Matrix3D proj = Matrix3D::MatrixPerspectiveFovLH(ANGTORAD(FOV), aspect, pinproj.m_rznear, pinproj.m_rzfar);
-   memcpy(pinproj.m_matProjLeft.m, proj.m, sizeof(float) * 4 * 4);
-   memcpy(pinproj.m_matProjRight.m, proj.m, sizeof(float) * 4 * 4);
+   memcpy(pinproj.m_matProj[0].m, proj.m, sizeof(float) * 4 * 4);
+   memcpy(pinproj.m_matProj[1].m, proj.m, sizeof(float) * 4 * 4);
 
    //pinproj.SetFieldOfView(FOV, aspect, pinproj.m_rznear, pinproj.m_rzfar);
 
@@ -2146,7 +2146,7 @@ void PinTable::Render3DProjection(Sur * const psur)
    pinproj.RotateView(inclination, 0, 0);
    pinproj.MultiplyView(ComputeLaybackTransform(m_BG_layback[m_BG_current_set]));
 
-   pinproj.CacheTransform(0);
+   pinproj.CacheTransform();
 
    psur->SetFillColor(RGB(200, 200, 200));
    psur->SetBorderColor(-1, false, 0);

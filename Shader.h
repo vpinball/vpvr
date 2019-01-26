@@ -42,6 +42,7 @@ public:
    void SetTechnique(const D3DXHANDLE technique);
 
    void SetMatrix(const D3DXHANDLE hParameter, const Matrix3D* pMatrix);
+   void SetUniformBlock(const D3DXHANDLE hParameter, const float* pMatrix, const int size);
    void SetVector(const D3DXHANDLE hParameter, const vec4* pVector);
    void SetVector(const D3DXHANDLE hParameter, const float x, const float y, const float z, const float w);
    void SetFloat(const D3DXHANDLE hParameter, const float f);
@@ -49,8 +50,8 @@ public:
    void SetBool(const D3DXHANDLE hParameter, const bool b);
    void SetFloatArray(const D3DXHANDLE hParameter, const float* pData, const unsigned int count);
 
-   static void SetTransform(const TransformStateType p1, const Matrix3D * p2);
-   static void GetTransform(const TransformStateType p1, Matrix3D* p2);
+   static void SetTransform(const TransformStateType p1, const Matrix3D * p2, const int count);
+   static void GetTransform(const TransformStateType p1, Matrix3D* p2, const int count);
    static Shader* getCurrentShader();
 private:
    static Shader* m_currentShader;
@@ -76,9 +77,11 @@ private:
    unsigned int currentLightImageMode;
    unsigned int currentLightBackglassMode;
    static int shaderCount;
+   int shaderID;
+   int currentShader;
 
 #ifdef ENABLE_SDL
-   bool compileGLShader(const char* fileNameRoot, string shaderCodeName, string vertex, string fragment);
+   bool compileGLShader(const char* fileNameRoot, string shaderCodeName, string vertex, string geometry, string fragment);
 
    struct attributeLoc {
       GLenum type;
@@ -89,6 +92,7 @@ private:
       GLenum type;
       int location;
       int size;
+      GLuint blockBuffer;
    };
    struct glShader {
       int program;
@@ -105,7 +109,7 @@ private:
    std::map<string, int> uniformInt;
    std::map<string, int> uniformTex;
    char technique[256];
-   static Matrix3D mWorld, mView, mProj;
+   static Matrix3D mWorld, mView, mProj[2];
    static int lastShaderProgram;
    static D3DTexture* noTexture;
    static float* zeroData;
@@ -117,6 +121,7 @@ private:
 public:
    void setAttributeFormat(DWORD fvf);
    static std::string shaderPath;
+   static std::string Defines;
    static void setTextureDirty(int TextureID);
 #else
    ID3DXEffect * m_shader;

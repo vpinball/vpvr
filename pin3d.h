@@ -26,16 +26,16 @@ public:
 
    void FitCameraToVerticesFS(std::vector<Vertex3Ds>& pvvertex3D, float aspect, float rotation, float inclination, float FOV, float xlatez, float layback);
    void FitCameraToVertices(std::vector<Vertex3Ds>& pvvertex3D, float aspect, float rotation, float inclination, float FOV, float xlatez, float layback);
-   void CacheTransform(int eye);      // compute m_matrixTotal = m_World * m_View * m_Proj
+   void CacheTransform();      // compute m_matrixTotal = m_World * m_View * m_Proj
    void TransformVertices(const Vertex3Ds * const rgv, const WORD * const rgi, const int count, Vertex2D * const rgvout) const;
 
    void ComputeNearFarPlane(std::vector<Vertex3Ds>& verts);
 
    Matrix3D m_matWorld;
    Matrix3D m_matView;
-   Matrix3D m_matProjLeft;
-   Matrix3D m_matProjRight;
-   Matrix3D m_matrixTotal;
+   Matrix3D m_matProj[2];
+   Matrix3D m_matrixTotal[2];
+   int m_stereo3D;
 
    RECT m_rcviewport;
 
@@ -60,7 +60,7 @@ public:
 
    void TransformVertices(const Vertex3D_NoTex2 * rgv, const WORD * rgi, int count, Vertex2D * rgvout) const;
 
-   Vertex3Ds Unproject(const Vertex3Ds& point, int eye);
+   Vertex3Ds Unproject(const Vertex3Ds& point);
    Vertex3Ds Get3DPointFrom2D(const POINT& p);
 
    void Flip(bool vsync);
@@ -80,15 +80,15 @@ public:
    void EnableAlphaTestReference(const DWORD alphaRefValue) const;
    void EnableAlphaBlend(const bool additiveBlending, const bool set_dest_blend = true, const bool set_blend_op = true) const;
 
-   void DrawBackground(int eye);
-   void DrawBackglass(int eye);
+   void DrawBackground();
+   void DrawBackglass();
    void RenderPlayfieldGraphics(const bool depth_only);
 
    const Matrix3D& GetWorldTransform() const   { return m_proj.m_matWorld; }
    const Matrix3D& GetViewTransform() const    { return m_proj.m_matView; }
    void InitPlayfieldGraphics();
    void InitLights();
-   void UpdateMatrices(int eye);
+   void UpdateMatrices();
 
 private:
    void InitRenderState();
@@ -98,22 +98,17 @@ private:
    // Data members
 public:
    RenderDevice* m_pd3dDevice;
-   RenderTarget* m_pddsBackBufferLeft;
-   RenderTarget* m_pddsBackBufferRight;
+   RenderTarget* m_pddsBackBuffer;
 
-   D3DTexture* m_pddsAOBackBufferLeft;
-   D3DTexture* m_pddsAOBackBufferRight;
-   D3DTexture* m_pddsAOBackTmpBufferLeft;
-   D3DTexture* m_pddsAOBackTmpBufferRight;
+   D3DTexture* m_pddsAOBackBuffer;
+   D3DTexture* m_pddsAOBackTmpBuffer;
 
-   D3DTexture* m_pdds3DZBufferLeft;
-   D3DTexture* m_pdds3DZBufferRight;
+   D3DTexture* m_pdds3DZBuffer;
 
 #ifdef FPS
    CGpuProfiler m_gpu_profiler;
 #endif
-   void* m_pddsZBufferLeft; // D3DTexture* or RenderTarget*, depending on HW support
-   void* m_pddsZBufferRight; // D3DTexture* or RenderTarget*, depending on HW support
+   void* m_pddsZBuffer; // D3DTexture* or RenderTarget*, depending on HW support
 
    Texture pinballEnvTexture; // loaded from Resources
    Texture envTexture; // loaded from Resources

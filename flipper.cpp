@@ -766,7 +766,7 @@ void Flipper::RenderDynamic(RenderDevice* pd3dDevice)
       matTemp.RotateZMatrix(m_phitflipper->m_flipperMover.m_angleCur);
       matTrafo.Multiply(matTemp, matTrafo);
    }
-   g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye(), matTrafo);
+   g_pplayer->UpdateBasicShaderMatrix(&matTrafo);
    pd3dDevice->basicShader->Begin(0);
    pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, vertexBuffer, 0, flipperBaseVertices, indexBuffer, 0, flipperBaseNumIndices);
    pd3dDevice->basicShader->End();
@@ -786,7 +786,7 @@ void Flipper::RenderDynamic(RenderDevice* pd3dDevice)
       pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, vertexBuffer, flipperBaseVertices, flipperBaseVertices, indexBuffer, 0, flipperBaseNumIndices);
       pd3dDevice->basicShader->End();
    }
-   g_pplayer->UpdateBasicShaderMatrix(pd3dDevice->getEye());
+   g_pplayer->UpdateBasicShaderMatrix();
 }
 
 void Flipper::ExportMesh(FILE *f)

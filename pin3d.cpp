@@ -9,16 +9,11 @@ int NumVideoBytes = 0;
 
 Pin3D::Pin3D()
 {
-   m_pddsBackBufferLeft = NULL;
-   m_pddsBackBufferRight = NULL;
-   m_pddsAOBackBufferLeft = NULL;
-   m_pddsAOBackBufferRight = NULL;
-   m_pddsAOBackTmpBufferLeft = NULL;
-   m_pddsAOBackTmpBufferRight = NULL;
-   m_pddsZBufferLeft = NULL;
-   m_pddsZBufferRight = NULL;
-   m_pdds3DZBufferLeft = NULL;
-   m_pdds3DZBufferRight = NULL;
+   m_pddsBackBuffer = NULL;
+   m_pddsAOBackBuffer = NULL;
+   m_pddsAOBackTmpBuffer = NULL;
+   m_pddsZBuffer = NULL;
+   m_pdds3DZBuffer = NULL;
    m_pd3dDevice = NULL;
    m_envRadianceTexture = NULL;
    tableVBuffer = NULL;
@@ -53,27 +48,20 @@ Pin3D::~Pin3D()
    if (tableVBuffer)
       tableVBuffer->release();
 
-   SAFE_RELEASE(m_pddsAOBackBufferLeft);
-   SAFE_RELEASE(m_pddsAOBackBufferRight);
-   SAFE_RELEASE(m_pddsAOBackTmpBufferLeft);
-   SAFE_RELEASE(m_pddsAOBackTmpBufferRight);
+   SAFE_RELEASE(m_pddsAOBackBuffer);
+   SAFE_RELEASE(m_pddsAOBackTmpBuffer);
    if (!m_pd3dDevice->m_useNvidiaApi && m_pd3dDevice->m_INTZ_support)
    {
-      SAFE_RELEASE_NO_SET((D3DTexture*)m_pddsZBufferLeft);
-      SAFE_RELEASE_NO_SET((D3DTexture*)m_pddsZBufferRight);
+      SAFE_RELEASE_NO_SET((D3DTexture*)m_pddsZBuffer);
    }
    else
    {
-      SAFE_RELEASE_NO_SET((RenderTarget*)m_pddsZBufferLeft);
-      SAFE_RELEASE_NO_SET((RenderTarget*)m_pddsZBufferRight);
+      SAFE_RELEASE_NO_SET((RenderTarget*)m_pddsZBuffer);
    }
-   m_pddsZBufferLeft = NULL;
-   m_pddsZBufferRight = NULL;
-   SAFE_RELEASE(m_pdds3DZBufferLeft);
-   SAFE_RELEASE(m_pdds3DZBufferRight);
+   m_pddsZBuffer = NULL;
+   SAFE_RELEASE(m_pdds3DZBuffer);
 
-   SAFE_RELEASE_NO_RCC(m_pddsBackBufferLeft);
-   SAFE_RELEASE_NO_RCC(m_pddsBackBufferRight);
+   SAFE_RELEASE_NO_RCC(m_pddsBackBuffer);
 
    delete m_pd3dDevice;
 }
@@ -98,9 +86,9 @@ void Pin3D::TransformVertices(const Vertex3D_NoTex2 * rgv, const WORD * rgi, int
       const float z = rgv[l].z;
 
       // Transform it through the current matrix set
-      const float xp = m_proj.m_matrixTotal._11*x + m_proj.m_matrixTotal._21*y + m_proj.m_matrixTotal._31*z + m_proj.m_matrixTotal._41;
-      const float yp = m_proj.m_matrixTotal._12*x + m_proj.m_matrixTotal._22*y + m_proj.m_matrixTotal._32*z + m_proj.m_matrixTotal._42;
-      const float wp = m_proj.m_matrixTotal._14*x + m_proj.m_matrixTotal._24*y + m_proj.m_matrixTotal._34*z + m_proj.m_matrixTotal._44;
+      const float xp = m_proj.m_matrixTotal[0]._11*x + m_proj.m_matrixTotal[0]._21*y + m_proj.m_matrixTotal[0]._31*z + m_proj.m_matrixTotal[0]._41;
+      const float yp = m_proj.m_matrixTotal[0]._12*x + m_proj.m_matrixTotal[0]._22*y + m_proj.m_matrixTotal[0]._32*z + m_proj.m_matrixTotal[0]._42;
+      const float wp = m_proj.m_matrixTotal[0]._14*x + m_proj.m_matrixTotal[0]._24*y + m_proj.m_matrixTotal[0]._34*z + m_proj.m_matrixTotal[0]._44;
 
       // Finally, scale the vertices to screen coords. This step first
       // "flattens" the coordinates from 3D space to 2D device coordinates,
@@ -222,7 +210,7 @@ HRESULT Pin3D::InitPin3D(const HWND hwnd, const bool fullScreen, const int displ
 #ifndef ENABLE_SDL
    m_hwnd = hwnd;
 #endif
-   m_stereo3D = stereo3D;
+   m_proj.m_stereo3D = m_stereo3D = stereo3D;
 
    m_useAA = useAA;
 #ifdef ENABLE_VR
@@ -256,14 +244,7 @@ HRESULT Pin3D::InitPin3D(const HWND hwnd, const bool fullScreen, const int displ
    vp.MaxZ = 1.0f;
    m_pd3dDevice->SetViewport(&vp);
 
-   m_pd3dDevice->setEye(0);
-   m_pddsZBufferLeft = m_pd3dDevice->AttachZBufferTo(m_pd3dDevice->GetBackBufferTexture());
-
-   m_pd3dDevice->setEye(1);
-   if (stereo3D != STEREO_OFF) {
-      m_pddsZBufferRight = m_pd3dDevice->AttachZBufferTo(m_pd3dDevice->GetBackBufferTexture());
-   }
-   m_pd3dDevice->setEye(0);
+   m_pddsZBuffer = m_pd3dDevice->AttachZBufferTo(m_pd3dDevice->GetBackBufferTexture());
 
    pinballEnvTexture.CreateFromResource(IDB_BALL);
 
@@ -287,15 +268,7 @@ HRESULT Pin3D::InitPin3D(const HWND hwnd, const bool fullScreen, const int displ
    m_pd3dDevice->m_texMan.SetDirty(m_envRadianceTexture);
 
 #ifdef ENABLE_SDL
-   m_pddsBackBufferLeft = m_pd3dDevice->GetBackBufferTexture();
-   if (stereo3D != STEREO_OFF) {
-      m_pd3dDevice->setEye(1);
-      m_pddsBackBufferRight = m_pd3dDevice->GetBackBufferTexture();
-      m_pd3dDevice->setEye(0);
-   }
-   else {
-      m_pddsBackBufferRight = NULL;
-   }
+   m_pddsBackBuffer = m_pd3dDevice->GetBackBufferTexture();
 
 #else
    if(m_pd3dDevice->DepthBufferReadBackAvailable() && ((stereo3D!=STEREO_OFF) || useAO || ss_refl)) {
@@ -324,13 +297,11 @@ HRESULT Pin3D::InitPin3D(const HWND hwnd, const bool fullScreen, const int displ
 
    if(m_pd3dDevice->DepthBufferReadBackAvailable() && useAO) 
    {//D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, void* data)
-      m_pddsAOBackTmpBufferLeft = m_pd3dDevice->CreateTexture(width, height, 1, RENDERTARGET, colorFormat::GREY, NULL);
-      m_pddsAOBackTmpBufferRight = (stereo3D != STEREO_OFF) ? m_pd3dDevice->CreateTexture(width, height, 1, RENDERTARGET, colorFormat::GREY, NULL) : NULL;
+      m_pddsAOBackTmpBuffer = m_pd3dDevice->CreateTexture(width, height, 1, RENDERTARGET, colorFormat::GREY, NULL, stereo3D);
 
-      m_pddsAOBackBufferLeft = m_pd3dDevice->CreateTexture(width, height, 1, RENDERTARGET, colorFormat::GREY, NULL);
-      m_pddsAOBackBufferRight = (stereo3D != STEREO_OFF) ? m_pd3dDevice->CreateTexture(width, height, 1, RENDERTARGET, colorFormat::GREY, NULL) : NULL;
+      m_pddsAOBackBuffer = m_pd3dDevice->CreateTexture(width, height, 1, RENDERTARGET, colorFormat::GREY, NULL, stereo3D);
 
-       if (!m_pddsAOBackBufferLeft || !m_pddsAOBackTmpBufferLeft || ((stereo3D != STEREO_OFF) && (!m_pddsAOBackBufferRight || !m_pddsAOBackTmpBufferRight)))
+       if (!m_pddsAOBackBuffer || !m_pddsAOBackTmpBuffer)
           return E_FAIL;
    }
 
@@ -343,8 +314,8 @@ HRESULT Pin3D::InitPin3D(const HWND hwnd, const bool fullScreen, const int displ
 
    InitRenderState();
 
-   if (m_pddsBackBufferLeft)
-      SetRenderTarget(m_pddsBackBufferLeft, m_pddsZBufferLeft);
+   if (m_pddsBackBuffer)
+      SetRenderTarget(m_pddsBackBuffer, m_pddsZBuffer);
 
    return S_OK;
 }
@@ -591,7 +562,7 @@ void Pin3D::InitRenderState()
    SetTextureFilter(4, TEXTURE_MODE_TRILINEAR);
 }
 
-void Pin3D::DrawBackground(int eye)
+void Pin3D::DrawBackground()
 {
    SetTextureFilter(0, TEXTURE_MODE_TRILINEAR);
 
@@ -626,7 +597,7 @@ void Pin3D::DrawBackground(int eye)
    }
 }
 
-void Pin3D::DrawBackglass(int eye)
+void Pin3D::DrawBackglass()
 {
    SetTextureFilter(0, TEXTURE_MODE_TRILINEAR);
 
@@ -734,22 +705,22 @@ Matrix3D ComputeLaybackTransform(const float layback)
    return matTrans;
 }
 
-void Pin3D::UpdateMatrices(int eye)
+void Pin3D::UpdateMatrices()
 {
 #ifdef ENABLE_VR
    if (m_stereo3D == STEREO_VR) {
-      m_pd3dDevice->SetTransformVR(eye);
-      Shader::GetTransform(TRANSFORMSTATE_PROJECTION, (eye == 0) ? (&m_proj.m_matProjLeft) : (&m_proj.m_matProjRight));
-      Shader::GetTransform(TRANSFORMSTATE_VIEW, &m_proj.m_matView);
+      m_pd3dDevice->SetTransformVR();
+      Shader::GetTransform(TRANSFORMSTATE_PROJECTION, m_proj.m_matProj, 2);
+      Shader::GetTransform(TRANSFORMSTATE_VIEW, &m_proj.m_matView, 1);
    } else
 #endif
    {
-      Shader::SetTransform(TRANSFORMSTATE_PROJECTION, (eye==0) ?  (&m_proj.m_matProjLeft): (&m_proj.m_matProjRight));
-      Shader::SetTransform(TRANSFORMSTATE_VIEW, &m_proj.m_matView);
+      Shader::SetTransform(TRANSFORMSTATE_PROJECTION, m_proj.m_matProj, m_stereo3D != STEREO_OFF  ? 2 : 1);
+      Shader::SetTransform(TRANSFORMSTATE_VIEW, &m_proj.m_matView, 1);
    }
-   Shader::SetTransform(TRANSFORMSTATE_WORLD, &m_proj.m_matWorld);
+   Shader::SetTransform(TRANSFORMSTATE_WORLD, &m_proj.m_matWorld, 1);
 
-   m_proj.CacheTransform(eye);
+   m_proj.CacheTransform();
 }
 
 void Pin3D::InitLayoutFS()
@@ -831,18 +802,18 @@ void Pin3D::InitLayoutFS()
    if (m_stereo3D != STEREO_OFF) {
       float stereoOffset = 0.03f;
       proj = Matrix3D::MatrixPerspectiveOffCenterLH(left - stereoOffset, right - stereoOffset, bottom, top, m_proj.m_rznear, m_proj.m_rzfar);
-      memcpy(m_proj.m_matProjLeft.m, proj.m, sizeof(float) * 4 * 4);
+      memcpy(m_proj.m_matProj[0].m, proj.m, sizeof(float) * 4 * 4);
       proj = Matrix3D::MatrixPerspectiveOffCenterLH(left + stereoOffset, right + stereoOffset, bottom, top, m_proj.m_rznear, m_proj.m_rzfar);
-      memcpy(m_proj.m_matProjRight.m, proj.m, sizeof(float) * 4 * 4);
+      memcpy(m_proj.m_matProj[1].m, proj.m, sizeof(float) * 4 * 4);
    }
    else {
       proj = Matrix3D::MatrixPerspectiveOffCenterLH(left, right, bottom, top, m_proj.m_rznear, m_proj.m_rzfar);
-      memcpy(m_proj.m_matProjLeft.m, proj.m, sizeof(float) * 4 * 4);
+      memcpy(m_proj.m_matProj[0].m, proj.m, sizeof(float) * 4 * 4);
    }
 
    //m_proj.m_cameraLength = sqrtf(m_proj.m_vertexcamera.x*m_proj.m_vertexcamera.x + m_proj.m_vertexcamera.y*m_proj.m_vertexcamera.y + m_proj.m_vertexcamera.z*m_proj.m_vertexcamera.z);
 
-   UpdateMatrices(0);
+   UpdateMatrices();
 
    // Compute view vector
    /*Matrix3D temp, viewRot;
@@ -975,25 +946,25 @@ void Pin3D::InitLayout(const bool FSS_mode, const float xpixoff, const float ypi
       float stereoOffset = 0.04f*m_proj.m_rznear;
       proj = Matrix3D::MatrixPerspectiveOffCenterLH(left + stereoOffset, right + stereoOffset, bottom, top, m_proj.m_rznear, m_proj.m_rzfar);
       proj._41 += 1.4f * stereoOffset;
-      memcpy(m_proj.m_matProjLeft.m, proj.m, sizeof(float) * 4 * 4);
+      memcpy(m_proj.m_matProj[0].m, proj.m, sizeof(float) * 4 * 4);
       proj = Matrix3D::MatrixPerspectiveOffCenterLH(left - stereoOffset, right - stereoOffset, bottom, top, m_proj.m_rznear, m_proj.m_rzfar);
       proj._41 -= 1.4f * stereoOffset;
-      memcpy(m_proj.m_matProjRight.m, proj.m, sizeof(float) * 4 * 4);
+      memcpy(m_proj.m_matProj[1].m, proj.m, sizeof(float) * 4 * 4);
    }
    else {
       proj = Matrix3D::MatrixPerspectiveOffCenterLH(left, right, bottom, top, m_proj.m_rznear, m_proj.m_rzfar);
-      memcpy(m_proj.m_matProjLeft.m, proj.m, sizeof(float) * 4 * 4);
+      memcpy(m_proj.m_matProj[0].m, proj.m, sizeof(float) * 4 * 4);
    }
    if (xpixoff != 0.f || ypixoff != 0.f)
    {
       Matrix3D projTrans;
       projTrans.SetTranslation((float)((double)xpixoff / (double)vp.Width), (float)((double)ypixoff / (double)vp.Height), 0.f);
-      projTrans.Multiply(m_proj.m_matProjLeft, m_proj.m_matProjLeft);
-      projTrans.Multiply(m_proj.m_matProjRight, m_proj.m_matProjRight);
+      projTrans.Multiply(m_proj.m_matProj[0], m_proj.m_matProj[0]);
+      projTrans.Multiply(m_proj.m_matProj[1], m_proj.m_matProj[1]);
    }
 
    //m_proj.m_cameraLength = sqrtf(m_proj.m_vertexcamera.x*m_proj.m_vertexcamera.x + m_proj.m_vertexcamera.y*m_proj.m_vertexcamera.y + m_proj.m_vertexcamera.z*m_proj.m_vertexcamera.z);
-   UpdateMatrices(0);
+   UpdateMatrices();
 
    // Compute view vector
    /*Matrix3D temp, viewRot;
@@ -1080,7 +1051,7 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
    {
       assert(tableVBuffer != NULL);
       m_pd3dDevice->basicShader->Begin(0);
-      m_pd3dDevice->DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_NOTEX2_VERTEX, tableVBuffer, 0, 4);
+      m_pd3dDevice->DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_NOTEX2_VERTEX, tableVBuffer, 0, 4, true);
       m_pd3dDevice->basicShader->End();
    }
    else
@@ -1126,11 +1097,11 @@ void Pin3D::Flip(bool vsync)
    m_pd3dDevice->Flip(vsync);
 }
 
-Vertex3Ds Pin3D::Unproject(const Vertex3Ds& point,int eye)
+Vertex3Ds Pin3D::Unproject(const Vertex3Ds& point)
 {
-   m_proj.CacheTransform(eye); // compute m_matrixTotal
+   m_proj.CacheTransform(); // compute m_matrixTotal
 
-   Matrix3D m2 = m_proj.m_matrixTotal; // = world * view * proj
+   Matrix3D m2 = m_proj.m_matrixTotal[0]; // = world * view * proj
    m2.Invert();
    Vertex3Ds p, p3;
 
@@ -1146,8 +1117,8 @@ Vertex3Ds Pin3D::Get3DPointFrom2D(const POINT& p)
    Vertex3Ds p1, p2, pNear, pFar;
    pNear.x = (float)p.x; pNear.y = (float)p.y; pNear.z = vp.MinZ;
    pFar.x = (float)p.x; pFar.y = (float)p.y; pFar.z = vp.MaxZ;
-   p1 = Unproject(pNear, 0);
-   p2 = Unproject(pFar, 0);
+   p1 = Unproject(pNear);
+   p2 = Unproject(pFar);
    float wz = g_pplayer->m_ptable->m_tableheight;
    float wx = ((wz - p1.z)*(p2.x - p1.x)) / (p2.z - p1.z) + p1.x;
    float wy = ((wz - p1.z)*(p2.y - p1.y)) / (p2.z - p1.z) + p1.y;
@@ -1328,14 +1299,15 @@ void PinProjection::ComputeNearFarPlane(std::vector<Vertex3Ds>& verts)
    m_rzfar *= 1.01f;
 }
 
-void PinProjection::CacheTransform(int eye)
+void PinProjection::CacheTransform()
 {
    Matrix3D matT;
-   if (eye==0) 
-      m_matProjLeft.Multiply(m_matView, matT);        // matT = matView * matProjLeft
-   else
-      m_matProjRight.Multiply(m_matView, matT);        // matT = matView * matProjLeft
-   matT.Multiply(m_matWorld, m_matrixTotal);   // total = matWorld * matView * matProj
+   m_matProj[0].Multiply(m_matView, matT);        // matT = matView * matProjLeft
+   matT.Multiply(m_matWorld, m_matrixTotal[0]);   // total = matWorld * matView * matProj
+   if (m_stereo3D > 0) {
+      m_matProj[1].Multiply(m_matView, matT);
+      matT.Multiply(m_matWorld, m_matrixTotal[1]);
+   }
 }
 
 // transforms the backdrop
@@ -1357,9 +1329,9 @@ void PinProjection::TransformVertices(const Vertex3Ds * const rgv, const WORD * 
       const float z = rgv[l].z;
 
       // Transform it through the current matrix set
-      const float xp = m_matrixTotal._11*x + m_matrixTotal._21*y + m_matrixTotal._31*z + m_matrixTotal._41;
-      const float yp = m_matrixTotal._12*x + m_matrixTotal._22*y + m_matrixTotal._32*z + m_matrixTotal._42;
-      const float wp = m_matrixTotal._14*x + m_matrixTotal._24*y + m_matrixTotal._34*z + m_matrixTotal._44;
+      const float xp = m_matrixTotal[0]._11*x + m_matrixTotal[0]._21*y + m_matrixTotal[0]._31*z + m_matrixTotal[0]._41;
+      const float yp = m_matrixTotal[0]._12*x + m_matrixTotal[0]._22*y + m_matrixTotal[0]._32*z + m_matrixTotal[0]._42;
+      const float wp = m_matrixTotal[0]._14*x + m_matrixTotal[0]._24*y + m_matrixTotal[0]._34*z + m_matrixTotal[0]._44;
 
       // Finally, scale the vertices to screen coords. This step first
       // "flattens" the coordinates from 3D space to 2D device coordinates,

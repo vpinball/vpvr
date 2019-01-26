@@ -168,7 +168,7 @@ public:
          return;
 
       if (m_buffers[m_curIdx])
-         pd3dDevice->DrawPrimitiveVB(RenderDevice::TRIANGLEFAN, MY_D3DFVF_NOTEX2_VERTEX, m_buffers[m_curIdx], 0, 3);
+         pd3dDevice->DrawPrimitiveVB(RenderDevice::TRIANGLEFAN, MY_D3DFVF_NOTEX2_VERTEX, m_buffers[m_curIdx], 0, 3, true);
 
       m_curIdx = (m_curIdx + 1) % m_buffers.size();
 
@@ -255,8 +255,8 @@ public:
    virtual ~Player();
 
    HRESULT Init(PinTable * const ptable, const HWND hwndProgress, const HWND hwndProgressName);
-   void RenderDynamicMirror(const bool onlyBalls, int eye);
-   void RenderMirrorOverlay(int eye);
+   void RenderDynamicMirror(const bool onlyBalls);
+   void RenderMirrorOverlay();
    void InitBallShader();
    void CreateDebugFont();
    void DebugPrint(int x, int y, LPCSTR text, int stringLen, bool shadow = false);
@@ -268,21 +268,19 @@ public:
 
    void InitStatic(HWND hwndProgress);
 
-   void UpdatePerFrame();
-
    void UpdatePhysics();
    void Render();
-   void RenderDynamics(int eye);
+   void RenderDynamics();
 
    void DrawBalls();
 
    void SetClipPlanePlayfield(const bool clip_orientation);
 
-   void DrawBulbLightBuffer(int eye);
+   void DrawBulbLightBuffer();
    void Bloom(float x, float y, float tx, float ty);
-   void SSRefl(int eye);
-   void RenderFXAA(const bool stereo, const bool SMAA, const bool DLAA, const bool NFAA, const bool FXAA1, const bool FXAA2, const bool FXAA3, const bool depth_available);
-   void RenderStereo(int stereo3D);
+   void SSRefl();
+   void RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, const bool NFAA, const bool FXAA1, const bool FXAA2, const bool FXAA3, const bool depth_available);
+   void RenderStereo(int stereo3D, bool shaderAA);
 
    void UpdateHUD();
 
@@ -597,11 +595,11 @@ public:
    bool RenderStaticOnly();
    bool RenderAOOnly();
    unsigned int ProfilingMode();
-   void UpdateBasicShaderMatrix(int eye, const Matrix3D& objectTrafo = Matrix3D(1.0f));
+   void UpdateBasicShaderMatrix(const Matrix3D* objectTrafo = NULL);
    void InitShader();
    void UpdateCameraModeDisplay();
    void UpdateBackdropSettings(const bool up);
-   void UpdateBallShaderMatrix(int eye);
+   void UpdateBallShaderMatrix();
    void CalcBallAspectRatio();
    void GetBallAspectRatio(const Ball * const pball, float &stretchX, float &stretchY, const float zHeight);
    //void DrawBallReflection(Ball *pball, const float zheight, const bool lowDetailBall);

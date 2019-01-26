@@ -190,12 +190,12 @@ void Shader::SetFloatArray(const D3DXHANDLE hParameter, const float* pData, cons
    m_renderDevice->m_curParameterChanges++;
 }
 
-void Shader::GetTransform(const TransformStateType p1, Matrix3D* p2)
+void Shader::GetTransform(const TransformStateType p1, Matrix3D* p2, const int count)
 {
    CHECKD3D(m_renderDevice->GetCoreDevice()->GetTransform((D3DTRANSFORMSTATETYPE)p1, p2));
 }
 
-void Shader::SetTransform(const TransformStateType p1, const Matrix3D * p2)
+void Shader::SetTransform(const TransformStateType p1, const Matrix3D * p2, const int count)
 {
    CHECKD3D(m_renderDevice->GetCoreDevice()->SetTransform((D3DTRANSFORMSTATETYPE)p1, p2));
 }
