@@ -267,7 +267,7 @@ namespace Win32xx
                     if (pWnd)
                     {
                         isProcessed = pWnd->PreTranslateMessage(msg);
-                        if(isProcessed)
+                        if (isProcessed)
                             break;
                     }
                 }

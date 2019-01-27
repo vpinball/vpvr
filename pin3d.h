@@ -50,11 +50,8 @@ public:
    Pin3D();
    ~Pin3D();
 
-#ifdef ENABLE_SDL
-   HRESULT Pin3D::InitPin3D(HWND *hwnd, const bool fullScreen, const int display, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl);
-#else
-   HRESULT Pin3D::InitPin3D(const HWND hwnd, const bool fullScreen, const int display, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl);
-#endif
+   HRESULT InitPin3D(HWND* hwnd, const bool fullScreen, const int display, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl);
+
    void InitLayoutFS();
    void InitLayout(const bool FSS_mode, const float xpixoff = 0.f, const float ypixoff = 0.f);
 
@@ -65,15 +62,28 @@ public:
 
    void Flip(bool vsync);
 #ifdef ENABLE_SDL
-   void SetRenderTarget(RenderTarget* pddsSurface, void* unused) const;
+   void SetRenderTarget(RenderDevice * const pd3dDevice, RenderTarget* pddsSurface, void* unused) const;
+   void SetPrimaryRenderTarget(RenderTarget* pddsSurface, void* unused) const;
+   void SetSecondaryRenderTarget(RenderTarget* pddsSurface, void* unused) const;
 #else
-   void SetRenderTarget(D3DTexture* pddsSurface, RenderTarget* pddsZ) const;
-   void SetRenderTarget(D3DTexture* pddsSurface, D3DTexture* pddsZ) const;
-   void SetRenderTarget(RenderTarget* pddsSurface, void* pddsZ) const;
-   void SetRenderTarget(D3DTexture* pddsSurface, void* pddsZ) const;
+   void SetRenderTarget(RenderDevice * const pd3dDevice, D3DTexture* pddsSurface, RenderTarget* pddsZ) const;
+   void SetRenderTarget(RenderDevice * const pd3dDevice, D3DTexture* pddsSurface, D3DTexture* pddsZ) const;
+   void SetRenderTarget(RenderDevice * const pd3dDevice, RenderTarget* pddsSurface, void* pddsZ) const;
+   void SetRenderTarget(RenderDevice * const pd3dDevice, D3DTexture* pddsSurface, void* pddsZ) const;
+
+   void SetPrimaryRenderTarget(D3DTexture* pddsSurface, RenderTarget* pddsZ) const;
+   void SetPrimaryRenderTarget(D3DTexture* pddsSurface, D3DTexture* pddsZ) const;
+   void SetPrimaryRenderTarget(RenderTarget* pddsSurface, void* pddsZ) const;
+   void SetPrimaryRenderTarget(D3DTexture* pddsSurface, void* pddsZ) const;
+   void SetSecondaryRenderTarget(D3DTexture* pddsSurface, RenderTarget* pddsZ) const;
+   void SetSecondaryRenderTarget(D3DTexture* pddsSurface, D3DTexture* pddsZ) const;
+   void SetSecondaryRenderTarget(RenderTarget* pddsSurface, void* pddsZ) const;
+   void SetSecondaryRenderTarget(D3DTexture* pddsSurface, void* pddsZ) const;
 #endif
 
-   void SetTextureFilter(const int TextureNum, const int Mode) const;
+   void SetTextureFilter(RenderDevice * const pd3dDevice, const int TextureNum, const int Mode) const;
+   void SetPrimaryTextureFilter(const int TextureNum, const int Mode) const;
+   void SetSecondaryTextureFilter(const int TextureNum, const int Mode) const;
 
    void InitBackglassVR();
 
@@ -91,13 +101,19 @@ public:
    void UpdateMatrices();
 
 private:
-   void InitRenderState();
+   void InitRenderState(RenderDevice * const pd3dDevice);
+   void InitPrimaryRenderState();
+   void InitSecondaryRenderState();
+
+   HRESULT InitPrimary(HWND *hwnd, const bool fullScreen, const int display, const int colordepth, int &refreshrate, const int VSync, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl);
 
    int m_stereo3D;
 
    // Data members
 public:
-   RenderDevice* m_pd3dDevice;
+   RenderDevice * m_pd3dPrimaryDevice;
+   RenderDevice* m_pd3dSecondaryDevice;
+
    RenderTarget* m_pddsBackBuffer;
 
    D3DTexture* m_pddsAOBackBuffer;
@@ -136,7 +152,7 @@ public:
 
    //Vertex3Ds m_viewVec;        // direction the camera is facing
 
-   ViewPort vp;
+   ViewPort m_viewPort;
    bool m_useAA;
 
 private:

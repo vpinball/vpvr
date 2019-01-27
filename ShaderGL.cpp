@@ -472,18 +472,20 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
 void Shader::Unload()
 {
    //Free all uniform cache pointers
-   for (auto it = uniformFloatP.begin(); it != uniformFloatP.end(); it++)
-   {
-      if (it->second.data)
-         free(it->second.data);
-   }
+   if (uniformFloatP.size() > 0)
+      for (auto it = uniformFloatP.begin(); it != uniformFloatP.end(); it++)
+      {
+         if (it->second.data)
+            free(it->second.data);
+      }
    uniformFloatP.clear();
    //Delete all glPrograms and their uniformLocation cache
-   for (auto it = shaderList.begin(); it != shaderList.end(); it++)
-   {
-      CHECKD3D(glDeleteProgram(it->second.program));
-      it->second.uniformLocation->clear();
-   }
+   if (shaderList.size() > 0)
+      for (auto it = shaderList.begin(); it != shaderList.end(); it++)
+      {
+         CHECKD3D(glDeleteProgram(it->second.program));
+         it->second.uniformLocation->clear();
+      }
    shaderList.clear();
 }
 

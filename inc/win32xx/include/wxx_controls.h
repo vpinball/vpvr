@@ -1682,7 +1682,7 @@ namespace Win32xx
         assert(IsWindow());
         DWORD result = static_cast<DWORD>(MonthCal_SetFirstDayOfWeek(*this, day));
 
-        if(pOldDay)
+        if (pOldDay)
             *pOldDay = LOWORD(result);
 
         return (HIWORD(result) != 0);

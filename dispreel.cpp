@@ -245,8 +245,10 @@ void DispReel::EndPlay()
    IEditable::EndPlay();
 }
 
-void DispReel::RenderDynamic(RenderDevice* pd3dDevice)
+void DispReel::RenderDynamic()
 {
+   RenderDevice * const pd3dDevice = m_fBackglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    TRACE_FUNCTION();
 
    if (!m_d.m_fVisible || !GetPTable()->GetEMReelsEnabled())
@@ -305,11 +307,11 @@ void DispReel::RenderDynamic(RenderDevice* pd3dDevice)
    //g_pplayer->m_pin3d.DisableAlphaBlend(); //!! not necessary anymore
    pd3dDevice->SetRenderState(RenderDevice::ALPHATESTENABLE, RenderDevice::RS_FALSE);
 
-   //if(g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_fReflectionEnabled)
+   //if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_fReflectionEnabled)
    //	pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 }
 
-void DispReel::RenderSetup(RenderDevice* pd3dDevice)
+void DispReel::RenderSetup()
 {
    // get the render sizes of the objects (reels and frame)
    m_renderwidth = max(0.0f, m_d.m_width / (float)EDITOR_BG_WIDTH);
@@ -395,7 +397,7 @@ void DispReel::RenderSetup(RenderDevice* pd3dDevice)
    m_timenextupdate = g_pplayer->m_time_msec + m_d.m_updateinterval;
 }
 
-void DispReel::RenderStatic(RenderDevice* pd3dDevice)
+void DispReel::RenderStatic()
 {
 }
 
@@ -848,7 +850,7 @@ STDMETHODIMP DispReel::put_Image(BSTR newVal)
    char szImage[MAXTOKEN];
    WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, 32, NULL, NULL);
    const Texture * const tex = m_ptable->GetImage(szImage);
-   if(tex && tex->IsHDR())
+   if (tex && tex->IsHDR())
    {
        ShowError("Cannot use a HDR image (.exr/.hdr) here");
        return E_FAIL;

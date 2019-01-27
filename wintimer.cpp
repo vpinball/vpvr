@@ -210,11 +210,11 @@ double TheoreticRadiation(const unsigned int day, const unsigned int month, cons
 double MaxTheoreticRadiation(const unsigned int year, const double rlat) // radian
 {
     double maxTR = 0.;
-    for(unsigned int month = 0; month < 12; ++month)
-        for(unsigned int day = 0; day < daysPerMonths[month]; ++day)
+    for (unsigned int month = 0; month < 12; ++month)
+        for (unsigned int day = 0; day < daysPerMonths[month]; ++day)
         {
             const double TR = TheoreticRadiation(day,month,year,rlat);
-            if(TR > maxTR)
+            if (TR > maxTR)
                 maxTR = TR;
         }
     return maxTR;

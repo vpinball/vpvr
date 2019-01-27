@@ -910,7 +910,7 @@ void Ramp::RenderStaticHabitrail(RenderDevice* pd3dDevice, const Material * cons
       pd3dDevice->basicShader->SetTexture("Texture0", pin, false);
       pd3dDevice->basicShader->SetTechnique("basic_with_texture");
 
-      //g_pplayer->m_pin3d.SetTextureFilter(0, TEXTURE_MODE_TRILINEAR);
+      //g_pplayer->m_pin3d.SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
    }
    pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
 
@@ -1202,8 +1202,9 @@ void Ramp::prepareHabitrail(RenderDevice* pd3dDevice)
    m_meshIndices.clear();
 }
 
-void Ramp::RenderSetup(RenderDevice* pd3dDevice)
+void Ramp::RenderSetup()
 {
+   RenderDevice *pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
    if (m_d.m_fVisible)
    {
       if (isHabitrail())
@@ -1213,8 +1214,10 @@ void Ramp::RenderSetup(RenderDevice* pd3dDevice)
    }
 }
 
-void Ramp::RenderStatic(RenderDevice* pd3dDevice)
+void Ramp::RenderStatic()
 {
+   RenderDevice *pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    // return if not Visible
    if (!m_d.m_fVisible)
       return;
@@ -2391,7 +2394,7 @@ void Ramp::RenderRamp(RenderDevice *pd3dDevice, const Material * const mat)
          pd3dDevice->basicShader->SetTexture("Texture0", pin, false);
          pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
 
-         //ppin3d->SetTextureFilter ( 0, TEXTURE_MODE_TRILINEAR );
+         //ppin3d->SetPrimaryTextureFilter ( 0, TEXTURE_MODE_TRILINEAR );
       }
       else
          pd3dDevice->basicShader->SetTechnique("basic_without_texture");
@@ -2445,8 +2448,10 @@ void Ramp::RenderRamp(RenderDevice *pd3dDevice, const Material * const mat)
 // Always called each frame to render over everything else (along with primitives)
 // Same code as RenderStatic (with the exception of the alpha tests).
 // Also has less drawing calls by bundling seperate calls.
-void Ramp::RenderDynamic(RenderDevice* pd3dDevice)
+void Ramp::RenderDynamic()
 {
+   RenderDevice *pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    TRACE_FUNCTION();
 
    const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);

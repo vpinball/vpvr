@@ -146,10 +146,9 @@ const VertexElement VertexTrafoTexelElement[] =
    { 0, 0, 0, 0, NULL }
 
    /*   { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITIONT, 0 }, // transformed pos
-      { 0, 4 * sizeof(float), D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 }, // legacy //!! unused, just there to share same code as VertexNormalTexelElement
-      { 0, 5 * sizeof(float), D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 1 }, // legacy //!! dto.
-      { 0, 6 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 }, // tex0
-      D3DDECL_END()*/
+   { 0, 4 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD,  1 }, // (mostly, except for classic lights) unused, there to be able to share same code as VertexNormalTexelElement
+   { 0, 6 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 }, // tex0
+   D3DDECL_END()*/
 };
 VertexDeclaration* RenderDevice::m_pVertexTrafoTexelDeclaration = (VertexDeclaration*)&VertexTrafoTexelElement;
 #else
@@ -181,11 +180,11 @@ VertexDeclaration* RenderDevice::m_pVertexNormalTexelDeclaration = NULL;
 
 VertexDeclaration* RenderDevice::m_pVertexNormalTexelTexelDeclaration = NULL;*/
 
+// pre-transformed, take care that this is a float4 and needs proper w component setup (also see https://docs.microsoft.com/en-us/windows/desktop/direct3d9/mapping-fvf-codes-to-a-directx-9-declaration)
 const VertexElement VertexTrafoTexelElement[] =
 {
    { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITIONT, 0 }, // transformed pos
-   { 0, 4 * sizeof(float), D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 0 }, // legacy //!! unused, just there to share same code as VertexNormalTexelElement
-   { 0, 5 * sizeof(float), D3DDECLTYPE_D3DCOLOR, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_COLOR, 1 }, // legacy //!! dto.
+   { 0, 4 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD,  1 }, // (mostly, except for classic lights) unused, there to be able to share same code as VertexNormalTexelElement
    { 0, 6 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 }, // tex0
    D3DDECL_END()
 };
@@ -371,7 +370,7 @@ void EnumerateDisplayModes(const int adapter, std::vector<VideoMode>& modes)
 static bool NVAPIinit = false; //!! meh
 
 bool RenderDevice::m_INTZ_support = false;
-bool RenderDevice::m_useNvidiaApi = false;
+VertexBuffer *RenderDevice::m_quadVertexBuffer = NULL;
 
 #ifdef USE_D3D9EX
 typedef HRESULT(WINAPI *pD3DC9Ex)(UINT SDKVersion, IDirect3D9Ex**);
@@ -391,7 +390,7 @@ static pDEC mDwmEnableComposition = NULL;
 #ifdef ENABLE_SDL
 static void CheckForGLLeak()
 {
-   //TODO if needed
+   //TODO
 }
 #else
 static void CheckForD3DLeak(IDirect3DDevice9* d3d)
@@ -512,33 +511,35 @@ void RenderDevice::InitVR() {
 }
 
 #ifdef ENABLE_SDL
-RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const int height, const bool fullscreen, const int colordepth, int &refreshrate, int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering)
-   : m_texMan(*this)
+RenderDevice::RenderDevice(HWND* const hwnd, const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice)
+   : m_texMan(*this), m_width(width), m_height(height), m_fullscreen(fullscreen),
+   m_colorDepth(colordepth), m_vsync(VSync), m_useAA(useAA), m_stereo3D(stereo3D), m_FXAA(FXAA),
+   m_ssRefl(ss_refl), m_useNvidiaApi(useNvidiaApi), m_disableDwm(disable_dwm), m_BWrendering(BWrendering)
 {
 #ifdef ENABLE_VR
    m_pHMD = NULL;
    m_rTrackedDevicePose = NULL;
 #endif
-   m_stereo3D = stereo3D;
+}
 
+void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
+{
    m_stats_drawn_triangles = 0;
 
-   //m_useNvidiaApi = useNvidiaApi;
    m_useNvidiaApi = false;
 
-
    int displays = SDL_GetNumVideoDisplays();
-   if (display >= displays) {
+   if (adapterIndex >= displays) {
       m_adapter = 0;
    }
    else {
-      m_adapter = display;
+      m_adapter = adapterIndex;
    }
    // get display bounds for selected display
    SDL_Rect displayBounds;
    SDL_GetDisplayBounds(m_adapter, &displayBounds);
 
-   bool video10bit = (colordepth == SDL_PIXELFORMAT_ARGB2101010);
+   bool video10bit = (m_colorDepth == SDL_PIXELFORMAT_ARGB2101010);
 
    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
@@ -556,63 +557,63 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
 
    //SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-   m_sdl_hwnd = SDL_CreateWindow(
-      "Visual Pinball Player SDL", displayBounds.x + (displayBounds.w - width) / 2, displayBounds.y + (displayBounds.h - height) / 2, width, height,
-      SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (fullscreen ? SDL_WINDOW_FULLSCREEN : 0) /*| SDL_WINDOW_INPUT_GRABBED*/
+   m_sdl_playfieldHwnd = SDL_CreateWindow(
+      "Visual Pinball Player SDL", displayBounds.x + (displayBounds.w - m_width) / 2, displayBounds.y + (displayBounds.h - m_height) / 2, m_width, m_height,
+      SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (m_fullscreen ? SDL_WINDOW_FULLSCREEN : 0) /*| SDL_WINDOW_INPUT_GRABBED*/
    );
    SDL_SysWMinfo wmInfo;
    SDL_VERSION(&wmInfo.version);
-   SDL_GetWindowWMInfo(m_sdl_hwnd, &wmInfo);
-   *hwnd = wmInfo.info.win.window;
+   SDL_GetWindowWMInfo(m_sdl_playfieldHwnd, &wmInfo);
+   m_windowHwnd = wmInfo.info.win.window;
 
-   m_sdl_context = SDL_GL_CreateContext(m_sdl_hwnd);
+   m_sdl_context = SDL_GL_CreateContext(m_sdl_playfieldHwnd);
 
-   SDL_GL_MakeCurrent(m_sdl_hwnd, m_sdl_context);
+   SDL_GL_MakeCurrent(m_sdl_playfieldHwnd, m_sdl_context);
 
    GLint frameBuffer[4];
    glGetIntegerv(GL_VIEWPORT, frameBuffer);
    int fbWidth = frameBuffer[2];
    int fbHeight = frameBuffer[3];
 
-   switch (stereo3D) {
+   switch (m_stereo3D) {
    case STEREO_OFF:
       m_Buf_width = fbWidth;
       m_Buf_height = fbHeight;
       m_Buf_widthBlur = fbWidth / 3;
       m_Buf_heightBlur = fbHeight / 3;
-      m_Buf_widthSS = fbWidth * (useAA ? 2 : 1);
-      m_Buf_heightSS = fbHeight * (useAA ? 2 : 1);
+      m_Buf_widthSS = fbWidth * (m_useAA ? 2 : 1);
+      m_Buf_heightSS = fbHeight * (m_useAA ? 2 : 1);
       break;
    case STEREO_TB:
    case STEREO_INT:
       m_Buf_width = fbWidth;
       m_Buf_height = fbHeight * 2;
       m_Buf_widthBlur = fbWidth / 3;
-      m_Buf_heightBlur = height * 2 / 3;
-      m_Buf_widthSS = fbWidth * (useAA ? 2 : 1);
-      m_Buf_heightSS = fbHeight * (useAA ? 4 : 2);
+      m_Buf_heightBlur = m_height * 2 / 3;
+      m_Buf_widthSS = fbWidth * (m_useAA ? 2 : 1);
+      m_Buf_heightSS = fbHeight * (m_useAA ? 4 : 2);
       break;
    case STEREO_SBS:
       m_Buf_width = fbWidth * 2;
       m_Buf_height = fbHeight;
       m_Buf_widthBlur = fbWidth * 2 / 3;
       m_Buf_heightBlur = fbHeight / 3;
-      m_Buf_widthSS = fbWidth * (useAA ? 4 : 2);
-      m_Buf_heightSS = fbHeight * (useAA ? 2 : 1);
+      m_Buf_widthSS = fbWidth * (m_useAA ? 4 : 2);
+      m_Buf_heightSS = fbHeight * (m_useAA ? 2 : 1);
       break;
 #ifdef ENABLE_VR
    case STEREO_VR:
       InitVR();
       m_Buf_widthBlur = m_Buf_width * 2 / 3 + 4;
       m_Buf_heightBlur = m_Buf_height / 3;
-      m_Buf_widthSS = m_Buf_width * (useAA ? 4 : 2);
-      m_Buf_heightSS = m_Buf_height * (useAA ? 2 : 1);
+      m_Buf_widthSS = m_Buf_width * (m_useAA ? 4 : 2);
+      m_Buf_heightSS = m_Buf_height * (m_useAA ? 2 : 1);
       m_Buf_width = m_Buf_width * 2;
       break;
 #endif
    default:
       char buf[1024];
-      sprintf_s(buf, sizeof(buf), "Unknown stereo Mode id: %d", stereo3D);
+      sprintf_s(buf, sizeof(buf), "Unknown stereo Mode id: %d", m_stereo3D);
       std::runtime_error unknownStereoMode(buf);
       throw(unknownStereoMode);
    }
@@ -632,9 +633,9 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
    }
    CHECKD3D();
 
-   if (VSync > refreshrate)
-      VSync = 0;
-   SDL_GL_SetSwapInterval(VSync);
+   if (m_vsync > refreshrate)
+      m_vsync = 0;
+   SDL_GL_SetSwapInterval(m_vsync);
 
    m_autogen_mipmap = true;
 
@@ -648,40 +649,40 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
    colorFormat renderBufferFormat = RGBA16;
 
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
-   m_pOffscreenBackBufferTexture = CreateTexture(m_Buf_widthSS,m_Buf_heightSS, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, stereo3D);
+   m_pOffscreenBackBufferTexture = CreateTexture(m_Buf_widthSS,m_Buf_heightSS, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
 
    if ((g_pplayer != NULL) && (g_pplayer->m_ptable->m_fReflectElementsOnPlayfield || (g_pplayer->m_fReflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1)))
-         m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_widthSS,m_Buf_heightSS, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, stereo3D);
+         m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_widthSS,m_Buf_heightSS, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
 
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
-   m_pBloomBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, NULL, stereo3D);
+   m_pBloomBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, NULL, m_stereo3D);
 
    // temporary buffer for gaussian blur
-   m_pBloomTmpBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, NULL, stereo3D);
+   m_pBloomTmpBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, NULL, m_stereo3D);
 
    // alloc temporary buffer for postprocessing
-   if ((FXAA > 0) || (stereo3D > 0))
+   if ((m_FXAA > 0) || (m_stereo3D > 0))
       m_pOffscreenBackBufferStereoTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET, RGBA, NULL, 0);
    else
       m_pOffscreenBackBufferStereoTexture = NULL;
 
-   if (stereo3D == STEREO_VR) {
+   if (m_stereo3D == STEREO_VR) {
       m_pOffscreenVRLeft = CreateTexture(m_Buf_width / 2 - 2, m_Buf_height, 0, RENDERTARGET, RGBA, NULL, 0);
       m_pOffscreenVRRight = CreateTexture(m_Buf_width / 2 - 2, m_Buf_height, 0, RENDERTARGET, RGBA, NULL, 0);
    }
 
    // alloc one more temporary buffer for SMAA
-   if (FXAA == Quality_SMAA)
+   if (m_FXAA == Quality_SMAA)
       m_pOffscreenBackBufferSMAATexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET, renderBufferFormat, NULL, 0);
    else
       m_pOffscreenBackBufferSMAATexture = NULL;
 
-   if (ss_refl)
+   if (m_ssRefl)
       m_pReflectionBufferTexture = CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, 0);
    else
       m_pReflectionBufferTexture = NULL;
 
-   if (video10bit && (FXAA == Quality_SMAA || FXAA == Standard_DLAA))
+   if (video10bit && (m_FXAA == Quality_SMAA || m_FXAA == Standard_DLAA))
       ShowError("SMAA or DLAA post-processing AA should not be combined with 10bit-output rendering (will result in visible artifacts)!");
 
    m_curIndexBuffer = 0;
@@ -703,6 +704,28 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
 //   CHECKD3D(glGetIntegeri_v(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, 0, (GLint*)&m_maxaniso));
    m_maxaniso = 0;
 
+   if (m_quadVertexBuffer == NULL) {
+      VertexBuffer::CreateVertexBuffer(4, USAGE_STATIC, MY_D3DFVF_TEX, &m_quadVertexBuffer);
+      Vertex3D_TexelOnly* bufvb;
+      m_quadVertexBuffer->lock(0, 0, (void**)&bufvb, USAGE_STATIC);
+      static const float verts[4 * 5] = //GL Texture coordinates
+      {
+         1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+         0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+         1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+         0.0f, 0.0f, 0.0f, 0.0f, 1.0f
+      };
+      memcpy(bufvb, verts, 4 * sizeof(Vertex3D_TexelOnly));
+      m_quadVertexBuffer->unlock();
+   }
+
+   SetRenderState(RenderDevice::ZFUNC, RenderDevice::Z_LESSEQUAL);
+
+   CHECKD3D();
+}
+
+bool RenderDevice::LoadShaders()
+{
    bool shaderCompilationOkay = true;
    CHECKD3D();
 
@@ -724,7 +747,7 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
    shaderCompilationOkay = ballShader->Load("ballShader.glfx", 0) && shaderCompilationOkay;
 
    DMDShader = new Shader(this);
-   if (stereo3D == STEREO_VR)
+   if (m_stereo3D == STEREO_VR)
       shaderCompilationOkay = DMDShader->Load("DMDShaderVR.glfx", 0) && shaderCompilationOkay;
    else
       shaderCompilationOkay = DMDShader->Load("DMDShader.glfx", 0) && shaderCompilationOkay;
@@ -737,7 +760,7 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
    FBShader->SetVector("quadOffsetScale", 0.0f, 0.0f, 1.0f, 1.0f);
    FBShader->SetVector("quadOffsetScaleTex", 0.0f, 0.0f, 1.0f, 1.0f);
 
-   if (stereo3D) {
+   if (m_stereo3D) {
       StereoShader = new Shader(this);
       shaderCompilationOkay = StereoShader->Load("StereoShader.glfx", 0) && shaderCompilationOkay;
    }
@@ -759,39 +782,20 @@ RenderDevice::RenderDevice(HWND *hwnd, const int display, const int width, const
    if (!shaderCompilationOkay)
       ReportError("Fatal Error: shader compilation failed!", -1, __FILE__, __LINE__);
    CHECKD3D();
-   m_quadVertexBuffer = NULL;
-   VertexBuffer::CreateVertexBuffer(4, USAGE_STATIC, MY_D3DFVF_TEX, &m_quadVertexBuffer);
-   Vertex3D_TexelOnly* bufvb;
-   m_quadVertexBuffer->lock(0, 0, (void**)&bufvb, USAGE_STATIC);
-   static const float verts[4 * 5] = //GL Texture coordinates
-   {
-      1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-      0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-      1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-      0.0f, 0.0f, 0.0f, 0.0f, 1.0f
-   };
-   memcpy(bufvb, verts, 4 * sizeof(Vertex3D_TexelOnly));
-   m_quadVertexBuffer->unlock();
-
-   //m_quadDynVertexBuffer = NULL;
-   //VertexBuffer::CreateVertexBuffer(4, USAGE_STATIC, MY_D3DFVF_TEX, &m_quadDynVertexBuffer);
-
-   if (FXAA == Quality_SMAA)
-      UploadAndSetSMAATextures();
-   else
-   {
-      m_SMAAareaTexture = 0;
-      m_SMAAsearchTexture = 0;
-   }
-
-   SetRenderState(RenderDevice::ZFUNC, RenderDevice::Z_LESSEQUAL);
-
-   CHECKD3D();
+   if (shaderCompilationOkay && m_FXAA == Quality_SMAA)
+         UploadAndSetSMAATextures();
+      else
+      {
+         m_SMAAareaTexture = 0;
+         m_SMAAsearchTexture = 0;
+      }
+   return shaderCompilationOkay;
 }
 
 RenderDevice::~RenderDevice()
 {
-   m_quadVertexBuffer->release();
+   if (m_quadVertexBuffer)
+      m_quadVertexBuffer->release();
    FreeShader();
    if (m_pHMD)
    {
@@ -799,38 +803,43 @@ RenderDevice::~RenderDevice()
       m_pHMD = NULL;
    }
    SDL_GL_DeleteContext(m_sdl_context);
-   SDL_DestroyWindow(m_sdl_hwnd);
+   SDL_DestroyWindow(m_sdl_playfieldHwnd);
    SDL_GL_DeleteContext(m_sdl_context);
-   SDL_DestroyWindow(m_sdl_hwnd);
+   SDL_DestroyWindow(m_sdl_playfieldHwnd);
 }
 
 #else
-RenderDevice::RenderDevice(const HWND hwnd, const int display, const int width, const int height, const bool fullscreen, const int colordepth, int &refreshrate, int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering)
-   : m_texMan(*this)
+RenderDevice::RenderDevice(HWND* const hwnd, const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice)
+   : m_texMan(*this), m_windowHwnd(*hwnd), m_width(width), m_height(height), m_fullscreen(fullscreen),
+      m_colorDepth(colordepth), m_vsync(VSync), m_useAA(useAA), m_stereo3D(stereo3D), m_FXAA(FXAA),
+      m_ssRefl(ss_refl), m_useNvidiaApi(useNvidiaApi), m_disableDwm(disable_dwm), m_BWrendering(BWrendering)
 {
-#ifdef ENABLE_VR
-   m_pHMD = NULL;
-   m_rTrackedDevicePose = NULL;
-#endif
    switch (stereo3D) {
    case STEREO_OFF:
-      m_Buf_width = width;
-      m_Buf_height = height;
+      m_Buf_width = m_width;
+      m_Buf_height = m_height;
+      m_Buf_widthBlur = m_width / 3;
+      m_Buf_heightBlur = m_height / 3;
+      m_Buf_widthSS = m_width * (m_useAA ? 2 : 1);
+      m_Buf_heightSS = m_height * (m_useAA ? 2 : 1);
       break;
    case STEREO_TB:
    case STEREO_INT:
-      m_Buf_width = width;
-      m_Buf_height = height / 2;
+      m_Buf_width = m_width;
+      m_Buf_height = m_height * 2;
+      m_Buf_widthBlur = m_width / 3;
+      m_Buf_heightBlur = m_height * 2 / 3;
+      m_Buf_widthSS = m_width * (m_useAA ? 2 : 1);
+      m_Buf_heightSS = m_height * (m_useAA ? 4 : 2);
       break;
    case STEREO_SBS:
-      m_Buf_width = width;
-      m_Buf_height = height;
+      m_Buf_width = m_width * 2;
+      m_Buf_height = m_height;
+      m_Buf_widthBlur = m_width * 2 / 3;
+      m_Buf_heightBlur = m_height / 3;
+      m_Buf_widthSS = m_width * (m_useAA ? 4 : 2);
+      m_Buf_heightSS = m_height * (m_useAA ? 2 : 1);
       break;
-#ifdef ENABLE_VR
-   case STEREO_VR:
-      InitVR();
-      break;
-#endif
    default:
       char buf[1024];
       sprintf_s(buf, sizeof(buf), "Unknown stereo Mode id: %d", stereo3D);
@@ -840,7 +849,6 @@ RenderDevice::RenderDevice(const HWND hwnd, const int display, const int width, 
 
    m_stats_drawn_triangles = 0;
 
-   m_useNvidiaApi = useNvidiaApi;
    m_adapter = D3DADAPTER_DEFAULT;     // for now, always use the default adapter
 
    mDwmIsCompositionEnabled = (pDICE)GetProcAddress(GetModuleHandle(TEXT("dwmapi.dll")), "DwmIsCompositionEnabled"); //!! remove as soon as win xp support dropped and use static link
@@ -853,7 +861,7 @@ RenderDevice::RenderDevice(const HWND hwnd, const int display, const int width, 
       mDwmIsCompositionEnabled(&dwm);
       m_dwm_enabled = m_dwm_was_enabled = !!dwm;
 
-      if (m_dwm_was_enabled && disable_dwm && IsWindowsVistaOr7()) // windows 8 and above will not allow do disable it, but will still return S_OK
+      if (m_dwm_was_enabled && m_disableDwm && IsWindowsVistaOr7()) // windows 8 and above will not allow do disable it, but will still return S_OK
       {
          mDwmEnableComposition(DWM_EC_DISABLECOMPOSITION);
          m_dwm_enabled = false;
@@ -865,6 +873,26 @@ RenderDevice::RenderDevice(const HWND hwnd, const int display, const int width, 
       m_dwm_enabled = false;
    }
 
+   m_curIndexBuffer = 0;
+   m_curVertexBuffer = 0;
+   currentDeclaration = NULL;
+   //m_curShader = NULL;
+
+   // fill state caches with dummy values
+   memset(textureStateCache, 0xCC, sizeof(DWORD) * 8 * TEXTURE_STATE_CACHE_SIZE);
+   memset(textureSamplerCache, 0xCC, sizeof(DWORD) * 8 * TEXTURE_SAMPLER_CACHE_SIZE);
+
+   // initialize performance counters
+   m_curDrawCalls = m_frameDrawCalls = 0;
+   m_curStateChanges = m_frameStateChanges = 0;
+   m_curTextureChanges = m_frameTextureChanges = 0;
+   m_curParameterChanges = m_frameParameterChanges = 0;
+   m_curTextureUpdates = m_frameTextureUpdates = 0;
+}
+
+void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
+{
+   m_adapter = adapterIndex;
 #ifdef USE_D3D9EX
    m_pD3DEx = NULL;
    m_pD3DDeviceEx = NULL;
@@ -929,7 +957,7 @@ RenderDevice::RenderDevice(const HWND hwnd, const int display, const int width, 
    if (hr != S_OK)
       video10bit = fFalse; // The default = off
 
-   if (!fullscreen && video10bit)
+   if (!m_fullscreen && video10bit)
    {
       ShowError("10Bit-Monitor support requires 'Force exclusive Fullscreen Mode' to be also enabled!");
       video10bit = fFalse;
@@ -937,7 +965,7 @@ RenderDevice::RenderDevice(const HWND hwnd, const int display, const int width, 
 
    // get the current display format
    D3DFORMAT format;
-   if (!fullscreen)
+   if (!m_fullscreen)
    {
       D3DDISPLAYMODE mode;
       CHECKD3D(m_pD3D->GetAdapterDisplayMode(m_adapter, &mode));
@@ -946,32 +974,41 @@ RenderDevice::RenderDevice(const HWND hwnd, const int display, const int width, 
    }
    else
    {
-      format = (D3DFORMAT)((video10bit ? colorFormat::RGBA10 : ((colordepth == 16) ? colorFormat::RGB5 : colorFormat::RGB)));
+      format = (D3DFORMAT)((video10bit ? colorFormat::RGBA10 : ((m_colorDepth == 16) ? colorFormat::RGB5 : colorFormat::RGB)));
    }
 
    // limit vsync rate to actual refresh rate, otherwise special handling in renderloop
-   if (VSync > refreshrate)
-      VSync = 0;
+   if (m_vsync > refreshrate)
+      m_vsync = 0;
 
    D3DPRESENT_PARAMETERS params;
-   params.BackBufferWidth = width;
-   params.BackBufferHeight = height;
+   params.BackBufferWidth = m_width;
+   params.BackBufferHeight = m_height;
    params.BackBufferFormat = format;
    params.BackBufferCount = 1;
    params.MultiSampleType = /*useAA ? D3DMULTISAMPLE_4_SAMPLES :*/ D3DMULTISAMPLE_NONE; // D3DMULTISAMPLE_NONMASKABLE? //!! useAA now uses super sampling/offscreen render
    params.MultiSampleQuality = 0; // if D3DMULTISAMPLE_NONMASKABLE then set to > 0
    params.SwapEffect = D3DSWAPEFFECT_DISCARD;  // FLIP ?
-   params.hDeviceWindow = hwnd;
-   params.Windowed = !fullscreen;
+   params.hDeviceWindow = m_windowHwnd;
+   params.Windowed = !m_fullscreen;
    params.EnableAutoDepthStencil = FALSE;
    params.AutoDepthStencilFormat = D3DFMT_UNKNOWN;      // ignored
    params.Flags = /*fullscreen ? D3DPRESENTFLAG_LOCKABLE_BACKBUFFER :*/ /*(stereo3D ?*/ 0 /*: D3DPRESENTFLAG_DISCARD_DEPTHSTENCIL)*/; // D3DPRESENTFLAG_LOCKABLE_BACKBUFFER only needed for SetDialogBoxMode() below, but makes rendering slower on some systems :/
-   params.FullScreen_RefreshRateInHz = fullscreen ? refreshrate : 0;
+   params.FullScreen_RefreshRateInHz = m_fullscreen ? refreshrate : 0;
 #ifdef USE_D3D9EX
-   params.PresentationInterval = (m_pD3DEx && (VSync != 1)) ? D3DPRESENT_INTERVAL_IMMEDIATE : (!!VSync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE); //!! or have a special mode to force normal vsync?
+   params.PresentationInterval = (m_pD3DEx && (m_vsync != 1)) ? D3DPRESENT_INTERVAL_IMMEDIATE : (!!m_vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE); //!! or have a special mode to force normal vsync?
 #else
    params.PresentationInterval = !!VSync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 #endif
+
+   // check if our HDR texture format supports/does sRGB conversion on texture reads, which must NOT be the case as we always set SRGBTexture=true independent of the format!
+   hr = m_pD3D->CheckDeviceFormat(m_adapter, devtype, params.BackBufferFormat, D3DUSAGE_QUERY_SRGBREAD, D3DRTYPE_TEXTURE, D3DFMT_A32B32G32R32F);
+   if (SUCCEEDED(hr))
+      ShowError("D3D device does support D3DFMT_A32B32G32R32F SRGBTexture reads (which leads to wrong tex colors)");
+   // now the same for our LDR/8bit texture format the other way round
+   hr = m_pD3D->CheckDeviceFormat(m_adapter, devtype, params.BackBufferFormat, D3DUSAGE_QUERY_SRGBREAD, D3DRTYPE_TEXTURE, D3DFMT_A8R8G8B8);
+   if (!SUCCEEDED(hr))
+      ShowError("D3D device does not support D3DFMT_A8R8G8B8 SRGBTexture reads (which leads to wrong tex colors)");
 
    // check if auto generation of mipmaps can be used, otherwise will be done via d3dx
    m_autogen_mipmap = (caps.Caps2 & D3DCAPS2_CANAUTOGENMIPMAP) != 0;
@@ -1019,7 +1056,7 @@ RenderDevice::RenderDevice(const HWND hwnd, const int display, const int width, 
    {
       D3DDISPLAYMODEEX mode;
       mode.Size = sizeof(D3DDISPLAYMODEEX);
-      if (fullscreen)
+      if (m_fullscreen)
       {
          mode.Format = params.BackBufferFormat;
          mode.Width = params.BackBufferWidth;
@@ -1031,10 +1068,10 @@ RenderDevice::RenderDevice(const HWND hwnd, const int display, const int width, 
       CHECKD3D(m_pD3DEx->CreateDeviceEx(
          m_adapter,
          devtype,
-         hwnd,
+         m_windowHwnd,
          flags /*| D3DCREATE_PUREDEVICE*/,
          &params,
-         fullscreen ? &mode : NULL,
+         m_fullscreen ? &mode : NULL,
          &m_pD3DDeviceEx));
 
       m_pD3DDeviceEx->QueryInterface(__uuidof(IDirect3DDevice9), reinterpret_cast<void**>(&m_pD3DDevice));
@@ -1050,7 +1087,7 @@ RenderDevice::RenderDevice(const HWND hwnd, const int display, const int width, 
       HRESULT hr = m_pD3D->CreateDevice(
          m_adapter,
          devtype,
-         hwnd,
+         m_windowHwnd,
          flags /*| D3DCREATE_PUREDEVICE*/,
          &params,
          &m_pD3DDevice);
@@ -1067,7 +1104,7 @@ RenderDevice::RenderDevice(const HWND hwnd, const int display, const int width, 
       refreshrate = mode.RefreshRate;
    }
 
-   /*if(fullscreen)
+   /*if (fullscreen)
        hr = m_pD3DDevice->SetDialogBoxMode(TRUE);*/ // needs D3DPRESENTFLAG_LOCKABLE_BACKBUFFER, but makes rendering slower on some systems :/
 
        // Retrieve a reference to the back buffer.
@@ -1075,48 +1112,19 @@ RenderDevice::RenderDevice(const HWND hwnd, const int display, const int width, 
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create back buffer!", hr, __FILE__, __LINE__);
 
-   const D3DFORMAT render_format = (BWrendering == 1) ? D3DFMT_G16R16F : ((BWrendering == 2) ? D3DFMT_R16F : D3DFMT_A16B16G16R16F);
+   const D3DFORMAT render_format = (m_BWrendering == 1) ? D3DFMT_G16R16F : ((m_BWrendering == 2) ? D3DFMT_R16F : D3DFMT_A16B16G16R16F);
 
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
-   if (stereo3D > 0) {
-      hr = m_pD3DDevice->CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 1,
-         D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pOffscreenBackBufferTextureLeft, NULL); //!! colorFormat::RGBA32?
+   hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pOffscreenBackBufferTexture, NULL); //!! colorFormat::RGBA32?
+   if (FAILED(hr))
+      ReportError("Fatal Error: unable to create render buffer!", hr, __FILE__, __LINE__);
+   if (m_ssRefl) {
+      hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pReflectionBufferTexture, NULL); //!! D3DFMT_A32B32G32R32F?
       if (FAILED(hr))
-         ReportError("Fatal Error: unable to create left stereo render buffer!", hr, __FILE__, __LINE__);
-      hr = m_pD3DDevice->CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 1,
-         D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pOffscreenBackBufferTextureRight, NULL); //!! colorFormat::RGBA32?
-      if (FAILED(hr))
-         ReportError("Fatal Error: unable to create right stereo render buffer!", hr, __FILE__, __LINE__);
+         ReportError("Fatal Error: unable to create reflection buffer!", hr, __FILE__, __LINE__);
    }
    else {
-      hr = m_pD3DDevice->CreateTexture(useAA ? 2 * width : width, useAA ? 2 * height : height, 1,
-         D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pOffscreenBackBufferTextureLeft, NULL); //!! colorFormat::RGBA32?
-      if (FAILED(hr))
-         ReportError("Fatal Error: unable to create render buffer!", hr, __FILE__, __LINE__);
-      m_pOffscreenBackBufferTextureRight = NULL;
-   }
-   if (ss_refl) {
-      if (stereo3D > 0) {
-         hr = m_pD3DDevice->CreateTexture(useAA ? 2 * width : width, useAA ? 2 * height : height, 1,
-            D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pReflectionBufferTextureLeft, NULL); //!! D3DFMT_A32B32G32R32F?
-         if (FAILED(hr))
-            ReportError("Fatal Error: unable to create reflection buffer!", hr, __FILE__, __LINE__);
-         hr = m_pD3DDevice->CreateTexture(useAA ? 2 * width : width, useAA ? 2 * height : height, 1,
-            D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pReflectionBufferTextureRight, NULL); //!! D3DFMT_A32B32G32R32F?
-         if (FAILED(hr))
-            ReportError("Fatal Error: unable to create reflection buffer!", hr, __FILE__, __LINE__);
-      }
-      else {
-         hr = m_pD3DDevice->CreateTexture(useAA ? 2 * width : width, useAA ? 2 * height : height, 1,
-            D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pReflectionBufferTextureLeft, NULL); //!! D3DFMT_A32B32G32R32F?
-         if (FAILED(hr))
-            ReportError("Fatal Error: unable to create reflection buffer!", hr, __FILE__, __LINE__);
-         m_pReflectionBufferTextureRight = NULL;
-      }
-   }
-   else {
-      m_pReflectionBufferTextureLeft = NULL;
-      m_pReflectionBufferTextureRight = NULL;
+      m_pReflectionBufferTexture = NULL;
    }
 
    if (g_pplayer != NULL)
@@ -1124,108 +1132,73 @@ RenderDevice::RenderDevice(const HWND hwnd, const int display, const int width, 
       const bool drawBallReflection = ((g_pplayer->m_fReflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
       if (g_pplayer->m_ptable->m_fReflectElementsOnPlayfield || drawBallReflection)
       {
-         hr = m_pD3DDevice->CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 1,
-            D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pMirrorTmpBufferTextureLeft, NULL); //!! colorFormat::RGBA32?
+         hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pMirrorTmpBufferTexture, NULL); //!! colorFormat::RGBA32?
          if (FAILED(hr))
             ReportError("Fatal Error: unable to create reflection map!", hr, __FILE__, __LINE__);
-         if (stereo3D > 0) {
-            hr = m_pD3DDevice->CreateTexture(useAA ? 2 * m_Buf_width : m_Buf_width, useAA ? 2 * m_Buf_height : m_Buf_height, 1,
-               D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pMirrorTmpBufferTextureRight, NULL); //!! colorFormat::RGBA32?
-            if (FAILED(hr))
-               ReportError("Fatal Error: unable to create reflection map!", hr, __FILE__, __LINE__);
-         }
-         else m_pMirrorTmpBufferTextureRight = NULL;
       }
    }
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
-   hr = m_pD3DDevice->CreateTexture(m_Buf_width / 3, m_Buf_height / 3, 1,
-      D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pBloomBufferTextureLeft, NULL); //!! 8bit enough?
+   hr = m_pD3DDevice->CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 1, D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pBloomBufferTexture, NULL); //!! 8bit enough?
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create bloom buffer!", hr, __FILE__, __LINE__);
-   if (stereo3D > 0) {
-      hr = m_pD3DDevice->CreateTexture(m_Buf_width / 3, m_Buf_height / 3, 1,
-         D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pBloomBufferTextureRight, NULL); //!! 8bit enough?
-      if (FAILED(hr))
-         ReportError("Fatal Error: unable to create bloom buffer!", hr, __FILE__, __LINE__);
-   }
-   else m_pBloomBufferTextureRight = NULL;
 
    // temporary buffer for gaussian blur
-   hr = m_pD3DDevice->CreateTexture(m_Buf_width / 3, m_Buf_height / 3, 1,
-      D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pBloomTmpBufferTextureLeft, NULL); //!! 8bit are enough! //!! but used also for bulb light transmission hack now!
+   hr = m_pD3DDevice->CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 1, D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pBloomTmpBufferTexture, NULL); //!! 8bit are enough! //!! but used also for bulb light transmission hack now!
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create blur buffer!", hr, __FILE__, __LINE__);
-   if (stereo3D > 0) {
-      hr = m_pD3DDevice->CreateTexture(m_Buf_width / 3, m_Buf_height / 3, 1,
-         D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pBloomTmpBufferTextureRight, NULL); //!! 8bit are enough! //!! but used also for bulb light transmission hack now!
-      if (FAILED(hr))
-         ReportError("Fatal Error: unable to create blur buffer!", hr, __FILE__, __LINE__);
-   }
-   else m_pBloomTmpBufferTextureRight = NULL;
 
    // alloc temporary buffer for postprocessing
-   if ((FXAA > 0) || (stereo3D > 0))
+   if ((m_FXAA > 0) || (m_stereo3D > 0))
    {
-      hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1,
-         D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), D3DPOOL_DEFAULT, &m_pOffscreenBackBufferStereoTextureLeft, NULL);
+      hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), D3DPOOL_DEFAULT, &m_pOffscreenBackBufferStereoTexture, NULL);
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create stereo3D/post-processing AA buffer!", hr, __FILE__, __LINE__);
-      if (stereo3D != STEREO_OFF) {
-         hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1,
-            D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), D3DPOOL_DEFAULT, &m_pOffscreenBackBufferStereoTextureRight, NULL);
-         if (FAILED(hr))
-            ReportError("Fatal Error: unable to create stereo3D/post-processing AA buffer!", hr, __FILE__, __LINE__);
-      }
-      else {
-         m_pOffscreenBackBufferStereoTextureRight = NULL;
-      }
    }
    else {
-      m_pOffscreenBackBufferStereoTextureLeft = NULL;
-      m_pOffscreenBackBufferStereoTextureRight = NULL;
+      m_pOffscreenBackBufferStereoTexture = NULL;
    }
 
    // alloc one more temporary buffer for SMAA
-   if (FXAA == Quality_SMAA)
+   if (m_FXAA == Quality_SMAA)
    {
-      hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1,
-         D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), D3DPOOL_DEFAULT, &m_pOffscreenBackBufferSMAATextureLeft, NULL);
+      hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), D3DPOOL_DEFAULT, &m_pOffscreenBackBufferSMAATexture, NULL);
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create SMAA buffer!", hr, __FILE__, __LINE__);
-      if (stereo3D != STEREO_OFF) {
-         hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1,
-            D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), D3DPOOL_DEFAULT, &m_pOffscreenBackBufferSMAATextureRight, NULL);
-         if (FAILED(hr))
-            ReportError("Fatal Error: unable to create SMAA buffer!", hr, __FILE__, __LINE__);
-      }
-      else {
-         m_pOffscreenBackBufferSMAATextureRight = NULL;
-      }
    }
    else {
-      m_pOffscreenBackBufferSMAATextureLeft = NULL;
-      m_pOffscreenBackBufferSMAATextureRight = NULL;
+      m_pOffscreenBackBufferSMAATexture = NULL;
    }
 
-   if (video10bit && (FXAA == Quality_SMAA || FXAA == Standard_DLAA))
+   if (video10bit && (m_FXAA == Quality_SMAA || m_FXAA == Standard_DLAA))
       ShowError("SMAA or DLAA post-processing AA should not be combined with 10bit-output rendering (will result in visible artifacts)!");
 
-   m_curIndexBuffer = 0;
-   m_curVertexBuffer = 0;
-   currentDeclaration = NULL;
-   //m_curShader = NULL;
+   VertexBuffer::setD3DDevice(m_pD3DDevice);
+   IndexBuffer::setD3DDevice(m_pD3DDevice);
 
-   // fill state caches with dummy values
-   memset(textureStateCache, 0xCC, sizeof(DWORD) * 8 * TEXTURE_STATE_CACHE_SIZE);
-   memset(textureSamplerCache, 0xCC, sizeof(DWORD) * 8 * TEXTURE_SAMPLER_CACHE_SIZE);
+   // create default vertex declarations for shaders
+   CreateVertexDeclaration(VertexTexelElement, &m_pVertexTexelDeclaration);
+   CreateVertexDeclaration(VertexNormalTexelElement, &m_pVertexNormalTexelDeclaration);
+   //CreateVertexDeclaration( VertexNormalTexelTexelElement, &m_pVertexNormalTexelTexelDeclaration );
+   CreateVertexDeclaration(VertexTrafoTexelElement, &m_pVertexTrafoTexelDeclaration);
 
-   // initialize performance counters
-   m_curDrawCalls = m_frameDrawCalls = 0;
-   m_curStateChanges = m_frameStateChanges = 0;
-   m_curTextureChanges = m_frameTextureChanges = 0;
-   m_curParameterChanges = m_frameParameterChanges = 0;
-   m_curTextureUpdates = m_frameTextureUpdates = 0;
+   if (m_quadVertexBuffer == NULL) {
+      VertexBuffer::CreateVertexBuffer(4, 0, MY_D3DFVF_TEX, &m_quadVertexBuffer);
+      Vertex3D_TexelOnly* bufvb;
+      m_quadVertexBuffer->lock(0, 0, (void**)&bufvb, VertexBuffer::WRITEONLY);
+      static const float verts[4 * 5] =
+      {
+         1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+         0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+         1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
+         0.0f, 0.0f, 0.0f, 0.0f, 0.0f
+      };
+      memcpy(bufvb, verts, 4 * sizeof(Vertex3D_TexelOnly));
+      m_quadVertexBuffer->unlock();
+   }
+}
 
+bool RenderDevice::LoadShaders()
+{
    bool shaderCompilationOkay = true;
 
    basicShader = new Shader(this);
@@ -1256,7 +1229,7 @@ RenderDevice::RenderDevice(const HWND hwnd, const int display, const int width, 
    shaderCompilationOkay = FBShader->Load(FBShaderCode, sizeof(FBShaderCode)) && shaderCompilationOkay;
 #endif
 
-   if (stereo3D) {
+   if (m_stereo3D != STEREO_OFF) {
       StereoShader = new Shader(this);
 #if _MSC_VER >= 1700
       shaderCompilationOkay = StereoShader->Load(g_StereoShaderCode, sizeof(g_StereoShaderCode)) && shaderCompilationOkay;
@@ -1293,48 +1266,21 @@ RenderDevice::RenderDevice(const HWND hwnd, const int display, const int width, 
 
    if (!shaderCompilationOkay)
       ReportError("Fatal Error: shader compilation failed!", -1, __FILE__, __LINE__);
-
-#ifndef ENABLE_SDL
-   VertexBuffer::setD3DDevice(m_pD3DDevice);
-   IndexBuffer::setD3DDevice(m_pD3DDevice);
-#endif
-
-   // create default vertex declarations for shaders
-   CreateVertexDeclaration(VertexTexelElement, &m_pVertexTexelDeclaration);
-   CreateVertexDeclaration(VertexNormalTexelElement, &m_pVertexNormalTexelDeclaration);
-   //CreateVertexDeclaration( VertexNormalTexelTexelElement, &m_pVertexNormalTexelTexelDeclaration );
-   CreateVertexDeclaration(VertexTrafoTexelElement, &m_pVertexTrafoTexelDeclaration);
-
-   m_quadVertexBuffer = NULL;
-   VertexBuffer::CreateVertexBuffer(4, 0, MY_D3DFVF_TEX, &m_quadVertexBuffer);
-   Vertex3D_TexelOnly* bufvb;
-   m_quadVertexBuffer->lock(0, 0, (void**)&bufvb, VertexBuffer::WRITEONLY);
-   static const float verts[4 * 5] =
-   {
-      1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-      0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-      1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-      0.0f, 0.0f, 0.0f, 0.0f, 0.0f
-   };
-   memcpy(bufvb, verts, 4 * sizeof(Vertex3D_TexelOnly));
-   m_quadVertexBuffer->unlock();
-
-   //m_quadDynVertexBuffer = NULL;
-   //CreateVertexBuffer(4, USAGE_DYNAMIC, MY_D3DFVF_TEX, &m_quadDynVertexBuffer);
-
-   if (FXAA == Quality_SMAA)
+   if (shaderCompilationOkay && m_FXAA == Quality_SMAA)
       UploadAndSetSMAATextures();
    else
    {
       m_SMAAareaTexture = 0;
       m_SMAAsearchTexture = 0;
    }
+   return shaderCompilationOkay;
 }
 
 RenderDevice::~RenderDevice()
 {
-   m_quadVertexBuffer->release();
-   //m_quadDynVertexBuffer->release();
+   if (m_quadVertexBuffer)
+      m_quadVertexBuffer->release();
+   m_quadVertexBuffer = NULL;
 
 #ifndef DISABLE_FORCE_NVIDIA_OPTIMUS
    if (srcr_cache != NULL)
@@ -1369,27 +1315,19 @@ RenderDevice::~RenderDevice()
    SAFE_RELEASE(m_pVertexTrafoTexelDeclaration);
 
    m_texMan.UnloadAll();
-   SAFE_RELEASE(m_pOffscreenBackBufferTextureLeft);
-   SAFE_RELEASE(m_pOffscreenBackBufferTextureRight);
-   SAFE_RELEASE(m_pOffscreenBackBufferStereoTextureLeft);
-   SAFE_RELEASE(m_pOffscreenBackBufferStereoTextureRight);
-   SAFE_RELEASE(m_pOffscreenBackBufferSMAATextureLeft);
-   SAFE_RELEASE(m_pOffscreenBackBufferSMAATextureRight);
-   SAFE_RELEASE(m_pReflectionBufferTextureLeft);
-   SAFE_RELEASE(m_pReflectionBufferTextureRight);
+   SAFE_RELEASE(m_pOffscreenBackBufferTexture);
+   SAFE_RELEASE(m_pOffscreenBackBufferStereoTexture);
+   SAFE_RELEASE(m_pOffscreenBackBufferSMAATexture);
+   SAFE_RELEASE(m_pReflectionBufferTexture);
 
    if (g_pplayer)
    {
       const bool drawBallReflection = ((g_pplayer->m_fReflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
-      if (g_pplayer->m_ptable->m_fReflectElementsOnPlayfield || drawBallReflection) {
-         SAFE_RELEASE(m_pMirrorTmpBufferTextureLeft);
-         SAFE_RELEASE(m_pMirrorTmpBufferTextureRight);
-      }
+      if (g_pplayer->m_ptable->m_fReflectElementsOnPlayfield || drawBallReflection)
+         SAFE_RELEASE(m_pMirrorTmpBufferTexture);
    }
-   SAFE_RELEASE(m_pBloomBufferTextureLeft);
-   SAFE_RELEASE(m_pBloomBufferTextureRight);
-   SAFE_RELEASE(m_pBloomTmpBufferTextureLeft);
-   SAFE_RELEASE(m_pBloomTmpBufferTextureRight);
+   SAFE_RELEASE(m_pBloomBufferTexture);
+   SAFE_RELEASE(m_pBloomTmpBufferTexture);
 
    SAFE_RELEASE(m_pBackBuffer);
 
@@ -1551,7 +1489,7 @@ bool RenderDevice::SetMaximumPreRenderedFrames(const DWORD frames)
 void RenderDevice::Flip(const bool vsync)
 {
 #ifdef ENABLE_SDL
-   SDL_GL_SwapWindow(m_sdl_hwnd);
+   SDL_GL_SwapWindow(m_sdl_playfieldHwnd);
 #ifdef ENABLE_VR
    //glFlush();
    //glFinish();
@@ -1752,7 +1690,7 @@ void RenderDevice::CopyDepth(D3DTexture* dest, RenderTarget* src)
    }
 #endif
 #if 0 // leftover resolve z code, maybe useful later-on
-   else //if(m_RESZ_support)
+   else //if (m_RESZ_support)
    {
 #define RESZ_CODE 0x7FA05000
       IDirect3DSurface9 *pDSTSurface;
@@ -1867,7 +1805,7 @@ void RenderDevice::CopyDepth(D3DTexture* dest, void* src)
 #endif
 
 #ifndef ENABLE_SDL
-D3DTexture* RenderDevice::CreateSystemTexture(BaseTexture* surf, const bool linearRGB) {
+D3DTexture* RenderDevice::CreateSystemTexture(BaseTexture* const surf, const bool linearRGB) {
    return CreateSystemTexture(surf->width(),
                               surf->height(), 
                               (D3DFORMAT)((m_compress_textures && ((surf->width() & 3) == 0) && ((surf->height() & 3) == 0) && (surf->width() > 256) && (surf->height() > 256) && (surf->m_format != BaseTexture::RGB_FP)) ? 
@@ -1935,7 +1873,7 @@ D3DTexture* RenderDevice::CreateSystemTexture(const int texwidth, const int texh
    return sysTex;
 }
 
-D3DTexture* RenderDevice::UploadTexture(BaseTexture* surf, int *pTexWidth, int *pTexHeight, const bool linearRGB)
+D3DTexture* RenderDevice::UploadTexture(BaseTexture* const surf, int* const pTexWidth, int* const pTexHeight, const bool linearRGB)
 {
    D3DTexture *sysTex, *tex;
    HRESULT hr;
@@ -2020,7 +1958,7 @@ void RenderDevice::UploadAndSetSMAATextures()
 }
 #endif
 
-void RenderDevice::UpdateTexture(D3DTexture* tex, BaseTexture* surf, const bool linearRGB)
+void RenderDevice::UpdateTexture(D3DTexture* const tex, BaseTexture* const surf, const bool linearRGB)
 {
 #ifdef ENABLE_SDL
    tex->format = surf->m_format == BaseTexture::RGB_FP ? RGB32 : RGBA;
@@ -2149,7 +2087,7 @@ void RenderDevice::SetTextureStageState(const DWORD p1, const D3DTEXTURESTAGESTA
 #endif
 
 #ifndef ENABLE_SDL
-void RenderDevice::SetRenderTarget(RenderTarget* surf)
+void RenderDevice::SetRenderTarget(RenderTarget* surf, bool ignoreStereo)
 {
    if (surf)
    {
@@ -2164,10 +2102,10 @@ void RenderDevice::SetRenderTarget(RenderTarget* surf)
 
 void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
 {
+#ifdef ENABLE_SDL
    static GLfloat viewPorts[] = { 0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f };
    static int currentFrameBuffer = -1;
    static int currentStereoMode = -1;
-#ifdef ENABLE_SDL
    if (currentFrameBuffer != (texture ? texture->framebuffer : 0)) {
       currentFrameBuffer = texture ? texture->framebuffer : 0;
       CHECKD3D(glBindFramebuffer(GL_FRAMEBUFFER, currentFrameBuffer));
@@ -2430,14 +2368,13 @@ void* RenderDevice::AttachZBufferTo(RenderTarget* surf)
    return NULL;
 }
 
-//TODO get rid of this function
+//Only used for DX9
 void RenderDevice::DrawPrimitive(const PrimitveTypes type, const DWORD fvf, const void* vertices, const DWORD vertexCount)
 {
+#ifndef ENABLE_SDL
    const unsigned int np = ComputePrimitiveCount(type, vertexCount);
    m_stats_drawn_triangles += np;
-#ifdef ENABLE_SDL
 
-#else
    VertexDeclaration * declaration = fvfToDecl(fvf);
    SetVertexDeclaration(declaration);
 
@@ -2445,23 +2382,21 @@ void RenderDevice::DrawPrimitive(const PrimitveTypes type, const DWORD fvf, cons
    hr = m_pD3DDevice->DrawPrimitiveUP((D3DPRIMITIVETYPE)type, np, vertices, fvfToSize(fvf));
    if (FAILED(hr))
       ReportError("Fatal Error: DrawPrimitiveUP failed!", hr, __FILE__, __LINE__);
-#endif
    m_curVertexBuffer = 0;      // DrawPrimitiveUP sets the VB to NULL
 
    m_curDrawCalls++;
+#endif
 }
 
 //Use this function if you want to render a stereo object
 void RenderDevice::DrawTexturedQuad()
 {
-   //TODO Somehow broken
    DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_TEX, m_quadVertexBuffer, 0, 4, true);
 }
 
 //Used for processing a Texture to the next Framebuffer with a shader.
 void RenderDevice::DrawTexturedQuadPostProcess()
 {
-   //TODO Somehow broken
    DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_TEX, m_quadVertexBuffer, 0, 4, false);
 }
 

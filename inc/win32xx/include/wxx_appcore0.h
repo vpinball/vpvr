@@ -647,11 +647,11 @@ namespace Win32xx
                 DLLGETVERSION* pfnDLLGetVersion = NULL;
 
                 pfnDLLGetVersion = reinterpret_cast<DLLGETVERSION*>(::GetProcAddress(comCtl, "DllGetVersion"));
-                if(pfnDLLGetVersion)
+                if (pfnDLLGetVersion)
                 {
                     DLLVERSIONINFO dvi;
                     dvi.cbSize = sizeof dvi;
-                    if(NOERROR == pfnDLLGetVersion(&dvi))
+                    if (NOERROR == pfnDLLGetVersion(&dvi))
                     {
                         DWORD verMajor = dvi.dwMajorVersion;
                         DWORD verMinor = dvi.dwMinorVersion;

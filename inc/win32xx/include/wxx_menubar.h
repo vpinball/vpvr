@@ -1057,7 +1057,7 @@ namespace Win32xx
         // Remove any existing buttons
         while (SendMessage(TB_BUTTONCOUNT,  0, 0) > 0)
         {
-            if(!SendMessage(TB_DELETEBUTTON, 0, 0))
+            if (!SendMessage(TB_DELETEBUTTON, 0, 0))
                 break;
         }
 

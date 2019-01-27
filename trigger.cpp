@@ -539,7 +539,7 @@ void Trigger::TriggerAnimationUnhit()
    unhitEvent = true;
 }
 
-void Trigger::UpdateAnimation(RenderDevice *pd3dDevice)
+void Trigger::UpdateAnimation()
 {
    const U32 old_time_msec = (m_d.m_time_msec < g_pplayer->m_time_msec) ? m_d.m_time_msec : g_pplayer->m_time_msec;
    m_d.m_time_msec = g_pplayer->m_time_msec;
@@ -629,14 +629,16 @@ void Trigger::UpdateAnimation(RenderDevice *pd3dDevice)
       }
    }
 }
-void Trigger::RenderDynamic(RenderDevice* pd3dDevice)
+void Trigger::RenderDynamic()
 {
    if (!m_d.m_fVisible || m_d.m_shape == TriggerNone)
       return;
    if (m_ptable->m_fReflectionEnabled && !m_d.m_fReflectionEnabled)
       return;
 
-   UpdateAnimation(pd3dDevice);
+   UpdateAnimation();
+
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
    const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
    pd3dDevice->basicShader->SetTechnique("basic_without_texture");
@@ -773,7 +775,7 @@ void Trigger::GenerateMesh()
    }
 }
 
-void Trigger::RenderSetup(RenderDevice* pd3dDevice)
+void Trigger::RenderSetup()
 {
    m_d.m_time_msec = g_pplayer->m_time_msec;
 
@@ -845,7 +847,7 @@ void Trigger::RenderSetup(RenderDevice* pd3dDevice)
    vertexBuffer->unlock();
 }
 
-void Trigger::RenderStatic(RenderDevice* pd3dDevice)
+void Trigger::RenderStatic()
 {
 }
 

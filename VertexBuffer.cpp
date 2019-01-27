@@ -125,11 +125,13 @@ void VertexBuffer::unlock()
 void VertexBuffer::release()
 {
 #ifdef ENABLE_SDL
-   CHECKD3D(glDeleteBuffers(1, &this->Buffer));
-   this->Buffer = 0;
-   this->sizePerVertex = 0;
-   this->offset = 0;
-   this->count = 0;
+   if (this->Buffer != 0) {
+      CHECKD3D(glDeleteBuffers(1, &this->Buffer));
+      this->Buffer = 0;
+      this->sizePerVertex = 0;
+      this->offset = 0;
+      this->count = 0;
+   }
 #else
    SAFE_RELEASE_NO_CHECK_NO_SET(this);
 #endif

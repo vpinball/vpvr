@@ -447,19 +447,21 @@ void Decal::EndPlay()
    IEditable::EndPlay();
 }
 
-void Decal::RenderDynamic(RenderDevice* pd3dDevice)
+void Decal::RenderDynamic()
 {
    const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
    if (!m_fBackglass //!! should just check if material has opacity enabled, but this is crucial for HV setup performance like-is
       && mat && mat->m_bOpacityActive)
-      RenderObject(pd3dDevice);
+      RenderObject();
 }
 
 static const WORD rgi0123[4] = { 0, 1, 2, 3 };
 
-void Decal::RenderSetup(RenderDevice* pd3dDevice)
+void Decal::RenderSetup()
 {
    RenderText();
+
+   RenderDevice * const pd3dDevice = m_fBackglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
    const float height = m_ptable->GetSurfaceHeight(m_d.m_szSurface, m_d.m_vCenter.x, m_d.m_vCenter.y) * m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
 
@@ -519,7 +521,7 @@ void Decal::RenderSetup(RenderDevice* pd3dDevice)
          vertices[i].y = vertices[i].y*ymult - 0.5f;
          vertices[i].z = 0.0f;
 
-         vertices[i].nx = 0.0f;
+         vertices[i].nx = 1.0f; //!! as this is the w component due to MY_D3DTRANSFORMED_NOTEX2_VERTEX usage
          vertices[i].ny = 0.0f;
          vertices[i].nz = 0.0f;
       }
@@ -548,10 +550,12 @@ bool Decal::IsTransparent() const
    return !m_fBackglass;
 }
 
-void Decal::RenderObject(RenderDevice* pd3dDevice)
+void Decal::RenderObject()
 {
    if (m_fBackglass && !GetPTable()->GetDecalsEnabled())
       return;
+
+   RenderDevice * const pd3dDevice = m_fBackglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
    if (m_fBackglass && (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_fReflectionEnabled))
       pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
@@ -575,22 +579,22 @@ void Decal::RenderObject(RenderDevice* pd3dDevice)
    }
    else
    {
-      Texture *pin = m_ptable->GetImage(m_d.m_szImage);
+      Texture *const pin = m_ptable->GetImage(m_d.m_szImage);
       if (pin)
       {
-         pd3dDevice->basicShader->SetTechnique("basic_with_texture");
+         pd3dDevice->basicShader->SetTechnique(!m_fBackglass ? "basic_with_texture" : "bg_decal_with_texture");
          pd3dDevice->basicShader->SetTexture("Texture0", pin, false);
          pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
       }
       else
-         pd3dDevice->basicShader->SetTechnique("basic_without_texture");
+         pd3dDevice->basicShader->SetTechnique(!m_fBackglass ? "basic_without_texture" : "bg_decal_without_texture");
    }
    pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
 
    // Set texture to mirror, so the alpha state of the texture blends correctly to the outside
    //!!   pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_MIRROR);
 
-   //ppin3d->SetTextureFilter ( 0, TEXTURE_MODE_TRILINEAR );
+   //ppin3d->SetPrimaryTextureFilter ( 0, TEXTURE_MODE_TRILINEAR );
    g_pplayer->m_pin3d.EnableAlphaBlend(false);
 
    if (!m_fBackglass)
@@ -613,16 +617,17 @@ void Decal::RenderObject(RenderDevice* pd3dDevice)
    //pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_WRAP);
    //pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE); //!! not necessary anymore
 
-   //if(m_fBackglass && (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_fReflectionEnabled))
+   //if (m_fBackglass && (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_fReflectionEnabled))
    //   pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 }
 
-void Decal::RenderStatic(RenderDevice* pd3dDevice)
+void Decal::RenderStatic()
 {
    const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
+
    if (m_fBackglass //!! should just check if material has no opacity enabled, but this is crucial for HV setup performance like-is
       || !mat || !mat->m_bOpacityActive)
-      RenderObject(pd3dDevice);
+      RenderObject();
 }
 
 void Decal::SetObjectPos()
@@ -923,7 +928,7 @@ STDMETHODIMP Decal::put_Image(BSTR newVal)
    char szImage[MAXTOKEN];
    WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, 32, NULL, NULL);
    const Texture * const tex = m_ptable->GetImage(szImage);
-   if(tex && tex->IsHDR())
+   if (tex && tex->IsHDR())
    {
        ShowError("Cannot use a HDR image (.exr/.hdr) here");
        return E_FAIL;

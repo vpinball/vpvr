@@ -721,8 +721,9 @@ STDMETHODIMP Flipper::RotateToStart() // return to park, key/button up/released
    return S_OK;
 }
 
-void Flipper::RenderDynamic(RenderDevice* pd3dDevice)
+void Flipper::RenderDynamic()
 {
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
    TRACE_FUNCTION();
 
    if (m_phitflipper && !m_phitflipper->m_flipperMover.m_fVisible)
@@ -743,7 +744,7 @@ void Flipper::RenderDynamic(RenderDevice* pd3dDevice)
       pd3dDevice->basicShader->SetTexture("Texture0", pin, false);
       pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
 
-      //g_pplayer->m_pin3d.SetTextureFilter(0, TEXTURE_MODE_TRILINEAR);
+      //g_pplayer->m_pin3d.SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
       // accomodate models with UV coords outside of [0,1]
       //pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_WRAP);
    }
@@ -976,8 +977,10 @@ void Flipper::GenerateBaseMesh(Vertex3D_NoTex2 *buf)
    delete [] temp;
 }
 
-void Flipper::RenderSetup(RenderDevice* pd3dDevice)
+void Flipper::RenderSetup()
 {
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    if (indexBuffer)
       indexBuffer->release();
    indexBuffer = IndexBuffer::CreateAndFillIndexBuffer(flipperBaseNumIndices, flipperBaseIndices);
@@ -992,7 +995,7 @@ void Flipper::RenderSetup(RenderDevice* pd3dDevice)
    vertexBuffer->unlock();
 }
 
-void Flipper::RenderStatic(RenderDevice* pd3dDevice)
+void Flipper::RenderStatic()
 {
 }
 
@@ -1303,7 +1306,7 @@ STDMETHODIMP Flipper::get_EOSTorque(float *pVal)
 
 STDMETHODIMP Flipper::put_EOSTorque(float newVal)
 {
-    if ( m_phitflipper )
+    if (m_phitflipper)
     {
        if (!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
           m_d.m_torqueDamping = newVal;
@@ -1768,7 +1771,7 @@ STDMETHODIMP Flipper::put_Scatter(float newVal)
 {
    if (m_phitflipper)
    {
-      if(!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
+      if (!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
          m_phitflipper->m_scatter = ANGTORAD(newVal);
    }
    else
@@ -1792,7 +1795,7 @@ STDMETHODIMP Flipper::put_ElasticityFalloff(float newVal)
 {
    if (m_phitflipper)
    {
-      if(!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
+      if (!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
          m_phitflipper->m_elasticityFalloff = newVal;
    }
    else
@@ -1838,7 +1841,7 @@ STDMETHODIMP Flipper::put_RampUp(float newVal)
 {
    if (m_phitflipper)
    {
-      if(!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
+      if (!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
          m_d.m_rampUp = newVal;
    }
    else
@@ -1886,7 +1889,7 @@ STDMETHODIMP Flipper::put_Return(float newVal)
 {
    if (m_phitflipper)
    {
-      if(!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
+      if (!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
          m_d.m_return = clamp(newVal, 0.0f, 1.0f);
    }
    else
@@ -1936,7 +1939,7 @@ STDMETHODIMP Flipper::put_Image(BSTR newVal)
    char szImage[MAXTOKEN];
    WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, 32, NULL, NULL);
    const Texture * const tex = m_ptable->GetImage(szImage);
-   if(tex && tex->IsHDR())
+   if (tex && tex->IsHDR())
    {
        ShowError("Cannot use a HDR image (.exr/.hdr) here");
        return E_FAIL;

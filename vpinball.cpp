@@ -2201,7 +2201,7 @@ void VPinball::OnClose()
          Sleep(THREADS_PAUSE);
    }
    if (g_pplayer)
-      SendMessage(g_pplayer->m_hwnd, WM_CLOSE, 0, 0);
+      SendMessage(g_pplayer->m_playfieldHwnd, WM_CLOSE, 0, 0);
 
    const bool fCanClose = g_pvp->FCanClose();
    if (fCanClose)
@@ -2953,7 +2953,7 @@ INT_PTR CALLBACK FontManagerProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
 
          const int ret = GetOpenFileName(&ofn);
 
-         if(ret)
+         if (ret)
          {
          LVITEM lvitem;
          lvitem.mask = LVIF_PARAM;

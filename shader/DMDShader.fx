@@ -18,6 +18,7 @@ sampler2D texSampler0 : TEXUNIT0 = sampler_state // DMD
    // Set texture to mirror, so the alpha state of the texture blends correctly to the outside
    ADDRESSU = MIRROR;
    ADDRESSV = MIRROR;
+   SRGBTexture = true;
 };
 
 sampler2D texSampler1 : TEXUNIT0 = sampler_state // Sprite
@@ -117,8 +118,8 @@ float3 color2 = float3(0., 0., 0.);
 color2 *= 1. / 25.;
 
 /*float3 colorg = float3(0,0,0);
-[unroll] for(int j = -1; j <= 1; ++j)
-[unroll] for(int i = -1; i <= 1; ++i)
+[unroll] for (int j = -1; j <= 1; ++j)
+[unroll] for (int i = -1; i <= 1; ++i)
 {
 //collect glow from neighbors
 }*/
@@ -133,7 +134,7 @@ float4 ps_main_noDMD(in VS_OUTPUT IN) : COLOR
 {
    const float4 l = tex2D(texSampler1, IN.tex0);
 
-return float4(InvToneMap(InvGamma(l.xyz * vColor_Intensity.xyz * vColor_Intensity.w)), l.w); //!! meh, this sucks a bit performance-wise, but how to avoid this when doing fullscreen-tonemap/gamma without stencil and depth read?
+return float4(InvToneMap(/*InvGamma*/(l.xyz * vColor_Intensity.xyz * vColor_Intensity.w)), l.w); //!! meh, this sucks a bit performance-wise, but how to avoid this when doing fullscreen-tonemap/gamma without stencil and depth read?
 }
 
 float4 ps_main_noDMD_notex(in VS_OUTPUT IN) : COLOR

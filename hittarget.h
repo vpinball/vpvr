@@ -33,6 +33,7 @@ public:
    TimerDataRoot m_tdr;
 
    float m_threshold;			// speed at which ball needs to hit to register a hit
+   float m_currentHitThreshold;
    float m_elasticity;
    float m_elasticityFalloff;
    float m_friction;
@@ -159,6 +160,7 @@ public:
    STDMETHOD(put_PhysicsMaterial)(/*[in]*/ BSTR newVal);
    STDMETHOD(get_OverwritePhysics)(/*[out, retval]*/ VARIANT_BOOL *pVal);
    STDMETHOD(put_OverwritePhysics)(/*[in]*/ VARIANT_BOOL newVal);
+   STDMETHOD(get_HitThreshold)(/*[out, retval]*/ float *pVal);
 
 
    virtual void MoveOffset(const float dx, const float dy);
@@ -202,10 +204,10 @@ private:        // private member functions
 
    void UpdateEditorView();
 
-   void UpdateAnimation(RenderDevice *pd3dDevice);
+   void UpdateAnimation();
    bool BrowseFor3DMeshFile();
-   void RenderObject(RenderDevice *pd3dDevice);
-   void UpdateTarget(RenderDevice *pd3dDevice);
+   void RenderObject();
+   void UpdateTarget();
    void SetupHitObject(vector<HitObject*> &pvho, HitObject * obj, const bool setHitObject = true);
    void AddHitEdge(vector<HitObject*> &pvho, std::set< std::pair<unsigned, unsigned> >& addedEdges, const unsigned i, const unsigned j, const Vertex3Ds &vi, const Vertex3Ds &vj, const bool setHitObject = true);
 

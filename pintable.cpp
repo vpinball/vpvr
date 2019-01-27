@@ -502,7 +502,7 @@ STDMETHODIMP ScriptGlobalTable::get_GetPlayerHWnd(long *pVal)
    }
    else
    {
-      *pVal = (size_t)g_pplayer->m_hwnd;
+      *pVal = (size_t)g_pplayer->m_playfieldHwnd;
    }
 
    return S_OK;
@@ -682,7 +682,7 @@ STDMETHODIMP ScriptGlobalTable::get_SystemTime(long *pVal)
 
 /*STDMETHODIMP ScriptGlobalTable::put_NightDay(int pVal)
 {
-if(g_pplayer)
+if (g_pplayer)
 g_pplayer->m_globalEmissionScale = dequantizeUnsignedPercent(newVal);
 return S_OK;
 }*/
@@ -696,7 +696,7 @@ STDMETHODIMP ScriptGlobalTable::get_NightDay(int *pVal)
 
 /*STDMETHODIMP ScriptGlobalTable::put_ShowDT(int pVal)
 {
-if(g_pplayer)
+if (g_pplayer)
 g_pplayer->m_ptable->m_BG_current_set = (!!newVal) ? 0 : 1;
 return S_OK;
 }*/
@@ -723,7 +723,7 @@ STARTUNDO
 
 m_BG_enable_FSS = !!newVal;
 
-if(m_BG_enable_FSS)
+if (m_BG_enable_FSS)
 m_BG_current_set = FULL_SINGLE_SCREEN;
 else
 GetRegInt("Player", "BGSet", (int*)&m_BG_current_set);
@@ -1163,8 +1163,8 @@ STDMETHODIMP ScriptGlobalTable::put_DMDPixels(VARIANT pVal) //!! use 64bit inste
       {
          if (g_pplayer->m_texdmd)
          {
-            g_pplayer->m_pin3d.m_pd3dDevice->DMDShader->SetTextureNull("Texture0");
-            g_pplayer->m_pin3d.m_pd3dDevice->m_texMan.UnloadTexture(g_pplayer->m_texdmd);
+            g_pplayer->m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTextureNull("Texture0");
+            g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.UnloadTexture(g_pplayer->m_texdmd);
             delete g_pplayer->m_texdmd;
          }
 #ifdef DMD_UPSCALE
@@ -1188,7 +1188,7 @@ STDMETHODIMP ScriptGlobalTable::put_DMDPixels(VARIANT pVal) //!! use 64bit inste
       if (g_pplayer->m_scaleFX_DMD)
          upscale(data, g_pplayer->m_dmdx, g_pplayer->m_dmdy, true);
 
-      g_pplayer->m_pin3d.m_pd3dDevice->m_texMan.SetDirty(g_pplayer->m_texdmd);
+      g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.SetDirty(g_pplayer->m_texdmd);
    }
 
    return S_OK;
@@ -1210,8 +1210,8 @@ STDMETHODIMP ScriptGlobalTable::put_DMDColoredPixels(VARIANT pVal) //!! use 64bi
       {
          if (g_pplayer->m_texdmd)
          {
-            g_pplayer->m_pin3d.m_pd3dDevice->DMDShader->SetTextureNull("Texture0");
-            g_pplayer->m_pin3d.m_pd3dDevice->m_texMan.UnloadTexture(g_pplayer->m_texdmd);
+            g_pplayer->m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTextureNull("Texture0");
+            g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.UnloadTexture(g_pplayer->m_texdmd);
             delete g_pplayer->m_texdmd;
          }
 #ifdef DMD_UPSCALE
@@ -1235,7 +1235,7 @@ STDMETHODIMP ScriptGlobalTable::put_DMDColoredPixels(VARIANT pVal) //!! use 64bi
       if (g_pplayer->m_scaleFX_DMD)
          upscale(data, g_pplayer->m_dmdx, g_pplayer->m_dmdy, false);
 
-      g_pplayer->m_pin3d.m_pd3dDevice->m_texMan.SetDirty(g_pplayer->m_texdmd);
+      g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.SetDirty(g_pplayer->m_texdmd);
    }
 
    return S_OK;
@@ -1768,7 +1768,7 @@ void PinTable::BackupLayers()
    // make all elements visible again
    for (int t = 0; t < MAX_LAYERS; t++)
    {
-      //for(SSIZE_T i = m_layer[t].size()-1; i >= 0; i--)
+      //for (SSIZE_T i = m_layer[t].size()-1; i >= 0; i--)
       for (size_t i = 0; i < m_layer[t].size(); i++)
       {
          IEditable * const piedit = m_layer[t][i];
@@ -2412,7 +2412,7 @@ void PinTable::Play(const bool _cameraMode)
          else
          {
             ShowError("Problem occured during Player init");
-            ::SendMessage(g_pplayer->m_hwnd, WM_CLOSE, 0, 0);
+            ::SendMessage(g_pplayer->m_playfieldHwnd, WM_CLOSE, 0, 0);
          }
       }
    }
@@ -2845,7 +2845,7 @@ HRESULT PinTable::SaveToStorage(IStorage *pstgRoot)
                   hr = piedit->SaveData(pstmItem, NULL);
                   pstmItem->Release();
                   pstmItem = NULL;
-                  //if(FAILED(hr)) goto Error;
+                  //if (FAILED(hr)) goto Error;
                }
 
                csaveditems++;
@@ -2948,7 +2948,7 @@ HRESULT PinTable::SaveToStorage(IStorage *pstgRoot)
          pstmItem->Write(hashval, hashlen, &writ);
          pstmItem->Release();
          pstmItem = NULL;
-         //if(FAILED(hr)) goto Error;
+         //if (FAILED(hr)) goto Error;
 
          //CryptExportKey(hkey, NULL, PUBLICKEYBLOB, 0, BYTE *pbData, DWORD *pdwDataLen);
       }

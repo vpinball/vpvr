@@ -596,7 +596,6 @@ void Primitive::SetupHitObject(vector<HitObject*> &pvho, HitObject * obj)
          obj->m_scatter = ANGTORAD(m_d.m_scatter);
       }
 
-      obj->m_threshold = m_d.m_threshold;
       obj->m_fEnabled = m_d.m_fCollidable;
    }
    else
@@ -608,6 +607,7 @@ void Primitive::SetupHitObject(vector<HitObject*> &pvho, HitObject * obj)
       obj->m_fEnabled = true;
    }
 
+   obj->m_threshold = m_d.m_threshold;
    obj->m_ObjType = ePrimitive;
    obj->m_obj = (IFireEvents *)this;
    obj->m_e = true;
@@ -1183,7 +1183,7 @@ void Primitive::RenderObject(RenderDevice *pd3dDevice)
          pd3dDevice->basicShader->SetTexture("Texture0", pin, false);
          pd3dDevice->basicShader->SetTexture("Texture4", nMap, true);
          pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
-         //g_pplayer->m_pin3d.SetTextureFilter(0, TEXTURE_MODE_TRILINEAR);
+         //g_pplayer->m_pin3d.SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
          // accommodate models with UV coords outside of [0,1]
          pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_WRAP);
       }
@@ -1193,7 +1193,7 @@ void Primitive::RenderObject(RenderDevice *pd3dDevice)
          pd3dDevice->basicShader->SetTexture("Texture0", pin, false);
          pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
 
-         //g_pplayer->m_pin3d.SetTextureFilter(0, TEXTURE_MODE_TRILINEAR);
+         //g_pplayer->m_pin3d.SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
          // accommodate models with UV coords outside of [0,1]
          pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_WRAP);
       }
@@ -1250,8 +1250,9 @@ void Primitive::RenderObject(RenderDevice *pd3dDevice)
 }
 
 // Always called each frame to render over everything else (along with alpha ramps)
-void Primitive::RenderDynamic(RenderDevice* pd3dDevice)
+void Primitive::RenderDynamic()
 {
+   RenderDevice *pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
    TRACE_FUNCTION();
 
    if (m_d.m_staticRendering || !m_d.m_fVisible || m_d.m_fSkipRendering)
@@ -1262,7 +1263,7 @@ void Primitive::RenderDynamic(RenderDevice* pd3dDevice)
    RenderObject(pd3dDevice);
 }
 
-void Primitive::RenderSetup(RenderDevice* pd3dDevice)
+void Primitive::RenderSetup()
 {
    if (m_d.m_fGroupdRendering || m_d.m_fSkipRendering)
       return;
@@ -1279,8 +1280,9 @@ void Primitive::RenderSetup(RenderDevice* pd3dDevice)
    indexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_mesh.m_indices);
 }
 
-void Primitive::RenderStatic(RenderDevice* pd3dDevice)
+void Primitive::RenderStatic()
 {
+   RenderDevice *pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
    if (m_d.m_staticRendering && m_d.m_fVisible)
    {
       if (m_ptable->m_fReflectionEnabled && !m_d.m_fReflectionEnabled)
@@ -2897,7 +2899,7 @@ STDMETHODIMP Primitive::put_Scatter(float newVal)
 
 STDMETHODIMP Primitive::get_Collidable(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB((!g_pplayer) ? m_d.m_fCollidable : m_vhoCollidable[0]->m_fEnabled);
+   *pVal = (VARIANT_BOOL)FTOVB((!g_pplayer || m_vhoCollidable.size()==0) ? m_d.m_fCollidable : m_vhoCollidable[0]->m_fEnabled);
 
    return S_OK;
 }
@@ -3069,6 +3071,12 @@ STDMETHODIMP Primitive::put_OverwritePhysics(VARIANT_BOOL newVal)
    STOPUNDO
 
       return S_OK;
+}
+
+STDMETHODIMP Primitive::get_HitThreshold(float *pVal)
+{
+   *pVal = m_d.m_currentHitThreshold;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_DisplayTexture(VARIANT_BOOL *pVal)

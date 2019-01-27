@@ -1172,7 +1172,7 @@ namespace Win32xx
 
         GetToolBar().AddButton(id, isEnabled, image);
 
-        if(0 != pText)
+        if (0 != pText)
             GetToolBar().SetButtonText(id, pText);
     }
 
@@ -1789,9 +1789,9 @@ namespace Win32xx
         // find the position of tab character
         int tab = -1;
         int len = lstrlen(pItem);
-        for(int i = 0; i < len; ++i)
+        for (int i = 0; i < len; ++i)
         {
-            if(_T('\t') == pItem[i])
+            if (_T('\t') == pItem[i])
             {
                 tab = i;
                 break;
@@ -1808,7 +1808,7 @@ namespace Win32xx
             GetMenuMetrics().DrawThemeText(pDIS->hDC, MENU_POPUPITEM, stateID, TtoW(pItem), tab, DT_SINGLELINE | DT_LEFT | DT_VCENTER | accel, 0, &textRect);
 
             // Draw text after tab, right aligned
-            if(tab != -1)
+            if (tab != -1)
                 GetMenuMetrics().DrawThemeText(pDIS->hDC, MENU_POPUPITEM, stateID, TtoW(&pItem[tab + 1]), -1, DT_SINGLELINE | DT_RIGHT | DT_VCENTER | accel, 0, &textRect);
         }
         else
@@ -1818,7 +1818,7 @@ namespace Win32xx
             DrawText(pDIS->hDC, pItem, tab, textRect, DT_SINGLELINE | DT_LEFT | DT_VCENTER);
 
             // Draw text after tab, right aligned
-            if(tab != -1)
+            if (tab != -1)
                 DrawText(pDIS->hDC, &pItem[tab + 1], -1, textRect, DT_SINGLELINE | DT_RIGHT | DT_VCENTER);
 
             SetBkMode(pDIS->hDC, mode);
@@ -2124,7 +2124,7 @@ namespace Win32xx
     {
         HMODULE theme = ::LoadLibrary(_T("uxtheme.dll"));
         WCHAR themeName[31] = L"";
-        if(theme != 0)
+        if (theme != 0)
         {
             typedef HRESULT (__stdcall *PFNGETCURRENTTHEMENAME)(LPWSTR pThemeFileName, int maxNameChars,
                 LPWSTR pColorBuff, int maxColorChars, LPWSTR pSizeBuff, int maxSizeChars);

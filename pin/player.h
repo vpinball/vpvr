@@ -260,7 +260,7 @@ public:
    void InitBallShader();
    void CreateDebugFont();
    void DebugPrint(int x, int y, LPCSTR text, int stringLen, bool shadow = false);
-   void InitWindow();
+   void InitPlayfieldWindow();
    void InitKeys();
    void InitRegValues();
 
@@ -323,12 +323,14 @@ public:
 #endif
 
    void DMDdraw(const float DMDposx, const float DMDposy, const float DMDwidth, const float DMDheight, const COLORREF DMDcolor, const float intensity);
-   void Spritedraw(const float posx, const float posy, const float width, const float height, const COLORREF color, Texture* const tex, const float intensity);
-   void Spritedraw(const float posx, const float posy, const float width, const float height, const COLORREF color, D3DTexture* const tex, const float intensity);
+   void Spritedraw(const float posx, const float posy, const float width, const float height, const COLORREF color, Texture* const tex, const float intensity, const bool backdrop = false);
+   void Spritedraw(const float posx, const float posy, const float width, const float height, const COLORREF color, D3DTexture* const tex, const float intensity, const bool backdrop = false);
 
-   HWND m_hwnd;
+   HWND m_playfieldHwnd;
+   HWND m_backdropHwnd;
 #ifdef ENABLE_SDL
-   SDL_Window *m_sdl_hwnd;
+   SDL_Window *m_sdl_playfieldHwnd;
+   SDL_Window *m_sdl_backdropHwnd;
 #endif
 
    IndexBuffer *ballIndexBuffer;
@@ -622,7 +624,7 @@ public:
    bool m_isRenderingStatic;
 
    bool m_stereo3DY;
-   bool m_fOverwriteBallImages;
+   bool m_overwriteBallImages;
    Texture *m_ballImage;
    Texture *m_decalImage;
 

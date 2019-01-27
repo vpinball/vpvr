@@ -360,8 +360,10 @@ void Plunger::SetDefaultPhysics(bool fromMouseClick)
 
 }
 
-void Plunger::RenderDynamic(RenderDevice* pd3dDevice)
+void Plunger::RenderDynamic()
 {
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    TRACE_FUNCTION();
 
    // TODO: get rid of frame stuff
@@ -451,7 +453,7 @@ static const char *nextTipToken(const char* &p)
 
 #define PLUNGER_FRAME_COUNT 25   //frame per 80 units distance
 
-void Plunger::RenderSetup(RenderDevice* pd3dDevice)
+void Plunger::RenderSetup()
 {
    const float zheight = m_ptable->GetSurfaceHeight(m_d.m_szSurface, m_d.m_v.x, m_d.m_v.y) + m_d.m_zAdjust;
    const float stroke = m_d.m_stroke;
@@ -988,7 +990,7 @@ void Plunger::RenderSetup(RenderDevice* pd3dDevice)
    }
 }
 
-void Plunger::RenderStatic(RenderDevice* pd3dDevice)
+void Plunger::RenderStatic()
 {
 }
 

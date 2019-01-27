@@ -294,7 +294,7 @@ inline Vertex3Ds cos_hemisphere_sample(const float u, const float v) // u,v in [
 inline Vertex3Ds rotate_to_vector_upper(const Vertex3Ds &vec, const Vertex3Ds &normal)
 {
    /*const float c = Vertex3Ds(0,1,0).Dot(normal);
-   if(fabsf(c) < 0.999f)
+   if (fabsf(c) < 0.999f)
    {
    const Vertex3Ds v = CrossProduct(Vertex3Ds(0,1,0),normal);
    const float h = (1.0f-c)/(v.Dot(v));
@@ -323,7 +323,7 @@ inline Vertex3Ds rotate_to_vector_upper(const Vertex3Ds &vec, const Vertex3Ds &n
 inline Vertex3Ds rotate_to_vector_full(const Vertex3Ds &vec, const Vertex3Ds &normal)
 {
    /*const float c = Vertex3Ds(0,1,0).Dot(normal);
-   if(fabsf(c) < 0.999f)
+   if (fabsf(c) < 0.999f)
    {
    const Vertex3Ds v = CrossProduct(Vertex3Ds(0,1,0),normal);
    const float h = (1.0f-c)/(v.Dot(v));

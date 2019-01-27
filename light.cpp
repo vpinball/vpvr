@@ -544,7 +544,7 @@ void Light::ClearForOverwrite()
    ClearPointsForOverwrite();
 }
 
-void Light::RenderBulbMesh(RenderDevice *pd3dDevice)
+void Light::RenderBulbMesh()
 {
    Material mat;
    mat.m_cBase = 0x181818;
@@ -559,6 +559,9 @@ void Light::RenderBulbMesh(RenderDevice *pd3dDevice)
    mat.m_fGlossyImageLerp = 1.0f;
    mat.m_fThickness = 0.05f;
    mat.m_cClearcoat = 0;
+
+   RenderDevice * const pd3dDevice = m_fBackglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    pd3dDevice->basicShader->SetTechnique("basic_without_texture");
    pd3dDevice->basicShader->SetBool("is_metal", mat.m_bIsMetal);
    pd3dDevice->basicShader->SetMaterial(&mat);
@@ -588,8 +591,10 @@ void Light::RenderBulbMesh(RenderDevice *pd3dDevice)
    pd3dDevice->basicShader->End();
 }
 
-void Light::RenderDynamic(RenderDevice* pd3dDevice)
+void Light::RenderDynamic()
 {
+   RenderDevice * const pd3dDevice = m_fBackglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    TRACE_FUNCTION();
 
    if (!m_d.m_fVisible || m_ptable->m_fReflectionEnabled)
@@ -602,7 +607,7 @@ void Light::RenderDynamic(RenderDevice* pd3dDevice)
       return;
 
    if (m_d.m_BulbLight && m_d.m_showBulbMesh && !m_d.m_staticBulbMesh)
-      RenderBulbMesh(pd3dDevice);
+      RenderBulbMesh();
 
    const U32 old_time_msec = (m_d.m_time_msec < g_pplayer->m_time_msec) ? m_d.m_time_msec : g_pplayer->m_time_msec;
    m_d.m_time_msec = g_pplayer->m_time_msec;
@@ -774,7 +779,7 @@ void Light::RenderDynamic(RenderDevice* pd3dDevice)
    pd3dDevice->SetRenderState(RenderDevice::BLENDOP, RenderDevice::BLENDOP_ADD);
    }*/
 
-   //if(m_fBackglass && (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_fReflectionEnabled))
+   //if (m_fBackglass && (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_fReflectionEnabled))
    //	pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 }
 
@@ -906,22 +911,22 @@ void Light::PrepareMoversCustom()
          buf[t].y = y;
          buf[t].z = 0.0f;
 
-         buf[t].nx = x; //!!! abuses normal to pass position to shader :/ (only if !(m_d.m_BulbLight || pin == NULL))
-         buf[t].ny = y;
-         buf[t].nz = 0.0f;
+         buf[t].nx = 1.f; //!! for backglass we use no vertex shader (D3DDECLUSAGE_POSITIONT), thus w component is actually mapped to nx, and that must be 1
+         buf[t].ny = (pv0->x * (float)(1.0 / EDITOR_BG_WIDTH)); //!! abuses normal to pass tex coord via TEXCOORD1.xy to shader for non-bulbs :/
+         buf[t].nz = (pv0->y * (float)(1.0 / EDITOR_BG_HEIGHT));
 
-         //!!! why the hell must the bulb light mode still use the old data (uv=xy) ?? LightShader does not use it at all!?!
-         //!!! same for no image mode, the corresponding shader in ClassicLightShader does not work otherwise then!!
-
-         buf[t].tu = (m_d.m_BulbLight || pin == NULL) ? x : (pv0->x * (float)(1.0 / EDITOR_BG_WIDTH)); //!!! still wrong??? (f.e. create new BG light and stretch over BG) -> perspective correction wrong!!!??? 4 vertices only also wrong! decals work though!
-         buf[t].tv = (m_d.m_BulbLight || pin == NULL) ? y : (pv0->y * (float)(1.0 / EDITOR_BG_HEIGHT));
+         //!! in backglass mode, position is also passed in via texture coords (due to D3DDECLUSAGE_POSITIONT again)
+         buf[t].tu = x;
+         buf[t].tv = y;
       }
    }
    customMoverVBuffer->unlock();
 }
 
-void Light::RenderSetup(RenderDevice* pd3dDevice)
+void Light::RenderSetup()
 {
+   RenderDevice * const pd3dDevice = m_fBackglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    m_iblinkframe = 0;
    m_d.m_time_msec = g_pplayer->m_time_msec;
    m_updateLightShape = false;
@@ -996,10 +1001,10 @@ void Light::RenderSetup(RenderDevice* pd3dDevice)
    PrepareMoversCustom();
 }
 
-void Light::RenderStatic(RenderDevice* pd3dDevice)
+void Light::RenderStatic()
 {
    if (m_d.m_BulbLight && m_d.m_showBulbMesh && m_d.m_staticBulbMesh)
-      RenderBulbMesh(pd3dDevice);
+      RenderBulbMesh();
 }
 
 void Light::SetObjectPos()
@@ -1612,7 +1617,7 @@ STDMETHODIMP Light::put_Intensity(float newVal)
 {
    STARTUNDO
 
-      m_d.m_intensity = max(0.f, newVal);
+   m_d.m_intensity = max(0.f, newVal);
    const bool isOn = (m_realState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : !!m_realState;
    if (isOn)
       m_d.m_currentIntensity = m_d.m_intensity*m_d.m_intensity_scale;
@@ -1632,7 +1637,7 @@ STDMETHODIMP Light::put_TransmissionScale(float newVal)
 {
    STARTUNDO
 
-      m_d.m_transmissionScale = max(0.f, newVal);
+   m_d.m_transmissionScale = max(0.f, newVal);
 
    STOPUNDO
 
@@ -1650,7 +1655,7 @@ STDMETHODIMP Light::put_IntensityScale(float newVal)
 {
    STARTUNDO
 
-      m_d.m_intensity_scale = newVal;
+   m_d.m_intensity_scale = newVal;
    const bool isOn = (m_realState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : !!m_realState;
    if (isOn)
       m_d.m_currentIntensity = m_d.m_intensity*m_d.m_intensity_scale;
@@ -1673,11 +1678,11 @@ STDMETHODIMP Light::put_Surface(BSTR newVal)
 {
    STARTUNDO
 
-      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, 32, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, 32, NULL, NULL);
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 
@@ -1695,11 +1700,11 @@ STDMETHODIMP Light::put_Image(BSTR newVal)
 {
    STARTUNDO
 
-      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szOffImage, 32, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szOffImage, 32, NULL, NULL);
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Light::get_DepthBias(float *pVal)
@@ -1713,11 +1718,11 @@ STDMETHODIMP Light::put_DepthBias(float newVal)
 {
    STARTUNDO
 
-      m_d.m_depthBias = newVal;
+   m_d.m_depthBias = newVal;
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Light::get_FadeSpeedUp(float *pVal)
@@ -1731,11 +1736,11 @@ STDMETHODIMP Light::put_FadeSpeedUp(float newVal)
 {
    STARTUNDO
 
-      m_d.m_fadeSpeedUp = newVal;
+   m_d.m_fadeSpeedUp = newVal;
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Light::get_FadeSpeedDown(float *pVal)
@@ -1749,11 +1754,11 @@ STDMETHODIMP Light::put_FadeSpeedDown(float newVal)
 {
    STARTUNDO
 
-      m_d.m_fadeSpeedDown = newVal;
+   m_d.m_fadeSpeedDown = newVal;
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Light::get_Bulb(VARIANT_BOOL *pVal)
@@ -1767,11 +1772,11 @@ STDMETHODIMP Light::put_Bulb(VARIANT_BOOL newVal)
 {
    STARTUNDO
 
-      m_d.m_BulbLight = VBTOF(newVal);
+   m_d.m_BulbLight = VBTOF(newVal);
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Light::get_ImageMode(VARIANT_BOOL *pVal)
@@ -1785,11 +1790,11 @@ STDMETHODIMP Light::put_ImageMode(VARIANT_BOOL newVal)
 {
    STARTUNDO
 
-      m_d.m_imageMode = VBTOF(newVal);
+   m_d.m_imageMode = VBTOF(newVal);
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Light::get_ShowBulbMesh(VARIANT_BOOL *pVal)
@@ -1803,11 +1808,11 @@ STDMETHODIMP Light::put_ShowBulbMesh(VARIANT_BOOL newVal)
 {
    STARTUNDO
 
-      m_d.m_showBulbMesh = VBTOF(newVal);
+   m_d.m_showBulbMesh = VBTOF(newVal);
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Light::get_StaticBulbMesh(VARIANT_BOOL *pVal)
@@ -1821,11 +1826,11 @@ STDMETHODIMP Light::put_StaticBulbMesh(VARIANT_BOOL newVal)
 {
    STARTUNDO
 
-      m_d.m_staticBulbMesh = VBTOF(newVal);
+   m_d.m_staticBulbMesh = VBTOF(newVal);
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Light::get_ShowReflectionOnBall(VARIANT_BOOL *pVal)
@@ -1839,11 +1844,11 @@ STDMETHODIMP Light::put_ShowReflectionOnBall(VARIANT_BOOL newVal)
 {
    STARTUNDO
 
-      m_d.m_showReflectionOnBall = VBTOF(newVal);
+   m_d.m_showReflectionOnBall = VBTOF(newVal);
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Light::get_ScaleBulbMesh(float *pVal)
@@ -1857,11 +1862,11 @@ STDMETHODIMP Light::put_ScaleBulbMesh(float newVal)
 {
    STARTUNDO
 
-      m_d.m_meshRadius = newVal;
+   m_d.m_meshRadius = newVal;
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Light::get_BulbModulateVsAdd(float *pVal)
@@ -1875,11 +1880,11 @@ STDMETHODIMP Light::put_BulbModulateVsAdd(float newVal)
 {
    STARTUNDO
 
-      m_d.m_modulate_vs_add = newVal;
+   m_d.m_modulate_vs_add = newVal;
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Light::get_BulbHaloHeight(float *pVal)
@@ -1893,12 +1898,12 @@ STDMETHODIMP Light::put_BulbHaloHeight(float newVal)
 {
    STARTUNDO
 
-      m_d.m_bulbHaloHeight = newVal;
+   m_d.m_bulbHaloHeight = newVal;
    m_updateLightShape = true;
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 void Light::GetDialogPanes(vector<PropertyPane*> &pvproppane)
@@ -1951,10 +1956,10 @@ STDMETHODIMP Light::get_Visible(VARIANT_BOOL *pVal) //temporary value of object
 STDMETHODIMP Light::put_Visible(VARIANT_BOOL newVal)
 {
    STARTUNDO
-      m_d.m_fVisible = VBTOF(newVal);
+   m_d.m_fVisible = VBTOF(newVal);
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 void Light::UpdatePropertyPanes()

@@ -60,12 +60,12 @@ float4 ps_main_textureOne_noLight(in VS_OUTPUT_2D IN) : COLOR
 
    clip(pixel.a <= alphaTestValueAB_filterMode_addBlend.x ? -1 : 1); // stop the pixel shader if alpha test should reject pixel
 
-   if(amount_blend_modulate_vs_add_hdrTexture01.z == 0.)
+   if (amount_blend_modulate_vs_add_hdrTexture01.z == 0.)
        pixel.xyz = InvGamma(pixel.xyz);
 
    const float4 result = staticColor_Alpha * pixel;
 
-   if(alphaTestValueAB_filterMode_addBlend.w == 0.)
+   if (alphaTestValueAB_filterMode_addBlend.w == 0.)
       return result;
    else
       return float4(result.xyz*(-amount_blend_modulate_vs_add_hdrTexture01.y*result.a), // negative as it will be blended with '1.0-thisvalue' (the 1.0 is needed to modulate the underlying elements correctly, but not wanted for the term below)
@@ -79,9 +79,9 @@ float4 ps_main_textureAB_noLight(in VS_OUTPUT_2D IN) : COLOR
 
    clip(pixel1.a <= alphaTestValueAB_filterMode_addBlend.x || pixel2.a <= alphaTestValueAB_filterMode_addBlend.y ? -1 : 1); //stop the pixel shader if alpha test should reject pixel
 
-   if(amount_blend_modulate_vs_add_hdrTexture01.z == 0.)
+   if (amount_blend_modulate_vs_add_hdrTexture01.z == 0.)
       pixel1.xyz = InvGamma(pixel1.xyz);
-   if(amount_blend_modulate_vs_add_hdrTexture01.w == 0.)
+   if (amount_blend_modulate_vs_add_hdrTexture01.w == 0.)
       pixel2.xyz = InvGamma(pixel2.xyz);
 
    float4 result = staticColor_Alpha;
@@ -95,7 +95,7 @@ float4 ps_main_textureAB_noLight(in VS_OUTPUT_2D IN) : COLOR
    else if ( alphaTestValueAB_filterMode_addBlend.z == Filter_Screen )
       result *= ScreenHDR(pixel1,pixel2); // could be HDR
 
-   if(alphaTestValueAB_filterMode_addBlend.w == 0.)
+   if (alphaTestValueAB_filterMode_addBlend.w == 0.)
       return result;
    else
       return float4(result.xyz*(-amount_blend_modulate_vs_add_hdrTexture01.y*result.a), // negative as it will be blended with '1.0-thisvalue' (the 1.0 is needed to modulate the underlying elements correctly, but not wanted for the term below)
@@ -104,7 +104,7 @@ float4 ps_main_textureAB_noLight(in VS_OUTPUT_2D IN) : COLOR
 
 float4 ps_main_noLight(in VS_OUTPUT_2D IN) : COLOR
 {
-   if(alphaTestValueAB_filterMode_addBlend.w == 0.)
+   if (alphaTestValueAB_filterMode_addBlend.w == 0.)
       return staticColor_Alpha;
    else
       return float4(staticColor_Alpha.xyz*(-amount_blend_modulate_vs_add_hdrTexture01.y*staticColor_Alpha.w), // negative as it will be blended with '1.0-thisvalue' (the 1.0 is needed to modulate the underlying elements correctly, but not wanted for the term below)

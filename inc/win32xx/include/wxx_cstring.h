@@ -1444,7 +1444,7 @@ namespace Win32xx
         assert(pTokens);
 
         CStringT str;
-        if(start >= 0)
+        if (start >= 0)
         {
         size_t pos1 = m_str.find_first_not_of(pTokens, start);
         size_t pos2 = m_str.find_first_of(pTokens, pos1);

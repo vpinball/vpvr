@@ -2022,7 +2022,7 @@ namespace Win32xx
 #ifndef _WIN32_WCE
 
         HMODULE theme = ::LoadLibrary(_T("uxtheme.dll"));
-        if(theme != 0)
+        if (theme != 0)
         {
             typedef HRESULT (__stdcall *PFNSETWINDOWTHEME)(HWND wnd, LPCWSTR pSubAppName, LPCWSTR pSubIdList);
             PFNSETWINDOWTHEME pfn = (PFNSETWINDOWTHEME)GetProcAddress(theme, "SetWindowTheme");

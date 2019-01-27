@@ -74,10 +74,15 @@ class Shader;
 class RenderDevice
 {
 public:
+
+RenderDevice(HWND* const hwnd, const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice = NULL);
+
 #ifdef ENABLE_SDL
    enum RenderStates
    {
       ALPHABLENDENABLE = GL_BLEND,
+      ZENABLE = GL_DEPTH_TEST,
+      DEPTHBIAS = GL_POLYGON_OFFSET_FILL,
       ALPHATESTENABLE,
       ALPHAREF,
       ALPHAFUNC,
@@ -88,10 +93,9 @@ public:
       DESTBLEND,
       LIGHTING,
       SRCBLEND,
-      ZENABLE = GL_DEPTH_TEST,
+      SRGBWRITEENABLE,
       ZFUNC,
       ZWRITEENABLE,
-      DEPTHBIAS = GL_POLYGON_OFFSET_FILL,
       COLORWRITEENABLE
    };
 
@@ -148,10 +152,8 @@ public:
       LINESTRIP = GL_LINE_STRIP
 };
 
-   SDL_Window *m_sdl_hwnd;
+   SDL_Window *m_sdl_playfieldHwnd;
    SDL_GLContext  m_sdl_context;
-
-   RenderDevice(HWND *hwnd, const int display, const int width, const int height, const bool fullscreen, const int colordepth, int &refreshrate, int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering);
 
 #else
    enum RenderStates
@@ -167,6 +169,7 @@ public:
       DESTBLEND = D3DRS_DESTBLEND,
       LIGHTING = D3DRS_LIGHTING,
       SRCBLEND = D3DRS_SRCBLEND,
+      SRGBWRITEENABLE = D3DRS_SRGBWRITEENABLE,
       ZENABLE = D3DRS_ZENABLE,
       ZFUNC = D3DRS_ZFUNC,
       ZWRITEENABLE = D3DRS_ZWRITEENABLE,
@@ -223,8 +226,9 @@ public:
       LINELIST = D3DPT_LINELIST,
       LINESTRIP = D3DPT_LINESTRIP
    };
-   RenderDevice(const HWND hwnd, const int display, const int width, const int height, const bool fullscreen, const int colordepth, int &refreshrate, int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering);
 #endif
+   void CreateDevice(int &refreshrate, UINT adapterIndex = D3DADAPTER_DEFAULT);
+   bool LoadShaders();
    void InitVR();
 
    ~RenderDevice();
@@ -254,7 +258,7 @@ public:
    D3DTexture* DuplicateDepthTexture(RenderTarget* src);
 
 #ifndef ENABLE_SDL
-   void SetRenderTarget(RenderTarget* surf);
+   void SetRenderTarget(RenderTarget* surf, bool ignoreStereo = false);
    void SetZBuffer(D3DTexture* surf);
    void* AttachZBufferTo(D3DTexture* surfTexture);
 #endif
@@ -280,11 +284,11 @@ public:
    bool DepthBufferReadBackAvailable();
 
 #ifndef ENABLE_SDL
-   D3DTexture* CreateSystemTexture(BaseTexture* surf, const bool linearRGB);
+   D3DTexture* CreateSystemTexture(BaseTexture* const surf, const bool linearRGB);
    D3DTexture* CreateSystemTexture(const int texwidth, const int texheight, const D3DFORMAT texformat, const void* data, const int pitch, const bool linearRGB);
 #endif
-   D3DTexture* UploadTexture(BaseTexture* surf, int *pTexWidth = NULL, int *pTexHeight = NULL, const bool linearRGB = true);
-   void UpdateTexture(D3DTexture* tex, BaseTexture* surf, const bool linearRGB);
+   D3DTexture* UploadTexture(BaseTexture* const surf, int* const pTexWidth = NULL, int* const pTexHeight = NULL, const bool linearRGB = true);
+   void UpdateTexture(D3DTexture* const tex, BaseTexture* const surf, const bool linearRGB);
 
    void SetRenderState(const RenderStates p1, DWORD p2);
    bool SetRenderStateCache(const RenderStates p1, DWORD p2);
@@ -348,13 +352,28 @@ public:
    }
 #endif
 
+   HWND getHwnd() { return m_windowHwnd; }
+
+   HWND         m_windowHwnd;
+   int          m_width;
+   int          m_height;
+   bool         m_fullscreen;
+   int          m_colorDepth;
+   int          m_vsync;
+   bool         m_useAA;
+   int          m_stereo3D;
+   bool         m_ssRefl;
+   bool         m_disableDwm;
+   unsigned int m_FXAA;
+   int          m_BWrendering;
+   UINT         m_adapter;
+
 private:
    void DrawPrimitive(const PrimitveTypes type, const DWORD fvf, const void* vertices, const DWORD vertexCount);
 
    void UploadAndSetSMAATextures();
    D3DTexture* m_SMAAsearchTexture;
    D3DTexture* m_SMAAareaTexture;
-   int m_stereo3D;
 
 #ifdef ENABLE_SDL
 #else
@@ -381,8 +400,6 @@ private:
    D3DTexture* m_pMirrorTmpBufferTexture;
    D3DTexture* m_pReflectionBufferTexture;
 
-   UINT m_adapter;      // index of the display adapter to use
-
    static const DWORD TEXTURE_STATE_CACHE_SIZE = 256;
    static const DWORD TEXTURE_SAMPLER_CACHE_SIZE = 14;
 
@@ -394,8 +411,7 @@ private:
    IndexBuffer* m_curIndexBuffer;         // dto.
    VertexDeclaration *currentDeclaration; // dto.
 
-   VertexBuffer *m_quadVertexBuffer;      // internal vb for rendering quads
-   //VertexBuffer *m_quadDynVertexBuffer;   // internal vb for rendering dynamic quads
+   static VertexBuffer *m_quadVertexBuffer;      // internal vb for rendering quads
 
    DWORD m_maxaniso;
    bool m_mag_aniso;
@@ -430,7 +446,7 @@ private:
 #endif
 
 public:
-   static bool m_useNvidiaApi;
+   bool m_useNvidiaApi;
    static bool m_INTZ_support;
 
    // performance counters

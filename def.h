@@ -122,8 +122,8 @@ typedef _int64          S64;
 
 #define CCO(x) CComObject<x>
 
-#define SAFE_VECTOR_DELETE(p)   { if(p) { delete [] (p);  (p)=NULL; } }
-#define SAFE_DELETE(p)			{ if(p) { delete (p);     (p)=NULL; } }
+#define SAFE_VECTOR_DELETE(p)   { if (p) { delete [] (p);  (p)=NULL; } }
+#define SAFE_DELETE(p)			{ if (p) { delete (p);     (p)=NULL; } }
 
 inline void ref_count_trigger(const ULONG r, const char *file, const int line) // helper for debugging
 {
@@ -140,10 +140,10 @@ inline void ref_count_trigger(const ULONG r, const char *file, const int line) /
 #define SAFE_RELEASE_NO_CHECK_NO_SET(p)	{}
 #define SAFE_RELEASE_NO_RCC(p)	{}
 #else
-#define SAFE_RELEASE(p)			{ if(p) { const ULONG rcc = (p)->Release(); if(rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); (p)=NULL; } }
-#define SAFE_RELEASE_NO_SET(p)	{ if(p) { const ULONG rcc = (p)->Release(); if(rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); } }
-#define SAFE_RELEASE_NO_CHECK_NO_SET(p)	{ const ULONG rcc = (p)->Release(); if(rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); }
-#define SAFE_RELEASE_NO_RCC(p)	{ if(p) { (p)->Release(); (p)=NULL; } } // use for releasing things like surfaces gotten from GetSurfaceLevel (that seem to "share" the refcount with the underlying texture)
+#define SAFE_RELEASE(p)			{ if (p) { const ULONG rcc = (p)->Release(); if (rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); (p)=NULL; } }
+#define SAFE_RELEASE_NO_SET(p)	{ if (p) { const ULONG rcc = (p)->Release(); if (rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); } }
+#define SAFE_RELEASE_NO_CHECK_NO_SET(p)	{ const ULONG rcc = (p)->Release(); if (rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); }
+#define SAFE_RELEASE_NO_RCC(p)	{ if (p) { (p)->Release(); (p)=NULL; } } // use for releasing things like surfaces gotten from GetSurfaceLevel (that seem to "share" the refcount with the underlying texture)
 #endif
 
 #define hrNotImplemented ResultFromScode(E_NOTIMPL)
@@ -184,11 +184,11 @@ public:
    D3DVALUE z;
 
    // Normals
-   D3DVALUE nx;
-   D3DVALUE ny;
-   D3DVALUE nz;
+   D3DVALUE nx; // w component if MY_D3DTRANSFORMED_NOTEX2_VERTEX
+   D3DVALUE ny; // tex coord (1) if MY_D3DTRANSFORMED_NOTEX2_VERTEX
+   D3DVALUE nz; // dto.
 
-   // Texture coordinates
+   // Texture coordinates (0)
    D3DVALUE tu;
    D3DVALUE tv;
 };

@@ -599,7 +599,7 @@ namespace Win32xx
             {
                 LPDLGTEMPLATE  lpTemplate = (LPDLGTEMPLATE)lparam;
 
-                if(!(lpTemplate->style & WS_SYSMENU))
+                if (!(lpTemplate->style & WS_SYSMENU))
                 {
                     lpTemplate->style |= WS_SYSMENU;
                 }

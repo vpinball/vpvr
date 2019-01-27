@@ -172,7 +172,7 @@ VS_OUTPUT_2D vs_main_no_trafo(float4 vPosition  : POSITION0,
 float4 ps_main_fb_tonemap(in VS_OUTPUT_2D IN) : COLOR
 {
    //!! const float depth0 = tex2Dlod(texSamplerDepth, float4(u, 0.,0.)).x;
-   //!! if((depth0 == 1.0) || (depth0 == 0.0)) //!! early out if depth too large (=BG) or too small (=DMD,etc -> retweak render options (depth write on), otherwise also screwup with stereo)
+   //!! if ((depth0 == 1.0) || (depth0 == 0.0)) //!! early out if depth too large (=BG) or too small (=DMD,etc -> retweak render options (depth write on), otherwise also screwup with stereo)
    //!!   return float4(tex2Dlod(texSampler5, float4(IN.tex0, 0.,0.)).xyz, 1.0);
 
    float3 result = FBToneMap(tex2Dlod(texSampler5, float4(IN.tex0, 0.,0.)).xyz);

@@ -381,7 +381,7 @@ void Bumper::EndPlay()
    }
 }
 
-void Bumper::UpdateRing(RenderDevice *pd3dDevice)
+void Bumper::UpdateRing()
 {
    //TODO update Worldmatrix instead.
    Vertex3D_NoTex2 *buf;
@@ -400,8 +400,9 @@ void Bumper::UpdateRing(RenderDevice *pd3dDevice)
    m_ringVertexBuffer->unlock();
 }
 
-void Bumper::RenderBase(RenderDevice *pd3dDevice, const Material * const baseMaterial)
+void Bumper::RenderBase(const Material * const baseMaterial)
 {
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
    pd3dDevice->basicShader->SetMaterial(baseMaterial);
    pd3dDevice->basicShader->SetTexture("Texture0", &m_baseTexture, false);
    g_pplayer->m_pin3d.EnableAlphaBlend(false);
@@ -412,8 +413,10 @@ void Bumper::RenderBase(RenderDevice *pd3dDevice, const Material * const baseMat
    pd3dDevice->basicShader->End();
 }
 
-void Bumper::RenderSocket(RenderDevice *pd3dDevice, const Material * const socketMaterial)
+void Bumper::RenderSocket(const Material * const socketMaterial)
 {
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    pd3dDevice->basicShader->SetMaterial(socketMaterial);
    pd3dDevice->basicShader->SetTexture("Texture0", &m_skirtTexture, false);
    g_pplayer->m_pin3d.EnableAlphaBlend(false);
@@ -424,8 +427,10 @@ void Bumper::RenderSocket(RenderDevice *pd3dDevice, const Material * const socke
    pd3dDevice->basicShader->End();
 }
 
-void Bumper::RenderCap(RenderDevice *pd3dDevice, const Material * const capMaterial)
+void Bumper::RenderCap(const Material * const capMaterial)
 {
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    pd3dDevice->basicShader->SetMaterial(capMaterial);
    pd3dDevice->basicShader->SetTexture("Texture0", &m_capTexture, false);
    g_pplayer->m_pin3d.EnableAlphaBlend(false);
@@ -436,7 +441,7 @@ void Bumper::RenderCap(RenderDevice *pd3dDevice, const Material * const capMater
    pd3dDevice->basicShader->End();
 }
 
-void Bumper::UpdateSkirt(RenderDevice *pd3dDevice, const bool doCalculation)
+void Bumper::UpdateSkirt(const bool doCalculation)
 {
    const float SKIRT_TILT = 5.0f;
 
@@ -492,8 +497,10 @@ void Bumper::UpdateSkirt(RenderDevice *pd3dDevice, const bool doCalculation)
    m_socketVertexBuffer->unlock();
 }
 
-void Bumper::RenderDynamic(RenderDevice* pd3dDevice)
+void Bumper::RenderDynamic()
 {
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    TRACE_FUNCTION();
 
    if (m_ptable->m_fReflectionEnabled && !m_d.m_fReflectionEnabled)
@@ -543,7 +550,7 @@ void Bumper::RenderDynamic(RenderDevice* pd3dDevice)
             }
          }
          if (m_ringVertexBuffer)
-            UpdateRing(pd3dDevice);
+            UpdateRing();
       }
 
       pd3dDevice->basicShader->SetTechnique("basic_with_texture");
@@ -564,7 +571,7 @@ void Bumper::RenderDynamic(RenderDevice* pd3dDevice)
          if (state == 1)
          {
             m_doSkirtAnimation = true;
-            UpdateSkirt(pd3dDevice, true);
+            UpdateSkirt(true);
             m_skirtCounter = 0.0f;
          }
          if (m_doSkirtAnimation)
@@ -573,19 +580,19 @@ void Bumper::RenderDynamic(RenderDevice* pd3dDevice)
             if (m_skirtCounter > 160.0f)
             {
                m_doSkirtAnimation = false;
-               UpdateSkirt(pd3dDevice, false);
+               UpdateSkirt(false);
             }
          }
       }
       else
-         UpdateSkirt(pd3dDevice, false);
+         UpdateSkirt(false);
 
       const Material *mat = m_ptable->GetMaterial(m_d.m_szSkirtMaterial);
       pd3dDevice->basicShader->SetTexture("Texture0", &m_skirtTexture, false);
       pd3dDevice->basicShader->SetTechnique("basic_with_texture");
       pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
       pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
-      RenderSocket(pd3dDevice, mat);
+      RenderSocket( mat);
    }
 
    if (m_d.m_fBaseVisible)
@@ -596,7 +603,7 @@ void Bumper::RenderDynamic(RenderDevice* pd3dDevice)
          pd3dDevice->basicShader->SetTechnique("basic_with_texture");
          pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
          pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
-         RenderBase(pd3dDevice, mat);
+         RenderBase(mat);
       }
    }
 
@@ -608,7 +615,7 @@ void Bumper::RenderDynamic(RenderDevice* pd3dDevice)
          pd3dDevice->basicShader->SetTechnique("basic_with_texture");
          pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
          pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
-         RenderCap(pd3dDevice, mat);
+         RenderCap(mat);
       }
    }
 }
@@ -772,8 +779,9 @@ void Bumper::GenerateCapMesh(Vertex3D_NoTex2 *buf)
    }
 }
 
-void Bumper::RenderSetup(RenderDevice* pd3dDevice)
+void Bumper::RenderSetup()
 {
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
    m_d.m_time_msec = g_pplayer->m_time_msec;
 
    m_baseHeight = m_ptable->GetSurfaceHeight(m_d.m_szSurface, m_d.m_vCenter.x, m_d.m_vCenter.y) * m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
@@ -864,20 +872,20 @@ void Bumper::RenderSetup(RenderDevice* pd3dDevice)
 
 }
 
-void Bumper::RenderStatic(RenderDevice* pd3dDevice)
+void Bumper::RenderStatic()
 {
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
    if (m_ptable->m_fReflectionEnabled && !m_d.m_fReflectionEnabled)
       return;
 
    if (m_d.m_fBaseVisible)
    {
-
       const Material *mat = m_ptable->GetMaterial(m_d.m_szBaseMaterial);
       if (!mat->m_bOpacityActive)
       {
          pd3dDevice->basicShader->SetTechnique("basic_with_texture");
          pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
-         RenderBase(pd3dDevice, mat);
+         RenderBase(mat);
       }
    }
 
@@ -888,7 +896,7 @@ void Bumper::RenderStatic(RenderDevice* pd3dDevice)
       {
          pd3dDevice->basicShader->SetTechnique("basic_with_texture");
          pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
-         RenderCap(pd3dDevice, mat);
+         RenderCap(mat);
       }
    }
 }

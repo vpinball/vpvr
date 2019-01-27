@@ -1277,7 +1277,7 @@ namespace Win32xx
     {
         BOOL success = FALSE;
 
-        if( &GetApp() )
+        if ( &GetApp() )
         {
             // Allocate an iterator for our HDC map
             std::map<HGDIOBJ, CGDI_Data*, CompareGDI>::iterator m;
@@ -2710,7 +2710,7 @@ namespace Win32xx
 
         if (isVertical)
         {
-            for(int i=0; i < Width; ++i)
+            for (int i=0; i < Width; ++i)
             {
                 int r = r1 + (i * (r2-r1) / Width);
                 int g = g1 + (i * (g2-g1) / Width);
@@ -2722,7 +2722,7 @@ namespace Win32xx
         }
         else
         {
-            for(int i=0; i < Height; ++i)
+            for (int i=0; i < Height; ++i)
             {
                 int r = r1 + (i * (r2-r1) / Height);
                 int g = g1 + (i * (g2-g1) / Height);
@@ -2753,7 +2753,7 @@ namespace Win32xx
     {
         BOOL success = FALSE;
 
-        if( &GetApp() )
+        if ( &GetApp() )
         {
             // Allocate an iterator for our Data map
             std::map<HDC, CDC_Data*, CompareHDC>::iterator m;

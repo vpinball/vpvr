@@ -757,7 +757,7 @@ namespace Win32xx
         GetAXWindow().Activate(TRUE);
 
         IUnknown* pUnk = GetAXWindow().GetUnknown();
-        if(pUnk)
+        if (pUnk)
         {
             // Store the pointer to the WebBrowser control
             HRESULT result = pUnk->QueryInterface(IID_IWebBrowser2, reinterpret_cast<void**>(&m_pIWebBrowser2));

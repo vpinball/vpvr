@@ -539,21 +539,21 @@ void Surface::MoveOffset(const float dx, const float dy)
    m_ptable->SetDirtyDraw();
 }
 
-void Surface::RenderDynamic(RenderDevice* pd3dDevice)
+void Surface::RenderDynamic()
 {
    TRACE_FUNCTION();
 
    if (m_ptable->m_fReflectionEnabled && !m_d.m_fReflectionEnabled)
       return;
 
-   RenderSlingshots(pd3dDevice);
+   RenderSlingshots();
 
    if (m_d.m_fDroppable || m_isDynamic)
    {
       if (!m_fIsDropped)
       {
          // Render wall raised.
-         RenderWallsAtHeight(pd3dDevice, false);
+         RenderWallsAtHeight(false);
       }
       else    // is dropped
       {
@@ -561,7 +561,7 @@ void Surface::RenderDynamic(RenderDevice* pd3dDevice)
          if (!m_d.m_fFlipbook)
          {
             // Render wall dropped (smashed to a pancake at bottom height).
-            RenderWallsAtHeight(pd3dDevice, true);
+            RenderWallsAtHeight(true);
          }
       }
    }
@@ -832,7 +832,7 @@ void Surface::ExportMesh(FILE *f)
    }
 }
 
-void Surface::PrepareWallsAtHeight(RenderDevice* pd3dDevice)
+void Surface::PrepareWallsAtHeight()
 {
    if (IBuffer)
       IBuffer->release();
@@ -875,7 +875,7 @@ static const WORD rgiSlingshot[24] = { 0, 4, 3, 0, 1, 4, 1, 2, 5, 1, 5, 4, 4, 8,
 
 static IndexBuffer* slingIBuffer = NULL;        // this is constant so we only have one global instance
 
-void Surface::PrepareSlingshots(RenderDevice *pd3dDevice)
+void Surface::PrepareSlingshots()
 {
    const float slingbottom = (m_d.m_heighttop - m_d.m_heightbottom) * 0.2f + m_d.m_heightbottom;
    const float slingtop = (m_d.m_heighttop - m_d.m_heightbottom) * 0.8f + m_d.m_heightbottom;
@@ -932,7 +932,7 @@ void Surface::PrepareSlingshots(RenderDevice *pd3dDevice)
       slingIBuffer = IndexBuffer::CreateAndFillIndexBuffer(24, rgiSlingshot);
 }
 
-void Surface::RenderSetup(RenderDevice* pd3dDevice)
+void Surface::RenderSetup()
 {
    const float oldBottomHeight = m_d.m_heightbottom;
    const float oldTopHeight = m_d.m_heighttop;
@@ -940,7 +940,7 @@ void Surface::RenderSetup(RenderDevice* pd3dDevice)
    m_d.m_heightbottom *= m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
    m_d.m_heighttop *= m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
    if (!m_vlinesling.empty())
-      PrepareSlingshots(pd3dDevice);
+      PrepareSlingshots();
 
    m_isDynamic = false;
    if (m_d.m_fSideVisible)
@@ -955,7 +955,7 @@ void Surface::RenderSetup(RenderDevice* pd3dDevice)
    }
 
    // create all vertices for dropped and non-dropped surface
-   PrepareWallsAtHeight(pd3dDevice);
+   PrepareWallsAtHeight();
    m_d.m_heightbottom = oldBottomHeight;
    m_d.m_heighttop = oldTopHeight;
 }
@@ -984,17 +984,17 @@ void Surface::FreeBuffers()
    }
 }
 
-void Surface::RenderStatic(RenderDevice* pd3dDevice)
+void Surface::RenderStatic()
 {
    if (m_ptable->m_fReflectionEnabled && !m_d.m_fReflectionEnabled)
       return;
 
-   RenderSlingshots(pd3dDevice);
+   RenderSlingshots();
    if (!m_d.m_fDroppable && !m_isDynamic)
-      RenderWallsAtHeight(pd3dDevice, false);
+      RenderWallsAtHeight(false);
 }
 
-void Surface::RenderSlingshots(RenderDevice* pd3dDevice)
+void Surface::RenderSlingshots()
 {
    if (!m_d.m_fSideVisible || (m_vlinesling.size() == 0))
       return;
@@ -1012,6 +1012,8 @@ void Surface::RenderSlingshots(RenderDevice* pd3dDevice)
 
    if (nothing_to_draw)
       return;
+
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
    const Material * const mat = m_ptable->GetMaterial(m_d.m_szSlingShotMaterial);
    pd3dDevice->basicShader->SetTechnique("basic_without_texture");
@@ -1046,10 +1048,12 @@ void Surface::RenderSlingshots(RenderDevice* pd3dDevice)
    //pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 }
 
-void Surface::RenderWallsAtHeight(RenderDevice* pd3dDevice, const bool fDrop)
+void Surface::RenderWallsAtHeight(const bool fDrop)
 {
    if (m_ptable->m_fReflectionEnabled && (/*m_d.m_heightbottom < 0.0f ||*/ m_d.m_heighttop < 0.0f))
       return;
+
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
    if ((m_d.m_fDisableLightingTop != 0.f || m_d.m_fDisableLightingBelow != 0.f) && (m_d.m_fSideVisible || m_d.m_fTopBottomVisible))
    {
@@ -1082,7 +1086,7 @@ void Surface::RenderWallsAtHeight(RenderDevice* pd3dDevice, const bool fDrop)
          pd3dDevice->basicShader->SetTexture("Texture0", pinSide, false);
          pd3dDevice->basicShader->SetAlphaTestValue(pinSide->m_alphaTestValue * (float)(1.0 / 255.0));
 
-         //g_pplayer->m_pin3d.SetTextureFilter( 0, TEXTURE_MODE_TRILINEAR );
+         //g_pplayer->m_pin3d.SetPrimaryTextureFilter( 0, TEXTURE_MODE_TRILINEAR );
       }
       else
          pd3dDevice->basicShader->SetTechnique("basic_without_texture");
@@ -1116,7 +1120,7 @@ void Surface::RenderWallsAtHeight(RenderDevice* pd3dDevice, const bool fDrop)
          pd3dDevice->basicShader->SetTexture("Texture0", pin, false);
          pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
 
-         //g_pplayer->m_pin3d.SetTextureFilter( 0, TEXTURE_MODE_TRILINEAR );
+         //g_pplayer->m_pin3d.SetPrimaryTextureFilter( 0, TEXTURE_MODE_TRILINEAR );
       }
       else
          pd3dDevice->basicShader->SetTechnique("basic_without_texture");
@@ -1150,7 +1154,6 @@ void Surface::RenderWallsAtHeight(RenderDevice* pd3dDevice, const bool fDrop)
       const vec4 tmp(0.f, 0.f, 0.f, 0.f);
       pd3dDevice->basicShader->SetDisableLighting(tmp);
    }
-
 }
 
 void Surface::AddPoint(int x, int y, const bool smooth)

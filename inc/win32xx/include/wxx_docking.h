@@ -1490,12 +1490,12 @@ namespace Win32xx
         switch (dockSide)
         {
         case DS_DOCKED_LEFTMOST:
-            if(RTL) rcHint.left = rcHint.right - Width;
+            if (RTL) rcHint.left = rcHint.right - Width;
             else    rcHint.right = rcHint.left + Width;
 
             break;
         case DS_DOCKED_RIGHTMOST:
-            if(RTL) rcHint.right = rcHint.left + Width;
+            if (RTL) rcHint.right = rcHint.left + Width;
             else    rcHint.left = rcHint.right - Width;
 
             break;
@@ -2086,11 +2086,11 @@ namespace Win32xx
         {
             if (!GetDockAncestor()->m_targetLeft.CheckTarget(pDragPos))
             {
-                if(!GetDockAncestor()->m_targetTop.CheckTarget(pDragPos))
+                if (!GetDockAncestor()->m_targetTop.CheckTarget(pDragPos))
                 {
-                    if(!GetDockAncestor()->m_targetRight.CheckTarget(pDragPos))
+                    if (!GetDockAncestor()->m_targetRight.CheckTarget(pDragPos))
                     {
-                        if(!GetDockAncestor()->m_targetBottom.CheckTarget(pDragPos))
+                        if (!GetDockAncestor()->m_targetBottom.CheckTarget(pDragPos))
                         {
                             // Not in a docking zone, so clean up
                             CDocker* pDockDrag = pDragPos->pDocker;
@@ -2812,7 +2812,7 @@ namespace Win32xx
                         if (pDockParent != 0)
                         {
                             CDocker* pDocker = NewDockerFromID(di.dockID);
-                            if(!pDocker)
+                            if (!pDocker)
                                 throw CUserException(_T("Failed to add dockers with parents from registry"));
 
                             pDockParent->AddDockedChild(pDocker, di.dockStyle, di.dockSize, di.dockID);
@@ -3821,7 +3821,7 @@ namespace Win32xx
                 {
                     DockInfo di = allDockInfo[u];
                     SubKeyName.Format(_T("DockChild%u"), u);
-                    if(ERROR_SUCCESS != keyDock.SetBinaryValue(SubKeyName, &di, sizeof(DockInfo)))
+                    if (ERROR_SUCCESS != keyDock.SetBinaryValue(SubKeyName, &di, sizeof(DockInfo)))
                         throw (CUserException(_T("KeyDock SetBinaryValue failed")));
                 }
 

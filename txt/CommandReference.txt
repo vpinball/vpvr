@@ -9,7 +9,8 @@ Changelog:
 10.6:
 - add support for non-mechanical/digital Position() plunger call
 - add EnableSkirtAnimation to the bumper element
-- add GetCustomParam to access custom command line parameters 
+- add GetCustomParam to access custom command line parameters
+- add support to read out the current hit threshold if the ball hits a Primitive or a HitTarget
 10.5:
 - EOSTorque, EOSTorqueAngle and Scatter of flipper element can now be changed by script
 - document missing DMDColoredPixels and add simple example for DMD access

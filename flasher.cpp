@@ -404,8 +404,10 @@ void Flasher::UpdateMesh()
    dynamicVertexBuffer->unlock();
 }
 
-void Flasher::RenderSetup(RenderDevice* pd3dDevice)
+void Flasher::RenderSetup()
 {
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    std::vector<RenderVertex> vvertex;
    GetRgVertex(vvertex);
 
@@ -490,7 +492,7 @@ void Flasher::RenderSetup(RenderDevice* pd3dDevice)
    }
 }
 
-void Flasher::RenderStatic(RenderDevice* pd3dDevice)
+void Flasher::RenderStatic()
 {
 }
 
@@ -713,7 +715,7 @@ BOOL Flasher::LoadToken(int id, BiffReader *pbr)
    {
       int iTmp;
       pbr->GetInt(&iTmp);
-      //if( iTmp>100 ) iTmp=100;
+      //if ( iTmp>100 ) iTmp=100;
       if (iTmp < 0) iTmp = 0;
       m_d.m_alpha = iTmp;
    }
@@ -1296,8 +1298,10 @@ STDMETHODIMP Flasher::put_ImageAlignment(RampImageAlignment newVal)
    return S_OK;
 }
 
-void Flasher::RenderDynamic(RenderDevice* pd3dDevice)
+void Flasher::RenderDynamic()
 {
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    TRACE_FUNCTION();
 
    // Don't render if invisible (or DMD connection not set)
@@ -1330,7 +1334,7 @@ void Flasher::RenderDynamic(RenderDevice* pd3dDevice)
        pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
 
        pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
-       if((g_pplayer->m_dmdstate == 1) && alphadmd)
+       if ((g_pplayer->m_dmdstate == 1) && alphadmd)
           g_pplayer->m_pin3d.EnableAlphaBlend(m_d.m_fAddBlend);
        else
           pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
@@ -1375,7 +1379,7 @@ void Flasher::RenderDynamic(RenderDevice* pd3dDevice)
 #endif
        pd3dDevice->DMDShader->SetVector("vRes_Alpha", &r);
 
-       pd3dDevice->DMDShader->SetTexture("Texture0", g_pplayer->m_pin3d.m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, false), false);
+       pd3dDevice->DMDShader->SetTexture("Texture0", g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, false), false);
 
        pd3dDevice->DMDShader->Begin(0);
        pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_TEX, dynamicVertexBuffer, 0, numVertices, dynamicIndexBuffer, 0, numPolys * 3);
@@ -1421,7 +1425,7 @@ void Flasher::RenderDynamic(RenderDevice* pd3dDevice)
            if (!m_d.m_fAddBlend)
                flasherData.x = pinA->m_alphaTestValue * (float)(1.0 / 255.0);
 
-           //ppin3d->SetTextureFilter( 0, TEXTURE_MODE_TRILINEAR );
+           //ppin3d->SetPrimaryTextureFilter( 0, TEXTURE_MODE_TRILINEAR );
        }
        else if (!pinA && pinB)
        {
@@ -1431,7 +1435,7 @@ void Flasher::RenderDynamic(RenderDevice* pd3dDevice)
            if (!m_d.m_fAddBlend)
                flasherData.x = pinB->m_alphaTestValue * (float)(1.0 / 255.0);
 
-           //ppin3d->SetTextureFilter( 0, TEXTURE_MODE_TRILINEAR );
+           //ppin3d->SetPrimaryTextureFilter( 0, TEXTURE_MODE_TRILINEAR );
        }
        else if (pinA && pinB)
        {
@@ -1445,7 +1449,7 @@ void Flasher::RenderDynamic(RenderDevice* pd3dDevice)
                flasherData.y = pinB->m_alphaTestValue * (float)(1.0 / 255.0);
            }
 
-           //ppin3d->SetTextureFilter( 0, TEXTURE_MODE_TRILINEAR );
+           //ppin3d->SetPrimaryTextureFilter( 0, TEXTURE_MODE_TRILINEAR );
        }
        else
            pd3dDevice->flasherShader->SetTechnique("basic_with_noLight");

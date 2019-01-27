@@ -138,9 +138,9 @@ void draw_transparent_box( F32 sx, F32 sy, const F32 x, const F32 y, const U32 c
    const DWORD a = (color & 0x000000ff)      ;
    const DWORD col = (a << 24) | (r << 16) | (g << 8) | b;
 
-   g_pplayer->m_pin3d.m_pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
+   g_pplayer->m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
 
-   g_pplayer->Spritedraw( y, x,
+   g_pplayer->Spritedraw(y, x,
       sy, sx,
       col,
       (Texture*)NULL,
@@ -163,9 +163,9 @@ void plumb_draw()
    // Save the current transformation state.
    ReturnCode = Shader::GetTransform ( D3DTRANSFORMSTATE_WORLD, &RestoreWorldMatrix ); 
    // Save the current render state.
-   //Display_GetRenderState(g_pplayer->m_pin3d.m_pd3dDevice, &(RestoreRenderState));
+   //Display_GetRenderState(g_pplayer->m_pin3d.m_pd3dPrimaryDevice, &(RestoreRenderState));
    // Save the current texture state.
-   //Display_GetTextureState (g_pplayer->m_pin3d.m_pd3dDevice, &(RestoreTextureState));
+   //Display_GetTextureState (g_pplayer->m_pin3d.m_pd3dPrimaryDevice, &(RestoreTextureState));
 
    static const Matrix3D WorldMatrix(1.0f,0.0f,0.0f,0.0f,0.0f,1.0f,0.0f,0.0f,0.0f,0.0f,1.0f,0.0f,0.0f,0.0f,0.0f,1.0f);
    Shader::SetTransform ( D3DTRANSFORMSTATE_WORLD, (LPD3DMATRIX)&WorldMatrix, 1); 
@@ -182,9 +182,9 @@ void plumb_draw()
    draw_transparent_box( 3, 3, x+gPlumb.y*100.0f, y+ac*(-(gPlumb.x))*100.0f, 0xffffffff );
 
    // Restore the render states.
-   //Display_SetRenderState(g_pplayer->m_pin3d.m_pd3dDevice, &(RestoreRenderState));
+   //Display_SetRenderState(g_pplayer->m_pin3d.m_pd3dPrimaryDevice, &(RestoreRenderState));
    // Restore the texture state.
-   //Display_SetTextureState(g_pplayer->m_pin3d.m_pd3dDevice, &(RestoreTextureState));
+   //Display_SetTextureState(g_pplayer->m_pin3d.m_pd3dPrimaryDevice, &(RestoreTextureState));
    // Restore the transformation state.
    ReturnCode = Shader::SetTransform ( D3DTRANSFORMSTATE_WORLD, &RestoreWorldMatrix, 1 ); 
 #endif

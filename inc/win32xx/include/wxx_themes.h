@@ -115,14 +115,14 @@ namespace Win32xx
         {
             HMODULE module = ::LoadLibrary(_T("uxtheme.dll"));
 
-            if(module != 0)
+            if (module != 0)
             {
                 // Declare pointers to IsCompositionActive function
                 FARPROC pIsCompositionActive = ::GetProcAddress(module, "IsCompositionActive");
 
-                if(pIsCompositionActive)
+                if (pIsCompositionActive)
                 {
-                    if(pIsCompositionActive())
+                    if (pIsCompositionActive())
                     {
                         IsAeroThemed = TRUE;
                     }
@@ -143,15 +143,15 @@ namespace Win32xx
         if (GetWinVersion() >= 2501)
         {
             HMODULE theme = ::LoadLibrary(_T("uxtheme.dll"));
-            if(theme != 0)
+            if (theme != 0)
             {
                 // Declare pointers to functions
                 FARPROC pIsAppThemed   = ::GetProcAddress(theme, "IsAppThemed");
                 FARPROC pIsThemeActive = ::GetProcAddress(theme, "IsThemeActive");
 
-                if(pIsAppThemed && pIsThemeActive)
+                if (pIsAppThemed && pIsThemeActive)
                 {
-                    if(pIsAppThemed() && pIsThemeActive())
+                    if (pIsAppThemed() && pIsThemeActive())
                     {
                         // Test if ComCtl32 dll used is version 6 or later
                         IsXPThemed = (GetComCtlVersion() >= 600);

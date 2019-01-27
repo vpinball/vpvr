@@ -132,33 +132,33 @@ public:
         return obj; \
     } \
 	HRESULT Init(PinTable *ptable, float x, float y, bool fromMouseClick); \
-	INITVBA(ItemType) \
-	virtual void UIRenderPass1(Sur * const psur); \
-	virtual void UIRenderPass2(Sur * const psur); \
-	virtual PinTable *GetPTable() {return m_ptable;} \
-	virtual void GetHitShapes(vector<HitObject*> &pvho); \
-	virtual void GetHitShapesDebug(vector<HitObject*> &pvho); \
-	virtual void GetTimers(vector<HitTimer*> &pvht); \
-	virtual void EndPlay(); \
-	virtual void Delete() {IEditable::Delete();} \
-	virtual void Uncreate() {IEditable::Uncreate();} \
-	virtual HRESULT SaveData(IStream *pstm, HCRYPTHASH hcrypthash); \
-	virtual ItemTypeEnum GetItemType() const { return ItemType; } \
-	virtual HRESULT InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version, HCRYPTHASH hcrypthash, HCRYPTKEY hcryptkey); \
-	virtual HRESULT InitPostLoad(); \
-	virtual BOOL LoadToken(int id, BiffReader *pbr); \
-	virtual IDispatch *GetDispatch() {return static_cast<IDispatch *>(this);} \
-	virtual IEditable *GetIEditable() {return static_cast<IEditable*>(this);} \
-	virtual ISelect *GetISelect() {return static_cast<ISelect*>(this);} \
-	virtual Hitable *GetIHitable() {return static_cast<Hitable *>(this);} \
-    virtual void RenderSetup(RenderDevice* pd3dDevice); \
-    virtual void RenderStatic(RenderDevice* pd3dDevice); \
-	virtual void RenderDynamic(RenderDevice* pd3dDevice); \
-	STDMETHOD(GetDisplayString)(DISPID dispID, BSTR *pbstr) {return hrNotImplemented;}\
-	STDMETHOD(MapPropertyToPage)(DISPID dispID, CLSID *pclsid) {return hrNotImplemented;} \
-	STDMETHOD(GetPredefinedStrings)(DISPID dispID, CALPOLESTR *pcaStringsOut, CADWORD *pcaCookiesOut) {return GetPTable()->GetPredefinedStrings(dispID, pcaStringsOut, pcaCookiesOut, this);} \
-	STDMETHOD(GetPredefinedValue)(DISPID dispID, DWORD dwCookie, VARIANT *pVarOut) {return GetPTable()->GetPredefinedValue(dispID, dwCookie, pVarOut, this);} \
-	virtual void SetDefaults(bool fromMouseClick);
+   INITVBA(ItemType) \
+   virtual void UIRenderPass1(Sur * const psur); \
+   virtual void UIRenderPass2(Sur * const psur); \
+   virtual PinTable *GetPTable() {return m_ptable;} \
+   virtual void GetHitShapes(vector<HitObject*> &pvho); \
+   virtual void GetHitShapesDebug(vector<HitObject*> &pvho); \
+   virtual void GetTimers(vector<HitTimer*> &pvht); \
+   virtual void EndPlay(); \
+   virtual void Delete() {IEditable::Delete();} \
+   virtual void Uncreate() {IEditable::Uncreate();} \
+   virtual HRESULT SaveData(IStream *pstm, HCRYPTHASH hcrypthash); \
+   virtual ItemTypeEnum GetItemType() const { return ItemType; } \
+   virtual HRESULT InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version, HCRYPTHASH hcrypthash, HCRYPTKEY hcryptkey); \
+   virtual HRESULT InitPostLoad(); \
+   virtual BOOL LoadToken(int id, BiffReader *pbr); \
+   virtual IDispatch *GetDispatch() {return static_cast<IDispatch *>(this);} \
+   virtual IEditable *GetIEditable() {return static_cast<IEditable*>(this);} \
+   virtual ISelect *GetISelect() {return static_cast<ISelect*>(this);} \
+   virtual Hitable *GetIHitable() {return static_cast<Hitable *>(this);} \
+   virtual void RenderSetup(); \
+   virtual void RenderStatic(); \
+   virtual void RenderDynamic(); \
+   STDMETHOD(GetDisplayString)(DISPID dispID, BSTR *pbstr) {return hrNotImplemented;}\
+   STDMETHOD(MapPropertyToPage)(DISPID dispID, CLSID *pclsid) {return hrNotImplemented;} \
+   STDMETHOD(GetPredefinedStrings)(DISPID dispID, CALPOLESTR *pcaStringsOut, CADWORD *pcaCookiesOut) {return GetPTable()->GetPredefinedStrings(dispID, pcaStringsOut, pcaCookiesOut, this);} \
+   STDMETHOD(GetPredefinedValue)(DISPID dispID, DWORD dwCookie, VARIANT *pVarOut) {return GetPTable()->GetPredefinedValue(dispID, dwCookie, pVarOut, this);} \
+   virtual void SetDefaults(bool fromMouseClick);
 
 #define _STANDARD_EDITABLE_CONSTANTS(ItTy, ResName, AllwdViews) \
     static const ItemTypeEnum ItemType = ItTy; \
@@ -253,6 +253,6 @@ public:
 
    bool m_fSingleEvents;
 
-   bool m_fBackglass; // if the light is on the table (false) or a backglass view
+   bool m_fBackglass; // if the light/decal (+dispreel/textbox is always true) is on the table (false) or a backglass view
    bool m_isVisible;
 };

@@ -12,7 +12,7 @@ bool Shader::Load(const BYTE* shaderCodeName, UINT codeSize)
    DWORD dwShaderFlags = 0; //D3DXSHADER_SKIPVALIDATION // these do not have a measurable effect so far (also if used in the offline fxc step): D3DXSHADER_PARTIALPRECISION, D3DXSHADER_PREFER_FLOW_CONTROL/D3DXSHADER_AVOID_FLOW_CONTROL
    HRESULT hr;
    /*
-   if(fromFile)
+   if (fromFile)
    {
    dwShaderFlags = D3DXSHADER_DEBUG|D3DXSHADER_SKIPOPTIMIZATION;
    hr = D3DXCreateEffectFromFile(	m_renderDevice->GetCoreDevice(),		// pDevice

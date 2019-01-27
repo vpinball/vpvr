@@ -164,7 +164,7 @@ VS_NOTEX_OUTPUT vs_notex_main(float4 vPosition : POSITION0,
 
    VS_NOTEX_OUTPUT Out;
    Out.pos = mul(vPosition, matWorldViewProj);
-   //if(cBase_Alpha.a < 1.0)
+   //if (cBase_Alpha.a < 1.0)
    {
       Out.worldPos_t1x.w = Out.pos.x / Out.pos.w;
       Out.normal_t1y.w = Out.pos.y / Out.pos.w;
@@ -230,10 +230,6 @@ float4 ps_main_texture(in VS_OUTPUT IN) : COLOR
    pixel.a *= cBase_Alpha.a;
    const float3 t = InvGamma(pixel.xyz);//pixel.xyz;
 
-   // early out if no normal set (e.g. decal vertices)
-   if (!any(IN.normal))
-      return float4(InvToneMap(t*cBase_Alpha.xyz), pixel.a);
-
    const float3 diffuse = t * cBase_Alpha.xyz;
    const float3 glossy = is_metal ? diffuse : (t*cGlossy_ImageLerp.w + (1.0 - cGlossy_ImageLerp.w))*cGlossy_ImageLerp.xyz*0.08; //!! use AO for glossy? specular?
    const float3 specular = cClearcoat_EdgeAlpha.xyz*0.08;
@@ -291,7 +287,7 @@ VS_NOTEX_OUTPUT vs_kicker(float4 vPosition : POSITION0,
    float4 P2 = vPosition;
    P2.z -= 30.0f*fKickerScale;
    Out.pos.z = mul(P2, matWorldViewProj).z;
-   //if(cBase_Alpha.a < 1.0)
+   //if (cBase_Alpha.a < 1.0)
    {
       Out.worldPos_t1x.w = Out.pos.x / Out.pos.w; //!! not necessary
       Out.normal_t1y.w = Out.pos.y / Out.pos.w; //!! not necessary

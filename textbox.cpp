@@ -209,7 +209,7 @@ void Textbox::EndPlay()
    IEditable::EndPlay();
 }
 
-void Textbox::RenderDynamic(RenderDevice* pd3dDevice)
+void Textbox::RenderDynamic()
 {
    TRACE_FUNCTION();
 
@@ -217,6 +217,8 @@ void Textbox::RenderDynamic(RenderDevice* pd3dDevice)
 
    if (!m_d.m_fVisible || (dmd && !g_pplayer->m_texdmd))
       return;
+
+   RenderDevice * const pd3dDevice = m_fBackglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
    if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_fReflectionEnabled)
       pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
@@ -257,11 +259,11 @@ void Textbox::RenderDynamic(RenderDevice* pd3dDevice)
          pd3dDevice->SetRenderState(RenderDevice::ALPHATESTENABLE, RenderDevice::RS_FALSE);
       }
 
-   //if(g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_fReflectionEnabled)
+   //if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_fReflectionEnabled)
    //	pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 }
 
-void Textbox::RenderSetup(RenderDevice* pd3dDevice)
+void Textbox::RenderSetup()
 {
    m_pIFont->Clone(&m_pIFontPlay);
 
@@ -273,7 +275,7 @@ void Textbox::RenderSetup(RenderDevice* pd3dDevice)
    RenderText();
 }
 
-void Textbox::RenderStatic(RenderDevice* pd3dDevice)
+void Textbox::RenderStatic()
 {
 }
 
@@ -365,7 +367,7 @@ void Textbox::RenderText()
       pch += m_texture->pitch() - m_texture->width() * 4;
    }
 
-   g_pplayer->m_pin3d.m_pd3dDevice->m_texMan.SetDirty(m_texture);
+   g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.SetDirty(m_texture);
 
    SelectObject(hdc, oldFont);
    SelectObject(hdc, oldBmp);

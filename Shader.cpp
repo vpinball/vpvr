@@ -120,7 +120,7 @@ void Shader::SetMaterial(const Material * const mat)
    if (bOpacityActive /*&& (alpha < 1.0f)*/)
       g_pplayer->m_pin3d.EnableAlphaBlend(false);
    else
-      g_pplayer->m_pin3d.m_pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
+      g_pplayer->m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
 }
 
 void Shader::SetDisableLighting(const float value) // only set top
@@ -203,7 +203,6 @@ void Shader::SetLightImageBackglassMode(const bool imageMode, const bool backgla
    {
       currentLightImageMode = (unsigned int)imageMode;
       currentLightBackglassMode = (unsigned int)backglassMode;
-      const vec4 data(imageMode ? 1.0f : 0.0f, backglassMode ? 1.0f : 0.0f, 0.f, 0.f);
-      SetVector("imageBackglassMode", &data);
+      SetBool("lightingOff", imageMode || backglassMode); // at the moment can be combined into a single bool due to what the shader actually does in the end
    }
 }

@@ -132,7 +132,7 @@ namespace Win32xx
         UINT GetDefaultItem(UINT flags, BOOL byPosition = FALSE) const;
         DWORD GetMenuContextHelpId() const;
 
-#if(WINVER >= 0x0500)   // Minimum OS required is Win2000
+#if (WINVER >= 0x0500)   // Minimum OS required is Win2000
         BOOL GetMenuInfo(MENUINFO& mi) const;
         BOOL SetMenuInfo(const MENUINFO& mi) const;
 #endif
@@ -491,7 +491,7 @@ namespace Win32xx
 
 
 // minimum OS required : Win2000
-#if(WINVER >= 0x0500)
+#if (WINVER >= 0x0500)
 
     // Retrieves the menu information.
     // Refer to GetMenuInfo in the Windows API documentation for more information.

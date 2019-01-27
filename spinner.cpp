@@ -318,7 +318,7 @@ void Spinner::ExportMesh(FILE *f)
 
    transformedVertices.resize(spinnerPlateNumVertices);
    vertexBuffer_spinneranimangle = -FLT_MAX;
-   UpdatePlate(NULL, transformedVertices.data());
+   UpdatePlate(transformedVertices.data());
 
    strcpy_s(subObjName, name);
    strcat_s(subObjName, "Plate");
@@ -330,7 +330,7 @@ void Spinner::ExportMesh(FILE *f)
    transformedVertices.clear();
 }
 
-void Spinner::UpdatePlate(RenderDevice *pd3dDevice, Vertex3D_NoTex2 *vertBuffer)
+void Spinner::UpdatePlate(Vertex3D_NoTex2 * const vertBuffer)
 {
    // early out in case still same rotation
    if (m_phitspinner->m_spinnerMover.m_angle == vertexBuffer_spinneranimangle)
@@ -348,7 +348,7 @@ void Spinner::UpdatePlate(RenderDevice *pd3dDevice, Vertex3D_NoTex2 *vertBuffer)
    rotzMat.Multiply(_fullMatrix, _fullMatrix);
 
    Vertex3D_NoTex2 *buf;
-   if (pd3dDevice != NULL && vertBuffer == NULL)
+   if (vertBuffer == NULL)
       plateVertexBuffer->lock(0, 0, (void**)&buf, VertexBuffer::DISCARDCONTENTS);
    else
       buf = vertBuffer;
@@ -370,12 +370,14 @@ void Spinner::UpdatePlate(RenderDevice *pd3dDevice, Vertex3D_NoTex2 *vertBuffer)
       buf[i].tu = spinnerPlate[i].tu;
       buf[i].tv = spinnerPlate[i].tv;
    }
-   if (pd3dDevice != NULL && vertBuffer == NULL)
+   if (vertBuffer == NULL)
       plateVertexBuffer->unlock();
 }
 
-void Spinner::RenderDynamic(RenderDevice* pd3dDevice)
+void Spinner::RenderDynamic()
 {
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    TRACE_FUNCTION();
 
    if (!m_phitspinner->m_spinnerMover.m_fVisible || !m_d.m_fVisible)
@@ -384,7 +386,7 @@ void Spinner::RenderDynamic(RenderDevice* pd3dDevice)
    if (m_ptable->m_fReflectionEnabled && !m_d.m_fReflectionEnabled)
       return;
 
-   UpdatePlate(pd3dDevice);
+   UpdatePlate(NULL);
 
    const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
    pd3dDevice->basicShader->SetMaterial(mat);
@@ -414,7 +416,7 @@ void Spinner::RenderDynamic(RenderDevice* pd3dDevice)
 }
 
 
-void Spinner::RenderSetup(RenderDevice* pd3dDevice)
+void Spinner::RenderSetup()
 {
    if (!m_d.m_fVisible)
       return;
@@ -462,16 +464,18 @@ void Spinner::RenderSetup(RenderDevice* pd3dDevice)
    VertexBuffer::CreateVertexBuffer(spinnerPlateNumVertices, USAGE_DYNAMIC, MY_D3DFVF_NOTEX2_VERTEX, &plateVertexBuffer);
 
    vertexBuffer_spinneranimangle = -FLT_MAX;
-   UpdatePlate(pd3dDevice);
+   UpdatePlate(NULL);
 }
 
-void Spinner::RenderStatic(RenderDevice* pd3dDevice)
+void Spinner::RenderStatic()
 {
    if (!m_d.m_fShowBracket || !m_d.m_fVisible)
       return;
 
    if (m_ptable->m_fReflectionEnabled && !m_d.m_fReflectionEnabled)
       return;
+
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
    Pin3D * const ppin3d = &g_pplayer->m_pin3d;
 
