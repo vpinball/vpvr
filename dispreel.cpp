@@ -247,12 +247,12 @@ void DispReel::EndPlay()
 
 void DispReel::RenderDynamic()
 {
-   RenderDevice * const pd3dDevice = m_fBackglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
-
    TRACE_FUNCTION();
 
    if (!m_d.m_fVisible || !GetPTable()->GetEMReelsEnabled())
       return;
+
+   RenderDevice * const pd3dDevice = m_fBackglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
    // get a pointer to the image specified in the object
    Texture * const pin = m_ptable->GetImage(m_d.m_szImage); // pointer to image information from the image manager
@@ -277,8 +277,6 @@ void DispReel::RenderDynamic()
    pd3dDevice->DMDShader->SetVector("vColor_Intensity", &c);
 
    pd3dDevice->DMDShader->SetTexture("Texture0", pin, false);
-   
-   pd3dDevice->DMDShader->Begin(0);
 
    // set up all the reel positions within the object frame
    const float renderspacingx = max(0.0f, m_d.m_reelspacing / (float)EDITOR_BG_WIDTH);
@@ -295,12 +293,13 @@ void DispReel::RenderDynamic()
 
        pd3dDevice->DMDShader->SetVector("quadOffsetScale", x1, y1, m_renderwidth, m_renderheight);
        pd3dDevice->DMDShader->SetVector("quadOffsetScaleTex", u0, v0, u1-u0, v1-v0);
+       pd3dDevice->DMDShader->Begin(0);
        pd3dDevice->DrawTexturedQuad();//(Vertex3D_TexelOnly*)Verts
+       pd3dDevice->DMDShader->End();
 
        // move to the next reel
        x1 += renderspacingx + m_renderwidth;
    }
-   pd3dDevice->DMDShader->End();
    pd3dDevice->DMDShader->SetVector("quadOffsetScale", 0.0f, 0.0f, 1.0f, 1.0f);
    pd3dDevice->DMDShader->SetVector("quadOffsetScaleTex", 0.0f, 0.0f, 1.0f, 1.0f);
 

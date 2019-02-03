@@ -433,7 +433,7 @@ void CodeViewer::UpdateRegWithPrefs()
 
 void CodeViewer::InitPreferences()
 {
-   for (int i = 0; i<16; ++i)
+   for (int i = 0; i < 16; ++i)
    {
       g_PrefCols[i] = 0;
    }
@@ -1986,7 +1986,7 @@ bool CodeViewer::ParseStructureName(vector<UserData> *ListIn, UserData ud, const
          ud.UniqueParent = CurrentParentKey;
          FindOrInsertUD(ListIn, ud);
          size_t iCurParent = GetUDPointerfromUniqueKey(ListIn, CurrentParentKey);
-         if (CurrentParentKey.size() != 0 && ud.UniqueKey.size() != 0 && iCurParent<ListIn->size())
+         if (CurrentParentKey.size() != 0 && ud.UniqueKey.size() != 0 && iCurParent < ListIn->size())
          {
             ListIn->at(iCurParent).Children.push_back(ud.UniqueKey);//add child to parent
          }
@@ -2007,7 +2007,7 @@ bool CodeViewer::ParseStructureName(vector<UserData> *ListIn, UserData ud, const
                ud.UniqueKey = lowerCase(ud.KeyName) + CurrentParentKey + "\0";
                ud.UniqueParent = CurrentParentKey;
                FindOrInsertUD(ListIn, ud);
-               if (CurrentParentKey.size() != 0 && iCurParent<ListIn->size())
+               if (CurrentParentKey.size() != 0 && iCurParent < ListIn->size())
                {
                   ListIn->at(iCurParent).Children.push_back(ud.UniqueKey);//add child to parent
                }
@@ -2332,7 +2332,7 @@ void CodeViewer::ParseForFunction() // Subs & Collections WIP
       char c_str1[256];
       memset(c_str1, 0, 256);
       SendMessage(m_hwndItemList, CB_GETLBTEXT, CBCount, (LPARAM)c_str1);
-      if (strlen(c_str1)>1)
+      if (strlen(c_str1) > 1)
       {
          UserData ud;
          ud.KeyName = string(c_str1);

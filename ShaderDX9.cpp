@@ -162,8 +162,8 @@ void Shader::SetVector(const D3DXHANDLE hParameter, const vec4* pVector)
 
 void Shader::SetVector(const D3DXHANDLE hParameter, const float x, const float y, const float z, const float w)
 {
-   vec4 *pVector = new vec4(x, y, z, w);
-   CHECKD3D(m_shader->SetVector(hParameter, pVector));
+   vec4 pVector = vec4(x, y, z, w);
+   CHECKD3D(m_shader->SetVector(hParameter, &pVector));
 }
 
 void Shader::SetFloat(const D3DXHANDLE hParameter, const float f)
