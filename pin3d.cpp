@@ -206,8 +206,9 @@ void EnvmapPrecalc(const void* const __restrict envmap, const DWORD env_xres, co
       }
 }
 
-HRESULT Pin3D::InitPrimary(HWND *hwnd, const bool fullScreen, const int display, const int colordepth, int &refreshrate, const int VSync, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
+HRESULT Pin3D::InitPrimary(HWND *hwnd, const bool fullScreen, const int colordepth, int &refreshrate, const int VSync, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
 {
+   const unsigned int display = GetRegIntWithDefault("Player", "Display", 0);
 #ifdef ENABLE_VR
    if ((stereo3D == STEREO_VR) && !vr::VR_IsHmdPresent()) {
 	   MessageBox(m_hwnd,"Please start SteamVR or go to Video Options to disable VR support.", "SteamVR", MB_OK);
@@ -287,7 +288,7 @@ HRESULT Pin3D::InitPrimary(HWND *hwnd, const bool fullScreen, const int display,
    return S_OK;
 }
 
-HRESULT Pin3D::InitPin3D(HWND *hwnd, const bool fullScreen, const int display, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
+HRESULT Pin3D::InitPin3D(HWND *hwnd, const bool fullScreen, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
 {
    m_proj.m_stereo3D = m_stereo3D = stereo3D;
    m_useAA = useAA;
@@ -300,7 +301,7 @@ HRESULT Pin3D::InitPin3D(HWND *hwnd, const bool fullScreen, const int display, c
    m_viewPort.MinZ = 0.0f;
    m_viewPort.MaxZ = 1.0f;
 
-   if ((InitPrimary(hwnd, fullScreen, display, colordepth, refreshrate, VSync, stereo3D, FXAA, useAO, ss_refl)))
+   if ((InitPrimary(hwnd, fullScreen, colordepth, refreshrate, VSync, stereo3D, FXAA, useAO, ss_refl)))
       return E_FAIL;
 
    m_pd3dSecondaryDevice = m_pd3dPrimaryDevice;

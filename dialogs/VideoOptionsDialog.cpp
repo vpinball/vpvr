@@ -164,7 +164,6 @@ void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes,
    for (size_t i = 0; i < modes.size(); ++i)
    {
       char szT[128];
-      if ((modes[i].display != display) && (modes[i].display != -1)) continue;
 #ifdef ENABLE_SDL
       if (modes[i].depth != SDL_PIXELFORMAT_UNKNOWN) {
          char* bitFormat;
@@ -209,7 +208,6 @@ void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes,
          modes[i].width == curSelMode->width &&
          modes[i].height == curSelMode->height &&
          modes[i].depth == curSelMode->depth &&
-         modes[i].display == curSelMode->display &&
          (modes[i].refreshrate == curSelMode->refreshrate || (curSelMode->refreshrate == 0 && modes[i].refreshrate == DEFAULT_PLAYER_FS_REFRESHRATE)))
          SendMessage(hwndList, LB_SETCURSEL, i, 0);
    }
@@ -569,14 +567,21 @@ BOOL VideoOptionsDialog::OnInitDialog()
       refreshrate = 1023;
 
    int display;
+   int numDisplays = getNumberOfDisplays();
    hr = GetRegInt("Player", "Display", &display);
    if ((hr != S_OK) || (getNumberOfDisplays()<= display))
       display = 0; // The default
 
    SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_RESETCONTENT, 0, 0);
    char displayName[256];
-   for (size_t i = 0;i < getNumberOfDisplays();++i) {
-      sprintf_s(displayName, "Display %d", (i + 1));
+   DISPLAY_DEVICE DispDev;
+   ZeroMemory(&DispDev, sizeof(DispDev));
+   DispDev.cb = sizeof(DispDev);
+   for (int i = 0;i < numDisplays;++i) {
+      if (EnumDisplayDevices(NULL, i, &DispDev, 0))
+         sprintf_s(displayName, "Display %d %s", (i + 1), DispDev.DeviceString);
+      else
+         sprintf_s(displayName, "Display %d", (i + 1));
       SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)displayName);
    }
    SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_SETCURSEL, display, 0);
@@ -668,8 +673,14 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
       //  indx = 0;
 
       const size_t csize = sizeof(rgwindowsize) / sizeof(int);
-      const int screenwidth = GetSystemMetrics(SM_CXSCREEN);
-      const int screenheight = GetSystemMetrics(SM_CYSCREEN);
+      int screenwidth;
+      int screenheight;
+      int x, y;
+      const int display = SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
+      if (!getDisplaySetupByID(display, x, y, screenwidth, screenheight)) {
+         screenwidth = GetSystemMetrics(SM_CXSCREEN);
+         screenheight = GetSystemMetrics(SM_CYSCREEN);
+      }
 
       //if (indx != -1)
       //  indexcur = indx;
@@ -697,7 +708,6 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             mode.height = portrait_modes_height[i];
             mode.depth = 0;
             mode.refreshrate = 0;
-            mode.display = -1;
 
             allVideoModes.push_back(mode);
             if (heightcur > widthcur)
@@ -721,7 +731,6 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             mode.height = xsize * 3 / 4;
             mode.depth = 0;
             mode.refreshrate = 0;
-            mode.display = -1;
 
             allVideoModes.push_back(mode);
          }
@@ -731,12 +740,10 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
       // set up windowed fullscreen mode
       VideoMode mode;
-      // TODO: use multi-monitor functions for DX9
-      mode.width = GetSystemMetrics(SM_CXSCREEN);
-      mode.height = GetSystemMetrics(SM_CYSCREEN);
+      mode.width = screenwidth;
+      mode.height = screenheight;
       mode.depth = 0;
       mode.refreshrate = 0;
-      mode.display = 0;
       allVideoModes.push_back(mode);
 
       char szT[128];
@@ -788,14 +795,15 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
    case GET_FULLSCREENMODES:
    {
       HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
-      EnumerateDisplayModes(0, allVideoModes);
+      HWND hwndDisplay = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
+      int display = SendMessage(hwndDisplay, CB_GETCURSEL, 0, 0);
+      EnumerateDisplayModes(display, allVideoModes);
 
       VideoMode curSelMode;
       curSelMode.width = (int)wParam >> 16;
       curSelMode.height = (int)lParam >> 16;
       curSelMode.depth = (int)lParam & 0xffff;
-      curSelMode.refreshrate = (int)wParam & 0x03ff;//Up to 1023Hz
-      curSelMode.display = ((int)wParam & 0xfc00) >> 10;//Up to 63 displays.
+      curSelMode.refreshrate = (int)wParam & 0xffff;
 
       FillVideoModesList(allVideoModes, &curSelMode);
 
@@ -900,6 +908,7 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       break;
    }
 
+   case IDC_DISPLAY_ID:
    case IDC_FULLSCREEN:
    {
       const size_t checked = SendDlgItemMessage(IDC_FULLSCREEN, BM_GETCHECK, 0, 0);

@@ -50,7 +50,7 @@ public:
    Pin3D();
    ~Pin3D();
 
-   HRESULT InitPin3D(HWND* hwnd, const bool fullScreen, const int display, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl);
+   HRESULT InitPin3D(HWND* hwnd, const bool fullScreen, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl);
 
    void InitLayoutFS();
    void InitLayout(const bool FSS_mode, const float xpixoff = 0.f, const float ypixoff = 0.f);
@@ -105,7 +105,7 @@ private:
    void InitPrimaryRenderState();
    void InitSecondaryRenderState();
 
-   HRESULT InitPrimary(HWND *hwnd, const bool fullScreen, const int display, const int colordepth, int &refreshrate, const int VSync, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl);
+   HRESULT InitPrimary(HWND *hwnd, const bool fullScreen, const int colordepth, int &refreshrate, const int VSync, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl);
 
    int m_stereo3D;
 

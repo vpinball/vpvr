@@ -37,12 +37,11 @@ struct VideoMode
    int height;
    int depth;
    int refreshrate;
-   int display;
 };
 
 int getNumberOfDisplays();
 void EnumerateDisplayModes(const int adapter, std::vector<VideoMode>& modes);
-
+bool getDisplaySetupByID(const int display, int &x, int &y, int &width, int &height);
 
 enum TransformStateType {
 #ifdef ENABLE_SDL

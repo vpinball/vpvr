@@ -1465,17 +1465,8 @@ HRESULT Player::Init(PinTable * const ptable, const HWND hwndProgress, const HWN
       colordepth = 32; // The default
 
    // colordepth & refreshrate are only defined if fullscreen is true.
-#ifdef ENABLE_SDL
-   int display;
-   if (GetRegInt("Player", "Display", &display) != S_OK)
-      display = 0;
-
-   hr = m_pin3d.InitPin3D(&m_playfieldHwnd, m_fFullScreen, display, m_width, m_height, colordepth,
+   hr = m_pin3d.InitPin3D(&m_playfieldHwnd, m_fFullScreen, m_width, m_height, colordepth,
                           m_refreshrate, vsync, useAA, m_stereo3D, FXAA, !m_disableAO, ss_refl);
-#else
-   hr = m_pin3d.InitPin3D(&m_playfieldHwnd, m_fFullScreen, 0, m_width, m_height, colordepth,
-      m_refreshrate, vsync, useAA, m_stereo3D, FXAA, !m_disableAO, ss_refl);
-#endif
    if (hr != S_OK)
    {
       char szfoo[64];
@@ -2114,6 +2105,12 @@ void Player::InitPlayfieldWindow()
    if (hr != S_OK)
       m_height = m_width * 9 / 16;
 
+   int x = 0;
+   int y = 0;
+
+   unsigned int display = GetRegIntWithDefault("Player", "Display", 0);
+   display = display < getNumberOfDisplays() ? display : 0;
+
    // command line override
    if (disEnableTrueFullscreen)
       m_fFullScreen = false;
@@ -2128,8 +2125,12 @@ void Player::InitPlayfieldWindow()
    }
    else
    {
-      m_screenwidth = GetSystemMetrics(SM_CXSCREEN);
-      m_screenheight = GetSystemMetrics(SM_CYSCREEN);
+      DISPLAY_DEVICE DispDev;
+      if (!getDisplaySetupByID(display, x, y, m_screenwidth, m_screenheight)) {
+         m_screenwidth = GetSystemMetrics(SM_CXSCREEN);
+         m_screenheight = GetSystemMetrics(SM_CYSCREEN);
+         display = 0;
+      }
       m_refreshrate = 0; // The default
 
       // constrain window to screen
@@ -2144,10 +2145,9 @@ void Player::InitPlayfieldWindow()
          m_height = m_screenheight;
          m_width = m_height * 16 / 9;
       }
+      x += (m_screenwidth - m_width) / 2;
+      y += (m_screenheight - m_height) / 2;
    }
-
-   const int x = (m_screenwidth - m_width) / 2;
-   int y = (m_screenheight - m_height) / 2;
 
    // No window border, title, or control boxes.
    int windowflags = WS_POPUP;

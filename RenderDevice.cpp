@@ -307,7 +307,7 @@ int getNumberOfDisplays()
 #ifdef ENABLE_SDL
    return SDL_GetNumVideoDisplays();
 #else
-   return 1;//TODO implement this for DX9
+   return GetSystemMetrics(SM_CMONITORS);
 #endif
 }
 
@@ -315,18 +315,15 @@ void EnumerateDisplayModes(const int adapter, std::vector<VideoMode>& modes)
 {
    modes.clear();
 #ifdef ENABLE_SDL
-   for (int display = 0; display < SDL_GetNumVideoDisplays(); ++display) {
-      for (int mode = 0; mode < SDL_GetNumDisplayModes(display); ++mode) {
-         SDL_DisplayMode myMode;
-         SDL_GetDisplayMode(display, mode, &myMode);
-         VideoMode vmode;
-         vmode.width = myMode.w;
-         vmode.height = myMode.h;
-         vmode.depth = myMode.format;
-         vmode.refreshrate = myMode.refresh_rate;
-         vmode.display = display;
-         modes.push_back(vmode);
-      }
+   for (int mode = 0; mode < SDL_GetNumDisplayModes(adapter); ++mode) {
+      SDL_DisplayMode myMode;
+      SDL_GetDisplayMode(adapter, mode, &myMode);
+      VideoMode vmode;
+      vmode.width = myMode.w;
+      vmode.height = myMode.h;
+      vmode.depth = myMode.format;
+      vmode.refreshrate = myMode.refresh_rate;
+      modes.push_back(vmode);
    }
 #else
    IDirect3D9 *d3d = Direct3DCreate9(D3D_SDK_VERSION);
@@ -354,7 +351,6 @@ void EnumerateDisplayModes(const int adapter, std::vector<VideoMode>& modes)
             mode.height = d3dmode.Height;
             mode.depth = (fmt == colorFormat::RGB5) ? 16 : 32;
             mode.refreshrate = d3dmode.RefreshRate;
-            mode.display = 0;
             modes.push_back(mode);
          }
       }
@@ -363,6 +359,55 @@ void EnumerateDisplayModes(const int adapter, std::vector<VideoMode>& modes)
    SAFE_RELEASE(d3d);
 #endif
 }
+
+#ifdef ENABLE_SDL
+bool getDisplaySetupByID(const int display, int &x, int &y, int &width, int &height)
+{
+   SDL_Rect displayBounds;
+   if (SDL_GetDisplayBounds(display, &displayBounds) == 0) {
+      x = displayBounds.x;
+      y = displayBounds.y;
+      width = displayBounds.w;
+      height = displayBounds.h;
+      return width > 0 && height > 0;
+   }
+   else
+      return false;
+}
+#else
+struct monitorData {
+   int display;
+   int count;
+   MONITORINFO info;
+};
+
+BOOL CALLBACK MonitorEnumProc(__in  HMONITOR hMonitor, __in  HDC hdcMonitor, __in  LPRECT lprcMonitor, __in  LPARAM dwData)
+{
+   monitorData* data = reinterpret_cast<monitorData*>(dwData);
+   if (data->display == data->count)
+      GetMonitorInfo(hMonitor, &data->info);
+   data->count++;
+   return TRUE;
+}
+
+bool getDisplaySetupByID(const int display, int &x, int &y, int &width, int &height)
+{
+   monitorData data;
+   data.count = 0;
+   data.display = display;
+   data.info.cbSize = sizeof(MONITORINFO);
+   EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, reinterpret_cast<LPARAM>(&data));
+   if (data.count > data.display) {
+      x = data.info.rcMonitor.left;
+      y = data.info.rcMonitor.top;
+      width = data.info.rcMonitor.right - data.info.rcMonitor.left;
+      height = data.info.rcMonitor.bottom - data.info.rcMonitor.top;
+      return width > 0 && height > 0;
+   }
+   else
+      return false;
+}
+#endif
 
 ////////////////////////////////////////////////////////////////////
 
@@ -892,7 +937,7 @@ RenderDevice::RenderDevice(HWND* const hwnd, const int width, const int height, 
 
 void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 {
-   m_adapter = adapterIndex;
+   m_adapter = getNumberOfDisplays() > adapterIndex ? adapterIndex : 0;
 #ifdef USE_D3D9EX
    m_pD3DEx = NULL;
    m_pD3DDeviceEx = NULL;
@@ -1077,7 +1122,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_pD3DDeviceEx->QueryInterface(__uuidof(IDirect3DDevice9), reinterpret_cast<void**>(&m_pD3DDevice));
 
       // Get the display mode so that we can report back the actual refresh rate.
-      CHECKD3D(m_pD3DDeviceEx->GetDisplayModeEx(m_adapter, &mode, NULL));
+      CHECKD3D(m_pD3DDeviceEx->GetDisplayModeEx(0, &mode, NULL));
 
       refreshrate = mode.RefreshRate;
    }
