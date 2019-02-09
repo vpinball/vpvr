@@ -395,7 +395,7 @@ void HitTarget::AddHitEdge(vector<HitObject*> &pvho, std::set< std::pair<unsigne
 
 void HitTarget::SetupHitObject(vector<HitObject*> &pvho, HitObject * obj, const bool setHitObject)
 {
-   Material *mat = m_ptable->GetMaterial(m_d.m_szPhysicsMaterial);
+   const Material const *mat = m_ptable->GetMaterial(m_d.m_szPhysicsMaterial);
    if (mat != NULL && !m_d.m_fOverwritePhysics)
    {
       obj->m_elasticity = mat->m_fElasticity;
@@ -1767,7 +1767,7 @@ STDMETHODIMP HitTarget::put_OverwritePhysics(VARIANT_BOOL newVal)
 
 STDMETHODIMP HitTarget::get_HitThreshold(float *pVal)
 {
-   *pVal = m_d.m_currentHitThreshold;
+   *pVal = m_currentHitThreshold;
 
    return S_OK;
 }

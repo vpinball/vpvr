@@ -27,11 +27,13 @@ public:
    int pitch() const { return (m_format == RGBA ? 4 : 3 * 4) * m_width; } // pitch in bytes
    BYTE* data() { return m_data.data(); }
 
+private:
    int m_width;
    int m_height;
+public:
+   std::vector<BYTE> m_data;
    int m_realWidth, m_realHeight;
    Format m_format;
-   std::vector<BYTE> m_data;
 
    void SetOpaque();
 
@@ -46,13 +48,14 @@ public:
    static BaseTexture *CreateFromHBitmap(const HBITMAP hbm);
    static BaseTexture *CreateFromFile(const char *filename);
    static BaseTexture *CreateFromFreeImage(FIBITMAP* dib);
-   static BaseTexture *CreateFromData(const void *data, size_t size);
+   static BaseTexture *CreateFromData(const void *data, const size_t size);
 };
 
 class Texture : public ILoadable
 {
 public:
    Texture();
+   Texture(BaseTexture * const base);
    virtual ~Texture();
 
    // ILoadable callback
@@ -78,13 +81,6 @@ public:
          return (m_pdsBuffer->m_format == BaseTexture::RGB_FP);
    }
 
-   // create/release a DC which contains a (read-only) copy of the texture; for editor use
-   void GetTextureDC(HDC *pdc);
-   void ReleaseTextureDC(HDC dc);
-
-private:
-   bool LoadFromMemory(BYTE *data, DWORD size);
-
    void SetSizeFrom(const BaseTexture* const tex)
    {
       m_width = tex->width();
@@ -92,6 +88,13 @@ private:
       m_realWidth = tex->m_realWidth;
       m_realHeight = tex->m_realHeight;
    }
+
+   // create/release a DC which contains a (read-only) copy of the texture; for editor use
+   void GetTextureDC(HDC *pdc);
+   void ReleaseTextureDC(HDC dc);
+
+private:
+   bool LoadFromMemory(BYTE * const data, const DWORD size);
 
 public:
 

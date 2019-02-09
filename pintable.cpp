@@ -1905,8 +1905,8 @@ void PinTable::InitPostLoad(VPinball *pvp)
    m_hbmOffScreen = NULL;
    m_fDirtyDraw = true;
 
-   m_left = 0;
-   m_top = 0;
+   m_left = 0.f;
+   m_top = 0.f;
 
    SetDefaultView();
 
@@ -7878,7 +7878,7 @@ Texture* PinTable::GetImage(const char * const szName) const
    // during playback, we use the hashtable for lookup
    if (!m_textureMap.empty())
    {
-      std::tr1::unordered_map<const char*, Texture*, StringHashFunctor, StringComparator>::const_iterator
+      std::unordered_map<const char*, Texture*, StringHashFunctor, StringComparator>::const_iterator
          it = m_textureMap.find(szName);
       if (it != m_textureMap.end())
          return it->second;
@@ -7932,8 +7932,7 @@ void PinTable::ReImportImage(Texture * const ppi, const char * const filename)
 
    //SAFE_RELEASE(ppi->m_pdsBuffer);
 
-   ppi->m_width = tex->width();
-   ppi->m_height = tex->height();
+   ppi->SetSizeFrom(tex);
    ppi->m_pdsBuffer = tex;
 
    strncpy_s(ppi->m_szPath, filename, MAX_PATH);
@@ -8266,7 +8265,7 @@ Material* PinTable::GetMaterial(const char * const szName) const
    // during playback, we use the hashtable for lookup
    if (!m_materialMap.empty())
    {
-      std::tr1::unordered_map<const char*, Material*, StringHashFunctor, StringComparator>::const_iterator
+      std::unordered_map<const char*, Material*, StringHashFunctor, StringComparator>::const_iterator
          it = m_materialMap.find(szName);
       if (it != m_materialMap.end())
          return it->second;
@@ -9276,7 +9275,7 @@ STDMETHODIMP PinTable::put_TableHeight(float newVal)
 }
 STDMETHODIMP PinTable::get_Width(float *pVal)
 {
-   *pVal = m_right;
+   *pVal = m_right - m_left;
    g_pvp->SetStatusBarUnitInfo("");
 
    return S_OK;
@@ -9299,7 +9298,7 @@ STDMETHODIMP PinTable::put_Width(float newVal)
 
 STDMETHODIMP PinTable::get_Height(float *pVal)
 {
-   *pVal = m_bottom;
+   *pVal = m_bottom - m_top;
 
    return S_OK;
 }
@@ -10442,8 +10441,6 @@ STDMETHODIMP PinTable::put_EnvironmentImage(BSTR newVal)
    STOPUNDO
 
       return S_OK;
-
-   return S_OK;
 }
 
 STDMETHODIMP PinTable::get_YieldTime(long *pVal)

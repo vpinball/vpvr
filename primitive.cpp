@@ -2899,7 +2899,7 @@ STDMETHODIMP Primitive::put_Scatter(float newVal)
 
 STDMETHODIMP Primitive::get_Collidable(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB((!g_pplayer || m_vhoCollidable.size()==0) ? m_d.m_fCollidable : m_vhoCollidable[0]->m_fEnabled);
+   *pVal = (VARIANT_BOOL)FTOVB((!g_pplayer || m_vhoCollidable.empty()) ? m_d.m_fCollidable : m_vhoCollidable[0]->m_fEnabled);
 
    return S_OK;
 }
@@ -3075,7 +3075,7 @@ STDMETHODIMP Primitive::put_OverwritePhysics(VARIANT_BOOL newVal)
 
 STDMETHODIMP Primitive::get_HitThreshold(float *pVal)
 {
-   *pVal = m_d.m_currentHitThreshold;
+   *pVal = m_currentHitThreshold;
    return S_OK;
 }
 

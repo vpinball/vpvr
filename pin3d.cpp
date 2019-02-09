@@ -215,6 +215,12 @@ HRESULT Pin3D::InitPrimary(HWND *hwnd, const bool fullScreen, const int colordep
 	   return E_FAIL;
    }
 #endif
+   std::vector<DisplayConfig> displays;
+   getDisplayList(displays);
+   int adapter = 0;
+   for (std::vector<DisplayConfig>::iterator dispConf = displays.begin(); dispConf != displays.end(); dispConf++)
+      if (display == dispConf->display) adapter = dispConf->adapter;
+
    m_pd3dPrimaryDevice = new RenderDevice(hwnd, m_viewPort.Width, m_viewPort.Height, fullScreen, colordepth, VSync, m_useAA, stereo3D, FXAA, ss_refl, g_pplayer->m_useNvidiaApi, g_pplayer->m_disableDWM, g_pplayer->m_BWrendering);
    try {
       m_pd3dPrimaryDevice->CreateDevice(refreshrate, display);

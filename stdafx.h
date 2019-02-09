@@ -110,13 +110,9 @@
 
 #ifndef _WIN32_WINNT
 #if defined(_WIN64) && defined(CRASH_HANDLER)
- #define _WIN32_WINNT 0x0501
-#elif _MSC_VER >= 1800
- #define _WIN32_WINNT 0x0500
-#elif _MSC_VER < 1600
- #define _WIN32_WINNT 0x0400
+#define _WIN32_WINNT 0x0501
 #else
- #define _WIN32_WINNT 0x0403
+#define _WIN32_WINNT 0x0500
 #endif
 #endif
 

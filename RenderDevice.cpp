@@ -41,10 +41,6 @@
 #pragma comment(lib, "dxerr.lib")       // TODO: put into build system
 #endif
 
-#if _MSC_VER <= 1700
-#define VerSetConditionMask(_m_,_t_,_c_) (_m_|(_c_<<(1<<_t_))) //!! does not work with VER_SERVICEPACKMAJOR! (see below)
-#endif
-
 static RenderTarget *srcr_cache = NULL; //!! meh, for nvidia depth read only
 static D3DTexture *srct_cache = NULL;
 static D3DTexture* dest_cache = NULL;
@@ -311,13 +307,14 @@ int getNumberOfDisplays()
 #endif
 }
 
-void EnumerateDisplayModes(const int adapter, std::vector<VideoMode>& modes)
+void EnumerateDisplayModes(const int display, std::vector<VideoMode>& modes)
 {
    modes.clear();
+
 #ifdef ENABLE_SDL
-   for (int mode = 0; mode < SDL_GetNumDisplayModes(adapter); ++mode) {
+   for (int mode = 0; mode < SDL_GetNumDisplayModes(display); ++mode) {
       SDL_DisplayMode myMode;
-      SDL_GetDisplayMode(adapter, mode, &myMode);
+      SDL_GetDisplayMode(display, mode, &myMode);
       VideoMode vmode;
       vmode.width = myMode.w;
       vmode.height = myMode.h;
@@ -326,6 +323,12 @@ void EnumerateDisplayModes(const int adapter, std::vector<VideoMode>& modes)
       modes.push_back(vmode);
    }
 #else
+   std::vector<DisplayConfig> displays;
+   getDisplayList(displays);
+   if (display >= displays.size())
+      return;
+   int adapter = displays[display].adapter;
+
    IDirect3D9 *d3d = Direct3DCreate9(D3D_SDK_VERSION);
    if (d3d == NULL)
    {
@@ -333,26 +336,21 @@ void EnumerateDisplayModes(const int adapter, std::vector<VideoMode>& modes)
       throw 0;
    }
 
-   //for (int j = 0; j < 2; ++j)
-   const int j = 0; // limit to 32bit only nowadays
+   const unsigned numModes = d3d->GetAdapterModeCount(adapter, (D3DFORMAT)colorFormat::RGB);
+
+   for (unsigned i = 0; i < numModes; ++i)
    {
-      const D3DFORMAT fmt = (D3DFORMAT)((j == 0) ? colorFormat::RGB : colorFormat::RGB5);
-      const unsigned numModes = d3d->GetAdapterModeCount(adapter, fmt);
+      D3DDISPLAYMODE d3dmode;
+      d3d->EnumAdapterModes(adapter, (D3DFORMAT)colorFormat::RGB, i, &d3dmode);
 
-      for (unsigned i = 0; i < numModes; ++i)
+      if (d3dmode.Width >= 640)
       {
-         D3DDISPLAYMODE d3dmode;
-         d3d->EnumAdapterModes(adapter, fmt, i, &d3dmode);
-
-         if (d3dmode.Width >= 640)
-         {
-            VideoMode mode;
-            mode.width = d3dmode.Width;
-            mode.height = d3dmode.Height;
-            mode.depth = (fmt == colorFormat::RGB5) ? 16 : 32;
-            mode.refreshrate = d3dmode.RefreshRate;
-            modes.push_back(mode);
-         }
+         VideoMode mode;
+         mode.width = d3dmode.Width;
+         mode.height = d3dmode.Height;
+         mode.depth = 32;
+         mode.refreshrate = d3dmode.RefreshRate;
+         modes.push_back(mode);
       }
    }
 
@@ -360,54 +358,131 @@ void EnumerateDisplayModes(const int adapter, std::vector<VideoMode>& modes)
 #endif
 }
 
-#ifdef ENABLE_SDL
-bool getDisplaySetupByID(const int display, int &x, int &y, int &width, int &height)
-{
-   SDL_Rect displayBounds;
-   if (SDL_GetDisplayBounds(display, &displayBounds) == 0) {
-      x = displayBounds.x;
-      y = displayBounds.y;
-      width = displayBounds.w;
-      height = displayBounds.h;
-      return width > 0 && height > 0;
-   }
-   else
-      return false;
-}
-#else
-struct monitorData {
-   int display;
-   int count;
-   MONITORINFO info;
-};
+//int getDisplayList(std::vector<DisplayConfig>& displays)
+//{
+//   int maxAdapter = SDL_GetNumVideoDrivers();
+//   int display = 0;
+//   for (display = 0; display < getNumberOfDisplays(); display++)
+//   {
+//      SDL_Rect displayBounds;
+//      if (SDL_GetDisplayBounds(display, &displayBounds) == 0) {
+//         DisplayConfig displayConf;
+//         displayConf.display = display;
+//         displayConf.adapter = 0;
+//         displayConf.isPrimary = (displayBounds.x == 0) && (displayBounds.y == 0);
+//         displayConf.top = displayBounds.x;
+//         displayConf.left = displayBounds.x;
+//         displayConf.width = displayBounds.w;
+//         displayConf.height = displayBounds.h;
+//
+//         strncpy_s(displayConf.DeviceName, SDL_GetDisplayName(displayConf.display), 32);
+//         strncpy_s(displayConf.GPU_Name, SDL_GetVideoDriver(displayConf.adapter), MAX_DEVICE_IDENTIFIER_STRING);
+//
+//         displays.push_back(displayConf);
+//      }
+//   }
+//   return display;
+//}
 
-BOOL CALLBACK MonitorEnumProc(__in  HMONITOR hMonitor, __in  HDC hdcMonitor, __in  LPRECT lprcMonitor, __in  LPARAM dwData)
+BOOL CALLBACK MonitorEnumList(__in  HMONITOR hMonitor, __in  HDC hdcMonitor, __in  LPRECT lprcMonitor, __in  LPARAM dwData)
 {
-   monitorData* data = reinterpret_cast<monitorData*>(dwData);
-   if (data->display == data->count)
-      GetMonitorInfo(hMonitor, &data->info);
-   data->count++;
+   std::map<std::string, DisplayConfig>* data = reinterpret_cast<std::map<std::string, DisplayConfig>*>(dwData);
+   DisplayConfig config;
+   MONITORINFOEX info;
+   info.cbSize = sizeof(MONITORINFOEX);
+   GetMonitorInfo(hMonitor, &info);
+   config.top = info.rcMonitor.top;
+   config.left = info.rcMonitor.left;
+   config.width = info.rcMonitor.right - info.rcMonitor.left;
+   config.height = info.rcMonitor.bottom - info.rcMonitor.top;
+   config.isPrimary = (config.top == 0) && (config.left == 0);
+   config.display = data->size(); // This number does neither map to the number form display settings nor something else.
+#ifdef ENABLE_SDL
+   config.adapter = config.display;
+#else
+   config.adapter = -1;
+#endif
+   memcpy(config.DeviceName, info.szDevice, 32); // Internal display name e.g. "\\\\.\\DISPLAY1"
+   data->insert(std::pair<std::string, DisplayConfig>(std::string(config.DeviceName), config));
    return TRUE;
 }
 
+int getDisplayList(std::vector<DisplayConfig>& displays)
+{
+   displays.clear();
+   std::map<std::string, DisplayConfig> displayMap;
+   // Get the resolution of all enabled displays.
+   EnumDisplayMonitors(NULL, NULL, MonitorEnumList, reinterpret_cast<LPARAM>(&displayMap));
+   DISPLAY_DEVICE DispDev;
+   ZeroMemory(&DispDev, sizeof(DispDev));
+   DispDev.cb = sizeof(DispDev);
+#ifndef ENABLE_SDL
+   IDirect3D9* pD3D = Direct3DCreate9(D3D_SDK_VERSION);
+   if (pD3D == NULL)
+   {
+      ShowError("Could not create D3D9 object.");
+      throw 0;
+   }
+   // Map the displays to the DX9 adapter. Otherwise this leads to an performance impact on systems with multiple GPUs
+   int adapterCount = pD3D->GetAdapterCount();
+   for (int i = 0;i < adapterCount;++i) {
+      D3DADAPTER_IDENTIFIER9 adapter;
+      pD3D->GetAdapterIdentifier(i, 0, &adapter);
+      std::map<std::string, DisplayConfig>::iterator display = displayMap.find(adapter.DeviceName);
+      if (display != displayMap.end()) {
+         display->second.adapter = i;
+         strncpy_s(display->second.GPU_Name, adapter.Description, MAX_DEVICE_IDENTIFIER_STRING);
+      }
+   }
+   SAFE_RELEASE(pD3D);
+#endif
+   // Apply the same numbering as windows
+   int i = 0;
+   for (std::map<std::string, DisplayConfig>::iterator display = displayMap.begin(); display != displayMap.end(); display++)
+   {
+      if (display->second.adapter >= 0) {
+         display->second.display = i;
+#ifdef ENABLE_SDL
+         strncpy_s(display->second.GPU_Name, SDL_GetDisplayName(display->second.adapter), MAX_DEVICE_IDENTIFIER_STRING);
+#endif
+         displays.push_back(display->second);
+      }
+      i++;
+   }
+   return i;
+}
+
 bool getDisplaySetupByID(const int display, int &x, int &y, int &width, int &height)
 {
-   monitorData data;
-   data.count = 0;
-   data.display = display;
-   data.info.cbSize = sizeof(MONITORINFO);
-   EnumDisplayMonitors(NULL, NULL, MonitorEnumProc, reinterpret_cast<LPARAM>(&data));
-   if (data.count > data.display) {
-      x = data.info.rcMonitor.left;
-      y = data.info.rcMonitor.top;
-      width = data.info.rcMonitor.right - data.info.rcMonitor.left;
-      height = data.info.rcMonitor.bottom - data.info.rcMonitor.top;
-      return width > 0 && height > 0;
+   std::vector<DisplayConfig> displays;
+   getDisplayList(displays);
+   for (std::vector<DisplayConfig>::iterator displayConf = displays.begin(); displayConf != displays.end(); displayConf++) {
+      if ((display == -1 && displayConf->isPrimary) || display == displayConf->display) {
+         x = displayConf->left;
+         y = displayConf->top;
+         width = displayConf->width;
+         height = displayConf->height;
+         return true;
+      }
    }
-   else
-      return false;
+   x = 0;
+   y = 0;
+   width = GetSystemMetrics(SM_CXSCREEN);
+   height = GetSystemMetrics(SM_CYSCREEN);
+   return false;
 }
-#endif
+
+int getPrimaryDisplay()
+{
+   std::vector<DisplayConfig> displays;
+   getDisplayList(displays);
+   for (std::vector<DisplayConfig>::iterator displayConf = displays.begin(); displayConf != displays.end(); displayConf++) {
+      if (displayConf->isPrimary) {
+         return displayConf->adapter;
+      }
+   }
+   return 0;
+}
 
 ////////////////////////////////////////////////////////////////////
 
@@ -573,21 +648,18 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 
    m_useNvidiaApi = false;
 
-   int displays = SDL_GetNumVideoDisplays();
+   int displays = getNumberOfDisplays();
    if (adapterIndex >= displays) {
       m_adapter = 0;
    }
    else {
       m_adapter = adapterIndex;
    }
-   // get display bounds for selected display
-   SDL_Rect displayBounds;
-   SDL_GetDisplayBounds(m_adapter, &displayBounds);
 
    bool video10bit = (m_colorDepth == SDL_PIXELFORMAT_ARGB2101010);
 
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, GL_VERSION_NUMBER / 100);
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, GL_VERSION_NUMBER % 100);
    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
 /*   SDL_GL_SetAttribute(SDL_GL_RED_SIZE, video10bit ? 10 : 8);
@@ -602,8 +674,11 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 
    //SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
+   int disp_x, disp_y, disp_w, disp_h;
+   getDisplaySetupByID(m_adapter, disp_x, disp_y, disp_w, disp_h);
+
    m_sdl_playfieldHwnd = SDL_CreateWindow(
-      "Visual Pinball Player SDL", displayBounds.x + (displayBounds.w - m_width) / 2, displayBounds.y + (displayBounds.h - m_height) / 2, m_width, m_height,
+      "Visual Pinball Player SDL", disp_x + (disp_w - m_width) / 2, disp_y + (disp_h - m_height) / 2, m_width, m_height,
       SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (m_fullscreen ? SDL_WINDOW_FULLSCREEN : 0) /*| SDL_WINDOW_INPUT_GRABBED*/
    );
    SDL_SysWMinfo wmInfo;
@@ -691,7 +766,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 
    CHECKD3D(glGetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)(&m_pBackBuffer->framebuffer)));
 
-   colorFormat renderBufferFormat = RGBA16;
+   colorFormat renderBufferFormat = RGBA16F;
 
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
    m_pOffscreenBackBufferTexture = CreateTexture(m_Buf_widthSS,m_Buf_heightSS, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
@@ -841,7 +916,10 @@ RenderDevice::~RenderDevice()
 {
    if (m_quadVertexBuffer)
       m_quadVertexBuffer->release();
+   m_quadVertexBuffer = NULL;
+
    FreeShader();
+
    if (m_pHMD)
    {
       vr::VR_Shutdown();
@@ -1047,18 +1125,18 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 #endif
 
    // check if our HDR texture format supports/does sRGB conversion on texture reads, which must NOT be the case as we always set SRGBTexture=true independent of the format!
-   hr = m_pD3D->CheckDeviceFormat(m_adapter, devtype, params.BackBufferFormat, D3DUSAGE_QUERY_SRGBREAD, D3DRTYPE_TEXTURE, D3DFMT_A32B32G32R32F);
+   hr = m_pD3D->CheckDeviceFormat(m_adapter, devtype, params.BackBufferFormat, D3DUSAGE_QUERY_SRGBREAD, D3DRTYPE_TEXTURE, (D3DFORMAT)colorFormat::RGBA32F);
    if (SUCCEEDED(hr))
       ShowError("D3D device does support D3DFMT_A32B32G32R32F SRGBTexture reads (which leads to wrong tex colors)");
    // now the same for our LDR/8bit texture format the other way round
-   hr = m_pD3D->CheckDeviceFormat(m_adapter, devtype, params.BackBufferFormat, D3DUSAGE_QUERY_SRGBREAD, D3DRTYPE_TEXTURE, D3DFMT_A8R8G8B8);
+   hr = m_pD3D->CheckDeviceFormat(m_adapter, devtype, params.BackBufferFormat, D3DUSAGE_QUERY_SRGBREAD, D3DRTYPE_TEXTURE, (D3DFORMAT)colorFormat::RGBA8);
    if (!SUCCEEDED(hr))
       ShowError("D3D device does not support D3DFMT_A8R8G8B8 SRGBTexture reads (which leads to wrong tex colors)");
 
    // check if auto generation of mipmaps can be used, otherwise will be done via d3dx
    m_autogen_mipmap = (caps.Caps2 & D3DCAPS2_CANAUTOGENMIPMAP) != 0;
    if (m_autogen_mipmap)
-      m_autogen_mipmap = (m_pD3D->CheckDeviceFormat(m_adapter, devtype, params.BackBufferFormat, D3DUSAGE_AUTOGENMIPMAP, D3DRTYPE_TEXTURE, (D3DFORMAT)(colorFormat::RGBA)) == D3D_OK);
+      m_autogen_mipmap = (m_pD3D->CheckDeviceFormat(m_adapter, devtype, params.BackBufferFormat, textureUsage::AUTOMIPMAP, D3DRTYPE_TEXTURE, (D3DFORMAT)(colorFormat::RGBA8)) == D3D_OK);
    m_autogen_mipmap = false;//!! done to support sRGB/gamma correct generation of mipmaps which is not possible with auto gen mipmap in DX9!
 
 
@@ -1157,14 +1235,14 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create back buffer!", hr, __FILE__, __LINE__);
 
-   const D3DFORMAT render_format = (m_BWrendering == 1) ? D3DFMT_G16R16F : ((m_BWrendering == 2) ? D3DFMT_R16F : D3DFMT_A16B16G16R16F);
+   const D3DFORMAT render_format = (D3DFORMAT)((m_BWrendering == 1) ? colorFormat::RG16F : ((m_BWrendering == 2) ? colorFormat::RED16F : colorFormat::RGBA16F));
 
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
-   hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pOffscreenBackBufferTexture, NULL); //!! colorFormat::RGBA32?
+   hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pOffscreenBackBufferTexture, NULL); //!! colorFormat::RGBA32F?
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create render buffer!", hr, __FILE__, __LINE__);
    if (m_ssRefl) {
-      hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pReflectionBufferTexture, NULL); //!! D3DFMT_A32B32G32R32F?
+      hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pReflectionBufferTexture, NULL); //!! D3DFMT_A32B32G32R32F?
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create reflection buffer!", hr, __FILE__, __LINE__);
    }
@@ -1177,25 +1255,25 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       const bool drawBallReflection = ((g_pplayer->m_fReflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
       if (g_pplayer->m_ptable->m_fReflectElementsOnPlayfield || drawBallReflection)
       {
-         hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pMirrorTmpBufferTexture, NULL); //!! colorFormat::RGBA32?
+         hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pMirrorTmpBufferTexture, NULL); //!! colorFormat::RGBA32?
          if (FAILED(hr))
             ReportError("Fatal Error: unable to create reflection map!", hr, __FILE__, __LINE__);
       }
    }
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
-   hr = m_pD3DDevice->CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 1, D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pBloomBufferTexture, NULL); //!! 8bit enough?
+   hr = m_pD3DDevice->CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pBloomBufferTexture, NULL); //!! 8bit enough?
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create bloom buffer!", hr, __FILE__, __LINE__);
 
    // temporary buffer for gaussian blur
-   hr = m_pD3DDevice->CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 1, D3DUSAGE_RENDERTARGET, render_format, D3DPOOL_DEFAULT, &m_pBloomTmpBufferTexture, NULL); //!! 8bit are enough! //!! but used also for bulb light transmission hack now!
+   hr = m_pD3DDevice->CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pBloomTmpBufferTexture, NULL); //!! 8bit are enough! //!! but used also for bulb light transmission hack now!
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create blur buffer!", hr, __FILE__, __LINE__);
 
    // alloc temporary buffer for postprocessing
    if ((m_FXAA > 0) || (m_stereo3D > 0))
    {
-      hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), D3DPOOL_DEFAULT, &m_pOffscreenBackBufferStereoTexture, NULL);
+      hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), (D3DPOOL)memoryPool::DEFAULT, &m_pOffscreenBackBufferStereoTexture, NULL);
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create stereo3D/post-processing AA buffer!", hr, __FILE__, __LINE__);
    }
@@ -1206,7 +1284,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    // alloc one more temporary buffer for SMAA
    if (m_FXAA == Quality_SMAA)
    {
-      hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), D3DPOOL_DEFAULT, &m_pOffscreenBackBufferSMAATexture, NULL);
+      hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), (D3DPOOL)memoryPool::DEFAULT, &m_pOffscreenBackBufferSMAATexture, NULL);
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create SMAA buffer!", hr, __FILE__, __LINE__);
    }
@@ -1247,66 +1325,34 @@ bool RenderDevice::LoadShaders()
    bool shaderCompilationOkay = true;
 
    basicShader = new Shader(this);
-#if _MSC_VER >= 1700
    shaderCompilationOkay = basicShader->Load(g_basicShaderCode, sizeof(g_basicShaderCode)) && shaderCompilationOkay;
-#else
-   shaderCompilationOkay = basicShader->Load(basicShaderCode, sizeof(basicShaderCode)) && shaderCompilationOkay;
-#endif
 
    ballShader = new Shader(this);
-#if _MSC_VER >= 1700
    ballShader->Load(g_ballShaderCode, sizeof(g_ballShaderCode));
-#else
-   ballShader->Load(ballShaderCode, sizeof(ballShaderCode));
-#endif
 
    DMDShader = new Shader(this);
-#if _MSC_VER >= 1700
    shaderCompilationOkay = DMDShader->Load(g_dmdShaderCode, sizeof(g_dmdShaderCode)) && shaderCompilationOkay;
-#else
-   shaderCompilationOkay = DMDShader->Load(dmdShaderCode, sizeof(dmdShaderCode)) && shaderCompilationOkay;
-#endif
 
    FBShader = new Shader(this);
-#if _MSC_VER >= 1700
    shaderCompilationOkay = FBShader->Load(g_FBShaderCode, sizeof(g_FBShaderCode)) && shaderCompilationOkay;
-#else
-   shaderCompilationOkay = FBShader->Load(FBShaderCode, sizeof(FBShaderCode)) && shaderCompilationOkay;
-#endif
 
    if (m_stereo3D != STEREO_OFF) {
       StereoShader = new Shader(this);
-#if _MSC_VER >= 1700
       shaderCompilationOkay = StereoShader->Load(g_StereoShaderCode, sizeof(g_StereoShaderCode)) && shaderCompilationOkay;
-#else
-      shaderCompilationOkay = StereoShader->Load(g_StereoShaderCode, sizeof(g_StereoShaderCode)) && shaderCompilationOkay;
-#endif
    }
    else {
       StereoShader = NULL;
    }
 
    flasherShader = new Shader(this);
-#if _MSC_VER >= 1700
    shaderCompilationOkay = flasherShader->Load(g_flasherShaderCode, sizeof(g_flasherShaderCode)) && shaderCompilationOkay;
-#else
-   shaderCompilationOkay = flasherShader->Load(flasherShaderCode, sizeof(flasherShaderCode)) && shaderCompilationOkay;
-#endif
 
    lightShader = new Shader(this);
-#if _MSC_VER >= 1700
    shaderCompilationOkay = lightShader->Load(g_lightShaderCode, sizeof(g_lightShaderCode)) && shaderCompilationOkay;
-#else
-   shaderCompilationOkay = lightShader->Load(lightShaderCode, sizeof(lightShaderCode)) && shaderCompilationOkay;
-#endif
 
 #ifdef SEPARATE_CLASSICLIGHTSHADER
    classicLightShader = new Shader(this);
-#if _MSC_VER >= 1700
    shaderCompilationOkay = classicLightShader->Load(g_classicLightShaderCode, sizeof(g_classicLightShaderCode)) && shaderCompilationOkay;
-#else
-   shaderCompilationOkay = classicLightShader->Load(classicLightShaderCode, sizeof(classicLightShaderCode)) && shaderCompilationOkay;
-#endif
 #endif
 
    if (!shaderCompilationOkay)
@@ -1384,6 +1430,7 @@ RenderDevice::~RenderDevice()
 #endif
 
 #ifdef USE_D3D9EX
+   if (m_pD3DDeviceEx == m_pD3DDevice) m_pD3DDevice = NULL;
    SAFE_RELEASE_NO_RCC(m_pD3DDeviceEx);
 #endif
    SAFE_RELEASE(m_pD3DDevice);
@@ -1610,7 +1657,7 @@ D3DTexture* RenderDevice::DuplicateTexture(RenderTarget* src)
    src->GetDesc(&desc);
    D3DTexture* dup;
    CHECKD3D(m_pD3DDevice->CreateTexture(desc.Width, desc.Height, 1,
-      D3DUSAGE_RENDERTARGET, desc.Format, D3DPOOL_DEFAULT, &dup, NULL)); // D3DUSAGE_AUTOGENMIPMAP?
+      D3DUSAGE_RENDERTARGET, desc.Format, (D3DPOOL)memoryPool::DEFAULT, &dup, NULL)); // D3DUSAGE_AUTOGENMIPMAP?
    return dup;
 #endif
 }
@@ -1626,7 +1673,7 @@ D3DTexture* RenderDevice::DuplicateTextureSingleChannel(RenderTarget* src)
    desc.Format = D3DFMT_L8;
    D3DTexture* dup;
    CHECKD3D(m_pD3DDevice->CreateTexture(desc.Width, desc.Height, 1,
-      D3DUSAGE_RENDERTARGET, desc.Format, D3DPOOL_DEFAULT, &dup, NULL)); // D3DUSAGE_AUTOGENMIPMAP?
+      D3DUSAGE_RENDERTARGET, desc.Format, (D3DPOOL)memoryPool::DEFAULT, &dup, NULL)); // D3DUSAGE_AUTOGENMIPMAP?
    return dup;
 #endif
 }
@@ -1641,7 +1688,7 @@ D3DTexture* RenderDevice::DuplicateDepthTexture(RenderTarget* src)
    src->GetDesc(&desc);
    D3DTexture* dup;
    CHECKD3D(m_pD3DDevice->CreateTexture(desc.Width, desc.Height, 1,
-      D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)MAKEFOURCC('I', 'N', 'T', 'Z'), D3DPOOL_DEFAULT, &dup, NULL)); // D3DUSAGE_AUTOGENMIPMAP?
+      D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)MAKEFOURCC('I', 'N', 'T', 'Z'), (D3DPOOL)memoryPool::DEFAULT, &dup, NULL)); // D3DUSAGE_AUTOGENMIPMAP?
    return dup;
 #endif
 }
@@ -1654,7 +1701,7 @@ void RenderDevice::CopyDepth(RenderTarget* dest, RenderTarget* src) {
 
 D3DTexture* RenderDevice::UploadTexture(BaseTexture* surf, int *pTexWidth, int *pTexHeight, const bool linearRGB)
 {
-   D3DTexture *tex = CreateTexture(surf->width(), surf->height(), 0, STATIC, surf->m_format == BaseTexture::RGB_FP ? RGB32 : RGBA, surf->m_data.data(), 0);
+   D3DTexture *tex = CreateTexture(surf->width(), surf->height(), 0, STATIC, surf->m_format == BaseTexture::RGB_FP ? RGB32F : RGBA, surf->m_data.data(), 0);
 
    if (pTexWidth) *pTexWidth = surf->width();
    if (pTexHeight) *pTexHeight = surf->height();
@@ -1856,7 +1903,7 @@ D3DTexture* RenderDevice::CreateSystemTexture(BaseTexture* const surf, const boo
                               (D3DFORMAT)((m_compress_textures && ((surf->width() & 3) == 0) && ((surf->height() & 3) == 0) && (surf->width() > 256) && (surf->height() > 256) && (surf->m_format != BaseTexture::RGB_FP)) ? 
                                          colorFormat::DXT5 : 
                                          ((surf->m_format == BaseTexture::RGB_FP) ? 
-                                                colorFormat::RGBA32 : 
+                                                colorFormat::RGBA32F : 
                                                 colorFormat::RGBA)),
                               surf->data(),
                               surf->pitch(),
@@ -1874,7 +1921,7 @@ D3DTexture* RenderDevice::CreateSystemTexture(const int texwidth, const int texh
    }
 
    // copy data into system memory texture
-   if (texformat == colorFormat::RGBA32)
+   if (texformat == colorFormat::RGBA32F)
    {
       D3DLOCKED_RECT locked;
       CHECKD3D(sysTex->LockRect(0, &locked, NULL, 0));
@@ -1933,9 +1980,9 @@ D3DTexture* RenderDevice::UploadTexture(BaseTexture* const surf, int* const pTex
 
    sysTex = CreateSystemTexture(surf, linearRGB);
 
-   const D3DFORMAT texformat = (D3DFORMAT)((m_compress_textures && ((texwidth & 3) == 0) && ((texheight & 3) == 0) && (texwidth > 256) && (texheight > 256) && (basetexformat != BaseTexture::RGB_FP)) ? colorFormat::DXT5 : ((basetexformat == BaseTexture::RGB_FP) ? colorFormat::RGBA32 : colorFormat::RGBA));
+   const D3DFORMAT texformat = (D3DFORMAT)((m_compress_textures && ((texwidth & 3) == 0) && ((texheight & 3) == 0) && (texwidth > 256) && (texheight > 256) && (basetexformat != BaseTexture::RGB_FP)) ? colorFormat::DXT5 : ((basetexformat == BaseTexture::RGB_FP) ? colorFormat::RGBA32F : colorFormat::RGBA));
 
-   hr = m_pD3DDevice->CreateTexture(texwidth, texheight, (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? 0 : sysTex->GetLevelCount(), (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? D3DUSAGE_AUTOGENMIPMAP : 0, texformat, D3DPOOL_DEFAULT, &tex, NULL);
+   hr = m_pD3DDevice->CreateTexture(texwidth, texheight, (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? 0 : sysTex->GetLevelCount(), (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? D3DUSAGE_AUTOGENMIPMAP : 0, texformat, (D3DPOOL)memoryPool::DEFAULT, &tex, NULL);
    if (FAILED(hr))
       ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
 
@@ -1959,7 +2006,7 @@ void RenderDevice::UploadAndSetSMAATextures()
       HRESULT hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, D3DFMT_L8, D3DPOOL_SYSTEMMEM, &sysTex, NULL);
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
-      hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, D3DFMT_L8, D3DPOOL_DEFAULT, &m_SMAAsearchTexture, NULL);
+      hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, D3DFMT_L8, (D3DPOOL)memoryPool::DEFAULT, &m_SMAAsearchTexture, NULL);
       if (FAILED(hr))
          ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
 
@@ -1980,7 +2027,7 @@ void RenderDevice::UploadAndSetSMAATextures()
       HRESULT hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, D3DFMT_A8L8, D3DPOOL_SYSTEMMEM, &sysTex, NULL);
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
-      hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, D3DFMT_A8L8, D3DPOOL_DEFAULT, &m_SMAAareaTexture, NULL);
+      hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, D3DFMT_A8L8, (D3DPOOL)memoryPool::DEFAULT, &m_SMAAareaTexture, NULL);
       if (FAILED(hr))
          ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
 
@@ -2006,9 +2053,9 @@ void RenderDevice::UploadAndSetSMAATextures()
 void RenderDevice::UpdateTexture(D3DTexture* const tex, BaseTexture* const surf, const bool linearRGB)
 {
 #ifdef ENABLE_SDL
-   tex->format = surf->m_format == BaseTexture::RGB_FP ? RGB32 : RGBA;
-   GLuint col_type = ((tex->format == RGBA32) || (tex->format == RGBA16) || (tex->format == RGB32)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
-   GLuint col_format = (tex->format == GREY) ? GL_RED : (tex->format == GREY_ALPHA) ? GL_RG : ((tex->format == RGB) || (tex->format == RGB5) || (tex->format == RGB10) || (tex->format == RGB32)) ? GL_BGR : GL_BGRA;
+   tex->format = surf->m_format == BaseTexture::RGB_FP ? RGB32F : RGBA;
+   GLuint col_type = ((tex->format == RGBA32F) || (tex->format == RGBA16F) || (tex->format == RGB32F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
+   GLuint col_format = (tex->format == GREY) ? GL_RED : (tex->format == GREY_ALPHA) ? GL_RG : ((tex->format == RGB) || (tex->format == RGB5) || (tex->format == RGB10) || (tex->format == RGB32F)) ? GL_BGR : GL_BGRA;
    glBindTexture(GL_TEXTURE_2D, tex->texture);
    CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, tex->format, surf->width(), surf->height(), 0, col_format, col_type, surf->data()));
    glBindTexture(GL_TEXTURE_2D, 0);
@@ -2394,7 +2441,7 @@ void* RenderDevice::AttachZBufferTo(RenderTarget* surf)
    {
       D3DTexture* dup;
       CHECKD3D(m_pD3DDevice->CreateTexture(desc.Width, desc.Height, 1,
-         D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)MAKEFOURCC('I', 'N', 'T', 'Z'), D3DPOOL_DEFAULT, &dup, NULL)); // D3DUSAGE_AUTOGENMIPMAP?
+         D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)MAKEFOURCC('I', 'N', 'T', 'Z'), (D3DPOOL)memoryPool::DEFAULT, &dup, NULL)); // D3DUSAGE_AUTOGENMIPMAP?
 
       return dup;
    }
@@ -2620,7 +2667,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
 
       CHECKD3D(glGenTextures(1, &tex->texture));
       CHECKD3D(glBindTexture(GL_TEXTURE_2D, tex->texture));
-      if (Format == RGBA16 || Format == RGBA32)
+      if (Format == RGBA16F || Format == RGBA32F)
       {
          CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, Format, Width, Height, 0, GL_RGBA, GL_FLOAT, NULL));
       }
@@ -2698,13 +2745,13 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    CHECKD3D(glGenTextures(1, &tex->texture));
    CHECKD3D(glBindTexture(GL_TEXTURE_2D, tex->texture));
 
-   GLuint col_type = ((Format == RGBA32) || (Format == RGBA16) || (Format == RGB32)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
-   GLuint col_format = (Format == GREY) ? GL_RED : (Format == GREY_ALPHA) ? GL_RG : ((Format == RGB) || (Format == RGB5) || (Format == RGB10) || (Format == RGB32)) ? GL_BGR : GL_BGRA;
+   GLuint col_type = ((Format == RGBA32F) || (Format == RGBA16F) || (Format == RGB32F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
+   GLuint col_format = (Format == GREY) ? GL_RED : (Format == GREY_ALPHA) ? GL_RG : ((Format == RGB) || (Format == RGB5) || (Format == RGB10) || (Format == RGB32F)) ? GL_BGR : GL_BGRA;
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
    if (m_maxaniso > 0)
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_maxaniso));
-   if (tex->usage == MIPMAP) {
+   if (tex->usage == AUTOMIPMAP) {
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR));
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR));
    }
@@ -2732,8 +2779,8 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    }
    if (data)
       CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, tex->format, Width, Height, 0, col_format, col_type, data));
-   if ((tex->usage == MIPMAP) && data) {
-      if ((tex->usage & MIPMAP) == MIPMAP) {
+   if ((tex->usage == AUTOMIPMAP) && data) {
+      if ((tex->usage & AUTOMIPMAP) == AUTOMIPMAP) {
          CHECKD3D(glGenerateMipmap(GL_TEXTURE_2D));
       }
    }
@@ -2747,9 +2794,9 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    case RENDERTARGET:
    //case RENDERTARGET_DEPTH:
    case DEPTH:
-      Pool = D3DPOOL_DEFAULT;
+      Pool = (D3DPOOL)memoryPool::DEFAULT;
       break;
-   case MIPMAP:
+   case AUTOMIPMAP:
    case STATIC:
    case DYNAMIC:
    default:

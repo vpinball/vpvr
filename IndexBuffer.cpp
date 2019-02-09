@@ -17,7 +17,7 @@ void IndexBuffer::CreateIndexBuffer(const unsigned int numIndices, const DWORD u
    HRESULT hr;
    const unsigned idxSize = (format == IndexBuffer::FMT_INDEX16) ? 2 : 4;
    hr = m_pD3DDevice->CreateIndexBuffer(idxSize * numIndices, usage | D3DUSAGE_WRITEONLY, (D3DFORMAT)format,
-      D3DPOOL_DEFAULT, (IDirect3DIndexBuffer9**)idxBuffer, NULL);
+      (D3DPOOL)memoryPool::DEFAULT, (IDirect3DIndexBuffer9**)idxBuffer, NULL);
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create index buffer!", hr, __FILE__, __LINE__);
 #endif
