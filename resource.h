@@ -998,6 +998,14 @@
 #define IDC_GLOBAL_PFREFLECTION_CHECK   821
 #define IDC_BUMPER_SKIRT_ANIM           822
 #define IDC_CUSTOM_PARAMS               823
+#define IDC_3D_STEREO_OFS_LABEL         824
+#define IDC_3D_STEREO_MS_LABEL          825
+#define IDC_3D_STEREO_ZPD_LABEL         826
+#define IDC_VR_SLOPE_LABEL              827
+#define IDC_3D_VR_ORIENTATION_LABEL     828
+#define IDC_VR_OFFSET_X_LABEL           829
+#define IDC_VR_OFFSET_Y_LABEL           830
+#define IDC_VR_OFFSET_Z_LABEL           831
 #define DISPID_Gate_Height1             1142
 #define DISPID_Image                    1500
 #define DISPID_Image2                   1501
@@ -1161,7 +1169,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        650
 #define _APS_NEXT_COMMAND_VALUE         4022
-#define _APS_NEXT_CONTROL_VALUE         824
+#define _APS_NEXT_CONTROL_VALUE         832
 #define _APS_NEXT_SYMED_VALUE           188
 #endif
 #endif

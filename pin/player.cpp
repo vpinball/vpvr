@@ -563,9 +563,12 @@ Player::Player(bool _cameraMode) : cameraMode(_cameraMode)
    else
       m_pf_refl = (pf_refl == 1);
 
-   hr = GetRegInt("Player", "Stereo3D", &m_stereo3D);
-   if (hr != S_OK)
-      m_stereo3D = STEREO_OFF; // The default = off
+   hr = GetRegInt("Player", "Stereo3DVR", &m_stereo3D);
+   if (hr != S_OK)  {
+      hr = GetRegInt("Player", "Stereo3D", &m_stereo3D);
+      if (hr != S_OK)
+         m_stereo3D = STEREO_OFF; // The default = off
+   }
 
    if (m_stereo3D == STEREO_VR)//Disable VSync for VR
       m_VSync = 0;

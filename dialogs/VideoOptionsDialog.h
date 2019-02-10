@@ -17,6 +17,7 @@ private:
    void AddToolTip(char *text, HWND parentHwnd, HWND toolTipHwnd, HWND controlHwnd);
    void ResetVideoPreferences(const unsigned int profile); // 0 = default, 1 = lowend PC, 2 = highend PC
    void FillVideoModesList(const std::vector<VideoMode>& modes, const VideoMode* curSelMode = 0);
+   void updateStereoVisibility(int stereo3D);
 
    std::vector<VideoMode> allVideoModes;
 };

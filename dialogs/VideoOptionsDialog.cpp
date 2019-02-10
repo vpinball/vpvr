@@ -111,6 +111,7 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
    SendMessage(hwndCheck, BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_SETCURSEL, 0, 0);
    hwndCheck = GetDlgItem(IDC_3D_STEREO_Y).GetHwnd();
+   updateStereoVisibility(0);
    SendMessage(hwndCheck, BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    float stereo3DOfs = 0.0f;
    sprintf_s(tmp, 256, "%f", stereo3DOfs);
@@ -211,6 +212,31 @@ void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes,
    }
 }
 
+void VideoOptionsDialog::updateStereoVisibility(int stereo3D) {
+   static int oldValue = -1;
+   if (stereo3D == STEREO_SBS || stereo3D == STEREO_INT) stereo3D = STEREO_TB;
+   if (stereo3D == oldValue) return;
+   oldValue = stereo3D;
+
+   GetDlgItem(IDC_3D_STEREO_Y).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
+   GetDlgItem(IDC_3D_STEREO_OFS).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
+   GetDlgItem(IDC_3D_STEREO_OFS_LABEL).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
+   GetDlgItem(IDC_3D_STEREO_MS).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
+   GetDlgItem(IDC_3D_STEREO_MS_LABEL).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
+   GetDlgItem(IDC_3D_STEREO_ZPD).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
+   GetDlgItem(IDC_3D_STEREO_ZPD_LABEL).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
+
+   GetDlgItem(IDC_VR_SLOPE).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
+   GetDlgItem(IDC_VR_SLOPE_LABEL).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
+   GetDlgItem(IDC_3D_VR_ORIENTATION).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
+   GetDlgItem(IDC_3D_VR_ORIENTATION_LABEL).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
+   GetDlgItem(IDC_VR_OFFSET_X).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
+   GetDlgItem(IDC_VR_OFFSET_X_LABEL).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
+   GetDlgItem(IDC_VR_OFFSET_Y).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
+   GetDlgItem(IDC_VR_OFFSET_Y_LABEL).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
+   GetDlgItem(IDC_VR_OFFSET_Z).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
+   GetDlgItem(IDC_VR_OFFSET_Z_LABEL).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
+}
 
 BOOL VideoOptionsDialog::OnInitDialog()
 {
@@ -444,9 +470,21 @@ BOOL VideoOptionsDialog::OnInitDialog()
    SendMessage(hwndCheck, BM_SETCHECK, (bgset != 0) ? BST_CHECKED : BST_UNCHECKED, 0);
 
    int stereo3D;
-   hr = GetRegInt("Player", "Stereo3D", &stereo3D);
-   if (hr != S_OK)
-      stereo3D = STEREO_OFF;
+
+   //Try to remain compatible with VPX in the registry
+   hr = GetRegInt("Player", "Stereo3DVR", &stereo3D);
+   if (hr != S_OK || stereo3D != STEREO_VR) {
+      hr = GetRegInt("Player", "Stereo3D", &stereo3D);
+      if (hr != S_OK)
+         stereo3D = STEREO_OFF;
+      //This should only happens once for users that have used the old VPVR version
+      if (stereo3D == STEREO_VR) {
+         stereo3D = 0;
+         SetRegValue("Player", "Stereo3D", REG_DWORD, &stereo3D, 4);
+         stereo3D = STEREO_VR;
+      }
+   }
+
    SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Disabled");
    SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"TB (Top / Bottom)");
    SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Interlaced (e.g. LG TVs)");
@@ -455,6 +493,8 @@ BOOL VideoOptionsDialog::OnInitDialog()
    SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Steam VR");
 #endif
    SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_SETCURSEL, stereo3D, 0);
+
+   updateStereoVisibility(stereo3D);
 
    hwndCheck = GetDlgItem(IDC_3D_STEREO_Y).GetHwnd();
    int stereo3DY;
@@ -908,7 +948,12 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       SendMessage(checked ? GET_FULLSCREENMODES : GET_WINDOW_MODES, 0, 0);
       break;
    }
-
+   case IDC_3D_STEREO:
+   {
+      int stereo3D = SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_GETCURSEL, 0, 0);
+      if (stereo3D>=0) updateStereoVisibility(stereo3D);
+      break;
+   }
    default:
       return FALSE;
    }
@@ -1032,7 +1077,12 @@ void VideoOptionsDialog::OnOK()
    }
 #endif
 
-   SetRegValue("Player", "Stereo3D", REG_DWORD, &stereo3D, 4);
+   SetRegValue("Player", "Stereo3DVR", REG_DWORD, &stereo3D, 4);
+
+   //Only write VPX compatible values to Stereo3D
+   if (stereo3D != STEREO_VR) 
+      SetRegValue("Player", "Stereo3D", REG_DWORD, &stereo3D, 4);
+
    SetRegValue("Player", "Stereo3DEnabled", REG_DWORD, &stereo3D, 4);
 
    HWND hwndStereo3DY = GetDlgItem(IDC_3D_STEREO_Y).GetHwnd();
