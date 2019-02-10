@@ -1170,17 +1170,17 @@ void Ramp::prepareHabitrail(RenderDevice* pd3dDevice)
    if (m_factor > 1) {
       if (m_numIndices * m_factor < 65535) {
          WORD* meshIndices = (WORD*)malloc(m_numIndices * m_factor * sizeof(WORD));
-         for (size_t i = 0;i < m_factor;++i) {
+         for (int i = 0;i < m_factor;++i) {
             for (int j = 0;j < m_numIndices;++j)
-               meshIndices[i*m_numIndices + j] = m_meshIndices[j] + i * m_numVertices;
+               meshIndices[i*m_numIndices + j] = (WORD)(m_meshIndices[j] + i * m_numVertices);
          }
          dynamicIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_numIndices * m_factor, meshIndices);
          free(meshIndices);
       }
       else {
          unsigned int* meshIndices = (unsigned int*)malloc(m_numIndices * m_factor * sizeof(unsigned int));
-         for (size_t i = 0;i < m_factor;++i) {
-            for (int j = 0;j < m_meshIndices.size();++j)
+         for (int i = 0;i < m_factor;++i) {
+            for (size_t j = 0;j < m_meshIndices.size();++j)
                meshIndices[i*m_numIndices + j] = (unsigned int)m_meshIndices[j] + i * m_numVertices;
          }
          dynamicIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_numIndices * m_factor, meshIndices);

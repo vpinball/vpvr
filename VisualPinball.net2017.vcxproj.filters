@@ -135,6 +135,7 @@
     <ClCompile Include="ShaderDX9.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="TextureManager.cpp" />
+    <ClCompile Include="backGlass.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="vpinball.rc">
@@ -1066,6 +1067,7 @@
     <ClInclude Include="TextureManager.h">
       <Filter>headers</Filter>
     </ClInclude>
+    <ClInclude Include="backGlass.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader\BallShader.fx">

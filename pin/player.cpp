@@ -3255,58 +3255,6 @@ void Player::UpdatePhysics()
 #endif
 }
 
-void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwidth, const float DMDheight, const COLORREF DMDcolor, const float intensity)
-{
-   if (m_texdmd)
-   {
-      //const float width = g_pplayer->m_pin3d.m_useAA ? 2.0f*(float)m_width : (float)m_width;
-      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTechnique("basic_DMD"); //!! DMD_UPSCALE ?? -> should just work
-
-      const vec4 c = convertColor(DMDcolor, intensity);
-      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetVector("vColor_Intensity", &c);
-#ifdef DMD_UPSCALE
-      const vec4 r((float)(m_dmdx*3), (float)(m_dmdy*3), 1.f, 0.f);
-#else
-      const vec4 r((float)m_dmdx, (float)m_dmdy, 1.f, 0.f);
-#endif
-      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetVector("vRes_Alpha", &r);
-
-      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_texdmd, false), false);
-//      m_pd3dPrimaryDevice->DMDShader->SetVector("quadOffsetScale", 0.0f, -1.0f, backglass_scale, backglass_scale*(float)backglass_height / (float)backglass_width);
-      bool zDisabled = false;
-      float tableWidth;
-      g_pplayer->m_ptable->get_Width(&tableWidth);
-      tableWidth *= m_pin3d.backglass_scale;
-      float scale = 0.5f;// 0.5 => use 50% of the height of the grill.
-      if (m_pin3d.backglass_texture && m_pin3d.backglass_grill_height > 0) {
-         //DMD is centered in the Grill of the backglass
-         float dmd_height = m_pin3d.backglass_scale * scale * (float)m_pin3d.backglass_grill_height / (float)m_pin3d.backglass_width;
-         float dmd_width = dmd_height / (float)(m_texdmd->height()) * (float)(m_texdmd->width());
-         float dmd_x = tableWidth * (0.5f - dmd_width / 2.0f);
-         float dmd_y = tableWidth * (float)m_pin3d.backglass_grill_height*(0.5f - scale / 2.0f) / (float)m_pin3d.backglass_width;
-         m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetVector("quadOffsetScale", dmd_x, dmd_y, dmd_width, dmd_height);
-         m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, FALSE);
-         zDisabled = true;
-      }
-      else if (m_stereo3D == STEREO_VR) {//Place it somewhere at the bottom
-         m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, FALSE);
-         zDisabled = true;
-         m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetVector("quadOffsetScale", (scale/2.0f)*tableWidth, (scale/3.0f)*tableWidth, scale, scale*DMDheight / DMDwidth);
-      }
-      else//No VR, so place it where it was intended
-         m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetVector("quadOffsetScale", DMDposx, DMDposy, DMDwidth, DMDheight);
-
-      m_pin3d.m_pd3dPrimaryDevice->DMDShader->Begin(0);
-      m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuad();
-      m_pin3d.m_pd3dPrimaryDevice->DMDShader->End();
-
-      if (zDisabled)
-         m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, TRUE);
-
-      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetVector("quadOffsetScale", 0.0f, 0.0f, 1.0f, 1.0f);
-   }
-}
-
 void Player::Spritedraw(const float posx, const float posy, const float width, const float height, const COLORREF color, Texture * const tex, const float intensity, const bool backdrop)
 {
    RenderDevice * const pd3dDevice = backdrop ? m_pin3d.m_pd3dSecondaryDevice : m_pin3d.m_pd3dPrimaryDevice;
@@ -3442,12 +3390,13 @@ void Player::RenderDynamics()
 
    UpdateBasicShaderMatrix();
 
-   if (m_stereo3D == STEREO_VR) {
+/*   if (m_stereo3D == STEREO_VR) {
       m_pin3d.m_pd3dPrimaryDevice->Clear(ZBUFFER | TARGET, 0, 1.0f, 0L);//Render Room later ?
-      m_pin3d.DrawBackglass();
+      m_pin3d.backGlass->Render();
    }
-   else
-      m_pin3d.DrawBackground();
+   else*/
+   m_pin3d.m_pd3dPrimaryDevice->Clear(ZBUFFER | TARGET, 0, 1.0f, 0L);//Render Room later ?
+   m_pin3d.backGlass->Render();
 
 /* TODO Broke it for DX9, and OpenGL has no support for Clipplanes when shaders are enabled
    m_pin3d.m_pd3dPrimaryDevice->SetRenderStateClipPlane0(true);

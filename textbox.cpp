@@ -244,7 +244,7 @@ void Textbox::RenderDynamic()
    if (dmd)
    {
       pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
-      g_pplayer->DMDdraw(x, y, width, height,
+      g_pplayer->m_pin3d.backGlass->DMDdraw(x, y, width, height,
          m_d.m_fontcolor, m_d.m_intensity_scale); //!! replace??!
    }
    else
