@@ -153,6 +153,9 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
    SendMessage(GetDlgItem(IDC_StretchNo).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);
    SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_SETCURSEL, 1, 0);
    SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_SETCURSEL, 0, 0);
+   //AMD Debug
+   SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_SETCURSEL, 1, 0);
+   SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_SETCURSEL, 0, 0);
 }
 
 void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes, const VideoMode* curSelMode)
@@ -299,6 +302,11 @@ BOOL VideoOptionsDialog::OnInitDialog()
       AddToolTip("When checked it overwrites the ball image/decal image(s) for every table.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
       AddToolTip("Select Display for Video output.", hwndDlg, toolTipHwnd, controlHwnd);
+      //AMD Debug
+      controlHwnd = GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd();
+      AddToolTip("Pixel format for VR Rendering.", hwndDlg, toolTipHwnd, controlHwnd);
+      controlHwnd = GetDlgItem(IDC_COMBO_BLIT).GetHwnd();
+      AddToolTip("Blitting technique for VR Rendering.", hwndDlg, toolTipHwnd, controlHwnd);
    }
 
    int maxTexDim;
@@ -689,6 +697,20 @@ BOOL VideoOptionsDialog::OnInitDialog()
    SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"10:21 (R)");
    SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_SETCURSEL, selected, 0);
 
+   //AMD Debugging
+   SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"RGB 8");
+   SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"RGBA 8");
+   SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"RGB 16F");
+   SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"RGBA 16F");
+   int textureModeVR = GetRegIntWithDefault("Player", "textureModeVR", 1);
+   SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_SETCURSEL, textureModeVR, 0);
+
+   SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Blit");
+   SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"BlitNamed");
+   SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Shader");
+   int blitModeVR = GetRegIntWithDefault("Player", "blitModeVR", 0);
+   SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_SETCURSEL, blitModeVR, 0);
+
    return TRUE;
 }
 
@@ -942,6 +964,25 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
    }
 
    case IDC_DISPLAY_ID:
+   {
+      const size_t checked = SendDlgItemMessage(IDC_FULLSCREEN, BM_GETCHECK, 0, 0);
+      size_t index = SendMessage(GetDlgItem(IDC_SIZELIST).GetHwnd(), LB_GETCURSEL, 0, 0);
+      if (allVideoModes.size() == 0) {
+         HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
+         HWND hwndDisplay = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
+         int display = SendMessage(hwndDisplay, CB_GETCURSEL, 0, 0);
+         EnumerateDisplayModes(display, allVideoModes);
+
+      }
+      if (allVideoModes.size() > index) {
+         VideoMode * pvm = &allVideoModes[index];
+         SendMessage(checked ? GET_FULLSCREENMODES : GET_WINDOW_MODES, (pvm->width) << 16 | (pvm->refreshrate), (pvm->height) << 16 | (pvm->depth));
+
+      }
+      else
+         SendMessage(checked ? GET_FULLSCREENMODES : GET_WINDOW_MODES, 0, 0);
+      break;
+   }
    case IDC_FULLSCREEN:
    {
       const size_t checked = SendDlgItemMessage(IDC_FULLSCREEN, BM_GETCHECK, 0, 0);
@@ -1078,6 +1119,13 @@ void VideoOptionsDialog::OnOK()
 #endif
 
    SetRegValue("Player", "Stereo3DVR", REG_DWORD, &stereo3D, 4);
+
+   //AMD Debugging
+   size_t textureModeVR = SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_GETCURSEL, 0, 0);
+   SetRegValue("Player", "textureModeVR", REG_DWORD, &textureModeVR, 4);
+
+   size_t blitModeVR = SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_GETCURSEL, 0, 0);
+   SetRegValue("Player", "blitModeVR", REG_DWORD, &blitModeVR, 4);
 
    //Only write VPX compatible values to Stereo3D
    if (stereo3D != STEREO_VR) 

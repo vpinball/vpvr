@@ -1006,6 +1006,9 @@
 #define IDC_VR_OFFSET_X_LABEL           829
 #define IDC_VR_OFFSET_Y_LABEL           830
 #define IDC_VR_OFFSET_Z_LABEL           831
+#define IDC_COMBO_BLIT                  832
+#define IDC_COMBO_TEXTURE               833
+
 #define DISPID_Gate_Height1             1142
 #define DISPID_Image                    1500
 #define DISPID_Image2                   1501
@@ -1167,9 +1170,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        650
+#define _APS_NEXT_RESOURCE_VALUE        651
 #define _APS_NEXT_COMMAND_VALUE         4022
-#define _APS_NEXT_CONTROL_VALUE         832
+#define _APS_NEXT_CONTROL_VALUE         834
 #define _APS_NEXT_SYMED_VALUE           188
 #endif
 #endif

@@ -787,8 +787,26 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_pOffscreenBackBufferStereoTexture = NULL;
 
    if (m_stereo3D == STEREO_VR) {
-      m_pOffscreenVRLeft = CreateTexture(m_Buf_width / 2 - 2, m_Buf_height, 0, RENDERTARGET, RGBA, NULL, 0);
-      m_pOffscreenVRRight = CreateTexture(m_Buf_width / 2 - 2, m_Buf_height, 0, RENDERTARGET, RGBA, NULL, 0);
+      //AMD Debugging
+      colorFormat renderBufferFormatVR;
+      int textureModeVR = GetRegIntWithDefault("Player", "textureModeVR", 1);
+      switch (textureModeVR) {
+      case 0:
+         renderBufferFormatVR = RGB8;
+         break;
+      case 2:
+         renderBufferFormatVR = RGB16F;
+         break;
+      case 3:
+         renderBufferFormatVR = RGBA16F;
+         break;
+      case 1:
+      default:
+         renderBufferFormatVR = RGBA8;
+         break;
+      }
+      m_pOffscreenVRLeft = CreateTexture(m_Buf_width / 2 - 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, NULL, 0);
+      m_pOffscreenVRRight = CreateTexture(m_Buf_width / 2 - 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, NULL, 0);
    }
 
    // alloc one more temporary buffer for SMAA
