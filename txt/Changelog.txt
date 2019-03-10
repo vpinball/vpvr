@@ -1,6 +1,8 @@
 SDL2 / VR Changelog
 ------------------------
 
+- Fixed x64 support. If it fails check if the architecture from VPVR matches the architecture from VPinMame.
+
 - Big render engine update that increases the frame rate. This update is based on an article by Krzysztof Kondrak which can be
   found at http://kondrak.info/blog/programming/rendering-in-vr-using-opengl-instancing/ Benchmarking with Nvidia NSight on the IJ table
   shows that this update reduces the rendering time on my i5-4590 with 970GTX from 32ms (CPU) to 15ms per frame. The GPU time is increased 
