@@ -388,6 +388,10 @@
 #define ID_RESUME                       294
 #define ID_DEBUGWINDOW                  295
 #define IDD_PHYSICS_OPTIONS             297
+#define IDC_ROOMREC_TEXT                298
+#define IDC_TABLEREC_TEXT               299
+#define IDC_TABLEUP_TEXT                300
+#define IDC_TABLEDOWN_TEXT              301
 #define IDC_VERSION                     302
 #define IDC_TRANSWEBSITE                303
 #define IDC_TRANSNAME                   304
@@ -619,12 +623,17 @@
 #define IDC_TABLE_DIM_LIST              423
 #define IDC_JOYDEBUGGERCOMBO            423
 #define IDC_DYNAMIC_AO                  424
+#define IDC_DEBUGBALLSBUTTON2           424
+#define IDC_BTROOMRECENTER              424
 #define IDC_FORCE_ANISO                 425
 #define IDC_WIRE_DISTY                  425
 #define IDC_SCALE_BULB_MESH             425
+#define IDC_JOYROOMRECENTER             425
 #define IDC_MATERIAL_COMBO3             426
+#define IDC_BTTABLERECENTER             426
 #define IDC_GLOBAL_3DSTEREO             427
 #define IDC_TWO_WAY_CHECK               427
+#define IDC_JOYTABLERECENTER            427
 #define IDC_3D_STEREO_MS                428
 #define IDC_3D_STEREO_ZPD               429
 #define IDC_HALO_EDIT                   429
@@ -655,15 +664,19 @@
 #define IDC_CHECK_ROTATE_CENTER         431
 #define IDC_CHECK_SCALE_CENTER          431
 #define IDC_CHECK_RENAME_ON_EXPORT      431
+#define IDC_BTTABLEUP                   431
 #define IDC_OVERWRITE_MATERIAL_SETTINGS 432
 #define IDC_LIGHT_FALLOFF_POWER         432
+#define IDC_JOYTABLEUP                  432
 #define IDC_TARGET_LEGACY_MODE_CHECK    433
 #define IDC_MODULATE_VS_ADD             433
 #define IDC_INTENSITY_SCALE_LIGHT       434
 #define IDC_OVERWRITE_MATERIAL_SETTINGS2 434
 #define IDC_TARGET_ISDROPPED_CHECK      435
 #define IDC_INTENSITY_SCALE_FLASHER     435
+#define IDC_BTTABLEDOWN                 435
 #define IDC_DAYNIGHT_SLIDER             436
+#define IDC_JOYTABLEDOWN                436
 #define IDC_FADE_SPEED_DOWN             437
 #define IDC_BALL_DECAL_MODE             438
 #define IDC_FS_INCL                     439
@@ -1008,7 +1021,6 @@
 #define IDC_VR_OFFSET_Z_LABEL           831
 #define IDC_COMBO_BLIT                  832
 #define IDC_COMBO_TEXTURE               833
-
 #define DISPID_Gate_Height1             1142
 #define DISPID_Image                    1500
 #define DISPID_Image2                   1501
@@ -1170,7 +1182,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        651
+#define _APS_NEXT_RESOURCE_VALUE        652
 #define _APS_NEXT_COMMAND_VALUE         4022
 #define _APS_NEXT_CONTROL_VALUE         834
 #define _APS_NEXT_SYMED_VALUE           188

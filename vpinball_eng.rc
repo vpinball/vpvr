@@ -411,12 +411,12 @@ BEGIN
     PUSHBUTTON      "&Rename",IDC_RENAME,259,97,50,14,WS_DISABLED
 END
 
-IDD_KEYS DIALOGEX 0, 0, 627, 311
+IDD_KEYS DIALOGEX 0, 0, 627, 325
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Keys, Nudge and DOF"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    GROUPBOX        "Button Assignments",IDC_STATIC,7,7,242,296
+    GROUPBOX        "Button Assignments",IDC_STATIC,7,7,245,315
     GROUPBOX        "",IDC_STATIC,12,17,54,39
     PUSHBUTTON      "Left Flipper",IDC_LEFTFLIPPERBUTTON,14,17,50,14
     CTEXT           "",IDC_LEFTFLIPPER,14,32,50,8,SS_CENTERIMAGE
@@ -510,8 +510,8 @@ BEGIN
     CTEXT           "",IDC_LOCKBAR,132,227,50,8,SS_CENTERIMAGE
     COMBOBOX        IDC_JOYLOCKBARCOMBO,132,236,50,100,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
     CONTROL         "Override Default Button Layout",IDC_DefaultLayout,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,258,153,10
-    CONTROL         "Disable ESC Key",IDC_DisableESC_CB,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,176,258,68,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,294,153,10
+    CONTROL         "Disable ESC Key",IDC_DisableESC_CB,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,176,294,68,10
     GROUPBOX        "PinMAME Buttons",IDC_STATIC,254,7,241,82
     CTEXT           "EB BuyIn (2)",IDC_STATIC,261,17,50,14,0,WS_EX_DLGMODALFRAME
     COMBOBOX        IDC_JOYPMBUYIN,261,32,50,100,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
@@ -570,8 +570,8 @@ BEGIN
     GROUPBOX        "",IDC_STATIC,262,110,128,21
     GROUPBOX        "",IDC_STATIC,262,128,128,21
     GROUPBOX        "",IDC_STATIC,262,146,128,21
-    LTEXT           "* To assign Custom Keys to Gamepad Buttons, click on the button and select desired key, then choose desired gamepad button from dropdown box.",IDC_STATIC,13,273,168,25
-    LTEXT           "To interactively set, calibrate and test the Nudge parameters, please load the\n'Nudge Test and Calibration.vpx' table and run it",IDC_STATIC,255,273,168,25
+    LTEXT           "* To assign Custom Keys to Gamepad Buttons, click on the button and select desired key, then choose desired gamepad button from dropdown box.",IDC_STATIC,7,304,243,16
+    LTEXT           "To interactively set, calibrate and test the Nudge parameters, please load the\n'Nudge Test and Calibration.vpx' table and run it",IDC_STATIC,255,292,168,25
     CONTROL         "Enable Mouse handling during Play",IDC_ENABLE_MOUSE_PLAYER,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,254,233,150,10
     CONTROL         "Enable flying around (Arrow Keys + Left Alt Key) during Camera/Light Edit Mode",IDC_ENABLE_CAMERA_FLY_AROUND,
@@ -597,8 +597,24 @@ BEGIN
     COMBOBOX        IDC_DOF_DROPTARGETS,505,180,50,100,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
     LTEXT           "* This will only apply to tables that are using the Controller.vbs in their script code",IDC_STATIC,563,156,55,40
     CONTROL         "Disable B2S",IDC_DOF_FORCEDISABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,505,203,86,10
-    PUSHBUTTON      "OK",IDOK,536,289,40,14
-    PUSHBUTTON      "Cancel",IDCANCEL,579,289,40,14
+    PUSHBUTTON      "OK",IDOK,536,308,40,14
+    PUSHBUTTON      "Cancel",IDCANCEL,579,308,40,14
+    GROUPBOX        "",IDC_STATIC,11,253,54,39
+    PUSHBUTTON      "Room Rec",IDC_BTROOMRECENTER,13,254,50,14
+    CTEXT           "",IDC_ROOMREC_TEXT,13,268,50,8,SS_CENTERIMAGE
+    COMBOBOX        IDC_JOYROOMRECENTER,13,277,50,100,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "",IDC_STATIC,71,254,54,39
+    PUSHBUTTON      "Table Rec",IDC_BTTABLERECENTER,73,254,50,14
+    CTEXT           "",IDC_TABLEREC_TEXT,73,268,50,8,SS_CENTERIMAGE
+    COMBOBOX        IDC_JOYTABLERECENTER,74,279,50,100,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "",IDC_STATIC,130,255,54,39
+    PUSHBUTTON      "Table up",IDC_BTTABLEUP,133,254,50,14
+    CTEXT           "",IDC_TABLEUP_TEXT,133,268,50,8,SS_CENTERIMAGE
+    COMBOBOX        IDC_JOYTABLEUP,132,279,50,100,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "",IDC_STATIC,189,254,54,39
+    PUSHBUTTON      "Table Down",IDC_BTTABLEDOWN,191,254,50,14
+    CTEXT           "",IDC_TABLEDOWN_TEXT,193,268,50,8,SS_CENTERIMAGE
+    COMBOBOX        IDC_JOYTABLEDOWN,191,278,50,100,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
 END
 
 IDD_TRANSLATE DIALOGEX 0, 0, 186, 97
@@ -2352,7 +2368,7 @@ BEGIN
 
     IDD_KEYS, DIALOG
     BEGIN
-        BOTTOMMARGIN, 310
+        BOTTOMMARGIN, 311
     END
 
     IDD_TRANSLATE, DIALOG
@@ -3270,6 +3286,11 @@ BEGIN
 END
 
 IDD_VIDEO_OPTIONS AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_KEYS AFX_DIALOG_LAYOUT
 BEGIN
     0
 END

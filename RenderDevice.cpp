@@ -599,30 +599,16 @@ void RenderDevice::InitVR() {
       throw(noDevicesFound);
    }
 
-   float slope, orientation, tablex, tabley, tablez;
-   if (GetRegStringAsFloat("Player", "VRSlope", &slope)<0) slope = 6.5f;
-   if (GetRegStringAsFloat("Player", "VROrientation", &orientation)<0) orientation = 0.0f;
-   if (GetRegStringAsFloat("Player", "VRTableX", &tablex)<0) tablex = 0.0f;
-   if (GetRegStringAsFloat("Player", "VRTableY", &tabley)<0) tabley = 0.0f;
-   if (GetRegStringAsFloat("Player", "VRTableZ", &tablez)<0) tablez = 80.0f;
+   slope = GetRegStringAsFloatWithDefault("Player", "VRSlope", 6.5f);
+   orientation = GetRegStringAsFloatWithDefault("Player", "VROrientation", 0.0f);
+   tablex = GetRegStringAsFloatWithDefault("Player", "VRTableX", 0.0f);
+   tabley = GetRegStringAsFloatWithDefault("Player", "VRTableY", 0.0f);
+   tablez = GetRegStringAsFloatWithDefault("Player", "VRTableZ", 80.0f);
+   roomOrientation = GetRegStringAsFloatWithDefault("Player", "VRRoomOrientation", 0.0f);
+   roomx = GetRegStringAsFloatWithDefault("Player", "VRRoomX", 0.0f);
+   roomy = GetRegStringAsFloatWithDefault("Player", "VRRoomY", 0.0f);
 
-   Matrix3D tmp;
-   m_tableWorld.SetIdentity();
-   //Tilt playfield. 
-   m_tableWorld.RotateXMatrix(ANGTORAD(-slope));
-   tmp.SetIdentity();
-   //Convert from VPX scale and coords to VR
-   float scale = 0.000540425f;
-   tmp.m[0][0] =-scale;  tmp.m[0][1] =  0.0f;  tmp.m[0][2] =  0.0f;
-   tmp.m[1][0] =  0.0f;  tmp.m[1][1] =  0.0f;  tmp.m[1][2] =-scale;
-   tmp.m[2][0] =  0.0f;  tmp.m[2][1] = scale;  tmp.m[2][2] =  0.0f;
-   m_tableWorld = m_tableWorld * tmp;
-   tmp.SetIdentity();
-   tmp.RotateYMatrix(ANGTORAD(180-orientation));//Rotate table around VR height axis, if desired
-   m_tableWorld = m_tableWorld * tmp;
-   tmp.SetIdentity();
-   tmp.SetTranslation(tablex/100.0f, tablez/100.0f, -tabley/100.0f);//Locate front left corner of the table in the room -x is to the right, -y is up and -z is back - all units in meters
-   m_tableWorld = m_tableWorld * tmp;
+   updateTableMatrix();
 
 #else
    std::runtime_error unknownStereoMode("This version of Visual Pinball was compiled without VR support");
@@ -942,9 +928,15 @@ RenderDevice::~RenderDevice()
    {
       vr::VR_Shutdown();
       m_pHMD = NULL;
+      SetRegValueFloat("Player", "VRSlope", slope);
+      SetRegValueFloat("Player", "VROrientation", orientation);
+      SetRegValueFloat("Player", "VRTableX", tablex);
+      SetRegValueFloat("Player", "VRTableY", tabley);
+      SetRegValueFloat("Player", "VRTableZ", tablez);
+      SetRegValueFloat("Player", "VRRoomOrientation", roomOrientation);
+      SetRegValueFloat("Player", "VRRoomX", roomx);
+      SetRegValueFloat("Player", "VRRoomY", roomy);
    }
-   SDL_GL_DeleteContext(m_sdl_context);
-   SDL_DestroyWindow(m_sdl_playfieldHwnd);
    SDL_GL_DeleteContext(m_sdl_context);
    SDL_DestroyWindow(m_sdl_playfieldHwnd);
 }
@@ -2603,7 +2595,6 @@ void RenderDevice::UpdateVRPosition()
 #ifdef ENABLE_VR
    if (!m_pHMD) return;
    const float scale = 0.000540425f;// Scale factor for VPUnits to Meters
-   vr::TrackedDevicePose_t hmdPosition;
    vr::VRCompositor()->WaitGetPoses(m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, NULL, 0);
 
    for (int device = 0; device < vr::k_unMaxTrackedDeviceCount; device++) {
@@ -2620,6 +2611,69 @@ void RenderDevice::UpdateVRPosition()
    m_matView.Invert();
    m_matView = m_tableWorld * m_matView;
 #endif
+}
+
+void RenderDevice::tableUp()
+{
+   tablez += 1.0f;
+   if (tablez > 250.0f) tablez = 250.0f;
+   updateTableMatrix();
+}
+
+void RenderDevice::tableDown()
+{
+   tablez -= 1.0f;
+   if (tablez < 0.0f) tablez = 0.0f;
+   updateTableMatrix();
+}
+
+//Do not change the position of the room
+void RenderDevice::recenterTable()
+{
+   //hmdPosition;
+   orientation = -RADTOANG(atan2(hmdPosition.mDeviceToAbsoluteTracking.m[0][2], hmdPosition.mDeviceToAbsoluteTracking.m[0][0]));
+   if (orientation < 0.0f) orientation += 360.0f;
+   float w = 0.0540425f*0.5*(g_pplayer->m_ptable->m_right - g_pplayer->m_ptable->m_left);
+   float h = 0.0540425f*(g_pplayer->m_ptable->m_bottom - g_pplayer->m_ptable->m_top) + 20.0f;
+   float c = cos(ANGTORAD(orientation));
+   float s = sin(ANGTORAD(orientation));
+   tablex = 100.0f*hmdPosition.mDeviceToAbsoluteTracking.m[0][3] - c * w + s * h;
+   tabley = -100.0f*hmdPosition.mDeviceToAbsoluteTracking.m[2][3] + s * w + c * h;
+   updateTableMatrix();
+}
+
+//Change the position of the room, but keep the table at the same position in the room
+void RenderDevice::recenterRoom()
+{
+   recenterTable();
+   //TODO: new code when room is working
+}
+
+void RenderDevice::updateTableMatrix()
+{
+   Matrix3D tmp;
+   m_tableWorld.SetIdentity();
+   //Tilt playfield.
+   m_tableWorld.RotateXMatrix(ANGTORAD(-slope));
+   tmp.SetIdentity();
+   //Convert from VPX scale and coords to VR
+   float scale = 0.000540425f;
+   tmp.m[0][0] = -scale;  tmp.m[0][1] = 0.0f;  tmp.m[0][2] = 0.0f;
+   tmp.m[1][0] = 0.0f;  tmp.m[1][1] = 0.0f;  tmp.m[1][2] = -scale;
+   tmp.m[2][0] = 0.0f;  tmp.m[2][1] = scale;  tmp.m[2][2] = 0.0f;
+   m_tableWorld = m_tableWorld * tmp;
+   tmp.SetIdentity();
+   tmp.RotateYMatrix(ANGTORAD(180 - orientation -roomOrientation));//Rotate table around VR height axis
+   m_tableWorld = m_tableWorld * tmp;
+   tmp.SetIdentity();
+   tmp.SetTranslation((roomx+tablex) / 100.0f, tablez / 100.0f, -(roomy+tabley) / 100.0f);//Locate front left corner of the table in the room -x is to the right, -y is up and -z is back - all units in meters
+   m_tableWorld = m_tableWorld * tmp;
+
+   m_roomWorld.SetIdentity();
+   tmp.SetIdentity();
+   tmp.RotateYMatrix(ANGTORAD(180 - roomOrientation));//Rotate room around VR height axis
+   tmp.SetIdentity();
+   tmp.SetTranslation((roomx) / 100.0f, 0.0f, -(roomy) / 100.0f);
 }
 
 void RenderDevice::SetTransformVR()

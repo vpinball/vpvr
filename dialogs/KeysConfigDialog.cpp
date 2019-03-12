@@ -392,7 +392,7 @@ BOOL KeysConfigDialog::OnInitDialog()
         legacyNudgeStrength = 1.f;
     SetDlgItemInt(IDC_LEGACY_NUDGE_STRENGTH, quantizeUnsignedPercent(legacyNudgeStrength), FALSE);
 
-    for (unsigned int i = 0; i <= 30; ++i)
+    for (unsigned int i = 0; i <= 34; ++i)
     {
         int item;
         switch (i)
@@ -428,6 +428,10 @@ BOOL KeysConfigDialog::OnInitDialog()
             case 28:hr = GetRegInt("Player", "JoyPMUp", &selected); item = IDC_JOYPMUP; break;
             case 29:hr = GetRegInt("Player", "JoyPMEnter", &selected); item = IDC_JOYPMENTER; break;
             case 30:hr = GetRegInt("Player", "JoyLockbarKey", &selected); item = IDC_JOYLOCKBARCOMBO; break;
+            case 31: hr = GetRegInt("Player", "JoyRoomRecenterKey", &selected); item = IDC_JOYROOMRECENTER; break;
+            case 32: hr = GetRegInt("Player", "JoyTableRecenterKey", &selected); item = IDC_JOYTABLERECENTER; break;
+            case 33: hr = GetRegInt("Player", "JoyTableUpKey", &selected); item = IDC_JOYTABLEUP; break;
+            case 34: hr = GetRegInt("Player", "JoyTableDownKey", &selected); item = IDC_JOYTABLEDOWN; break;
         }
 
         if (hr != S_OK)
@@ -731,6 +735,22 @@ BOOL KeysConfigDialog::OnInitDialog()
     ::SetWindowLongPtr(hwndButton, GWLP_WNDPROC, (size_t)MyKeyButtonProc);
     ::SetWindowLongPtr(hwndButton, GWLP_USERDATA, (size_t)pksw);
 
+    hwndButton = GetDlgItem(IDC_BTROOMRECENTER).GetHwnd();
+    ::SetWindowLongPtr(hwndButton, GWLP_WNDPROC, (size_t)MyKeyButtonProc);
+    ::SetWindowLongPtr(hwndButton, GWLP_USERDATA, (size_t)pksw);
+
+    hwndButton = GetDlgItem(IDC_BTTABLERECENTER).GetHwnd();
+    ::SetWindowLongPtr(hwndButton, GWLP_WNDPROC, (size_t)MyKeyButtonProc);
+    ::SetWindowLongPtr(hwndButton, GWLP_USERDATA, (size_t)pksw);
+
+    hwndButton = GetDlgItem(IDC_BTTABLEUP).GetHwnd();
+    ::SetWindowLongPtr(hwndButton, GWLP_WNDPROC, (size_t)MyKeyButtonProc);
+    ::SetWindowLongPtr(hwndButton, GWLP_USERDATA, (size_t)pksw);
+
+    hwndButton = GetDlgItem(IDC_BTTABLEDOWN).GetHwnd();
+    ::SetWindowLongPtr(hwndButton, GWLP_WNDPROC, (size_t)MyKeyButtonProc);
+    ::SetWindowLongPtr(hwndButton, GWLP_USERDATA, (size_t)pksw);
+
     return TRUE;
 }
 
@@ -894,6 +914,26 @@ BOOL KeysConfigDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                 StartTimer(IDC_JOYCUSTOM4);
                 break;
             }
+            case IDC_BTROOMRECENTER:
+            {
+               StartTimer(IDC_ROOMREC_TEXT);
+               break;
+            }
+            case IDC_BTTABLERECENTER:
+            {
+               StartTimer(IDC_TABLEREC_TEXT);
+               break;
+            }
+            case IDC_BTTABLEUP:
+            {
+               StartTimer(IDC_TABLEUP_TEXT);
+               break;
+            }
+            case IDC_BTTABLEDOWN:
+            {
+               StartTimer(IDC_TABLEDOWN_TEXT);
+               break;
+            }
             default:
                 return FALSE;
         }//switch
@@ -943,6 +983,10 @@ void KeysConfigDialog::OnOK()
     SetValue(IDC_PLUNGERAXIS, "Player", "PlungerAxis");
     SetValue(IDC_LRAXISCOMBO, "Player", "LRAxis");
     SetValue(IDC_UDAXISCOMBO, "Player", "UDAxis");
+    SetValue(IDC_JOYROOMRECENTER, "Player", "JoyRoomRecenterKey");
+    SetValue(IDC_JOYTABLERECENTER, "Player", "JoyTableRecenterKey");
+    SetValue(IDC_JOYTABLEUP, "Player", "JoyTableUpKey");
+    SetValue(IDC_JOYTABLEDOWN, "Player", "JoyTableDownKey");
 
     newvalue = GetDlgItemInt(IDC_LRAXISGAIN, nothing, TRUE);
     if (newvalue < 0) { newvalue = 0; }

@@ -346,6 +346,16 @@ RenderDevice(HWND* const hwnd, const int width, const int height, const bool ful
    unsigned int getBufwidth() { return m_Buf_width; }
    unsigned int getBufheight() { return m_Buf_width; }
    void UpdateVRPosition();
+   void tableUp();
+   void tableDown();
+   void recenterTable();
+   void recenterRoom();
+   void updateTableMatrix();
+   float slope, orientation, tablex, tabley, tablez, roomOrientation, roomx, roomy;
+#ifdef ENABLE_VR
+   vr::TrackedDevicePose_t hmdPosition;
+#endif
+
 
    // performance counters
    unsigned int Perf_GetNumDrawCalls() const      { return m_frameDrawCalls; }
@@ -455,6 +465,7 @@ private:
    Matrix3D m_matProj[2];
    Matrix3D m_matView;
    Matrix3D m_tableWorld;
+   Matrix3D m_roomWorld;
    vr::TrackedDevicePose_t *m_rTrackedDevicePose;
 
 #endif

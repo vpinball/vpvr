@@ -33,6 +33,10 @@ enum EnumAssignKeys
    eVolumeDown,
    eLockbarKey,
    eEnable3D,
+   eRoomRecenter,
+   eTableRecenter,
+   eTableUp,
+   eTableDown,
    eEscape,
    eCKeys
 };
@@ -57,6 +61,10 @@ static const char* regkey_string[eCKeys] = {
    "VolumeDown",
    "LockbarKey",
    "Enable3DKey",
+   "RoomRecenterKey",
+   "TableRecenterKey",
+   "TableUpKey",
+   "TableDownKey",
    "EscapeKey"
 };
 static const int regkey_defdik[eCKeys] = {
@@ -80,6 +88,10 @@ static const int regkey_defdik[eCKeys] = {
    DIK_MINUS,
    DIK_LALT,
    DIK_F10,
+   DIK_NUMPAD0,
+   DIK_NUMPAD5,
+   DIK_NUMPAD8,
+   DIK_NUMPAD2,
    DIK_ESCAPE
 };
 static const int regkey_idc[eCKeys] = {
@@ -104,6 +116,10 @@ static const int regkey_idc[eCKeys] = {
    IDC_LOCKBAR,
 
    -1, //!! missing in key dialog!
+   IDC_ROOMREC_TEXT,
+   IDC_TABLEREC_TEXT,
+   IDC_TABLEUP_TEXT,
+   IDC_TABLEDOWN_TEXT,
    -1
 };
 

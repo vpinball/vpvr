@@ -72,6 +72,10 @@ PinInput::PinInput()
    m_joydebugger = 0;
    m_joylockbar = 0;
    m_joymechtilt = 0;
+   m_joyroomrecenter = 0;
+   m_joytablerecenter = 0;
+   m_joytableup = 0;
+   m_joytabledown = 0;
 
    m_firedautostart = 0;
 
@@ -233,6 +237,18 @@ void PinInput::LoadSettings()
 
    hr = GetRegInt("Player", "JoyLockbarKey", &tmp);
    if (hr == S_OK) m_joylockbar = tmp;
+
+   hr = GetRegInt("Player", "JoyRoomRecenterKey", &tmp);
+   if (hr == S_OK) m_joyroomrecenter = tmp;
+
+   hr = GetRegInt("Player", "JoyTableRecenterKey", &tmp);
+   if (hr == S_OK) m_joytablerecenter = tmp;
+
+   hr = GetRegInt("Player", "JoyTableUpKey", &tmp);
+   if (hr == S_OK) m_joytableup = tmp;
+
+   hr = GetRegInt("Player", "JoyTableDownKey", &tmp);
+   if (hr == S_OK) m_joytabledown = tmp;
 
    hr = GetRegInt("Player", "EnableMouseInPlayer", &tmp);
    if (hr == S_OK) m_enableMouseInPlayer = (tmp == fTrue);
@@ -758,8 +774,15 @@ void PinInput::FireKeyEvent(const int dispid, int keycode)
       else if (keycode == DIK_LEFT)   keycode = DIK_RIGHT;
       else if (keycode == DIK_RIGHT)  keycode = DIK_LEFT;
    }
-
-   if (g_pplayer->cameraMode)
+   if (keycode == g_pplayer->m_rgKeys[eRoomRecenter] && dispid == DISPID_GameEvents_KeyUp)
+      g_pplayer->m_pin3d.m_pd3dPrimaryDevice->recenterTable();
+   else if (keycode == g_pplayer->m_rgKeys[eTableRecenter] && dispid == DISPID_GameEvents_KeyUp)
+      g_pplayer->m_pin3d.m_pd3dPrimaryDevice->recenterRoom();
+   else if (keycode == g_pplayer->m_rgKeys[eTableUp] && dispid == DISPID_GameEvents_KeyUp)
+      g_pplayer->m_pin3d.m_pd3dPrimaryDevice->tableUp();
+   else if (keycode == g_pplayer->m_rgKeys[eTableDown] && dispid == DISPID_GameEvents_KeyUp)
+      g_pplayer->m_pin3d.m_pd3dPrimaryDevice->tableDown();
+   else if (g_pplayer->cameraMode)
    {
       m_keyPressedState[eLeftFlipperKey] = false;
       m_keyPressedState[eRightFlipperKey] = false;
@@ -1005,6 +1028,10 @@ void PinInput::Joy(const unsigned int n, const int updown, const bool start)
    if (m_joyaddcreditkey2 == n) FireKeyEvent(updown, g_pplayer->m_rgKeys[eAddCreditKey2]);
    if (m_joylmagnasave == n) FireKeyEvent(updown, g_pplayer->m_rgKeys[eLeftMagnaSave]);
    if (m_joyrmagnasave == n) FireKeyEvent(updown, g_pplayer->m_rgKeys[eRightMagnaSave]);
+   if (m_joyroomrecenter == n) FireKeyEvent(updown, g_pplayer->m_rgKeys[eRoomRecenter]);
+   if (m_joytablerecenter == n) FireKeyEvent(updown, g_pplayer->m_rgKeys[eTableRecenter]);
+   if (m_joytableup == n) FireKeyEvent(updown, g_pplayer->m_rgKeys[eTableUp]);
+   if (m_joytabledown == n) FireKeyEvent(updown, g_pplayer->m_rgKeys[eTableDown]);
    if (m_joystartgamekey == n)
    {
       if (start)
