@@ -3790,7 +3790,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
 
          CHECKD3D(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rightTexture->framebuffer));
          CHECKD3D(glBlitFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->width - rightTexture->width, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->width - 1, rightTexture->height, 0, 0, rightTexture->width - 1, rightTexture->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
-         CHECKD3D(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0));
+         CHECKD3D(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->framebuffer));
          CHECKD3D(glBlitFramebuffer(0, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
          break;
          //#else
@@ -3799,7 +3799,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
             0, 0, leftTexture->width - 1, leftTexture->height - 1, 0, 0, leftTexture->width - 1, leftTexture->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
          CHECKD3D(glBlitNamedFramebuffer(shaderAA ? m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->framebuffer : m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->framebuffer, rightTexture->framebuffer,
             m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->width - rightTexture->width, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->width - 1, rightTexture->height - 1, 0, 0, rightTexture->width - 1, rightTexture->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
-         CHECKD3D(glBlitNamedFramebuffer(shaderAA ? m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->framebuffer : m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->framebuffer, 0,
+         CHECKD3D(glBlitNamedFramebuffer(shaderAA ? m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->framebuffer : m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->framebuffer, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->framebuffer,
             0, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
          break;
       default:
@@ -3819,6 +3819,13 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin(0);
          m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
+
+         m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
+         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat("eye", 2.0f);
+         m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin(0);
+         m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+         m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
+
          break;
       }
    vr::EVRCompositorError error;
