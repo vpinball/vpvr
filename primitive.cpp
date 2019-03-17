@@ -333,8 +333,6 @@ void Primitive::SetDefaults(bool fromMouseClick)
 {
    static const char strKeyName[] = "DefaultProps\\Primitive";
 
-   HRESULT hr;
-
    m_d.m_useAsPlayfield = false;
    m_d.m_use3DMesh = false;
 
@@ -370,7 +368,7 @@ void Primitive::SetDefaults(bool fromMouseClick)
    m_d.m_aRotAndTra[7] = fromMouseClick ? GetRegStringAsFloatWithDefault(strKeyName, "RotAndTra7", 0.0f) : 0.0f;
    m_d.m_aRotAndTra[8] = fromMouseClick ? GetRegStringAsFloatWithDefault(strKeyName, "RotAndTra8", 0.0f) : 0.0f;
 
-   hr = GetRegString(strKeyName, "Image", m_d.m_szImage, MAXTOKEN);
+   HRESULT hr = GetRegString(strKeyName, "Image", m_d.m_szImage, MAXTOKEN);
    if ((hr != S_OK) && fromMouseClick)
       m_d.m_szImage[0] = 0;
 
@@ -611,9 +609,7 @@ void Primitive::SetupHitObject(vector<HitObject*> &pvho, HitObject * obj)
    obj->m_ObjType = ePrimitive;
    obj->m_obj = (IFireEvents *)this;
    obj->m_e = true;
-
-   if (m_d.m_fHitEvent)
-      obj->m_fe = true;
+   obj->m_fe = m_d.m_fHitEvent;
 
    pvho.push_back(obj);
    m_vhoCollidable.push_back(obj); // remember hit components of primitive
@@ -934,30 +930,51 @@ void Primitive::CalculateBuiltinOriginal()
    middle->x = 0.0f;
    middle->y = 0.0f;
    middle->z = 0.5f;
+   middle->nx = 0.0f;
+   middle->ny = 0.0f;
+   middle->nz = 1.0f;
    middle = &m_mesh.m_vertices[m_d.m_Sides + 1]; // middle point bottom
    middle->x = 0.0f;
    middle->y = 0.0f;
    middle->z = -0.5f;
+   middle->nx = 0.0f;
+   middle->ny = 0.0f;
+   middle->nz = -1.0f;
+
    for (int i = 0; i < m_d.m_Sides; ++i)
    {
-      // calculate Top
+      // calculate top
       Vertex3D_NoTex2 * const topVert = &m_mesh.m_vertices[i + 1]; // top point at side
       const float currentAngle = addAngle * (float)i + offsAngle;
       topVert->x = sinf(currentAngle)*outerRadius;
       topVert->y = cosf(currentAngle)*outerRadius;
       topVert->z = 0.5f;
+      topVert->nx = 0.0f;
+      topVert->ny = 0.0f;
+      topVert->nz = 1.0f;
 
       // calculate bottom
       Vertex3D_NoTex2 * const bottomVert = &m_mesh.m_vertices[i + 1 + m_d.m_Sides + 1]; // bottompoint at side
       bottomVert->x = topVert->x;
       bottomVert->y = topVert->y;
       bottomVert->z = -0.5f;
+      bottomVert->nx = 0.0f;
+      bottomVert->ny = 0.0f;
+      bottomVert->nz = -1.0f;
 
       // calculate sides
-      m_mesh.m_vertices[m_d.m_Sides * 2 + 2 + i] = *topVert; // sideTopVert
-      m_mesh.m_vertices[m_d.m_Sides * 3 + 2 + i] = *bottomVert; // sideBottomVert
+      Vertex3D_NoTex2 &sideTopVert = m_mesh.m_vertices[m_d.m_Sides * 2 + 2 + i];
+      sideTopVert = *topVert;
+      sideTopVert.nx = sinf(currentAngle);
+      sideTopVert.ny = cosf(currentAngle);
+      sideTopVert.nz = 0.0f;
+      Vertex3D_NoTex2 &sideBottomVert = m_mesh.m_vertices[m_d.m_Sides * 3 + 2 + i];
+      sideBottomVert = *bottomVert;
+      sideBottomVert.nx = sideTopVert.nx;
+      sideBottomVert.ny = sideTopVert.ny;
+      sideBottomVert.nz = 0.0f;
 
-                                                                // calculate bounds for X and Y
+      // calculate bounds for X and Y
       if (topVert->x < minX)
          minX = topVert->x;
       if (topVert->x > maxX)
@@ -1081,11 +1098,24 @@ void Primitive::CalculateBuiltinOriginal()
    }
 
    //SetNormal(&m_mesh.m_vertices[0], &m_mesh.m_indices[0], m_mesh.NumIndices()); // SetNormal only works for plane polygons
-   ComputeNormals(m_mesh.m_vertices, m_mesh.m_indices);
+   //ComputeNormals(m_mesh.m_vertices, m_mesh.m_indices);
+}
+
+void Primitive::UpdateMeshInfo()
+{
+   if (g_pplayer)
+      return;
+
+   char tbuf[128];
+   sprintf_s(tbuf, "vertices: %i | polygons: %i", m_mesh.NumVertices(), m_mesh.NumIndices());
+   g_pvp->SetStatusBarUnitInfo(tbuf, false);
 }
 
 void Primitive::UpdateEditorView()
 {
+   if (g_pplayer)
+      return;
+
    RecalculateMatrices();
    TransformVertices();
 }
@@ -1307,7 +1337,6 @@ void Primitive::MoveOffset(const float dx, const float dy)
    m_d.m_vPosition.y += dy;
 
    UpdateEditorView();
-   m_ptable->SetDirtyDraw();
 }
 
 Vertex2D Primitive::GetCenter() const
@@ -1321,7 +1350,6 @@ void Primitive::PutCenter(const Vertex2D& pv)
    m_d.m_vPosition.y = pv.y;
 
    UpdateEditorView();
-   m_ptable->SetDirtyDraw();
 }
 
 //////////////////////////////
@@ -1383,18 +1411,18 @@ HRESULT Primitive::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
       bw.WriteInt(FID(M3VN), (int)m_mesh.NumVertices());
 
 #ifndef COMPRESS_MESHES
-      bw.WriteStruct(FID(M3DX), &m_mesh.m_vertices[0], (int)(sizeof(Vertex3D_NoTex2)*m_mesh.NumVertices()));
+      bw.WriteStruct(FID(M3DX), m_mesh.m_vertices.data(), (int)(sizeof(Vertex3D_NoTex2)*m_mesh.NumVertices()));
 #else
       /*bw.WriteTag(FID(M3CX));
       {
-      LZWWriter lzwwriter(pstm, (int *)&m_mesh.m_vertices[0], sizeof(Vertex3D_NoTex2)*m_mesh.NumVertices(), 1, sizeof(Vertex3D_NoTex2)*m_mesh.NumVertices());
+      LZWWriter lzwwriter(pstm, (int *)m_mesh.m_vertices.data(), sizeof(Vertex3D_NoTex2)*m_mesh.NumVertices(), 1, sizeof(Vertex3D_NoTex2)*m_mesh.NumVertices());
       lzwwriter.CompressBits(8 + 1);
       }*/
       {
          const mz_ulong slen = (mz_ulong)(sizeof(Vertex3D_NoTex2)*m_mesh.NumVertices());
          mz_ulong clen = compressBound(slen);
          mz_uint8 * c = (mz_uint8 *)malloc(clen);
-         if (compress2(c, &clen, (const unsigned char *)&m_mesh.m_vertices[0], slen, MZ_BEST_COMPRESSION) != Z_OK)
+         if (compress2(c, &clen, (const unsigned char *)m_mesh.m_vertices.data(), slen, MZ_BEST_COMPRESSION) != Z_OK)
             ShowError("Could not compress primitive vertex data");
          bw.WriteInt(FID(M3CY), (int)clen);
          bw.WriteStruct(FID(M3CX), c, clen);
@@ -1406,15 +1434,15 @@ HRESULT Primitive::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
       if (m_mesh.NumVertices() > 65535)
       {
 #ifndef COMPRESS_MESHES
-         bw.WriteStruct(FID(M3DI), &m_mesh.m_indices[0], (int)(sizeof(unsigned int)*m_mesh.NumIndices()));
+         bw.WriteStruct(FID(M3DI), m_mesh.m_indices.data(), (int)(sizeof(unsigned int)*m_mesh.NumIndices()));
 #else
          /*bw.WriteTag(FID(M3CI));
-         LZWWriter lzwwriter(pstm, (int *)&m_mesh.m_indices[0], sizeof(unsigned int)*m_mesh.NumIndices(), 1, sizeof(unsigned int)*m_mesh.NumIndices());
+         LZWWriter lzwwriter(pstm, (int *)m_mesh.m_indices.data(), sizeof(unsigned int)*m_mesh.NumIndices(), 1, sizeof(unsigned int)*m_mesh.NumIndices());
          lzwwriter.CompressBits(8 + 1);*/
          const mz_ulong slen = (mz_ulong)(sizeof(unsigned int)*m_mesh.NumIndices());
          mz_ulong clen = compressBound(slen);
          mz_uint8 * c = (mz_uint8 *)malloc(clen);
-         if (compress2(c, &clen, (const unsigned char *)&m_mesh.m_indices[0], slen, MZ_BEST_COMPRESSION) != Z_OK)
+         if (compress2(c, &clen, (const unsigned char *)m_mesh.m_indices.data(), slen, MZ_BEST_COMPRESSION) != Z_OK)
             ShowError("Could not compress primitive index data");
          bw.WriteInt(FID(M3CJ), (int)clen);
          bw.WriteStruct(FID(M3CI), c, clen);
@@ -1427,15 +1455,15 @@ HRESULT Primitive::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
          for (size_t i = 0; i < m_mesh.NumIndices(); ++i)
             tmp[i] = m_mesh.m_indices[i];
 #ifndef COMPRESS_MESHES
-         bw.WriteStruct(FID(M3DI), &tmp[0], (int)(sizeof(WORD)*m_mesh.NumIndices()));
+         bw.WriteStruct(FID(M3DI), tmp.data(), (int)(sizeof(WORD)*m_mesh.NumIndices()));
 #else
          /*bw.WriteTag(FID(M3CI));
-         LZWWriter lzwwriter(pstm, (int *)&tmp[0], sizeof(WORD)*m_mesh.NumIndices(), 1, sizeof(WORD)*m_mesh.NumIndices());
+         LZWWriter lzwwriter(pstm, (int *)tmp.data(), sizeof(WORD)*m_mesh.NumIndices(), 1, sizeof(WORD)*m_mesh.NumIndices());
          lzwwriter.CompressBits(8 + 1);*/
          const mz_ulong slen = (mz_ulong)(sizeof(WORD)*m_mesh.NumIndices());
          mz_ulong clen = compressBound(slen);
          mz_uint8 * c = (mz_uint8 *)malloc(clen);
-         if (compress2(c, &clen, (const unsigned char *)&tmp[0], slen, MZ_BEST_COMPRESSION) != Z_OK)
+         if (compress2(c, &clen, (const unsigned char *)tmp.data(), slen, MZ_BEST_COMPRESSION) != Z_OK)
             ShowError("Could not compress primitive index data");
          bw.WriteInt(FID(M3CJ), (int)clen);
          bw.WriteStruct(FID(M3CI), c, clen);
@@ -1450,7 +1478,7 @@ HRESULT Primitive::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
          {
             mz_ulong clen = compressBound(slen);
             mz_uint8 * c = (mz_uint8 *)malloc(clen);
-            if (compress2(c, &clen, (const unsigned char *)&m_mesh.m_animationFrames[i].m_frameVerts[0], slen, MZ_BEST_COMPRESSION) != Z_OK)
+            if (compress2(c, &clen, (const unsigned char *)m_mesh.m_animationFrames[i].m_frameVerts.data(), slen, MZ_BEST_COMPRESSION) != Z_OK)
                ShowError("Could not compress primitive animation vertex data");
             bw.WriteInt(FID(M3AY), (int)clen);
             bw.WriteStruct(FID(M3AX), c, clen);
@@ -2325,7 +2353,7 @@ STDMETHODIMP Primitive::put_DrawTexturesInside(VARIANT_BOOL newVal)
    {
       STARTUNDO
 
-         m_d.m_DrawTexturesInside = VBTOF(newVal);
+      m_d.m_DrawTexturesInside = VBTOF(newVal);
       vertexBufferRegenerate = true;
 
       STOPUNDO
@@ -2336,7 +2364,7 @@ STDMETHODIMP Primitive::put_DrawTexturesInside(VARIANT_BOOL newVal)
 STDMETHODIMP Primitive::get_X(float *pVal)
 {
    *pVal = m_d.m_vPosition.x;
-   g_pvp->SetStatusBarUnitInfo("");
+   UpdateMeshInfo();
 
    return S_OK;
 }
@@ -2346,11 +2374,10 @@ STDMETHODIMP Primitive::put_X(float newVal)
    if (m_d.m_vPosition.x != newVal)
    {
       STARTUNDO
-         m_d.m_vPosition.x = newVal;
+      m_d.m_vPosition.x = newVal;
       STOPUNDO
 
-         if (!g_pplayer)
-            UpdateEditorView();
+      UpdateEditorView();
    }
 
    return S_OK;
@@ -2368,11 +2395,10 @@ STDMETHODIMP Primitive::put_Y(float newVal)
    if (m_d.m_vPosition.y != newVal)
    {
       STARTUNDO
-         m_d.m_vPosition.y = newVal;
+      m_d.m_vPosition.y = newVal;
       STOPUNDO
 
-         if (!g_pplayer)
-            UpdateEditorView();
+      UpdateEditorView();
    }
 
    return S_OK;
@@ -2390,11 +2416,10 @@ STDMETHODIMP Primitive::put_Z(float newVal)
    if (m_d.m_vPosition.z != newVal)
    {
       STARTUNDO
-         m_d.m_vPosition.z = newVal;
+      m_d.m_vPosition.z = newVal;
       STOPUNDO
 
-         if (!g_pplayer)
-            UpdateEditorView();
+      UpdateEditorView();
    }
 
    return S_OK;
@@ -2412,11 +2437,10 @@ STDMETHODIMP Primitive::put_Size_X(float newVal)
    if (m_d.m_vSize.x != newVal)
    {
       STARTUNDO
-         m_d.m_vSize.x = newVal;
+      m_d.m_vSize.x = newVal;
       STOPUNDO
 
-         if (!g_pplayer)
-            UpdateEditorView();
+      UpdateEditorView();
    }
 
    return S_OK;
@@ -2434,11 +2458,10 @@ STDMETHODIMP Primitive::put_Size_Y(float newVal)
    if (m_d.m_vSize.y != newVal)
    {
       STARTUNDO
-         m_d.m_vSize.y = newVal;
+      m_d.m_vSize.y = newVal;
       STOPUNDO
 
-         if (!g_pplayer)
-            UpdateEditorView();
+      UpdateEditorView();
    }
 
    return S_OK;
@@ -2456,11 +2479,10 @@ STDMETHODIMP Primitive::put_Size_Z(float newVal)
    if (m_d.m_vSize.z != newVal)
    {
       STARTUNDO
-         m_d.m_vSize.z = newVal;
+      m_d.m_vSize.z = newVal;
       STOPUNDO
 
-         if (!g_pplayer)
-            UpdateEditorView();
+      UpdateEditorView();
    }
 
    return S_OK;
@@ -2487,11 +2509,10 @@ STDMETHODIMP Primitive::put_RotX(float newVal)
    if (m_d.m_aRotAndTra[0] != newVal)
    {
       STARTUNDO
-         m_d.m_aRotAndTra[0] = newVal;
+      m_d.m_aRotAndTra[0] = newVal;
       STOPUNDO
 
-         if (!g_pplayer)
-            UpdateEditorView();
+      UpdateEditorView();
    }
 
    return S_OK;
@@ -2518,11 +2539,10 @@ STDMETHODIMP Primitive::put_RotY(float newVal)
    if (m_d.m_aRotAndTra[1] != newVal)
    {
       STARTUNDO
-         m_d.m_aRotAndTra[1] = newVal;
+      m_d.m_aRotAndTra[1] = newVal;
       STOPUNDO
 
-         if (!g_pplayer)
-            UpdateEditorView();
+      UpdateEditorView();
    }
 
    return S_OK;
@@ -2549,11 +2569,10 @@ STDMETHODIMP Primitive::put_RotZ(float newVal)
    if (m_d.m_aRotAndTra[2] != newVal)
    {
       STARTUNDO
-         m_d.m_aRotAndTra[2] = newVal;
+      m_d.m_aRotAndTra[2] = newVal;
       STOPUNDO
 
-         if (!g_pplayer)
-            UpdateEditorView();
+      UpdateEditorView();
    }
 
    return S_OK;
@@ -2580,11 +2599,10 @@ STDMETHODIMP Primitive::put_TransX(float newVal)
    if (m_d.m_aRotAndTra[3] != newVal)
    {
       STARTUNDO
-         m_d.m_aRotAndTra[3] = newVal;
+      m_d.m_aRotAndTra[3] = newVal;
       STOPUNDO
 
-         if (!g_pplayer)
-            UpdateEditorView();
+      UpdateEditorView();
    }
 
    return S_OK;
@@ -2611,11 +2629,10 @@ STDMETHODIMP Primitive::put_TransY(float newVal)
    if (m_d.m_aRotAndTra[4] != newVal)
    {
       STARTUNDO
-         m_d.m_aRotAndTra[4] = newVal;
+      m_d.m_aRotAndTra[4] = newVal;
       STOPUNDO
 
-         if (!g_pplayer)
-            UpdateEditorView();
+      UpdateEditorView();
    }
 
    return S_OK;
@@ -2642,11 +2659,10 @@ STDMETHODIMP Primitive::put_TransZ(float newVal)
    if (m_d.m_aRotAndTra[5] != newVal)
    {
       STARTUNDO
-         m_d.m_aRotAndTra[5] = newVal;
+      m_d.m_aRotAndTra[5] = newVal;
       STOPUNDO
 
-         if (!g_pplayer)
-            UpdateEditorView();
+      UpdateEditorView();
    }
 
    return S_OK;
@@ -2673,11 +2689,10 @@ STDMETHODIMP Primitive::put_ObjRotX(float newVal)
    if (m_d.m_aRotAndTra[6] != newVal)
    {
       STARTUNDO
-         m_d.m_aRotAndTra[6] = newVal;
+      m_d.m_aRotAndTra[6] = newVal;
       STOPUNDO
 
-         if (!g_pplayer)
-            UpdateEditorView();
+      UpdateEditorView();
    }
 
    return S_OK;
@@ -2704,11 +2719,10 @@ STDMETHODIMP Primitive::put_ObjRotY(float newVal)
    if (m_d.m_aRotAndTra[7] != newVal)
    {
       STARTUNDO
-         m_d.m_aRotAndTra[7] = newVal;
+      m_d.m_aRotAndTra[7] = newVal;
       STOPUNDO
 
-         if (!g_pplayer)
-            UpdateEditorView();
+      UpdateEditorView();
    }
 
    return S_OK;
@@ -2735,11 +2749,10 @@ STDMETHODIMP Primitive::put_ObjRotZ(float newVal)
    if (m_d.m_aRotAndTra[8] != newVal)
    {
       STARTUNDO
-         m_d.m_aRotAndTra[8] = newVal;
+      m_d.m_aRotAndTra[8] = newVal;
       STOPUNDO
 
-         if (!g_pplayer)
-            UpdateEditorView();
+      UpdateEditorView();
    }
 
    return S_OK;
@@ -3214,7 +3227,7 @@ void Primitive::UpdatePropertyPanes()
       EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, IDC_MATERIAL_COMBO4), FALSE);
       EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, IDC_OVERWRITE_MATERIAL_SETTINGS), FALSE);
    }
-   else if (!m_d.m_fToy && m_d.m_fCollidable)
+   else //if (!m_d.m_fToy && m_d.m_fCollidable)
    {
       EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, IDC_OVERWRITE_MATERIAL_SETTINGS), TRUE);
       EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 34), TRUE);

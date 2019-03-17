@@ -1440,7 +1440,6 @@ RenderDevice::~RenderDevice()
 #endif
 
 #ifdef USE_D3D9EX
-   if (m_pD3DDeviceEx == m_pD3DDevice) m_pD3DDevice = NULL;
    SAFE_RELEASE_NO_RCC(m_pD3DDeviceEx);
 #endif
    SAFE_RELEASE(m_pD3DDevice);
@@ -1627,7 +1626,8 @@ void RenderDevice::Flip(const bool vsync)
    m_frameStateChanges = m_curStateChanges;
    m_frameTextureChanges = m_curTextureChanges;
    m_frameParameterChanges = m_curParameterChanges;
-   m_curDrawCalls = m_curStateChanges = m_curTextureChanges = m_curParameterChanges = 0;
+   m_frameTechniqueChanges = m_curTechniqueChanges;
+   m_curDrawCalls = m_curStateChanges = m_curTextureChanges = m_curParameterChanges = m_curTechniqueChanges = 0;
    m_frameTextureUpdates = m_curTextureUpdates;
    m_curTextureUpdates = 0;
 }

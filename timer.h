@@ -72,7 +72,7 @@ public:
    virtual void RenderBlueprint(Sur *psur, const bool solid);
    virtual ItemTypeEnum HitableGetItemType() const { return eItemTimer; }
 
-   void WriteRegDefaults();
+   virtual void WriteRegDefaults();
 
    STANDARD_EDITABLE_DECLARES(Timer, eItemTimer, TIMER, 3)
 
@@ -91,6 +91,7 @@ public:
    STDMETHOD(get_Enabled)(/*[out, retval]*/ VARIANT_BOOL *pVal);
    STDMETHOD(put_Enabled)(/*[in]*/ VARIANT_BOOL newVal);
 
+private:
    PinTable *m_ptable;
 
    TimerData m_d;

@@ -1073,16 +1073,16 @@ void Player::InitRegValues()
    int playmusic;
    hr = GetRegInt("Player", "PlayMusic", &playmusic);
    if (hr != S_OK)
-      m_fPlayMusic = true; // default value
+      m_PlayMusic = true; // default value
    else
-      m_fPlayMusic = (playmusic == 1);
+      m_PlayMusic = (playmusic == 1);
 
    int playsound;
    hr = GetRegInt("Player", "PlaySound", &playsound);
    if (hr != S_OK)
-      m_fPlaySound = true; // default value
+      m_PlaySound = true; // default value
    else
-      m_fPlaySound = (playsound == 1);
+      m_PlaySound = (playsound == 1);
 
    hr = GetRegInt("Player", "MusicVolume", &m_MusicVolume);
    if (hr != S_OK)
@@ -2765,7 +2765,6 @@ void Player::SetGravity(float slopeDeg, float strength)
 
 void Player::PhysicsSimulateCycle(float dtime) // move physics forward to this time
 {
-   float hittime;
    int StaticCnts = STATICCNTS;    // maximum number of static counts
 
    // it's okay to have this code outside of the inner loop, as the ball hitrects already include the maximum distance they can travel in that timespan
@@ -2777,7 +2776,7 @@ void Player::PhysicsSimulateCycle(float dtime) // move physics forward to this t
 #ifdef DEBUGPHYSICS
       c_timesearch++;
 #endif
-      hittime = dtime;        // begin time search from now ...  until delta ends
+      float hittime = dtime;        // begin time search from now ...  until delta ends
 
       // find earliest time where a flipper collides with its stop
       for (size_t i = 0; i < m_vFlippers.size(); ++i)
@@ -3754,7 +3753,7 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
 void Player::RenderStereo(int stereo3D, bool shaderAA) {
    static int blitMode = -1;
    if (blitMode == -1) {
-      int blitModeVR = GetRegIntWithDefault("Player", "blitModeVR", 0);
+      blitMode = GetRegIntWithDefault("Player", "blitModeVR", 0);
    }
    switch (stereo3D) {
    case STEREO_OFF://Should not happen
@@ -3790,6 +3789,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
 
          CHECKD3D(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rightTexture->framebuffer));
          CHECKD3D(glBlitFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->width - rightTexture->width, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->width - 1, rightTexture->height, 0, 0, rightTexture->width - 1, rightTexture->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+
          CHECKD3D(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->framebuffer));
          CHECKD3D(glBlitFramebuffer(0, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
          break;
@@ -3825,19 +3825,18 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin(0);
          m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
-
          break;
       }
-   vr::EVRCompositorError error;
-   CHECKD3D();
-   vr::Texture_t leftEyeTexture = { (void *)leftTexture->texture, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
-   CHECKD3D(error = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture));
-
-   vr::Texture_t rightEyeTexture = { (void *)rightTexture->texture, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
-   CHECKD3D(error = vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture));
+      vr::EVRCompositorError error;
+      CHECKD3D();
+      CHECKD3D(glFinish(););
+      vr::Texture_t leftEyeTexture = { (void *)leftTexture->texture, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+      CHECKD3D(error = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture));
+      vr::Texture_t rightEyeTexture = { (void *)rightTexture->texture, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+      CHECKD3D(error = vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture));
    }
 #endif
-      return;
+   return;
    }
 
 
@@ -3932,16 +3931,16 @@ void Player::UpdateHUD()
 		DebugPrint(10, 70, szFoo, len);
 
 		// performance counters
-		len = sprintf_s(szFoo, "Draw calls: %u", m_pin3d.m_pd3dPrimaryDevice->Perf_GetNumDrawCalls());
-		DebugPrint(10, 95, szFoo, len);
-		len = sprintf_s(szFoo, "State changes: %u", m_pin3d.m_pd3dPrimaryDevice->Perf_GetNumStateChanges());
-		DebugPrint(10, 115, szFoo, len);
-		len = sprintf_s(szFoo, "Texture changes: %u (%u Uploads)", m_pin3d.m_pd3dPrimaryDevice->Perf_GetNumTextureChanges(), m_pin3d.m_pd3dPrimaryDevice->Perf_GetNumTextureUploads());
-		DebugPrint(10, 135, szFoo, len);
-		len = sprintf_s(szFoo, "Parameter changes: %u (%u Material ID changes)", m_pin3d.m_pd3dPrimaryDevice->Perf_GetNumParameterChanges(), material_flips);
-		DebugPrint(10, 155, szFoo, len);
-		len = sprintf_s(szFoo, "Objects: %u Transparent, %u Solid", (unsigned int)m_vHitTrans.size(), (unsigned int)m_vHitNonTrans.size());
-		DebugPrint(10, 175, szFoo, len);
+      len = sprintf_s(szFoo, "Draw calls: %u", m_pin3d.m_pd3dPrimaryDevice->Perf_GetNumDrawCalls());
+      DebugPrint(10, 95, szFoo, len);
+      len = sprintf_s(szFoo, "State changes: %u", m_pin3d.m_pd3dPrimaryDevice->Perf_GetNumStateChanges());
+      DebugPrint(10, 115, szFoo, len);
+      len = sprintf_s(szFoo, "Texture changes: %u (%u Uploads)", m_pin3d.m_pd3dPrimaryDevice->Perf_GetNumTextureChanges(), m_pin3d.m_pd3dPrimaryDevice->Perf_GetNumTextureUploads());
+      DebugPrint(10, 135, szFoo, len);
+      len = sprintf_s(szFoo, "Shader/Parameter changes: %u / %u (%u Material ID changes)", m_pin3d.m_pd3dPrimaryDevice->Perf_GetNumTechniqueChanges(), m_pin3d.m_pd3dPrimaryDevice->Perf_GetNumParameterChanges(), material_flips);
+      DebugPrint(10, 155, szFoo, len);
+      len = sprintf_s(szFoo, "Objects: %u Transparent, %u Solid", (unsigned int)m_vHitTrans.size(), (unsigned int)m_vHitNonTrans.size());
+      DebugPrint(10, 175, szFoo, len);
 
 #ifdef DEBUGPHYSICS
 		len = sprintf_s(szFoo, "Phys: %5u iterations (%5u avg %5u max))",
@@ -4336,8 +4335,8 @@ void Player::UpdateCameraModeDisplay()
    char szFoo[128];
    int len;
 
-   len = sprintf_s(szFoo, "Camera & Light Mode");
-   DebugPrint(10, 30, szFoo, len);
+   len = sprintf_s(szFoo, "Camera / Light / Material Edit Mode");
+   DebugPrint(10, 10, szFoo, len);
    len = sprintf_s(szFoo, "Left / Right flipper key = decrease / increase value");
    DebugPrint(10, 50, szFoo, len);
    len = sprintf_s(szFoo, "Left / Right magna save key = previous / next option");
@@ -4415,12 +4414,12 @@ void Player::UpdateCameraModeDisplay()
       len = sprintf_s(szFoo, "unknown");
    }
    }
-   DebugPrint(10, 120, szFoo, len);
+   DebugPrint(10, 130, szFoo, len);
    m_pin3d.InitLayout(m_ptable->m_BG_enable_FSS);
    len = sprintf_s(szFoo, "Camera at X: %f Y: %f Z: %f", -m_pin3d.m_proj.m_matView._41, (m_ptable->m_BG_current_set == 0 || m_ptable->m_BG_current_set == 2) ? m_pin3d.m_proj.m_matView._42 : -m_pin3d.m_proj.m_matView._42, m_pin3d.m_proj.m_matView._43); // DT & FSS
-   DebugPrint(10, 90, szFoo, len);
+   DebugPrint(10, 110, szFoo, len);
    len = sprintf_s(szFoo, "Navigate around with the Arrow Keys and Left Alt Key (if enabled in the Key settings)");
-   DebugPrint(10, 180, szFoo, len);
+   DebugPrint(10, 170, szFoo, len);
    len = sprintf_s(szFoo, "Use the Debugger/Interactive Editor to change Lights/Materials");
    DebugPrint(10, 210, szFoo, len);
 }
@@ -4786,7 +4785,7 @@ void Player::DrawBalls()
    for (size_t i = 0; i < m_ptable->m_vedit.size(); i++)
    {
       IEditable * const item = m_ptable->m_vedit[i];
-      if (item->GetItemType() == eItemLight && ((Light *)item)->m_d.m_BulbLight && ((Light *)item)->m_d.m_showReflectionOnBall)
+      if (item && item->GetItemType() == eItemLight && ((Light *)item)->m_d.m_BulbLight && ((Light *)item)->m_d.m_showReflectionOnBall)
          lights.push_back((Light *)item);
    }
 

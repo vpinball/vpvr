@@ -119,16 +119,16 @@ public:
    virtual void GetPointDialogPanes(vector<PropertyPane*> &pvproppane);
    // end IHaveDragPoints
 
-   void WriteRegDefaults();
+   virtual void WriteRegDefaults();
    void AddHitEdge(vector<HitObject*> &pvho, std::set< std::pair<unsigned, unsigned> >& addedEdges, const unsigned i, const unsigned j);
    void SetupHitObject(vector<HitObject*> &pvho, HitObject * obj);
    void UpdateUnitsInfo();
 
-   PinTable *m_ptable;
-
    RubberData m_d;
 
 private:
+   PinTable * m_ptable;
+
    Vertex2D * rgvInit;    // just for setup/static drawing
 
    int m_numVertices;      // this goes along with dynamicVertexBuffer

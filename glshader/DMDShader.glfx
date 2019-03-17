@@ -48,7 +48,7 @@ void main()
    tex0_gs = vec2(tc.x,1.0-tc.y)*quadOffsetScaleTex.zw+quadOffsetScaleTex.xy;
 }
 
-////vs_simple_main
+////vs_simple_world
 
 layout(std140) uniform matrixBlock { mat4 matWorldViewProj[eyes];};
 
@@ -156,7 +156,8 @@ void main()
 ////TECHNIQUES
 
 basic_DMD:P0:vs_main():gs_simple_main():ps_main_DMD()
-basic_DMD_world:P0:vs_simple_main():gs_simple_main():ps_main_DMD()
+basic_DMD_world:P0:vs_simple_world():gs_simple_main():ps_main_DMD()
 basic_noDMD:P0:vs_main():gs_simple_main():ps_main_noDMD()
+basic_noDMD_world:P0:vs_simple_world():gs_simple_main():ps_main_noDMD()
 basic_noDMD_notex:P0:vs_main():gs_simple_main():ps_main_noDMD_notex()
 

@@ -127,7 +127,7 @@ public:
 
       void UpdatePhysicsSettings();
 
-      void WriteRegDefaults();
+      virtual void WriteRegDefaults();
 
       //DECLARE_NOT_AGGREGATABLE(Flipper) 
       // Remove the comment from the line above if you don't want your object to 
@@ -137,13 +137,13 @@ public:
       // ISupportsErrorInfo
       STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
 
-      PinTable *m_ptable;
-
       FlipperData m_d;
       VertexBuffer *vertexBuffer;
       IndexBuffer *indexBuffer;
 
       HitFlipper *m_phitflipper;
+
+      PinTable *m_ptable;
 
       // IFlipper
 public:

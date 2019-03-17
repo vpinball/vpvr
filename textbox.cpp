@@ -272,14 +272,14 @@ void Textbox::RenderSetup()
    size.int64 = (LONGLONG)(size.int64 / 1.5 * g_pplayer->m_height * g_pplayer->m_width);
    m_pIFontPlay->put_Size(size);
 
-   RenderText();
+   PreRenderText();
 }
 
 void Textbox::RenderStatic()
 {
 }
 
-void Textbox::RenderText()
+void Textbox::PreRenderText()
 {
    RECT rect;
    rect.left = (int)min(m_d.m_v1.x, m_d.m_v2.x);
@@ -387,8 +387,6 @@ void Textbox::MoveOffset(const float dx, const float dy)
 
    m_d.m_v2.x += dx;
    m_d.m_v2.y += dy;
-
-   m_ptable->SetDirtyDraw();
 }
 
 Vertex2D Textbox::GetCenter() const
@@ -402,8 +400,6 @@ void Textbox::PutCenter(const Vertex2D& pv)
    m_d.m_v2.y = pv.y + m_d.m_v2.y - m_d.m_v1.y;
 
    m_d.m_v1 = pv;
-
-   m_ptable->SetDirtyDraw();
 }
 
 STDMETHODIMP Textbox::get_BackColor(OLE_COLOR *pVal)
@@ -461,7 +457,7 @@ STDMETHODIMP Textbox::put_Text(BSTR newVal)
          WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.sztext, 512, NULL, NULL);
 
       if (g_pplayer)
-         RenderText();
+         PreRenderText();
 
       STOPUNDO
    }

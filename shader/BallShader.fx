@@ -62,7 +62,7 @@ bool     hdrEnvTextures = false;
 
 #include "Material.fxh"
 
-float4   invTableRes_playfield_height_reflection;
+float4   invTableRes__playfield_height_reflection;
 
 //float    reflection_ball_playfield;
 
@@ -175,7 +175,7 @@ float3 ballLightLoop(const float3 pos, float3 N, float3 V, float3 diffuse, float
    const float glossyMax = max(glossy.x,max(glossy.y,glossy.z));
    const float specularMax = max(specular.x,max(specular.y,specular.z)); //!! not needed as 2nd layer only so far
    const float sum = diffuseMax + glossyMax; //+ specularMax
-   if (sum > 1.0)
+   if(sum > 1.0)
    {
       const float invsum = 1.0/sum;
       diffuse  *= invsum;
@@ -183,21 +183,21 @@ float3 ballLightLoop(const float3 pos, float3 N, float3 V, float3 diffuse, float
       //specular *= invsum;
    }
 
-   //if (dot(N,V) < 0.0) //!! flip normal in case of wrong orientation? (backside lighting)
+   //if(dot(N,V) < 0.0) //!! flip normal in case of wrong orientation? (backside lighting)
    //   N = -N;
 
    float3 color = float3(0.0, 0.0, 0.0);
       
-   [branch] if ((!is_metal && (diffuseMax > 0.0)) || (glossyMax > 0.0))
+   [branch] if((!is_metal && (diffuseMax > 0.0)) || (glossyMax > 0.0))
    {
-      for (int i = 0; i < iLightPointBallsNum; i++)  
+      for(int i = 0; i < iLightPointBallsNum; i++)  
          color += DoPointLight(pos, N, V, diffuse, glossy, edge, Roughness_WrapL_Edge_Thickness.x, i, is_metal); // no clearcoat needed as only pointlights so far
    }
 
-   [branch] if (!is_metal && (diffuseMax > 0.0))
+   [branch] if(!is_metal && (diffuseMax > 0.0))
       color += DoEnvmapDiffuse(normalize(mul(matView, N).xyz), diffuse); // trafo back to world for lookup into world space envmap // actually: mul(float4(N, 0.0), matViewInverseInverseTranspose)
 
-   if (specularMax > 0.0)
+   if(specularMax > 0.0)
       color += specular; //!! blend? //!! Fresnel with 1st layer?
   
    return color;
@@ -239,15 +239,15 @@ float4 psBall( in vout IN, uniform bool cabMode, uniform bool decalMode ) : COLO
 	const float NdotR = dot(playfield_normal,r);
 	
 	float3 playfieldColor;
-	[branch] if (/*(reflection_ball_playfield > 0.0) &&*/ (NdotR > 0.0))
+	[branch] if(/*(reflection_ball_playfield > 0.0) &&*/ (NdotR > 0.0))
 	{
-       const float3 playfield_p0 = mul_w1(float3(/*playfield_pos=*/0.,0.,invTableRes_playfield_height_reflection.z), matWorldView);
+       const float3 playfield_p0 = mul_w1(float3(/*playfield_pos=*/0.,0.,invTableRes__playfield_height_reflection.z), matWorldView);
        const float t = dot(playfield_normal, IN.worldPos_t0y.xyz - playfield_p0) / NdotR;
        const float3 playfield_hit = IN.worldPos_t0y.xyz - t*r;
 
-       const float2 uv = mul_w1(playfield_hit, matWorldViewInverse).xy * invTableRes_playfield_height_reflection.xy;
+       const float2 uv = mul_w1(playfield_hit, matWorldViewInverse).xy * invTableRes__playfield_height_reflection.xy;
 	   playfieldColor = (t < 0.) ? float3(0., 0., 0.) // happens for example when inside kicker
-                                 : InvGamma(tex2Dlod(texSampler1, float4(uv, 0., 0.)).xyz)*invTableRes_playfield_height_reflection.w; //!! rather use screen space sample from previous frame??
+                                 : InvGamma(tex2Dlod(texSampler1, float4(uv, 0., 0.)).xyz)*invTableRes__playfield_height_reflection.w; //!! rather use screen space sample from previous frame??
 
        //!! hack to get some lighting on sample, but only diffuse, the rest is not setup correctly anyhow
        playfieldColor = lightLoop(playfield_hit, playfield_normal, -r, playfieldColor, float3(0.,0.,0.), float3(0.,0.,0.), 1.0, true, false);
@@ -261,11 +261,11 @@ float4 psBall( in vout IN, uniform bool cabMode, uniform bool decalMode ) : COLO
 	   playfieldColor = ballImageColor;
 
 	float3 diffuse = cBase_Alpha.xyz*0.075;
-	if (!decalMode)
+	if(!decalMode)
 	    diffuse *= decalColor; // scratches make the material more rough
     const float3 glossy = max(diffuse*2.0, float3(0.1,0.1,0.1)); //!! meh
     float3 specular = playfieldColor*cBase_Alpha.xyz; //!! meh, too, as only added in ballLightLoop anyhow
-	if (!decalMode)
+	if(!decalMode)
 	    specular *= float3(1.,1.,1.)-decalColor; // see above
 
     float4 result;
@@ -279,7 +279,7 @@ float4 psBallReflection( in voutReflection IN ) : COLOR
 {
    const float2 envTex = cabMode ? float2(IN.r.y*0.5f + 0.5f, -IN.r.x*0.5f + 0.5f) : float2(IN.r.x*0.5f + 0.5f, IN.r.y*0.5f + 0.5f);
    float3 ballImageColor = tex2D(texSampler0, envTex).xyz;
-   if (!hdrTexture0)
+   if(!hdrTexture0)
       ballImageColor = InvGamma(ballImageColor);
    ballImageColor = (cBase_Alpha.xyz*(0.075*0.25) + ballImageColor)*fenvEmissionScale_TexWidth.x; //!! just add the ballcolor in, this is a whacky reflection anyhow
    float alpha = saturate((IN.tex0.y - position_radius.y) / position_radius.w);
@@ -313,7 +313,7 @@ technique RenderBall_DecalMode
    pass p0
    {
       vertexshader = compile vs_3_0 vsBall();
-      pixelshader = compile ps_3_0 psBall(false, true);
+      pixelshader  = compile ps_3_0 psBall(false, true);
    }
 }
 
@@ -322,7 +322,7 @@ technique RenderBall_CabMode
    pass p0
    {
       vertexshader = compile vs_3_0 vsBall();
-      pixelshader = compile ps_3_0 psBall(true,false);
+      pixelshader  = compile ps_3_0 psBall(true,false);
    }
 }
 technique RenderBall_CabMode_DecalMode
@@ -330,14 +330,14 @@ technique RenderBall_CabMode_DecalMode
    pass p0
    {
       vertexshader = compile vs_3_0 vsBall();
-      pixelshader = compile ps_3_0 psBall(true,true);
+      pixelshader  = compile ps_3_0 psBall(true,true);
    }
 }
 
 /*technique RenderBallReflection
 {
-	pass p0 
-	{		
+	pass p0
+	{
 		vertexshader = compile vs_3_0 vsBallReflection();
 		pixelshader  = compile ps_3_0 psBallReflection();
 	}
@@ -345,8 +345,8 @@ technique RenderBall_CabMode_DecalMode
 
 technique RenderBallTrail
 {
-	pass p0 
-	{		
+	pass p0
+	{
 		vertexshader = compile vs_3_0 vsBallTrail();
 		pixelshader  = compile ps_3_0 psBallTrail();
 	}

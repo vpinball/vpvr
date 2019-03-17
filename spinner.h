@@ -89,11 +89,9 @@ public:
    virtual ItemTypeEnum HitableGetItemType() const { return eItemSpinner; }
    virtual void ExportMesh(FILE *f);
 
-   void WriteRegDefaults();
+   virtual void WriteRegDefaults();
    void UpdatePlate(Vertex3D_NoTex2 * const vertBuffer);
    void UpdateUnitsInfo();
-
-   PinTable *m_ptable;
 
    SpinnerData m_d;
    float m_posZ;
@@ -101,6 +99,8 @@ public:
    HitSpinner *m_phitspinner;
 
 private:
+   PinTable * m_ptable;
+
    VertexBuffer * bracketVertexBuffer;
    IndexBuffer *bracketIndexBuffer;
    VertexBuffer *plateVertexBuffer;

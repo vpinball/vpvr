@@ -47,6 +47,8 @@ Trigger::~Trigger()
 
 void Trigger::UpdateEditorView()
 {
+   if (g_pplayer)
+      return;
    if (m_d.m_shape != TriggerNone)
    {
       const Vertex3D_NoTex2 *meshVertices;
@@ -870,7 +872,6 @@ void Trigger::MoveOffset(const float dx, const float dy)
    }
 
    UpdateEditorView();
-   m_ptable->SetDirtyDraw();
 }
 
 Vertex2D Trigger::GetPointCenter() const
@@ -881,8 +882,6 @@ Vertex2D Trigger::GetPointCenter() const
 void Trigger::PutPointCenter(const Vertex2D& pv)
 {
    m_d.m_vCenter = pv;
-
-   SetDirtyDraw();
 }
 
 void Trigger::EditMenu(HMENU hmenu)
@@ -951,8 +950,6 @@ void Trigger::DoCommand(int icmd, int x, int y)
          m_vdpoint.insert(m_vdpoint.begin() + icp, pdp); // push the second point forward, and replace it with this one.  Should work when index2 wraps.
       }
 
-      SetDirtyDraw();
-
       STOPUNDO
    }
    break;
@@ -977,12 +974,10 @@ void Trigger::Rotate(const float ang, const Vertex2D& pvCenter, const bool useEl
       IHaveDragPoints::RotatePoints(ang, pvCenter, useElementCenter);
    else
    {
-      GetIEditable()->BeginUndo();
-      GetIEditable()->MarkForUndo();
+      STARTUNDOSELECT
       m_d.m_rotation = ang;
-      GetIEditable()->EndUndo();
+      STOPUNDOSELECT
       UpdateEditorView();
-      GetPTable()->SetDirtyDraw();
    }
 }
 
@@ -992,13 +987,11 @@ void Trigger::Scale(const float scalex, const float scaley, const Vertex2D& pvCe
       IHaveDragPoints::ScalePoints(scalex, scaley, pvCenter, useElementCenter);
    else
    {
-      GetIEditable()->BeginUndo();
-      GetIEditable()->MarkForUndo();
+      STARTUNDOSELECT
       m_d.m_scaleX = scalex;
       m_d.m_scaleY = scaley;
-      GetIEditable()->EndUndo();
+      STOPUNDOSELECT
       UpdateEditorView();
-      GetPTable()->SetDirtyDraw();
    }
 }
 
@@ -1008,11 +1001,9 @@ void Trigger::Translate(const Vertex2D &pvOffset)
       IHaveDragPoints::TranslatePoints(pvOffset);
    else
    {
-      GetIEditable()->BeginUndo();
-      GetIEditable()->MarkForUndo();
+      STARTUNDOSELECT
       MoveOffset(pvOffset.x, pvOffset.y);
-      GetIEditable()->EndUndo();
-      GetPTable()->SetDirtyDraw();
+      STOPUNDOSELECT
    }
 }
 
@@ -1387,12 +1378,12 @@ STDMETHODIMP Trigger::put_Rotation(float newVal)
 {
    STARTUNDO
 
-      m_d.m_rotation = newVal;
-   UpdateEditorView();
+   m_d.m_rotation = newVal;
 
    STOPUNDO
+   UpdateEditorView();
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Trigger::get_WireThickness(float *pVal)

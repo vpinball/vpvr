@@ -87,6 +87,9 @@ Gate::~Gate()
 
 void Gate::UpdateUnitsInfo()
 {
+   if (g_pplayer)
+      return;
+
    char tbuf[128];
    sprintf_s(tbuf, "Length: %.3f | Height: %.3f", g_pvp->ConvertToUnit(m_d.m_length), g_pvp->ConvertToUnit(m_d.m_height));
    g_pvp->SetStatusBarUnitInfo(tbuf);
@@ -400,9 +403,9 @@ void Gate::GetHitShapes(vector<HitObject*> &pvho)
    m_phitgate->m_twoWay = m_d.m_twoWay;
    m_phitgate->m_obj = (IFireEvents*)this;
    m_phitgate->m_fe = true;
-   pvho.push_back(m_phitgate);
-
    m_phitgate->m_fEnabled = m_d.m_fCollidable;
+
+   pvho.push_back(m_phitgate);
 
    if (m_d.m_fShowBracket)
    {
@@ -664,8 +667,6 @@ void Gate::MoveOffset(const float dx, const float dy)
 {
    m_d.m_vCenter.x += dx;
    m_d.m_vCenter.y += dy;
-
-   m_ptable->SetDirtyDraw();
 }
 
 Vertex2D Gate::GetCenter() const
@@ -676,8 +677,6 @@ Vertex2D Gate::GetCenter() const
 void Gate::PutCenter(const Vertex2D& pv)
 {
    m_d.m_vCenter = pv;
-
-   m_ptable->SetDirtyDraw();
 }
 
 HRESULT Gate::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
@@ -856,11 +855,10 @@ STDMETHODIMP Gate::get_Length(float *pVal)
 STDMETHODIMP Gate::put_Length(float newVal)
 {
    STARTUNDO
-
    m_d.m_length = newVal;
-   UpdateUnitsInfo();
-
    STOPUNDO
+
+   UpdateUnitsInfo();
 
    return S_OK;
 }
@@ -876,11 +874,10 @@ STDMETHODIMP Gate::get_Height(float *pVal)
 STDMETHODIMP Gate::put_Height(float newVal)
 {
    STARTUNDO
-
    m_d.m_height = newVal;
-   UpdateUnitsInfo();
-
    STOPUNDO
+
+   UpdateUnitsInfo();
 
    return S_OK;
 }
@@ -898,7 +895,7 @@ STDMETHODIMP Gate::put_Rotation(float newVal)
 
    m_d.m_rotation = newVal;
 
-   STOPUNDO;
+   STOPUNDO
 
    return S_OK;
 }

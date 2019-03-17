@@ -92,7 +92,7 @@ public:
       virtual int GetMinimumPoints() const { return 2; }
 
       virtual Vertex2D GetCenter() const { return m_d.m_vCenter; }
-      virtual void PutCenter(const Vertex2D& pv) { m_d.m_vCenter = pv; m_ptable->SetDirtyDraw(); }
+      virtual void PutCenter(const Vertex2D& pv) { m_d.m_vCenter = pv; }
       virtual void DoCommand(int icmd, int x, int y);
 
       virtual bool IsTransparent() const { return !m_d.m_IsDMD; }
@@ -117,11 +117,9 @@ public:
 
       virtual void UpdatePropertyPanes();
 
-      void WriteRegDefaults();
+      virtual void WriteRegDefaults();
       void UpdateMesh();
       void InitShape();
-
-      PinTable *m_ptable;
 
       FlasherData m_d;
       unsigned int numVertices;
@@ -135,6 +133,10 @@ public:
 	  PropertyPane *m_propVisual;
 	  
 	  bool dynamicVertexBufferRegenerate;
+
+private:
+   PinTable * m_ptable;
+
 	  // IFlasher
 public:
    STDMETHOD(get_ImageA)(/*[out, retval]*/ BSTR *pVal);

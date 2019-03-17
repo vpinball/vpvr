@@ -59,8 +59,6 @@ void LightCenter::MoveOffset(const float dx, const float dy)
 {
    m_plight->m_d.m_vCenter.x += dx;
    m_plight->m_d.m_vCenter.y += dy;
-
-   GetPTable()->SetDirtyDraw();
 }
 
 int LightCenter::GetSelectLevel()
@@ -1024,8 +1022,6 @@ void Light::MoveOffset(const float dx, const float dy)
       pdp->m_v.x += dx;
       pdp->m_v.y += dy;
    }
-
-   m_ptable->SetDirtyDraw();
 }
 
 HRESULT Light::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
@@ -1249,8 +1245,6 @@ Vertex2D Light::GetPointCenter() const
 void Light::PutPointCenter(const Vertex2D& pv)
 {
    m_d.m_vCenter = pv;
-
-   SetDirtyDraw();
 }
 
 void Light::EditMenu(HMENU hmenu)
@@ -1291,8 +1285,6 @@ void Light::AddPoint(int x, int y, const bool smooth)
       pdp->Init(this, vOut.x, vOut.y, 0.f, smooth);
       m_vdpoint.insert(m_vdpoint.begin() + icp, pdp); // push the second point forward, and replace it with this one.  Should work when index2 wraps.
    }
-
-   SetDirtyDraw();
 
    STOPUNDO
 }

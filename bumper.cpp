@@ -26,6 +26,7 @@ Bumper::Bumper()
    memset(m_d.m_szSkirtMaterial, 0, 32);
    memset(m_d.m_szRingMaterial, 0, 32);
    memset(m_d.m_szSurface, 0, MAXTOKEN);
+   m_d.m_ringDropOffset = 0.0f;
    m_ringDown = false;
    m_doSkirtAnimation = false;
    m_enableSkirtAnimation = true;
@@ -89,8 +90,6 @@ HRESULT Bumper::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
    m_d.m_vCenter.x = x;
    m_d.m_vCenter.y = y;
 
-   m_ringAnimate = false;
-   m_d.m_ringDropOffset = 0.0f;
    return InitVBA(fTrue, 0, NULL);
 }
 
@@ -171,6 +170,9 @@ void Bumper::SetDefaults(bool fromMouseClick)
        m_d.m_fCollidable = iTmp == 0 ? false : true;
    else
        m_d.m_fCollidable = true;
+
+   m_ringAnimate = false;
+   m_d.m_ringDropOffset = 0.0f;
 }
 
 void Bumper::WriteRegDefaults()
@@ -910,8 +912,6 @@ void Bumper::MoveOffset(const float dx, const float dy)
 {
    m_d.m_vCenter.x += dx;
    m_d.m_vCenter.y += dy;
-
-   m_ptable->SetDirtyDraw();
 }
 
 Vertex2D Bumper::GetCenter() const
@@ -922,8 +922,6 @@ Vertex2D Bumper::GetCenter() const
 void Bumper::PutCenter(const Vertex2D& pv)
 {
    m_d.m_vCenter = pv;
-
-   m_ptable->SetDirtyDraw();
 }
 
 HRESULT Bumper::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
@@ -1336,7 +1334,7 @@ STDMETHODIMP Bumper::put_SkirtMaterial(BSTR newVal)
 STDMETHODIMP Bumper::get_X(float *pVal)
 {
    *pVal = m_d.m_vCenter.x;
-   g_pvp->SetStatusBarUnitInfo("");
+   g_pvp->SetStatusBarUnitInfo("", true);
 
    return S_OK;
 }

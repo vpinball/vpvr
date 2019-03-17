@@ -152,13 +152,11 @@ public:
    virtual void SetDefaultPhysics(bool fromMouseClick);
    virtual ItemTypeEnum HitableGetItemType() const { return eItemPlunger; }
 
-   void WriteRegDefaults();
+   virtual void WriteRegDefaults();
 
    DECLARE_REGISTRY_RESOURCEID(IDR_PLUNGER)
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
-
-   PinTable *m_ptable;
 
    PlungerData m_d;
    VertexBuffer *vertexBuffer;
@@ -179,6 +177,9 @@ public:
 
    // number of triangle indices per frame
    int m_indicesPerFrame;
+
+private:
+   PinTable * m_ptable;
 
    // IPlunger
 public:

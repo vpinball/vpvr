@@ -54,6 +54,9 @@ Kicker::~Kicker()
 
 void Kicker::UpdateUnitsInfo()
 {
+   if (g_pplayer)
+      return;
+
    char tbuf[128];
    sprintf_s(tbuf, "Radius: %.3f", g_pvp->ConvertToUnit(m_d.m_radius));
    g_pvp->SetStatusBarUnitInfo(tbuf);
@@ -633,8 +636,6 @@ void Kicker::MoveOffset(const float dx, const float dy)
 {
    m_d.m_vCenter.x += dx;
    m_d.m_vCenter.y += dy;
-
-   m_ptable->SetDirtyDraw();
 }
 
 Vertex2D Kicker::GetCenter() const
@@ -645,8 +646,6 @@ Vertex2D Kicker::GetCenter() const
 void Kicker::PutCenter(const Vertex2D& pv)
 {
    m_d.m_vCenter = pv;
-
-   SetDirtyDraw();
 }
 
 
@@ -1096,13 +1095,12 @@ STDMETHODIMP Kicker::get_Radius(float *pVal)
 STDMETHODIMP Kicker::put_Radius(float newVal)
 {
    STARTUNDO
-
-      m_d.m_radius = newVal;
-   UpdateUnitsInfo();
-
+   m_d.m_radius = newVal;
    STOPUNDO
 
-      return S_OK;
+   UpdateUnitsInfo();
+
+   return S_OK;
 }
 
 STDMETHODIMP Kicker::get_FallThrough(VARIANT_BOOL *pVal)

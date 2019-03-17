@@ -301,7 +301,7 @@ void Decal::GetTextSize(int * const px, int * const py)
    DeleteObject(hFont);
 }
 
-void Decal::RenderText()
+void Decal::PreRenderText()
 {
    if (m_d.m_decaltype != DecalText)
       return;
@@ -459,7 +459,7 @@ static const WORD rgi0123[4] = { 0, 1, 2, 3 };
 
 void Decal::RenderSetup()
 {
-   RenderText();
+   PreRenderText();
 
    RenderDevice * const pd3dDevice = m_fBackglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
@@ -639,8 +639,6 @@ void Decal::MoveOffset(const float dx, const float dy)
 {
    m_d.m_vCenter.x += dx;
    m_d.m_vCenter.y += dy;
-
-   m_ptable->SetDirtyDraw();
 }
 
 Vertex2D Decal::GetCenter() const
@@ -651,8 +649,6 @@ Vertex2D Decal::GetCenter() const
 void Decal::PutCenter(const Vertex2D& pv)
 {
    m_d.m_vCenter = pv;
-
-   m_ptable->SetDirtyDraw();
 }
 
 void Decal::Rotate(const float ang, const Vertex2D& pvCenter, const bool useElementCenter)
@@ -826,7 +822,7 @@ void Decal::EnsureSize()
       m_realheight = (float)cy.Lo * (float)(1.0 / 2545.0);
 
       if (m_d.m_fVerticalText)
-         m_realheight *= lstrlen(m_d.m_sztext);
+         m_realheight *= (float)lstrlen(m_d.m_sztext);
 
       m_realwidth = m_realheight * (float)sizex / (float)sizey;
    }
@@ -855,7 +851,7 @@ void Decal::EnsureSize()
 
          if (m_d.m_fVerticalText)
          {
-            m_realheight *= lstrlen(m_d.m_sztext);
+            m_realheight *= (float)lstrlen(m_d.m_sztext);
             m_realwidth = m_d.m_width;
          }
          else
@@ -1186,8 +1182,6 @@ STDMETHODIMP Decal::put_HasVerticalText(VARIANT_BOOL newVal)
    STARTUNDO
 
    m_d.m_fVerticalText = VBTOF(newVal);
-
-   SetDirtyDraw();
 
    EnsureSize();
 

@@ -97,18 +97,18 @@ public:
    virtual unsigned long long GetMaterialID() const { return m_ptable->GetMaterial(m_d.m_szMaterial)->hash(); }
    virtual ItemTypeEnum HitableGetItemType() const { return eItemGate; }
 
-   void WriteRegDefaults();
+   virtual void WriteRegDefaults();
    void UpdateWire();
    void RenderObject();
    void GenerateBracketMesh(Vertex3D_NoTex2 *buf);
    void GenerateWireMesh(Vertex3D_NoTex2 *buf);
    void UpdateUnitsInfo();
 
-   PinTable *m_ptable;
-
    GateData m_d;
 
 private:
+   PinTable * m_ptable;
+
    LineSeg *m_plineseg;
    HitGate *m_phitgate;
 

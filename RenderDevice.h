@@ -362,6 +362,7 @@ RenderDevice(HWND* const hwnd, const int width, const int height, const bool ful
    unsigned int Perf_GetNumStateChanges() const   { return m_frameStateChanges; }
    unsigned int Perf_GetNumTextureChanges() const { return m_frameTextureChanges; }
    unsigned int Perf_GetNumParameterChanges() const { return m_frameParameterChanges; }
+   unsigned int Perf_GetNumTechniqueChanges() const { return m_frameTechniqueChanges; }
    unsigned int Perf_GetNumTextureUploads() const { return m_frameTextureUpdates; }
 
    void FreeShader();
@@ -475,11 +476,12 @@ public:
    static bool m_INTZ_support;
 
    // performance counters
-   unsigned m_curDrawCalls, m_frameDrawCalls;
-   unsigned m_curStateChanges, m_frameStateChanges;
-   unsigned m_curTextureChanges, m_frameTextureChanges;
-   unsigned m_curParameterChanges, m_frameParameterChanges;
-   unsigned m_curTextureUpdates, m_frameTextureUpdates;
+   unsigned int m_curDrawCalls, m_frameDrawCalls;
+   unsigned int m_curStateChanges, m_frameStateChanges;
+   unsigned int m_curTextureChanges, m_frameTextureChanges;
+   unsigned int m_curParameterChanges, m_frameParameterChanges;
+   unsigned int m_curTechniqueChanges, m_frameTechniqueChanges;
+   unsigned int m_curTextureUpdates, m_frameTextureUpdates;
 
    Shader *ballShader;
    Shader *basicShader;

@@ -535,8 +535,6 @@ void Surface::MoveOffset(const float dx, const float dy)
       pdp->m_v.x += dx;
       pdp->m_v.y += dy;
    }
-
-   m_ptable->SetDirtyDraw();
 }
 
 void Surface::RenderDynamic()
@@ -1184,8 +1182,6 @@ void Surface::AddPoint(int x, int y, const bool smooth)
       m_vdpoint.insert(m_vdpoint.begin() + icp, pdp); // push the second point forward, and replace it with this one.  Should work when index2 wraps.
    }
 
-   SetDirtyDraw();
-
    STOPUNDO
 }
 
@@ -1537,7 +1533,10 @@ HRESULT Surface::InitPostLoad()
 
 void Surface::UpdateUnitsInfo()
 {
-   char tbuf[64];
+   if (g_pplayer)
+      return;
+
+   char tbuf[128];
    sprintf_s(tbuf, "TopHeight: %.03f | BottomHeight: %0.3f", g_pvp->ConvertToUnit(m_d.m_heighttop), g_pvp->ConvertToUnit(m_d.m_heightbottom));
    g_pvp->SetStatusBarUnitInfo(tbuf);
 }
@@ -1675,12 +1674,13 @@ STDMETHODIMP Surface::put_HeightBottom(float newVal)
 {
    STARTUNDO
 
-      m_d.m_heightbottom = newVal;
-   UpdateUnitsInfo();
+   m_d.m_heightbottom = newVal;
 
    STOPUNDO
 
-      return S_OK;
+   UpdateUnitsInfo();
+
+   return S_OK;
 }
 
 STDMETHODIMP Surface::get_HeightTop(float *pVal)
@@ -1694,12 +1694,13 @@ STDMETHODIMP Surface::put_HeightTop(float newVal)
 {
    STARTUNDO
 
-      m_d.m_heighttop = newVal;
-   UpdateUnitsInfo();
+   m_d.m_heighttop = newVal;
 
    STOPUNDO
 
-      return S_OK;
+   UpdateUnitsInfo();
+
+   return S_OK;
 }
 
 STDMETHODIMP Surface::get_TopMaterial(BSTR *pVal)

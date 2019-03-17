@@ -23,6 +23,9 @@ void PinUndo::SetCleanPoint(SaveDirtyState sds)
 
 void PinUndo::BeginUndo()
 {
+   if (g_pplayer)
+      return;
+
    m_cUndoLayer++;
 
    if (m_cUndoLayer == 1)
@@ -42,6 +45,9 @@ void PinUndo::BeginUndo()
 
 void PinUndo::MarkForUndo(IEditable *pie)
 {
+   if (g_pplayer)
+      return;
+
    if (m_vur.size() == 0)
    {
       _ASSERTE(fFalse);
@@ -122,7 +128,6 @@ void PinUndo::Undo()
    }
 
    UndoRecord * const pur = m_vur[m_vur.size() - 1];
-   //IStorage *pstg = pur->m_pstg;
 
    for (size_t i = 0; i < pur->m_vieDelete.size(); i++)
       m_ptable->Undelete(pur->m_vieDelete[i]);
@@ -176,6 +181,9 @@ void PinUndo::Undo()
 
 void PinUndo::EndUndo()
 {
+   if (g_pplayer)
+      return;
+
    _ASSERTE(m_cUndoLayer > 0);
    if (m_cUndoLayer > 0)
    {

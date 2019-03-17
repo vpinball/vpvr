@@ -770,6 +770,7 @@ void Shader::SetTextureNull(const D3DXHANDLE texelName)
 void Shader::SetTechnique(const D3DXHANDLE technique)
 {
    strcpy_s(this->technique, technique);
+   m_renderDevice->m_curTechniqueChanges++;
 }
 
 void Shader::SetUniformBlock(const D3DXHANDLE hParameter, const float* pMatrix, const int size)

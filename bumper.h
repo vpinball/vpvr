@@ -115,9 +115,7 @@ public:
 
    virtual ItemTypeEnum HitableGetItemType() const { return eItemBumper; }
 
-   void WriteRegDefaults();
-
-   PinTable *m_ptable;
+   virtual void WriteRegDefaults();
 
    BumperData m_d;
 
@@ -134,6 +132,8 @@ private:
    void GenerateSocketMesh(Vertex3D_NoTex2 *buf);
    void GenerateRingMesh(Vertex3D_NoTex2 *buf);
    void GenerateCapMesh(Vertex3D_NoTex2 *buf);
+
+   PinTable *m_ptable;
 
    VertexBuffer *m_baseVertexBuffer;
    IndexBuffer *m_baseIndexBuffer;

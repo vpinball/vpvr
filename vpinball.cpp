@@ -776,32 +776,35 @@ void VPinball::SetStatusBarElementInfo(const char *info)
    SendMessage(m_hwndStatusBar, SB_SETTEXT, 4 | 0, (size_t)info);
 }
 
-void VPinball::SetStatusBarUnitInfo(const char *info)
+void VPinball::SetStatusBarUnitInfo(const char *info, const bool isUnit)
 {
    char textBuf[256] = { 0 };
 
    if (strlen(info) > 0)
    {
       strcpy_s(textBuf, info);
-      switch (m_convertToUnit)
+      if (isUnit)
       {
-      case 0:
-      {
-         strcat_s(textBuf, " (inch)");
-         break;
-      }
-      case 1:
-      {
-         strcat_s(textBuf, " (mm)");
-         break;
-      }
-      case 2:
-      {
-         strcat_s(textBuf, " (VPUnits)");
-         break;
-      }
-      default:
-         break;
+         switch (m_convertToUnit)
+         {
+         case 0:
+         {
+            strcat_s(textBuf, " (inch)");
+            break;
+         }
+         case 1:
+         {
+            strcat_s(textBuf, " (mm)");
+            break;
+         }
+         case 2:
+         {
+            strcat_s(textBuf, " (VPUnits)");
+            break;
+         }
+         default:
+            break;
+         }
       }
    }
    SendMessage(m_hwndStatusBar, SB_SETTEXT, 5 | 0, (size_t)textBuf);
@@ -864,8 +867,6 @@ HMENU VPinball::GetMainMenu(int id)
 
 void VPinball::ParseCommand(size_t code, HWND hwnd, size_t notify)
 {
-   CComObject<PinTable> *ptCur;
-
    // check if it's an Editable tool
    ItemTypeEnum type = EditableRegistry::TypeFromToolID((int)code);
    if (type != eItemInvalid)
@@ -891,6 +892,8 @@ void VPinball::ParseCommand(size_t code, HWND hwnd, size_t notify)
       /* close all dialogs if the table is changed to prevent further issues */
       CloseAllDialogs();
    }
+
+   CComObject<PinTable> *ptCur;
 
    switch (code)
    {
@@ -925,7 +928,7 @@ void VPinball::ParseCommand(size_t code, HWND hwnd, size_t notify)
       ptCur = GetActiveTable();
       if (ptCur)
       {
-         int alwaysViewScript = GetRegIntWithDefault("Editor", "AlwaysViewScript", 0);
+         const int alwaysViewScript = GetRegIntWithDefault("Editor", "AlwaysViewScript", 0);
 
          ptCur->m_pcv->SetVisible(alwaysViewScript || !(ptCur->m_pcv->m_visible && !ptCur->m_pcv->m_minimized));
 
@@ -1119,7 +1122,7 @@ void VPinball::ParseCommand(size_t code, HWND hwnd, size_t notify)
 
       if (ptCur->m_vmultisel.Size() > 0)
       {
-         ISelect *psel = ptCur->m_vmultisel.ElementAt(0);
+         ISelect * const psel = ptCur->m_vmultisel.ElementAt(0);
          if (psel != NULL)
          {
             POINT pt;
@@ -1161,7 +1164,7 @@ void VPinball::ParseCommand(size_t code, HWND hwnd, size_t notify)
 
       if (ptCur->m_vmultisel.Size() > 0)
       {
-         ISelect *psel = ptCur->m_vmultisel.ElementAt(0);
+         ISelect * const psel = ptCur->m_vmultisel.ElementAt(0);
          if (psel != NULL)
          {
             POINT pt;
@@ -1199,7 +1202,7 @@ void VPinball::ParseCommand(size_t code, HWND hwnd, size_t notify)
       ptCur = GetActiveTable();
       if (ptCur)
       {
-         HRESULT hr = ptCur->TableSave();
+         const HRESULT hr = ptCur->TableSave();
          if (hr == S_OK)
             UpdateRecentFileList(ptCur->m_szFileName);
       }
@@ -1210,7 +1213,7 @@ void VPinball::ParseCommand(size_t code, HWND hwnd, size_t notify)
       ptCur = GetActiveTable();
       if (ptCur)
       {
-         HRESULT hr = ptCur->SaveAs();
+         const HRESULT hr = ptCur->SaveAs();
          if (hr == S_OK)
             UpdateRecentFileList(ptCur->m_szFileName);
       }
@@ -1435,83 +1438,81 @@ void VPinball::ParseCommand(size_t code, HWND hwnd, size_t notify)
    }
    case ID_EDIT_KEYS:
    {
-      KeysConfigDialog *keysConfigDlg = new KeysConfigDialog();
+      KeysConfigDialog * const keysConfigDlg = new KeysConfigDialog();
       keysConfigDlg->DoModal();
       delete keysConfigDlg;
       break;
    }
    case ID_LAYER_LAYER1:
    {
-      setLayerStatus(0);
+      SetLayerStatus(0);
       break;
    }
    case ID_LAYER_LAYER2:
    {
-      setLayerStatus(1);
+      SetLayerStatus(1);
       break;
    }
    case ID_LAYER_LAYER3:
    {
-      setLayerStatus(2);
+      SetLayerStatus(2);
       break;
    }
    case ID_LAYER_LAYER4:
    {
-      setLayerStatus(3);
+      SetLayerStatus(3);
       break;
    }
    case ID_LAYER_LAYER5:
    {
-      setLayerStatus(4);
+      SetLayerStatus(4);
       break;
    }
    case ID_LAYER_LAYER6:
    {
-      setLayerStatus(5);
+      SetLayerStatus(5);
       break;
    }
    case ID_LAYER_LAYER7:
    {
-      setLayerStatus(6);
+      SetLayerStatus(6);
       break;
    }
    case ID_LAYER_LAYER8:
    {
-      setLayerStatus(7);
+      SetLayerStatus(7);
       break;
    }
    case ID_LAYER_LAYER9:
    {
-      setLayerStatus(8);
+      SetLayerStatus(8);
       break;
    }
    case ID_LAYER_LAYER10:
    {
-      setLayerStatus(9);
+      SetLayerStatus(9);
       break;
    }
    case ID_LAYER_LAYER11:
    {
-      setLayerStatus(10);
+      SetLayerStatus(10);
       break;
    }
    case ID_LAYER_MERGEALL:
    {
       ptCur = GetActiveTable();
       if (!ptCur) break;
-      HMENU hmenu = ::GetMenu(m_hwnd);
       ptCur->MergeAllLayers();
       for (int i = 0; i < MAX_LAYERS; i++) ptCur->m_activeLayers[i] = false;
-      for (int i = 0; i < MAX_LAYERS; i++) setLayerStatus(i);
+      for (int i = 0; i < MAX_LAYERS; i++) SetLayerStatus(i);
       break;
    }
    case ID_LAYER_TOGGLEALL:
    {
       ptCur = GetActiveTable();
       if (!ptCur) break;
-      HMENU hmenu = ::GetMenu(m_hwnd);
       for (int i = 0; i < MAX_LAYERS; i++) ptCur->m_activeLayers[i] = !ptCur->m_toggleAllLayers;
-      for (int i = 0; i < MAX_LAYERS; i++) setLayerStatus(i);
+      for (int i = 0; i < MAX_LAYERS; i++) SetLayerStatus(i);
       ptCur->m_toggleAllLayers ^= true;
       break;
    }
@@ -1559,11 +1560,9 @@ void VPinball::ReInitPinDirectSound()
    }
 }
 
-void VPinball::setLayerStatus(int layerNumber)
+void VPinball::SetLayerStatus(const int layerNumber)
 {
-   CComObject<PinTable> *ptCur;
-
-   ptCur = GetActiveTable();
+   CComObject<PinTable> * const ptCur = GetActiveTable();
    if (!ptCur || layerNumber >= MAX_LAYERS) return;
 
    SendMessage(m_hwndToolbarLayers, TB_CHECKBUTTON, allLayers[layerNumber], MAKELONG((!ptCur->m_activeLayers[layerNumber]), 0));
@@ -1576,7 +1575,7 @@ void VPinball::SetEnablePalette()
 {
    PinTable * const ptCur = GetActiveTable();
 
-   bool fTableActive = (ptCur != NULL) && !g_pplayer;
+   const bool fTableActive = (ptCur != NULL) && !g_pplayer;
 
    const unsigned state = (m_fBackglassView ? VIEW_BACKGLASS : VIEW_PLAYFIELD);
 
@@ -1602,7 +1601,7 @@ void VPinball::SetEnablePalette()
 
 void VPinball::SetEnableToolbar()
 {
-   PinTable *ptCur = GetActiveTable();
+   PinTable * const ptCur = GetActiveTable();
 
    const bool fTableActive = (ptCur != NULL) && !g_pplayer;
 
@@ -1758,7 +1757,7 @@ void VPinball::LoadFileName(char *szFileName)
 
 CComObject<PinTable> *VPinball::GetActiveTable()
 {
-   HWND hwndT = (HWND)SendMessage(m_hwndWork, WM_MDIGETACTIVE, 0, 0);
+   const HWND hwndT = (HWND)SendMessage(m_hwndWork, WM_MDIGETACTIVE, 0, 0);
 
    if (hwndT)
    {
@@ -1769,13 +1768,13 @@ CComObject<PinTable> *VPinball::GetActiveTable()
       return NULL;
 }
 
-bool VPinball::FCanClose()
+bool VPinball::CanClose()
 {
    while (m_vtable.size())
    {
-      const bool fCanClose = CloseTable(m_vtable[0]);
+      const bool canClose = CloseTable(m_vtable[0]);
 
-      if (!fCanClose)
+      if (!canClose)
          return false;
    }
 
@@ -2203,8 +2202,8 @@ void VPinball::OnClose()
    if (g_pplayer)
       SendMessage(g_pplayer->m_playfieldHwnd, WM_CLOSE, 0, 0);
 
-   const bool fCanClose = g_pvp->FCanClose();
-   if (fCanClose)
+   const bool canClose = g_pvp->CanClose();
+   if (canClose)
    {
       WINDOWPLACEMENT winpl;
       winpl.length = sizeof(winpl);

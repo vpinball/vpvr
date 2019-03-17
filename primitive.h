@@ -269,10 +269,8 @@ public:
    //STDMETHOD(get_Name)(BSTR *pVal) {return E_FAIL;}
 
    //virtual HRESULT InitVBA(BOOL fNew, int id, WCHAR *wzName);
-   void WriteRegDefaults();
+   virtual void WriteRegDefaults();
    virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
-   PinTable *m_ptable;
 
    //!! here starts the more general primitive stuff:
 
@@ -295,6 +293,7 @@ public:
    void    RecalculateMatrices();
    void    TransformVertices();
    void    RenderObject(RenderDevice *pd3dDevice);
+   void    UpdateMeshInfo();
 
    static INT_PTR CALLBACK ObjImportProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -308,9 +307,9 @@ public:
    float m_speed;
    bool m_DoAnimation;
    bool m_Endless;
-   float m_currentHitThreshold; // while playing and the ball hits the mesh the hit threshold is updated here
 
 private:        // private member functions
+   PinTable * m_ptable;
 
    int numIndices;         // only used during loading
    int numVertices;        // only used during loading

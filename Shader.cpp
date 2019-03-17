@@ -161,12 +161,17 @@ void Shader::SetFlasherColorAlpha(const vec4& color)
    }
 }
 
-void Shader::SetFlasherData(const vec4& color)
+void Shader::SetFlasherData(const vec4& color, const float mode)
 {
    if (currentFlasherData.x != color.x || currentFlasherData.y != color.y || currentFlasherData.z != color.z || currentFlasherData.w != color.w)
    {
       currentFlasherData = color;
       SetVector("alphaTestValueAB_filterMode_addBlend", &color);
+   }
+   if (currentFlasherMode != mode)
+   {
+      currentFlasherMode = mode;
+      SetFloat("flasherMode", mode);
    }
 }
 

@@ -286,7 +286,7 @@ HRESULT Texture::LoadFromStream(IStream *pstream, int version, PinTable *pt)
 }
 
 
-bool Texture::LoadFromMemory(BYTE* const data, DWORD size)
+bool Texture::LoadFromMemory(BYTE* const data, const DWORD size)
 {
    FIMEMORY *hmem = FreeImage_OpenMemory(data, size);
    FREE_IMAGE_FORMAT fif = FreeImage_GetFileTypeFromMemory(hmem, 0);

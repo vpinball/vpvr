@@ -145,6 +145,7 @@ void Shader::SetTechnique(const D3DXHANDLE technique)
       strcpy_s(currentTechnique, technique);
       //m_renderDevice->m_curShader = this;
       CHECKD3D(m_shader->SetTechnique(technique));
+      m_renderDevice->m_curTechniqueChanges++;
    }
 }
 

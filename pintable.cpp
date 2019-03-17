@@ -173,7 +173,7 @@ STDMETHODIMP ScriptGlobalTable::NudgeTiltStatus(VARIANT *XPlumb, VARIANT *YPlumb
 
 STDMETHODIMP ScriptGlobalTable::PlaySound(BSTR bstr, long LoopCount, float volume, float pan, float randompitch, long pitch, VARIANT_BOOL usesame, VARIANT_BOOL restart, float front_rear_fade)
 {
-   if (g_pplayer && g_pplayer->m_fPlaySound) m_pt->PlaySound(bstr, LoopCount, volume, pan, randompitch, pitch, usesame, restart, front_rear_fade);
+   if (g_pplayer && g_pplayer->m_PlaySound) m_pt->PlaySound(bstr, LoopCount, volume, pan, randompitch, pitch, usesame, restart, front_rear_fade);
 
    return S_OK;
 }
@@ -194,7 +194,7 @@ STDMETHODIMP ScriptGlobalTable::QuitPlayer(int CloseType)
 
 STDMETHODIMP ScriptGlobalTable::StopSound(BSTR Sound)
 {
-   if (g_pplayer && g_pplayer->m_fPlaySound)
+   if (g_pplayer && g_pplayer->m_PlaySound)
       m_pt->StopSound(Sound);
 
    return S_OK;
@@ -202,7 +202,7 @@ STDMETHODIMP ScriptGlobalTable::StopSound(BSTR Sound)
 
 STDMETHODIMP ScriptGlobalTable::PlayMusic(BSTR str, float volume)
 {
-   if (g_pplayer && g_pplayer->m_fPlayMusic)
+   if (g_pplayer && g_pplayer->m_PlayMusic)
    {
       if (g_pplayer->m_pxap)
          EndMusic();
@@ -246,7 +246,7 @@ STDMETHODIMP ScriptGlobalTable::PlayMusic(BSTR str, float volume)
 
 STDMETHODIMP ScriptGlobalTable::EndMusic()
 {
-   if (g_pplayer && g_pplayer->m_fPlayMusic)
+   if (g_pplayer && g_pplayer->m_PlayMusic)
    {
       if (g_pplayer->m_pxap)
       {
@@ -261,7 +261,7 @@ STDMETHODIMP ScriptGlobalTable::EndMusic()
 
 STDMETHODIMP ScriptGlobalTable::put_MusicVolume(float volume)
 {
-   if (g_pplayer && g_pplayer->m_fPlayMusic)
+   if (g_pplayer && g_pplayer->m_PlayMusic)
    {
       const float MusicVolumef = max(min((float)g_pplayer->m_MusicVolume*m_pt->m_TableMusicVolume*volume, 100.0f), 0.0f);
 #ifdef NO_XAUDIO
@@ -387,8 +387,7 @@ STDMETHODIMP ScriptGlobalTable::get_LockbarKey(long *pVal)
 
 bool ScriptGlobalTable::GetTextFileFromDirectory(char *szfilename, char *dirname, BSTR *pContents)
 {
-   char *szPath;
-   szPath = new char[MAX_PATH + lstrlen(szfilename)];
+   char *szPath = new char[MAX_PATH + lstrlen(szfilename)];
    bool fSuccess = false;
 
    if (dirname != NULL)
@@ -448,7 +447,6 @@ bool ScriptGlobalTable::GetTextFileFromDirectory(char *szfilename, char *dirname
 
 STDMETHODIMP ScriptGlobalTable::GetCustomParam(long index, BSTR *param)
 {
-
    if (index <= 0 || index >= MAX_CUSTOM_PARAM_INDEX)
       return E_FAIL;
 
@@ -566,7 +564,6 @@ STDMETHODIMP ScriptGlobalTable::SaveValue(BSTR TableName, BSTR ValueName, VARIAN
    BSTR bstr = BstrFromVariant(&Value, 0x409);
 
    DWORD writ;
-
    pstmValue->Write((WCHAR *)bstr, lstrlenW((WCHAR *)bstr) * (int)sizeof(WCHAR), &writ);
 
    SysFreeString(bstr);
@@ -619,14 +616,11 @@ STDMETHODIMP ScriptGlobalTable::LoadValue(BSTR TableName, BSTR ValueName, VARIAN
 
    pstmValue->Stat(&statstg, STATFLAG_NONAME);
 
-   WCHAR *wzT;
+   const int size = statstg.cbSize.LowPart / sizeof(WCHAR);
 
-   int size = statstg.cbSize.LowPart / sizeof(WCHAR);
-
-   wzT = new WCHAR[size + 1];
+   WCHAR *wzT = new WCHAR[size + 1];
 
    DWORD read;
-
    hr = pstmValue->Read(wzT, size * (int)sizeof(WCHAR), &read);
    wzT[size] = L'\0';
 
@@ -729,8 +723,6 @@ else
 GetRegInt("Player", "BGSet", (int*)&m_BG_current_set);
 
 STOPUNDO
-
-SetDirtyDraw();
 
 return S_OK;
 }*/
@@ -1912,8 +1904,6 @@ void PinTable::InitPostLoad(VPinball *pvp)
 
    m_szBlueprintFileName[0] = 0;
 
-   CreateGDIBackdrop();
-
    //InitVBA();
    m_pcv->AddItem(this, false);
    m_pcv->AddItem(m_psgt, true);
@@ -2264,6 +2254,9 @@ ISelect *PinTable::HitTest(const int x, const int y)
 
 void PinTable::SetDirtyDraw()
 {
+   if (g_pplayer)
+      return;
+
    m_fDirtyDraw = true;
    ::InvalidateRect(m_hwnd, NULL, fFalse);
 }
@@ -3168,7 +3161,7 @@ HRESULT PinTable::WriteInfoValue(IStorage* pstg, WCHAR *wzName, char *szValue, H
       BiffWriter bw(pstm, hcrypthash);
 
       const int len = lstrlen(szValue);
-      WCHAR *wzT = new WCHAR[len + 1];
+      WCHAR * const wzT = new WCHAR[len + 1];
       MultiByteToWideChar(CP_ACP, 0, szValue, -1, wzT, len + 1);
 
       bw.WriteBytes(wzT, len*(int)sizeof(WCHAR), &writ);
@@ -3193,7 +3186,7 @@ HRESULT PinTable::SaveInfo(IStorage* pstg, HCRYPTHASH hcrypthash)
    WriteInfoValue(pstg, L"TableDescription", m_szDescription, hcrypthash);
    WriteInfoValue(pstg, L"TableRules", m_szRules, hcrypthash);
 
-   Texture *pin = GetImage(m_szScreenShot);
+   Texture * const pin = GetImage(m_szScreenShot);
    if (pin != NULL && pin->m_ppb != NULL)
    {
       IStream *pstm;
@@ -3230,7 +3223,7 @@ HRESULT PinTable::SaveCustomInfo(IStorage* pstg, IStream *pstmTags, HCRYPTHASH h
    {
       char * const szName = m_vCustomInfoTag[i];
       int len = lstrlen(szName);
-      WCHAR *wzName = new WCHAR[len + 1];
+      WCHAR * const wzName = new WCHAR[len + 1];
       MultiByteToWideChar(CP_ACP, 0, szName, -1, wzName, len + 1);
 
       WriteInfoValue(pstg, wzName, m_vCustomInfoContent[i], hcrypthash);
@@ -3255,7 +3248,7 @@ HRESULT PinTable::ReadInfoValue(IStorage* pstg, WCHAR *wzName, char **pszValue, 
       pstm->Stat(&ss, STATFLAG_NONAME);
 
       const int len = ss.cbSize.LowPart / (DWORD)sizeof(WCHAR);
-      WCHAR *wzT = new WCHAR[len + 1];
+      WCHAR * const wzT = new WCHAR[len + 1];
       *pszValue = new char[len + 1];
 
       ULONG read;
@@ -3331,7 +3324,7 @@ HRESULT PinTable::LoadCustomInfo(IStorage* pstg, IStream *pstmTags, HCRYPTHASH h
    {
       char * const szName = m_vCustomInfoTag[i];
       const int len = lstrlen(szName);
-      WCHAR *wzName = new WCHAR[len + 1];
+      WCHAR * const wzName = new WCHAR[len + 1];
       MultiByteToWideChar(CP_ACP, 0, szName, -1, wzName, len + 1);
 
       char *szValue;
@@ -3761,8 +3754,7 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
 
                if (SUCCEEDED(hr = pstgData->OpenStream(wszStmName, NULL, STGM_DIRECT | STGM_READ | STGM_SHARE_EXCLUSIVE, 0, &pstmItem)))
                {
-                  PinFont *ppf;
-                  ppf = new PinFont();
+                  PinFont *ppf = new PinFont();
                   ppf->LoadFromStream(pstmItem, loadfileversion);
                   m_vfont.push_back(ppf);
                   ppf->Register();
@@ -4965,10 +4957,7 @@ void PinTable::DoLButtonDown(int x, int y, bool zoomIn)
       {
          m_offset = TransformPoint(x, y);
 
-         if (zoomIn)
-            SetZoom(m_zoom * 1.5f);
-         else
-            SetZoom(m_zoom * 0.5f);
+         SetZoom(m_zoom * (zoomIn ? 1.5f : 0.5f));
 
          SetDirtyDraw();
       }
@@ -4993,7 +4982,7 @@ void PinTable::DoLButtonDown(int x, int y, bool zoomIn)
 
       for (int i = 0; i < m_vmultisel.Size(); i++)
       {
-         ISelect *pisel2 = m_vmultisel.ElementAt(i);
+         ISelect *const pisel2 = m_vmultisel.ElementAt(i);
          if (pisel2)
             pisel2->OnLButtonDown(x, y);
       }
@@ -5031,6 +5020,7 @@ void PinTable::DoRButtonDown(int x, int y)
       {
          m_offset = TransformPoint(x, y);
          SetZoom(m_zoom * 0.5f);
+
          SetDirtyDraw();
       }
    }
@@ -5113,7 +5103,7 @@ void PinTable::FillCollectionContextMenu(HMENU hmenu, HMENU colSubMenu, ISelect 
    }
 }
 
-void PinTable::DoContextMenu(int x, int y, int menuid, ISelect *psel)
+void PinTable::DoContextMenu(int x, int y, const int menuid, ISelect *psel)
 {
    POINT pt;
    pt.x = x;
@@ -5122,19 +5112,14 @@ void PinTable::DoContextMenu(int x, int y, int menuid, ISelect *psel)
 
    HMENU hmenumain;
    HMENU hmenu;
-   HMENU subMenu;
-   HMENU colSubMenu;
    if (menuid != -1)
    {
       hmenumain = LoadMenu(g_hinst, MAKEINTRESOURCE(menuid));
-
       hmenu = GetSubMenu(hmenumain, 0);
    }
    else
    {
       hmenu = CreatePopupMenu();
-      subMenu = CreatePopupMenu();
-      colSubMenu = CreatePopupMenu();
    }
 
    psel->EditMenu(hmenu);
@@ -5144,9 +5129,10 @@ void PinTable::DoContextMenu(int x, int y, int menuid, ISelect *psel)
       if (GetMenuItemCount(hmenu) > 0)
       {
          AppendMenu(hmenu, MF_SEPARATOR, ~0u, "");
-         subMenu = CreatePopupMenu();
-         colSubMenu = CreatePopupMenu();
       }
+      HMENU subMenu = CreatePopupMenu();
+      HMENU colSubMenu = CreatePopupMenu();
+
       // TEXT
       LocalString ls17(IDS_COPY_ELEMENT);
       AppendMenu(hmenu, MF_STRING, IDC_COPY, ls17.m_szbuffer);
@@ -5300,7 +5286,7 @@ void PinTable::DoContextMenu(int x, int y, int menuid, ISelect *psel)
    }
 }
 
-char elementName[256];
+static char elementName[256];
 char *PinTable::GetElementName(IEditable *pedit)
 {
    WCHAR *elemName = NULL;
@@ -5504,8 +5490,7 @@ void PinTable::AssignMultiToLayer(int layerNumber, int x, int y)
 {
    for (int i = 0; i < m_vmultisel.Size(); i++)
    {
-      ISelect *psel;
-      psel = m_vmultisel.ElementAt(i);
+      ISelect * const psel = m_vmultisel.ElementAt(i);
       _ASSERTE(psel != this); // Would make an infinite loop
       switch (layerNumber)
       {
@@ -5578,7 +5563,7 @@ void PinTable::UpdateCollection(int index)
          /* if the selection is part of the selected collection remove only remove these elements*/
          for (int t = 0; t < m_vmultisel.Size(); t++)
          {
-            ISelect *ptr = m_vmultisel.ElementAt(t);
+            ISelect * const ptr = m_vmultisel.ElementAt(t);
             for (int k = 0; k < m_vcollection.ElementAt(index)->m_visel.Size(); k++)
             {
                if (ptr == m_vcollection.ElementAt(index)->m_visel.ElementAt(k))
@@ -5596,7 +5581,7 @@ void PinTable::UpdateCollection(int index)
          /*selected elements are not part of the the selected collection and can be added*/
          for (int t = 0; t < m_vmultisel.Size(); t++)
          {
-            ISelect *ptr = m_vmultisel.ElementAt(t);
+            ISelect * const ptr = m_vmultisel.ElementAt(t);
             m_vcollection.ElementAt(index)->m_visel.AddElement(ptr);
          }
       }
@@ -5784,8 +5769,10 @@ LRESULT PinTable::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
          if (pt->m_oldMousePosX < x)  pt->m_offset.x -= dx;
          if (pt->m_oldMousePosY > y)  pt->m_offset.y += dy;
          if (pt->m_oldMousePosY < y)  pt->m_offset.y -= dy;
+
          pt->SetDirtyDraw();
          pt->SetMyScrollInfo();
+
          pt->m_oldMousePosX = x;
          pt->m_oldMousePosY = y;
          break;
@@ -5850,7 +5837,7 @@ LRESULT PinTable::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
          break;
       case SB_THUMBTRACK:
       {
-         const int delta = (int)(pt->m_offset.x - si.nPos);
+         const int delta = (int)(pt->m_offset.x - (float)si.nPos);
          pt->m_offset.x = (float)((short)HIWORD(wParam) + delta);
          break;
       }
@@ -5885,7 +5872,7 @@ LRESULT PinTable::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
          break;
       case SB_THUMBTRACK:
       {
-         const int delta = (int)(pt->m_offset.y - si.nPos);
+         const int delta = (int)(pt->m_offset.y - (float)si.nPos);
          pt->m_offset.y = (float)((short)HIWORD(wParam) + delta);
          break;
       }
@@ -6267,7 +6254,7 @@ void PinTable::ExportMesh(FILE *f)
 
    const WORD playfieldPolyIndices[10] = { 0, 1, 3, 0, 3, 2, 2, 3, 5, 6 };
 
-   Vertex3D_NoTex2 *buffer = new Vertex3D_NoTex2[4 + 7];
+   Vertex3D_NoTex2 *const buffer = new Vertex3D_NoTex2[4 + 7];
    unsigned int offs = 0;
    for (unsigned int y = 0; y <= 1; ++y)
       for (unsigned int x = 0; x <= 1; ++x, ++offs)
@@ -6334,7 +6321,6 @@ void PinTable::ExportTableMesh()
    }
    WaveFrontObj_ExportEnd(f);
    ::MessageBox(NULL, "Export finished!", "Info", MB_OK | MB_ICONEXCLAMATION);
-
 }
 
 void PinTable::ImportBackdropPOV(const char *filename)
@@ -6442,7 +6428,7 @@ void PinTable::ExportBackdropPOV(const char *filename)
       ofn.lpstrDefExt = "pov";
       ofn.Flags = OFN_OVERWRITEPROMPT;
 
-      int ret = GetSaveFileName(&ofn);
+      const int ret = GetSaveFileName(&ofn);
 
       // user canceled
       if (ret == 0)
@@ -6629,7 +6615,7 @@ void PinTable::SetNonUndoableDirty(SaveDirtyState sds)
 
 void PinTable::CheckDirty()
 {
-   SaveDirtyState sdsNewDirtyState = (SaveDirtyState)max(max((int)m_sdsDirtyProp, (int)m_sdsDirtyScript), (int)m_sdsNonUndoableDirty);
+   const SaveDirtyState sdsNewDirtyState = (SaveDirtyState)max(max((int)m_sdsDirtyProp, (int)m_sdsDirtyScript), (int)m_sdsNonUndoableDirty);
 
    if (sdsNewDirtyState != m_sdsCurrentDirtyState)
    {
@@ -6670,6 +6656,8 @@ void PinTable::Undo()
    m_undo.Undo();
 
    SetDirtyDraw();
+   SetMyScrollInfo();
+
    if (m_searchSelectDlg.IsWindow())
    {
       m_searchSelectDlg.Update();
@@ -6715,8 +6703,6 @@ void PinTable::RestoreBackup()
 
 void PinTable::Copy(int x, int y)
 {
-   ULONG writ = 0;
-
    if (MultiSelIsEmpty()) // Can't copy table
    {
       return;
@@ -6743,11 +6729,12 @@ void PinTable::Copy(int x, int y)
       IStream *pstm;
       CreateStreamOnHGlobal(hglobal, TRUE, &pstm);
 
-      IEditable *pe = m_vmultisel.ElementAt(i)->GetIEditable();
+      IEditable * const pe = m_vmultisel.ElementAt(i)->GetIEditable();
 
       ////////!! BUG!  With multi-select, if you have multiple dragpoints on
       //////// a surface selected, the surface will get copied multiple times
       const int type = pe->GetItemType();
+      ULONG writ = 0;
       pstm->Write(&type, sizeof(int), &writ);
 
       pe->SaveData(pstm, NULL);
@@ -6766,10 +6753,10 @@ void PinTable::Paste(const bool fAtLocation, int x, int y)
    if (m_vmultisel.Size() == 1)
    {
       // User wants to paste the copied coordinates of a Control Point
-      ISelect *pItem = HitTest(x, y);
+      ISelect * const pItem = HitTest(x, y);
       if (pItem->GetItemType() == eItemDragPoint)
       {
-         DragPoint *pPoint = (DragPoint*)pItem;
+         DragPoint * const pPoint = (DragPoint*)pItem;
          pPoint->Paste();
          SetDirtyDraw();
          return;
@@ -7065,6 +7052,7 @@ void PinTable::OnDelete()
    g_pvp->SetPropSel(&m_vmultisel);
    if (m_searchSelectDlg.IsWindow())
       m_searchSelectDlg.Update();
+
    SetDirtyDraw();
 }
 
@@ -7120,6 +7108,7 @@ void PinTable::OnKeyDown(int key)
          g_pvp->m_sb.RefreshProperties();    // update position fields
       }
       EndUndo();
+      SetDirtyDraw();
    }
    break;
    }
@@ -7152,11 +7141,10 @@ Vertex2D PinTable::TransformPoint(int x, int y) const
    RECT rc;
    ::GetClientRect(m_hwnd, &rc);
 
-   HitSur * const phs = new HitSur(NULL, m_zoom, m_offset.x, m_offset.y, rc.right - rc.left, rc.bottom - rc.top, 0, 0, NULL);
+   const HitSur phs(NULL, m_zoom, m_offset.x, m_offset.y, rc.right - rc.left, rc.bottom - rc.top, 0, 0, NULL);
 
-   const Vertex2D result = phs->ScreenToSurface(x, y);
+   const Vertex2D result = phs.ScreenToSurface(x, y);
 
-   delete phs;
    return result;
 }
 
@@ -7290,9 +7278,7 @@ void PinTable::GetDialogPanes(vector<PropertyPane*> &pvproppane)
    }
    else
    {
-      PropertyPane *pproppane;
-
-      pproppane = new PropertyPane(IDD_PROPBACKGLASS_VISUALS, IDS_VISUALS2);
+      PropertyPane * const pproppane = new PropertyPane(IDD_PROPBACKGLASS_VISUALS, IDS_VISUALS2);
       pvproppane.push_back(pproppane);
    }
 }
@@ -7638,14 +7624,13 @@ STDMETHODIMP PinTable::put_Name(BSTR newVal)
 {
    //GetIApcProjectItem()->put_Name(newVal);
 
-   STARTUNDO
-
-      const int l = lstrlenW(newVal);
+   const int l = lstrlenW(newVal);
    if ((l > 32) || (l < 1))
    {
       return E_FAIL;
    }
 
+   STARTUNDO
    if (m_pcv->ReplaceName((IScriptable *)this, newVal) == S_OK)
    {
       WideStrNCopy(newVal, (WCHAR *)m_wzName, MAXNAMEBUFFER);
@@ -7897,10 +7882,6 @@ Texture* PinTable::GetImage(const char * const szName) const
    return NULL;
 }
 
-void PinTable::CreateGDIBackdrop()
-{
-}
-
 void PinTable::ReImportImage(Texture * const ppi, const char * const filename)
 {
    char szextension[MAX_PATH];
@@ -7985,7 +7966,7 @@ bool PinTable::ExportImage(Texture * const ppi, const char * const szfilename)
       //write BMP Info Header
       WriteFile(hFile, &bmpi, sizeof(BITMAPINFOHEADER), &write, NULL);
 
-      unsigned char* sinfo = new unsigned char[bmplnsize + 4]; //linebuffer and safty pad
+      unsigned char* const sinfo = new unsigned char[bmplnsize + 4]; //linebuffer and safty pad
       if (!sinfo)
       {
          CloseHandle(hFile);
@@ -8554,7 +8535,7 @@ void PinTable::AddDbgLight(Light *plight)
    }
    else
    {
-      DebugLightData *data = new DebugLightData;
+      DebugLightData * const data = new DebugLightData;
       data->color1 = plight->m_d.m_color;
       data->color2 = plight->m_d.m_color2;
       plight->get_BulbModulateVsAdd(&data->bulbModulateVsAdd);
@@ -8570,7 +8551,7 @@ void PinTable::AddDbgLight(Light *plight)
    }
 }
 
-void PinTable::UpdateDbgLight(void)
+void PinTable::UpdateDbgLight()
 {
    bool somethingChanged = false;
    for (size_t i = 0; i < m_dbgChangedLights.size(); i++)
@@ -8697,17 +8678,11 @@ STDMETHODIMP PinTable::put_Image(BSTR newVal)
 
    STARTUNDO
 
-      strcpy_s(m_szImage, szImage);
-
-   if (!g_pplayer)
-   {
-      CreateGDIBackdrop();
-      SetDirtyDraw();
-   }
+   strcpy_s(m_szImage, szImage);
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaStringsOut, CADWORD *pcaCookiesOut)
@@ -8817,8 +8792,8 @@ STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaString
 
       for (size_t ivar = 0; ivar < cvar; ivar++)
       {
-         char *szSrc = m_vsound[ivar]->m_szName;
-         DWORD cwch = lstrlen(szSrc) + 1;
+         char * const szSrc = m_vsound[ivar]->m_szName;
+         const DWORD cwch = lstrlen(szSrc) + 1;
          wzDst = (WCHAR *)CoTaskMemAlloc(cwch * sizeof(WCHAR));
          if (wzDst == NULL)
          {
@@ -8904,7 +8879,7 @@ STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaString
             CComBSTR bstr;
             m_vedit[ivar]->GetScriptable()->get_Name(&bstr);
 
-            DWORD cwch = lstrlenW(bstr) + 1;
+            const DWORD cwch = lstrlenW(bstr) + 1;
             //wzDst = ::SysAllocString(bstr);
 
             wzDst = (WCHAR *)CoTaskMemAlloc(cwch * sizeof(WCHAR));
@@ -9186,13 +9161,11 @@ STDMETHODIMP PinTable::put_DisplayGrid(VARIANT_BOOL newVal)
 {
    STARTUNDO
 
-      m_fGrid = !!newVal;
-
-   SetDirtyDraw();
+   m_fGrid = !!newVal;
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP PinTable::get_DisplayBackdrop(VARIANT_BOOL *pVal)
@@ -9206,13 +9179,11 @@ STDMETHODIMP PinTable::put_DisplayBackdrop(VARIANT_BOOL newVal)
 {
    STARTUNDO
 
-      m_fBackdrop = !!newVal;
-
-   SetDirtyDraw();
+   m_fBackdrop = !!newVal;
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 INT_PTR CALLBACK ProgressProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -9285,15 +9256,13 @@ STDMETHODIMP PinTable::put_Width(float newVal)
 {
    STARTUNDO
 
-      m_right = newVal;
-
-   SetDirtyDraw();
-
-   SetMyScrollInfo();
+   m_right = newVal;
 
    STOPUNDO
 
-      return S_OK;
+   SetMyScrollInfo();
+
+   return S_OK;
 }
 
 STDMETHODIMP PinTable::get_Height(float *pVal)
@@ -9307,15 +9276,13 @@ STDMETHODIMP PinTable::put_Height(float newVal)
 {
    STARTUNDO
 
-      m_bottom = newVal;
-
-   SetDirtyDraw();
-
-   SetMyScrollInfo();
+   m_bottom = newVal;
 
    STOPUNDO
 
-      return S_OK;
+   SetMyScrollInfo();
+
+   return S_OK;
 }
 
 STDMETHODIMP PinTable::get_PlayfieldMaterial(BSTR *pVal)
@@ -9843,8 +9810,6 @@ STDMETHODIMP PinTable::put_ShowFSS(VARIANT_BOOL newVal)
 
    STOPUNDO
 
-      SetDirtyDraw();
-
    return S_OK;
 }
 
@@ -9862,17 +9827,11 @@ STDMETHODIMP PinTable::put_BackdropImage_DT(BSTR newVal) //!! HDR??
 {
    STARTUNDO
 
-      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_BG_szImage[0], 32, NULL, NULL);
-
-   if (!g_pplayer)
-   {
-      CreateGDIBackdrop();
-      SetDirtyDraw();
-   }
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_BG_szImage[0], 32, NULL, NULL);
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP PinTable::get_BackdropImage_FS(BSTR *pVal)
@@ -9889,17 +9848,11 @@ STDMETHODIMP PinTable::put_BackdropImage_FS(BSTR newVal) //!! HDR??
 {
    STARTUNDO
 
-      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_BG_szImage[1], 32, NULL, NULL);
-
-   if (!g_pplayer)
-   {
-      CreateGDIBackdrop();
-      SetDirtyDraw();
-   }
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_BG_szImage[1], 32, NULL, NULL);
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP PinTable::get_BackdropImage_FSS(BSTR *pVal)
@@ -9916,17 +9869,11 @@ STDMETHODIMP PinTable::put_BackdropImage_FSS(BSTR newVal) //!! HDR??
 {
    STARTUNDO
 
-      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_BG_szImage[2], 32, NULL, NULL);
-
-   if (!g_pplayer)
-   {
-      CreateGDIBackdrop();
-      SetDirtyDraw();
-   }
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_BG_szImage[2], 32, NULL, NULL);
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP PinTable::get_ColorGradeImage(BSTR *pVal)
@@ -10436,11 +10383,11 @@ STDMETHODIMP PinTable::put_EnvironmentImage(BSTR newVal)
 
    STARTUNDO
 
-      strcpy_s(m_szEnvImage, szImage);
+   strcpy_s(m_szEnvImage, szImage);
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP PinTable::get_YieldTime(long *pVal)

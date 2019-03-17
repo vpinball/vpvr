@@ -343,7 +343,7 @@ public:
    void Spritedraw(const float posx, const float posy, const float width, const float height, const COLORREF color, D3DTexture* const tex, const float intensity, const bool backdrop = false);
 
    HWND m_playfieldHwnd;
-   HWND m_backdropHwnd;
+
 #ifdef ENABLE_SDL
    SDL_Window *m_sdl_playfieldHwnd;
    SDL_Window *m_sdl_backdropHwnd;
@@ -434,8 +434,8 @@ public:
 
    bool m_bloomOff;
 
-   bool m_fPlayMusic;
-   bool m_fPlaySound;
+   bool m_PlayMusic;
+   bool m_PlaySound;
    int m_MusicVolume;
    int m_SoundVolume;
 

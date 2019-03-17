@@ -35,6 +35,9 @@ Rubber::~Rubber()
 
 void Rubber::UpdateUnitsInfo()
 {
+   if (g_pplayer)
+      return;
+
    char tbuf[128];
    sprintf_s(tbuf, "Height: %.3f | Thickness: %.3f", g_pvp->ConvertToUnit(m_d.m_height), g_pvp->ConvertToUnit((float)m_d.m_thickness));
    g_pvp->SetStatusBarUnitInfo(tbuf);
@@ -669,8 +672,6 @@ void Rubber::MoveOffset(const float dx, const float dy)
       pdp->m_v.x += dx;
       pdp->m_v.y += dy;
    }
-
-   m_ptable->SetDirtyDraw();
 }
 
 void Rubber::ClearForOverwrite()
@@ -906,8 +907,6 @@ void Rubber::DoCommand(int icmd, int x, int y)
          m_vdpoint.insert(m_vdpoint.begin() + icp, pdp); // push the second point forward, and replace it with this one.  Should work when index2 wraps.
       }
 
-      SetDirtyDraw();
-
       STOPUNDO
    }
    break;
@@ -967,11 +966,12 @@ STDMETHODIMP Rubber::put_Height(float newVal)
    {
       STARTUNDO
 
-         m_d.m_height = newVal;
+      m_d.m_height = newVal;
       dynamicVertexBufferRegenerate = true;
-      UpdateUnitsInfo();
 
       STOPUNDO
+
+      UpdateUnitsInfo();
    }
 
    return S_OK;
@@ -1012,11 +1012,12 @@ STDMETHODIMP Rubber::put_Thickness(int newVal)
    {
       STARTUNDO
 
-         m_d.m_thickness = newVal;
+      m_d.m_thickness = newVal;
       dynamicVertexBufferRegenerate = true;
-      UpdateUnitsInfo();
 
       STOPUNDO
+
+      UpdateUnitsInfo();
    }
 
    return S_OK;

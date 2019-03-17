@@ -155,14 +155,12 @@ public:
    virtual void UpdatePropertyPanes();
    virtual void AddPoint(int x, int y, const bool smooth);
 
-   void WriteRegDefaults();
+   virtual void WriteRegDefaults();
    void FreeBuffers();
 
    void InitShape();
    void setLightState(const LightState newVal);
    void RenderBulbMesh();
-
-   PinTable *m_ptable;
 
    LightData m_d;
    LightState m_realState;
@@ -175,6 +173,8 @@ public:
 
    // Run-time
 private:
+   PinTable * m_ptable;
+
    Material * m_surfaceMaterial;
    Texture  *m_surfaceTexture;
 

@@ -62,7 +62,8 @@ Pin3D::~Pin3D()
 
    SAFE_RELEASE_NO_RCC(m_pddsBackBuffer);
 
-   if (m_pd3dSecondaryDevice && (m_pd3dSecondaryDevice != m_pd3dPrimaryDevice)) delete m_pd3dSecondaryDevice;
+   if (m_pd3dSecondaryDevice && (m_pd3dSecondaryDevice != m_pd3dPrimaryDevice))
+      delete m_pd3dSecondaryDevice;
    delete m_pd3dPrimaryDevice;
 
    m_pd3dPrimaryDevice = NULL;

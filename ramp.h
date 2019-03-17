@@ -128,18 +128,18 @@ public:
    virtual void ExportMesh(FILE *f);
    virtual void AddPoint(int x, int y, const bool smooth);
 
-   void WriteRegDefaults();
+   virtual void WriteRegDefaults();
    void UpdateUnitsInfo();
 
    // IHaveDragPoints
    virtual void GetPointDialogPanes(vector<PropertyPane*> &pvproppane);
    // end IHaveDragPoints
 
-   PinTable *m_ptable;
-
    RampData m_d;
 
 private:
+   PinTable * m_ptable;
+
    int rampVertex;
    Vertex2D *rgvInit;    // just for setup/static drawing
    float *rgheightInit;
