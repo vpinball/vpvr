@@ -318,7 +318,33 @@ void EnumerateDisplayModes(const int display, std::vector<VideoMode>& modes)
       VideoMode vmode;
       vmode.width = myMode.w;
       vmode.height = myMode.h;
-      vmode.depth = myMode.format;
+      switch (myMode.format) {
+      case SDL_PIXELFORMAT_RGB24:
+      case SDL_PIXELFORMAT_BGR24:
+      case SDL_PIXELFORMAT_RGB888:
+      case SDL_PIXELFORMAT_RGBX8888:
+      case SDL_PIXELFORMAT_BGR888:
+      case SDL_PIXELFORMAT_BGRX8888:
+      case SDL_PIXELFORMAT_ARGB8888:
+      case SDL_PIXELFORMAT_RGBA8888:
+      case SDL_PIXELFORMAT_ABGR8888:
+      case SDL_PIXELFORMAT_BGRA8888:
+         vmode.depth = 32;
+         break;
+      case SDL_PIXELFORMAT_RGB565:
+      case SDL_PIXELFORMAT_BGR565:
+      case SDL_PIXELFORMAT_ABGR1555:
+      case SDL_PIXELFORMAT_BGRA5551:
+      case SDL_PIXELFORMAT_ARGB1555:
+      case SDL_PIXELFORMAT_RGBA5551:
+         vmode.depth = 16;
+         break;
+      case SDL_PIXELFORMAT_ARGB2101010:
+         vmode.depth = 30;
+         break;
+      default:
+         vmode.depth = 0;
+      }
       vmode.refreshrate = myMode.refresh_rate;
       modes.push_back(vmode);
    }
@@ -663,10 +689,17 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    int disp_x, disp_y, disp_w, disp_h;
    getDisplaySetupByID(m_adapter, disp_x, disp_y, disp_w, disp_h);
 
-   m_sdl_playfieldHwnd = SDL_CreateWindow(
-      "Visual Pinball Player SDL", disp_x + (disp_w - m_width) / 2, disp_y + (disp_h - m_height) / 2, m_width, m_height,
-      SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (m_fullscreen ? SDL_WINDOW_FULLSCREEN : 0) /*| SDL_WINDOW_INPUT_GRABBED*/
-   );
+   bool disableVRPreview = (m_stereo3D == STEREO_VR) && (GetRegIntWithDefault("Player", "VRPreviewDisabled", 0) > 0);
+
+   if (disableVRPreview == 0)
+      m_sdl_playfieldHwnd = SDL_CreateWindow(
+         "Visual Pinball Player SDL", disp_x + (disp_w - m_width) / 2, disp_y + (disp_h - m_height) / 2, m_width, m_height,
+         SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (m_fullscreen ? SDL_WINDOW_FULLSCREEN : 0));
+   else
+      m_sdl_playfieldHwnd = SDL_CreateWindow(
+         "Visual Pinball Player SDL", disp_x + (disp_w - 640) / 2, disp_y + (disp_h - 480) / 2, 640, 480,
+         SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+
    SDL_SysWMinfo wmInfo;
    SDL_VERSION(&wmInfo.version);
    SDL_GetWindowWMInfo(m_sdl_playfieldHwnd, &wmInfo);

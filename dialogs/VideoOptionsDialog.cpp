@@ -36,7 +36,7 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
 
    int depthcur;
    HRESULT hr = GetRegInt("Player", "ColorDepth", &depthcur);
-   if (hr != S_OK)
+   if (hr != S_OK || (depthcur != 16) || (depthcur != 30) || (depthcur != 32))
       depthcur = 32;
 
    int refreshrate;
@@ -162,65 +162,50 @@ void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes,
 {
    const HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
    SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
+   int bestMatch = 0;
+   int bestMatchingPoints = 0;
+   int screenwidth;
+   int screenheight;
+   int x, y;
+   const int display = SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
+   getDisplaySetupByID(display, x, y, screenwidth, screenheight);
 
    for (size_t i = 0; i < modes.size(); ++i)
    {
       char szT[128];
+
 #ifdef ENABLE_SDL
-      if (modes[i].depth != SDL_PIXELFORMAT_UNKNOWN) {
-         char* bitFormat;
-         switch (modes[i].depth) {
-         case SDL_PIXELFORMAT_RGB24:
-         case SDL_PIXELFORMAT_BGR24:
-         case SDL_PIXELFORMAT_RGB888:
-         case SDL_PIXELFORMAT_RGBX8888:
-         case SDL_PIXELFORMAT_BGR888:
-         case SDL_PIXELFORMAT_BGRX8888:
-         case SDL_PIXELFORMAT_ARGB8888:
-         case SDL_PIXELFORMAT_RGBA8888:
-         case SDL_PIXELFORMAT_ABGR8888:
-         case SDL_PIXELFORMAT_BGRA8888:
-            bitFormat = "32bit";
-            break;
-         case SDL_PIXELFORMAT_RGB565:
-         case SDL_PIXELFORMAT_BGR565:
-         case SDL_PIXELFORMAT_ABGR1555:
-         case SDL_PIXELFORMAT_BGRA5551:
-         case SDL_PIXELFORMAT_ARGB1555:
-         case SDL_PIXELFORMAT_RGBA5551:
-            bitFormat = "16bit";
-            break;
-         case SDL_PIXELFORMAT_ARGB2101010:
-            bitFormat = "HDR";
-            break;
-         }
-         sprintf_s(szT, "%d x %d (%dHz) %s", modes[i].width, modes[i].height, modes[i].refreshrate, bitFormat);
-      }
-      else {
-         sprintf_s(szT, "%d x %d",  modes[i].width, modes[i].height);
-      }
+      if (modes[i].depth)
+         sprintf_s(szT, "%d x %d (%dHz) %s", modes[i].width, modes[i].height, modes[i].refreshrate, (modes[i].depth == 32) ? "32bit" :
+            (modes[i].depth == 30) ? "HDR" :
+            (modes[i].depth == 16) ? "16bit" : "");
 #else
       if (modes[i].depth)
          sprintf_s(szT, "%d x %d (%dHz)", modes[i].width, modes[i].height, /*modes[i].depth,*/ modes[i].refreshrate);
+#endif
       else
          sprintf_s(szT, "%d x %d", modes[i].width, modes[i].height);
-#endif
+
       SendMessage(hwndList, LB_ADDSTRING, 0, (LPARAM)szT);
-      if (curSelMode &&
-         modes[i].width == curSelMode->width &&
-         modes[i].height == curSelMode->height &&
-         modes[i].depth == curSelMode->depth &&
-         (modes[i].refreshrate == curSelMode->refreshrate || (curSelMode->refreshrate == 0 && modes[i].refreshrate == DEFAULT_PLAYER_FS_REFRESHRATE)))
-         SendMessage(hwndList, LB_SETCURSEL, i, 0);
+      if (curSelMode) {
+         int matchingPoints = 0;
+         if (modes[i].width == curSelMode->width) matchingPoints += 100;
+         if (modes[i].height == curSelMode->height) matchingPoints += 100;
+         if (modes[i].depth == curSelMode->depth) matchingPoints += 50;
+         if (modes[i].refreshrate == curSelMode->refreshrate) matchingPoints += 10;
+         if (modes[i].width == screenwidth) matchingPoints += 3;
+         if (modes[i].height == screenheight) matchingPoints += 3;
+         if (modes[i].refreshrate == DEFAULT_PLAYER_FS_REFRESHRATE) matchingPoints += 1;
+         if (matchingPoints > bestMatchingPoints) {
+            bestMatch = i;
+            bestMatchingPoints = matchingPoints;
+         }
+      }
    }
+   SendMessage(hwndList, LB_SETCURSEL, bestMatch, 0);
 }
 
 void VideoOptionsDialog::updateStereoVisibility(int stereo3D) {
-   static int oldValue = -1;
-   if (stereo3D == STEREO_SBS || stereo3D == STEREO_INT) stereo3D = STEREO_TB;
-   if (stereo3D == oldValue) return;
-   oldValue = stereo3D;
-
    GetDlgItem(IDC_3D_STEREO_Y).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
    GetDlgItem(IDC_3D_STEREO_OFS).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
    GetDlgItem(IDC_3D_STEREO_OFS_LABEL).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
@@ -229,6 +214,7 @@ void VideoOptionsDialog::updateStereoVisibility(int stereo3D) {
    GetDlgItem(IDC_3D_STEREO_ZPD).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
    GetDlgItem(IDC_3D_STEREO_ZPD_LABEL).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
 
+   GetDlgItem(IDC_VR_DISABLE_PREVIEW).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
    GetDlgItem(IDC_VR_SLOPE).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
    GetDlgItem(IDC_VR_SLOPE_LABEL).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
    GetDlgItem(IDC_3D_VR_ORIENTATION).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
@@ -502,8 +488,6 @@ BOOL VideoOptionsDialog::OnInitDialog()
 #endif
    SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_SETCURSEL, stereo3D, 0);
 
-   updateStereoVisibility(stereo3D);
-
    hwndCheck = GetDlgItem(IDC_3D_STEREO_Y).GetHwnd();
    int stereo3DY;
    hr = GetRegInt("Player", "Stereo3DYAxis", &stereo3DY);
@@ -517,6 +501,9 @@ BOOL VideoOptionsDialog::OnInitDialog()
       stereo3DOfs = 0.0f;
    sprintf_s(tmp, 256, "%f", stereo3DOfs);
    SetDlgItemTextA(IDC_3D_STEREO_OFS, tmp);
+
+   int disableVRPreview = GetRegIntWithDefault("Player", "VRPreviewDisabled", 0);
+   SendMessage(GetDlgItem(IDC_VR_DISABLE_PREVIEW).GetHwnd(), BM_SETCHECK, disableVRPreview ? BST_CHECKED : BST_UNCHECKED, 0);
 
    float vrSlope;
    hr = GetRegStringAsFloat("Player", "VRSlope", &vrSlope);
@@ -602,7 +589,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
 
    int depthcur;
    hr = GetRegInt("Player", "ColorDepth", &depthcur);
-   if (hr != S_OK)
+   if (hr != S_OK || (depthcur!=16) || (depthcur != 30) || (depthcur != 32))
       depthcur = 32;
 
    int refreshrate;
@@ -710,6 +697,8 @@ BOOL VideoOptionsDialog::OnInitDialog()
    SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Shader");
    int blitModeVR = GetRegIntWithDefault("Player", "blitModeVR", 0);
    SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_SETCURSEL, blitModeVR, 0);
+
+   updateStereoVisibility(stereo3D);
 
    return TRUE;
 }
@@ -976,7 +965,10 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       }
       if (allVideoModes.size() > index) {
          VideoMode * pvm = &allVideoModes[index];
-         SendMessage(checked ? GET_FULLSCREENMODES : GET_WINDOW_MODES, (pvm->width) << 16 | (pvm->refreshrate), (pvm->height) << 16 | (pvm->depth));
+         if (checked)
+            SendMessage(GET_FULLSCREENMODES, (pvm->width) << 16 | (pvm->refreshrate), (pvm->height) << 16 | (pvm->depth));
+         else
+            SendMessage(GET_WINDOW_MODES, pvm->width, pvm->height);
 
       }
       else
@@ -1155,6 +1147,9 @@ void VideoOptionsDialog::OnOK()
 
    tmpStr = GetDlgItemTextA(IDC_3D_STEREO_OFS);
    SetRegValue("Player", "Stereo3DOffset", REG_SZ, tmpStr.c_str(), lstrlen(tmpStr.c_str()));
+
+   size_t disableVRPreview = SendMessage(GetDlgItem(IDC_VR_DISABLE_PREVIEW).GetHwnd(), BM_GETCHECK, 0, 0);
+   SetRegValue("Player", "VRPreviewDisabled", REG_DWORD, &disableVRPreview, 4);
 
    tmpStr = GetDlgItemTextA(IDC_VR_SLOPE);
    SetRegValue("Player", "VRSlope", REG_SZ, tmpStr.c_str(), lstrlen(tmpStr.c_str()));

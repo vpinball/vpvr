@@ -811,6 +811,7 @@
 #define IDS_INPUT                       551
 #define IDC_VR_OFFSET_Z                 551
 #define IDS_UNHIDEALL                   552
+#define IDC_VR_DISABLE_PREVIEW          552
 #define IDS_HIDE                        553
 #define IDC_MODIFY3DSTEREO              554
 #define IDC_DMD2                        555
