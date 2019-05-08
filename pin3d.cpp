@@ -520,11 +520,6 @@ void Pin3D::DrawBackground()
 
 void Pin3D::InitLights()
 {
-   //m_pd3dPrimaryDevice->basicShader->SetInt("iLightPointNum",MAX_LIGHT_SOURCES);
-#ifdef SEPARATE_CLASSICLIGHTSHADER
-   //m_pd3dPrimaryDevice->classicLightShader->SetInt("iLightPointNum",MAX_LIGHT_SOURCES);
-#endif
-
    g_pplayer->m_ptable->m_Light[0].pos.x = g_pplayer->m_ptable->m_right*0.5f;
    g_pplayer->m_ptable->m_Light[1].pos.x = g_pplayer->m_ptable->m_right*0.5f;
    g_pplayer->m_ptable->m_Light[0].pos.y = g_pplayer->m_ptable->m_bottom*(float)(1.0 / 3.0);
@@ -533,24 +528,28 @@ void Pin3D::InitLights()
    g_pplayer->m_ptable->m_Light[1].pos.z = g_pplayer->m_ptable->m_lightHeight;
 
    vec4 emission = convertColor(g_pplayer->m_ptable->m_Light[0].emission);
-   emission.x *= g_pplayer->m_ptable->m_lightEmissionScale*g_pplayer->m_globalEmissionScale;
-   emission.y *= g_pplayer->m_ptable->m_lightEmissionScale*g_pplayer->m_globalEmissionScale;
-   emission.z *= g_pplayer->m_ptable->m_lightEmissionScale*g_pplayer->m_globalEmissionScale;
+   // Multiplying emission by the global emissionscale creates some weird results, some objects get very bright
+   //emission.x *= g_pplayer->m_ptable->m_lightEmissionScale*g_pplayer->m_globalEmissionScale;
+   //emission.y *= g_pplayer->m_ptable->m_lightEmissionScale*g_pplayer->m_globalEmissionScale;
+   //emission.z *= g_pplayer->m_ptable->m_lightEmissionScale*g_pplayer->m_globalEmissionScale;
 
-   struct CLight
+   float lightPos[MAX_LIGHT_SOURCES][3];
+   float lightEmission[MAX_LIGHT_SOURCES][3];
+   int lightSources = MAX_LIGHT_SOURCES;
+
+   for (unsigned int i = 0; i < MAX_LIGHT_SOURCES; i++)
    {
-      float vPos[3];
-      float vEmission[3];
-   };
-   CLight l[MAX_LIGHT_SOURCES];
-   for (unsigned int i = 0; i < MAX_LIGHT_SOURCES; ++i)
-   {
-      memcpy(&l[i].vPos, &g_pplayer->m_ptable->m_Light[i].pos, sizeof(float) * 3);
-      memcpy(&l[i].vEmission, &emission, sizeof(float) * 3);
+       memcpy(&lightPos[i], &g_pplayer->m_ptable->m_Light[i].pos, sizeof(float) * 3);
+       memcpy(&lightEmission[i], &emission, sizeof(float) * 3);
    }
-   m_pd3dPrimaryDevice->basicShader->SetFloatArray("packedLights", (float*)l, 6*MAX_LIGHT_SOURCES);
-#ifdef SEPARATE_CLASSICLIGHTSHADER
-   m_pd3dPrimaryDevice->classicLightShader->SetFloatArray("packedLights", (float*)l, 6*MAX_LIGHT_SOURCES);
+
+   m_pd3dPrimaryDevice->basicShader->SetFloatArray("lightPos", (float *)lightPos, 3 * lightSources);
+   m_pd3dPrimaryDevice->basicShader->SetFloatArray("lightEmission", (float *)lightEmission, 3 * lightSources);
+   m_pd3dPrimaryDevice->basicShader->SetInt("lightSources", lightSources);
+#ifdef SEPARATE_CLASSICLIGHTSHADER;
+   m_pd3dPrimaryDevice->basicShader->SetFloatArray("lightPos", (float *)lightPos, 3 * lightSources);
+   m_pd3dPrimaryDevice->basicShader->SetFloatArray("lightEmission", (float *)lightEmission, 3 * lightSources);
+   m_pd3dPrimaryDevice->basicShader->SetInt("lightSources", lightSources);
 #endif
 
    vec4 amb_lr = convertColor(g_pplayer->m_ptable->m_lightAmbient, g_pplayer->m_ptable->m_lightRange);
