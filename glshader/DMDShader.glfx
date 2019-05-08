@@ -15,22 +15,19 @@ uniform vec3 vRes_Alpha;
 
 ////VERTEX
 
-out
-int instanceID;
+out int instanceID;
 
 ////GEOMETRY
 #extension GL_ARB_viewport_array : enable
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
-in
-int instanceID[];
+in int instanceID[];
 
 ////FRAGMENT
 
 uniform sampler2D Texture0; // base texture
 
-out
-vec4 color;
+out vec4 color;
 
 //
 // VS function output structures 
@@ -38,13 +35,10 @@ vec4 color;
 
 ////vs_main
 
-in
-vec3 vPosition;
-in
-vec2 tc;
+in vec3 vPosition;
+in vec2 tc;
 
-out
-vec2 tex0_gs;
+out vec2 tex0_gs;
 
 void main()
 {
@@ -59,13 +53,10 @@ void main()
 layout(std140) uniform matrixBlock {
 mat4 matWorldViewProj[eyes];};
 
-in
-vec3 vPosition;
-in
-vec2 tc;
+in vec3 vPosition;
+in vec2 tc;
 
-out
-vec2 tex0_gs;
+out vec2 tex0_gs;
 
 void main()
 {
@@ -76,10 +67,8 @@ void main()
 
 ////gs_simple_main
 
-in
-vec2 tex0_gs[];
-out
-vec2 tex0;
+in vec2 tex0_gs[];
+out vec2 tex0;
 
 void main()
 {
@@ -102,8 +91,7 @@ void main()
 
 ////ps_main_DMD
 
-in
-float2 tex0;
+in float2 tex0;
 
 void main()
 {
@@ -150,8 +138,7 @@ void main()
 
 ////ps_main_noDMD
 
-in
-vec2 tex0;
+in vec2 tex0;
 
 void main()
 {
