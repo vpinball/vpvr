@@ -3336,7 +3336,6 @@ void Player::DrawBulbLightBuffer()
 
       //for (unsigned int blur = 0; blur < 2; ++blur) // uses larger blur kernel instead now (see below)
       {
-          const vec4 fb_inv_resolution_05((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidthBlur()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheightBlur()), 1.0f, 1.0f);
          {
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull("Texture0");
 
@@ -3344,6 +3343,7 @@ void Player::DrawBulbLightBuffer()
             m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture(), true);
 
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture(), false);
+            const vec4 fb_inv_resolution_05((float)(3.0 / (double)m_width), (float)(3.0 / (double)m_height), 1.0f, 1.0f);
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector("w_h_height", &fb_inv_resolution_05);
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique("fb_bloom_horiz19x19");
 
@@ -3358,6 +3358,7 @@ void Player::DrawBulbLightBuffer()
             m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture(), true);
 
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture(), false);
+            const vec4 fb_inv_resolution_05((float)(3.0 / (double)m_width), (float)(3.0 / (double)m_height), 1.0f, 1.0f);
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector("w_h_height", &fb_inv_resolution_05);
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique("fb_bloom_vert19x19");
 
@@ -3616,7 +3617,7 @@ void Player::SSRefl()
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture3", m_pin3d.m_pdds3DZBuffer, true);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture4", &m_pin3d.aoDitherTexture, true); //!!!
 
-   const vec4 w_h_height((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheight()), 1.0f, 1.0f);
+   const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), 1.0f, 1.0f);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector("w_h_height", &w_h_height);
 
    const float rotation = fmodf(m_ptable->m_BG_rotation[m_ptable->m_BG_current_set], 360.f);
@@ -3641,7 +3642,7 @@ void Player::Bloom(float x, float y, float tx, float ty)
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture(), true);
 
-      const vec4 fb_inv_resolution_05((float)(0.5 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidth()), (float)(0.5 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheight()), 1.0f, 1.0f);
+      const vec4 fb_inv_resolution_05((float)(0.5 / (double)m_width), (float)(0.5 / (double)m_height), 1.0f, 1.0f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector("w_h_height", &fb_inv_resolution_05);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique("fb_bloom");
 
@@ -3657,7 +3658,7 @@ void Player::Bloom(float x, float y, float tx, float ty)
       m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture(), true);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture(), true);
-      const vec4 fb_inv_resolution_05((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidthBlur()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheightBlur()), 1.0f, 1.0f);
+      const vec4 fb_inv_resolution_05((float)(3.0 / (double)m_width), (float)(3.0 / (double)m_height), 1.0f, 1.0f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector("w_h_height", &fb_inv_resolution_05);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(/*m_low_quality_bloom ? "fb_bloom_horiz9x9" :*/ "fb_bloom_horiz19x19h");
 
@@ -3672,7 +3673,7 @@ void Player::Bloom(float x, float y, float tx, float ty)
       m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture(), true);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture(), true);
-      const vec4 fb_inv_resolution_05((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidthBlur()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheightBlur()), 1.0f, 1.0f);
+      const vec4 fb_inv_resolution_05((float)(3.0 / (double)m_width), (float)(3.0 / (double)m_height), m_ptable->m_bloom_strength, 1.0f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector("w_h_height", &fb_inv_resolution_05);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(/*m_low_quality_bloom ? "fb_bloom_vert9x9" :*/ "fb_bloom_vert19x19h");
 
@@ -3696,7 +3697,7 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
    if (depth_available)
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture3", m_pin3d.m_pdds3DZBuffer, true);
 
-   const vec4 w_h_height((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheight()), (float)m_pin3d.m_pd3dPrimaryDevice->getBufwidth(), depth_available ? 1.f : 0.f);
+   const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), (float)m_width, depth_available ? 1.f : 0.f);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector("w_h_height", &w_h_height);
 
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SMAA ? "SMAA_ColorEdgeDetection" : (DLAA ? "DLAA_edge" : (NFAA ? "NFAA" : (FXAA3 ? "FXAA3" : (FXAA2 ? "FXAA2" : "FXAA1")))));
@@ -3772,7 +3773,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
 
       m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
 
-      {const vec4* width_height_rotated_flipLR = new vec4((float)m_pin3d.m_pd3dPrimaryDevice->getBufwidth(), (float)m_pin3d.m_pd3dPrimaryDevice->getBufheight(), 0.0f, 0.0f);
+      {const vec4* width_height_rotated_flipLR = new vec4((float)m_width, (float)m_height, 0.0f, 0.0f);
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetVector("width_height_rotated_flipLR", width_height_rotated_flipLR);}
 
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin(0);
