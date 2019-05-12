@@ -585,6 +585,9 @@ Player::Player(bool _cameraMode) : cameraMode(_cameraMode)
       stereo3DY = fFalse; // The default
    m_stereo3DY = (stereo3DY == 1);
 
+#ifdef ENABLE_BAM
+   m_headTracking = GetRegIntWithDefault("Player", "BAMheadTracking", 0) != 0;
+#endif
    int scaleFX_DMD;
    hr = GetRegInt("Player", "ScaleFXDMD", &scaleFX_DMD);
    if (hr != S_OK)
@@ -4510,6 +4513,11 @@ void Player::Render()
 #ifdef ENABLE_VR
    if (m_stereo3D == STEREO_VR) {
       m_pin3d.m_pd3dPrimaryDevice->UpdateVRPosition();
+   }
+#endif
+#ifdef ENABLE_BAM
+   if ((m_stereo3D != STEREO_VR) && m_headTracking) {
+      m_pin3d.UpdateBAMHeadTracking();				// #ravarcade: UpdateBAMHeadTracking will set proj/view matrix to add BAM view and head tracking
    }
 #endif
 

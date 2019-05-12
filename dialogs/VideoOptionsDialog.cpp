@@ -207,6 +207,7 @@ void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes,
 }
 
 void VideoOptionsDialog::updateStereoVisibility(int stereo3D) {
+   if (stereo3D == STEREO_INT || stereo3D == STEREO_SBS) stereo3D = STEREO_TB;
    GetDlgItem(IDC_3D_STEREO_Y).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
    GetDlgItem(IDC_3D_STEREO_OFS).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
    GetDlgItem(IDC_3D_STEREO_OFS_LABEL).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
@@ -226,6 +227,8 @@ void VideoOptionsDialog::updateStereoVisibility(int stereo3D) {
    GetDlgItem(IDC_VR_OFFSET_Y_LABEL).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
    GetDlgItem(IDC_VR_OFFSET_Z).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
    GetDlgItem(IDC_VR_OFFSET_Z_LABEL).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
+
+   GetDlgItem(IDC_HEADTRACKING).ShowWindow(stereo3D != STEREO_VR ? SW_SHOW : SW_HIDE);
 }
 
 BOOL VideoOptionsDialog::OnInitDialog()
@@ -294,6 +297,8 @@ BOOL VideoOptionsDialog::OnInitDialog()
       AddToolTip("Pixel format for VR Rendering.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_COMBO_BLIT).GetHwnd();
       AddToolTip("Blitting technique for VR Rendering.", hwndDlg, toolTipHwnd, controlHwnd);
+      controlHwnd = GetDlgItem(IDC_HEADTRACKING).GetHwnd();
+      AddToolTip("Enable BAM Headtracking. See https://www.ravarcade.pl", hwndDlg, toolTipHwnd, controlHwnd);
    }
 
    int maxTexDim;
@@ -554,6 +559,9 @@ BOOL VideoOptionsDialog::OnInitDialog()
       stereo3DZPD = 0.5f;
    sprintf_s(tmp, 256, "%f", stereo3DZPD);
    SetDlgItemTextA(IDC_3D_STEREO_ZPD, tmp);
+
+   int bamHeadtracking = GetRegIntWithDefault("Player", "BAMheadTracking", 0);
+   SendMessage(GetDlgItem(IDC_HEADTRACKING).GetHwnd(), BM_SETCHECK, bamHeadtracking ? BST_CHECKED : BST_UNCHECKED, 0);
 
    hwndCheck = GetDlgItem(IDC_DISABLE_DWM).GetHwnd();
    int disableDWM;
@@ -1172,6 +1180,9 @@ void VideoOptionsDialog::OnOK()
 
    tmpStr = GetDlgItemTextA(IDC_3D_STEREO_ZPD);
    SetRegValue("Player", "Stereo3DZPD", REG_SZ, tmpStr.c_str(), lstrlen(tmpStr.c_str()));
+
+   size_t bamHeadtracking = SendMessage(GetDlgItem(IDC_HEADTRACKING).GetHwnd(), BM_GETCHECK, 0, 0);
+   SetRegValue("Player", "BAMheadTracking", REG_DWORD, &bamHeadtracking, 4);
 
    HWND hwndDisableDWM = GetDlgItem(IDC_DISABLE_DWM).GetHwnd();
    size_t disableDWM = SendMessage(hwndDisableDWM, BM_GETCHECK, 0, 0);

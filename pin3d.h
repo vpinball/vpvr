@@ -151,6 +151,9 @@ public:
 
 private:
    VertexBuffer *tableVBuffer;
+#ifdef ENABLE_BAM
+   public: void UpdateBAMHeadTracking();                 // #ravarcade: UpdateBAMHeadTracking will set proj/view matrix to add BAM view and head tracking
+#endif
 };
 
 Matrix3D ComputeLaybackTransform(float layback);

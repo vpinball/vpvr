@@ -1,6 +1,13 @@
 SDL2 / VR Changelog
 ------------------------
 
+- Added support for BAM Headtracking (Thanks to Rafal from ravarcade.pl). Usage:
+	All works almost same way as with Arcade Pinball, but you don't have control over table location.
+	1. Player need working Future Pinball with head tracking. (FP is used to setup head tracking, FP is closed).
+	2. Start BAM-Tracker.exe, select head tracking method, left it running.
+	3. Run VPinballX_GL.exe.
+	https://www.youtube.com/watch?v=g-EpTp_3wKo
+
 - Shader and rendering fixes by Rawnei
 
 - Fixed x64 support. If it fails check if the architecture from VPVR matches the architecture from VPinMame.
