@@ -4870,20 +4870,20 @@ void Player::DrawBalls()
           memcpy(&lightEmission[i2], &emission, sizeof(float) * 3);
       }
 
-      for (unsigned int light_i = MAX_LIGHT_SOURCES; light_i < MAX_BALL_LIGHT_SOURCES; light_i++)
+      for (unsigned int light_i = 0; light_i < MAX_BALL_LIGHT_SOURCES; light_i++)
       {
           if (light_nearest[light_i] != NULL)
           {
               lightSources++;
-              lightPos[light_i][0] = light_nearest[light_i]->m_d.m_vCenter.x;
-              lightPos[light_i][1] = light_nearest[light_i]->m_d.m_vCenter.y;
-              lightPos[light_i][2] = light_nearest[light_i]->m_d.m_meshRadius + light_nearest[light_i]->m_surfaceHeight;
+              lightPos[light_i + MAX_LIGHT_SOURCES][0] = light_nearest[light_i]->m_d.m_vCenter.x;
+              lightPos[light_i + MAX_LIGHT_SOURCES][1] = light_nearest[light_i]->m_d.m_vCenter.y;
+              lightPos[light_i + MAX_LIGHT_SOURCES][2] = light_nearest[light_i]->m_d.m_meshRadius + light_nearest[light_i]->m_surfaceHeight;
 
               const float c = map_bulblight_to_emission(light_nearest[light_i]) * pball->m_bulb_intensity_scale;
               const vec4 color = convertColor(light_nearest[light_i]->m_d.m_color);
-              lightEmission[light_i][0] = color.x*c;
-              lightEmission[light_i][1] = color.y*c;
-              lightEmission[light_i][2] = color.z*c;
+              lightEmission[light_i + MAX_LIGHT_SOURCES][0] = color.x*c;
+              lightEmission[light_i + MAX_LIGHT_SOURCES][1] = color.y*c;
+              lightEmission[light_i + MAX_LIGHT_SOURCES][2] = color.z*c;
           }
       }
 
