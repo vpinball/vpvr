@@ -288,7 +288,7 @@ copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"</Command>
       <AdditionalIncludeDirectories>inc\win32xx\include</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>SDL2.lib;SDL2_ttf.lib;SDL2main.lib;opengl32.lib;openvr_api.lib;glew32.lib;dinput8.lib;dsound.lib
+      <AdditionalDependencies>SDL2.lib;SDL2_ttf.lib;SDL2main.lib;opengl32.lib;openvr_api.lib;dinput8.lib;dsound.lib
 ;dxguid.lib;comctl32.lib;freeimage.lib;winmm.lib;odbc32.lib;odbccp32.lib;bass.lib;imm32.lib;setupapi.lib;hid.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(DXSDK_DIR)\Lib\x86;.\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -407,7 +407,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>SDL2.lib;SDL2_ttf.lib;SDL2main.lib;opengl32.lib;openvr_api.lib;glew32.lib;dinput8.lib;dsound.lib
+      <AdditionalDependencies>SDL2.lib;SDL2_ttf.lib;SDL2main.lib;opengl32.lib;openvr_api.lib;dinput8.lib;dsound.lib
 ;dxguid.lib;comctl32.lib;freeimage.lib;winmm.lib;odbc32.lib;odbccp32.lib;bass.lib;imm32.lib;setupapi.lib;hid.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(DXSDK_DIR)\Lib\x64;.\lib\x64;.\dll\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -550,7 +550,7 @@ copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"</Command>
       <AdditionalIncludeDirectories>inc\win32xx\include</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>SDL2.lib;SDL2_ttf.lib;opengl32.lib;SDL2main.lib;openvr_api.lib;glew32.lib;dinput8.lib;comctl32.lib;dxguid.lib;freeimage.lib;dsound.lib;winmm.lib;odbc32.lib;odbccp32.lib;bass.lib;imm32.lib;setupapi.lib;hid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;SDL2_ttf.lib;opengl32.lib;SDL2main.lib;openvr_api.lib;dinput8.lib;comctl32.lib;dxguid.lib;freeimage.lib;dsound.lib;winmm.lib;odbc32.lib;odbccp32.lib;bass.lib;imm32.lib;setupapi.lib;hid.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(DXSDK_DIR)\Lib\x86;.\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>LIBC;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -685,7 +685,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>SDL2.lib;SDL2_ttf.lib;SDL2main.lib;opengl32.lib;openvr_api.lib;glew32.lib;comctl32.lib;dinput8.lib;dxguid.lib;freeimage.lib;dsound.lib;winmm.lib;dinput.lib;nvapi.lib;odbc32.lib;odbccp32.lib;bass.lib;imm32.lib;setupapi.lib;hid.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib;SDL2_ttf.lib;SDL2main.lib;opengl32.lib;openvr_api.lib;comctl32.lib;dinput8.lib;dxguid.lib;freeimage.lib;dsound.lib;winmm.lib;dinput.lib;nvapi.lib;odbc32.lib;odbccp32.lib;bass.lib;imm32.lib;setupapi.lib;hid.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(DXSDK_DIR)\Lib\x64;.\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>LIBC;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>

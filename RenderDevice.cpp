@@ -248,7 +248,6 @@ const char* glErrorToString(int error) {
    case GL_STACK_UNDERFLOW: return "GL_STACK_UNDERFLOW";
    case GL_OUT_OF_MEMORY: return "GL_OUT_OF_MEMORY";
    case GL_INVALID_FRAMEBUFFER_OPERATION: return "GL_INVALID_FRAMEBUFFER_OPERATION";
-   case GL_CONTEXT_LOST: return "GL_CONTEXT_LOST";
    default: return "unknown";
    }
 }
@@ -709,6 +708,11 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 
    SDL_GL_MakeCurrent(m_sdl_playfieldHwnd, m_sdl_context);
 
+   if (!gladLoadGLLoader(SDL_GL_GetProcAddress)) {
+      ShowError("Glad failed");
+      exit(-1);
+   }
+
    GLint frameBuffer[4];
    glGetIntegerv(GL_VIEWPORT, frameBuffer);
    int fbWidth = frameBuffer[2];
@@ -757,19 +761,6 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       throw(unknownStereoMode);
    }
 
-/*   if (!gladLoadGLLoader(SDL_GL_GetProcAddress)) {
-      ShowError("Glad failed");
-      exit(-1);
-   }*/
-   glewExperimental = GL_TRUE;
-   GLenum nGlewError = glewInit();
-   if (nGlewError != GLEW_OK)
-   {
-      char msg[256];
-      sprintf_s(msg, 256,"%s - Error initializing GLEW! %s\n", __FUNCTION__, glewGetErrorString(nGlewError));
-      ShowError(msg);
-      exit(-1);
-   }
    CHECKD3D();
 
    if (m_vsync > refreshrate)
