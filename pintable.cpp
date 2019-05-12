@@ -2824,7 +2824,7 @@ HRESULT PinTable::SaveToStorage(IStorage *pstgRoot)
             {
                char szSuffix[32], szStmName[64];
                strcpy_s(szStmName, sizeof(szStmName), "GameItem");
-               _itoa_s(i, szSuffix, sizeof(szSuffix), 10);
+               _itoa_s((int)i, szSuffix, sizeof(szSuffix), 10);
                strcat_s(szStmName, sizeof(szStmName), szSuffix);
 
                MAKE_WIDEPTR_FROMANSI(wszStmName, szStmName);
@@ -2849,7 +2849,7 @@ HRESULT PinTable::SaveToStorage(IStorage *pstgRoot)
             {
                char szSuffix[32], szStmName[64];
                strcpy_s(szStmName, sizeof(szStmName), "Sound");
-               _itoa_s(i, szSuffix, sizeof(szSuffix), 10);
+               _itoa_s((int)i, szSuffix, sizeof(szSuffix), 10);
                strcat_s(szStmName, sizeof(szStmName), szSuffix);
 
                MAKE_WIDEPTR_FROMANSI(wszStmName, szStmName);
@@ -2869,7 +2869,7 @@ HRESULT PinTable::SaveToStorage(IStorage *pstgRoot)
             {
                char szSuffix[32], szStmName[64];
                strcpy_s(szStmName, sizeof(szStmName), "Image");
-               _itoa_s(i, szSuffix, sizeof(szSuffix), 10);
+               _itoa_s((int)i, szSuffix, sizeof(szSuffix), 10);
                strcat_s(szStmName, sizeof(szStmName), szSuffix);
 
                MAKE_WIDEPTR_FROMANSI(wszStmName, szStmName);
@@ -2889,7 +2889,7 @@ HRESULT PinTable::SaveToStorage(IStorage *pstgRoot)
             {
                char szSuffix[32], szStmName[64];
                strcpy_s(szStmName, sizeof(szStmName), "Font");
-               _itoa_s(i, szSuffix, sizeof(szSuffix), 10);
+               _itoa_s((int)i, szSuffix, sizeof(szSuffix), 10);
                strcat_s(szStmName, sizeof(szStmName), szSuffix);
 
                MAKE_WIDEPTR_FROMANSI(wszStmName, szStmName);
@@ -2909,7 +2909,7 @@ HRESULT PinTable::SaveToStorage(IStorage *pstgRoot)
             {
                char szSuffix[32], szStmName[64];
                strcpy_s(szStmName, sizeof(szStmName), "Collection");
-               _itoa_s(i, szSuffix, sizeof(szSuffix), 10);
+               _itoa_s((int)i, szSuffix, sizeof(szSuffix), 10);
                strcat_s(szStmName, sizeof(szStmName), szSuffix);
 
                MAKE_WIDEPTR_FROMANSI(wszStmName, szStmName);
@@ -5255,7 +5255,7 @@ void PinTable::DoContextMenu(int x, int y, const int menuid, ISelect *psel)
                   // so the ID_SELECT_ELEMENT is the global ID for selecting an element from the list and the rest is
                   // added for finding the element out of the list
                   // the selection is done in ISelect::DoCommand()
-                  const unsigned long id = 0x80000000 + (i << 16) + ID_SELECT_ELEMENT;
+                  const unsigned long id = 0x80000000 + ((unsigned long)i << 16) + ID_SELECT_ELEMENT;
                   AppendMenu(hmenu, MF_STRING, id, szTemp);
                }
             }
@@ -6365,7 +6365,20 @@ void PinTable::ImportBackdropPOV(const char *filename)
       xmlDoc.parse<0>(&content[0]);
 
       xml_node<> *root = xmlDoc.first_node("POV");
+      if (!root)
+      {
+         ShowError("Error parsing POV XML file: root is NULL");
+         xmlDoc.clear();
+         return;
+      }
+
       xml_node<> *desktop = root->first_node("desktop");
+      if (!desktop)
+      {
+         ShowError("Error parsing POV XML file: desktop is NULL");
+         xmlDoc.clear();
+         return;
+      }
       sscanf_s(desktop->first_node("inclination")->value(), "%f", &m_BG_inclination[BG_DESKTOP]);
       sscanf_s(desktop->first_node("fov")->value(), "%f", &m_BG_FOV[BG_DESKTOP]);
       sscanf_s(desktop->first_node("layback")->value(), "%f", &m_BG_layback[BG_DESKTOP]);
@@ -6391,6 +6404,13 @@ void PinTable::ImportBackdropPOV(const char *filename)
       oldFormatLoaded = true;
 
       xml_node<> *fullsinglescreen = root->first_node("fullsinglescreen");
+      if (!fullscreen)
+      {
+         ShowError("Error parsing POV XML file: fullscreen is NULL");
+         xmlDoc.clear();
+         return;
+      }
+
       sscanf_s(fullsinglescreen->first_node("inclination")->value(), "%f", &m_BG_inclination[BG_FSS]);
       sscanf_s(fullsinglescreen->first_node("fov")->value(), "%f", &m_BG_FOV[BG_FSS]);
       sscanf_s(fullsinglescreen->first_node("layback")->value(), "%f", &m_BG_layback[BG_FSS]);
@@ -8739,7 +8759,7 @@ STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaString
 
          //MsoWzCopy(szSrc,szDst);
          rgstr[ivar + 1] = wzDst;
-         rgdw[ivar + 1] = ivar;
+         rgdw[ivar + 1] = (DWORD)ivar;
       }
       cvar++;
    }
@@ -8772,7 +8792,7 @@ STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaString
 
          //MsoWzCopy(szSrc,szDst);
          rgstr[ivar + 1] = wzDst;
-         rgdw[ivar + 1] = ivar;
+         rgdw[ivar + 1] = (DWORD)ivar;
       }
       cvar++;
       break;
@@ -8804,7 +8824,7 @@ STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaString
 
          //MsoWzCopy(szSrc,szDst);
          rgstr[ivar + 1] = wzDst;
-         rgdw[ivar + 1] = ivar;
+         rgdw[ivar + 1] = (DWORD)ivar;
       }
       cvar++;
    }
@@ -8832,7 +8852,7 @@ STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaString
          else
             memcpy(wzDst, m_vcollection.ElementAt(ivar)->m_wzName, cwch);
          rgstr[ivar + 1] = wzDst;
-         rgdw[ivar + 1] = ivar;
+         rgdw[ivar + 1] = (DWORD)ivar;
       }
       cvar++;
    }
@@ -9247,7 +9267,7 @@ STDMETHODIMP PinTable::put_TableHeight(float newVal)
 STDMETHODIMP PinTable::get_Width(float *pVal)
 {
    *pVal = m_right - m_left;
-   g_pvp->SetStatusBarUnitInfo("");
+   g_pvp->SetStatusBarUnitInfo("", true);
 
    return S_OK;
 }

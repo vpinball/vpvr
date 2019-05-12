@@ -81,6 +81,16 @@ vec3 InvToneMap( vec3 color)
 	return (color - 1.0 + sqrt(color*(color + bh) + 1.0))*inv_2bh;
 }
 
+float FBGamma( float color) //!! use hardware support? D3DRS_SRGBWRITEENABLE
+{
+	return pow(color, 1.0/2.2); // pow does not matter anymore on current GPUs
+}
+
+vec2 FBGamma( vec2 color) //!! use hardware support? D3DRS_SRGBWRITEENABLE
+{
+	return pow(color, vec2(1.0/2.2)); // pow does not matter anymore on current GPUs
+}
+
 vec3 FBGamma( vec3 color) //!! use hardware support? D3DRS_SRGBWRITEENABLE
 {
 	return pow(color, vec3(1.0/2.2)); // pow does not matter anymore on current GPUs

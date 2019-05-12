@@ -143,10 +143,7 @@ sampler2D searchTex {
 void DX9_SMAAEdgeDetectionVS(inout float4 position : POSITION,
                              inout float2 texcoord : TEXCOORD0,
                              out float4 offset[3] : TEXCOORD1) {
-	position.x = 2.0*position.x-1.0,
-	position.y = 2.0*position.y-1.0;
     texcoord += w_h_height.xy*0.5;
-	texcoord.y = 1.0 -texcoord.y;
     SMAAEdgeDetectionVS(texcoord, offset);
 }
 
@@ -154,21 +151,15 @@ void DX9_SMAABlendingWeightCalculationVS(inout float4 position : POSITION,
                                          inout float2 texcoord : TEXCOORD0,
                                          out float2 pixcoord : TEXCOORD1,
                                          out float4 offset[3] : TEXCOORD2) {
-	position.x = 2.0*position.x-1.0,
-	position.y = 2.0*position.y-1.0;
     texcoord += w_h_height.xy*0.5;
-	texcoord.y = 1.0 -texcoord.y;
-	SMAABlendingWeightCalculationVS(texcoord, pixcoord, offset);
+    SMAABlendingWeightCalculationVS(texcoord, pixcoord, offset);
 }
 
 void DX9_SMAANeighborhoodBlendingVS(inout float4 position : POSITION,
                                     inout float2 texcoord : TEXCOORD0,
                                     out float4 offset : TEXCOORD1) {
-	position.x = 2.0*position.x-1.0,
-	position.y = 2.0*position.y-1.0;
     texcoord += w_h_height.xy*0.5;
-	texcoord.y = 1.0 -texcoord.y;
-	SMAANeighborhoodBlendingVS(texcoord, offset);
+    SMAANeighborhoodBlendingVS(texcoord, offset);
 }
 
 #ifndef SMAA_USE_COLOR

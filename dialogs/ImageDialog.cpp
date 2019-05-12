@@ -5,19 +5,21 @@
 
 typedef struct _tagSORTDATA
 {
-    HWND hwndList;
-    int subItemIndex;
-    int sortUpDown;
+   HWND hwndList;
+   int subItemIndex;
+   int sortUpDown;
 }SORTDATA;
 
 extern SORTDATA SortData;
-extern int CALLBACK MyCompProc( LPARAM lSortParam1, LPARAM lSortParam2, LPARAM lSortOption );
+extern int CALLBACK MyCompProc(LPARAM lSortParam1, LPARAM lSortParam2, LPARAM lSortOption);
 extern int CALLBACK MyCompProcIntValues(LPARAM lSortParam1, LPARAM lSortParam2, LPARAM lSortOption);
 int ImageDialog::m_columnSortOrder;
+bool ImageDialog::m_doNotChange;
 
 ImageDialog::ImageDialog() : CDialog(IDD_IMAGEDIALOG)
 {
    m_columnSortOrder = 1;
+   m_doNotChange = false;
 }
 
 ImageDialog::~ImageDialog()
@@ -37,7 +39,7 @@ void ImageDialog::OnClose()
 }
 
 BOOL ImageDialog::OnInitDialog()
-{   
+{
    m_columnSortOrder = 1;
    return TRUE;
 }
@@ -51,255 +53,263 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
    switch (uMsg)
    {
-      case WM_INITDIALOG:
+   case WM_INITDIALOG:
+   {
+      LVCOLUMN lvcol;
+      HWND hListView = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
+      m_resizer.Initialize(*this, CRect(0, 0, 500, 600));
+      m_resizer.AddChild(hListView, topleft, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+      m_resizer.AddChild(GetDlgItem(IDC_PICTUREPREVIEW).GetHwnd(), topright, 0);
+      m_resizer.AddChild(GetDlgItem(IDC_IMPORT).GetHwnd(), topright, 0);
+      m_resizer.AddChild(GetDlgItem(IDC_REIMPORT).GetHwnd(), topright, 0);
+      m_resizer.AddChild(GetDlgItem(IDC_REIMPORTFROM).GetHwnd(), topright, 0);
+      m_resizer.AddChild(GetDlgItem(IDC_UPDATE_ALL_BUTTON).GetHwnd(), topright, 0);
+      m_resizer.AddChild(GetDlgItem(IDC_DELETE_IMAGE).GetHwnd(), topright, 0);
+      m_resizer.AddChild(GetDlgItem(IDC_RENAME).GetHwnd(), topright, 0);
+      m_resizer.AddChild(GetDlgItem(IDC_EXPORT).GetHwnd(), topright, 0);
+      m_resizer.AddChild(GetDlgItem(IDC_OK).GetHwnd(), topright, 0);
+      m_resizer.AddChild(GetDlgItem(IDC_ALPHA_MASK_EDIT).GetHwnd(), topright, 0);
+      m_resizer.AddChild(GetDlgItem(IDC_STATIC_ALPHA).GetHwnd(), topright, 0);
+      m_resizer.AddChild(GetDlgItem(IDC_CHECK_RENAME_ON_EXPORT).GetHwnd(), topright, 0);
+
+      LoadPosition();
+
+      ListView_SetExtendedListViewStyle(hListView, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+
+      lvcol.mask = LVCF_TEXT | LVCF_WIDTH;
+      LocalString ls(IDS_NAME);
+      lvcol.pszText = ls.m_szbuffer;// = "Name";
+      lvcol.cx = 100;
+      ListView_InsertColumn(hListView, 0, &lvcol);
+
+      LocalString ls2(IDS_IMPORTPATH);
+      lvcol.pszText = ls2.m_szbuffer; // = "Import Path";
+      lvcol.cx = 200;
+      ListView_InsertColumn(hListView, 1, &lvcol);
+
+      LocalString ls3(IDS_IMAGESIZE);
+      lvcol.pszText = ls3.m_szbuffer; // = "Image Size";
+      lvcol.cx = 100;
+      ListView_InsertColumn(hListView, 2, &lvcol);
+
+      LocalString ls4(IDS_USED_IN_TABLE);
+      lvcol.pszText = ls4.m_szbuffer; // = "In use";
+      lvcol.cx = 45;
+      ListView_InsertColumn(hListView, 3, &lvcol);
+
+      LocalString ls5(IDS_IMAGE_RAW_SIZE);
+      lvcol.pszText = ls5.m_szbuffer; // = "Raw Size";
+      lvcol.cx = 60;
+      ListView_InsertColumn(hListView, 4, &lvcol);
+
+      if (pt)
+         pt->ListImages(hListView);
+
+      char textBuf[16];
+      strcpy_s(textBuf, "128");
+      SetDlgItemText(IDC_ALPHA_MASK_EDIT, textBuf);
+      ListView_SetItemState(hListView, 0, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+      GotoDlgCtrl(hListView);
+      return FALSE;
+   }
+   case GET_COLOR_TABLE:
+   {
+      if (pt)
+         *((unsigned long **)lParam) = pt->m_rgcolorcustom;
+      return TRUE;
+   }
+   case WM_NOTIFY:
+   {
+      LPNMHDR pnmhdr = (LPNMHDR)lParam;
+      if (wParam == IDC_SOUNDLIST)
       {
-         LVCOLUMN lvcol;
-         HWND hListView = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-         m_resizer.Initialize(*this, CRect(0, 0, 500, 600));
-         m_resizer.AddChild(hListView, topleft, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
-         m_resizer.AddChild(GetDlgItem(IDC_PICTUREPREVIEW).GetHwnd(), topright, 0);
-         m_resizer.AddChild(GetDlgItem(IDC_IMPORT).GetHwnd(), topright, 0);
-         m_resizer.AddChild(GetDlgItem(IDC_REIMPORT).GetHwnd(), topright, 0);
-         m_resizer.AddChild(GetDlgItem(IDC_REIMPORTFROM).GetHwnd(), topright, 0);
-         m_resizer.AddChild(GetDlgItem(IDC_UPDATE_ALL_BUTTON).GetHwnd(), topright, 0);
-         m_resizer.AddChild(GetDlgItem(IDC_DELETE_IMAGE).GetHwnd(), topright, 0);
-         m_resizer.AddChild(GetDlgItem(IDC_RENAME).GetHwnd(), topright, 0);
-         m_resizer.AddChild(GetDlgItem(IDC_EXPORT).GetHwnd(), topright, 0);
-         m_resizer.AddChild(GetDlgItem(IDC_OK).GetHwnd(), topright, 0);
-         m_resizer.AddChild(GetDlgItem(IDC_ALPHA_MASK_EDIT).GetHwnd(), topright, 0);
-         m_resizer.AddChild(GetDlgItem(IDC_STATIC_ALPHA).GetHwnd(), topright, 0);
-         m_resizer.AddChild(GetDlgItem(IDC_CHECK_RENAME_ON_EXPORT).GetHwnd(), topright, 0);
-
-         LoadPosition();
-
-         ListView_SetExtendedListViewStyle(hListView, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
-
-         lvcol.mask = LVCF_TEXT | LVCF_WIDTH;
-         LocalString ls(IDS_NAME);
-         lvcol.pszText = ls.m_szbuffer;// = "Name";
-         lvcol.cx = 100;
-         ListView_InsertColumn(hListView, 0, &lvcol);
-
-         LocalString ls2(IDS_IMPORTPATH);
-         lvcol.pszText = ls2.m_szbuffer; // = "Import Path";
-         lvcol.cx = 200;
-         ListView_InsertColumn(hListView, 1, &lvcol);
-
-         LocalString ls3(IDS_IMAGESIZE);
-         lvcol.pszText = ls3.m_szbuffer; // = "Image Size";
-         lvcol.cx = 100;
-         ListView_InsertColumn(hListView, 2, &lvcol);
-
-         LocalString ls4( IDS_USED_IN_TABLE );
-         lvcol.pszText = ls4.m_szbuffer; // = "In use";
-         lvcol.cx = 45;
-         ListView_InsertColumn( hListView, 3, &lvcol );
-
-         LocalString ls5(IDS_IMAGE_RAW_SIZE);
-         lvcol.pszText = ls5.m_szbuffer; // = "Raw Size";
-         lvcol.cx = 60;
-         ListView_InsertColumn(hListView, 4, &lvcol);
-
-         if (pt)
-            pt->ListImages(hListView);
-
-         char textBuf[16];
-         strcpy_s(textBuf, "128");
-         SetDlgItemText(IDC_ALPHA_MASK_EDIT, textBuf);
-         ListView_SetItemState(hListView, 0, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
-         GotoDlgCtrl(hListView);
-         return FALSE;
+         LPNMLISTVIEW lpnmListView = (LPNMLISTVIEW)lParam;
+         if (lpnmListView->hdr.code == LVN_COLUMNCLICK)
+         {
+            const int columnNumber = lpnmListView->iSubItem;
+            if (m_columnSortOrder == 1)
+               m_columnSortOrder = 0;
+            else
+               m_columnSortOrder = 1;
+            SortData.hwndList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
+            SortData.subItemIndex = columnNumber;
+            SortData.sortUpDown = m_columnSortOrder;
+            if (columnNumber == 4)
+               ListView_SortItems(SortData.hwndList, MyCompProcIntValues, &SortData);
+            else
+               ListView_SortItems(SortData.hwndList, MyCompProc, &SortData);
+         }
       }
-      case GET_COLOR_TABLE:
+
+      switch (pnmhdr->code)
       {
-         if ( pt )
-            *((unsigned long **)lParam) = pt->m_rgcolorcustom;
+      case LVN_ENDLABELEDIT:
+      {
+         NMLVDISPINFO * const pinfo = (NMLVDISPINFO *)lParam;
+         const HWND hSoundlist = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
+         if (pinfo->item.pszText == NULL || pinfo->item.pszText[0] == '\0')
+         {
+            return FALSE;
+         }
+         ListView_SetItemText(hSoundlist, pinfo->item.iItem, 0, pinfo->item.pszText);
+         LVITEM lvitem;
+         lvitem.mask = LVIF_PARAM;
+         lvitem.iItem = pinfo->item.iItem;
+         lvitem.iSubItem = 0;
+         ListView_GetItem(hSoundlist, &lvitem);
+         Texture * const ppi = (Texture *)lvitem.lParam;
+         if (ppi != NULL)
+         {
+            strncpy_s(ppi->m_szName, pinfo->item.pszText, MAXTOKEN);
+            strncpy_s(ppi->m_szInternalName, pinfo->item.pszText, MAXTOKEN);
+            CharLowerBuff(ppi->m_szInternalName, lstrlen(ppi->m_szInternalName));
+            if (pt)
+               pt->SetNonUndoableDirty(eSaveDirty);
+         }
          return TRUE;
       }
-      case WM_NOTIFY:
+      break;
+
+      case LVN_ITEMCHANGING:
       {
-         LPNMHDR pnmhdr = (LPNMHDR)lParam;
-         if (wParam == IDC_SOUNDLIST)
+         if (m_doNotChange)
+            break;
+         NMLISTVIEW * const plistview = (LPNMLISTVIEW)lParam;
+         if ((plistview->uNewState & LVIS_SELECTED) != (plistview->uOldState & LVIS_SELECTED))
          {
-            LPNMLISTVIEW lpnmListView = (LPNMLISTVIEW)lParam;
-            if (lpnmListView->hdr.code == LVN_COLUMNCLICK)
+            if (plistview->uNewState & LVIS_SELECTED)
             {
-               const int columnNumber = lpnmListView->iSubItem;
-               if (m_columnSortOrder == 1)
-                  m_columnSortOrder = 0;
-               else
-                  m_columnSortOrder = 1;
-               SortData.hwndList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-               SortData.subItemIndex = columnNumber;
-               SortData.sortUpDown = m_columnSortOrder;
-               if (columnNumber==4)
-                   ListView_SortItems(SortData.hwndList, MyCompProcIntValues, &SortData);
-               else
-                   ListView_SortItems(SortData.hwndList, MyCompProc, &SortData);
-            }
-         }
-         switch (pnmhdr->code)
-         {
-            case LVN_ENDLABELEDIT:
-            {
-               NMLVDISPINFO * const pinfo = (NMLVDISPINFO *)lParam;
-               HWND hSoundlist = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-               if (pinfo->item.pszText == NULL || pinfo->item.pszText[0] == '\0')
-               {
-                  return FALSE;
-               }
-               ListView_SetItemText(hSoundlist, pinfo->item.iItem, 0, pinfo->item.pszText);
+               const int sel = plistview->iItem;
                LVITEM lvitem;
                lvitem.mask = LVIF_PARAM;
-               lvitem.iItem = pinfo->item.iItem;
+               lvitem.iItem = sel;
                lvitem.iSubItem = 0;
-               ListView_GetItem(hSoundlist, &lvitem);
+               ListView_GetItem(GetDlgItem(IDC_SOUNDLIST).GetHwnd(), &lvitem);
                Texture * const ppi = (Texture *)lvitem.lParam;
                if (ppi != NULL)
                {
-                  strncpy_s(ppi->m_szName, pinfo->item.pszText, MAXTOKEN);
-                  strncpy_s(ppi->m_szInternalName, pinfo->item.pszText, MAXTOKEN);
-                  CharLowerBuff(ppi->m_szInternalName, lstrlen(ppi->m_szInternalName));
-                  if (pt)
-                     pt->SetNonUndoableDirty(eSaveDirty);
+                  char textBuf[256];
+                  sprintf_s(textBuf, "%i", (int)ppi->m_alphaTestValue);
+                  SetDlgItemText(IDC_ALPHA_MASK_EDIT, textBuf);
                }
-               return TRUE;
-         }
-         break;
-         case LVN_ITEMCHANGING:
-         {
-            NMLISTVIEW * const plistview = (LPNMLISTVIEW)lParam;
-            if ((plistview->uNewState & LVIS_SELECTED) != (plistview->uOldState & LVIS_SELECTED))
-            {
-               if (plistview->uNewState & LVIS_SELECTED)
-               {
-                  const int sel = plistview->iItem;
-                  LVITEM lvitem;
-                  lvitem.mask = LVIF_PARAM;
-                  lvitem.iItem = sel;
-                  lvitem.iSubItem = 0;
-                  ListView_GetItem(GetDlgItem(IDC_SOUNDLIST).GetHwnd(), &lvitem);
-                  Texture * const ppi = (Texture *)lvitem.lParam;
-                  if (ppi != NULL)
-                  {
-                     char textBuf[256];
-                     sprintf_s(textBuf, "%i", (int)ppi->m_alphaTestValue);
-                     SetDlgItemText(IDC_ALPHA_MASK_EDIT, textBuf);
-                  }
-               }
-               ::InvalidateRect(GetDlgItem(IDC_PICTUREPREVIEW).GetHwnd(), NULL, fTrue);
             }
-         }
-         break;
-
-         case LVN_ITEMCHANGED:
-         {
-            NMLISTVIEW * const plistview = (LPNMLISTVIEW)lParam;
-            const int sel = plistview->iItem;
-            LVITEM lvitem;
-            lvitem.mask = LVIF_PARAM;
-            lvitem.iItem = sel;
-            lvitem.iSubItem = 0;
-            ListView_GetItem(GetDlgItem(IDC_SOUNDLIST).GetHwnd(), &lvitem);
-            Texture * const ppi = (Texture *)lvitem.lParam;
-            if (ppi != NULL)
-            {
-               CString textStr = GetDlgItemText(IDC_ALPHA_MASK_EDIT);
-               float v = sz2f((char*)textStr.c_str());
-               if (ppi->m_alphaTestValue != v)
-               {
-                  ppi->m_alphaTestValue = v;
-                  pt->SetNonUndoableDirty(eSaveDirty);
-               }
-
-               const int count = ListView_GetSelectedCount(GetDlgItem(IDC_SOUNDLIST).GetHwnd());
-               const int fEnable = !(count > 1);
-               ::EnableWindow(GetDlgItem(IDC_REIMPORTFROM).GetHwnd(), fEnable);
-               ::EnableWindow(GetDlgItem(IDC_RENAME).GetHwnd(), fEnable);
-            }
-            //EnableWindow(GetDlgItem(hwndDlg, IDC_EXPORT), fEnable);
-         }
-         break;
+            ::InvalidateRect(GetDlgItem(IDC_PICTUREPREVIEW).GetHwnd(), NULL, fTrue);
          }
       }
       break;
-      case WM_DRAWITEM:
+
+      case LVN_ITEMCHANGED:
       {
-         HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-         DRAWITEMSTRUCT * const pdis = (DRAWITEMSTRUCT *)lParam;
-         const int sel = ListView_GetNextItem(hSoundList, -1, LVNI_SELECTED);
-         if (sel != -1)
+         if (m_doNotChange)
+            break;
+         NMLISTVIEW * const plistview = (LPNMLISTVIEW)lParam;
+         const int sel = plistview->iItem;
+         LVITEM lvitem;
+         lvitem.mask = LVIF_PARAM;
+         lvitem.iItem = sel;
+         lvitem.iSubItem = 0;
+         ListView_GetItem(GetDlgItem(IDC_SOUNDLIST).GetHwnd(), &lvitem);
+         Texture * const ppi = (Texture *)lvitem.lParam;
+         if (ppi != NULL)
          {
-            LVITEM lvitem;
-            lvitem.mask = LVIF_PARAM;
-            lvitem.iItem = sel;
-            lvitem.iSubItem = 0;
-            ListView_GetItem(hSoundList, &lvitem);
-            Texture * const ppi = (Texture *)lvitem.lParam;
-            if (ppi != NULL)
+            const CString textStr = GetDlgItemText(IDC_ALPHA_MASK_EDIT);
+            const float v = sz2f((char*)textStr.c_str());
+            if (ppi->m_alphaTestValue != v)
             {
-               RECT rcClient;
-               ::GetWindowRect(pdis->hwndItem, &rcClient);
-
-               const int xsize = rcClient.right - rcClient.left;
-               const int ysize = rcClient.bottom - rcClient.top;
-
-               const float controlaspect = (float)xsize / (float)ysize;
-               const float aspect = (float)ppi->m_width / (float)ppi->m_height;
-
-               int width, height;
-               if (aspect > controlaspect)
-               {
-                  width = xsize;
-                  height = (int)(xsize / aspect);
-               }
-               else
-               {
-                  height = ysize;
-                  width = (int)(ysize*aspect);
-               }
-
-               const int x = (xsize - width) / 2;
-               const int y = (ysize - height) / 2;
-
-               HDC hdcDD;
-               ppi->GetTextureDC(&hdcDD);
-               SetStretchBltMode(pdis->hDC, HALFTONE); // somehow enables filtering
-               StretchBlt(pdis->hDC, x, y, width, height, hdcDD, 0, 0, ppi->m_width, ppi->m_height, SRCCOPY);
-               ppi->ReleaseTextureDC(hdcDD);
+               ppi->m_alphaTestValue = v;
+               pt->SetNonUndoableDirty(eSaveDirty);
             }
+
+            const int count = ListView_GetSelectedCount(GetDlgItem(IDC_SOUNDLIST).GetHwnd());
+            const int fEnable = !(count > 1);
+            ::EnableWindow(GetDlgItem(IDC_REIMPORTFROM).GetHwnd(), fEnable);
+            ::EnableWindow(GetDlgItem(IDC_RENAME).GetHwnd(), fEnable);
          }
-         else
-         {
-            // Nothing currently selected
-            RECT rcClient;
-            ::GetClientRect(pdis->hwndItem, &rcClient);
-            SelectObject(pdis->hDC, GetStockObject(NULL_BRUSH));
-            SelectObject(pdis->hDC, GetStockObject(BLACK_PEN));
-            Rectangle(pdis->hDC, rcClient.left + 5, rcClient.top + 5, rcClient.right - 5, rcClient.bottom - 5);
-
-            SetBkMode(pdis->hDC, TRANSPARENT);
-
-            RECT rcText = rcClient;
-
-            //ExtTextOut(pdis->hDC, 0, 20, 0, NULL, "Image\nPreview", 13, NULL);
-            LocalString ls(IDS_IMAGE_PREVIEW);
-            const int len = lstrlen(ls.m_szbuffer);
-            DrawText(pdis->hDC, ls.m_szbuffer/*"Image\n\nPreview"*/, len, &rcText, DT_CALCRECT);
-
-            const int halfheight = (rcClient.bottom - rcClient.top) / 2;
-            const int halffont = (rcText.bottom - rcText.top) / 2;
-
-            rcText.left = rcClient.left;
-            rcText.right = rcClient.right;
-            rcText.top = halfheight - halffont;
-            rcText.bottom = halfheight + halffont;
-
-            DrawText(pdis->hDC, ls.m_szbuffer/*"Image\n\nPreview"*/, len, &rcText, DT_CENTER);
-         }
-         return TRUE;
+         //EnableWindow(GetDlgItem(hwndDlg, IDC_EXPORT), fEnable);
       }
       break;
+
+      }
+   }
+   break;
+
+   case WM_DRAWITEM:
+   {
+      const HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
+      DRAWITEMSTRUCT * const pdis = (DRAWITEMSTRUCT *)lParam;
+      const int sel = ListView_GetNextItem(hSoundList, -1, LVNI_SELECTED);
+      if (sel != -1)
+      {
+         LVITEM lvitem;
+         lvitem.mask = LVIF_PARAM;
+         lvitem.iItem = sel;
+         lvitem.iSubItem = 0;
+         ListView_GetItem(hSoundList, &lvitem);
+         Texture * const ppi = (Texture *)lvitem.lParam;
+         if (ppi != NULL)
+         {
+            RECT rcClient;
+            ::GetWindowRect(pdis->hwndItem, &rcClient);
+
+            const int xsize = rcClient.right - rcClient.left;
+            const int ysize = rcClient.bottom - rcClient.top;
+
+            const float controlaspect = (float)xsize / (float)ysize;
+            const float aspect = (float)ppi->m_width / (float)ppi->m_height;
+
+            int width, height;
+            if (aspect > controlaspect)
+            {
+               width = xsize;
+               height = (int)(xsize / aspect);
+            }
+            else
+            {
+               height = ysize;
+               width = (int)(ysize*aspect);
+            }
+
+            const int x = (xsize - width) / 2;
+            const int y = (ysize - height) / 2;
+
+            HDC hdcDD;
+            ppi->GetTextureDC(&hdcDD);
+            SetStretchBltMode(pdis->hDC, HALFTONE); // somehow enables filtering
+            StretchBlt(pdis->hDC, x, y, width, height, hdcDD, 0, 0, ppi->m_width, ppi->m_height, SRCCOPY);
+            ppi->ReleaseTextureDC(hdcDD);
+         }
+      }
+      else
+      {
+         // Nothing currently selected
+         RECT rcClient;
+         ::GetClientRect(pdis->hwndItem, &rcClient);
+         SelectObject(pdis->hDC, GetStockObject(NULL_BRUSH));
+         SelectObject(pdis->hDC, GetStockObject(BLACK_PEN));
+         Rectangle(pdis->hDC, rcClient.left + 5, rcClient.top + 5, rcClient.right - 5, rcClient.bottom - 5);
+
+         SetBkMode(pdis->hDC, TRANSPARENT);
+
+         RECT rcText = rcClient;
+
+         //ExtTextOut(pdis->hDC, 0, 20, 0, NULL, "Image\nPreview", 13, NULL);
+         LocalString ls(IDS_IMAGE_PREVIEW);
+         const int len = lstrlen(ls.m_szbuffer);
+         DrawText(pdis->hDC, ls.m_szbuffer/*"Image\n\nPreview"*/, len, &rcText, DT_CALCRECT);
+
+         const int halfheight = (rcClient.bottom - rcClient.top) / 2;
+         const int halffont = (rcText.bottom - rcText.top) / 2;
+
+         rcText.left = rcClient.left;
+         rcText.right = rcClient.right;
+         rcText.top = halfheight - halffont;
+         rcText.bottom = halfheight + halffont;
+
+         DrawText(pdis->hDC, ls.m_szbuffer/*"Image\n\nPreview"*/, len, &rcText, DT_CENTER);
+      }
+      return TRUE;
+   }
+   break;
 
    }
    return DialogProcDefault(uMsg, wParam, lParam);
@@ -307,36 +317,36 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void ImageDialog::UpdateImages()
 {
-    HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-    CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+   HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
+   CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
 
-    const int count = ListView_GetSelectedCount(hSoundList);
-    if (count > 0)
-    {
-        int sel = ListView_GetNextItem(hSoundList, -1, LVNI_SELECTED);
-        while (sel != -1)
-        {
-            LVITEM lvitem;
-            lvitem.mask = LVIF_PARAM;
-            lvitem.iItem = sel;
-            lvitem.iSubItem = 0;
-            ListView_GetItem(hSoundList, &lvitem);
-            Texture * const ppi = (Texture *)lvitem.lParam;
-            if (ppi != NULL)
+   const int count = ListView_GetSelectedCount(hSoundList);
+   if (count > 0)
+   {
+      int sel = ListView_GetNextItem(hSoundList, -1, LVNI_SELECTED);
+      while (sel != -1)
+      {
+         LVITEM lvitem;
+         lvitem.mask = LVIF_PARAM;
+         lvitem.iItem = sel;
+         lvitem.iSubItem = 0;
+         ListView_GetItem(hSoundList, &lvitem);
+         Texture * const ppi = (Texture *)lvitem.lParam;
+         if (ppi != NULL)
+         {
+            const CString textStr = GetDlgItemText(IDC_ALPHA_MASK_EDIT);
+            const float v = sz2f((char*)textStr.c_str());
+            if (ppi->m_alphaTestValue != v)
             {
-                CString textStr = GetDlgItemText(IDC_ALPHA_MASK_EDIT);
-                float v = sz2f((char*)textStr.c_str());
-                if (ppi->m_alphaTestValue != v)
-                {
-                    ppi->m_alphaTestValue = v;
-                    pt->SetNonUndoableDirty(eSaveDirty);
-                }
-
-                sel = ListView_GetNextItem(hSoundList, sel, LVNI_SELECTED);
+               ppi->m_alphaTestValue = v;
+               pt->SetNonUndoableDirty(eSaveDirty);
             }
-        }
-        SetFocus();
-    }
+
+            sel = ListView_GetNextItem(hSoundList, sel, LVNI_SELECTED);
+         }
+      }
+      SetFocus();
+   }
 
 }
 
@@ -348,40 +358,40 @@ BOOL ImageDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 
    switch (LOWORD(wParam))
    {
-      case IDC_IMPORT: Import(); break;
-      case IDC_EXPORT: Export(); break;
-      case IDC_DELETE_IMAGE: DeleteImage(); break;
-      case IDC_REIMPORT: Reimport(); break;
-      case IDC_UPDATE_ALL_BUTTON: UpdateAll(); break;
-      case IDC_REIMPORTFROM: ReimportFrom(); break;
-      case IDC_RENAME:
+   case IDC_IMPORT: Import(); break;
+   case IDC_EXPORT: Export(); break;
+   case IDC_DELETE_IMAGE: DeleteImage(); break;
+   case IDC_REIMPORT: Reimport(); break;
+   case IDC_UPDATE_ALL_BUTTON: UpdateAll(); break;
+   case IDC_REIMPORTFROM: ReimportFrom(); break;
+   case IDC_RENAME:
+   {
+      const int sel = ListView_GetNextItem(hSoundList, -1, LVNI_SELECTED);
+      if (sel != -1)
       {
-         const int sel = ListView_GetNextItem(hSoundList, -1, LVNI_SELECTED);
-         if (sel != -1)
-         {
-            ::SetFocus(hSoundList);
-            ListView_EditLabel(hSoundList, sel);
-            pt->SetNonUndoableDirty(eSaveDirty);
-            g_pvp->m_sb.PopulateDropdowns();
-            g_pvp->m_sb.RefreshProperties();
-         }
-         break;
-      }
-      case IDC_OK:
-      {
-         const int count = ListView_GetSelectedCount(hSoundList);
-         if (count > 0)
-         {
-            UpdateImages();
-            SetFocus();
-         }
+         ::SetFocus(hSoundList);
+         ListView_EditLabel(hSoundList, sel);
+         pt->SetNonUndoableDirty(eSaveDirty);
          g_pvp->m_sb.PopulateDropdowns();
          g_pvp->m_sb.RefreshProperties();
-
-         SavePosition();
-         CDialog::OnOK();
-         break;
       }
+      break;
+   }
+   case IDC_OK:
+   {
+      const int count = ListView_GetSelectedCount(hSoundList);
+      if (count > 0)
+      {
+         UpdateImages();
+         SetFocus();
+      }
+      g_pvp->m_sb.PopulateDropdowns();
+      g_pvp->m_sb.RefreshProperties();
+
+      SavePosition();
+      CDialog::OnOK();
+      break;
+   }
    }
    return FALSE;
 }
@@ -393,14 +403,14 @@ void ImageDialog::OnOK()
 
 void ImageDialog::OnCancel()
 {
-    SavePosition();
-    CDialog::OnCancel();
+   SavePosition();
+   CDialog::OnCancel();
 }
 
 void ImageDialog::Import()
 {
-   HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-   CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+   const HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
+   CCO(PinTable) * const pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
    char szFileName[4096];
    char szInitialDir[4096];
    char szT[4096];
@@ -412,7 +422,7 @@ void ImageDialog::Import()
    ofn.hInstance = g_hinst;
    ofn.hwndOwner = g_pvp->m_hwnd;
 
-   ofn.lpstrFilter = "Bitmap, JPEG, PNG, EXR, HDR Files (.bmp/.jpg/.png/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.exr;*.hdr\0";
+   ofn.lpstrFilter = "Bitmap, JPEG, PNG, TGA, EXR, HDR Files (.bmp/.jpg/.png/.tga/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.tga;*.exr;*.hdr\0";
    ofn.lpstrFile = szFileName;
    ofn.nMaxFile = 4096;
    ofn.lpstrDefExt = "png";
@@ -459,12 +469,12 @@ void ImageDialog::Import()
 
 void ImageDialog::Export()
 {
-   HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-   CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+   const HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
+   CCO(PinTable) * const pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
    char g_filename[MAX_PATH];
    char g_initDir[MAX_PATH];
    const int selectedItemsCount = ListView_GetSelectedCount(hSoundList);
-      
+
    const size_t renameOnExport = SendMessage(GetDlgItem(IDC_CHECK_RENAME_ON_EXPORT).GetHwnd(), BM_GETCHECK, 0, 0);
 
    if (selectedItemsCount)	// if some items are selected???
@@ -477,7 +487,7 @@ void ImageDialog::Export()
          lvitem.iItem = sel;
          lvitem.iSubItem = 0;
          ListView_GetItem(hSoundList, &lvitem);
-         Texture *ppi = (Texture*)lvitem.lParam;
+         Texture * ppi = (Texture*)lvitem.lParam;
          if (ppi != NULL)
          {
             OPENFILENAME ofn;
@@ -511,8 +521,8 @@ void ImageDialog::Export()
             else
             {
                strcat_s(g_filename, ppi->m_szName);
-               string ext(ppi->m_szPath);
-               size_t idx = ext.find_last_of(".");
+               const string ext(ppi->m_szPath);
+               const size_t idx = ext.find_last_of(".");
                strcat_s(g_filename, ext.c_str() + idx);
             }
             ofn.lpstrFile = g_filename;
@@ -523,7 +533,7 @@ void ImageDialog::Export()
 
             if (hr == S_OK)
                ofn.lpstrInitialDir = g_initDir;
-            else 
+            else
                ofn.lpstrInitialDir = NULL;
             //ofn.lpstrTitle = "SAVE AS";
             ofn.Flags = OFN_NOREADONLYRETURN | OFN_CREATEPROMPT | OFN_OVERWRITEPROMPT | OFN_EXPLORER;
@@ -585,22 +595,24 @@ void ImageDialog::Export()
          }
       }
    }
+
    SetFocus();
 }
 
 void ImageDialog::DeleteImage()
 {
-   HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-   CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+   const HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
+   CCO(PinTable) * const pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
 
    const int count = ListView_GetSelectedCount(hSoundList);
    if (count > 0)
    {
       LocalString ls(IDS_REMOVEIMAGE);
-      const int ans = MessageBox( ls.m_szbuffer/*"Are you sure you want to remove this image?"*/, "Visual Pinball", MB_YESNO | MB_DEFBUTTON2);
+      const int ans = MessageBox(ls.m_szbuffer/*"Are you sure you want to remove this image?"*/, "Confirm Deletion", MB_YESNO | MB_DEFBUTTON2);
       if (ans == IDYES)
       {
          int sel = ListView_GetNextItem(hSoundList, -1, LVNI_SELECTED);
+         int lastsel = -1;
          while (sel != -1)
          {
             LVITEM lvitem;
@@ -611,32 +623,38 @@ void ImageDialog::DeleteImage()
             Texture * const ppi = (Texture*)lvitem.lParam;
             if (ppi != NULL)
             {
-               pt->RemoveImage(ppi);
+               m_doNotChange = true; // do not trigger LVN_ITEMCHANGING or LVN_ITEMCHANGED code!
                ListView_DeleteItem(hSoundList, sel);
+               m_doNotChange = false;
+               pt->RemoveImage(ppi);
 
                // The previous selection is now deleted, so look again from the top of the list
+               lastsel = sel;
                sel = ListView_GetNextItem(hSoundList, -1, LVNI_SELECTED);
                g_pvp->m_sb.PopulateDropdowns();
                g_pvp->m_sb.RefreshProperties();
             }
          }
+         if (lastsel != -1)
+            ListView_SetItemState(hSoundList, (lastsel > 0) ? lastsel - 1 : 0, LVNI_SELECTED | LVNI_FOCUSED, LVNI_SELECTED | LVNI_FOCUSED);
+         pt->SetNonUndoableDirty(eSaveDirty);
       }
-      pt->SetNonUndoableDirty(eSaveDirty);
    }
+
    SetFocus();
 }
 
 void ImageDialog::Reimport()
 {
-   HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-   CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+   const HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
+   CCO(PinTable) * const pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
 
    const int count = ListView_GetSelectedCount(hSoundList);
 
    if (count > 0)
    {
       LocalString ls(IDS_REPLACEIMAGE);
-      const int ans = MessageBox(ls.m_szbuffer/*"Are you sure you want to replace this image?"*/, "Visual Pinball", MB_YESNO | MB_DEFBUTTON2);
+      const int ans = MessageBox(ls.m_szbuffer/*"Are you sure you want to replace this image?"*/, "Confirm Reimport", MB_YESNO | MB_DEFBUTTON2);
       if (ans == IDYES)
       {
          int sel = ListView_GetNextItem(hSoundList, -1, LVNI_SELECTED);
@@ -659,7 +677,7 @@ void ImageDialog::Reimport()
                   pt->ReImportImage(ppi, ppi->m_szPath);
                   pt->SetNonUndoableDirty(eSaveDirty);
                }
-               else MessageBox( ppi->m_szPath, "  FILE NOT FOUND!  ", MB_OK);
+               else MessageBox(ppi->m_szPath, "  FILE NOT FOUND!  ", MB_OK);
                sel = ListView_GetNextItem(hSoundList, sel, LVNI_SELECTED);
             }
          }
@@ -672,11 +690,11 @@ void ImageDialog::Reimport()
 
 void ImageDialog::UpdateAll()
 {
-   HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-   CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+   const HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
+   CCO(PinTable) *const pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
 
    const int count = ListView_GetSelectedCount(hSoundList);
-   bool  errorOccurred = false;;
+   bool errorOccurred = false;
 
    for (int sel = 0; sel < count; sel++)
    {
@@ -701,21 +719,21 @@ void ImageDialog::UpdateAll()
       // Display new image
       ::InvalidateRect(GetDlgItem(IDC_PICTUREPREVIEW).GetHwnd(), NULL, fTrue);
    }
-   if (errorOccurred)
-      MessageBox( "Not all images were updated!", "  FILES NOT FOUND!  ", MB_OK);
 
+   if (errorOccurred)
+      MessageBox("Not all images were updated!", "  FILES NOT FOUND!  ", MB_OK);
 }
 
 void ImageDialog::ReimportFrom()
 {
-   HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-   CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+   const HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
+   CCO(PinTable) * const pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
 
    int sel = ListView_GetNextItem(hSoundList, -1, LVNI_SELECTED);
    if (sel != -1)
    {
       LocalString ls(IDS_REPLACEIMAGE);
-      const int ans = MessageBox( ls.m_szbuffer/*"Are you sure you want to replace this image with a new one?"*/, "Visual Pinball", MB_YESNO | MB_DEFBUTTON2);
+      const int ans = MessageBox(ls.m_szbuffer/*"Are you sure you want to replace this image with a new one?"*/, "Confirm Reimport", MB_YESNO | MB_DEFBUTTON2);
       if (ans == IDYES)
       {
          char szFileName[MAXSTRING];
@@ -727,7 +745,7 @@ void ImageDialog::ReimportFrom()
          ofn.hInstance = g_hinst;
          ofn.hwndOwner = g_pvp->m_hwnd;
          // TEXT
-         ofn.lpstrFilter = "Bitmap, JPEG, PNG, EXR, HDR Files (.bmp/.jpg/.png/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.exr;*.hdr\0";
+         ofn.lpstrFilter = "Bitmap, JPEG, PNG, TGA, EXR, HDR Files (.bmp/.jpg/.png/.tga/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.tga;*.exr;*.hdr\0";
          ofn.lpstrFile = szFileName;
          ofn.nMaxFile = MAXSTRING;
          ofn.lpstrDefExt = "png";
@@ -763,36 +781,36 @@ void ImageDialog::ReimportFrom()
          }
       }
    }
+
    SetFocus();
 }
 
 void ImageDialog::LoadPosition()
 {
-    int x, y, w, h;
-    HRESULT hr;
+   int x, y, w, h;
+   HRESULT hr;
 
-    hr = GetRegInt( "Editor", "ImageMngPosX", &x );
-    if (hr != S_OK)
-        x=0;
-    hr = GetRegInt( "Editor", "ImageMngPosY", &y );
-    if (hr != S_OK)
-        y=0;
+   hr = GetRegInt("Editor", "ImageMngPosX", &x);
+   if (hr != S_OK)
+      x = 0;
+   hr = GetRegInt("Editor", "ImageMngPosY", &y);
+   if (hr != S_OK)
+      y = 0;
 
-    w = GetRegIntWithDefault("Editor", "ImageMngWidth", 1000);
-    h = GetRegIntWithDefault("Editor", "ImageMngHeight", 800);
-    SetWindowPos(NULL, x, y, w, h, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE);
+   w = GetRegIntWithDefault("Editor", "ImageMngWidth", 1000);
+   h = GetRegIntWithDefault("Editor", "ImageMngHeight", 800);
+   SetWindowPos(NULL, x, y, w, h, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
 void ImageDialog::SavePosition()
 {
-    int w, h;
-    CRect rect = GetWindowRect();
+   int w, h;
+   CRect rect = GetWindowRect();
 
-    (void)SetRegValue( "Editor", "ImageMngPosX", REG_DWORD, &rect.left, 4 );
-    (void)SetRegValue( "Editor", "ImageMngPosY", REG_DWORD, &rect.top, 4 );
-    w = rect.right - rect.left;
-    (void)SetRegValue("Editor", "ImageMngWidth", REG_DWORD, &w, 4);
-    h = rect.bottom - rect.top;
-    (void)SetRegValue("Editor", "ImageMngHeight", REG_DWORD, &h, 4);
+   SetRegValue("Editor", "ImageMngPosX", REG_DWORD, &rect.left, 4);
+   SetRegValue("Editor", "ImageMngPosY", REG_DWORD, &rect.top, 4);
+   w = rect.right - rect.left;
+   SetRegValue("Editor", "ImageMngWidth", REG_DWORD, &w, 4);
+   h = rect.bottom - rect.top;
+   SetRegValue("Editor", "ImageMngHeight", REG_DWORD, &h, 4);
 }
-

@@ -4,9 +4,9 @@
 
 typedef struct _tagSORTDATA
 {
-    HWND hwndList;
-    int subItemIndex;
-    int sortUpDown;
+   HWND hwndList;
+   int subItemIndex;
+   int sortUpDown;
 }SORTDATA;
 
 extern SORTDATA SortData;
@@ -18,306 +18,306 @@ int CollectionManagerDialog::m_columnSortOrder;
 
 CollectionManagerDialog::CollectionManagerDialog() : CDialog(IDD_COLLECTDIALOG)
 {
-    hListHwnd = NULL;
+   hListHwnd = NULL;
 }
 
 BOOL CollectionManagerDialog::OnInitDialog()
 {
-    CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+   CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
 
-    hListHwnd = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
+   hListHwnd = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
 
-    m_columnSortOrder = 1;
-    LoadPosition();
+   m_columnSortOrder = 1;
+   LoadPosition();
 
-    ListView_SetExtendedListViewStyle(hListHwnd, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+   ListView_SetExtendedListViewStyle(hListHwnd, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
-    LVCOLUMN lvcol;
-    lvcol.mask = LVCF_TEXT | LVCF_WIDTH;
-    LocalString ls(IDS_NAME);
-    lvcol.pszText = ls.m_szbuffer;// = "Name";
-    lvcol.cx = 280;
-    ListView_InsertColumn(hListHwnd, 0, &lvcol);
+   LVCOLUMN lvcol;
+   lvcol.mask = LVCF_TEXT | LVCF_WIDTH;
+   LocalString ls(IDS_NAME);
+   lvcol.pszText = ls.m_szbuffer;// = "Name";
+   lvcol.cx = 280;
+   ListView_InsertColumn(hListHwnd, 0, &lvcol);
 
-    lvcol.mask = LVCF_TEXT | LVCF_WIDTH;
-    lvcol.fmt = LVCFMT_CENTER;
-    LocalString ls2(IDS_SIZE);
-    lvcol.pszText = ls2.m_szbuffer;// = "Size";
-    lvcol.cx = 50;
-    ListView_InsertColumn(hListHwnd, 1, &lvcol);
+   lvcol.mask = LVCF_TEXT | LVCF_WIDTH;
+   lvcol.fmt = LVCFMT_CENTER;
+   LocalString ls2(IDS_SIZE);
+   lvcol.pszText = ls2.m_szbuffer;// = "Size";
+   lvcol.cx = 50;
+   ListView_InsertColumn(hListHwnd, 1, &lvcol);
 
-    pt->ListCollections(hListHwnd);
-    ListView_SetItemState(hListHwnd, 0, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
-    GotoDlgCtrl(hListHwnd);
-    return FALSE;
+   pt->ListCollections(hListHwnd);
+   ListView_SetItemState(hListHwnd, 0, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+   GotoDlgCtrl(hListHwnd);
+   return FALSE;
 }
 
 
 void CollectionManagerDialog::EditCollection()
 {
-    CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+   CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
 
-    const int sel = ListView_GetNextItem(hListHwnd, -1, LVNI_SELECTED);
-    if (sel != -1)
-    {
-        LVITEM lvitem;
-        lvitem.mask = LVIF_PARAM;
-        lvitem.iItem = sel;
-        lvitem.iSubItem = 0;
-        ListView_GetItem(hListHwnd, &lvitem);
-        CComObject<Collection> * const pcol = (CComObject<Collection> *)lvitem.lParam;
+   const int sel = ListView_GetNextItem(hListHwnd, -1, LVNI_SELECTED);
+   if (sel != -1)
+   {
+      LVITEM lvitem;
+      lvitem.mask = LVIF_PARAM;
+      lvitem.iItem = sel;
+      lvitem.iSubItem = 0;
+      ListView_GetItem(hListHwnd, &lvitem);
+      CComObject<Collection> * const pcol = (CComObject<Collection> *)lvitem.lParam;
 
-        cds.pcol = pcol;
-        cds.ppt = pt;
+      cds.pcol = pcol;
+      cds.ppt = pt;
 
-        CollectionDialog *colDlg = new CollectionDialog(cds);
-        if (colDlg->DoModal() >= 0)
-            pt->SetNonUndoableDirty(eSaveDirty);
+      CollectionDialog *colDlg = new CollectionDialog(cds);
+      if (colDlg->DoModal() >= 0)
+         pt->SetNonUndoableDirty(eSaveDirty);
 
-        char szT[MAX_PATH];
-        WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
-        ListView_SetItemText(hListHwnd, sel, 0, szT);
-    }
+      char szT[MAX_PATH];
+      WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
+      ListView_SetItemText(hListHwnd, sel, 0, szT);
+   }
 }
 
 INT_PTR CollectionManagerDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+   CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
 
-    switch(uMsg)
-    {
-        case WM_NOTIFY:
-        {
-            LPNMHDR pnmhdr = (LPNMHDR)lParam;
-            if (wParam == IDC_SOUNDLIST)
+   switch (uMsg)
+   {
+   case WM_NOTIFY:
+   {
+      LPNMHDR pnmhdr = (LPNMHDR)lParam;
+      if (wParam == IDC_SOUNDLIST)
+      {
+         LPNMLISTVIEW lpnmListView = (LPNMLISTVIEW)lParam;
+         if (lpnmListView->hdr.code == LVN_COLUMNCLICK)
+         {
+            const int columnNumber = lpnmListView->iSubItem;
+            if (m_columnSortOrder == 1)
+               m_columnSortOrder = 0;
+            else
+               m_columnSortOrder = 1;
+            SortData.hwndList = hListHwnd;
+            SortData.subItemIndex = columnNumber;
+            SortData.sortUpDown = m_columnSortOrder;
+            if (columnNumber == 0)
+               ListView_SortItems(SortData.hwndList, MyCompProc, &SortData);
+            else
+               ListView_SortItems(SortData.hwndList, MyCompProcIntValues, &SortData);
+            int count = ListView_GetItemCount(hListHwnd);
+            for (int i = 0; i < count; i++)
             {
-                LPNMLISTVIEW lpnmListView = (LPNMLISTVIEW)lParam;
-                if (lpnmListView->hdr.code == LVN_COLUMNCLICK)
-                {
-                    const int columnNumber = lpnmListView->iSubItem;
-                    if (m_columnSortOrder == 1)
-                       m_columnSortOrder = 0;
-                    else
-                       m_columnSortOrder = 1;
-                    SortData.hwndList = hListHwnd;
-                    SortData.subItemIndex = columnNumber;
-                    SortData.sortUpDown = m_columnSortOrder;
-                    if (columnNumber == 0)
-                        ListView_SortItems(SortData.hwndList, MyCompProc, &SortData);
-                    else
-                        ListView_SortItems(SortData.hwndList, MyCompProcIntValues, &SortData);
-                    int count = ListView_GetItemCount(hListHwnd);
-                    for (int i = 0; i < count; i++)
-                    {
-                       LVITEM lvitem;
-                       lvitem.mask = LVIF_PARAM;
-                       lvitem.iItem = i;
-                       lvitem.iSubItem = 0;
-                       ListView_GetItem(hListHwnd, &lvitem);
-                       Collection * const pcol = (Collection *)lvitem.lParam;
-                       char buf[16] = { 0 };
-                       sprintf_s(buf, "%i", pcol->m_visel.Size());
-                       ListView_SetItemText(hListHwnd, i, 1, buf);
+               LVITEM lvitem;
+               lvitem.mask = LVIF_PARAM;
+               lvitem.iItem = i;
+               lvitem.iSubItem = 0;
+               ListView_GetItem(hListHwnd, &lvitem);
+               Collection * const pcol = (Collection *)lvitem.lParam;
+               char buf[16] = { 0 };
+               sprintf_s(buf, "%i", pcol->m_visel.Size());
+               ListView_SetItemText(hListHwnd, i, 1, buf);
 
-                    }
-                }
             }
-            if (pnmhdr->code == LVN_ENDLABELEDIT)
-            {
-                NMLVDISPINFO *pinfo = (NMLVDISPINFO *)lParam;
-                if (pinfo->item.pszText == NULL || pinfo->item.pszText[0] == '\0')
-                    return FALSE;
-                LVITEM lvitem;
-                lvitem.mask = LVIF_PARAM;
-                lvitem.iItem = pinfo->item.iItem;
-                lvitem.iSubItem = 0;
-                ListView_GetItem(hListHwnd, &lvitem);
-                Collection * const pcol = (Collection *)lvitem.lParam;
-                pt->SetCollectionName(pcol, pinfo->item.pszText, hListHwnd, pinfo->item.iItem);
-                pt->SetNonUndoableDirty(eSaveDirty);
-                return TRUE;
-            }
-            else if (pnmhdr->code == NM_DBLCLK)
-            {
-                EditCollection();
-                return TRUE;
-            }
-            break;
-        }
-    }
+         }
+      }
+      if (pnmhdr->code == LVN_ENDLABELEDIT)
+      {
+         NMLVDISPINFO *pinfo = (NMLVDISPINFO *)lParam;
+         if (pinfo->item.pszText == NULL || pinfo->item.pszText[0] == '\0')
+            return FALSE;
+         LVITEM lvitem;
+         lvitem.mask = LVIF_PARAM;
+         lvitem.iItem = pinfo->item.iItem;
+         lvitem.iSubItem = 0;
+         ListView_GetItem(hListHwnd, &lvitem);
+         Collection * const pcol = (Collection *)lvitem.lParam;
+         pt->SetCollectionName(pcol, pinfo->item.pszText, hListHwnd, pinfo->item.iItem);
+         pt->SetNonUndoableDirty(eSaveDirty);
+         return TRUE;
+      }
+      else if (pnmhdr->code == NM_DBLCLK)
+      {
+         EditCollection();
+         return TRUE;
+      }
+      break;
+   }
+   }
 
-    return DialogProcDefault(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }
 
 BOOL CollectionManagerDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-    CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
-    UNREFERENCED_PARAMETER(lParam);
+   CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+   UNREFERENCED_PARAMETER(lParam);
 
-    switch(LOWORD(wParam))
-    {
-        case IDCLOSE:
-        {
-            OnClose();
-            break;
-        }
-        case IDC_NEW:
-        {
-            pt->NewCollection(hListHwnd, false);
+   switch (LOWORD(wParam))
+   {
+   case IDCLOSE:
+   {
+      OnClose();
+      break;
+   }
+   case IDC_NEW:
+   {
+      pt->NewCollection(hListHwnd, false);
+      pt->SetNonUndoableDirty(eSaveDirty);
+      break;
+   }
+   case IDC_CREATEFROMSELECTION:
+   {
+      pt->NewCollection(hListHwnd, true);
+      pt->SetNonUndoableDirty(eSaveDirty);
+      break;
+   }
+   case IDC_EDIT:
+   {
+      EditCollection();
+      break;
+   }
+   case IDC_RENAME:
+   {
+      const int sel = ListView_GetNextItem(hListHwnd, -1, LVNI_SELECTED);
+      if (sel != -1)
+      {
+         ::SetFocus(hListHwnd);
+         ListView_EditLabel(hListHwnd, sel);
+      }
+      break;
+   }
+   case IDC_COL_UP_BUTTON:
+   {
+      const int idx = ListView_GetNextItem(hListHwnd, -1, LVNI_SELECTED);
+      if (idx != -1 && idx > 0)
+      {
+         ::SetFocus(hListHwnd);
+         LVITEM lvitem1;
+         memset(&lvitem1, 0, sizeof(LVITEM));
+         lvitem1.mask = LVCF_TEXT | LVIF_PARAM;
+         lvitem1.iItem = idx;
+         lvitem1.iSubItem = 0;
+         ListView_GetItem(hListHwnd, &lvitem1);
+         CComObject<Collection> * const pcol = (CComObject<Collection> *)lvitem1.lParam;
+         pt->MoveCollectionUp(pcol);
+         ListView_DeleteItem(hListHwnd, idx);
+         lvitem1.mask = LVIF_PARAM;
+         lvitem1.iItem = idx - 1;
+         ListView_InsertItem(hListHwnd, &lvitem1);
+         char szT[MAX_PATH];
+         WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
+         ListView_SetItemText(hListHwnd, idx - 1, 0, szT);
+
+         char buf[16] = { 0 };
+         sprintf_s(buf, "%i", pcol->m_visel.Size());
+         ListView_SetItemText(hListHwnd, idx - 1, 1, buf);
+
+         ListView_SetItemState(hListHwnd, -1, 0, LVIS_SELECTED);
+         ListView_SetItemState(hListHwnd, idx - 1, LVIS_SELECTED, LVIS_SELECTED);
+         ListView_SetItemState(hListHwnd, idx - 1, LVIS_FOCUSED, LVIS_FOCUSED);
+      }
+      break;
+   }
+   case IDC_COL_DOWN_BUTTON:
+   {
+      const int idx = ListView_GetNextItem(hListHwnd, -1, LVNI_SELECTED);
+      if (idx != -1 && (idx < pt->m_vcollection.Size() - 1))
+      {
+         ::SetFocus(hListHwnd);
+         LVITEM lvitem1;
+         memset(&lvitem1, 0, sizeof(LVITEM));
+         lvitem1.mask = LVCF_TEXT | LVIF_PARAM;
+         lvitem1.iItem = idx;
+         lvitem1.iSubItem = 0;
+         ListView_GetItem(hListHwnd, &lvitem1);
+         CComObject<Collection> * const pcol = (CComObject<Collection> *)lvitem1.lParam;
+         pt->MoveCollectionDown(pcol);
+         ListView_DeleteItem(hListHwnd, idx);
+         lvitem1.mask = LVIF_PARAM;
+         lvitem1.iItem = idx + 1;
+         ListView_InsertItem(hListHwnd, &lvitem1);
+         char szT[MAX_PATH];
+         WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
+         ListView_SetItemText(hListHwnd, idx + 1, 0, szT);
+
+         char buf[16] = { 0 };
+         sprintf_s(buf, "%i", pcol->m_visel.Size());
+         ListView_SetItemText(hListHwnd, idx + 1, 1, buf);
+
+         ListView_SetItemState(hListHwnd, -1, 0, LVIS_SELECTED);
+         ListView_SetItemState(hListHwnd, idx + 1, LVIS_SELECTED, LVIS_SELECTED);
+         ListView_SetItemState(hListHwnd, idx + 1, LVIS_FOCUSED, LVIS_FOCUSED);
+      }
+      break;
+   }
+   case IDC_DELETE_COLLECTION:
+   {
+      const int sel = ListView_GetNextItem(hListHwnd, -1, LVNI_SELECTED);
+      if (sel != -1)
+      {
+         // TEXT
+         const int ans = MessageBox("Are you sure you want to remove this collection?", "Confirm Deletion", MB_YESNO | MB_DEFBUTTON2);
+         if (ans == IDYES)
+         {
+            LVITEM lvitem;
+            lvitem.mask = LVIF_PARAM;
+            lvitem.iItem = sel;
+            lvitem.iSubItem = 0;
+            ListView_GetItem(hListHwnd, &lvitem);
+            CComObject<Collection> * const pcol = (CComObject<Collection> *)lvitem.lParam;
+            pt->RemoveCollection(pcol);
+            ListView_DeleteItem(hListHwnd, sel);
             pt->SetNonUndoableDirty(eSaveDirty);
-            break;
-        }
-        case IDC_CREATEFROMSELECTION:
-        {
-            pt->NewCollection(hListHwnd, true);
-            pt->SetNonUndoableDirty(eSaveDirty);
-            break;
-        }
-        case IDC_EDIT:
-        {
-            EditCollection();
-            break;
-        }
-        case IDC_RENAME:
-        {
-            const int sel = ListView_GetNextItem(hListHwnd, -1, LVNI_SELECTED);
-            if (sel != -1)
-            {
-                ::SetFocus(hListHwnd);
-                ListView_EditLabel(hListHwnd, sel);
-            }
-            break;
-        }
-        case IDC_COL_UP_BUTTON:
-        {
-            const int idx = ListView_GetNextItem(hListHwnd, -1, LVNI_SELECTED);
-            if (idx != -1 && idx > 0)
-            {
-                ::SetFocus(hListHwnd);
-                LVITEM lvitem1;
-                memset(&lvitem1, 0, sizeof(LVITEM));
-                lvitem1.mask = LVCF_TEXT | LVIF_PARAM;
-                lvitem1.iItem = idx;
-                lvitem1.iSubItem = 0;
-                ListView_GetItem(hListHwnd, &lvitem1);
-                CComObject<Collection> * const pcol = (CComObject<Collection> *)lvitem1.lParam;
-                pt->MoveCollectionUp(pcol);
-                ListView_DeleteItem(hListHwnd, idx);
-                lvitem1.mask = LVIF_PARAM;
-                lvitem1.iItem = idx - 1;
-                ListView_InsertItem(hListHwnd, &lvitem1);
-                char szT[MAX_PATH];
-                WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
-                ListView_SetItemText(hListHwnd, idx - 1, 0, szT);
+         }
+      }
+      break;
+   }
 
-                char buf[16] = { 0 };
-                sprintf_s(buf, "%i", pcol->m_visel.Size());
-                ListView_SetItemText(hListHwnd, idx - 1, 1, buf);
-
-                ListView_SetItemState(hListHwnd, -1, 0, LVIS_SELECTED);
-                ListView_SetItemState(hListHwnd, idx - 1, LVIS_SELECTED, LVIS_SELECTED);
-                ListView_SetItemState(hListHwnd, idx - 1, LVIS_FOCUSED, LVIS_FOCUSED);
-            }
-            break;
-        }
-        case IDC_COL_DOWN_BUTTON:
-        {
-            const int idx = ListView_GetNextItem(hListHwnd, -1, LVNI_SELECTED);
-            if (idx != -1 && (idx < pt->m_vcollection.Size() - 1))
-            {
-                ::SetFocus(hListHwnd);
-                LVITEM lvitem1;
-                memset(&lvitem1, 0, sizeof(LVITEM));
-                lvitem1.mask = LVCF_TEXT | LVIF_PARAM;
-                lvitem1.iItem = idx;
-                lvitem1.iSubItem = 0;
-                ListView_GetItem(hListHwnd, &lvitem1);
-                CComObject<Collection> * const pcol = (CComObject<Collection> *)lvitem1.lParam;
-                pt->MoveCollectionDown(pcol);
-                ListView_DeleteItem(hListHwnd, idx);
-                lvitem1.mask = LVIF_PARAM;
-                lvitem1.iItem = idx + 1;
-                ListView_InsertItem(hListHwnd, &lvitem1);
-                char szT[MAX_PATH];
-                WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
-                ListView_SetItemText(hListHwnd, idx + 1, 0, szT);
-
-                char buf[16] = { 0 };
-                sprintf_s(buf, "%i", pcol->m_visel.Size());
-                ListView_SetItemText(hListHwnd, idx + 1, 1, buf);
-
-                ListView_SetItemState(hListHwnd, -1, 0, LVIS_SELECTED);
-                ListView_SetItemState(hListHwnd, idx + 1, LVIS_SELECTED, LVIS_SELECTED);
-                ListView_SetItemState(hListHwnd, idx + 1, LVIS_FOCUSED, LVIS_FOCUSED);
-            }
-            break;
-        }
-        case IDC_DELETE_COLLECTION:
-        {
-            const int sel = ListView_GetNextItem(hListHwnd, -1, LVNI_SELECTED);
-            if (sel != -1)
-            {
-                // TEXT
-                const int ans = MessageBox("Are you sure you want to remove this collection?", "Confirm Deletion", MB_YESNO | MB_DEFBUTTON2);
-                if (ans == IDYES)
-                {
-                    LVITEM lvitem;
-                    lvitem.mask = LVIF_PARAM;
-                    lvitem.iItem = sel;
-                    lvitem.iSubItem = 0;
-                    ListView_GetItem(hListHwnd, &lvitem);
-                    CComObject<Collection> * const pcol = (CComObject<Collection> *)lvitem.lParam;
-                    pt->RemoveCollection(pcol);
-                    ListView_DeleteItem(hListHwnd, sel);
-                    pt->SetNonUndoableDirty(eSaveDirty);
-                }
-            }
-            break;
-        }
-
-        default:
-            return FALSE;
-    }
-    return TRUE;
+   default:
+      return FALSE;
+   }
+   return TRUE;
 }
 
 void CollectionManagerDialog::OnOK()
 {
-    // do not call CDialog::OnOk() here because if you rename sounds keys like backspace or escape in rename mode cause an IDOK message and this function is called
+   // do not call CDialog::OnOk() here because if you rename sounds keys like backspace or escape in rename mode cause an IDOK message and this function is called
 }
 
 void CollectionManagerDialog::OnClose()
 {
-    SavePosition();
-    CDialog::OnClose();
+   SavePosition();
+   CDialog::OnClose();
 }
 
 void CollectionManagerDialog::OnCancel()
 {
-    SavePosition();
-    CDialog::OnCancel();
+   SavePosition();
+   CDialog::OnCancel();
 }
 
 void CollectionManagerDialog::LoadPosition()
 {
-    int x, y;
-    HRESULT hr;
+   int x, y;
+   HRESULT hr;
 
-    hr = GetRegInt("Editor", "CollectionMngPosX", &x);
-    if (hr != S_OK)
-        x=0;
-    hr = GetRegInt("Editor", "CollectionMngPosY", &y);
-    if (hr != S_OK)
-        y=0;
+   hr = GetRegInt("Editor", "CollectionMngPosX", &x);
+   if (hr != S_OK)
+      x = 0;
+   hr = GetRegInt("Editor", "CollectionMngPosY", &y);
+   if (hr != S_OK)
+      y = 0;
 
-    SetWindowPos(NULL, x, y, 0, 0, SWP_NOOWNERZORDER | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+   SetWindowPos(NULL, x, y, 0, 0, SWP_NOOWNERZORDER | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
 void CollectionManagerDialog::SavePosition()
 {
-    CRect rect = GetWindowRect();
-    (void)SetRegValue("Editor", "CollectionMngPosX", REG_DWORD, &rect.left, 4);
-    (void)SetRegValue("Editor", "CollectionMngPosY", REG_DWORD, &rect.top, 4);
+   const CRect rect = GetWindowRect();
+   SetRegValueInt("Editor", "CollectionMngPosX", rect.left);
+   SetRegValueInt("Editor", "CollectionMngPosY", rect.top);
 }
 
 //######################################## Collection Dialog ########################################
@@ -328,208 +328,208 @@ CollectionDialog::CollectionDialog(CollectionDialogStruct &pcds) : CDialog(IDD_C
 
 BOOL CollectionDialog::OnInitDialog()
 {
-    Collection * const pcol = pCurCollection.pcol;
+   Collection * const pcol = pCurCollection.pcol;
 
-    HWND hwndName = GetDlgItem(IDC_NAME).GetHwnd();
+   HWND hwndName = GetDlgItem(IDC_NAME).GetHwnd();
 
-    char szT[MAX_PATH];
-    WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
+   char szT[MAX_PATH];
+   WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
 
-    ::SetWindowText(hwndName, szT);
+   ::SetWindowText(hwndName, szT);
 
-    HWND hwndFireEvents = GetDlgItem(IDC_FIRE).GetHwnd();
-    ::SendMessage(hwndFireEvents, BM_SETCHECK, pcol->m_fFireEvents ? BST_CHECKED : BST_UNCHECKED, 0);
+   HWND hwndFireEvents = GetDlgItem(IDC_FIRE).GetHwnd();
+   ::SendMessage(hwndFireEvents, BM_SETCHECK, pcol->m_fFireEvents ? BST_CHECKED : BST_UNCHECKED, 0);
 
-    HWND hwndStopSingle = GetDlgItem(IDC_SUPPRESS).GetHwnd();
-    ::SendMessage(hwndStopSingle, BM_SETCHECK, pcol->m_fStopSingleEvents ? BST_CHECKED : BST_UNCHECKED, 0);
+   HWND hwndStopSingle = GetDlgItem(IDC_SUPPRESS).GetHwnd();
+   ::SendMessage(hwndStopSingle, BM_SETCHECK, pcol->m_fStopSingleEvents ? BST_CHECKED : BST_UNCHECKED, 0);
 
-    HWND hwndGroupElements = GetDlgItem(IDC_GROUP_CHECK).GetHwnd();
-    ::SendMessage(hwndGroupElements, BM_SETCHECK, pcol->m_fGroupElements ? BST_CHECKED : BST_UNCHECKED, 0);
+   HWND hwndGroupElements = GetDlgItem(IDC_GROUP_CHECK).GetHwnd();
+   ::SendMessage(hwndGroupElements, BM_SETCHECK, pcol->m_fGroupElements ? BST_CHECKED : BST_UNCHECKED, 0);
 
-    HWND hwndOut = GetDlgItem(IDC_OUTLIST).GetHwnd();
-    HWND hwndIn = GetDlgItem(IDC_INLIST).GetHwnd();
+   HWND hwndOut = GetDlgItem(IDC_OUTLIST).GetHwnd();
+   HWND hwndIn = GetDlgItem(IDC_INLIST).GetHwnd();
 
-    for (int i = 0; i < pcol->m_visel.Size(); i++)
-    {
-        ISelect * const pisel = pcol->m_visel.ElementAt(i);
-        IEditable * const piedit = pisel->GetIEditable();
-        IScriptable * const piscript = piedit->GetScriptable();
-        if (piscript)
-        {
-            WideCharToMultiByte(CP_ACP, 0, piscript->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
-            const size_t index = ::SendMessage(hwndIn, LB_ADDSTRING, 0, (size_t)szT);
-            ::SendMessage(hwndIn, LB_SETITEMDATA, index, (size_t)piscript);
-        }
-    }
+   for (int i = 0; i < pcol->m_visel.Size(); i++)
+   {
+      ISelect * const pisel = pcol->m_visel.ElementAt(i);
+      IEditable * const piedit = pisel->GetIEditable();
+      IScriptable * const piscript = piedit->GetScriptable();
+      if (piscript)
+      {
+         WideCharToMultiByte(CP_ACP, 0, piscript->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
+         const size_t index = ::SendMessage(hwndIn, LB_ADDSTRING, 0, (size_t)szT);
+         ::SendMessage(hwndIn, LB_SETITEMDATA, index, (size_t)piscript);
+      }
+   }
 
-    PinTable * const ppt = pCurCollection.ppt;
+   PinTable * const ppt = pCurCollection.ppt;
 
-    for (size_t i = 0; i < ppt->m_vedit.size(); i++)
-    {
-        IEditable * const piedit = ppt->m_vedit[i];
-        IScriptable * const piscript = piedit->GetScriptable();
-        ISelect * const pisel = piedit->GetISelect();
+   for (size_t i = 0; i < ppt->m_vedit.size(); i++)
+   {
+      IEditable * const piedit = ppt->m_vedit[i];
+      IScriptable * const piscript = piedit->GetScriptable();
+      ISelect * const pisel = piedit->GetISelect();
 
-        // Only process objects not in this collection
-        int l;
-        for (l = 0; l < pcol->m_visel.Size(); l++)
-        {
-            if (pisel == pcol->m_visel.ElementAt(l))
-            {
-                break;
-            }
-        }
+      // Only process objects not in this collection
+      int l;
+      for (l = 0; l < pcol->m_visel.Size(); l++)
+      {
+         if (pisel == pcol->m_visel.ElementAt(l))
+         {
+            break;
+         }
+      }
 
-        if ((l == pcol->m_visel.Size()) && piscript)
-            //if (!piedit->m_pcollection)
-        {
-            WideCharToMultiByte(CP_ACP, 0, piscript->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
-            const size_t index = ::SendMessage(hwndOut, LB_ADDSTRING, 0, (size_t)szT);
-            ::SendMessage(hwndOut, LB_SETITEMDATA, index, (size_t)piscript);
-        }
-    }
+      if ((l == pcol->m_visel.Size()) && piscript)
+         //if (!piedit->m_pcollection)
+      {
+         WideCharToMultiByte(CP_ACP, 0, piscript->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
+         const size_t index = ::SendMessage(hwndOut, LB_ADDSTRING, 0, (size_t)szT);
+         ::SendMessage(hwndOut, LB_SETITEMDATA, index, (size_t)piscript);
+      }
+   }
 
-    return TRUE;
+   return TRUE;
 }
 
 BOOL CollectionDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-    CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
-    UNREFERENCED_PARAMETER(lParam);
+   CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+   UNREFERENCED_PARAMETER(lParam);
 
-    switch(LOWORD(wParam))
-    {
-        case IDC_UP:
-        case IDC_DOWN:
-        {
-            // Mode items up or down in the collection list
-            HWND hwndList = GetDlgItem(IDC_INLIST).GetHwnd();
-            const size_t listsize = ::SendMessage(hwndList, LB_GETCOUNT, 0, 0);
-            const size_t count = ::SendMessage(hwndList, LB_GETSELCOUNT, 0, 0);
-            int * const rgsel = new int[count]; //!! size_t?
-            ::SendMessage(hwndList, LB_GETSELITEMS, count, (LPARAM)rgsel);
+   switch (LOWORD(wParam))
+   {
+   case IDC_UP:
+   case IDC_DOWN:
+   {
+      // Mode items up or down in the collection list
+      HWND hwndList = GetDlgItem(IDC_INLIST).GetHwnd();
+      const size_t listsize = ::SendMessage(hwndList, LB_GETCOUNT, 0, 0);
+      const size_t count = ::SendMessage(hwndList, LB_GETSELCOUNT, 0, 0);
+      int * const rgsel = new int[count]; //!! size_t?
+      ::SendMessage(hwndList, LB_GETSELITEMS, count, (LPARAM)rgsel);
 
-            for (size_t loop = 0; loop < count; loop++)
-                //for (i=count-1;i>=0;i--)
-            {
-                const size_t i = (LOWORD(wParam) == IDC_UP) ? loop : (count - loop - 1);
+      for (size_t loop = 0; loop < count; loop++)
+         //for (i=count-1;i>=0;i--)
+      {
+         const size_t i = (LOWORD(wParam) == IDC_UP) ? loop : (count - loop - 1);
 
-                const size_t len = ::SendMessage(hwndList, LB_GETTEXTLEN, rgsel[i], 0);
-                char * const szT = new char[len + 1]; // include null terminator
-                ::SendMessage(hwndList, LB_GETTEXT, rgsel[i], (LPARAM)szT);
-                const size_t data = ::SendMessage(hwndList, LB_GETITEMDATA, rgsel[i], 0);
+         const size_t len = ::SendMessage(hwndList, LB_GETTEXTLEN, rgsel[i], 0);
+         char * const szT = new char[len + 1]; // include null terminator
+         ::SendMessage(hwndList, LB_GETTEXT, rgsel[i], (LPARAM)szT);
+         const size_t data = ::SendMessage(hwndList, LB_GETITEMDATA, rgsel[i], 0);
 
-                const size_t newindex = (LOWORD(wParam) == IDC_UP) ? max(rgsel[i] - 1, (int)i) : min(rgsel[i] + 2, (int)(listsize - (count - 1) + i)); //!! see above
-                size_t oldindex = rgsel[i];
+         const size_t newindex = (LOWORD(wParam) == IDC_UP) ? max(rgsel[i] - 1, (int)i) : min(rgsel[i] + 2, (int)(listsize - (count - 1) + i)); //!! see above
+         size_t oldindex = rgsel[i];
 
-                if (oldindex > newindex)
-                    oldindex++; // old item will be one lower when we try to delete it
+         if (oldindex > newindex)
+            oldindex++; // old item will be one lower when we try to delete it
 
-                const size_t index = ::SendMessage(hwndList, LB_INSERTSTRING, newindex, (LPARAM)szT);
-                ::SendMessage(hwndList, LB_SETITEMDATA, index, data);
-                // Set the new value to be selected, like the old one was
-                ::SendMessage(hwndList, LB_SETSEL, TRUE, index);
-                // Delete the old value
-                ::SendMessage(hwndList, LB_DELETESTRING, oldindex, 0);
-                delete[] szT;
-            }
-            delete[] rgsel;
-            break;
-        }
+         const size_t index = ::SendMessage(hwndList, LB_INSERTSTRING, newindex, (LPARAM)szT);
+         ::SendMessage(hwndList, LB_SETITEMDATA, index, data);
+         // Set the new value to be selected, like the old one was
+         ::SendMessage(hwndList, LB_SETSEL, TRUE, index);
+         // Delete the old value
+         ::SendMessage(hwndList, LB_DELETESTRING, oldindex, 0);
+         delete[] szT;
+      }
+      delete[] rgsel;
+      break;
+   }
 
-        case IDC_IN:
-        case IDC_OUT:
-        {
-            HWND hwndOut;
-            HWND hwndIn;
+   case IDC_IN:
+   case IDC_OUT:
+   {
+      HWND hwndOut;
+      HWND hwndIn;
 
-            if (LOWORD(wParam) == IDC_IN)
-            {
-                hwndOut = GetDlgItem(IDC_OUTLIST).GetHwnd();
-                hwndIn = GetDlgItem(IDC_INLIST).GetHwnd();
-            }
-            else
-            {
-                hwndOut = GetDlgItem(IDC_INLIST).GetHwnd();
-                hwndIn = GetDlgItem(IDC_OUTLIST).GetHwnd();
-            }
+      if (LOWORD(wParam) == IDC_IN)
+      {
+         hwndOut = GetDlgItem(IDC_OUTLIST).GetHwnd();
+         hwndIn = GetDlgItem(IDC_INLIST).GetHwnd();
+      }
+      else
+      {
+         hwndOut = GetDlgItem(IDC_INLIST).GetHwnd();
+         hwndIn = GetDlgItem(IDC_OUTLIST).GetHwnd();
+      }
 
-            const size_t count = ::SendMessage(hwndOut, LB_GETSELCOUNT, 0, 0);
-            int * const rgsel = new int[count];
-            ::SendMessage(hwndOut, LB_GETSELITEMS, count, (LPARAM)rgsel);
-            for (size_t i = 0; i < count; i++)
-            {
-                const size_t len = ::SendMessage(hwndOut, LB_GETTEXTLEN, rgsel[i], 0);
-                char * const szT = new char[len + 1]; // include null terminator
-                ::SendMessage(hwndOut, LB_GETTEXT, rgsel[i], (LPARAM)szT);
-                const size_t data = ::SendMessage(hwndOut, LB_GETITEMDATA, rgsel[i], 0);
+      const size_t count = ::SendMessage(hwndOut, LB_GETSELCOUNT, 0, 0);
+      int * const rgsel = new int[count];
+      ::SendMessage(hwndOut, LB_GETSELITEMS, count, (LPARAM)rgsel);
+      for (size_t i = 0; i < count; i++)
+      {
+         const size_t len = ::SendMessage(hwndOut, LB_GETTEXTLEN, rgsel[i], 0);
+         char * const szT = new char[len + 1]; // include null terminator
+         ::SendMessage(hwndOut, LB_GETTEXT, rgsel[i], (LPARAM)szT);
+         const size_t data = ::SendMessage(hwndOut, LB_GETITEMDATA, rgsel[i], 0);
 
-                const size_t index = ::SendMessage(hwndIn, LB_ADDSTRING, 0, (LPARAM)szT);
-                ::SendMessage(hwndIn, LB_SETITEMDATA, index, data);
-                delete[] szT;
-            }
+         const size_t index = ::SendMessage(hwndIn, LB_ADDSTRING, 0, (LPARAM)szT);
+         ::SendMessage(hwndIn, LB_SETITEMDATA, index, data);
+         delete[] szT;
+      }
 
-            // Remove the old strings after everything else, to avoid messing up indices
-            // Remove things in reverse order, so we don't get messed up inside this loop
-            for (size_t i = 0; i < count; i++)
-                ::SendMessage(hwndOut, LB_DELETESTRING, rgsel[count - i - 1], 0);
+      // Remove the old strings after everything else, to avoid messing up indices
+      // Remove things in reverse order, so we don't get messed up inside this loop
+      for (size_t i = 0; i < count; i++)
+         ::SendMessage(hwndOut, LB_DELETESTRING, rgsel[count - i - 1], 0);
 
-            delete[] rgsel;
-        }
-        break;
-    }
-    return TRUE;
+      delete[] rgsel;
+   }
+   break;
+   }
+   return TRUE;
 }
 
 void CollectionDialog::OnOK()
 {
-    Collection * const pcol = pCurCollection.pcol;
+   Collection * const pcol = pCurCollection.pcol;
 
-    for (int i = 0; i < pcol->m_visel.Size(); i++)
-    {
-        const int index = FindIndexOf(pcol->m_visel.ElementAt(i)->GetIEditable()->m_vCollection, pcol);
-        if (index != -1)
-        {
-            pcol->m_visel.ElementAt(i)->GetIEditable()->m_vCollection.erase (pcol->m_visel.ElementAt(i)->GetIEditable()->m_vCollection.begin()  + index);
-            pcol->m_visel.ElementAt(i)->GetIEditable()->m_viCollection.erase(pcol->m_visel.ElementAt(i)->GetIEditable()->m_viCollection.begin() + index);
-        }
-    }
+   for (int i = 0; i < pcol->m_visel.Size(); i++)
+   {
+      const int index = FindIndexOf(pcol->m_visel.ElementAt(i)->GetIEditable()->m_vCollection, pcol);
+      if (index != -1)
+      {
+         pcol->m_visel.ElementAt(i)->GetIEditable()->m_vCollection.erase(pcol->m_visel.ElementAt(i)->GetIEditable()->m_vCollection.begin() + index);
+         pcol->m_visel.ElementAt(i)->GetIEditable()->m_viCollection.erase(pcol->m_visel.ElementAt(i)->GetIEditable()->m_viCollection.begin() + index);
+      }
+   }
 
-    pcol->m_visel.RemoveAllElements();
+   pcol->m_visel.RemoveAllElements();
 
-    HWND hwndIn = GetDlgItem(IDC_INLIST).GetHwnd();
+   HWND hwndIn = GetDlgItem(IDC_INLIST).GetHwnd();
 
-    const size_t count = ::SendMessage(hwndIn, LB_GETCOUNT, 0, 0);
+   const size_t count = ::SendMessage(hwndIn, LB_GETCOUNT, 0, 0);
 
-    for (size_t i = 0; i < count; i++)
-    {
-        IScriptable * const piscript = (IScriptable *)::SendMessage(hwndIn, LB_GETITEMDATA, i, 0);
-        ISelect * const pisel = piscript->GetISelect();
-        if (pisel) // Not sure how we could possibly get an iscript here that was never an iselect
-        {
-            pcol->m_visel.AddElement(pisel);
-            pisel->GetIEditable()->m_vCollection.push_back(pcol);
-            pisel->GetIEditable()->m_viCollection.push_back((int)i);
-        }
-    }
+   for (size_t i = 0; i < count; i++)
+   {
+      IScriptable * const piscript = (IScriptable *)::SendMessage(hwndIn, LB_GETITEMDATA, i, 0);
+      ISelect * const pisel = piscript->GetISelect();
+      if (pisel) // Not sure how we could possibly get an iscript here that was never an iselect
+      {
+         pcol->m_visel.AddElement(pisel);
+         pisel->GetIEditable()->m_vCollection.push_back(pcol);
+         pisel->GetIEditable()->m_viCollection.push_back((int)i);
+      }
+   }
 
-    HWND hwndFireEvents = GetDlgItem(IDC_FIRE).GetHwnd();
-    const size_t fEvents = ::SendMessage(hwndFireEvents, BM_GETCHECK, 0, 0);
-    pcol->m_fFireEvents = !!fEvents;
+   HWND hwndFireEvents = GetDlgItem(IDC_FIRE).GetHwnd();
+   const size_t fEvents = ::SendMessage(hwndFireEvents, BM_GETCHECK, 0, 0);
+   pcol->m_fFireEvents = !!fEvents;
 
-    HWND hwndStopSingle = GetDlgItem(IDC_SUPPRESS).GetHwnd();
-    const size_t fStopSingle = ::SendMessage(hwndStopSingle, BM_GETCHECK, 0, 0);
-    pcol->m_fStopSingleEvents = !!fStopSingle;
+   HWND hwndStopSingle = GetDlgItem(IDC_SUPPRESS).GetHwnd();
+   const size_t fStopSingle = ::SendMessage(hwndStopSingle, BM_GETCHECK, 0, 0);
+   pcol->m_fStopSingleEvents = !!fStopSingle;
 
-    HWND hwndGroupElements = GetDlgItem(IDC_GROUP_CHECK).GetHwnd();
-    const size_t fGroupElements = ::SendMessage(hwndGroupElements, BM_GETCHECK, 0, 0);
-    pcol->m_fGroupElements = !!fGroupElements;
+   HWND hwndGroupElements = GetDlgItem(IDC_GROUP_CHECK).GetHwnd();
+   const size_t fGroupElements = ::SendMessage(hwndGroupElements, BM_GETCHECK, 0, 0);
+   pcol->m_fGroupElements = !!fGroupElements;
 
-    char szT[MAXSTRING];
-    HWND hwndName = GetDlgItem(IDC_NAME).GetHwnd();
-    ::GetWindowText(hwndName, szT, MAXSTRING);
+   char szT[MAXSTRING];
+   HWND hwndName = GetDlgItem(IDC_NAME).GetHwnd();
+   ::GetWindowText(hwndName, szT, MAXSTRING);
 
-    pCurCollection.ppt->SetCollectionName(pcol, szT, NULL, 0);
+   pCurCollection.ppt->SetCollectionName(pcol, szT, NULL, 0);
 
-    CDialog::OnOK();
+   CDialog::OnOK();
 }

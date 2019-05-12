@@ -36,6 +36,8 @@ float acos_approx(const float v)
 
 float acos_approx_divPI(const float v)
 {
+    //return acos(v)*(1./PI);
+
     const float x = abs(v);
     const float res = ((-0.155972/PI)/*C1*/ * x + (1.56467/PI)/*C0*/) * sqrt(1.0 - x);
     return (v >= 0.) ? res : 1. - res;
@@ -55,6 +57,8 @@ float atan2_approx(const float y, const float x)
 
 float atan2_approx_div2PI(const float y, const float x)
 {
+	//return atan2(y,x)*(0.5/PI);
+
 	const float abs_y = abs(y);
 	const float abs_x = abs(x);
 	const float r = (abs_x - abs_y) / (abs_x + abs_y);
@@ -159,6 +163,8 @@ float3 FilmicToneMap2(const float3 texColor) //!! test/experimental
    const float3 x = max(0.,texColor-0.004); // Filmic Curve
    return (x*(6.2*x+.5))/(x*(6.2*x+1.7)+0.06);
 }
+
+
 
 // RGBM/RGBD
 

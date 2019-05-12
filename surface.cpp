@@ -800,7 +800,7 @@ void Surface::ExportMesh(FILE *f)
    }
    else if (topBuf.size() > 0 && m_d.m_fTopBottomVisible && m_d.m_fSideVisible)
    {
-      Vertex3D_NoTex2 *tmp = new Vertex3D_NoTex2[numVertices * 5];
+      Vertex3D_NoTex2 * const tmp = new Vertex3D_NoTex2[numVertices * 5];
       memcpy(tmp, sideBuf.data(), sizeof(Vertex3D_NoTex2) * numVertices * 4);
       memcpy(&tmp[numVertices * 4], topBuf.data(), sizeof(Vertex3D_NoTex2)*numVertices);
       WaveFrontObj_WriteObjectName(f, name);
@@ -1039,7 +1039,7 @@ void Surface::RenderSlingshots()
          }
       }
 
-      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, slingshotVBuffer, i * 9, 9, slingIBuffer, 0, 24);
+      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, slingshotVBuffer, (DWORD)i * 9, 9, slingIBuffer, 0, 24);
    }
    pd3dDevice->basicShader->End();
 
@@ -1538,7 +1538,7 @@ void Surface::UpdateUnitsInfo()
 
    char tbuf[128];
    sprintf_s(tbuf, "TopHeight: %.03f | BottomHeight: %0.3f", g_pvp->ConvertToUnit(m_d.m_heighttop), g_pvp->ConvertToUnit(m_d.m_heightbottom));
-   g_pvp->SetStatusBarUnitInfo(tbuf);
+   g_pvp->SetStatusBarUnitInfo(tbuf, true);
 }
 
 STDMETHODIMP Surface::get_HasHitEvent(VARIANT_BOOL *pVal)

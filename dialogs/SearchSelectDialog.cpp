@@ -18,12 +18,12 @@ int SearchSelectDialog::m_lastSortColumn;
 
 SearchSelectDialog::SearchSelectDialog() : CDialog(IDD_SEARCH_SELECT_ELEMENT)
 {
-    hElementList = NULL;
-    
-    m_switchSortOrder = false;
-    m_columnSortOrder = 1;
-    m_lastSortColumn = 0;
-    curTable = NULL;
+   hElementList = NULL;
+
+   m_switchSortOrder = false;
+   m_columnSortOrder = 1;
+   m_lastSortColumn = 0;
+   curTable = NULL;
 }
 
 void SearchSelectDialog::Update()
@@ -59,7 +59,7 @@ void SearchSelectDialog::Update()
    for (int i = 0; i < curTable->m_vcollection.Size(); i++)
    {
       CComObject<Collection> *const pcol = curTable->m_vcollection.ElementAt(i);
-      char szT[64]; 
+      char szT[64];
 
       WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, 64, NULL, NULL);
       lv.iItem = idx;
@@ -118,39 +118,39 @@ BOOL SearchSelectDialog::OnInitDialog()
 
 void SearchSelectDialog::SelectElement()
 {
-    const int count = ListView_GetSelectedCount(hElementList);
+   const int count = ListView_GetSelectedCount(hElementList);
 
-    curTable->ClearMultiSel();
-    int iItem = -1;
-    LVITEM lv;
-    for (int i = 0; i < count; i++)
-    {
-        iItem = ListView_GetNextItem(hElementList, iItem, LVNI_SELECTED);
-        lv.iItem = iItem;
-        lv.mask = LVIF_PARAM;
-        if (ListView_GetItem(hElementList, &lv) == TRUE)
-        {
-           char szType[64];
-           ListView_GetItemText(hElementList, iItem, 1, szType, 32);
-           if (strcmp(szType, "Collection") == 0)
-           {
-              CComObject<Collection> *const pcol = (CComObject<Collection>*)lv.lParam;
-              if (pcol->m_visel.Size()>0)
-              {
-                 ISelect *const pisel = pcol->m_visel.ElementAt(0);
-                 if (pisel)
-                    curTable->AddMultiSel(pisel, false);
-              }
-           }
-           else
-           {
-              IScriptable *pscript = (IScriptable*)lv.lParam;
-              ISelect *const pisel = pscript->GetISelect();
-              if (pisel)
-                 curTable->AddMultiSel(pisel, true);
-           }
-        }
-    }
+   curTable->ClearMultiSel();
+   int iItem = -1;
+   LVITEM lv;
+   for (int i = 0; i < count; i++)
+   {
+      iItem = ListView_GetNextItem(hElementList, iItem, LVNI_SELECTED);
+      lv.iItem = iItem;
+      lv.mask = LVIF_PARAM;
+      if (ListView_GetItem(hElementList, &lv) == TRUE)
+      {
+         char szType[64];
+         ListView_GetItemText(hElementList, iItem, 1, szType, 32);
+         if (strcmp(szType, "Collection") == 0)
+         {
+            CComObject<Collection> *const pcol = (CComObject<Collection>*)lv.lParam;
+            if (pcol->m_visel.Size()>0)
+            {
+               ISelect *const pisel = pcol->m_visel.ElementAt(0);
+               if (pisel)
+                  curTable->AddMultiSel(pisel, false);
+            }
+         }
+         else
+         {
+            IScriptable *pscript = (IScriptable*)lv.lParam;
+            ISelect *const pisel = pscript->GetISelect();
+            if (pisel)
+               curTable->AddMultiSel(pisel, true);
+         }
+      }
+   }
 }
 
 void SearchSelectDialog::SortItems(const int columnNumber)
@@ -164,7 +164,7 @@ void SearchSelectDialog::SortItems(const int columnNumber)
    }
 
    SortData.hwndList = hElementList;
-   SortData.subItemIndex = (m_switchSortOrder==true) ? columnNumber: m_lastSortColumn;
+   SortData.subItemIndex = (m_switchSortOrder == true) ? columnNumber : m_lastSortColumn;
    m_lastSortColumn = columnNumber;
    SortData.sortUpDown = m_columnSortOrder;
    ListView_SortItems(SortData.hwndList, MyCompProc, &SortData);
@@ -177,44 +177,44 @@ INT_PTR SearchSelectDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
    switch (uMsg)
    {
-      case WM_NOTIFY:
+   case WM_NOTIFY:
+   {
+      if (((LPNMHDR)lParam)->code == NM_DBLCLK)
       {
-         if (((LPNMHDR)lParam)->code == NM_DBLCLK)
-         {
-             SelectElement();
-         }
-         else if (wParam == IDC_ELEMENT_LIST)
-         {
-            LPNMLISTVIEW lpnmListView = (LPNMLISTVIEW)lParam;
-            if (lpnmListView->hdr.code == LVN_COLUMNCLICK)
-            {
-               const int columnNumber = lpnmListView->iSubItem;
-               SortItems(columnNumber);
-            }
-         }
-         break;
+         SelectElement();
       }
-      case WM_SIZE:
+      else if (wParam == IDC_ELEMENT_LIST)
       {
-         CRect rc;
-         RECT buttonRc;
-
-         rc = GetWindowRect();
-         int windowHeight = rc.bottom - rc.top;
-         int windowWidth = rc.right - rc.left;
-
-         HWND hOkButton = GetDlgItem(IDOK).GetHwnd();
-         HWND hCancelButton = GetDlgItem(IDCANCEL).GetHwnd();
-         int buttonY = (windowHeight - 80) + 5;
-         ::GetClientRect(hOkButton, &buttonRc);
-         int buttonWidth = buttonRc.right - buttonRc.left;
-         int buttonHeight = buttonRc.bottom - buttonRc.top;
-         
-         ::SetWindowPos(hElementList, NULL, 6, 5, windowWidth - 28, windowHeight - 90, 0);
-         ::SetWindowPos(hOkButton, NULL, 6, buttonY, buttonWidth, buttonHeight, 0);
-         ::SetWindowPos(hCancelButton, NULL, 6 + buttonWidth + 50, buttonY, buttonWidth, buttonHeight, 0);
-         break;
+         LPNMLISTVIEW lpnmListView = (LPNMLISTVIEW)lParam;
+         if (lpnmListView->hdr.code == LVN_COLUMNCLICK)
+         {
+            const int columnNumber = lpnmListView->iSubItem;
+            SortItems(columnNumber);
+         }
       }
+      break;
+   }
+   case WM_SIZE:
+   {
+      CRect rc;
+      RECT buttonRc;
+
+      rc = GetWindowRect();
+      int windowHeight = rc.bottom - rc.top;
+      int windowWidth = rc.right - rc.left;
+
+      HWND hOkButton = GetDlgItem(IDOK).GetHwnd();
+      HWND hCancelButton = GetDlgItem(IDCANCEL).GetHwnd();
+      int buttonY = (windowHeight - 80) + 5;
+      ::GetClientRect(hOkButton, &buttonRc);
+      int buttonWidth = buttonRc.right - buttonRc.left;
+      int buttonHeight = buttonRc.bottom - buttonRc.top;
+
+      ::SetWindowPos(hElementList, NULL, 6, 5, windowWidth - 28, windowHeight - 90, 0);
+      ::SetWindowPos(hOkButton, NULL, 6, buttonY, buttonWidth, buttonHeight, 0);
+      ::SetWindowPos(hCancelButton, NULL, 6 + buttonWidth + 50, buttonY, buttonWidth, buttonHeight, 0);
+      break;
+   }
 
    }
    return DialogProcDefault(uMsg, wParam, lParam);
@@ -484,7 +484,7 @@ void SearchSelectDialog::AddSearchItemToList(IEditable * const piedit, int idx)
 }
 void SearchSelectDialog::LoadPosition()
 {
-   int x, y,w,h;
+   int x, y, w, h;
 
    x = GetRegIntWithDefault("Editor", "SearchSelectPosX", 0);
    y = GetRegIntWithDefault("Editor", "SearchSelectPosY", 0);
@@ -496,12 +496,11 @@ void SearchSelectDialog::LoadPosition()
 
 void SearchSelectDialog::SavePosition()
 {
-   int w, h;
-   CRect rect = GetWindowRect();
-   (void)SetRegValue("Editor", "SearchSelectPosX", REG_DWORD, &rect.left, 4);
-   (void)SetRegValue("Editor", "SearchSelectPosY", REG_DWORD, &rect.top, 4);
-   w = rect.right - rect.left;
-   (void)SetRegValue("Editor", "SearchSelectWidth", REG_DWORD, &w, 4);
-   h = rect.bottom - rect.top;
-   (void)SetRegValue("Editor", "SearchSelectHeight", REG_DWORD, &h, 4);
+   const CRect rect = GetWindowRect();
+   SetRegValueInt("Editor", "SearchSelectPosX", rect.left);
+   SetRegValueInt("Editor", "SearchSelectPosY", rect.top);
+   const int w = rect.right - rect.left;
+   SetRegValueInt("Editor", "SearchSelectWidth", w);
+   const int h = rect.bottom - rect.top;
+   SetRegValueInt("Editor", "SearchSelectHeight", h);
 }

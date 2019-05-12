@@ -276,7 +276,7 @@ public:
    void InitBallShader();
    void CreateDebugFont();
    void DebugPrint(int x, int y, LPCSTR text, int stringLen, bool shadow = false);
-   void InitPlayfieldWindow();
+   void InitGameplayWindow();
    void InitKeys();
    void InitRegValues();
 
@@ -450,6 +450,8 @@ public:
    bool m_fCloseDown;                // Whether to shut down the player at the end of this frame
    bool m_fCloseDownDelay;
    bool m_fShowDebugger;
+
+   bool m_ShowWindowedCaption;
 
    bool m_fReflectionForBalls;
    bool m_fTrailForBalls;

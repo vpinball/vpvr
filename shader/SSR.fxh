@@ -33,7 +33,7 @@ float4 ps_main_fb_ss_refl(in VS_OUTPUT_2D IN) : COLOR
 	const float3 color0 = tex2Dlod(texSampler4, float4(u, 0.,0.)).xyz; // original pixel
 
 	const float depth0 = tex2Dlod(texSamplerDepth, float4(u, 0.,0.)).x;
-	[branch] if ((depth0 == 1.0) || (depth0 == 0.0)) //!!! early out if depth too large (=BG) or too small (=DMD,etc -> retweak render options (depth write on), otherwise also screwup with stereo)
+	[branch] if((depth0 == 1.0) || (depth0 == 0.0)) //!!! early out if depth too large (=BG) or too small (=DMD,etc -> retweak render options (depth write on), otherwise also screwup with stereo)
 		return float4(color0, 1.0);
 
 	const float3 normal = normalize(get_nonunit_normal(depth0,u));
@@ -51,7 +51,7 @@ float4 ps_main_fb_ss_refl(in VS_OUTPUT_2D IN) : COLOR
     return float4(0.,sqr(normal_fade_factor(normal_b/*normal*/)),0., 1.0);
 #endif
 
-	[branch] if (fresnel < 0.01) //!! early out if contribution too low
+	[branch] if(fresnel < 0.01) //!! early out if contribution too low
 		return float4(color0, 1.0);
 
 	const int samples = 32;
@@ -64,12 +64,12 @@ float4 ps_main_fb_ss_refl(in VS_OUTPUT_2D IN) : COLOR
 	// loop in screen space, simply collect all pixels in the normal direction (not even a depth check done!)
 	float3 refl = float3(0.,0.,0.);
 	float color0w = 0.;
-	[unroll] for (int i=1; i</*=*/samples; i++) //!! due to jitter
+	[unroll] for(int i=1; i</*=*/samples; i++) //!! due to jitter
 	{
 		const float2 offs = u + ((float)i+ushift)*offsMul; //!! jitter per pixel (uses blue noise tex)
 		const float3 color = tex2Dlod(texSampler5, float4(offs, 0.,0.)).xyz;
 		
-		[branch] if (i==1) // necessary special case as compiler warns/'optimizes' sqrt below into rqsrt?!
+		[branch] if(i==1) // necessary special case as compiler warns/'optimizes' sqrt below into rqsrt?!
 		{
 		refl += color;
 		}

@@ -162,12 +162,13 @@ void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes,
 {
    const HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
    SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
-   int bestMatch = 0;
-   int bestMatchingPoints = 0;
+   int bestMatch = 0; // to find closest matching res
+   int bestMatchingPoints = 0; // dto.
+
    int screenwidth;
    int screenheight;
    int x, y;
-   const int display = SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
+   const int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
    getDisplaySetupByID(display, x, y, screenwidth, screenheight);
 
    for (size_t i = 0; i < modes.size(); ++i)
@@ -175,7 +176,7 @@ void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes,
       char szT[128];
 
 #ifdef ENABLE_SDL
-      if (modes[i].depth)
+      if (modes[i].depth) // i.e. is this windowed or not
          sprintf_s(szT, "%d x %d (%dHz) %s", modes[i].width, modes[i].height, modes[i].refreshrate, (modes[i].depth == 32) ? "32bit" :
             (modes[i].depth == 30) ? "HDR" :
             (modes[i].depth == 16) ? "16bit" : "");
@@ -197,7 +198,7 @@ void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes,
          if (modes[i].height == screenheight) matchingPoints += 3;
          if (modes[i].refreshrate == DEFAULT_PLAYER_FS_REFRESHRATE) matchingPoints += 1;
          if (matchingPoints > bestMatchingPoints) {
-            bestMatch = i;
+            bestMatch = (int)i;
             bestMatchingPoints = matchingPoints;
          }
       }
@@ -723,7 +724,7 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
       int screenwidth;
       int screenheight;
       int x, y;
-      const int display = SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
+      const int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
       getDisplaySetupByID(display, x, y, screenwidth, screenheight);
 
       //if (indx != -1)
@@ -840,7 +841,7 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
    {
       HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
       HWND hwndDisplay = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
-      int display = SendMessage(hwndDisplay, CB_GETCURSEL, 0, 0);
+      int display = (int)SendMessage(hwndDisplay, CB_GETCURSEL, 0, 0);
       EnumerateDisplayModes(display, allVideoModes);
 
       VideoMode curSelMode;
@@ -917,7 +918,7 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       ofn.hInstance = g_hinst;
       ofn.hwndOwner = g_pvp->m_hwnd;
       // TEXT
-      ofn.lpstrFilter = "Bitmap, JPEG, PNG, EXR, HDR Files (.bmp/.jpg/.png/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.exr;*.hdr\0";
+      ofn.lpstrFilter = "Bitmap, JPEG, PNG, TGA, EXR, HDR Files (.bmp/.jpg/.png/.tga/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.tga;*.exr;*.hdr\0";
       ofn.lpstrFile = szFileName;
       ofn.nMaxFile = MAXSTRING;
       ofn.lpstrDefExt = "png";
@@ -940,7 +941,7 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       ofn.hInstance = g_hinst;
       ofn.hwndOwner = g_pvp->m_hwnd;
       // TEXT
-      ofn.lpstrFilter = "Bitmap, JPEG, PNG, EXR, HDR Files (.bmp/.jpg/.png/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.exr;*.hdr\0";
+      ofn.lpstrFilter = "Bitmap, JPEG, PNG, TGA, EXR, HDR Files (.bmp/.jpg/.png/.tga/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.tga;*.exr;*.hdr\0";
       ofn.lpstrFile = szFileName;
       ofn.nMaxFile = MAXSTRING;
       ofn.lpstrDefExt = "png";
@@ -955,7 +956,7 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
    case IDC_DISPLAY_ID:
    {
       const size_t checked = SendDlgItemMessage(IDC_FULLSCREEN, BM_GETCHECK, 0, 0);
-      size_t index = SendMessage(GetDlgItem(IDC_SIZELIST).GetHwnd(), LB_GETCURSEL, 0, 0);
+      size_t index = (int)SendMessage(GetDlgItem(IDC_SIZELIST).GetHwnd(), LB_GETCURSEL, 0, 0);
       if (allVideoModes.size() == 0) {
          HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
          HWND hwndDisplay = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
@@ -966,7 +967,7 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       if (allVideoModes.size() > index) {
          VideoMode * pvm = &allVideoModes[index];
          if (checked)
-            SendMessage(GET_FULLSCREENMODES, (pvm->width) << 16 | (pvm->refreshrate), (pvm->height) << 16 | (pvm->depth));
+            SendMessage(GET_FULLSCREENMODES, (pvm->width << 16) | pvm->refreshrate, (pvm->height << 16) | pvm->depth);
          else
             SendMessage(GET_WINDOW_MODES, pvm->width, pvm->height);
 

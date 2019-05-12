@@ -118,7 +118,7 @@ float3 DoEnvmapDiffuse(const float3 N, const float3 diffuse)
 // very very crude approximation by abusing miplevels
 float3 DoEnvmapGlossy(const float3 N, const float3 V, const float2 Ruv, const float3 glossy, const float glossyPower)
 {
-   const float mip = log2(fenvEmissionScale_TexWidth.y * sqrt(3.0)) - 0.5*log2(glossyPower + 1.0);
+   const float mip = min(log2(fenvEmissionScale_TexWidth.y * sqrt(3.0)) - 0.5*log2(glossyPower + 1.0), log2(fenvEmissionScale_TexWidth.y)-1.); //!! do diffuse lookup instead of this limit/min, if too low?? and blend?
    float3 env = tex2Dlod(texSampler1, float4(Ruv, 0., mip)).xyz;
    if (!hdrEnvTextures)
        env = InvGamma(env);
@@ -154,7 +154,7 @@ float3 lightLoop(const float3 pos, float3 N, const float3 V, float3 diffuse, flo
    if (fix_normal_orientation && (NdotV < 0.0)) // flip normal in case of wrong orientation? (backside lighting), currently disabled if normal mapping active, for that case we should actually clamp the normal with respect to V instead (see f.e. 'view-dependant shading normal adaptation')
    {
       N = -N;
-	  NdotV = -NdotV;
+      NdotV = -NdotV;
    }
 
    float3 color = float3(0.0, 0.0, 0.0);

@@ -684,6 +684,7 @@ Player::Player(bool _cameraMode) : cameraMode(_cameraMode)
 
    m_fCloseDown = false;
    m_fCloseDownDelay = true;
+   m_ShowWindowedCaption = false;
    m_closeType = 0;
    m_fShowDebugger = false;
 
@@ -1401,7 +1402,7 @@ HRESULT Player::Init(PinTable * const ptable, const HWND hwndProgress, const HWN
    // TEXT
    SetWindowText(hwndProgressName, "Initializing Visuals...");
 
-   InitPlayfieldWindow();
+   InitGameplayWindow();
    InitKeys();
    InitRegValues();
 
@@ -2061,7 +2062,7 @@ void Player::DestroyBall(Ball *pball)
 }
 
 //initalizes the player window, and places it somewhere on the screen, does not manage content
-void Player::InitPlayfieldWindow()
+void Player::InitGameplayWindow()
 {
    WNDCLASSEX wcex;
    ZeroMemory(&wcex, sizeof(WNDCLASSEX));
@@ -2141,20 +2142,26 @@ void Player::InitPlayfieldWindow()
       y += (m_screenheight - m_height) / 2;
    }
 
-   // No window border, title, or control boxes.
-   int windowflags = WS_POPUP;
-   int windowflagsex = 0;
+   int windowflags;
+   int windowflagsex;
 
    const int captionheight = GetSystemMetrics(SM_CYCAPTION);
 
-   if (!m_fFullScreen && ((m_screenheight - m_height) >= (captionheight * 2))) // We have enough room for a frame
+   if (false) // only do this nowadays if ESC menu is brought up //(!m_fFullScreen && ((m_screenheight - m_height) >= (captionheight * 2))) // We have enough room for a frame?
    {
       // Add a pretty window border and standard control boxes.
       windowflags = WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_CLIPCHILDREN;
       windowflagsex = WS_EX_OVERLAPPEDWINDOW;
 
+      //!! does not respect borders so far!!! -> change width/height accordingly ??
+      //!! like this the render window is scaled and thus implicitly blurred!
       y -= captionheight;
       m_height += captionheight;
+   }
+   else // No window border, title, or control boxes.
+   {
+      windowflags = WS_POPUP;
+      windowflagsex = 0;
    }
    CalcBallAspectRatio();
 #ifndef ENABLE_SDL
@@ -3932,12 +3939,12 @@ void Player::UpdateHUD()
 		int len = sprintf_s(szFoo, "Overall: %.1f ms (%.1f (%.1f) avg %.1f max)",
 			float(1e-3*period), float(1e-3 * (double)m_total / (double)m_count), float(1e-3*m_max), float(1e-3*m_max_total));
 		DebugPrint(10, 30, szFoo, len);
-		len = sprintf_s(szFoo, "%.1f%% Physics: %.1f ms (%.1f (%.1f %.1f%%) avg %.1f max)",
-			float((m_phys_period-m_script_period)*100.0 / period), float(1e-3*(m_phys_period-m_script_period)),
-			float(1e-3 * (double)m_phys_total / (double)m_count), float(1e-3*m_phys_max), float((double)m_phys_total*100.0 / (double)m_total), float(1e-3*m_phys_max_total));
-		DebugPrint(10, 50, szFoo, len);
-		len = sprintf_s(szFoo, "%.1f%% Scripts: %.1f ms (%.1f (%.1f %.1f%%) avg %.1f max)",
-			float(m_script_period*100.0 / period), float(1e-3*m_script_period),
+      len = sprintf_s(szFoo, "%4.1f%% Physics: %.1f ms (%.1f (%.1f %4.1f%%) avg %.1f max)",
+         float((m_phys_period - m_script_period)*100.0 / period), float(1e-3*(m_phys_period - m_script_period)),
+         float(1e-3 * (double)m_phys_total / (double)m_count), float(1e-3*m_phys_max), float((double)m_phys_total*100.0 / (double)m_total), float(1e-3*m_phys_max_total));
+      DebugPrint(10, 50, szFoo, len);
+      len = sprintf_s(szFoo, "%4.1f%% Scripts: %.1f ms (%.1f (%.1f %4.1f%%) avg %.1f max)",
+         float(m_script_period*100.0 / period), float(1e-3*m_script_period),
 			float(1e-3 * (double)m_script_total / (double)m_count), float(1e-3*m_script_max), float((double)m_script_total*100.0 / (double)m_total), float(1e-3*m_script_max_total));
 		DebugPrint(10, 70, szFoo, len);
 
@@ -3953,13 +3960,14 @@ void Player::UpdateHUD()
       len = sprintf_s(szFoo, "Objects: %u Transparent, %u Solid", (unsigned int)m_vHitTrans.size(), (unsigned int)m_vHitNonTrans.size());
       DebugPrint(10, 175, szFoo, len);
 
-#ifdef DEBUGPHYSICS
-		len = sprintf_s(szFoo, "Phys: %5u iterations (%5u avg %5u max))",
-			m_phys_iterations,
-			(U32)(m_phys_total_iterations / m_count),
-			m_phys_max_iterations);
-		DebugPrint(10, 200, szFoo, len);
+      len = sprintf_s(szFoo, "Physics: %u iterations per frame (%u avg %u max)    Ball Velocity / Ang.Vel.: %.1f %.1f",
+         m_phys_iterations,
+         (U32)(m_phys_total_iterations / m_count),
+         m_phys_max_iterations,
+         g_pplayer->m_pactiveball ? (g_pplayer->m_pactiveball->m_vel + (float)PHYS_FACTOR*g_pplayer->m_gravity).Length() : -1.f, g_pplayer->m_pactiveball ? g_pplayer->m_pactiveball->m_angularvelocity.Length() : -1.f);
+      DebugPrint(10, 200, szFoo, len);
 
+#ifdef DEBUGPHYSICS
 #ifdef C_DYNAMIC
 		len = sprintf_s(szFoo, "Hits:%5u Collide:%5u Ctacs:%5u Static:%5u Embed:%5u TimeSearch:%5u",
 			c_hitcnts, c_collisioncnt, c_contactcnt, c_staticcnt, c_embedcnts, c_timesearch);
@@ -3973,6 +3981,7 @@ void Player::UpdateHUD()
 			c_kDObjects, c_kDNextlevels, c_quadObjects, c_quadNextlevels, c_traversed, c_tested, c_deepTested);
 		DebugPrint(10, 240, szFoo, len);
 #endif
+
 		len = sprintf_s(szFoo, "Left Flipper keypress to rotate: %.1f ms (%d f) to eos: %.1f ms (%d f)",
 			(INT64)(m_pininput.m_leftkey_down_usec_rotate_to_end - m_pininput.m_leftkey_down_usec) < 0 ? int_as_float(0x7FC00000) : (double)(m_pininput.m_leftkey_down_usec_rotate_to_end - m_pininput.m_leftkey_down_usec) / 1000.,
 			(int)(m_pininput.m_leftkey_down_frame_rotate_to_end - m_pininput.m_leftkey_down_frame) < 0 ? -1 : (int)(m_pininput.m_leftkey_down_frame_rotate_to_end - m_pininput.m_leftkey_down_frame),
@@ -4001,8 +4010,8 @@ void Player::UpdateHUD()
 			DebugPrint(10, 320, szFoo, len2);
 			for (GTS gts = GTS(GTS_BeginFrame + 1); gts < GTS_EndFrame; gts = GTS(gts + 1))
 			{
-				len2 = sprintf_s(szFoo, "   %s: %.2f ms (%.1f%%)", GTS_name[gts], float(1000.0 * m_pin3d.m_gpu_profiler.DtAvg(gts)), float(100. * m_pin3d.m_gpu_profiler.DtAvg(gts)/dTDrawTotal));
-				DebugPrint(10, 320 + gts * 20, szFoo, len2);
+            len2 = sprintf_s(szFoo, "   %s: %.2f ms (%4.1f%%)", GTS_name[gts], float(1000.0 * m_pin3d.m_gpu_profiler.DtAvg(gts)), float(100. * m_pin3d.m_gpu_profiler.DtAvg(gts) / dTDrawTotal));
+            DebugPrint(10, 320 + gts * 20, szFoo, len2);
 			}
 			len2 = sprintf_s(szFoo, " Frame time: %.2f ms", float(1000.0 * (dTDrawTotal + m_pin3d.m_gpu_profiler.DtAvg(GTS_EndFrame))));
 			DebugPrint(10, 320 + GTS_EndFrame * 20, szFoo, len2);
@@ -4011,8 +4020,8 @@ void Player::UpdateHUD()
 		{
 			for (GTS gts = GTS(GTS_BeginFrame + 1); gts < GTS_EndFrame; gts = GTS(gts + 1))
 			{
-				len2 = sprintf_s(szFoo, " %s: %.2f ms (%.1f%%)", GTS_name_item[gts], float(1000.0 * m_pin3d.m_gpu_profiler.DtAvg(gts)), float(100. * m_pin3d.m_gpu_profiler.DtAvg(gts)/dTDrawTotal));
-				DebugPrint(10, 300 + gts * 20, szFoo, len2);
+            len2 = sprintf_s(szFoo, " %s: %.2f ms (%4.1f%%)", GTS_name_item[gts], float(1000.0 * m_pin3d.m_gpu_profiler.DtAvg(gts)), float(100. * m_pin3d.m_gpu_profiler.DtAvg(gts) / dTDrawTotal));
+            DebugPrint(10, 300 + gts * 20, szFoo, len2);
 			}
 		}
     }
@@ -4190,7 +4199,10 @@ void Player::PostProcess(const bool ambientOcclusion)
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool("color_grade", pin != NULL);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool("do_bloom", (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff));
 
-   const vec4 fb_inv_resolution_05((float)(0.5 * inv_width), (float)(0.5 * inv_height), 1.0f, 1.0f);
+   const vec4 fb_inv_resolution_05((float)(0.5 / (double)m_width), (float)(0.5 / (double)m_height),
+      //1.0f, 1.0f);
+      radical_inverse(m_overall_frames)*(float)(1. / 8.0),
+      sobol(m_overall_frames)*(float)(5. / 8.0)); // jitter for dither pattern
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector("w_h_height", &fb_inv_resolution_05);
    if (ambientOcclusion)
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(RenderAOOnly() ? "fb_AO" : (useAA ? "fb_tonemap_AO" : "fb_tonemap_AO_no_filter"));
@@ -4628,7 +4640,32 @@ void Player::Render()
    else
    {
       if (m_fCloseDown && m_fCloseDownDelay) // wait for one frame to stop game, to be able to display the additional text (table info, etc)
+      {
          m_fCloseDownDelay = false;
+
+         // add or remove caption, border and buttons (only if in windowed mode)?
+         const int captionheight = GetSystemMetrics(SM_CYCAPTION);
+         if (!m_fFullScreen && (m_ShowWindowedCaption || (!m_ShowWindowedCaption && ((m_screenheight - m_height) >= (captionheight * 2))))) // We have enough room for a frame? //!! *2 ??
+         {
+            RECT rect;
+            GetWindowRect(m_playfieldHwnd, &rect);
+            const int x = rect.left;
+            const int y = rect.top;
+
+            // Add/Remove a pretty window border and standard control boxes.
+            const int windowflags = m_ShowWindowedCaption ? WS_POPUP : (WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_CLIPCHILDREN);
+            const int windowflagsex = m_ShowWindowedCaption ? 0 : WS_EX_OVERLAPPEDWINDOW;
+
+            //!! does not respect borders so far!!! -> remove them or change width/height accordingly ?? otherwise ignore as eventually it will be restored anyway??
+            //!! like this the render window is scaled and thus implicitly blurred though!
+            SetWindowLong(m_playfieldHwnd, GWL_STYLE, windowflags);
+            SetWindowLong(m_playfieldHwnd, GWL_EXSTYLE, windowflagsex);
+            SetWindowPos(m_playfieldHwnd, NULL, x, m_ShowWindowedCaption ? (y + captionheight) : (y - captionheight), m_width, m_height + (m_ShowWindowedCaption ? 0 : captionheight), SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+            ShowWindow(m_playfieldHwnd, SW_SHOW);
+
+            m_ShowWindowedCaption = !m_ShowWindowedCaption;
+         }
+      }
       else if (m_fCloseDown)
       {
          PauseMusic();
