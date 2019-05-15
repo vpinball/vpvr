@@ -3310,7 +3310,7 @@ void Player::Spritedraw(const float posx, const float posy, const float width, c
 void Player::DrawBulbLightBuffer()
 {
    // switch to 'bloom' output buffer to collect all bulb lights
-   m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture());
+   m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture(), true);
 
    m_pin3d.m_pd3dPrimaryDevice->Clear(TARGET | ZBUFFER, 0, 1.0f, 0L);
 
