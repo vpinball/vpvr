@@ -747,11 +747,11 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 #ifdef ENABLE_VR
    case STEREO_VR:
       InitVR();
-      m_Buf_widthBlur = m_Buf_width * 2 / 3 + 4;
-      m_Buf_heightBlur = m_Buf_height / 3;
-      m_Buf_widthSS = m_Buf_width * (m_useAA ? 4 : 2);
-      m_Buf_heightSS = m_Buf_height * (m_useAA ? 2 : 1);
       m_Buf_width = m_Buf_width * 2;
+      m_Buf_widthBlur = m_Buf_width / 3 + 4;
+      m_Buf_heightBlur = m_Buf_height / 3;
+      m_Buf_widthSS = m_Buf_width * (m_useAA ? 2 : 1);
+      m_Buf_heightSS = m_Buf_height * (m_useAA ? 2 : 1);
       break;
 #endif
    default:

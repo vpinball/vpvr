@@ -344,7 +344,9 @@ RenderDevice(HWND* const hwnd, const int width, const int height, const bool ful
 
    //VR stuff
    unsigned int getBufwidth() { return m_Buf_width; }
-   unsigned int getBufheight() { return m_Buf_width; }
+   unsigned int getBufheight() { return m_Buf_height; }
+   unsigned int getBufwidthBlur() { return m_Buf_widthBlur; }
+   unsigned int getBufheightBlur() { return m_Buf_heightBlur; }
    void UpdateVRPosition();
    void tableUp();
    void tableDown();
