@@ -2848,11 +2848,11 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    if (m_maxaniso > 0)
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_maxaniso));
    if (tex->usage == AUTOMIPMAP) {
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)); // Use mipmap bilinear filtering GL_LINEAR_MIPMAP_LINEAR
+      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)); // Use mipmap filtering GL_LINEAR_MIPMAP_LINEAR
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)); // MAG Filter does not support mipmaps
    }
    else {
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)); // Use mipmap bilinear filtering GL_LINEAR_MIPMAP_LINEAR
+      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)); // Use mipmap filtering GL_LINEAR_MIPMAP_LINEAR
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));; // MAG Filter does not support mipmaps
    }
    if (Format == GREY) {//Hack so that GL_RED behaves as GL_GREY
@@ -2874,12 +2874,15 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA));
    }
    if (data)
+   {
       CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, tex->format, Width, Height, 0, col_format, col_type, data));
-   if ((tex->usage == AUTOMIPMAP) && data) {
+      CHECKD3D(glGenerateMipmap(GL_TEXTURE_2D));
+   }
+   /*if ((tex->usage == AUTOMIPMAP) && data) {
       if ((tex->usage & AUTOMIPMAP) == AUTOMIPMAP) {
          CHECKD3D(glGenerateMipmap(GL_TEXTURE_2D));
       }
-   }
+   }*/
    return tex;
 #else //D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, void* data) {
    D3DPOOL Pool;
