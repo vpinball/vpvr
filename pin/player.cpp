@@ -3309,6 +3309,10 @@ void Player::Spritedraw(const float posx, const float posy, const float width, c
 
 void Player::DrawBulbLightBuffer()
 {
+   // Temporarly disable stereo rendering for the bulb light rendering or we get overlapping lights
+   int orig_m_stereo3D = m_pin3d.m_pd3dPrimaryDevice->m_stereo3D;
+   m_pin3d.m_pd3dPrimaryDevice->m_stereo3D = 0;
+
    // switch to 'bloom' output buffer to collect all bulb lights
    m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture(), true);
 
@@ -3346,7 +3350,7 @@ void Player::DrawBulbLightBuffer()
 
       //for (unsigned int blur = 0; blur < 2; ++blur) // uses larger blur kernel instead now (see below)
       {
-         const vec4 fb_inv_resolution_05((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidthBlur()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheightBlur()), 1.0f, 1.0f);
+         const vec4 fb_inv_resolution_05((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->width), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->height), 1.0f, 1.0f);
          {
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull("Texture0");
 
@@ -3383,10 +3387,11 @@ void Player::DrawBulbLightBuffer()
 
       m_current_renderstage = 0;
    }
+   // Re-set the original stereo value
+   m_pin3d.m_pd3dPrimaryDevice->m_stereo3D = orig_m_stereo3D;
 
    // switch back to render buffer
-   //m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pddsBackBuffer);
-   m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture());
+   m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture(), false);
    
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture("Texture3", m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture(), false);
 }
@@ -3801,14 +3806,15 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
          CHECKD3D(glBindFramebuffer(GL_READ_FRAMEBUFFER, shaderAA ? m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->framebuffer : m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->framebuffer));
 
          CHECKD3D(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, leftTexture->framebuffer));
-         CHECKD3D(glBlitFramebuffer(0, 0, leftTexture->width- 1, leftTexture->height - 1, 0, 0, leftTexture->width - 1, leftTexture->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+         CHECKD3D(glBlitFramebuffer(0, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth()/2, m_pin3d.m_pd3dPrimaryDevice->getBufheight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth()/2, m_pin3d.m_pd3dPrimaryDevice->getBufheight(), GL_COLOR_BUFFER_BIT, GL_NEAREST));
 
          CHECKD3D(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rightTexture->framebuffer));
-         CHECKD3D(glBlitFramebuffer(rightTexture->width - 1, 0, (rightTexture->width * 2) - 2, rightTexture->height, 0, 0, rightTexture->width - 1, rightTexture->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+                                   // srcx0, srcy0, srcx1, srcy1, dstx0, dsty0, dstx1, dstyx1
+         CHECKD3D(glBlitFramebuffer(m_pin3d.m_pd3dPrimaryDevice->getBufwidth() /2, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth(), m_pin3d.m_pd3dPrimaryDevice->getBufheight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth()/2, m_pin3d.m_pd3dPrimaryDevice->getBufheight(), GL_COLOR_BUFFER_BIT, GL_NEAREST));
 
          if (disableVRPreview == 0) {
             CHECKD3D(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->framebuffer));
-            CHECKD3D(glBlitFramebuffer(0, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+            CHECKD3D(glBlitFramebuffer(0, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth(), m_pin3d.m_pd3dPrimaryDevice->getBufheight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
          }
          break;
          //#else

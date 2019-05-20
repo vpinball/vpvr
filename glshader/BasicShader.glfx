@@ -91,6 +91,7 @@ in vec3 vNormal;
 in vec2 tc;
 
 out vec4 tex01_gs; // pack tex0 and tex1 into one vec4
+out vec2 tex03_gs;
 out vec3 worldPos_gs;
 out vec3 normal_gs;
 
@@ -103,6 +104,8 @@ void main()
 
    gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition, 1.0));
    tex01_gs = vec4(tc, /*(cBase_Alpha.a < 1.0) ?*/gl_Position.xy/gl_Position.w);
+   vec4 bulbPos = (matWorldViewProj[0]*vec4(vPosition, 1.0));
+   tex03_gs = vec2(bulbPos.xy/bulbPos.w);
    worldPos_gs = P;
    normal_gs = N;
 }
@@ -113,6 +116,7 @@ in vec3 vPosition;
 in vec3 vNormal;
 in vec2 tc;
 
+out vec2 tex03_gs;
 out vec4 worldPos_t1x_gs;
 out vec4 normal_t1y_gs;
 
@@ -124,6 +128,8 @@ void main()
    vec3 N = normalize((matWorldViewInverseTranspose*vNormal).xyz);
 
    gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition, 1.0));
+   vec4 bulbPos = (matWorldViewProj[0]*vec4(vPosition, 1.0));
+   tex03_gs = vec2(bulbPos.xy/bulbPos.w);
    //if(cBase_Alpha.a < 1.0)
    {
       worldPos_t1x_gs.w = gl_Position.x/gl_Position.w;
@@ -162,20 +168,26 @@ void main()
 in vec4 tex01_gs[]; // pack tex0 and tex1 into one vec4
 out vec4 tex01; // pack tex0 and tex1 into one vec4
 
+in vec2 tex03_gs[];
+out vec2 tex03;
+
 in vec3 worldPos_gs[];
 out vec3 worldPos;
 
 in vec3 normal_gs[];
 out vec3 normal;
 
+out int gl_ViewportIndex;
+
 void main()
 {
     gl_ViewportIndex = instanceID[0];
-	for (int i=0;i<3;i++) {
+	for (int i=0;i<gl_in.length();i++) {
 		//Default
 		gl_Position = gl_in[i].gl_Position;
 		//Custom
 		tex01 = tex01_gs[i];
+        tex03 = tex03_gs[i];
 		worldPos = worldPos_gs[i];
 		normal = normal_gs[i];
 		//Default
@@ -186,6 +198,9 @@ void main()
 
 ////gs_notex_main
 
+in vec2 tex03_gs[];
+out vec2 tex03;
+
 in vec4 worldPos_t1x_gs[];
 out vec4 worldPos_t1x;
 
@@ -195,10 +210,11 @@ out vec4 normal_t1y;
 void main()
 {
     gl_ViewportIndex = instanceID[0];
-	for (int i=0;i<3;i++) {
+	for (int i=0;i<gl_in.length();i++) {
 		//Default
 		gl_Position = gl_in[i].gl_Position;
 		//Custom
+        tex03 = tex03_gs[i];
 		worldPos_t1x = worldPos_t1x_gs[i];
 		normal_t1y = normal_t1y_gs[i];
 		//Default
@@ -212,7 +228,7 @@ void main()
 void main()
 {
     gl_ViewportIndex = instanceID[0];
-	for (int i=0;i<3;i++) {
+	for (int i=0;i<gl_in.length();i++) {
 		//Default
 		gl_Position = gl_in[i].gl_Position;
 		//Custom
@@ -230,7 +246,7 @@ out vec2 tex0;
 void main()
 {
     gl_ViewportIndex = instanceID[0];
-	for (int i=0;i<3;i++) {
+	for (int i=0;i<gl_in.length();i++) {
 		//Default
 		gl_Position = gl_in[i].gl_Position;
 		//Custom
@@ -243,6 +259,7 @@ void main()
 
 ////ps_main
 
+in vec2 tex03;
 in vec4 worldPos_t1x;
 in vec4 normal_t1y;
 
@@ -265,13 +282,14 @@ void main() {
 
       if (fDisableLighting_top_below.y < 1.0)
           // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-          color.xyz += clamp(mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*worldPos_t1x.w,0.5*normal_t1y.w)+0.5, 0.0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
+          color.xyz += clamp(mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5, 0.0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
    }
 }
 
 ////ps_main_texture
 
 in vec4 tex01; // pack tex0 and tex1 into one float4
+in vec2 tex03;
 in vec3 worldPos;
 in vec3 normal;
 
@@ -305,7 +323,7 @@ void main() {
 
 	  if (fDisableLighting_top_below.y < 1.0)
 		  // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-		  color.xyz += clamp(mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex01.z,0.5*tex01.w)+0.5, 0.).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
+		  color.xyz += clamp(mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5, 0.).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
    }
 }
 

@@ -722,36 +722,36 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    case STEREO_OFF:
       m_Buf_width = fbWidth;
       m_Buf_height = fbHeight;
-      m_Buf_widthBlur = fbWidth / 3;
-      m_Buf_heightBlur = fbHeight / 3;
-      m_Buf_widthSS = fbWidth * (m_useAA ? 2 : 1);
-      m_Buf_heightSS = fbHeight * (m_useAA ? 2 : 1);
+      m_Buf_widthBlur = m_Buf_width / 3;
+      m_Buf_heightBlur = m_Buf_height / 3;
+      m_Buf_width = m_Buf_width * (m_useAA ? 2 : 1);
+      m_Buf_height = m_Buf_height * (m_useAA ? 2 : 1);
       break;
    case STEREO_TB:
    case STEREO_INT:
       m_Buf_width = fbWidth;
       m_Buf_height = fbHeight * 2;
-      m_Buf_widthBlur = fbWidth / 3;
-      m_Buf_heightBlur = m_height * 2 / 3;
-      m_Buf_widthSS = fbWidth * (m_useAA ? 2 : 1);
-      m_Buf_heightSS = fbHeight * (m_useAA ? 4 : 2);
+      m_Buf_widthBlur = m_Buf_width / 3;
+      m_Buf_heightBlur = m_Buf_height / 3;
+      m_Buf_width = m_Buf_width * (m_useAA ? 2 : 1);
+      m_Buf_height = m_Buf_height * (m_useAA ? 2 : 1);
       break;
    case STEREO_SBS:
       m_Buf_width = fbWidth * 2;
       m_Buf_height = fbHeight;
-      m_Buf_widthBlur = fbWidth * 2 / 3;
-      m_Buf_heightBlur = fbHeight / 3;
-      m_Buf_widthSS = fbWidth * (m_useAA ? 4 : 2);
-      m_Buf_heightSS = fbHeight * (m_useAA ? 2 : 1);
+      m_Buf_widthBlur = m_Buf_width / 3;
+      m_Buf_heightBlur = m_Buf_height / 3;
+      m_Buf_width = m_Buf_width * (m_useAA ? 2 : 1);
+      m_Buf_height = m_Buf_height * (m_useAA ? 2 : 1);
       break;
 #ifdef ENABLE_VR
    case STEREO_VR:
       InitVR();
       m_Buf_width = m_Buf_width * 2;
-      m_Buf_widthBlur = m_Buf_width / 3 + 4;
+      m_Buf_widthBlur = m_Buf_width / 3;
       m_Buf_heightBlur = m_Buf_height / 3;
-      m_Buf_widthSS = m_Buf_width * (m_useAA ? 2 : 1);
-      m_Buf_heightSS = m_Buf_height * (m_useAA ? 2 : 1);
+      m_Buf_width = m_Buf_width * (m_useAA ? 2 : 1);
+      m_Buf_height = m_Buf_height * (m_useAA ? 2 : 1);
       break;
 #endif
    default:
@@ -779,10 +779,10 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    colorFormat renderBufferFormat = RGBA16F;
 
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
-   m_pOffscreenBackBufferTexture = CreateTexture(m_Buf_widthSS,m_Buf_heightSS, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
+   m_pOffscreenBackBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
 
    if ((g_pplayer != NULL) && (g_pplayer->m_ptable->m_fReflectElementsOnPlayfield || (g_pplayer->m_fReflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1)))
-         m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_widthSS,m_Buf_heightSS, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
+         m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
 
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
    m_pBloomBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, NULL, m_stereo3D);
@@ -815,8 +815,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
          renderBufferFormatVR = RGBA8;
          break;
       }
-      m_pOffscreenVRLeft = CreateTexture(m_Buf_width / 2 - 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, NULL, 0);
-      m_pOffscreenVRRight = CreateTexture(m_Buf_width / 2 - 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, NULL, 0);
+      m_pOffscreenVRLeft = CreateTexture(m_Buf_width / 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, NULL, 0);
+      m_pOffscreenVRRight = CreateTexture(m_Buf_width / 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, NULL, 0);
    }
 
    // alloc one more temporary buffer for SMAA
@@ -826,7 +826,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_pOffscreenBackBufferSMAATexture = NULL;
 
    if (m_ssRefl)
-      m_pReflectionBufferTexture = CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, 0);
+      m_pReflectionBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, 0);
    else
       m_pReflectionBufferTexture = NULL;
 
@@ -2246,27 +2246,27 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
          CHECKD3D(glViewport(0, 0, texture->width, texture->height));
       }
       else
-      switch (texture->stereo) {
-      case STEREO_OFF:
-         CHECKD3D(glViewport(0, 0, texture->width, texture->height));
-         break;
-      case STEREO_TB:
-      case STEREO_INT:
-         viewPorts[2] = viewPorts[6] = texture->width;
-         viewPorts[3] = viewPorts[7] = texture->height/2.0f;
-         viewPorts[4] = 0.0f;
-         viewPorts[5] = texture->height / 2.0f;
-         glViewportArrayv(0, 2, viewPorts);
-         break;
-      case STEREO_SBS:
-      case STEREO_VR:
-         viewPorts[2] = viewPorts[6] = texture->width / 2.0f;
-         viewPorts[3] = viewPorts[7] = texture->height;
-         viewPorts[4] = texture->width / 2.0f;
-         viewPorts[5] = 0.0f;
-         glViewportArrayv(0, 2, viewPorts);
-         break;
-      }
+         switch (texture->stereo) {
+         case STEREO_OFF:
+            CHECKD3D(glViewport(0, 0, texture->width, texture->height));
+            break;
+         case STEREO_TB:
+         case STEREO_INT:
+            viewPorts[2] = viewPorts[6] = texture->width;
+            viewPorts[3] = viewPorts[7] = texture->height/2.0f;
+            viewPorts[4] = 0.0f;
+            viewPorts[5] = texture->height / 2.0f;
+            glViewportArrayv(0, 2, viewPorts);
+            break;
+         case STEREO_SBS:
+         case STEREO_VR:
+            viewPorts[2] = viewPorts[6] = texture->width / 2.0f;
+            viewPorts[3] = viewPorts[7] = texture->height;
+            viewPorts[4] = texture->width / 2.0f;
+            viewPorts[5] = 0.0f;
+            glViewportArrayv(0, 2, viewPorts);
+            break;
+         }
    }
    else {
       CHECKD3D(glViewport(0, 0, m_pBackBuffer->width, m_pBackBuffer->height));
@@ -2771,7 +2771,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
          CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
       }
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-      //CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
       CHECKD3D(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->texture, 0));
 
@@ -2848,12 +2848,12 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    if (m_maxaniso > 0)
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_maxaniso));
    if (tex->usage == AUTOMIPMAP) {
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR));
+      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)); // Use mipmap bilinear filtering GL_LINEAR_MIPMAP_LINEAR
+      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)); // MAG Filter does not support mipmaps
    }
    else {
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)); // Use mipmap bilinear filtering GL_LINEAR_MIPMAP_LINEAR
+      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));; // MAG Filter does not support mipmaps
    }
    if (Format == GREY) {//Hack so that GL_RED behaves as GL_GREY
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED));
