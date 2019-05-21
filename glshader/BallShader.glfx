@@ -30,9 +30,9 @@ in int instanceID[];
 ////FRAGMENT
 
 uniform sampler2D Texture0; // base texture
-uniform sampler2D Texture1; // envmap
+uniform sampler2D Texture1; // playfield
 uniform sampler2D Texture2; // envmap radiance
-uniform sampler2D Texture3; // bulb light buffer
+uniform sampler2D Texture3; // ball decal
 
 
 uniform bool hdrEnvTextures;// = false;
@@ -62,15 +62,15 @@ void main()
 	instanceID = gl_InstanceID;
 	// apply spinning and move the ball to it's actual position
 	vec4 pos = vec4(vPosition, 1.0);
-	pos.xyz = mul(pos, orientation).xyz;
+	pos.xyz = mul_w1(pos.xyz, orientation).xyz;
 	
 	// apply spinning to the normals too to get the sphere mapping effect
 	vec3 nspin = mul_w0(vec4(vNormal,0.0), orientation).xyz;
-	vec3 normal = normalize(mul(matWorldViewInverse, vec4(nspin,0.0)).xyz); // actually: mul(vec4(nspin,0.), matWorldViewInverseTranspose), but optimized to save one matrix
+	vec3 normal = normalize((matWorldViewInverse*vec4(nspin,0.0)).xyz); // actually: mul(vec4(nspin,0.), matWorldViewInverseTranspose), but optimized to save one matrix
 
 	vec3 p = mul_w1(pos.xyz, matWorldView);
 
-	gl_Position = mul(pos, matWorldViewProj[gl_InstanceID]);
+	gl_Position = (matWorldViewProj[gl_InstanceID]*pos);
 	normal_t0x_gs = vec4(normal,tex0.x);
 	worldPos_t0y_gs = vec4(p,tex0.y);
 }
@@ -86,7 +86,7 @@ out vec3 tex0_alpha_gs;
 void main()
 {
 	instanceID = gl_InstanceID;
-    gl_Position = mul(vec4(vPosition, 1.0), matWorldViewProj[gl_InstanceID]);
+    gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition, 1.0));
 	tex0_alpha_gs = vec3(tex0, vNormal.x); //!! abuses normal for now
 }
 
@@ -101,7 +101,7 @@ out vec4 worldPos_t0y;
 void main()
 {
     gl_ViewportIndex = instanceID[0];
-	for (int i=0;i<3;i++) {
+	for (int i=0;i<gl_in.length();i++) {
 		//Default
 		gl_Position = gl_in[i].gl_Position;
 		//Custom
@@ -121,7 +121,7 @@ out vec3 tex0_alpha;
 void main()
 {
     gl_ViewportIndex = instanceID[0];
-	for (int i=0;i<3;i++) {
+	for (int i=0;i<gl_in.length();i++) {
 		//Default
 		gl_Position = gl_in[i].gl_Position;
 		//Custom
@@ -165,7 +165,7 @@ vec3 ballLightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 spe
    }
 
    if(!is_metal && (diffuseMax > 0.0))
-      color += DoEnvmapDiffuse(normalize(mul(matView, vec4(N,0.0)).xyz), diffuse); // trafo back to world for lookup into world space envmap // actually: mul(vec4(N, 0.0), matViewInverseInverseTranspose)
+      color += DoEnvmapDiffuse(normalize((matView*vec4(N,0.0)).xyz), diffuse); // trafo back to world for lookup into world space envmap // actually: mul(vec4(N, 0.0), matViewInverseInverseTranspose)
 
    if(specularMax > 0.0)
       color += specular; //!! blend? //!! Fresnel with 1st layer?
@@ -207,7 +207,7 @@ void main()
 	else
 	   ballImageColor = ScreenHDR( ballImageColor, decalColor ) * (0.5*fenvEmissionScale_TexWidth.x); //!! 0.5=magic
 	
-	vec3 playfield_normal = normalize(mul(matWorldViewInverse, vec4(0.,0.,1.,0.0)).xyz); // actually: mul(vec4(0.,0.,1.,0.), matWorldViewInverseTranspose), but optimized to save one matrix
+	vec3 playfield_normal = (matWorldViewInverse*vec4(0.,0.,1.,0.0)).xyz; // actually: mul(vec4(0.,0.,1.,0.), matWorldViewInverseTranspose), but optimized to save one matrix
 	float NdotR = dot(playfield_normal,r);
 	
 	vec3 playfieldColor;
