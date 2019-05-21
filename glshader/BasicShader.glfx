@@ -75,8 +75,8 @@ mat3 TBN_trafo(vec3 N, vec3 V, vec2 uv)
 
 vec3 normal_map(vec3 N, vec3 V, vec2 uv)
 {
-    return normalize( TBN_trafo(N, V, uv)*
-                          texture(Texture4, uv).xyz * (255./127.) - (128./127.) );
+    return normalize(mul(TBN_trafo(N, V, uv),
+                          texture(Texture4, uv).xyz * (255./127.) - (128./127.)));
 }
 
 //------------------------------------
