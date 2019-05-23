@@ -44,7 +44,7 @@ uniform vec4  invTableRes_playfield_height_reflection;
 //float    reflection_ball_playfield;
 
 
-bool hdrTexture0;
+uniform bool hdrTexture0;
 
 out vec4 color;
 
@@ -66,7 +66,7 @@ void main()
 	
 	// apply spinning to the normals too to get the sphere mapping effect
 	vec3 nspin = mul_w0(vec4(vNormal,0.0), orientation).xyz;
-	vec3 normal = normalize((matWorldViewInverse*vec4(nspin,0.0)).xyz); // actually: mul(vec4(nspin,0.), matWorldViewInverseTranspose), but optimized to save one matrix
+	vec3 normal = normalize(mul(matWorldViewInverse, vec4(nspin,0.0)).xyz); // actually: mul(vec4(nspin,0.), matWorldViewInverseTranspose), but optimized to save one matrix
 
 	vec3 p = mul_w1(pos.xyz, matWorldView);
 
@@ -165,7 +165,7 @@ vec3 ballLightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 spe
    }
 
    if(!is_metal && (diffuseMax > 0.0))
-      color += DoEnvmapDiffuse(normalize((matView*vec4(N,0.0)).xyz), diffuse); // trafo back to world for lookup into world space envmap // actually: mul(vec4(N, 0.0), matViewInverseInverseTranspose)
+      color += DoEnvmapDiffuse(normalize(mul(matView, vec4(N,0.0)).xyz), diffuse); // trafo back to world for lookup into world space envmap // actually: mul(vec4(N, 0.0), matViewInverseInverseTranspose)
 
    if(specularMax > 0.0)
       color += specular; //!! blend? //!! Fresnel with 1st layer?
@@ -191,9 +191,12 @@ void main()
 		0.0;
 
     vec2 uv0 = %PARAM0% ? vec2(r.y*-m + 0.5, r.x*-m + 0.5) : vec2(r.x*-m + 0.5, r.y*m + 0.5);
-    vec3 ballImageColor = textureLod(Texture0, uv0, lod).xyz;
+    
+    vec3 ballImageColor;
     if (!hdrTexture0)
-        ballImageColor = InvGamma(ballImageColor);
+        ballImageColor = InvGamma(textureLod(Texture0, uv0, lod).rgb);
+    else
+        ballImageColor = textureLod(Texture0, uv0, lod).bgr;
 
 	vec4 decalColorT = tex2D(Texture3, vec2(normal_t0x.w,worldPos_t0y.w));
 	vec3 decalColor = InvGamma(decalColorT.xyz);
@@ -207,7 +210,7 @@ void main()
 	else
 	   ballImageColor = ScreenHDR( ballImageColor, decalColor ) * (0.5*fenvEmissionScale_TexWidth.x); //!! 0.5=magic
 	
-	vec3 playfield_normal = (matWorldViewInverse*vec4(0.,0.,1.,0.0)).xyz; // actually: mul(vec4(0.,0.,1.,0.), matWorldViewInverseTranspose), but optimized to save one matrix
+	vec3 playfield_normal = mul(matWorldViewInverse, vec4(0.,0.,1.,0.0)).xyz; // actually: mul(vec4(0.,0.,1.,0.), matWorldViewInverseTranspose), but optimized to save one matrix
 	float NdotR = dot(playfield_normal,r);
 	
 	vec3 playfieldColor;
@@ -248,9 +251,13 @@ void main()
 vec4 psBallReflection( in voutReflection IN ) : COLOR
 {
    vec2 envTex = /*cabMode*/false ? vec2(r.y*0.5f + 0.5f, -r.x*0.5f + 0.5f) : vec2(r.x*0.5f + 0.5f, r.y*0.5f + 0.5f);
-   vec3 ballImageColor = texture(Texture0, envTex).xyz;
+   
+   vec3 ballImageColor;
    if(!hdrTexture0)
-      ballImageColor = InvGamma(ballImageColor);
+      ballImageColor = InvGamma(texture(Texture0, envTex).rgb);
+   else
+      ballImageColor = texture(Texture0, envTex).bgr;
+      
    ballImageColor = (cBase_Alpha.xyz*(0.075*0.25) + ballImageColor)*fenvEmissionScale_TexWidth.x; //!! just add the ballcolor in, this is a whacky reflection anyhow
    float alpha = clamp((tex0.y - position_radius.y) / position_radius.w, 0.0, 1.0);
    alpha = (alpha*alpha)*(alpha*alpha)*reflection_ball_playfield;
@@ -264,9 +271,11 @@ in vec3 tex0_alpha;
 
 void main()
 {
-   vec3 ballImageColor = texture(Texture0, tex0_alpha.xy).xyz;
+   vec3 ballImageColor;
    if (!hdrTexture0)
-      ballImageColor = InvGamma(ballImageColor);
+      ballImageColor = InvGamma(texture(Texture0, tex0_alpha.xy).rgb);
+   else
+      ballImageColor = texture(Texture0, tex0_alpha.xy).bgr;
    color = vec4((cBase_Alpha.xyz*(0.075*0.25) + ballImageColor)*fenvEmissionScale_TexWidth.x, tex0_alpha.z); //!! just add the ballcolor in, this is a whacky trail anyhow
 }
 
