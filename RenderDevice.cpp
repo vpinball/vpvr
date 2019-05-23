@@ -2088,8 +2088,8 @@ void RenderDevice::UpdateTexture(D3DTexture* const tex, BaseTexture* const surf,
 {
 #ifdef ENABLE_SDL
    tex->format = surf->m_format == BaseTexture::RGB_FP ? RGB32F : RGBA;
-   GLuint col_type = ((tex->format == RGBA32F) || (tex->format == RGBA16F) || (tex->format == RGB32F) || (tex->format == RGB16F) || (tex->format == RED16F) || (tex->format == RG16F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
-   GLuint col_format = (tex->format == GREY) ? GL_RED : (tex->format == GREY_ALPHA) ? GL_RG : ((tex->format == RGB) || (tex->format == RGB5) || (tex->format == RGB8) || (tex->format == RGB10) || (tex->format == RGB32F) || (tex->format == RGB16F)) ? GL_BGR : GL_BGRA;
+   GLuint col_type = ((tex->format == RGBA32F) || (tex->format == RGBA16F) || (tex->format == RGB32F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
+   GLuint col_format = (tex->format == GREY) ? GL_RED : (tex->format == GREY_ALPHA) ? GL_RG : ((tex->format == RGB) || (tex->format == RGB5) || (tex->format == RGB10) || (tex->format == RGB32F)) ? GL_BGR : GL_BGRA;
    glBindTexture(GL_TEXTURE_2D, tex->texture);
    CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, tex->format, surf->width(), surf->height(), 0, col_format, col_type, surf->data()));
    glBindTexture(GL_TEXTURE_2D, 0);
@@ -2756,10 +2756,6 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    tex->height = Height;
    tex->format = Format;
    tex->slot = -1;
-
-   GLuint col_type = ((Format == RGBA32F) || (Format == RGBA16F) || (Format == RGB32F) || (Format == RGB16F) || (Format == RED16F) || (Format == RG16F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
-   GLuint col_format = (Format == GREY) ? GL_RED : (Format == GREY_ALPHA) ? GL_RG : ((Format == RGB) || (Format == RGB5) || (Format == RGB8) || (Format == RGB10) || (Format == RGB32F) || (Format == RGB16F)) ? GL_BGR : GL_BGRA;
-
    if ((tex->usage == RENDERTARGET) || (tex->usage == RENDERTARGET_DEPTH)) {//Create Renderbuffer
       tex->stereo = stereo;
       CHECKD3D(glGenFramebuffers(1, &tex->framebuffer));
@@ -2767,7 +2763,13 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
 
       CHECKD3D(glGenTextures(1, &tex->texture));
       CHECKD3D(glBindTexture(GL_TEXTURE_2D, tex->texture));
-      CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, Format, Width, Height, 0, col_format, col_type, NULL));
+      if (Format == RGBA16F || Format == RGBA32F)
+      {
+         CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, Format, Width, Height, 0, GL_RGBA, GL_FLOAT, NULL));
+      }
+      else {
+         CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
+      }
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
@@ -2839,6 +2841,8 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    CHECKD3D(glGenTextures(1, &tex->texture));
    CHECKD3D(glBindTexture(GL_TEXTURE_2D, tex->texture));
 
+   GLuint col_type = ((Format == RGBA32F) || (Format == RGBA16F) || (Format == RGB32F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
+   GLuint col_format = (Format == GREY) ? GL_RED : (Format == GREY_ALPHA) ? GL_RG : ((Format == RGB) || (Format == RGB5) || (Format == RGB10) || (Format == RGB32F)) ? GL_BGR : GL_BGRA;
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
    if (m_maxaniso > 0)
