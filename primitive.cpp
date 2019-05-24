@@ -1257,6 +1257,8 @@ void Primitive::RenderObject(RenderDevice *pd3dDevice)
 
       pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_CLAMP);
       //g_pplayer->m_pin3d.DisableAlphaBlend(); //!! not necessary anymore
+
+      pd3dDevice->basicShader->SetDisableLighting(vec4(0.f, 0.f, 0.f, 0.f));
    }
    else // m_d.m_useAsPlayfield == true:
    {
