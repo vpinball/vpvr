@@ -47,8 +47,9 @@ out vec2 tex0_gs;
 void main()
 {
     instanceID = gl_InstanceID;
-    gl_Position = mul(vec4((vPosition.x*backBoxSize.z*quadOffsetScale.z+quadOffsetScale.x+backBoxSize.x),0.0,
-					       (vPosition.y*quadOffsetScale.w*backBoxSize.w+quadOffsetScale.y+backBoxSize.y),1.0), matWorldViewProj[gl_InstanceID]);
+    gl_Position = (matWorldViewProj[gl_InstanceID] *
+                   vec4((vPosition.x*backBoxSize.z*quadOffsetScale.z+quadOffsetScale.x+backBoxSize.x),0.0,
+				   (vPosition.y*quadOffsetScale.w*backBoxSize.w+quadOffsetScale.y+backBoxSize.y),1.0));
     tex0_gs = vec2(tc.x, tc.y) * quadOffsetScaleTex.zw + quadOffsetScaleTex.xy;
 }
 
@@ -62,7 +63,7 @@ out vec2 tex0_gs;
 void main()
 {
     instanceID = gl_InstanceID;
-    gl_Position = mul(vec4(vPosition, 1.0), matWorldViewProj[gl_InstanceID]);
+    gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition, 1.0));
     tex0_gs = tc;
 }
 

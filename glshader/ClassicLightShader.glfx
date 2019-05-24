@@ -22,10 +22,10 @@ void main()
 { 
    instanceID = gl_InstanceID;
    // trafo all into worldview space (as most of the weird trafos happen in view, world is identity so far)
-   vec3 P = mul(vec4(vPosition,1.0), matWorldView).xyz;
-   vec3 N = normalize(mul(vNormal, matWorldViewInverseTranspose).xyz);
+   vec3 P = (matWorldView * vec4(vPosition,1.0)).xyz;
+   vec3 N = normalize((matWorldViewInverseTranspose * vNormal).xyz);
 
-   gl_Position = mul(vec4(vPosition,1.0), matWorldViewProj[gl_InstanceID]);
+   gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition,1.0));
    tex0_gs = tc;
    tablePos_gs = vPosition.xyz;
    worldPos_gs = P;

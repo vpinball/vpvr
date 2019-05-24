@@ -59,7 +59,7 @@ vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edg
       return diffuse;
 
     vec3 lightDir;
-    lightDir = mul_w1(lightPos[i].xyz, matView) - pos; //!! do in vertex shader?! or completely before?!
+    lightDir = (matView * vec4(lightPos[i].xyz, 1.0)).xyz - pos; //!! do in vertex shader?! or completely before?!
     vec3 L = normalize(lightDir);
     float NdotL = -abs(dot(N, L));
     vec3 Out = vec3(0.0,0.0,0.0);

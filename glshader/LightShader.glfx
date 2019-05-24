@@ -35,7 +35,7 @@ out vec3 tablePos_gs;
 void main()									   
 {
    instanceID = gl_InstanceID;
-   gl_Position = mul(vec4(vPosition,1.0), matWorldViewProj[gl_InstanceID]);
+   gl_Position = (matWorldViewProj[gl_InstanceID] * vec4(vPosition,1.0));
    gl_Position.z = max(gl_Position.z, 0.00001); // clamp lights to near clip plane to avoid them being partially clipped
    tablePos_gs = vPosition.xyz;
 }

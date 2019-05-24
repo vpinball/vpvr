@@ -46,7 +46,7 @@ out vec4 color;
 void main()
 {
    instanceID = gl_InstanceID;
-   gl_Position = mul(vec4(vPosition, 1.0), matWorldViewProj[gl_InstanceID]);
+   gl_Position = (matWorldViewProj[gl_InstanceID] * vec4(vPosition, 1.0));
    tex0_gs = tc;
 }
 
