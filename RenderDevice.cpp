@@ -2088,10 +2088,11 @@ void RenderDevice::UpdateTexture(D3DTexture* const tex, BaseTexture* const surf,
 {
 #ifdef ENABLE_SDL
    tex->format = surf->m_format == BaseTexture::RGB_FP ? RGB32F : RGBA;
-   GLuint col_type = ((tex->format == RGBA32F) || (tex->format == RGBA16F) || (tex->format == RGB32F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
-   GLuint col_format = (tex->format == GREY) ? GL_RED : (tex->format == GREY_ALPHA) ? GL_RG : ((tex->format == RGB) || (tex->format == RGB5) || (tex->format == RGB10) || (tex->format == RGB32F)) ? GL_BGR : GL_BGRA;
+   GLuint col_type = ((tex->format == RGBA32F) || (tex->format == RGBA16F) || (tex->format == RGB32F) || (tex->format == RGB16F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
+   GLuint col_format = (tex->format == GREY) ? GL_RED : (tex->format == GREY_ALPHA) ? GL_RG : ((tex->format == RGB) || (tex->format == RGB5) || (tex->format == RGB10) || (tex->format == RGB16F) || (tex->format == RGB32F)) ? GL_BGR : GL_BGRA;
    glBindTexture(GL_TEXTURE_2D, tex->texture);
-   CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, tex->format, surf->width(), surf->height(), 0, col_format, col_type, surf->data()));
+   CHECKD3D(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, surf->width(), surf->height(), col_format, col_type, surf->data()));
+   //CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, tex->format, surf->width(), surf->height(), 0, col_format, col_type, surf->data())); // Use TexStorage instead
    glBindTexture(GL_TEXTURE_2D, 0);
 #else
    IDirect3DTexture9* sysTex = CreateSystemTexture(surf, linearRGB);
@@ -2841,8 +2842,8 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    CHECKD3D(glGenTextures(1, &tex->texture));
    CHECKD3D(glBindTexture(GL_TEXTURE_2D, tex->texture));
 
-   GLuint col_type = ((Format == RGBA32F) || (Format == RGBA16F) || (Format == RGB32F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
-   GLuint col_format = (Format == GREY) ? GL_RED : (Format == GREY_ALPHA) ? GL_RG : ((Format == RGB) || (Format == RGB5) || (Format == RGB10) || (Format == RGB32F)) ? GL_BGR : GL_BGRA;
+   GLuint col_type = ((Format == RGBA32F) || (Format == RGBA16F) || (Format == RGB32F) || (Format == RGB16F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
+   GLuint col_format = (Format == GREY) ? GL_RED : (Format == GREY_ALPHA) ? GL_RG : ((Format == RGB) || (Format == RGB5) || (Format == RGB10) || (Format == RGB16F) || (Format == RGB32F)) ? GL_BGR : GL_BGRA;
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
    if (m_maxaniso > 0)
@@ -2875,8 +2876,11 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    }
    if (data)
    {
-      CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, tex->format, Width, Height, 0, col_format, col_type, data));
-      CHECKD3D(glGenerateMipmap(GL_TEXTURE_2D));
+      float num_mips = std::log2(float(std::max(Width, Height))) + 1;
+      CHECKD3D(glTexStorage2D(GL_TEXTURE_2D, num_mips, Format, Width, Height));
+      CHECKD3D(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Width, Height, col_format, col_type, data));
+      //CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, tex->format, Width, Height, 0, col_format, col_type, data)); // Use TexStorage instead
+      CHECKD3D(glGenerateMipmap(GL_TEXTURE_2D)); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwhise good idea to limit by GL_TEXTURE_MAX_LEVEL
    }
    /*if ((tex->usage == AUTOMIPMAP) && data) {
       if ((tex->usage & AUTOMIPMAP) == AUTOMIPMAP) {
