@@ -4916,7 +4916,6 @@ void Player::DrawBalls()
 
       for (unsigned int i2 = 0; i2 < MAX_LIGHT_SOURCES; i2++)
       {
-          vec4 emission = convertColor(m_ptable->m_Light[0].emission);
           memcpy(&lightPos[i2], &g_pplayer->m_ptable->m_Light[i2].pos, sizeof(float) * 3);
           memcpy(&lightEmission[i2], &emission, sizeof(float) * 3);
       }
