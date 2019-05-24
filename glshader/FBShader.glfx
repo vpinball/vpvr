@@ -191,7 +191,7 @@ void main()
                         +  tex2Dlod(Texture0, float4(tex0+w_h_height.xy*2.5, 0.,0.)).xyz
                         +  tex2Dlod(Texture0, float4(tex0+float2(w_h_height.x*2.5,-w_h_height.y*0.5), 0.,0.)).xyz
                         +  tex2Dlod(Texture0, float4(tex0+float2(-w_h_height.x*0.5,w_h_height.y*2.5), 0.,0.)).xyz)*0.25; //!! offset for useAA?
-    color = float4(clamp(max(FBToneMap(result) - float3(1., 1., 1.), float3(0., 0., 0.)), 0.0, 3.0), 1.0);
+    color = float4(max(FBToneMap(result) - float3(1., 1., 1.), float3(0., 0., 0.)), 1.0);
 }
 
 ////ps_main_fb_AO
