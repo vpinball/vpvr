@@ -1257,7 +1257,7 @@ void Player::UpdateBallShaderMatrix()
    struct {
       Matrix3D matView;
       Matrix3D matWorldView;
-      Matrix3D matWorldViewInverse;
+      Matrix3D matWorldViewInverseTranspose;
       Matrix3D matWorldViewProj[2];
    } matrices;
    Shader::GetTransform(TRANSFORMSTATE_WORLD, &matWorld, 1);
@@ -1282,8 +1282,9 @@ void Player::UpdateBallShaderMatrix()
       for (int eye = 0;eye<eyes;++eye) matrices.matWorldViewProj[eye] = matrices.matWorldViewProj[eye] * (rotation != 0.f ? flipy : flipx);
    }
 
-   Matrix3D matWorldViewInv;
-   memcpy(matWorldViewInv.m, matrices.matWorldView.m, 4 * 4 * sizeof(float));
+   memcpy(matrices.matWorldViewInverseTranspose.m, matrices.matWorldView.m, 4 * 4 * sizeof(float));
+   matrices.matWorldViewInverseTranspose.Invert();
+   matrices.matWorldViewInverseTranspose.Transpose();
 
 #ifdef ENABLE_SDL
    m_pin3d.m_pd3dPrimaryDevice->ballShader->SetUniformBlock("matrixBlock", &matrices.matView.m[0][0], (eyes+3) * 16);
