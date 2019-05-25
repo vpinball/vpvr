@@ -170,16 +170,16 @@ vec3 lightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 specula
     {
         for(int i = 0; i < lightSources; i++)//Rendering issues when doing this in an loop. Weird.
             color += DoPointLight(pos, N, V, diffuse, glossy, edge, Roughness_WrapL_Edge_Thickness.x, i, is_metal); // no clearcoat needed as only pointlights so far
-        color = clamp(color,0.0,1.0);
+        //color = clamp(color,0.0,1.0);
     }
 
    if(!is_metal && (diffuseMax > 0.0))
-      color += DoEnvmapDiffuse(normalize((matView*vec4(N,0.0)).xyz), diffuse); // trafo back to world for lookup into world space envmap // actually: mul(vec4(N,0.0), matViewInverseInverseTranspose), but optimized to save one matrix
+      color += DoEnvmapDiffuse(normalize((inverse(matView)*vec4(N,0.0)).xyz), diffuse); // trafo back to world for lookup into world space envmap // actually: mul(vec4(N,0.0), matViewInverseInverseTranspose), but optimized to save one matrix
 
    if((glossyMax > 0.0) || (specularMax > 0.0))
    {
 	   vec3 R = (2.0*NdotV)*N - V; // reflect(-V,n);
-	   R = normalize(matView*vec4(R,0.0)).xyz; // trafo back to world for lookup into world space envmap // actually: mul(vec4(R,0.0), matViewInverseInverseTranspose), but optimized to save one matrix
+	   R = normalize(inverse(matView)*vec4(R,0.0)).xyz; // trafo back to world for lookup into world space envmap // actually: mul(vec4(R,0.0), matViewInverseInverseTranspose), but optimized to save one matrix
 
 	   vec2 Ruv = vec2( // remap to 2D envmap coords
 			0.5 + atan2_approx_div2PI(R.y, R.x),
