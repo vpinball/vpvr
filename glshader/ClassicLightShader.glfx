@@ -49,7 +49,7 @@ out vec3 normal;
 void main()
 {
     gl_ViewportIndex = instanceID[0];
-	for (int i=0;i<3;i++) {
+	for (int i=0;i<gl_in.length();i++) {
 		//Default
 		gl_Position = gl_in[i].gl_Position;
 		//Custom
@@ -71,7 +71,7 @@ in vec3 tablePos;
 in vec3 normal;
 
 void main()
-{
+{     
     vec4 pixel = texture(Texture0, tex0); //!! IN.tex0 abused in backglass mode
     if(!hdrTexture0)
         pixel.xyz = InvGamma(pixel.xyz);

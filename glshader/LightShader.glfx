@@ -18,9 +18,9 @@ in int instanceID[];
 
 ////FRAGMENT
 
-uniform float4 lightColor_intensity;
-uniform float4 lightColor2_falloff_power;
-uniform float4 lightCenter_maxRange;
+uniform vec4 lightColor_intensity;
+uniform vec4 lightColor2_falloff_power;
+uniform vec4 lightCenter_maxRange;
 uniform float blend_modulate_vs_add;
 
 out vec4 color;
@@ -47,9 +47,8 @@ in vec3 tablePos;
 void main()
 {
 	float len = length(lightCenter_maxRange.xyz - tablePos) * lightCenter_maxRange.w;
-    float atten = pow(1.0 - saturate(len), lightColor2_falloff_power.w);
-	float3 lcolor = lerp(lightColor2_falloff_power.xyz, lightColor_intensity.xyz, sqrt(len));
-	float4 result;
+    float atten = pow(1.0 - clamp(len, 0.0, 1.0), lightColor2_falloff_power.w);
+	float3 lcolor = mix(lightColor2_falloff_power.xyz, lightColor_intensity.xyz, sqrt(len));
 	color.xyz = lcolor*(-blend_modulate_vs_add*atten*lightColor_intensity.w); // negative as it will be blended with '1.0-thisvalue' (the 1.0 is needed to modulate the underlying elements correctly, but not wanted for the term below)
 	color.a = 1.0/blend_modulate_vs_add - 1.0; //saturate(atten*lightColor_intensity.w);
 }
@@ -63,7 +62,7 @@ out vec3 tablePos;
 void main()
 {
     gl_ViewportIndex = instanceID[0];
-	for (int i=0;i<3;i++) {
+	for (int i=0;i<gl_in.length();i++) {
 		//Default
 		gl_Position = gl_in[i].gl_Position;
 		//Custom
