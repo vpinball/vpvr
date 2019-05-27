@@ -1004,6 +1004,9 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
    {
        m_pd3dPrimaryDevice->basicShader->SetMaterial(mat);
 
+       const vec4 tmp(0.f, 1.f, 0.f, 0.f);
+       m_pd3dPrimaryDevice->basicShader->SetDisableLighting(tmp);
+
        if (pin)
        {
            SetPrimaryTextureFilter(0, TEXTURE_MODE_ANISOTROPIC);
