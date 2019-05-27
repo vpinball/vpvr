@@ -1288,6 +1288,11 @@ void Player::UpdateBallShaderMatrix()
 
 #ifdef ENABLE_SDL
    m_pin3d.m_pd3dPrimaryDevice->ballShader->SetUniformBlock("matrixBlock", &matrices.matView.m[0][0], (eyes+3) * 16);
+   if (m_stereo3D == 4)
+      m_pin3d.m_pd3dPrimaryDevice->ballShader->SetBool("VR", true);
+   else
+      m_pin3d.m_pd3dPrimaryDevice->ballShader->SetBool("VR", false);
+
 #else
    m_pin3d.m_pd3dPrimaryDevice->ballShader->SetMatrix("matWorldViewProj", &matrices.matWorldViewProj[0]);
    m_pin3d.m_pd3dPrimaryDevice->ballShader->SetMatrix("matWorldView", &matrices.matWorldView);
