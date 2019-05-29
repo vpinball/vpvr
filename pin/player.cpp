@@ -4916,8 +4916,8 @@ void Player::DrawBalls()
       //emission.y *= m_ptable->m_lightEmissionScale*m_globalEmissionScale;
       //emission.z *= m_ptable->m_lightEmissionScale*m_globalEmissionScale;
 
-      float lightPos[MAX_LIGHT_SOURCES + MAX_BALL_LIGHT_SOURCES][3] = {0.0f, 0.0f, 0.0f};
-      float lightEmission[MAX_LIGHT_SOURCES + MAX_BALL_LIGHT_SOURCES][3] = { 0.0f, 0.0f, 0.0f };
+      float lightPos[MAX_LIGHT_SOURCES + MAX_BALL_LIGHT_SOURCES][4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+      float lightEmission[MAX_LIGHT_SOURCES + MAX_BALL_LIGHT_SOURCES][4] = { 0.0f, 0.0f, 0.0f, 0.0f };
       int lightSources = MAX_LIGHT_SOURCES;
 
       for (unsigned int i2 = 0; i2 < MAX_LIGHT_SOURCES; i2++)
@@ -4943,8 +4943,8 @@ void Player::DrawBalls()
           }
       }
 
-      m_pin3d.m_pd3dPrimaryDevice->ballShader->SetFloatArray("lightPos", (float *)lightPos, 3 * lightSources);
-      m_pin3d.m_pd3dPrimaryDevice->ballShader->SetFloatArray("lightEmission", (float *)lightEmission, 3 * lightSources);
+      m_pin3d.m_pd3dPrimaryDevice->ballShader->SetFloatArray("lightPos", (float *)lightPos, 4 * lightSources);
+      m_pin3d.m_pd3dPrimaryDevice->ballShader->SetFloatArray("lightEmission", (float *)lightEmission, 4 * lightSources);
       m_pin3d.m_pd3dPrimaryDevice->ballShader->SetInt("lightSources", lightSources);
 
 	  // now for a weird hack: make material more rough, depending on how near the nearest lightsource is, to 'emulate' the area of the bulbs (as VP only features point lights so far)

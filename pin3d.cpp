@@ -619,8 +619,8 @@ void Pin3D::InitLights()
    //emission.y *= g_pplayer->m_ptable->m_lightEmissionScale*g_pplayer->m_globalEmissionScale;
    //emission.z *= g_pplayer->m_ptable->m_lightEmissionScale*g_pplayer->m_globalEmissionScale;
 
-   float lightPos[MAX_LIGHT_SOURCES][3];
-   float lightEmission[MAX_LIGHT_SOURCES][3];
+   float lightPos[MAX_LIGHT_SOURCES][4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+   float lightEmission[MAX_LIGHT_SOURCES][4] = { 0.0f, 0.0f, 0.0f, 0.0f };
    int lightSources = MAX_LIGHT_SOURCES;
 
    for (unsigned int i = 0; i < MAX_LIGHT_SOURCES; i++)
@@ -629,14 +629,9 @@ void Pin3D::InitLights()
        memcpy(&lightEmission[i], &emission, sizeof(float) * 3);
    }
 
-   m_pd3dPrimaryDevice->basicShader->SetFloatArray("lightPos", (float *)lightPos, 3 * lightSources);
-   m_pd3dPrimaryDevice->basicShader->SetFloatArray("lightEmission", (float *)lightEmission, 3 * lightSources);
+   m_pd3dPrimaryDevice->basicShader->SetFloatArray("lightPos", (float *)lightPos, 4 * lightSources);
+   m_pd3dPrimaryDevice->basicShader->SetFloatArray("lightEmission", (float *)lightEmission, 4 * lightSources);
    m_pd3dPrimaryDevice->basicShader->SetInt("lightSources", lightSources);
-#ifdef SEPARATE_CLASSICLIGHTSHADER;
-   m_pd3dPrimaryDevice->basicShader->SetFloatArray("lightPos", (float *)lightPos, 3 * lightSources);
-   m_pd3dPrimaryDevice->basicShader->SetFloatArray("lightEmission", (float *)lightEmission, 3 * lightSources);
-   m_pd3dPrimaryDevice->basicShader->SetInt("lightSources", lightSources);
-#endif
 
    vec4 amb_lr = convertColor(g_pplayer->m_ptable->m_lightAmbient, g_pplayer->m_ptable->m_lightRange);
    amb_lr.x *= g_pplayer->m_globalEmissionScale;
