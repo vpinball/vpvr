@@ -261,7 +261,7 @@ void main() {
    //color = vec4((N+1.0)*0.5,1.0); return; // visualize normals
 
    color.xyz = lightLoop(worldPos, N, V, diffuse, glossy, specular, edge, true, is_metal); //!! have a "real" view vector instead that mustn't assume that viewer is directly in front of monitor? (e.g. cab setup) -> viewer is always relative to playfield and/or user definable
-   color.a = cBase_Alpha.a;
+   color.a = clamp(cBase_Alpha.a, 0.0, 1.0);
 
    if(cBase_Alpha.a < 1.0) {
       color.a = GeometricOpacity(dot(N,V),color.a,cClearcoat_EdgeAlpha.w,Roughness_WrapL_Edge_Thickness.w);
@@ -285,7 +285,7 @@ void main() {
       if (pixel.a <= fAlphaTestValue)
          discard;           //stop the pixel shader if alpha test should reject pixel
 
-   pixel.a *= cBase_Alpha.a;
+   pixel.a = clamp(pixel.a * cBase_Alpha.a, 0.0, 1.0);
    vec3 t = InvGamma(pixel.xyz);
 
    vec3 diffuse  = t*cBase_Alpha.xyz;
@@ -335,7 +335,7 @@ void main() {
 // BG-Decal
 
 void main() {
-   color = vec4(InvToneMap(cBase_Alpha.xyz), cBase_Alpha.a);
+   color = vec4(InvToneMap(cBase_Alpha.xyz), clamp(cBase_Alpha.a, 0.0, 1.0));
 }
 
 ////ps_main_bg_decal_texture
@@ -347,7 +347,7 @@ void main() {
 
    if (pixel.a <= fAlphaTestValue) discard;
 
-   pixel.a *= cBase_Alpha.a;
+   pixel.a = clamp(pixel.a * cBase_Alpha.a, 0.0, 1.0);
    float3 t = InvGamma(pixel.xyz); // DX9: uses automatic sRGB trafo instead in sampler! - still missing in OpenGL so we still need InvGamma
 
    color = vec4(InvToneMap(t*cBase_Alpha.xyz), pixel.a);

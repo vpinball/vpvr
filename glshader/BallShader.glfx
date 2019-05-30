@@ -267,7 +267,7 @@ void main()
 	   specular *= vec3(1.,1.,1.)-decalColor; // see above
         
    color.xyz = ballLightLoop(worldPos_t0y.xyz, normal_t0x.xyz, -worldPos_t0y.xyz, diffuse, glossy, specular, 1.0, false);
-	color.a = cBase_Alpha.a;
+	color.a = clamp(cBase_Alpha.a, 0.0, 1.0);
 }
 
 #if 0
