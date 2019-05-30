@@ -89,7 +89,7 @@ in vec3 vPosition;
 in vec3 vNormal;
 in vec2 tc;
 
-out vec4 tex01_gs; // pack tex0 and tex1 into one vec4
+out vec2 tex01_gs;
 out vec2 tex03_gs;
 out vec3 worldPos_gs;
 out vec3 normal_gs;
@@ -97,16 +97,12 @@ out vec3 normal_gs;
 void main()
 { 
    instanceID = gl_InstanceID;
-   // trafo all into worldview space (as most of the weird trafos happen in view, world is identity so far)
-   vec3 P = (matWorldView*vec4(vPosition, 1.0)).xyz;
-   vec3 N = normalize((matWorldViewInverseTranspose*vNormal).xyz);
-
    gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition, 1.0));
-   tex01_gs = vec4(tc, /*(cBase_Alpha.a < 1.0) ?*/gl_Position.xy/gl_Position.w);
+   tex01_gs = tc;
    vec4 bulbPos = (matWorldViewProj[0]*vec4(vPosition, 1.0));
    tex03_gs = vec2(bulbPos.xy/bulbPos.w);
-   worldPos_gs = P;
-   normal_gs = N;
+   worldPos_gs = (matWorldView*vec4(vPosition, 1.0)).xyz;
+   normal_gs = normalize((matWorldViewInverseTranspose*vNormal).xyz);
 }
 
 ////vs_notex_main
@@ -116,26 +112,17 @@ in vec3 vNormal;
 in vec2 tc;
 
 out vec2 tex03_gs;
-out vec4 worldPos_t1x_gs;
-out vec4 normal_t1y_gs;
+out vec3 worldPos_gs;
+out vec3 normal_gs;
 
 void main()
 {
    instanceID = gl_InstanceID;
-   // trafo all into worldview space (as most of the weird trafos happen in view, world is identity so far)
-   vec3 P = (matWorldView*vec4(vPosition, 1.0)).xyz;
-   vec3 N = normalize((matWorldViewInverseTranspose*vNormal).xyz);
-
    gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition, 1.0));
    vec4 bulbPos = (matWorldViewProj[0]*vec4(vPosition, 1.0));
    tex03_gs = vec2(bulbPos.xy/bulbPos.w);
-   //if(cBase_Alpha.a < 1.0)
-   {
-      worldPos_t1x_gs.w = gl_Position.x/gl_Position.w;
-      normal_t1y_gs.w = gl_Position.y/gl_Position.w;
-   }
-   worldPos_t1x_gs.xyz = P;
-   normal_t1y_gs.xyz = N;
+   worldPos_gs = (matWorldView*vec4(vPosition, 1.0)).xyz;
+   normal_gs = normalize((matWorldViewInverseTranspose*vNormal).xyz);
 }
 
 ////vs_depth_only_main_without_texture
@@ -164,8 +151,8 @@ void main()
 
 ////gs_main
 
-in vec4 tex01_gs[]; // pack tex0 and tex1 into one vec4
-out vec4 tex01; // pack tex0 and tex1 into one vec4
+in vec2 tex01_gs[];
+out vec2 tex01;
 
 in vec2 tex03_gs[];
 out vec2 tex03;
@@ -186,7 +173,7 @@ void main()
 		gl_Position = gl_in[i].gl_Position;
 		//Custom
 		tex01 = tex01_gs[i];
-        tex03 = tex03_gs[i];
+      tex03 = tex03_gs[i];
 		worldPos = worldPos_gs[i];
 		normal = normal_gs[i];
 		//Default
@@ -200,11 +187,11 @@ void main()
 in vec2 tex03_gs[];
 out vec2 tex03;
 
-in vec4 worldPos_t1x_gs[];
-out vec4 worldPos_t1x;
+in vec3 worldPos_gs[];
+out vec3 worldPos;
 
-in vec4 normal_t1y_gs[];
-out vec4 normal_t1y;
+in vec3 normal_gs[];
+out vec3 normal;
 
 void main()
 {
@@ -213,9 +200,9 @@ void main()
 		//Default
 		gl_Position = gl_in[i].gl_Position;
 		//Custom
-        tex03 = tex03_gs[i];
-		worldPos_t1x = worldPos_t1x_gs[i];
-		normal_t1y = normal_t1y_gs[i];
+      tex03 = tex03_gs[i];
+		worldPos = worldPos_gs[i];
+		normal = normal_gs[i];
 		//Default
 		EmitVertex();
 	}
@@ -256,11 +243,11 @@ void main()
     EndPrimitive();
 }
 
-////ps_main
+////ps_main_notex
 
 in vec2 tex03;
-in vec4 worldPos_t1x;
-in vec4 normal_t1y;
+in vec3 worldPos;
+in vec3 normal;
 
 void main() {
    vec3 diffuse  = cBase_Alpha.xyz;
@@ -268,12 +255,12 @@ void main() {
    vec3 specular = cClearcoat_EdgeAlpha.xyz*0.08;
    float  edge     = is_metal ? 1.0 : Roughness_WrapL_Edge_Thickness.z;
    
-   vec3 V = normalize(/*camera=0,0,0,1*/-worldPos_t1x.xyz);
-   vec3 N = normalize(normal_t1y.xyz);
+   vec3 V = normalize(-worldPos);
+   vec3 N = normalize(normal);
 
-   //return vec4((N+1.0)*0.5,1.0); // visualize normals
+   //color = vec4((N+1.0)*0.5,1.0); return; // visualize normals
 
-   color.xyz = lightLoop(worldPos_t1x.xyz, N, V, diffuse, glossy, specular, edge, true, is_metal); //!! have a "real" view vector instead that mustn't assume that viewer is directly in front of monitor? (e.g. cab setup) -> viewer is always relative to playfield and/or user definable
+   color.xyz = lightLoop(worldPos, N, V, diffuse, glossy, specular, edge, true, is_metal); //!! have a "real" view vector instead that mustn't assume that viewer is directly in front of monitor? (e.g. cab setup) -> viewer is always relative to playfield and/or user definable
    color.a = cBase_Alpha.a;
 
    if(cBase_Alpha.a < 1.0) {
@@ -287,13 +274,13 @@ void main() {
 
 ////ps_main_texture
 
-in vec4 tex01; // pack tex0 and tex1 into one float4
+in vec2 tex01;
 in vec2 tex03;
 in vec3 worldPos;
 in vec3 normal;
 
 void main() {
-   vec4 pixel = texture(Texture0, tex01.xy);
+   vec4 pixel = textureLod(Texture0, tex01, 0.);
 
       if (pixel.a <= fAlphaTestValue)
          discard;           //stop the pixel shader if alpha test should reject pixel
@@ -306,13 +293,13 @@ void main() {
    vec3 specular = cClearcoat_EdgeAlpha.xyz*0.08;
    float  edge     = is_metal ? 1.0 : Roughness_WrapL_Edge_Thickness.z;
 
-   vec3 V = normalize(/*camera=0,0,0,1*/-worldPos);
+   vec3 V = normalize(-worldPos);
    vec3 N = normalize(normal);
 
    if (doNormalMapping)
-	  N = normal_map(N, V, tex01.xy);
+	  N = normal_map(N, V, tex01);
    
-   //return vec4((N+1.0)*0.5,1.0); // visualize normals
+   //color = vec4((N+1.0)*0.5,1.0); return; // visualize normals
 
    color.xyz = lightLoop(worldPos, N, V, diffuse, glossy, specular, edge, !doNormalMapping, is_metal);
    color.a = pixel.a;
@@ -348,22 +335,22 @@ void main() {
 // BG-Decal
 
 void main() {
-   color = float4(InvToneMap(cBase_Alpha.xyz), cBase_Alpha.a);
+   color = vec4(InvToneMap(cBase_Alpha.xyz), cBase_Alpha.a);
 }
 
 ////ps_main_bg_decal_texture
 
-in vec4 tex01; // pack tex0 and tex1 into one float4
+in vec2 tex01;
 
 void main() {
-   float4 pixel = tex2D(Texture0, tex01.xy);
+   vec4 pixel = texture(Texture0, tex01);
 
    if (pixel.a <= fAlphaTestValue) discard;
 
    pixel.a *= cBase_Alpha.a;
    float3 t = InvGamma(pixel.xyz); // DX9: uses automatic sRGB trafo instead in sampler! - still missing in OpenGL so we still need InvGamma
 
-   color = float4(InvToneMap(t*cBase_Alpha.xyz), pixel.a);
+   color = vec4(InvToneMap(t*cBase_Alpha.xyz), pixel.a);
 }
 
 
@@ -376,27 +363,23 @@ in vec3 vPosition;
 in vec3 vNormal;
 in vec2 tc;
 
-out vec4 worldPos_t1x_gs; // pack tex1 into w component of the float4s
-out vec4 normal_t1y_gs;
+out vec3 worldPos_gs;
+out vec3 normal_gs;
+out vec2 tex03_gs;
 
 void main() {
 	instanceID = gl_InstanceID;
 	vec4 vPosition4 = vec4(vPosition,1.0);
 	float fKickerScale = 1.;
-    vec3 P = (matWorldView * vPosition4).xyz;
-    vec3 N = normalize((matWorldViewInverseTranspose*vNormal).xyz);
 
-    gl_Position.xyw = (matWorldViewProj[gl_InstanceID]*vPosition4).xyw;
-    vec4 P2 = vPosition4;
-    P2.z -= 30.0f*fKickerScale;
-    gl_Position.z = (matWorldViewProj[gl_InstanceID]*P2).z;
-    //if(cBase_Alpha.a < 1.0)
-    {
-        worldPos_t1x_gs.w = gl_Position.x/gl_Position.w; //!! not necessary
-        normal_t1y_gs.w = gl_Position.y/gl_Position.w; //!! not necessary
-    }
-    worldPos_t1x_gs.xyz = P;
-    normal_t1y_gs.xyz = N;
+   gl_Position.xyw = (matWorldViewProj[gl_InstanceID]*vPosition4).xyw;
+   vec4 P2 = vPosition4;
+   P2.z -= 30.0f*fKickerScale;
+   gl_Position.z = (matWorldViewProj[gl_InstanceID]*P2).z;
+   vec4 bulbPos = (matWorldViewProj[0]*vec4(vPosition, 1.0));
+   tex03_gs = vec2(bulbPos.xy/bulbPos.w);
+   worldPos_gs = (matWorldView * vPosition4).xyz;
+   normal_gs = normalize((matWorldViewInverseTranspose*vNormal).xyz);
 }
 
 //------------------------------------
@@ -408,7 +391,7 @@ void main() {
 //
 ////TECHNIQUES
 
-basic_without_texture:P0:vs_notex_main():gs_notex_main():ps_main()
+basic_without_texture:P0:vs_notex_main():gs_notex_main():ps_main_notex()
 
 basic_with_texture:P0:vs_main():gs_main():ps_main_texture()
 
@@ -426,6 +409,6 @@ bg_decal_with_texture:P0:vs_main():gs_main():ps_main_bg_decal_texture()
 // Kicker
 //
 
-kickerBoolean:P0:vs_kicker():gs_notex_main():ps_main()
+kickerBoolean:P0:vs_kicker():gs_notex_main():ps_main_notex()
 
 #include "ClassicLightShader.glfx"
