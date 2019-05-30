@@ -93,7 +93,7 @@ vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edg
    if (!VR)
       result = Out * lightEmission[i].xyz * fAtten + ambient * cAmbient_LightRange.xyz;
    else
-      result = Out * lightEmission[i].xyz * (fAtten*0.0001) + ambient * cAmbient_LightRange.xyz;
+      result = Out * lightEmission[i].xyz * (fAtten*0.00001) + ambient * cAmbient_LightRange.xyz;
    
    if(fDisableLighting_top_below.x != 0.0)
        return mix(result,diffuse,fDisableLighting_top_below.x);
