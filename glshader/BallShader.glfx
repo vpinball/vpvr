@@ -180,11 +180,11 @@ in vec4 worldPos_t0y;
 void main()
 {
     vec3 v;
-    if (!VR)
+#if !enable_VR
         v = normalize(-worldPos_t0y.xyz);
-    else
+#else
         v = normalize(worldPos_t0y.xyz);
-
+#endif
     vec3 r = reflect(v, normalize(normal_t0x.xyz));
     // calculate the intermediate value for the final texture coords. found here http://www.ozone3d.net/tutorials/glsl_texturing_p04.php
 	float  m = (r.z + 1.0 > 0.) ? 0.3535533905932737622 * rsqrt(r.z + 1.0) : 0.; // 0.353...=0.5/sqrt(2)
@@ -194,11 +194,11 @@ void main()
 		0.0;
 
     vec2 uv0;
-    if (!VR)
+#if !enable_VR
         uv0 = %PARAM0% ? vec2(r.y*-m + 0.5, r.x*-m + 0.5) : vec2(r.x*-m + 0.5, r.y*m + 0.5);
-    else
+#else
         uv0 = %PARAM0% ? vec2(r.y*m + 0.5, r.x*m + 0.5) : vec2(r.x*m + 0.5, r.y*-m + 0.5);
-    
+#endif
     vec3 ballImageColor;
     if (!hdrTexture0)
         ballImageColor = InvGamma(textureLod(Texture0, uv0, lod).rgb);
@@ -222,10 +222,11 @@ void main()
    vec3 lightLoop_normal = (matWorldView * vec4(0.,0.,1.,0.)).xyz;
     
    float NdotR;
-   if (!VR)
+#if !enable_VR
       NdotR = dot(playfield_normal,r);
-   else
+#else
       NdotR = dot(playfield_normal,-r);
+#endif
 
    vec3 playfieldColor;
    if(/*(reflection_ball_playfield > 0.0) &&*/ (NdotR > 0.0))
@@ -233,20 +234,22 @@ void main()
       vec3 playfield_p0 = (matWorldView * vec4(/*playfield_pos=*/0.,0.,invTableRes_playfield_height_reflection.z, 1.0)).xyz;
       float t = dot(playfield_normal, worldPos_t0y.xyz - playfield_p0) / NdotR;
       vec3 playfield_hit;
-      if (!VR)
+#if !enable_VR
          playfield_hit = worldPos_t0y.xyz - t*r;
-      else
+#else
          playfield_hit = worldPos_t0y.xyz - t*-r;
+#endif
 
       vec2 uv = (inverse(matWorldView) * vec4(playfield_hit, 1.0)).xy * invTableRes_playfield_height_reflection.xy;
       playfieldColor = (t < 0.) ? vec3(0., 0., 0.) // happens for example when inside kicker
                               : InvGamma(textureLod(Texture1, uv,  0.).xyz)*invTableRes_playfield_height_reflection.w; //!! rather use screen space sample from previous frame??
 
       //!! hack to get some lighting on sample, but only diffuse, the rest is not setup correctly anyhow
-      if (!VR)
+#if !enable_VR
          playfieldColor = lightLoop(playfield_hit, lightLoop_normal, -r, playfieldColor, vec3(0.,0.,0.), vec3(0.,0.,0.), 1.0, true, false);
-      else
+#else
          playfieldColor = lightLoop(playfield_hit, lightLoop_normal, r, playfieldColor, vec3(0.,0.,0.), vec3(0.,0.,0.), 1.0, true, false);
+#endif
 
       //!! magic falloff & weight the rest in from the ballImage
       float weight = NdotR*NdotR;

@@ -22,8 +22,6 @@ uniform vec2 fenvEmissionScale_TexWidth;
 
 uniform vec2 fDisableLighting_top_below;// = vec2(0.,0.);
 
-uniform bool VR = false; // For different calculations off of MatrixBlock depending on if in VR or not, default to false
-
 //
 // Material Params
 //
@@ -90,11 +88,12 @@ vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edg
        ambient += diffuse;
 
    vec3 result;
-   if (!VR)
+#if !enable_VR
       result = Out * lightEmission[i].xyz * fAtten + ambient * cAmbient_LightRange.xyz;
-   else
+#else
       result = Out * lightEmission[i].xyz * (fAtten*0.00001) + ambient * cAmbient_LightRange.xyz;
-   
+#endif
+
    if(fDisableLighting_top_below.x != 0.0)
        return mix(result,diffuse,fDisableLighting_top_below.x);
    else
