@@ -1,6 +1,8 @@
 SDL2 / VR Changelog
 ------------------------
 
+- More fixes by Rawnei
+
 - Added support for BAM Headtracking (Thanks to Rafal from ravarcade.pl). Usage:
 	All works almost same way as with Arcade Pinball, but you don't have control over table location.
 	1. Player need working Future Pinball with head tracking. (FP is used to setup head tracking, FP is closed).
@@ -111,14 +113,17 @@ Next steps:
 	5. Go back to step 1 because of step 2,3 and 4
 		
   
-VP 10.6.0 Changelog (trunk R3699)
+VP 10.6.0 Changelog (trunk R3708)
 ------------------------
+
+- increase robustness (and reduce temporary memory used) when handling very large images/textures
 
 - add rothbauerw's and cyberpez' ball dropping sound code to builtin example tables
 
 - add proper dithering to final output buffer (most noticable on gradients and/or low-quality/cheaper output monitors)
 
-- remove caption and window borders in windowed mode (only re-enable/toggle the caption if ESC menu is brought up)
+- remove caption and window borders in windowed mode (only re-enable/toggle that caption if the 'ESC'/Pause-menu is brought up so that one can move the window around after unpausing again)
+- save position of the windowed mode player window
 
 - fix some issues with the physically based lighting calculations, this can change the brightness (most noticably on the playfield) for some tables (more so if the (HDR) environment map is very high contrast, especially on the poles)
 

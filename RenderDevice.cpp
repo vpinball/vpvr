@@ -624,14 +624,14 @@ void RenderDevice::InitVR() {
       throw(noDevicesFound);
    }
 
-   slope = GetRegStringAsFloatWithDefault("Player", "VRSlope", 6.5f);
-   orientation = GetRegStringAsFloatWithDefault("Player", "VROrientation", 0.0f);
-   tablex = GetRegStringAsFloatWithDefault("Player", "VRTableX", 0.0f);
-   tabley = GetRegStringAsFloatWithDefault("Player", "VRTableY", 0.0f);
-   tablez = GetRegStringAsFloatWithDefault("Player", "VRTableZ", 80.0f);
-   roomOrientation = GetRegStringAsFloatWithDefault("Player", "VRRoomOrientation", 0.0f);
-   roomx = GetRegStringAsFloatWithDefault("Player", "VRRoomX", 0.0f);
-   roomy = GetRegStringAsFloatWithDefault("Player", "VRRoomY", 0.0f);
+   slope = LoadValueFloatWithDefault("Player", "VRSlope", 6.5f);
+   orientation = LoadValueFloatWithDefault("Player", "VROrientation", 0.0f);
+   tablex = LoadValueFloatWithDefault("Player", "VRTableX", 0.0f);
+   tabley = LoadValueFloatWithDefault("Player", "VRTableY", 0.0f);
+   tablez = LoadValueFloatWithDefault("Player", "VRTableZ", 80.0f);
+   roomOrientation = LoadValueFloatWithDefault("Player", "VRRoomOrientation", 0.0f);
+   roomx = LoadValueFloatWithDefault("Player", "VRRoomX", 0.0f);
+   roomy = LoadValueFloatWithDefault("Player", "VRRoomY", 0.0f);
 
    updateTableMatrix();
 
@@ -688,7 +688,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    int disp_x, disp_y, disp_w, disp_h;
    getDisplaySetupByID(m_adapter, disp_x, disp_y, disp_w, disp_h);
 
-   bool disableVRPreview = (m_stereo3D == STEREO_VR) && (GetRegIntWithDefault("Player", "VRPreviewDisabled", 0) > 0);
+   bool disableVRPreview = (m_stereo3D == STEREO_VR) && (LoadValueIntWithDefault("Player", "VRPreviewDisabled", 0) > 0);
 
    if (disableVRPreview == 0)
       m_sdl_playfieldHwnd = SDL_CreateWindow(
@@ -799,7 +799,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    if (m_stereo3D == STEREO_VR) {
       //AMD Debugging
       colorFormat renderBufferFormatVR;
-      int textureModeVR = GetRegIntWithDefault("Player", "textureModeVR", 1);
+      int textureModeVR = LoadValueIntWithDefault("Player", "textureModeVR", 1);
       switch (textureModeVR) {
       case 0:
          renderBufferFormatVR = RGB8;
@@ -955,14 +955,14 @@ RenderDevice::~RenderDevice()
    {
       vr::VR_Shutdown();
       m_pHMD = NULL;
-      SetRegValueFloat("Player", "VRSlope", slope);
-      SetRegValueFloat("Player", "VROrientation", orientation);
-      SetRegValueFloat("Player", "VRTableX", tablex);
-      SetRegValueFloat("Player", "VRTableY", tabley);
-      SetRegValueFloat("Player", "VRTableZ", tablez);
-      SetRegValueFloat("Player", "VRRoomOrientation", roomOrientation);
-      SetRegValueFloat("Player", "VRRoomX", roomx);
-      SetRegValueFloat("Player", "VRRoomY", roomy);
+      SaveValueFloat("Player", "VRSlope", slope);
+      SaveValueFloat("Player", "VROrientation", orientation);
+      SaveValueFloat("Player", "VRTableX", tablex);
+      SaveValueFloat("Player", "VRTableY", tabley);
+      SaveValueFloat("Player", "VRTableZ", tablez);
+      SaveValueFloat("Player", "VRRoomOrientation", roomOrientation);
+      SaveValueFloat("Player", "VRRoomX", roomx);
+      SaveValueFloat("Player", "VRRoomY", roomy);
    }
    SDL_GL_DeleteContext(m_sdl_context);
    SDL_DestroyWindow(m_sdl_playfieldHwnd);
@@ -1112,15 +1112,12 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    //if (caps.NumSimultaneousRTs < 2)
    //   ShowError("D3D device doesn't support multiple render targets!");
 
-   int video10bit;
-   HRESULT hr = GetRegInt("Player", "Render10Bit", &video10bit);
-   if (hr != S_OK)
-      video10bit = fFalse; // The default = off
+   bool video10bit = LoadValueBoolWithDefault("Player", "Render10Bit", false);
 
    if (!m_fullscreen && video10bit)
    {
       ShowError("10Bit-Monitor support requires 'Force exclusive Fullscreen Mode' to be also enabled!");
-      video10bit = fFalse;
+      video10bit = false;
    }
 
    // get the current display format
@@ -1162,7 +1159,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 #endif
 
    // check if our HDR texture format supports/does sRGB conversion on texture reads, which must NOT be the case as we always set SRGBTexture=true independent of the format!
-   hr = m_pD3D->CheckDeviceFormat(m_adapter, devtype, params.BackBufferFormat, D3DUSAGE_QUERY_SRGBREAD, D3DRTYPE_TEXTURE, (D3DFORMAT)colorFormat::RGBA32F);
+   HRESULT hr = m_pD3D->CheckDeviceFormat(m_adapter, devtype, params.BackBufferFormat, D3DUSAGE_QUERY_SRGBREAD, D3DRTYPE_TEXTURE, (D3DFORMAT)colorFormat::RGBA32F);
    if (SUCCEEDED(hr))
       ShowError("D3D device does support D3DFMT_A32B32G32R32F SRGBTexture reads (which leads to wrong tex colors)");
    // now the same for our LDR/8bit texture format the other way round
@@ -1206,7 +1203,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    else
       params.MultiSampleQuality = min(params.MultiSampleQuality, MultiSampleQualityLevels);
 
-   const int softwareVP = GetRegIntWithDefault("Player", "SoftwareVertexProcessing", 0);
+   const int softwareVP = LoadValueIntWithDefault("Player", "SoftwareVertexProcessing", 0);
    const DWORD flags = softwareVP ? D3DCREATE_SOFTWARE_VERTEXPROCESSING : D3DCREATE_HARDWARE_VERTEXPROCESSING;
 
    // Create the D3D device. This optionally goes to the proper fullscreen mode.

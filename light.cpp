@@ -142,182 +142,78 @@ HRESULT Light::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
 
 void Light::SetDefaults(bool fromMouseClick)
 {
-   HRESULT hr;
-   float fTmp;
-   int iTmp;
-
    m_duration = 0;
    m_finalState = 0;
 
-   hr = GetRegStringAsFloat("DefaultProps\\Light", "Falloff", &fTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_falloff = fTmp;
-   else
-      m_d.m_falloff = 50.f;
-
-   hr = GetRegStringAsFloat("DefaultProps\\Light", "FalloffPower", &fTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_falloff_power = fTmp;
-   else
-      m_d.m_falloff_power = 2.0f;
-
-   hr = GetRegInt("DefaultProps\\Light", "LightState", &iTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_state = (LightState)iTmp;
-   else
-      m_d.m_state = LightStateOff;
+   m_d.m_falloff = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Light", "Falloff", 50.f) : 50.f;
+   m_d.m_falloff_power = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Light", "FalloffPower", 2.0f) : 2.0f;
+   m_d.m_state = fromMouseClick ? (LightState)LoadValueIntWithDefault("DefaultProps\\Light", "LightState", LightStateOff) : LightStateOff;
 
    m_d.m_shape = ShapeCustom;
 
-   hr = GetRegInt("DefaultProps\\Light", "TimerEnabled", &iTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_tdr.m_fTimerEnabled = iTmp == 0 ? false : true;
-   else
-      m_d.m_tdr.m_fTimerEnabled = false;
+   m_d.m_tdr.m_fTimerEnabled = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Light", "TimerEnabled", false) : false;
+   m_d.m_tdr.m_TimerInterval = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "TimerInterval", 100) : 100;
+   m_d.m_color = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "Color", RGB(255, 255, 0)) : RGB(255, 255, 0);
+   m_d.m_color2 = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "ColorFull", RGB(255, 255, 255)) : RGB(255, 255, 255);
 
-   hr = GetRegInt("DefaultProps\\Light", "TimerInterval", &iTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_tdr.m_TimerInterval = iTmp;
-   else
-      m_d.m_tdr.m_TimerInterval = 100;
-
-   hr = GetRegInt("DefaultProps\\Light", "Color", &iTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_color = iTmp;
-   else
-      m_d.m_color = RGB(255, 255, 0);
-
-   hr = GetRegInt("DefaultProps\\Light", "ColorFull", &iTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_color2 = iTmp;
-   else
-      m_d.m_color2 = RGB(255, 255, 255);
-
-   hr = GetRegString("DefaultProps\\Light", "OffImage", m_d.m_szOffImage, MAXTOKEN);
+   HRESULT hr = LoadValueString("DefaultProps\\Light", "OffImage", m_d.m_szOffImage, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
       m_d.m_szOffImage[0] = 0;
 
-   hr = GetRegString("DefaultProps\\Light", "BlinkPattern", m_rgblinkpattern, MAXTOKEN);
+   hr = LoadValueString("DefaultProps\\Light", "BlinkPattern", m_rgblinkpattern, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
       strcpy_s(m_rgblinkpattern, sizeof(m_rgblinkpattern), "10");
 
-   hr = GetRegInt("DefaultProps\\Light", "BlinkInterval", &iTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_blinkinterval = iTmp;
-   else
-      m_blinkinterval = 125;
-
-   hr = GetRegStringAsFloat("DefaultProps\\Light", "Intensity", &fTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_intensity = fTmp;
-   else
-      m_d.m_intensity = 1.0f;
-
-   hr = GetRegStringAsFloat("DefaultProps\\Light", "TransmissionScale", &fTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_transmissionScale = fTmp;
-   else
-      m_d.m_transmissionScale = fromMouseClick ? 0.5f : 0.f;
+   m_blinkinterval = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "BlinkInterval", 125) : 125;
+   m_d.m_intensity = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Light", "Intensity", 1.0f) : 1.0f;
+   m_d.m_transmissionScale = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Light", "TransmissionScale", 0.5f) : 0.f; // difference in defaults is intended
 
    m_d.m_intensity_scale = 1.0f;
 
-   /*hr = GetRegInt("DefaultProps\\Light","BorderColor", &iTmp);
-   if ((hr == S_OK) && fromMouseClick)
-   m_d.m_bordercolor = iTmp;
-   else
-   m_d.m_bordercolor = RGB(0,0,0);*/
+   //m_d.m_bordercolor = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "BorderColor", RGB(0,0,0)) : RGB(0,0,0);
 
-   hr = GetRegString("DefaultProps\\Light", "Surface", &m_d.m_szSurface, MAXTOKEN);
+   hr = LoadValueString("DefaultProps\\Light", "Surface", &m_d.m_szSurface, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
       m_d.m_szSurface[0] = 0;
 
-   hr = GetRegStringAsFloat("DefaultProps\\Light", "FadeSpeedUp", &fTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_fadeSpeedUp = fTmp;
-   else
-      m_d.m_fadeSpeedUp = 0.2f;
-
-   hr = GetRegStringAsFloat("DefaultProps\\Light", "FadeSpeedDown", &fTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_fadeSpeedDown = fTmp;
-   else
-      m_d.m_fadeSpeedDown = 0.2f;
-
-   hr = GetRegInt("DefaultProps\\Light", "Bulb", &iTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_BulbLight = iTmp ? true : false;
-   else
-      m_d.m_BulbLight = false;
-
-   hr = GetRegInt("DefaultProps\\Light", "ImageMode", &iTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_imageMode = iTmp ? true : false;
-   else
-      m_d.m_imageMode = false;
-
-   hr = GetRegInt("DefaultProps\\Light", "ShowBulbMesh", &iTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_showBulbMesh = iTmp ? true : false;
-   else
-      m_d.m_showBulbMesh = false;
-
-   hr = GetRegInt("DefaultProps\\Light", "StaticBulbMesh", &iTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_staticBulbMesh = iTmp ? true : false;
-   else
-      m_d.m_staticBulbMesh = true;
-
-   hr = GetRegInt("DefaultProps\\Light", "ShowReflectionOnBall", &iTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_showReflectionOnBall = iTmp ? true : false;
-   else
-      m_d.m_showReflectionOnBall = true;
-
-   hr = GetRegStringAsFloat("DefaultProps\\Light", "ScaleBulbMesh", &fTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_meshRadius = fTmp;
-   else
-      m_d.m_meshRadius = 20.0f;
-
-   hr = GetRegStringAsFloat("DefaultProps\\Light", "BulbModulateVsAdd", &fTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_modulate_vs_add = fTmp;
-   else
-      m_d.m_modulate_vs_add = 0.9f;
-
-   hr = GetRegStringAsFloat("DefaultProps\\Light", "BulbHaloHeight", &fTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_bulbHaloHeight = fTmp;
-   else
-      m_d.m_bulbHaloHeight = 28.0f;
+   m_d.m_fadeSpeedUp = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Light", "FadeSpeedUp", 0.2f) : 0.2f;
+   m_d.m_fadeSpeedDown = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Light", "FadeSpeedDown", 0.2f) : 0.2f;
+   m_d.m_BulbLight = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Light", "Bulb", false) : false;
+   m_d.m_imageMode = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Light", "ImageMode", false) : false;
+   m_d.m_showBulbMesh = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Light", "ShowBulbMesh", false) : false;
+   m_d.m_staticBulbMesh = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Light", "StaticBulbMesh", true) : true;
+   m_d.m_showReflectionOnBall = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Light", "ShowReflectionOnBall", true) : true;
+   m_d.m_meshRadius = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Light", "ScaleBulbMesh", 20.0f) : 20.0f;
+   m_d.m_modulate_vs_add = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Light", "BulbModulateVsAdd", 0.9f) : 0.9f;
+   m_d.m_bulbHaloHeight = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Light", "BulbHaloHeight", 28.0f) : 28.0f;
 }
 
 void Light::WriteRegDefaults()
 {
-   SetRegValueFloat("DefaultProps\\Light", "Falloff", m_d.m_falloff);
-   SetRegValueFloat("DefaultProps\\Light", "FalloffPower", m_d.m_falloff_power);
-   SetRegValue("DefaultProps\\Light", "LightState", REG_DWORD, &m_d.m_state, 4);
-   SetRegValueBool("DefaultProps\\Light", "TimerEnabled", m_d.m_tdr.m_fTimerEnabled);
-   SetRegValue("DefaultProps\\Light", "TimerInterval", REG_DWORD, &m_d.m_tdr.m_TimerInterval, 4);
-   SetRegValue("DefaultProps\\Light", "Color", REG_DWORD, &m_d.m_color, 4);
-   SetRegValue("DefaultProps\\Light", "ColorFull", REG_DWORD, &m_d.m_color2, 4);
-   SetRegValue("DefaultProps\\Light", "OffImage", REG_SZ, &m_d.m_szOffImage, lstrlen(m_d.m_szOffImage));
-   SetRegValue("DefaultProps\\Light", "BlinkPattern", REG_SZ, &m_rgblinkpattern, lstrlen(m_rgblinkpattern));
-   SetRegValue("DefaultProps\\Light", "BlinkInterval", REG_DWORD, &m_blinkinterval, 4);
-   //SetRegValue("DefaultProps\\Light","BorderColor", REG_DWORD, &m_d.m_bordercolor,4);
-   SetRegValue("DefaultProps\\Light", "Surface", REG_SZ, &m_d.m_szSurface, lstrlen(m_d.m_szSurface));
-   SetRegValueFloat("DefaultProps\\Light", "FadeSpeedUp", m_d.m_fadeSpeedUp);
-   SetRegValueFloat("DefaultProps\\Light", "FadeSpeedDown", m_d.m_fadeSpeedDown);
-   SetRegValueFloat("DefaultProps\\Light", "Intensity", m_d.m_intensity);
-   SetRegValueFloat("DefaultProps\\Light", "TransmissionScale", m_d.m_transmissionScale);
-   SetRegValueBool("DefaultProps\\Light", "Bulb", m_d.m_BulbLight);
-   SetRegValueBool("DefaultProps\\Light", "ImageMode", m_d.m_imageMode);
-   SetRegValueBool("DefaultProps\\Light", "ShowBulbMesh", m_d.m_showBulbMesh);
-   SetRegValueBool("DefaultProps\\Light", "StaticBulbMesh", m_d.m_staticBulbMesh);
-   SetRegValueBool("DefaultProps\\Light", "ShowReflectionOnBall", m_d.m_showReflectionOnBall);
-   SetRegValueFloat("DefaultProps\\Light", "ScaleBulbMesh", m_d.m_meshRadius);
-   SetRegValueFloat("DefaultProps\\Light", "BulbModulateVsAdd", m_d.m_modulate_vs_add);
-   SetRegValueFloat("DefaultProps\\Light", "BulbHaloHeight", m_d.m_bulbHaloHeight);
+   SaveValueFloat("DefaultProps\\Light", "Falloff", m_d.m_falloff);
+   SaveValueFloat("DefaultProps\\Light", "FalloffPower", m_d.m_falloff_power);
+   SaveValueInt("DefaultProps\\Light", "LightState", m_d.m_state);
+   SaveValueBool("DefaultProps\\Light", "TimerEnabled", m_d.m_tdr.m_fTimerEnabled);
+   SaveValueInt("DefaultProps\\Light", "TimerInterval", m_d.m_tdr.m_TimerInterval);
+   SaveValueInt("DefaultProps\\Light", "Color", m_d.m_color);
+   SaveValueInt("DefaultProps\\Light", "ColorFull", m_d.m_color2);
+   SaveValueString("DefaultProps\\Light", "OffImage", m_d.m_szOffImage);
+   SaveValueString("DefaultProps\\Light", "BlinkPattern", m_rgblinkpattern);
+   SaveValueInt("DefaultProps\\Light", "BlinkInterval", m_blinkinterval);
+   //SaveValueInt("DefaultProps\\Light","BorderColor", m_d.m_bordercolor);
+   SaveValueString("DefaultProps\\Light", "Surface", m_d.m_szSurface);
+   SaveValueFloat("DefaultProps\\Light", "FadeSpeedUp", m_d.m_fadeSpeedUp);
+   SaveValueFloat("DefaultProps\\Light", "FadeSpeedDown", m_d.m_fadeSpeedDown);
+   SaveValueFloat("DefaultProps\\Light", "Intensity", m_d.m_intensity);
+   SaveValueFloat("DefaultProps\\Light", "TransmissionScale", m_d.m_transmissionScale);
+   SaveValueBool("DefaultProps\\Light", "Bulb", m_d.m_BulbLight);
+   SaveValueBool("DefaultProps\\Light", "ImageMode", m_d.m_imageMode);
+   SaveValueBool("DefaultProps\\Light", "ShowBulbMesh", m_d.m_showBulbMesh);
+   SaveValueBool("DefaultProps\\Light", "StaticBulbMesh", m_d.m_staticBulbMesh);
+   SaveValueBool("DefaultProps\\Light", "ShowReflectionOnBall", m_d.m_showReflectionOnBall);
+   SaveValueFloat("DefaultProps\\Light", "ScaleBulbMesh", m_d.m_meshRadius);
+   SaveValueFloat("DefaultProps\\Light", "BulbModulateVsAdd", m_d.m_modulate_vs_add);
+   SaveValueFloat("DefaultProps\\Light", "BulbHaloHeight", m_d.m_bulbHaloHeight);
 }
 
 Texture *Light::GetDisplayTexture()

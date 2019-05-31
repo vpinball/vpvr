@@ -123,7 +123,7 @@ namespace
 
    void WriteHeader(FILE* f)
    {
-      fprintf(f, "Crash report VPX rev%i\n============\n",SVN_REVISION);
+      fprintf(f, "Crash report VPX GL rev%i\n============\n",SVN_REVISION);
    }
 
    const char* GetExceptionString(DWORD exc)

@@ -298,7 +298,7 @@ void EnvmapPrecalc(const void* /*const*/ __restrict envmap, const DWORD env_xres
 
 HRESULT Pin3D::InitPrimary(HWND *hwnd, const bool fullScreen, const int colordepth, int &refreshrate, const int VSync, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
 {
-   const unsigned int display = GetRegIntWithDefault("Player", "Display", 0);
+   const unsigned int display = LoadValueIntWithDefault("Player", "Display", 0);
 #ifdef ENABLE_VR
    if ((stereo3D == STEREO_VR) && !vr::VR_IsHmdPresent()) {
 	   MessageBox(m_hwnd,"Please start SteamVR or go to Video Options to disable VR support.", "SteamVR", MB_OK);
@@ -326,10 +326,10 @@ HRESULT Pin3D::InitPrimary(HWND *hwnd, const bool fullScreen, const int colordep
    *hwnd = m_pd3dPrimaryDevice->getHwnd();
 #endif
 
-   const int forceAniso = GetRegIntWithDefault("Player", "ForceAnisotropicFiltering", 1);
+   const int forceAniso = LoadValueIntWithDefault("Player", "ForceAnisotropicFiltering", 1);
    m_pd3dPrimaryDevice->ForceAnisotropicFiltering(!!forceAniso);
 
-   const int compressTextures = GetRegIntWithDefault("Player", "CompressTextures", 0);
+   const int compressTextures = LoadValueIntWithDefault("Player", "CompressTextures", 0);
    m_pd3dPrimaryDevice->CompressTextures(!!compressTextures);
 
    m_pd3dPrimaryDevice->SetViewport(&m_viewPort);

@@ -23,26 +23,14 @@ HRESULT Timer::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
 
 void Timer::SetDefaults(bool fromMouseClick)
 {
-   HRESULT hr;
-   int iTmp;
-
-   hr = GetRegInt("DefaultProps\\Timer", "TimerEnabled", &iTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_tdr.m_fTimerEnabled = iTmp == 0 ? false : true;
-   else
-      m_d.m_tdr.m_fTimerEnabled = true;
-
-   hr = GetRegInt("DefaultProps\\Timer", "TimerInterval", &iTmp);
-   if ((hr == S_OK) && fromMouseClick)
-      m_d.m_tdr.m_TimerInterval = iTmp;
-   else
-      m_d.m_tdr.m_TimerInterval = 100;
+   m_d.m_tdr.m_fTimerEnabled = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Timer", "TimerEnabled", true) : true;
+   m_d.m_tdr.m_TimerInterval = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Timer", "TimerInterval", 100) : 100;
 }
 
 void Timer::WriteRegDefaults()
 {
-   SetRegValueBool("DefaultProps\\Timer", "TimerEnabled", m_d.m_tdr.m_fTimerEnabled);
-   SetRegValueInt("DefaultProps\\Timer", "TimerInterval", m_d.m_tdr.m_TimerInterval);
+   SaveValueBool("DefaultProps\\Timer", "TimerEnabled", m_d.m_tdr.m_fTimerEnabled);
+   SaveValueInt("DefaultProps\\Timer", "TimerInterval", m_d.m_tdr.m_TimerInterval);
 }
 
 void Timer::SetObjectPos()

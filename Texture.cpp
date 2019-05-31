@@ -5,43 +5,93 @@
 BaseTexture* BaseTexture::CreateFromFreeImage(FIBITMAP* dib)
 {
    // check if Textures exceed the maximum texture dimension
-   int maxTexDim;
-   HRESULT hrMaxTex = GetRegInt("Player", "MaxTexDimension", &maxTexDim);
-   if (hrMaxTex != S_OK)
-      maxTexDim = 0; // default: Don't resize textures
+   int maxTexDim = LoadValueIntWithDefault("Player", "MaxTexDimension", 0); // default: Don't resize textures
    if (maxTexDim <= 0)
       maxTexDim = 65536;
 
    const int pictureWidth = FreeImage_GetWidth(dib);
    const int pictureHeight = FreeImage_GetHeight(dib);
-   FIBITMAP* dibResized = dib;
 
-   if ((pictureHeight > maxTexDim) || (pictureWidth > maxTexDim))
+   FIBITMAP* dib32;
+   BaseTexture* tex = NULL;
+
+   // do loading in a loop, in case memory runs out and we need to scale the texture down due to this
+   bool success = false;
+   while (!success)
    {
-      int newWidth = max(min(pictureWidth, maxTexDim), MIN_TEXTURE_SIZE);
-      int newHeight = max(min(pictureHeight, maxTexDim), MIN_TEXTURE_SIZE);
-      /*
-      * The following code tries to maintain the aspect ratio while resizing.
-      */
-      if (pictureWidth - newWidth > pictureHeight - newHeight)
-         newHeight = min(pictureHeight * newWidth / pictureWidth, maxTexDim);
-      else
-         newWidth = min(pictureWidth * newHeight / pictureHeight, maxTexDim);
-      dibResized = FreeImage_Rescale(dib, newWidth, newHeight, FILTER_BILINEAR);
-   }
-   else if (pictureWidth < MIN_TEXTURE_SIZE || pictureHeight < MIN_TEXTURE_SIZE)
-   {
-      // some drivers seem to choke on small (1x1) textures, so be safe by scaling them up
-      const int newWidth = max(pictureWidth, MIN_TEXTURE_SIZE);
-      const int newHeight = max(pictureHeight, MIN_TEXTURE_SIZE);
-      dibResized = FreeImage_Rescale(dib, newWidth, newHeight, FILTER_BOX);
+      // the mem is so low that the texture won't even be able to be rescaled -> return
+      if (maxTexDim <= 0)
+         return NULL;
+
+      FIBITMAP* dibResized = dib;
+
+      if ((pictureHeight > maxTexDim) || (pictureWidth > maxTexDim))
+      {
+         int newWidth = max(min(pictureWidth, maxTexDim), MIN_TEXTURE_SIZE);
+         int newHeight = max(min(pictureHeight, maxTexDim), MIN_TEXTURE_SIZE);
+         /*
+         * The following code tries to maintain the aspect ratio while resizing.
+         */
+         if (pictureWidth - newWidth > pictureHeight - newHeight)
+            newHeight = min(pictureHeight * newWidth / pictureWidth, maxTexDim);
+         else
+            newWidth = min(pictureWidth * newHeight / pictureHeight, maxTexDim);
+         dibResized = FreeImage_Rescale(dib, newWidth, newHeight, FILTER_BILINEAR); //!! use a better filter in case scale ratio is pretty high?
+      }
+      else if (pictureWidth < MIN_TEXTURE_SIZE || pictureHeight < MIN_TEXTURE_SIZE)
+      {
+         // some drivers seem to choke on small (1x1) textures, so be safe by scaling them up
+         const int newWidth = max(pictureWidth, MIN_TEXTURE_SIZE);
+         const int newHeight = max(pictureHeight, MIN_TEXTURE_SIZE);
+         dibResized = FreeImage_Rescale(dib, newWidth, newHeight, FILTER_BOX);
+      }
+
+      // failed to get mem?
+      if (!dibResized)
+      {
+         maxTexDim /= 2;
+         while ((maxTexDim > pictureHeight) && (maxTexDim > pictureWidth))
+            maxTexDim /= 2;
+
+         continue;
+      }
+
+      const FREE_IMAGE_TYPE img_type = FreeImage_GetImageType(dibResized);
+      const bool rgbf = (img_type == FIT_FLOAT) || (img_type == FIT_DOUBLE) || (img_type == FIT_RGBF) || (img_type == FIT_RGBAF); //(FreeImage_GetBPP(dibResized) > 32);
+      dib32 = rgbf ? FreeImage_ConvertToRGBF(dibResized) : FreeImage_ConvertTo32Bits(dibResized);
+
+      if (dibResized != dib) // did we allocate a rescaled copy?
+         FreeImage_Unload(dibResized);
+
+      // failed to get mem?
+      if (!dib32)
+      {
+         maxTexDim /= 2;
+         while ((maxTexDim > pictureHeight) && (maxTexDim > pictureWidth))
+            maxTexDim /= 2;
+
+         continue;
+      }
+
+      try
+      {
+         tex = new BaseTexture(FreeImage_GetWidth(dib32), FreeImage_GetHeight(dib32), rgbf ? RGB_FP : RGBA);
+
+         success = true;
+      }
+      // failed to get mem?
+      catch (...)
+      {
+         delete tex;
+
+         FreeImage_Unload(dib32);
+
+         maxTexDim /= 2;
+         while ((maxTexDim > pictureHeight) && (maxTexDim > pictureWidth))
+            maxTexDim /= 2;
+      }
    }
 
-   const FREE_IMAGE_TYPE img_type = FreeImage_GetImageType(dibResized);
-   const bool rgbf = (img_type == FIT_FLOAT) || (img_type == FIT_DOUBLE) || (img_type == FIT_RGBF) || (img_type == FIT_RGBAF); //(FreeImage_GetBPP(dibResized) > 32);
-   FIBITMAP* dib32 = rgbf ? FreeImage_ConvertToRGBF(dibResized) : FreeImage_ConvertTo32Bits(dibResized);
-
-   BaseTexture* tex = new BaseTexture(FreeImage_GetWidth(dib32), FreeImage_GetHeight(dib32), rgbf ? RGB_FP : RGBA);
    tex->m_realWidth = pictureWidth;
    tex->m_realHeight = pictureHeight;
 
@@ -53,8 +103,6 @@ BaseTexture* BaseTexture::CreateFromFreeImage(FIBITMAP* dib)
       memcpy(pdst + (height - y - 1)*pitchdst, psrc + y * pitchsrc, pitchsrc);
 
    FreeImage_Unload(dib32);
-   if (dibResized != dib)      // did we allocate a rescaled copy?
-      FreeImage_Unload(dibResized);
 
    return tex;
 }
@@ -76,9 +124,11 @@ BaseTexture* BaseTexture::CreateFromFile(const char *szfile)
    // check that the plugin has reading capabilities ...
    if ((fif != FIF_UNKNOWN) && FreeImage_FIFSupportsReading(fif)) {
       // ok, let's load the file
-      FIBITMAP *dib = FreeImage_Load(fif, szfile, 0);
+      FIBITMAP * const dib = FreeImage_Load(fif, szfile, 0);
+      if (!dib)
+         return NULL;
 
-      BaseTexture* mySurface = BaseTexture::CreateFromFreeImage(dib);
+      BaseTexture* const mySurface = BaseTexture::CreateFromFreeImage(dib);
       FreeImage_Unload(dib);
 
       //if (bitsPerPixel == 24)
@@ -92,28 +142,32 @@ BaseTexture* BaseTexture::CreateFromFile(const char *szfile)
 
 BaseTexture* BaseTexture::CreateFromData(const void *data, const size_t size)
 {
-   FREE_IMAGE_FORMAT fif;
-
    // check the file signature and deduce its format
-   FIMEMORY *dataHandle = FreeImage_OpenMemory((BYTE*)data, size);
-   fif = FreeImage_GetFileTypeFromMemory(dataHandle, size);
+   FIMEMORY * const dataHandle = FreeImage_OpenMemory((BYTE*)data, size);
+   if (!dataHandle)
+      return NULL;
+   const FREE_IMAGE_FORMAT fif = FreeImage_GetFileTypeFromMemory(dataHandle, size);
 
    // check that the plugin has reading capabilities ...
    if ((fif != FIF_UNKNOWN) && FreeImage_FIFSupportsReading(fif)) {
       // ok, let's load the file
-      FIBITMAP *dib = FreeImage_LoadFromMemory(fif, dataHandle, 0);
+      FIBITMAP * const dib = FreeImage_LoadFromMemory(fif, dataHandle, 0);
+      FreeImage_CloseMemory(dataHandle);
+      if (!dib)
+         return NULL;
 
-      BaseTexture* mySurface = BaseTexture::CreateFromFreeImage(dib);
+      BaseTexture* const mySurface = BaseTexture::CreateFromFreeImage(dib);
       FreeImage_Unload(dib);
 
       //if (bitsPerPixel == 24)
       //   mySurface->SetOpaque();
 
-      FreeImage_CloseMemory(dataHandle);
       return mySurface;
    }
-   FreeImage_CloseMemory(dataHandle);
-   return NULL;
+   else {
+      FreeImage_CloseMemory(dataHandle);
+      return NULL;
+   }
 }
 
 void BaseTexture::CopyTo_ConvertAlpha(BYTE* const bits) // premultiplies alpha (as Win32 AlphaBlend() wants it like that) OR converts rgb_fp format to 32bits
@@ -191,6 +245,8 @@ static FIBITMAP* HBitmapToFreeImage(HBITMAP hbmp)
    BITMAP bm;
    GetObject(hbmp, sizeof(BITMAP), &bm);
    FIBITMAP* dib = FreeImage_Allocate(bm.bmWidth, bm.bmHeight, bm.bmBitsPixel);
+   if (!dib)
+      return NULL;
    // The GetDIBits function clears the biClrUsed and biClrImportant BITMAPINFO members (dont't know why)
    // So we save these infos below. This is needed for palettized images only.
    const int nColors = FreeImage_GetColorsUsed(dib);
@@ -206,8 +262,10 @@ static FIBITMAP* HBitmapToFreeImage(HBITMAP hbmp)
 
 BaseTexture* BaseTexture::CreateFromHBitmap(const HBITMAP hbm)
 {
-   FIBITMAP *dib = HBitmapToFreeImage(hbm);
-   BaseTexture* pdds = BaseTexture::CreateFromFreeImage(dib);
+   FIBITMAP* const dib = HBitmapToFreeImage(hbm);
+   if (!dib)
+      return NULL;
+   BaseTexture* const pdds = BaseTexture::CreateFromFreeImage(dib);
    FreeImage_Unload(dib);
    return pdds;
 }
@@ -288,13 +346,17 @@ HRESULT Texture::LoadFromStream(IStream *pstream, int version, PinTable *pt)
 
 bool Texture::LoadFromMemory(BYTE* const data, const DWORD size)
 {
-   FIMEMORY *hmem = FreeImage_OpenMemory(data, size);
-   FREE_IMAGE_FORMAT fif = FreeImage_GetFileTypeFromMemory(hmem, 0);
-   FIBITMAP *dib = FreeImage_LoadFromMemory(fif, hmem, 0);
-   FreeImage_CloseMemory(hmem);
-
    if (m_pdsBuffer)
       FreeStuff();
+
+   FIMEMORY * const hmem = FreeImage_OpenMemory(data, size);
+   if (!hmem)
+      return false;
+   const FREE_IMAGE_FORMAT fif = FreeImage_GetFileTypeFromMemory(hmem, 0);
+   FIBITMAP * const dib = FreeImage_LoadFromMemory(fif, hmem, 0);
+   FreeImage_CloseMemory(hmem);
+   if (!dib)
+      return false;
 
    m_pdsBuffer = BaseTexture::CreateFromFreeImage(dib);
    SetSizeFrom(m_pdsBuffer);

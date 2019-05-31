@@ -1073,6 +1073,8 @@
 #define ID_TABLEMENU_PASTE              4019
 #define ID_NEW_BLANKTABLE               4020
 #define ID_NEW_EXAMPLETABLE             4021
+#define ID_PREFERENCES_VR               4022
+#define ID_EDIT_VROPTIONS               4023
 #define IDM_NEW                         32768
 #define IDM_OPEN                        32769
 #define IDM_CLOSE                       32770
@@ -1185,7 +1187,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        652
-#define _APS_NEXT_COMMAND_VALUE         4022
+#define _APS_NEXT_COMMAND_VALUE         4024
 #define _APS_NEXT_CONTROL_VALUE         834
 #define _APS_NEXT_SYMED_VALUE           188
 #endif

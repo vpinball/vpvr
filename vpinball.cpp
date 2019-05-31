@@ -349,12 +349,12 @@ void VPinball::Init()
       int left, top, right, bottom;
       BOOL fMaximized;
 
-      const HRESULT hrleft = GetRegInt("Editor", "WindowLeft", &left);
-      const HRESULT hrtop = GetRegInt("Editor", "WindowTop", &top);
-      const HRESULT hrright = GetRegInt("Editor", "WindowRight", &right);
-      const HRESULT hrbottom = GetRegInt("Editor", "WindowBottom", &bottom);
+      const HRESULT hrleft = LoadValueInt("Editor", "WindowLeft", &left);
+      const HRESULT hrtop = LoadValueInt("Editor", "WindowTop", &top);
+      const HRESULT hrright = LoadValueInt("Editor", "WindowRight", &right);
+      const HRESULT hrbottom = LoadValueInt("Editor", "WindowBottom", &bottom);
 
-      const HRESULT hrmax = GetRegInt("Editor", "WindowMaximized", &fMaximized);
+      const HRESULT hrmax = LoadValueInt("Editor", "WindowMaximized", &fMaximized);
 
       if (hrleft == S_OK && hrtop == S_OK && hrright == S_OK && hrbottom == S_OK)
       {
@@ -425,12 +425,9 @@ void VPinball::Init()
 
 void VPinball::InitPinDirectSound()
 {
-   int DSidx1 = 0, DSidx2 = 0;
-   GetRegInt("Player", "SoundDevice", &DSidx1);
-   GetRegInt("Player", "SoundDeviceBG", &DSidx2);
-   int tmp = (int)m_pds.m_i3DSoundMode;
-   GetRegInt("Player", "Sound3D", &tmp);
-   m_pds.m_i3DSoundMode = (SoundConfigTypes)tmp;
+   int DSidx1 = LoadValueIntWithDefault("Player", "SoundDevice", 0);
+   int DSidx2 = LoadValueIntWithDefault("Player", "SoundDeviceBG", 0);
+   m_pds.m_i3DSoundMode = (SoundConfigTypes)LoadValueIntWithDefault("Player", "Sound3D", (int)m_pds.m_i3DSoundMode);
 
    m_pds.InitDirectSound(m_hwnd, false);						// init Direct Sound (in pinsound.cpp)
                                                          // If these are the same device, and we are not in 3d mode, just point the backglass device to the main one. 
@@ -502,9 +499,8 @@ void VPinball::SetAutoSaveMinutes(const int minutes)
 void VPinball::InitTools()
 {
    // was the properties panel open last time we used VP?
-   int state;
-   const HRESULT hr = GetRegInt("Editor", "PropertiesVisible", (int *)&state);
-   if ((hr == S_OK) && (state == 1))
+   const bool state = LoadValueBoolWithDefault("Editor", "PropertiesVisible", false);
+   if (state)
    {
       // if so then re-open it
       ParseCommand(ID_EDIT_PROPERTIES, m_hwnd, 1); //display
@@ -524,48 +520,31 @@ void VPinball::InitTools()
 ///</summary>
 void VPinball::InitRegValues()
 {
-   HRESULT hr;
+   const int deadz = LoadValueIntWithDefault("Player", "DeadZone", 0);
+   SaveValueInt("Player", "DeadZone", deadz);
 
-   int deadz;
-   deadz = GetRegIntWithDefault("Player", "DeadZone", 0);
-   SetRegValueInt("Player", "DeadZone", deadz);
+   m_fAlwaysDrawDragPoints = LoadValueBoolWithDefault("Editor", "ShowDragPoints", false);
+   m_fAlwaysDrawLightCenters = LoadValueBoolWithDefault("Editor", "DrawLightCenters", false);
+   m_gridSize = LoadValueIntWithDefault("Editor", "GridSize", 50);
 
-   m_fAlwaysDrawDragPoints = GetRegBoolWithDefault("Editor", "ShowDragPoints", false);
-   m_fAlwaysDrawLightCenters = GetRegBoolWithDefault("Editor", "DrawLightCenters", false);
-   m_gridSize = GetRegIntWithDefault("Editor", "GridSize", 50);
-
-   BOOL fAutoSave = GetRegIntWithDefault("Editor", "AutoSaveOn", fTrue);
-   m_fPropertiesFloating = !!GetRegIntWithDefault("Editor", "PropertiesFloating", fTrue);
+   const bool fAutoSave = LoadValueBoolWithDefault("Editor", "AutoSaveOn", true);
+   m_fPropertiesFloating = LoadValueBoolWithDefault("Editor", "PropertiesFloating", true);
 
    if (fAutoSave)
    {
-      m_autosaveTime = GetRegIntWithDefault("Editor", "AutoSaveTime", AUTOSAVE_DEFAULT_TIME);
+      m_autosaveTime = LoadValueIntWithDefault("Editor", "AutoSaveTime", AUTOSAVE_DEFAULT_TIME);
       SetAutoSaveMinutes(m_autosaveTime);
    }
    else
       m_autosaveTime = -1;
 
-   m_securitylevel = GetRegIntWithDefault("Player", "SecurityLevel", DEFAULT_SECURITY_LEVEL);
-   DWORD type = REG_DWORD;
-   hr = GetRegValue("Editor", "DefaultMaterialColor", &type, &g_pvp->dummyMaterial.m_cBase, 4);
-   if (FAILED(hr))
-      g_pvp->dummyMaterial.m_cBase = 0xB469FF;
+   m_securitylevel = LoadValueIntWithDefault("Player", "SecurityLevel", DEFAULT_SECURITY_LEVEL);
 
-   hr = GetRegValue("Editor", "ElementSelectColor", &type, &g_pvp->m_elemSelectColor, 4);
-   if (FAILED(hr))
-      g_pvp->m_elemSelectColor = 0x00FF0000;
-
-   hr = GetRegValue("Editor", "ElementSelectLockedColor", &type, &g_pvp->m_elemSelectLockedColor, 4);
-   if (FAILED(hr))
-      g_pvp->m_elemSelectLockedColor = 0x00A7726D;
-
-   hr = GetRegValue("Editor", "BackgroundColor", &type, &g_pvp->m_backgroundColor, 4);
-   if (FAILED(hr))
-      g_pvp->m_backgroundColor = 0x008D8D8D;
-
-   hr = GetRegValue("Editor", "FillColor", &type, &g_pvp->m_fillColor, 4);
-   if (FAILED(hr))
-      g_pvp->m_fillColor = 0x00B1CFB3;
+   g_pvp->dummyMaterial.m_cBase = LoadValueIntWithDefault("Editor", "DefaultMaterialColor", 0xB469FF);
+   g_pvp->m_elemSelectColor = LoadValueIntWithDefault("Editor", "ElementSelectColor", 0x00FF0000);
+   g_pvp->m_elemSelectLockedColor = LoadValueIntWithDefault("Editor", "ElementSelectLockedColor", 0x00A7726D);
+   g_pvp->m_backgroundColor = LoadValueIntWithDefault("Editor", "BackgroundColor", 0x008D8D8D);
+   g_pvp->m_fillColor = LoadValueIntWithDefault("Editor", "FillColor", 0x00B1CFB3);
 
    if (m_securitylevel < eSecurityNone || m_securitylevel > eSecurityNoControls)
       m_securitylevel = eSecurityNoControls;
@@ -576,11 +555,10 @@ void VPinball::InitRegValues()
       char szRegName[MAX_PATH];
       sprintf_s(szRegName, "TableFileName%d", i);
       m_szRecentTableList[i][0] = 0x00;
-      GetRegString("RecentDir", szRegName, m_szRecentTableList[i], MAX_PATH);
+      LoadValueString("RecentDir", szRegName, m_szRecentTableList[i], MAX_PATH);
    }
-   hr = GetRegValue("Editor", "Units", &type, &g_pvp->m_convertToUnit, 4);
-   if (FAILED(hr))
-      g_pvp->m_convertToUnit = 0;
+
+   g_pvp->m_convertToUnit = LoadValueIntWithDefault("Editor", "Units", 0);
 }
 
 ///<summary>
@@ -928,7 +906,7 @@ void VPinball::ParseCommand(size_t code, HWND hwnd, size_t notify)
       ptCur = GetActiveTable();
       if (ptCur)
       {
-         const int alwaysViewScript = GetRegIntWithDefault("Editor", "AlwaysViewScript", 0);
+         const int alwaysViewScript = LoadValueIntWithDefault("Editor", "AlwaysViewScript", 0);
 
          ptCur->m_pcv->SetVisible(alwaysViewScript || !(ptCur->m_pcv->m_visible && !ptCur->m_pcv->m_minimized));
 
@@ -954,7 +932,7 @@ void VPinball::ParseCommand(size_t code, HWND hwnd, size_t notify)
          break;
       }
 
-      SetRegValueBool("Editor", "PropertiesVisible", fShow);
+      SaveValueBool("Editor", "PropertiesVisible", fShow);
 
       if (!g_pplayer)
       {
@@ -1080,7 +1058,7 @@ void VPinball::ParseCommand(size_t code, HWND hwnd, size_t notify)
       {
          ptCur->m_renderSolid = (code == ID_VIEW_SOLID);
          ptCur->SetDirtyDraw();
-         SetRegValueBool("Editor", "RenderSolid", ptCur->m_renderSolid);
+         SaveValueBool("Editor", "RenderSolid", ptCur->m_renderSolid);
       }
       break;
    }
@@ -1661,7 +1639,7 @@ bool VPinball::LoadFile()
    ofn.lpstrDefExt = "vpx";
    ofn.Flags = OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY;
 
-   const HRESULT hr = GetRegString("RecentDir", "LoadDir", szInitialDir, MAXSTRING);
+   const HRESULT hr = LoadValueString("RecentDir", "LoadDir", szInitialDir, MAXSTRING);
    char szFoo[MAX_PATH];
    if (hr == S_OK)
    {
@@ -1744,7 +1722,7 @@ void VPinball::LoadFileName(char *szFileName)
       }
 
       // get the load path from the filename
-      SetRegValue("RecentDir", "LoadDir", REG_SZ, m_currentTablePath, lstrlen(m_currentTablePath));
+      SaveValueString("RecentDir", "LoadDir", m_currentTablePath);
 
       // make sure the load directory is the active directory
       SetCurrentDirectory(m_currentTablePath);
@@ -1961,7 +1939,7 @@ void VPinball::UpdateRecentFileList(char *szfilename)
          if (m_szRecentTableList[i][0] == 0x00) break;
          // write entry to the registry
          sprintf_s(szRegName, "TableFileName%d", i);
-         SetRegValue("RecentDir", szRegName, REG_SZ, m_szRecentTableList[i], lstrlen(m_szRecentTableList[i]) + 1);
+         SaveValueString("RecentDir", szRegName, m_szRecentTableList[i]);
       }
    }
 
@@ -2210,12 +2188,12 @@ void VPinball::OnClose()
 
       if (::GetWindowPlacement(m_hwnd, &winpl))
       {
-         SetRegValue("Editor", "WindowLeft", REG_DWORD, &winpl.rcNormalPosition.left, 4);
-         SetRegValue("Editor", "WindowTop", REG_DWORD, &winpl.rcNormalPosition.top, 4);
-         SetRegValue("Editor", "WindowRight", REG_DWORD, &winpl.rcNormalPosition.right, 4);
-         SetRegValue("Editor", "WindowBottom", REG_DWORD, &winpl.rcNormalPosition.bottom, 4);
+         SaveValueInt("Editor", "WindowLeft", winpl.rcNormalPosition.left);
+         SaveValueInt("Editor", "WindowTop", winpl.rcNormalPosition.top);
+         SaveValueInt("Editor", "WindowRight", winpl.rcNormalPosition.right);
+         SaveValueInt("Editor", "WindowBottom", winpl.rcNormalPosition.bottom);
 
-         SetRegValueBool("Editor", "WindowMaximized", !!::IsZoomed(m_hwnd));
+         SaveValueBool("Editor", "WindowMaximized", !!::IsZoomed(m_hwnd));
       }
       CWnd::OnClose();
    }
@@ -2712,7 +2690,7 @@ INT_PTR CALLBACK SecurityOptionsProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
    {
    case WM_INITDIALOG:
    {
-      HWND hwndParent = GetParent(hwndDlg);
+      const HWND hwndParent = GetParent(hwndDlg);
       RECT rcDlg;
       RECT rcMain;
       GetWindowRect(hwndParent, &rcMain);
@@ -2723,26 +2701,17 @@ INT_PTR CALLBACK SecurityOptionsProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
          (rcMain.bottom + rcMain.top) / 2 - (rcDlg.bottom - rcDlg.top) / 2,
          0, 0, SWP_NOOWNERZORDER | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE/* | SWP_NOMOVE*/);
 
-      int security;
-      HRESULT hr = GetRegInt("Player", "SecurityLevel", &security);
-      if (hr != S_OK)
-         security = DEFAULT_SECURITY_LEVEL;
+      int security = LoadValueIntWithDefault("Player", "SecurityLevel", DEFAULT_SECURITY_LEVEL);
 
       if (security < 0 || security > 4)
          security = 0;
 
       const int buttonid = rgDlgIDFromSecurityLevel[security];
 
-      HWND hwndCheck = GetDlgItem(hwndDlg, buttonid);
+      SendMessage(GetDlgItem(hwndDlg, buttonid), BM_SETCHECK, BST_CHECKED, 0);
 
-      SendMessage(hwndCheck, BM_SETCHECK, BST_CHECKED, 0);
-
-      HWND hwndDetectHang = GetDlgItem(hwndDlg, IDC_HANGDETECT);
-      int hangdetect;
-      hr = GetRegInt("Player", "DetectHang", &hangdetect);
-      if (hr != S_OK)
-         hangdetect = fFalse;
-      SendMessage(hwndDetectHang, BM_SETCHECK, hangdetect ? BST_CHECKED : BST_UNCHECKED, 0);
+      const bool hangdetect = LoadValueBoolWithDefault("Player", "DetectHang", false);
+      SendMessage(GetDlgItem(hwndDlg, IDC_HANGDETECT), BM_SETCHECK, hangdetect ? BST_CHECKED : BST_UNCHECKED, 0);
 
       return TRUE;
    }
@@ -2759,15 +2728,13 @@ INT_PTR CALLBACK SecurityOptionsProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPA
          {
             for (int i = 0; i < 5; i++)
             {
-               HWND hwndCheck = GetDlgItem(hwndDlg, rgDlgIDFromSecurityLevel[i]);
-               size_t checked = SendMessage(hwndCheck, BM_GETCHECK, 0, 0);
+               const size_t checked = SendMessage(GetDlgItem(hwndDlg, rgDlgIDFromSecurityLevel[i]), BM_GETCHECK, 0, 0);
                if (checked == BST_CHECKED)
-                  SetRegValue("Player", "SecurityLevel", REG_DWORD, &i, 4);
+                  SaveValueInt("Player", "SecurityLevel", i);
             }
 
-            HWND hwndCheck = GetDlgItem(hwndDlg, IDC_HANGDETECT);
-            size_t hangdetect = SendMessage(hwndCheck, BM_GETCHECK, 0, 0);
-            SetRegValue("Player", "DetectHang", REG_DWORD, &hangdetect, 4);
+            const size_t hangdetect = SendMessage(GetDlgItem(hwndDlg, IDC_HANGDETECT), BM_GETCHECK, 0, 0);
+            SaveValueInt("Player", "DetectHang", hangdetect);
 
             EndDialog(hwndDlg, TRUE);
          }
@@ -2856,7 +2823,7 @@ INT_PTR CALLBACK FontManagerProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
             ofn.lpstrDefExt = "ttf";
             ofn.Flags = OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY;
 
-            HRESULT hr = GetRegString("RecentDir", "FontDir", szInitialDir, MAXSTRING);
+            HRESULT hr = LoadValueString("RecentDir", "FontDir", szInitialDir, MAXSTRING);
             ofn.lpstrInitialDir = (hr == S_OK) ? szInitialDir : NULL;
 
             const int ret = GetOpenFileName(&ofn);
@@ -2864,7 +2831,7 @@ INT_PTR CALLBACK FontManagerProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM 
             {
                strcpy_s(szInitialDir, sizeof(szInitialDir), szFileName);
                szInitialDir[ofn.nFileOffset] = 0;
-               SetRegValue("RecentDir", "FontDir", REG_SZ, szInitialDir, lstrlen(szInitialDir));
+               SaveValueString("RecentDir", "FontDir", szInitialDir);
                pt->ImportFont(GetDlgItem(hwndDlg, IDC_SOUNDLIST), ofn.lpstrFile);
             }
          }
