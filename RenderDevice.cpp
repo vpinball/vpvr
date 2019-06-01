@@ -881,11 +881,11 @@ bool RenderDevice::LoadShaders()
    DWORD length = GetModuleFileName(NULL, glShaderPath, 256);
 
    if (m_stereo3D == STEREO_OFF) {
-      Shader::Defines = "#define eyes 1\n#define enable_VR false";
+      Shader::Defines = "#define eyes 1\n#define enable_VR 0";
    } else  if (m_stereo3D == STEREO_VR) {
-      Shader::Defines = "#define eyes 2\n#define enable_VR true";
+      Shader::Defines = "#define eyes 2\n#define enable_VR 1";
    } else {
-      Shader::Defines = "#define eyes 2\n#define enable_VR false";
+      Shader::Defines = "#define eyes 2\n#define enable_VR 0";
    }
 
    Shader::shaderPath = string(glShaderPath);
