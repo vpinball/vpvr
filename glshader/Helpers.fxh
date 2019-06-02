@@ -7,26 +7,6 @@ float sqr( float v)
     return v*v;
 }
 
-vec3 mul_w1( vec3 v,  mat4 m)
-{
-    return v.x*m[0].xyz + (v.y*m[1].xyz + (v.z*m[2].xyz + m[3].xyz));
-}
-
-vec3 mul_w1( vec3 v,  mat4x3 m)
-{
-    return v.x*m[0] + (v.y*m[1] + (v.z*m[2] + m[3]));
-}
-
-vec3 mul_w0( vec3 v,  mat4x3 m)
-{
-    return v.x*m[0] + v.y*m[1] + v.z*m[2];
-}
-
-vec4 mul_w0( vec4 v,  mat4 m)
-{
-    return v.x*m[0] + v.y*m[1] + v.z*m[2] + v.w*m[3];
-}
-
 float acos_approx( float v)
 {
      float x = abs(v);
