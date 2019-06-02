@@ -2093,6 +2093,7 @@ void RenderDevice::UpdateTexture(D3DTexture* const tex, BaseTexture* const surf,
    glBindTexture(GL_TEXTURE_2D, tex->texture);
    CHECKD3D(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, surf->width(), surf->height(), col_format, col_type, surf->data()));
    //CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, tex->format, surf->width(), surf->height(), 0, col_format, col_type, surf->data())); // Use TexStorage instead
+   CHECKD3D(glGenerateMipmap(GL_TEXTURE_2D)); // Generate mip-maps
    glBindTexture(GL_TEXTURE_2D, 0);
 #else
    IDirect3DTexture9* sysTex = CreateSystemTexture(surf, linearRGB);
@@ -2253,19 +2254,19 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
             break;
          case STEREO_TB:
          case STEREO_INT:
+            CHECKD3D(glViewport(0, 0, texture->width, texture->height / 2.0f)); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
             viewPorts[2] = viewPorts[6] = texture->width;
             viewPorts[3] = viewPorts[7] = texture->height/2.0f;
-            viewPorts[4] = 0.0f;
             viewPorts[5] = texture->height / 2.0f;
-            glViewportArrayv(0, 2, viewPorts);
+            CHECKD3D(glViewportArrayv(0, 2, viewPorts));
             break;
          case STEREO_SBS:
          case STEREO_VR:
+            CHECKD3D(glViewport(0, 0, texture->width / 2.0f, texture->height)); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
             viewPorts[2] = viewPorts[6] = texture->width / 2.0f;
             viewPorts[3] = viewPorts[7] = texture->height;
             viewPorts[4] = texture->width / 2.0f;
-            viewPorts[5] = 0.0f;
-            glViewportArrayv(0, 2, viewPorts);
+            CHECKD3D(glViewportArrayv(0, 2, viewPorts));
             break;
          }
    }
