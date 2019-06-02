@@ -268,7 +268,7 @@ void main() {
 
       if (fDisableLighting_top_below.y < 1.0)
           // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-          color.xyz += clamp(mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5, 0.0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
+          color.xyz += mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5, 0.0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
    }
 }
 
@@ -309,7 +309,7 @@ void main() {
 
 	  if (fDisableLighting_top_below.y < 1.0)
 		  // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-		  color.xyz += clamp(mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5, 0.).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
+		  color.xyz += mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5, 0.).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
    }
 }
 
