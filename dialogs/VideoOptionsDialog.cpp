@@ -258,7 +258,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
       controlHwnd = GetDlgItem(IDC_FXAACB).GetHwnd();
       AddToolTip("Enables post-processed Anti-Aliasing.\r\nThis delivers smoother images, at the cost of slight blurring.\r\n'Quality FXAA' and 'Quality SMAA' are recommended and lead to less artifacts,\nbut will harm performance on low-end graphics cards.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_AA_ALL_TABLES).GetHwnd();
-      AddToolTip("Enables brute-force 4x Anti-Aliasing (similar to DSR).\r\nThis delivers very good quality, but slows down performance significantly.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip("Enable 2x SuperSampling. Good AA for VR.\r\nThis delivers very good quality, but can slow down performance significantly.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_OVERWRITE_BALL_IMAGE_CHECK).GetHwnd();
       AddToolTip("When checked it overwrites the ball image/decal image(s) for every table.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
@@ -394,6 +394,17 @@ BOOL VideoOptionsDialog::OnInitDialog()
    SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Steam VR");
 #endif
    SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_SETCURSEL, stereo3D, 0);
+
+   if (stereo3D == STEREO_VR)
+   {
+      ::EnableWindow(GetDlgItem(IDC_FXAACB).GetHwnd(), FALSE);
+      ::EnableWindow(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), FALSE);
+   }
+   else
+   {
+      ::EnableWindow(GetDlgItem(IDC_FXAACB).GetHwnd(), TRUE);
+      ::EnableWindow(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), TRUE);
+   }
 
    const bool stereo3DY = LoadValueBoolWithDefault("Player", "Stereo3DYAxis", false);
    SendMessage(GetDlgItem(IDC_3D_STEREO_Y).GetHwnd(), BM_SETCHECK, stereo3DY ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -831,6 +842,16 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
    {
       int stereo3D = SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_GETCURSEL, 0, 0);
       if (stereo3D>=0) updateStereoVisibility(stereo3D);
+      if (stereo3D == STEREO_VR)
+      {
+         ::EnableWindow(GetDlgItem(IDC_FXAACB).GetHwnd(), FALSE);
+         ::EnableWindow(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), FALSE);
+      }
+      else
+      {
+         ::EnableWindow(GetDlgItem(IDC_FXAACB).GetHwnd(), TRUE);
+         ::EnableWindow(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), TRUE);
+      }
       break;
    }
    default:

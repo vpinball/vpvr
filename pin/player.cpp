@@ -1302,9 +1302,15 @@ HRESULT Player::Init(PinTable * const ptable, const HWND hwndProgress, const HWN
 
    int vsync = (m_stereo3D == STEREO_VR || m_ptable->m_TableAdaptiveVSync == -1) ? m_VSync : m_ptable->m_TableAdaptiveVSync;
 
+   // In VR we will ignore AA settings other than SuperSampling as well as Screenspace Reflections since they dont work
    const bool useAA = (m_AA && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
-   const unsigned int FXAA = (m_ptable->m_useFXAA == -1) ? m_FXAA : m_ptable->m_useFXAA;
-   const bool ss_refl = (m_ss_refl && (m_ptable->m_useSSR == -1)) || (m_ptable->m_useSSR == 1);
+   const unsigned int FXAA = (m_stereo3D == STEREO_VR) ? 0 : (m_ptable->m_useFXAA == -1) ? m_FXAA : m_ptable->m_useFXAA;
+   const bool ss_refl = (m_stereo3D == STEREO_VR) ? false : (m_ss_refl && (m_ptable->m_useSSR == -1)) || (m_ptable->m_useSSR == 1);
+   if (m_stereo3D == STEREO_VR)
+   {
+      m_FXAA = 0;
+      m_ss_refl = false;
+   }
 
    const int colordepth = LoadValueIntWithDefault("Player", "ColorDepth", 32);
 
