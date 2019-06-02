@@ -833,8 +833,6 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    if (video10bit && (m_FXAA == Quality_SMAA || m_FXAA == Standard_DLAA))
       ShowError("SMAA or DLAA post-processing AA should not be combined with 10bit-output rendering (will result in visible artifacts)!");
 
-   m_curIndexBuffer = 0;
-   m_curVertexBuffer = 0;
    currentDeclaration = NULL;
    //m_curShader = NULL;
 
@@ -1033,8 +1031,6 @@ RenderDevice::RenderDevice(HWND* const hwnd, const int width, const int height, 
       m_dwm_enabled = false;
    }
 
-   m_curIndexBuffer = 0;
-   m_curVertexBuffer = 0;
    currentDeclaration = NULL;
    //m_curShader = NULL;
 
@@ -2513,7 +2509,7 @@ void RenderDevice::DrawPrimitive(const PrimitveTypes type, const DWORD fvf, cons
    hr = m_pD3DDevice->DrawPrimitiveUP((D3DPRIMITIVETYPE)type, np, vertices, fvfToSize(fvf));
    if (FAILED(hr))
       ReportError("Fatal Error: DrawPrimitiveUP failed!", hr, __FILE__, __LINE__);
-   m_curVertexBuffer = 0;      // DrawPrimitiveUP sets the VB to NULL
+   vertexBuffer::bindNull();      // DrawPrimitiveUP sets the VB to NULL
 
    m_curDrawCalls++;
 #endif
@@ -2536,33 +2532,12 @@ void RenderDevice::DrawPrimitiveVB(const PrimitveTypes type, const DWORD fvf, Ve
    const unsigned int np = ComputePrimitiveCount(type, vertexCount);
    m_stats_drawn_triangles += np;
 
+   vb->bind();
 #ifdef ENABLE_SDL
-   CHECKD3D();
-   if (m_curVertexBuffer != vb)
-   {
-      CHECKD3D(glBindVertexArray(vb->Array));
-      CHECKD3D(glBindBuffer(GL_ARRAY_BUFFER, vb->Buffer));
-      m_curVertexBuffer = vb;
-   }
-
-   Shader::getCurrentShader()->setAttributeFormat(fvf);
-
-   if (stereo) {
-      CHECKD3D(glDrawArraysInstanced(type, startVertex, vertexCount, m_stereo3D != STEREO_OFF ? 2 : 1));
-   }
-   else {
-      CHECKD3D(glDrawArrays(type, startVertex, vertexCount));
-   }
+   CHECKD3D(glDrawArraysInstanced(type, vb->getOffset() + startVertex, vertexCount, m_stereo3D != STEREO_OFF ? 2 : 1));
 #else
    VertexDeclaration * declaration = fvfToDecl(fvf);
    SetVertexDeclaration(declaration);
-
-   if (m_curVertexBuffer != vb)
-   {
-      const unsigned int vsize = fvfToSize(fvf);
-      CHECKD3D(m_pD3DDevice->SetStreamSource(0, vb, 0, vsize));
-      m_curVertexBuffer = vb;
-   }
 
    HRESULT hr;
    hr = m_pD3DDevice->DrawPrimitive((D3DPRIMITIVETYPE)type, startVertex, np);
@@ -2576,42 +2551,15 @@ void RenderDevice::DrawIndexedPrimitiveVB(const PrimitveTypes type, const DWORD 
 {
    const unsigned int np = ComputePrimitiveCount(type, indexCount);
    m_stats_drawn_triangles += np;
+   vb->bind();
+   ib->bind();
 #ifdef ENABLE_SDL
-   if (m_curVertexBuffer != vb)
-   {
-      CHECKD3D(glBindVertexArray(vb->Array));
-      CHECKD3D(glBindBuffer(GL_ARRAY_BUFFER, vb->Buffer));
-      m_curVertexBuffer = vb;
-   }
 
-   if (m_curIndexBuffer != ib)
-   {
-      CHECKD3D(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ib->Buffer));
-      m_curIndexBuffer = ib;
-   }
-
-   Shader::getCurrentShader()->setAttributeFormat(fvf);
-
-   int offset = (ib->indexFormat == IndexBuffer::FMT_INDEX16 ? 2 : 4) * startIndex;
-   //CHECKD3D(glDrawElementsBaseVertex(type, indexCount, ib->indexFormat == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, startVertex));
-   CHECKD3D(glDrawElementsInstancedBaseVertex(type, indexCount, ib->indexFormat == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, m_stereo3D != STEREO_OFF ? 2 : 1, startVertex));
+   int offset = (ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? 2 : 4) * (ib->getOffset() + startIndex);
+   CHECKD3D(glDrawElementsInstancedBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, m_stereo3D != STEREO_OFF ? 2 : 1, vb->getOffset() + startVertex));
 #else
    VertexDeclaration * declaration = fvfToDecl(fvf);
    SetVertexDeclaration(declaration);
-
-   // bind the vertex and index buffers
-   if (m_curVertexBuffer != vb)
-   {
-      const unsigned int vsize = fvfToSize(fvf);
-      CHECKD3D(m_pD3DDevice->SetStreamSource(0, vb, 0, vsize));
-      m_curVertexBuffer = vb;
-   }
-
-   if (m_curIndexBuffer != ib)
-   {
-      CHECKD3D(m_pD3DDevice->SetIndices(ib));
-      m_curIndexBuffer = ib;
-   }
 
    // render
    CHECKD3D(m_pD3DDevice->DrawIndexedPrimitive((D3DPRIMITIVETYPE)type, startVertex, 0, vertexCount, startIndex, np));

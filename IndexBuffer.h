@@ -12,15 +12,12 @@ public:
       FMT_INDEX16 = 16,
       FMT_INDEX32 = 32
    };
-   GLuint Buffer;
-   Format indexFormat;
-   GLuint count;
-   GLuint offset;//unused ATM, but if we want to group multiple IndexBuffers later in one buffer we might need it
-   DWORD usage;
 
    void lock(const unsigned int offsetToLock, const unsigned int sizeToLock, void **dataBuffer, const DWORD flags);
    void unlock(void);
    void release(void);
+   void bind();
+   static void bindNull() { m_curIndexBuffer = nullptr; }
 
    static void CreateIndexBuffer(const unsigned int numIndices, const DWORD usage, const IndexBuffer::Format format, IndexBuffer **idxBuffer);
 
@@ -29,10 +26,23 @@ public:
    static IndexBuffer* CreateAndFillIndexBuffer(const std::vector<unsigned int>& indices);
    static IndexBuffer* CreateAndFillIndexBuffer(const std::vector<WORD>& indices);
 
+   GLuint getOffset() const { return offset; }
+   Format getIndexFormat() const { return indexFormat; }
 private:
+   GLuint count;
+   GLuint offset;
+   DWORD usage;
+
+   // CPU memory management
    unsigned int _offsetToLock;
    unsigned int _sizeToLock;
    void *_dataBuffer;
+
+   //GPU memory management
+   GLuint Buffer;
+   Format indexFormat;
+
+   static IndexBuffer* m_curIndexBuffer; // for caching
 };
 
 #else

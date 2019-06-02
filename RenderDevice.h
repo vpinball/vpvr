@@ -434,9 +434,7 @@ private:
    DWORD textureStateCache[8][TEXTURE_STATE_CACHE_SIZE];     // dto.
    DWORD textureSamplerCache[8][TEXTURE_SAMPLER_CACHE_SIZE]; // dto.
 
-   VertexBuffer* m_curVertexBuffer;       // for caching
-   IndexBuffer* m_curIndexBuffer;         // dto.
-   VertexDeclaration *currentDeclaration; // dto.
+   VertexDeclaration *currentDeclaration; // for caching
 
    static VertexBuffer *m_quadVertexBuffer;      // internal vb for rendering quads
 

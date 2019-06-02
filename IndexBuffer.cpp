@@ -2,6 +2,8 @@
 #include "IndexBuffer.h"
 #include "RenderDevice.h"
 
+IndexBuffer* IndexBuffer::m_curIndexBuffer = nullptr;
+
 void IndexBuffer::CreateIndexBuffer(const unsigned int numIndices, const DWORD usage, const IndexBuffer::Format format, IndexBuffer **idxBuffer)
 {
 #ifdef ENABLE_SDL
@@ -141,3 +143,16 @@ void IndexBuffer::setD3DDevice(IDirect3DDevice9* pD3DDevice) {
    m_pD3DDevice = pD3DDevice;
 }
 #endif
+
+void IndexBuffer::bind()
+{
+#ifdef ENABLE_SDL
+   if (m_curIndexBuffer != this)
+   {
+      CHECKD3D(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->Buffer));
+      m_curIndexBuffer = this;
+   }
+#else
+   if (m_curIndexBuffer != ib)   {      CHECKD3D(m_pD3DDevice->SetIndices(ib));      m_curIndexBuffer = ib;   }
+#endif
+}

@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "VertexBuffer.h"
 #include "RenderDevice.h"
+#include "Shader.h"
 
 static unsigned int fvfToSize(const DWORD fvf)
 {
@@ -16,41 +17,7 @@ static unsigned int fvfToSize(const DWORD fvf)
    }
 }
 
-#ifdef ENABLE_SDL
-//TODO get all this stuff from here, RenderDevice, def.h and FileIO to one place. And reduce calls for creating/updating meshes to one for all objects (e.g. bumper).
-void setVertexAttribPointer(const DWORD fvf) {
-   uintptr_t offset = 0;
-   switch (fvf)
-   {
-   case MY_D3DFVF_NOTEX2_VERTEX:             //VertexNormalTexelElement and Vertex3D_NoTex2
-   case MY_D3DTRANSFORMED_NOTEX2_VERTEX:     //VertexTrafoTexelElement and Vertex3D_NoTex2
-      CHECKD3D(glEnableVertexAttribArray(0));//Position
-      CHECKD3D(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (const void *)offset));//Position
-      offset += 3;
-      CHECKD3D(glEnableVertexAttribArray(1));//Normals
-      CHECKD3D(glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (const void *)offset));//Normals
-      offset += 3;
-      CHECKD3D(glEnableVertexAttribArray(2));//Texture
-      CHECKD3D(glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (const void *)offset));//Texture
-      CHECKD3D(glEnableVertexAttribArray(0));//Position
-      CHECKD3D(glEnableVertexAttribArray(1));//Normals
-      CHECKD3D(glDisableVertexAttribArray(2));//Texture
-      break;
-   case MY_D3DFVF_TEX:     //VertexTexelElement and Vertex3D_TexelOnly
-      CHECKD3D(glEnableVertexAttribArray(0));//Position
-      CHECKD3D(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (const void *)offset));//Position
-      offset += 3;
-      CHECKD3D(glEnableVertexAttribArray(2));//Texture
-      CHECKD3D(glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (const void *)offset));//Texture
-      CHECKD3D(glEnableVertexAttribArray(0));//Position
-      CHECKD3D(glEnableVertexAttribArray(2));//Texture
-      break;
-   default:
-      ShowError("Cannot set unknown Vertex Attribute Pointer.");
-   }
-}
-
-#endif
+VertexBuffer* VertexBuffer::m_curVertexBuffer = nullptr;
 
 void VertexBuffer::CreateVertexBuffer(const unsigned int vertexCount, const DWORD usage, const DWORD fvf, VertexBuffer **vBuffer)
 {
@@ -113,7 +80,6 @@ void VertexBuffer::unlock()
    else {
       CHECKD3D(glBufferData(GL_ARRAY_BUFFER, sizePerVertex*count, _dataBuffer, usage));
    }
-//   setVertexAttribPointer(fvf);
    CHECKD3D(glBindBuffer(GL_ARRAY_BUFFER, 0));
    CHECKD3D(glBindVertexArray(0));
    free(_dataBuffer);
@@ -144,3 +110,23 @@ void VertexBuffer::setD3DDevice(IDirect3DDevice9* pD3DDevice) {
    m_pD3DDevice = pD3DDevice;
 }
 #endif
+
+void VertexBuffer::bind()
+{
+#ifdef ENABLE_SDL
+   if (m_curVertexBuffer != this)
+   {
+      CHECKD3D(glBindVertexArray(this->Array));
+      CHECKD3D(glBindBuffer(GL_ARRAY_BUFFER, this->Buffer));
+      m_curVertexBuffer = this;
+   }
+   Shader::getCurrentShader()->setAttributeFormat(fvf);
+#else
+   if (m_curVertexBuffer != vb)
+   {
+      const unsigned int vsize = fvfToSize(fvf);
+      CHECKD3D(m_pD3DDevice->SetStreamSource(0, vb, 0, vsize));
+      m_curVertexBuffer = vb;
+   }
+#endif
+}

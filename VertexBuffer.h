@@ -13,24 +13,34 @@ public:
       NOOVERWRITE,
       DISCARDCONTENTS = D3DLOCK_DISCARD
    };
-   GLuint Buffer;
-   GLuint Array;
-   GLuint count;
-   GLuint sizePerVertex;
-   DWORD fvf;
-   GLuint offset;//unused ATM, but if we want to group multiple IndexBuffers later in one buffer we might need it
-   DWORD usage;
 
    void lock(const unsigned int offsetToLock, const unsigned int sizeToLock, void **dataBuffer, const DWORD flags);
    void unlock(void);
    void release(void);
+   void bind();
+   static void bindNull() { m_curVertexBuffer = nullptr; }
 
    static void CreateVertexBuffer(const unsigned int vertexCount, const DWORD usage, const DWORD fvf, VertexBuffer **vBuffer);
 
+   GLuint getOffset() const { return offset; }
 private:
+   GLuint count;
+   GLuint sizePerVertex;
+   DWORD fvf;
+   DWORD usage;
+
+   // CPU memory management
    unsigned int _offsetToLock;
    unsigned int _sizeToLock;
    void *_dataBuffer;
+
+   //GPU memory management
+   GLuint Buffer;
+   GLuint Array;
+   GLuint offset;//unused ATM, but if we want to group multiple IndexBuffers later in one buffer we might need it
+
+   static VertexBuffer* m_curVertexBuffer; // for caching
+
 };
 
 
