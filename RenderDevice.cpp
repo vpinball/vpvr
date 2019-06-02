@@ -2555,7 +2555,7 @@ void RenderDevice::DrawIndexedPrimitiveVB(const PrimitveTypes type, const DWORD 
    ib->bind();
 #ifdef ENABLE_SDL
 
-   int offset = (ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? 2 : 4) * (ib->getOffset() + startIndex);
+   int offset = (ib->getIndexFormat() == ib->getOffset() + IndexBuffer::FMT_INDEX16 ? 2 : 4) * startIndex;
    CHECKD3D(glDrawElementsInstancedBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, m_stereo3D != STEREO_OFF ? 2 : 1, vb->getOffset() + startVertex));
 #else
    VertexDeclaration * declaration = fvfToDecl(fvf);

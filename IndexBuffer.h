@@ -28,21 +28,28 @@ public:
 
    GLuint getOffset() const { return offset; }
    Format getIndexFormat() const { return indexFormat; }
+   static void UploadBuffers();
 private:
    GLuint count;
+   GLuint size;
    GLuint offset;
    DWORD usage;
+   bool isUploaded;
+   bool sharedBuffer;
 
    // CPU memory management
-   unsigned int _offsetToLock;
-   unsigned int _sizeToLock;
-   void *_dataBuffer;
+   unsigned int offsetToLock;
+   unsigned int sizeToLock;
+   void *dataBuffer;
 
    //GPU memory management
    GLuint Buffer;
    Format indexFormat;
 
    static IndexBuffer* m_curIndexBuffer; // for caching
+   static std::vector<IndexBuffer*> notUploadedBuffers;
+   void UploadData(bool freeData);
+   void addToNotUploadedBuffers(const void* indices = nullptr);
 };
 
 #else

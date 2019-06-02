@@ -23,16 +23,20 @@ public:
    static void CreateVertexBuffer(const unsigned int vertexCount, const DWORD usage, const DWORD fvf, VertexBuffer **vBuffer);
 
    GLuint getOffset() const { return offset; }
+   static void UploadBuffers();
 private:
    GLuint count;
+   GLuint size;
    GLuint sizePerVertex;
    DWORD fvf;
    DWORD usage;
+   bool isUploaded;
+   bool sharedBuffer;
 
    // CPU memory management
-   unsigned int _offsetToLock;
-   unsigned int _sizeToLock;
-   void *_dataBuffer;
+   unsigned int offsetToLock;
+   unsigned int sizeToLock;
+   void *dataBuffer;
 
    //GPU memory management
    GLuint Buffer;
@@ -40,7 +44,9 @@ private:
    GLuint offset;//unused ATM, but if we want to group multiple IndexBuffers later in one buffer we might need it
 
    static VertexBuffer* m_curVertexBuffer; // for caching
-
+   static std::vector<VertexBuffer*> notUploadedBuffers;
+   void UploadData();
+   void addToNotUploadedBuffers();
 };
 
 

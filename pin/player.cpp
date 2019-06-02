@@ -1676,7 +1676,8 @@ HRESULT Player::Init(PinTable * const ptable, const HWND hwndProgress, const HWN
 #ifdef FPS
    m_limiter.Init(m_pin3d.m_pd3dPrimaryDevice, m_maxPrerenderedFrames);
 #endif
-
+   VertexBuffer::UploadBuffers();
+   IndexBuffer::UploadBuffers();
    Render(); //!! why here already? potentially not all initialized yet??
 
 #if (_WIN32_WINNT >= 0x0500)
