@@ -2377,9 +2377,10 @@ void RenderDevice::SetRenderStateCulling(RenderStateValue cull) {
      CHECKD3D(glDisable(GL_CULL_FACE));
    }
    else {
-      if (renderStateCache[RenderStates::CULLMODE] == CULL_NONE)
+      //if (renderStateCache[RenderStates::CULLMODE] == CULL_NONE) // If enabled culling will not always be enabled correctly?!
          CHECKD3D(glEnable(GL_CULL_FACE));
       CHECKD3D(glFrontFace(cull));
+      CHECKD3D(glCullFace(GL_FRONT));
    }
 #else
    CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)RenderStates::CULLMODE, cull));
