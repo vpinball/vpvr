@@ -1488,9 +1488,6 @@ PinTable::PinTable()
 
 void PinTable::ReadAccelerometerCalibration()
 {
-   HRESULT hr;
-   int tmp;
-
    m_tblAccelerometer = LoadValueBoolWithDefault("Player", "PBWEnabled", true); // true if electronic accelerometer enabled
    m_tblAccelNormalMount = LoadValueBoolWithDefault("Player", "PBWNormalMount", true); // true is normal mounting (left hand coordinates)
 
@@ -1502,12 +1499,11 @@ void PinTable::ReadAccelerometerCalibration()
    m_tblAccelAmpX = dequantizeUnsignedPercentNoClamp(LoadValueIntWithDefault("Player", "PBWAccelGainX", 150));
    m_tblAccelAmpY = dequantizeUnsignedPercentNoClamp(LoadValueIntWithDefault("Player", "PBWAccelGainY", 150));
 
-   m_tblAccelMaxX = LoadValueIntWithDefault("Player", "PBWAccelMaxX", JOYRANGEMX * 100) / 100;
-   m_tblAccelMaxY = LoadValueIntWithDefault("Player", "PBWAccelMaxY", JOYRANGEMX * 100) / 100;
+   m_tblAccelMaxX = LoadValueIntWithDefault("Player", "PBWAccelMaxX", 100) * JOYRANGEMX / 100;
+   m_tblAccelMaxY = LoadValueIntWithDefault("Player", "PBWAccelMaxY", 100) * JOYRANGEMX / 100;
 
    // bug!! If tilt sensitiivty is not set, it's supposed to disable analog tilting, see KeysConfigDialog.cpp
-   F32 tiltsens = LoadValueIntWithDefault("Player", "TiltSensitivity", 0.40f) * (float)(1.0 / 1000.0);
-   plumb_set_sensitivity(tiltsens);
+   plumb_set_sensitivity((float)LoadValueIntWithDefault("Player", "TiltSensitivity", 0.40f) * (float)(1.0 / 1000.0));
 
    if (g_pplayer)
       g_pplayer->m_pininput.LoadSettings();
