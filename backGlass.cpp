@@ -247,9 +247,10 @@ void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DM
          float dmd_height = backglass_scale * scale * (float)backglass_grill_height / (float)backglass_width;
          float dmd_width = dmd_height / (float)(g_pplayer->m_texdmd->height()) * (float)(g_pplayer->m_texdmd->width());
          float dmd_x = tableWidth * (0.5f - dmd_width / 2.0f);
-         float dmd_y = tableWidth * (float)backglass_grill_height*(0.5f - scale / 2.0f) / (float)backglass_width;
+         float dmd_y = (tableWidth * (float)backglass_grill_height*(0.5f - scale / 2.0f) / (float)backglass_width);
          m_pd3dDevice->DMDShader->SetVector("quadOffsetScale", dmd_x, dmd_y, dmd_width, dmd_height);
          m_pd3dDevice->SetRenderState(RenderDevice::ZENABLE, FALSE);
+         m_pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
          zDisabled = true;
       }
       else if (m_pd3dDevice->m_stereo3D == STEREO_VR) {//Place it somewhere at the bottom
