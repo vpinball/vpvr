@@ -724,8 +724,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_Buf_height = fbHeight;
       m_Buf_widthBlur = m_Buf_width / 3;
       m_Buf_heightBlur = m_Buf_height / 3;
-      m_Buf_width = m_Buf_width * (m_useAA ? 2 : 1);
-      m_Buf_height = m_Buf_height * (m_useAA ? 2 : 1);
+      m_Buf_width = m_Buf_width * (m_useAA ? 1.5 : 1);
+      m_Buf_height = m_Buf_height * (m_useAA ? 1.5 : 1);
       break;
    case STEREO_TB:
    case STEREO_INT:
@@ -733,16 +733,16 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_Buf_height = fbHeight * 2;
       m_Buf_widthBlur = m_Buf_width / 3;
       m_Buf_heightBlur = m_Buf_height / 3;
-      m_Buf_width = m_Buf_width * (m_useAA ? 2 : 1);
-      m_Buf_height = m_Buf_height * (m_useAA ? 2 : 1);
+      m_Buf_width = m_Buf_width * (m_useAA ? 1.5 : 1);
+      m_Buf_height = m_Buf_height * (m_useAA ? 1.5 : 1);
       break;
    case STEREO_SBS:
       m_Buf_width = fbWidth * 2;
       m_Buf_height = fbHeight;
       m_Buf_widthBlur = m_Buf_width / 3;
       m_Buf_heightBlur = m_Buf_height / 3;
-      m_Buf_width = m_Buf_width * (m_useAA ? 2 : 1);
-      m_Buf_height = m_Buf_height * (m_useAA ? 2 : 1);
+      m_Buf_width = m_Buf_width * (m_useAA ? 1.5 : 1);
+      m_Buf_height = m_Buf_height * (m_useAA ? 1.5 : 1);
       break;
 #ifdef ENABLE_VR
    case STEREO_VR:
