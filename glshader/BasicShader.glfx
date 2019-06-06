@@ -174,7 +174,6 @@ void main()
 		//Custom
 		tex01 = tex01_gs[i];
       tex03 = tex03_gs[i];
-      //tex03 = gl_Position.xy/gl_Position.w;
 		worldPos = worldPos_gs[i];
 		normal = normal_gs[i];
 		//Default
@@ -202,7 +201,6 @@ void main()
       gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
 		//Custom
       tex03 = tex03_gs[i];
-      //tex03 = gl_Position.xy/gl_Position.w;
 		worldPos = worldPos_gs[i];
 		normal = normal_gs[i];
 		//Default
@@ -341,7 +339,7 @@ void main() {
 
 	  if (fDisableLighting_top_below.y < 1.0)
 		  // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-		  color.xyz += clamp(mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5, 0.).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?color.xyz += clamp(mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5, 0.).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
+		  color.xyz += clamp(mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5, 0.).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
    }
 }
 
