@@ -2254,6 +2254,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
             CHECKD3D(glViewport(0, 0, texture->width, texture->height / 2.0f)); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
             viewPorts[2] = viewPorts[6] = texture->width;
             viewPorts[3] = viewPorts[7] = texture->height/2.0f;
+            viewPorts[4] = 0.0f;
             viewPorts[5] = texture->height / 2.0f;
             CHECKD3D(glViewportArrayv(0, 2, viewPorts));
             lightShader->SetBool("ignoreStereo", false);
@@ -2264,6 +2265,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
             viewPorts[2] = viewPorts[6] = texture->width / 2.0f;
             viewPorts[3] = viewPorts[7] = texture->height;
             viewPorts[4] = texture->width / 2.0f;
+            viewPorts[5] = 0.0f;
             CHECKD3D(glViewportArrayv(0, 2, viewPorts));
             lightShader->SetBool("ignoreStereo", false);
             break;
