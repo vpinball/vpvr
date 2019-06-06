@@ -9,6 +9,10 @@ uniform vec4 backBoxSize; //xy=backbox location relative to rear left edge of th
 uniform vec4 vColor_Intensity;
 uniform vec3 vRes_Alpha;
 
+layout(std140) uniform matrixBlock {
+   mat4 matWorldViewProj[eyes];
+};
+
 //!! split into pure sprite & pure DMD?
 
 #include "Helpers.fxh"
@@ -17,15 +21,17 @@ uniform vec3 vRes_Alpha;
 
 out int instanceID;
 
-layout(std140) uniform matrixBlock {
-mat4 matWorldViewProj[eyes];};
-
 ////GEOMETRY
 #extension GL_ARB_viewport_array : enable
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
-in
-int instanceID[];
+#if eyes == 1
+   layout(invocations = 1) in;
+#else
+   layout(invocations = 2) in;
+#endif
+
+in int instanceID[];
 
 ////FRAGMENT
 
@@ -46,10 +52,7 @@ out vec2 tex0_gs;
 
 void main()
 {
-    instanceID = gl_InstanceID;
-    gl_Position = (matWorldViewProj[gl_InstanceID] *
-                   vec4((vPosition.x*backBoxSize.z*quadOffsetScale.z+quadOffsetScale.x+backBoxSize.x),0.0,
-				   (vPosition.y*quadOffsetScale.w*backBoxSize.w+quadOffsetScale.y+backBoxSize.y),1.0));
+    gl_Position = vec4(vPosition, 1.0);
     tex0_gs = vec2(tc.x, tc.y) * quadOffsetScaleTex.zw + quadOffsetScaleTex.xy;
 }
 
@@ -62,9 +65,8 @@ out vec2 tex0_gs;
 
 void main()
 {
-    instanceID = gl_InstanceID;
-    gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition, 1.0));
-    tex0_gs = tc;
+   gl_Position = vec4(vPosition, 1.0);
+   tex0_gs = tc;
 }
 
 ////gs_simple_main
@@ -74,15 +76,35 @@ out vec2 tex0;
 
 void main()
 {
-    gl_ViewportIndex = instanceID[0];
-    for (int i = 0; i < 3; i++)
-    {
-		//Default
-        gl_Position = gl_in[i].gl_Position;
-		//Custom
-        tex0 = tex0_gs[i];
-		//Default
-        EmitVertex();
+   gl_ViewportIndex = gl_InvocationID;
+   for (int i=0;i<gl_in.length();i++) {
+      //Default
+      gl_Position = (matWorldViewProj[gl_InvocationID] *
+                     vec4((gl_in[i].gl_Position.x*backBoxSize.z*quadOffsetScale.z+quadOffsetScale.x+backBoxSize.x),0.0,
+                     (gl_in[i].gl_Position.y*quadOffsetScale.w*backBoxSize.w+quadOffsetScale.y+backBoxSize.y),1.0));
+      //Custom
+      tex0 = tex0_gs[i];
+      //Default
+      EmitVertex();
+   }
+   EndPrimitive();
+}
+
+////gs_simple_world
+
+in vec2 tex0_gs[];
+out vec2 tex0;
+
+void main()
+{
+   gl_ViewportIndex = gl_InvocationID;
+   for (int i=0;i<gl_in.length();i++) {
+      //Default
+      gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
+      //Custom
+      tex0 = tex0_gs[i];
+      //Default
+      EmitVertex();
     }
     EndPrimitive();
 }
@@ -140,7 +162,7 @@ in vec2 tex0;
 
 void main()
 {
-    vec4 l = texture(Texture0, tex0);
+    vec4 l = textureLod(Texture0, tex0, 0);
 
     color = vec4(InvToneMap(InvGamma(l.xyz * vColor_Intensity.xyz * vColor_Intensity.w)), l.w); //!! meh, this sucks a bit performance-wise, but how to avoid this when doing fullscreen-tonemap/gamma without stencil and depth read?
 }
@@ -155,8 +177,8 @@ void main()
 ////TECHNIQUES
 
 basic_DMD:P0:vs_main():gs_simple_main():ps_main_DMD()
-basic_DMD_world:P0:vs_simple_world():gs_simple_main():ps_main_DMD()
+basic_DMD_world:P0:vs_simple_world():gs_simple_world():ps_main_DMD()
 basic_noDMD:P0:vs_main():gs_simple_main():ps_main_noDMD()
-basic_noDMD_world:P0:vs_simple_world():gs_simple_main():ps_main_noDMD()
+basic_noDMD_world:P0:vs_simple_world():gs_simple_world():ps_main_noDMD()
 basic_noDMD_notex:P0:vs_main():gs_simple_main():ps_main_noDMD_notex()
 

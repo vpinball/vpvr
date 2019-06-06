@@ -1,5 +1,5 @@
 ////GLOBAL
-#version 330
+#version 400
 
 ////DEFINES
 
@@ -11,11 +11,9 @@
 #define Filter_Multiply	3.
 #define Filter_Screen   4.
 
-////VERTEX
-
-// transformation matrices
-out int instanceID;
 layout(std140) uniform matrixBlock { mat4 matWorldViewProj[eyes];};
+
+////VERTEX
 
 in vec3 vPosition;
 in vec2 tc;
@@ -26,7 +24,11 @@ out vec2 tex0_gs;
 #extension GL_ARB_viewport_array : enable
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
-in int instanceID[];
+#if (eyes == 1)
+   layout(invocations = 1) in;
+#else
+   layout(invocations = 2) in;
+#endif
 
 ////FRAGMENT
 
@@ -45,8 +47,7 @@ out vec4 color;
 
 void main()
 {
-   instanceID = gl_InstanceID;
-   gl_Position = (matWorldViewProj[gl_InstanceID] * vec4(vPosition, 1.0));
+   gl_Position = vec4(vPosition, 1.0);
    tex0_gs = tc;
 }
 
@@ -57,10 +58,10 @@ out vec2 tex0;
 
 void main()
 {
-    gl_ViewportIndex = instanceID[0];
-	for (int i=0;i<3;i++) {
+   gl_ViewportIndex = gl_InvocationID;
+	for (int i=0;i<gl_in.length();i++) {
 		//Default
-		gl_Position = gl_in[i].gl_Position;
+      gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
 		//Custom
 		tex0 = tex0_gs[i];
 		//Default
@@ -78,12 +79,12 @@ void main()
 
    if (flasherMode < 2.) // Mode 0 & 1
    {
-      pixel1 = tex2D(Texture0, tex0);
+      pixel1 = textureLod(Texture0, tex0, 0);
       stop = (pixel1.a <= alphaTestValueAB_filterMode_addBlend.x);
    }
    if (flasherMode == 1.)
    {
-      pixel2 = tex2D(Texture1, tex0);
+      pixel2 = textureLod(Texture1, tex0, 0);
       stop = (stop || pixel2.a <= alphaTestValueAB_filterMode_addBlend.y);
    }
 

@@ -1,5 +1,5 @@
 ////GLOBAL
-#version 330
+#version 400
 
 ////DEFINES
 
@@ -17,18 +17,22 @@ layout(std140) uniform matrixBlock {
 	mat4 matWorldViewProj[eyes];
 };
 
+uniform bool ignoreStereo = false; // Must be able to force only one invocation for drawing bulb light texture
+
 ////VERTEX
-
-out int instanceID;
-
-// transformation matrices
-//mat4 matViewInverseInverseTranspose; // matView used instead and multiplied from other side
 
 ////GEOMETRY
 #extension GL_ARB_viewport_array : enable
+
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
-in int instanceID[];
+
+// Use geometry invocations for stereo rendering
+#if (eyes == 1)
+   layout(invocations = 1) in;
+#else
+   layout(invocations = 2) in;
+#endif
 
 ////FRAGMENT
 
@@ -75,7 +79,7 @@ mat3 TBN_trafo(vec3 N, vec3 V, vec2 uv)
 
 vec3 normal_map(vec3 N, vec3 V, vec2 uv)
 {
-    return normalize((TBN_trafo(N, V, uv) * (texture(Texture4, uv).xyz * (255./127.) - (128./127.))));
+    return normalize((TBN_trafo(N, V, uv) * (textureLod(Texture4, uv, 0).xyz * (255./127.) - (128./127.))));
 }
 
 //------------------------------------
@@ -96,8 +100,7 @@ out vec3 normal_gs;
 
 void main()
 { 
-   instanceID = gl_InstanceID;
-   gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition, 1.0));
+   gl_Position = vec4(vPosition, 1.0);
    tex01_gs = tc;
    vec4 bulbPos = (matWorldViewProj[0]*vec4(vPosition, 1.0));
    tex03_gs = vec2(bulbPos.xy/bulbPos.w);
@@ -117,8 +120,7 @@ out vec3 normal_gs;
 
 void main()
 {
-   instanceID = gl_InstanceID;
-   gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition, 1.0));
+   gl_Position = vec4(vPosition, 1.0);
    vec4 bulbPos = (matWorldViewProj[0]*vec4(vPosition, 1.0));
    tex03_gs = vec2(bulbPos.xy/bulbPos.w);
    worldPos_gs = (matWorldView*vec4(vPosition, 1.0)).xyz;
@@ -131,8 +133,7 @@ in vec3 vPosition;
 
 void main()
 { 
-   instanceID = gl_InstanceID;
-   gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition, 1.0));
+   gl_Position = vec4(vPosition, 1.0);
 }
 
 ////vs_depth_only_main_with_texture
@@ -144,8 +145,7 @@ out vec2 tex0_gs;
 
 void main()
 {
-   instanceID = gl_InstanceID;
-   gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition, 1.0));
+   gl_Position = vec4(vPosition, 1.0);
    tex0_gs = tc;
 }
 
@@ -167,13 +167,14 @@ out int gl_ViewportIndex;
 
 void main()
 {
-    gl_ViewportIndex = instanceID[0];
+   gl_ViewportIndex = gl_InvocationID;
 	for (int i=0;i<gl_in.length();i++) {
 		//Default
-		gl_Position = gl_in[i].gl_Position;
+      gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
 		//Custom
 		tex01 = tex01_gs[i];
       tex03 = tex03_gs[i];
+      //tex03 = gl_Position.xy/gl_Position.w;
 		worldPos = worldPos_gs[i];
 		normal = normal_gs[i];
 		//Default
@@ -195,10 +196,41 @@ out vec3 normal;
 
 void main()
 {
-    gl_ViewportIndex = instanceID[0];
+   gl_ViewportIndex = gl_InvocationID;
 	for (int i=0;i<gl_in.length();i++) {
 		//Default
-		gl_Position = gl_in[i].gl_Position;
+      gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
+		//Custom
+      tex03 = tex03_gs[i];
+      //tex03 = gl_Position.xy/gl_Position.w;
+		worldPos = worldPos_gs[i];
+		normal = normal_gs[i];
+		//Default
+		EmitVertex();
+	}
+    EndPrimitive();
+}
+
+////gs_kicker_main
+
+in vec2 tex03_gs[];
+out vec2 tex03;
+
+in vec3 worldPos_gs[];
+out vec3 worldPos;
+
+in vec3 normal_gs[];
+out vec3 normal;
+
+void main()
+{
+   gl_ViewportIndex = gl_InvocationID;
+	for (int i=0;i<gl_in.length();i++) {
+		//Default
+      vec4 P2 = gl_in[i].gl_Position;
+      P2.z -= 30.0f*1.0f; // 1.0f = fKickerScale
+      gl_Position.xyw = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position).xyw;
+      gl_Position.z = (matWorldViewProj[gl_InvocationID]*P2).z;
 		//Custom
       tex03 = tex03_gs[i];
 		worldPos = worldPos_gs[i];
@@ -213,10 +245,10 @@ void main()
 
 void main()
 {
-    gl_ViewportIndex = instanceID[0];
+   gl_ViewportIndex = gl_InvocationID;
 	for (int i=0;i<gl_in.length();i++) {
 		//Default
-		gl_Position = gl_in[i].gl_Position;
+      gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);;
 		//Custom
 		//Default
 		EmitVertex();
@@ -231,10 +263,10 @@ out vec2 tex0;
 
 void main()
 {
-    gl_ViewportIndex = instanceID[0];
+   gl_ViewportIndex = gl_InvocationID;
 	for (int i=0;i<gl_in.length();i++) {
 		//Default
-		gl_Position = gl_in[i].gl_Position;
+      gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
 		//Custom
 		tex0 = tex0_gs[i];
 		//Default
@@ -280,7 +312,7 @@ in vec3 worldPos;
 in vec3 normal;
 
 void main() {
-   vec4 pixel = textureLod(Texture0, tex01, 0.);
+   vec4 pixel = textureLod(Texture0, tex01, 0);
 
       if (pixel.a <= fAlphaTestValue)
          discard;           //stop the pixel shader if alpha test should reject pixel
@@ -309,7 +341,7 @@ void main() {
 
 	  if (fDisableLighting_top_below.y < 1.0)
 		  // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-		  color.xyz += clamp(mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5, 0.).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
+		  color.xyz += clamp(mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5, 0.).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?color.xyz += clamp(mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5, 0.).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
    }
 }
 
@@ -324,7 +356,7 @@ void main() {
 in vec2 tex0;
 
 void main() {
-   if (texture(Texture0, tex0).a <= fAlphaTestValue)
+   if (textureLod(Texture0, tex0, 0).a <= fAlphaTestValue)
       discard;           //stop the pixel shader if alpha test should reject pixel
 
    color = vec4(0., 0., 0., 1.);
@@ -343,7 +375,7 @@ void main() {
 in vec2 tex01;
 
 void main() {
-   vec4 pixel = texture(Texture0, tex01);
+   vec4 pixel = textureLod(Texture0, tex01, 0);
 
    if (pixel.a <= fAlphaTestValue) discard;
 
@@ -368,14 +400,8 @@ out vec3 normal_gs;
 out vec2 tex03_gs;
 
 void main() {
-	instanceID = gl_InstanceID;
 	vec4 vPosition4 = vec4(vPosition,1.0);
-	float fKickerScale = 1.;
-
-   gl_Position.xyw = (matWorldViewProj[gl_InstanceID]*vPosition4).xyw;
-   vec4 P2 = vPosition4;
-   P2.z -= 30.0f*fKickerScale;
-   gl_Position.z = (matWorldViewProj[gl_InstanceID]*P2).z;
+   gl_Position = vPosition4;
    vec4 bulbPos = (matWorldViewProj[0]*vec4(vPosition, 1.0));
    tex03_gs = vec2(bulbPos.xy/bulbPos.w);
    worldPos_gs = (matWorldView * vPosition4).xyz;
@@ -409,6 +435,6 @@ bg_decal_with_texture:P0:vs_main():gs_main():ps_main_bg_decal_texture()
 // Kicker
 //
 
-kickerBoolean:P0:vs_kicker():gs_notex_main():ps_main_notex()
+kickerBoolean:P0:vs_kicker():gs_kicker_main():ps_main_notex()
 
 #include "ClassicLightShader.glfx"

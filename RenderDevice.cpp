@@ -2242,6 +2242,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
       if (ignoreStereo)
       {
          CHECKD3D(glViewport(0, 0, texture->width, texture->height));
+         lightShader->SetBool("ignoreStereo", true); // For non-stereo lightbulb texture, can't use pre-processor for this
       }
       else
          switch (texture->stereo) {
@@ -2255,6 +2256,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
             viewPorts[3] = viewPorts[7] = texture->height/2.0f;
             viewPorts[5] = texture->height / 2.0f;
             CHECKD3D(glViewportArrayv(0, 2, viewPorts));
+            lightShader->SetBool("ignoreStereo", false);
             break;
          case STEREO_SBS:
          case STEREO_VR:
@@ -2263,6 +2265,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
             viewPorts[3] = viewPorts[7] = texture->height;
             viewPorts[4] = texture->width / 2.0f;
             CHECKD3D(glViewportArrayv(0, 2, viewPorts));
+            lightShader->SetBool("ignoreStereo", false);
             break;
          }
    }
@@ -2535,7 +2538,8 @@ void RenderDevice::DrawPrimitiveVB(const PrimitveTypes type, const DWORD fvf, Ve
 
    vb->bind();
 #ifdef ENABLE_SDL
-   CHECKD3D(glDrawArraysInstanced(type, vb->getOffset() + startVertex, vertexCount, m_stereo3D != STEREO_OFF ? 2 : 1));
+   //CHECKD3D(glDrawArraysInstanced(type, vb->getOffset() + startVertex, vertexCount, m_stereo3D != STEREO_OFF ? 2 : 1)); // Do instancing in geometry shader instead
+   CHECKD3D(glDrawArrays(type, vb->getOffset() + startVertex, vertexCount));
 #else
    VertexDeclaration * declaration = fvfToDecl(fvf);
    SetVertexDeclaration(declaration);
@@ -2557,7 +2561,8 @@ void RenderDevice::DrawIndexedPrimitiveVB(const PrimitveTypes type, const DWORD 
 #ifdef ENABLE_SDL
 
    int offset = (ib->getIndexFormat() == ib->getOffset() + IndexBuffer::FMT_INDEX16 ? 2 : 4) * startIndex;
-   CHECKD3D(glDrawElementsInstancedBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, m_stereo3D != STEREO_OFF ? 2 : 1, vb->getOffset() + startVertex));
+   //CHECKD3D(glDrawElementsInstancedBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, m_stereo3D != STEREO_OFF ? 2 : 1, vb->getOffset() + startVertex)); // Do instancing in geometry shader instead
+   CHECKD3D(glDrawElementsBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, vb->getOffset() + startVertex));
 #else
    VertexDeclaration * declaration = fvfToDecl(fvf);
    SetVertexDeclaration(declaration);

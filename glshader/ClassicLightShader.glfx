@@ -20,12 +20,11 @@ out vec3 normal_gs;
 
 void main()
 { 
-   instanceID = gl_InstanceID;
    // trafo all into worldview space (as most of the weird trafos happen in view, world is identity so far)
    vec3 P = (matWorldView * vec4(vPosition,1.0)).xyz;
    vec3 N = normalize((matWorldViewInverseTranspose * vNormal).xyz);
 
-   gl_Position = (matWorldViewProj[gl_InstanceID]*vec4(vPosition,1.0));
+   gl_Position = vec4(vPosition, 1.0);
    tex0_gs = tc;
    tablePos_gs = vPosition.xyz;
    worldPos_gs = P;
@@ -48,19 +47,22 @@ out vec3 normal;
 
 void main()
 {
-    gl_ViewportIndex = instanceID[0];
-	for (int i=0;i<gl_in.length();i++) {
-		//Default
-		gl_Position = gl_in[i].gl_Position;
-		//Custom
-		tex0 = tex0_gs[i];
-		worldPos = worldPos_gs[i];
-		tablePos = tablePos_gs[i];
-		normal = normal_gs[i];
-		//Default
-		EmitVertex();
-	}
-    EndPrimitive();
+   gl_ViewportIndex = gl_InvocationID;
+   if (gl_ViewportIndex == 0 || !ignoreStereo)
+   {
+      for (int i=0;i<gl_in.length();i++) {
+         //Default
+         gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
+         //Custom
+         tex0 = tex0_gs[i];
+         worldPos = worldPos_gs[i];
+         tablePos = tablePos_gs[i];
+         normal = normal_gs[i];
+         //Default
+         EmitVertex();
+      }
+      EndPrimitive();
+   }
 }
 
 ////PS_LightWithTexel
@@ -72,7 +74,7 @@ in vec3 normal;
 
 void main()
 {     
-    vec4 pixel = texture(Texture0, tex0); //!! IN.tex0 abused in backglass mode
+    vec4 pixel = textureLod(Texture0, tex0, 0); //!! IN.tex0 abused in backglass mode
     if(!hdrTexture0)
         pixel.xyz = InvGamma(pixel.xyz);
 
