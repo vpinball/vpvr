@@ -13,7 +13,6 @@ uniform bool ignoreStereo = false; // Must be able to force only one invocation 
 
 ////GEOMETRY
 #extension GL_ARB_viewport_array : enable
-
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
 
@@ -43,8 +42,7 @@ out vec3 tablePos_gs;
 void main()									   
 {
    gl_Position = vec4(vPosition, 1.0);
-   gl_Position.z = max(gl_Position.z, 0.00001); // clamp lights to near clip plane to avoid them being partially clipped
-   tablePos_gs = vPosition.xyz;
+   tablePos_gs = vPosition;
 }
 
 ////PS_BulbLight
@@ -74,6 +72,7 @@ void main()
       for (int i=0;i<gl_in.length();i++) {
          //Default
          gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
+         gl_Position.z = max(gl_Position.z, 0.00001); // clamp lights to near clip plane to avoid them being partially clipped
          //Custom
          tablePos = tablePos_gs[i];
          //Default
