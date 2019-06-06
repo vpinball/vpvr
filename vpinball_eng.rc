@@ -297,7 +297,7 @@ BEGIN
     CONTROL         "Use always FS backdrop settings",IDC_BG_SET,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,125,131,10
     LTEXT           "Post-processed Anti-Aliasing",IDC_STATIC,19,159,93,9
     COMBOBOX        IDC_FXAACB,19,169,111,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Brute-force 4x SSAA",IDC_AA_ALL_TABLES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,185,133,10
+    CONTROL         "Enable 1.5x SuperSampling",IDC_AA_ALL_TABLES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,185,133,10
     CONTROL         "Enable ScaleFX for internal DMD",IDC_SCALE_FX_DMD,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,197,121,10
     CONTROL         "Stretch Ball with Table",IDC_StretchNo,"Button",BS_AUTORADIOBUTTON | WS_GROUP,16,235,83,10

@@ -258,7 +258,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
       controlHwnd = GetDlgItem(IDC_FXAACB).GetHwnd();
       AddToolTip("Enables post-processed Anti-Aliasing.\r\nThis delivers smoother images, at the cost of slight blurring.\r\n'Quality FXAA' and 'Quality SMAA' are recommended and lead to less artifacts,\nbut will harm performance on low-end graphics cards.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_AA_ALL_TABLES).GetHwnd();
-      AddToolTip("Enable 2x SuperSampling. Good AA for VR.\r\nThis delivers very good quality, but can slow down performance significantly.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip("Enable 1.5x SuperSampling. Good AA for VR.\r\nThis delivers very good quality, but can slow down performance significantly.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_OVERWRITE_BALL_IMAGE_CHECK).GetHwnd();
       AddToolTip("When checked it overwrites the ball image/decal image(s) for every table.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
