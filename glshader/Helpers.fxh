@@ -9,35 +9,44 @@ float sqr( float v)
 
 float acos_approx( float v)
 {
-     float x = abs(v);
-     float res = (-0.155972/*C1*/ * x + 1.56467/*C0*/) * sqrt(1.0 - x);
-    return (v >= 0.) ? res : PI - res;
+	float x = abs(v);
+    if(1.0 - x < 0.0000001) // necessary due to compiler doing 1./rsqrt instead of sqrt
+       return (v >= 0.) ? 0. : PI;
+	float res = (-0.155972/*C1*/ * x + 1.56467/*C0*/) * sqrt(1.0 - x);
+	return (v >= 0.) ? res : PI - res;
 }
 
 float acos_approx_divPI( float v)
 {
-     float x = abs(v);
-     float res = ((-0.155972/PI)/*C1*/ * x + (1.56467/PI)/*C0*/) * sqrt(1.0 - x);
-    return (v >= 0.) ? res : 1. - res;
+	float x = abs(v);
+    if(1.0 - x < 0.0000001) // necessary due to compiler doing 1./rsqrt instead of sqrt
+       return (v >= 0.) ? 0. : 1.;
+	float res = ((-0.155972/PI)/*C1*/ * x + (1.56467/PI)/*C0*/) * sqrt(1.0 - x);
+	return (v >= 0.) ? res : 1. - res;
 }
 
 float atan2_approx( float y,  float x)
 {
-	 float abs_y = abs(y);
-	 float abs_x = abs(x);
-	 float r = (abs_x - abs_y) / (abs_x + abs_y);
-	 float angle = ((x < 0.) ? (0.75*PI) : (0.25*PI))
-	                  + (0.211868/*C3*/ * r * r - 0.987305/*C1*/) * ((x < 0.) ? -r : r);
+	float abs_y = abs(y);
+	float abs_x = abs(x);
+	if(abs_x < 0.0000001 && abs_y < 0.0000001)
+		return 0.;//(PI/4.);
+
+	float r = (abs_x - abs_y) / (abs_x + abs_y);
+	float angle = ((x < 0.) ? (0.75*PI) : (0.25*PI))
+				  + (0.211868/*C3*/ * r * r - 0.987305/*C1*/) * ((x < 0.) ? -r : r);
 	return (y < 0.) ? -angle : angle;
 }
 
 float atan2_approx_div2PI( float y,  float x)
 {
-	 float abs_y = abs(y);
-	 float abs_x = abs(x);
-	 float r = (abs_x - abs_y) / (abs_x + abs_y);
-	 float angle = ((x < 0.) ? (3./8.) : (1./8.))
-	                  + (0.211868/*C3*//(2.*PI) * r * r - 0.987305/*C1*//(2.*PI)) * ((x < 0.) ? -r : r);
+	float abs_y = abs(y);
+	float abs_x = abs(x);
+	if(abs_x < 0.0000001 && abs_y < 0.0000001)
+		return 0.;//(PI/4.)*(0.5/PI);
+	float r = (abs_x - abs_y) / (abs_x + abs_y);
+	float angle = ((x < 0.) ? (3./8.) : (1./8.))
+                + (0.211868/*C3*//(2.*PI) * r * r - 0.987305/*C1*//(2.*PI)) * ((x < 0.) ? -r : r);
 	return (y < 0.) ? -angle : angle;
 }
 

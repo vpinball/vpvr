@@ -1199,7 +1199,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    else
       params.MultiSampleQuality = min(params.MultiSampleQuality, MultiSampleQualityLevels);
 
-   const int softwareVP = LoadValueIntWithDefault("Player", "SoftwareVertexProcessing", 0);
+   const bool softwareVP = LoadValueBoolWithDefault("Player", "SoftwareVertexProcessing", false);
    const DWORD flags = softwareVP ? D3DCREATE_SOFTWARE_VERTEXPROCESSING : D3DCREATE_HARDWARE_VERTEXPROCESSING;
 
    // Create the D3D device. This optionally goes to the proper fullscreen mode.
@@ -2010,7 +2010,7 @@ D3DTexture* RenderDevice::UploadTexture(BaseTexture* const surf, int* const pTex
 
    sysTex = CreateSystemTexture(surf, linearRGB);
 
-   const D3DFORMAT texformat = (D3DFORMAT)((m_compress_textures && ((texwidth & 3) == 0) && ((texheight & 3) == 0) && (texwidth > 256) && (texheight > 256) && (basetexformat != BaseTexture::RGB_FP)) ? colorFormat::DXT5 : ((basetexformat == BaseTexture::RGB_FP) ? colorFormat::RGBA32F : colorFormat::RGBA));
+   const colorFormat texformat = (D3DFORMAT)((m_compress_textures && ((texwidth & 3) == 0) && ((texheight & 3) == 0) && (texwidth > 256) && (texheight > 256) && (basetexformat != BaseTexture::RGB_FP)) ? colorFormat::DXT5 : ((basetexformat == BaseTexture::RGB_FP) ? colorFormat::RGBA32F : colorFormat::RGBA));
 
    hr = m_pD3DDevice->CreateTexture(texwidth, texheight, (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? 0 : sysTex->GetLevelCount(), (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? D3DUSAGE_AUTOGENMIPMAP : 0, texformat, (D3DPOOL)memoryPool::DEFAULT, &tex, NULL);
    if (FAILED(hr))

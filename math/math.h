@@ -25,6 +25,10 @@ __forceinline float atan2_approx_div2PI(const float y, const float x)
 
    const float abs_y = fabsf(y);
    const float abs_x = fabsf(x);
+
+   if (abs_x < 0.0000001f && abs_y < 0.0000001f)
+      return 0.f;//(float)(M_PI/4.)*(float)(0.5/M_PI);
+
    const float r = (abs_x - abs_y) / (abs_x + abs_y);
    const float angle = ((x < 0.f) ? (float)(3. / 8.) : (float)(1. / 8.))
       + ((float)(0.211868/*C3*/ / (2.*M_PI)) * r * r - (float)(0.987305/*C1*/ / (2.*M_PI))) * ((x < 0.f) ? -r : r);
@@ -36,6 +40,15 @@ __forceinline float precise_divide(const float a, const float b)
    return _mm_cvtss_f32(_mm_div_ss(_mm_set_ss(a), _mm_set_ss(b)));
 }
 
+__forceinline double force_add(const double a, const double b) // hopefully compiler is not smart enough to still change order of computations then
+{
+   return _mm_cvtsd_f64(_mm_add_sd(_mm_set_sd(a), _mm_set_sd(b)));
+}
+
+__forceinline double force_add_in_order(const double a, const double b, const double c) // hopefully compiler is not smart enough to still change order of computations then
+{
+   return _mm_cvtsd_f64(_mm_add_sd(_mm_add_sd(_mm_set_sd(a), _mm_set_sd(b)), _mm_set_sd(c)));
+}
 
 // from "Scalar quantization to a signed integer" by Rutanen, keeps values under continuous quantize/dequantize cycles constant (and more)
 // BUT cannot map max values, e.g. for 7 bits: -1. -> -127 -> 0.99.. and 1. -> 127 -> 0.99..

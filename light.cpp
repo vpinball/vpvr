@@ -517,7 +517,7 @@ void Light::RenderDynamic()
    if (m_realState == LightStateBlinking)
       UpdateBlinker(g_pplayer->m_time_msec);
 
-   const bool isOn = (m_realState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : !!m_realState;
+   const bool isOn = (m_realState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : (m_realState != LightStateOff);
 
    if (isOn)
    {
@@ -838,7 +838,7 @@ void Light::RenderSetup()
       m_timerDurationEndTime = g_pplayer->m_time_msec + m_duration;
    }
 
-   const bool isOn = (m_realState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : !!m_realState;
+   const bool isOn = (m_realState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : (m_realState != LightStateOff);
    if (isOn)
       m_d.m_currentIntensity = m_d.m_intensity*m_d.m_intensity_scale;
    else
@@ -1506,7 +1506,7 @@ STDMETHODIMP Light::put_Intensity(float newVal)
    STARTUNDO
 
    m_d.m_intensity = max(0.f, newVal);
-   const bool isOn = (m_realState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : !!m_realState;
+   const bool isOn = (m_realState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : (m_realState != LightStateOff);
    if (isOn)
       m_d.m_currentIntensity = m_d.m_intensity*m_d.m_intensity_scale;
    STOPUNDO
@@ -1544,7 +1544,7 @@ STDMETHODIMP Light::put_IntensityScale(float newVal)
    STARTUNDO
 
    m_d.m_intensity_scale = newVal;
-   const bool isOn = (m_realState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : !!m_realState;
+   const bool isOn = (m_realState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : (m_realState != LightStateOff);
    if (isOn)
       m_d.m_currentIntensity = m_d.m_intensity*m_d.m_intensity_scale;
    STOPUNDO

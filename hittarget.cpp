@@ -1700,11 +1700,11 @@ STDMETHODIMP HitTarget::get_DrawStyle(TargetType *pVal)
 STDMETHODIMP HitTarget::put_DrawStyle(TargetType newVal)
 {
    STARTUNDO
-   m_d.m_targetType = newVal;
+      m_d.m_targetType = newVal;
    STOPUNDO
 
-   if (!g_pplayer)
-      UpdateEditorView();
+      if (!g_pplayer)
+         UpdateEditorView();
 
    return S_OK;
 }

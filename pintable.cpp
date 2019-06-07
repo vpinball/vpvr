@@ -1437,8 +1437,7 @@ PinTable::PinTable()
 
    m_numMaterials = 0;
 
-   F32 nudgesens = LoadValueIntWithDefault("Player", "NudgeSensitivity", 500) * (float)(1.0 / 1000.0);
-   nudge_set_sensitivity(nudgesens);
+   nudge_set_sensitivity((float)LoadValueIntWithDefault("Player", "NudgeSensitivity", 500) * (float)(1.0 / 1000.0));
 
    m_globalDifficulty = dequantizeUnsignedPercent(LoadValueIntWithDefault("Player", "GlobalDifficulty", 20)); // easy by default
 
@@ -4049,10 +4048,8 @@ BOOL PinTable::LoadToken(int id, BiffReader *pbr)
    }
    else if (id == FID(MPDF))
    {
-      int tmp;
-      pbr->GetBool(&tmp);
-      /*const HRESULT hr =*/ LoadValueInt("Player", "PlungerFilter", &tmp);
-      m_plungerFilter = (tmp != 0);
+      pbr->GetBool(&m_plungerFilter);
+      m_plungerFilter = LoadValueBoolWithDefault("Player", "PlungerFilter", m_plungerFilter);
    }
    else if (id == FID(PHML))
    {
@@ -5186,14 +5183,13 @@ static char elementName[256];
 char *PinTable::GetElementName(IEditable *pedit)
 {
    WCHAR *elemName = NULL;
-   IScriptable *pscript = NULL;
    if (pedit)
    {
-      pscript = pedit->GetScriptable();
       if (pedit->GetItemType() == eItemDecal)
       {
          return "Decal";
       }
+      IScriptable * const pscript = pedit->GetScriptable();
       if (pscript)
       {
          elemName = pscript->m_wzName;
@@ -9967,8 +9963,7 @@ STDMETHODIMP PinTable::put_PlungerNormalize(int newVal)
 {
    STARTUNDO
 
-      m_plungerNormalize = newVal;
-   LoadValueInt("Player", "PlungerNormalize", &m_plungerNormalize);
+      m_plungerNormalize = LoadValueIntWithDefault("Player", "PlungerNormalize", newVal);
 
    STOPUNDO
 
@@ -9985,13 +9980,12 @@ STDMETHODIMP PinTable::put_PlungerFilter(VARIANT_BOOL newVal)
 {
    STARTUNDO
 
-      BOOL tmp = VBTOF(newVal);
-   LoadValueInt("Player", "PlungerFilter", &tmp);
-   m_plungerFilter = (tmp != 0);
+   const BOOL tmp = VBTOF(newVal);
+   m_plungerFilter = LoadValueBoolWithDefault("Player", "PlungerFilter", tmp != 0);
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP PinTable::get_PhysicsLoopTime(int *pVal)

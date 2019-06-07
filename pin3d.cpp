@@ -326,11 +326,11 @@ HRESULT Pin3D::InitPrimary(HWND *hwnd, const bool fullScreen, const int colordep
    *hwnd = m_pd3dPrimaryDevice->getHwnd();
 #endif
 
-   const int forceAniso = LoadValueIntWithDefault("Player", "ForceAnisotropicFiltering", 1);
-   m_pd3dPrimaryDevice->ForceAnisotropicFiltering(!!forceAniso);
+   const bool forceAniso = LoadValueBoolWithDefault("Player", "ForceAnisotropicFiltering", true);
+   m_pd3dPrimaryDevice->ForceAnisotropicFiltering(forceAniso);
 
-   const int compressTextures = LoadValueIntWithDefault("Player", "CompressTextures", 0);
-   m_pd3dPrimaryDevice->CompressTextures(!!compressTextures);
+   const bool compressTextures = LoadValueBoolWithDefault("Player", "CompressTextures", false);
+   m_pd3dPrimaryDevice->CompressTextures(compressTextures);
 
    m_pd3dPrimaryDevice->SetViewport(&m_viewPort);
 
@@ -1026,7 +1026,7 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
       const IEditable * const piEdit = g_pplayer->m_ptable->GetElementByName("playfield_mesh");
       Primitive * const pPrim = (Primitive *)piEdit;
       pPrim->m_d.m_fVisible = true;  // temporary enable the otherwise invisible playfield
-      pPrim->RenderObject(m_pd3dPrimaryDevice);
+      pPrim->RenderObject();
       pPrim->m_d.m_fVisible = false; // restore
    }
 

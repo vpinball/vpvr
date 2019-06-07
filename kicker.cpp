@@ -1054,11 +1054,11 @@ STDMETHODIMP Kicker::put_FallThrough(VARIANT_BOOL newVal)
 {
    STARTUNDO
 
-      m_d.m_fFallThrough = VBTOF(newVal);
+   m_d.m_fFallThrough = VBTOF(newVal);
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Kicker::get_Legacy(VARIANT_BOOL *pVal)
@@ -1072,11 +1072,11 @@ STDMETHODIMP Kicker::put_Legacy(VARIANT_BOOL newVal)
 {
    STARTUNDO
 
-      m_d.m_legacyMode = VBTOF(newVal);
+   m_d.m_legacyMode = VBTOF(newVal);
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 void Kicker::GetDialogPanes(vector<PropertyPane*> &pvproppane)

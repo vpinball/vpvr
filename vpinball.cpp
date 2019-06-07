@@ -906,7 +906,7 @@ void VPinball::ParseCommand(size_t code, HWND hwnd, size_t notify)
       ptCur = GetActiveTable();
       if (ptCur)
       {
-         const int alwaysViewScript = LoadValueIntWithDefault("Editor", "AlwaysViewScript", 0);
+         const bool alwaysViewScript = LoadValueBoolWithDefault("Editor", "AlwaysViewScript", false);
 
          ptCur->m_pcv->SetVisible(alwaysViewScript || !(ptCur->m_pcv->m_visible && !ptCur->m_pcv->m_minimized));
 

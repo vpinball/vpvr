@@ -289,11 +289,11 @@ public:
    virtual void RenderBlueprint(Sur *psur, const bool solid);
 
 
-   void    CreateRenderGroup(Collection *collection, RenderDevice *pd3dDevice);
-   void    RecalculateMatrices();
-   void    TransformVertices();
-   void    RenderObject(RenderDevice *pd3dDevice);
-   void    UpdateMeshInfo();
+   void CreateRenderGroup(const Collection * const collection);
+   void RecalculateMatrices();
+   void TransformVertices();
+   void RenderObject();
+   void UpdateMeshInfo();
 
    static INT_PTR CALLBACK ObjImportProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 

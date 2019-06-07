@@ -1146,7 +1146,7 @@ void Surface::AddPoint(int x, int y, const bool smooth)
 {
    STARTUNDO
 
-      const Vertex2D v = m_ptable->TransformPoint(x, y);
+   const Vertex2D v = m_ptable->TransformPoint(x, y);
 
    std::vector<RenderVertex> vvertex;
    GetRgVertex(vvertex);
