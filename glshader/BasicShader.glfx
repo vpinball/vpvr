@@ -35,6 +35,14 @@ layout(triangle_strip, max_vertices = 3) out;
 #endif
 
 ////FRAGMENT
+// Early-Z-test implementation:
+// Don't enable early_fragment_tests in basicshader, only enable conservative_depth
+// Otherwise shader will cull unintended things like mini-playfield under regular playfield
+//#extension GL_ARB_shader_image_load_store : enable
+#extension GL_ARB_conservative_depth : enable
+//layout(early_fragment_tests) in;
+layout(depth_unchanged) out float gl_FragDepth;
+
 
 uniform sampler2D Texture0; // base texture
 uniform sampler2D Texture1; // envmap
@@ -337,9 +345,11 @@ void main() {
    if (cBase_Alpha.a < 1.0 && color.a < 1.0) {
 	  color.a = GeometricOpacity(dot(N,V),color.a,cClearcoat_EdgeAlpha.w,Roughness_WrapL_Edge_Thickness.w);
 
-	  if (fDisableLighting_top_below.y < 1.0)
+	 if (fDisableLighting_top_below.y < 1.0)
+    {
 		  // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
 		  color.xyz += clamp(mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5, 0.).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
+    }
    }
 }
 
