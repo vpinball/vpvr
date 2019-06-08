@@ -175,6 +175,43 @@ vec3 ballLightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 spe
    return color;
 }
 
+vec3 PFDoPointLight(vec3 pos, vec3 N, vec3 diffuse, int i) 
+{ 
+   vec3 lightDir = (matView * vec4(lightPos[i].xyz, 1.0)).xyz - pos; //!! do in vertex shader?! or completely before?!
+   vec3 L = normalize(lightDir);
+   float NdotL = dot(N, L);
+   // compute diffuse color (lambert)
+   vec3 Out = (NdotL > 0.0) ? diffuse * NdotL : vec3(0.0,0.0,0.0);
+
+   float sqrl_lightDir = dot(lightDir,lightDir); // tweaked falloff to have ranged lightsources
+   float fAtten = saturate(1.0 - sqrl_lightDir*sqrl_lightDir/(cAmbient_LightRange.w*cAmbient_LightRange.w*cAmbient_LightRange.w*cAmbient_LightRange.w)); //!! pre-mult/invert cAmbient_LightRange.w?
+   fAtten = fAtten*fAtten/(sqrl_lightDir + 1.0);
+
+   #if !enable_VR
+      return Out * lightEmission[i].xyz * fAtten;
+   #else
+      return Out * lightEmission[i].xyz * (fAtten*0.00001);
+   #endif
+}
+
+vec3 PFlightLoop(vec3 pos, vec3 N, vec3 diffuse)
+{
+   float diffuseMax = max(diffuse.x,max(diffuse.y,diffuse.z));
+
+   vec3 color = vec3(0.0,0.0,0.0);
+
+   if (diffuseMax > 0.0)
+   {
+      for (int i = 0; i < lightSources; i++)
+         color += PFDoPointLight(pos, N, diffuse, i);
+
+      color += DoEnvmapDiffuse(vec3(0.,0.,1.), diffuse); // directly wire world space playfield normal
+   }
+
+   return color;
+}
+
+
 ////psBall
 
 in vec4 normal_t0x;
@@ -221,7 +258,8 @@ void main()
 	else
 	   ballImageColor = ScreenHDR( ballImageColor, decalColor ) * (0.5*fenvEmissionScale_TexWidth.x); //!! 0.5=magic
     
-   vec3 playfield_normal = normalize((matWorldViewInverseTranspose * vec4(0.,0.,1.,0.)).xyz);
+   vec3 playfield_normal = normalize((matWorldViewInverseTranspose * vec4(0.,0.,1.,0.)).xyz); //!! normalize necessary?
+  
    vec3 lightLoop_normal = (matWorldView * vec4(0.,0.,1.,0.)).xyz;
     
    float NdotR;
@@ -247,16 +285,12 @@ void main()
       playfieldColor = (t < 0.) ? vec3(0., 0., 0.) // happens for example when inside kicker
                               : InvGamma(textureLod(Texture1, uv,  0.).xyz)*invTableRes_playfield_height_reflection.w; //!! rather use screen space sample from previous frame??
 
-      //!! hack to get some lighting on sample, but only diffuse, the rest is not setup correctly anyhow
-#if !enable_VR
-         playfieldColor = lightLoop(playfield_hit, lightLoop_normal, -r, playfieldColor, vec3(0.,0.,0.), vec3(0.,0.,0.), 1.0, true, false);
-#else
-         playfieldColor = lightLoop(playfield_hit, lightLoop_normal, r, playfieldColor, vec3(0.,0.,0.), vec3(0.,0.,0.), 1.0, true, false);
-#endif
+      //!! hack to get some lighting on reflection sample, but only diffuse, the rest is not setup correctly anyhow
+      playfieldColor = PFlightLoop(playfield_hit, lightLoop_normal, playfieldColor);
 
       //!! magic falloff & weight the rest in from the ballImage
       float weight = NdotR*NdotR;
-      playfieldColor = (playfieldColor * weight) + ballImageColor*(1.0-weight);
+      playfieldColor = mix(ballImageColor,playfieldColor,weight);
    }
    else
       playfieldColor = ballImageColor;
