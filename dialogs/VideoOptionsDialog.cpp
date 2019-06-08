@@ -309,9 +309,11 @@ BOOL VideoOptionsDialog::OnInitDialog()
    SetDlgItemTextA(IDC_DN_LATITUDE, tmp);
 
    const float longitude = LoadValueFloatWithDefault("Player", "Longitude", 13.37f);
+   sprintf_s(tmp, 256, "%f", longitude);
    SetDlgItemTextA(IDC_DN_LONGITUDE, tmp);
 
    const float nudgeStrength = LoadValueFloatWithDefault("Player", "NudgeStrength", 2e-2f);
+   sprintf_s(tmp, 256, "%f", nudgeStrength);
    SetDlgItemTextA(IDC_NUDGE_STRENGTH, tmp);
 
    const int useAA = LoadValueIntWithDefault("Player", "USEAA", 0);
