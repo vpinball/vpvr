@@ -599,6 +599,7 @@ BEGIN
     COMBOBOX        IDC_DOF_DROPTARGETS,505,180,50,100,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
     LTEXT           "* This will only apply to tables that are using the Controller.vbs in their script code",IDC_STATIC,563,156,55,40
     CONTROL         "Disable B2S",IDC_DOF_FORCEDISABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,505,203,86,10
+    CONTROL         "Capture External DMD", IDC_CAP_EXTDMD, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 505, 213, 86, 10
     PUSHBUTTON      "OK",IDOK,536,308,40,14
     PUSHBUTTON      "Cancel",IDCANCEL,579,308,40,14
     GROUPBOX        "",IDC_STATIC,11,253,54,39

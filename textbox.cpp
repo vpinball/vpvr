@@ -216,7 +216,8 @@ void Textbox::RenderDynamic()
    const bool dmd = (m_d.m_IsDMD || strstr(m_d.sztext, "DMD") != NULL); //!! second part is VP10.0 legacy
 
    if (!m_d.m_fVisible || (dmd && !g_pplayer->m_texdmd))
-      return;
+      if (!g_pplayer->m_capExtDMD || (FindWindowA(NULL, "Virtual DMD") == NULL && FindWindowA("pygame", NULL) == NULL)) // If DMD capture is enabled check for external DMD window
+         return;
 
    RenderDevice * const pd3dDevice = m_fBackglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 

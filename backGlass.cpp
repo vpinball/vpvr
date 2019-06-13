@@ -7,6 +7,7 @@
 #include "backGlass.h"
 #include "RenderDevice.h"
 #include "Shader.h"
+#include "captureExt.h"
 
 //#define WRITE_BACKGLASS_IMAGES 1
 //XML helpers
@@ -221,7 +222,7 @@ void BackGlass::Render()
 
 void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwidth, const float DMDheight, const COLORREF DMDcolor, const float intensity)
 {
-   if (g_pplayer->m_texdmd)
+   if (g_pplayer->m_texdmd || (g_pplayer->m_capExtDMD && (FindWindowA(NULL, "Virtual DMD") != NULL || FindWindowA("pygame", NULL) != NULL))) // If DMD capture is enabled check if external DMD exists (for capturing UltraDMD+P-ROC DMD)
    {
       //const float width = g_pplayer->m_pin3d.m_useAA ? 2.0f*(float)m_width : (float)m_width;
       m_pd3dDevice->DMDShader->SetTechnique("basic_DMD"); //!! DMD_UPSCALE ?? -> should just work
@@ -234,6 +235,10 @@ void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DM
       const vec4 r((float)g_pplayer->m_dmdx, (float)g_pplayer->m_dmdy, 1.f, 0.f);
 #endif
       m_pd3dDevice->DMDShader->SetVector("vRes_Alpha", &r);
+
+      // If we're capturing Freezy DMD switch to ext technique to avoid incorrect colorization
+      if (captureExternalDMD())
+         m_pd3dDevice->DMDShader->SetTechnique("basic_DMD_ext");
 
       m_pd3dDevice->DMDShader->SetTexture("Texture0", m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, false), false);
       //      m_pd3dPrimaryDevice->DMDShader->SetVector("quadOffsetScale", 0.0f, -1.0f, backglass_scale, backglass_scale*(float)backglass_height / (float)backglass_width);

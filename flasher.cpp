@@ -2,6 +2,7 @@
 #include "Shader.h"
 #include "IndexBuffer.h"
 #include "VertexBuffer.h"
+#include "captureExt.h"
 
 Flasher::Flasher()
 {
@@ -1230,7 +1231,8 @@ void Flasher::RenderDynamic()
 
    // Don't render if invisible (or DMD connection not set)
    if (!m_d.m_IsVisible || dynamicVertexBuffer == NULL || m_ptable->m_fReflectionEnabled || (m_d.m_IsDMD && !g_pplayer->m_texdmd))
-      return;
+      if (!m_d.m_IsVisible || (!g_pplayer->m_capExtDMD || (FindWindowA(NULL, "Virtual DMD") == NULL && FindWindowA("pygame", NULL) == NULL))) // If DMD capture is enabled check if external DMD exists (for capturing UltraDMD+P-ROC DMD)
+         return;
 
    const vec4 color = convertColor(m_d.m_color, (float)m_d.m_alpha*m_d.m_intensity_scale / 100.0f);
    if (color.w == 0.f)
@@ -1302,6 +1304,10 @@ void Flasher::RenderDynamic()
        const vec4 r((float)g_pplayer->m_dmdx, (float)g_pplayer->m_dmdy, m_d.m_modulate_vs_add, 0.f); //(float)(0.5 / m_width), (float)(0.5 / m_height));
 #endif
        pd3dDevice->DMDShader->SetVector("vRes_Alpha", &r);
+
+       // If we're capturing Freezy DMD switch to ext technique to avoid incorrect colorization
+       if (captureExternalDMD())
+          pd3dDevice->DMDShader->SetTechnique("basic_DMD_world_ext");
 
        pd3dDevice->DMDShader->SetTexture("Texture0", g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, false), false);
 

@@ -14,6 +14,7 @@ protected:
     virtual void OnDestroy();
 
 private:
+    void AddToolTip(char *text, HWND parentHwnd, HWND toolTipHwnd, HWND controlHwnd);
     HWND GetItemHwnd(int nID);
     void SetValue(int nID, char *regKey, char *regValue);
     void StartTimer(int nID);

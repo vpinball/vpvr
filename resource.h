@@ -1023,6 +1023,7 @@
 #define IDC_VR_OFFSET_Z_LABEL           831
 #define IDC_COMBO_BLIT                  832
 #define IDC_COMBO_TEXTURE               833
+#define IDC_CAP_EXTDMD                  834
 #define DISPID_Gate_Height1             1142
 #define DISPID_Image                    1500
 #define DISPID_Image2                   1501

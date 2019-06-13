@@ -633,6 +633,7 @@ public:
    unsigned int m_showFPS;
 
    bool m_scaleFX_DMD;
+   bool m_capExtDMD;
 
    bool m_toogle_DTFS;
 

@@ -265,8 +265,29 @@ KeysConfigDialog::KeysConfigDialog() : CDialog(IDD_KEYS)
 {
 }
 
+void KeysConfigDialog::AddToolTip(char *text, HWND parentHwnd, HWND toolTipHwnd, HWND controlHwnd)
+{
+   TOOLINFO toolInfo = { 0 };
+   toolInfo.cbSize = sizeof(toolInfo);
+   toolInfo.hwnd = parentHwnd;
+   toolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
+   toolInfo.uId = (UINT_PTR)controlHwnd;
+   toolInfo.lpszText = text;
+   SendMessage(toolTipHwnd, TTM_ADDTOOL, 0, (LPARAM)&toolInfo);
+}
+
 BOOL KeysConfigDialog::OnInitDialog()
 {
+   const HWND hwndDlg = GetHwnd();
+   const HWND toolTipHwnd = CreateWindowEx(NULL, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_ALWAYSTIP | TTS_BALLOON, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hwndDlg, NULL, g_hinst, NULL);
+   if (toolTipHwnd)
+   {
+      SendMessage(toolTipHwnd, TTM_SETMAXTIPWIDTH, 0, 180);
+      HWND controlHwnd = GetDlgItem(IDC_USE_NVIDIA_API_CHECK).GetHwnd();
+      controlHwnd = GetDlgItem(IDC_CAP_EXTDMD).GetHwnd();
+      AddToolTip("Attempt to capture External DMD window such as Freezy, UltraDMD or P-ROC.\r\n\r\nFor Freezy DmdDevice.ini need to have 'stayontop = true'.", hwndDlg, toolTipHwnd, controlHwnd);
+   }
+
     bool on = LoadValueBoolWithDefault("Player", "PBWDefaultLayout", false);
     ::SendMessage(GetDlgItem(IDC_DefaultLayout).GetHwnd(), BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
 
@@ -415,6 +436,9 @@ BOOL KeysConfigDialog::OnInitDialog()
 
     on = LoadValueBoolWithDefault("Controller", "ForceDisableB2S", false);
     ::SendMessage(GetDlgItem(IDC_DOF_FORCEDISABLE).GetHwnd(), BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
+
+    on = LoadValueBoolWithDefault("Player", "CaptureExternalDMD", false);
+    ::SendMessage(GetDlgItem(IDC_CAP_EXTDMD).GetHwnd(), BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
 
     int selected = LoadValueIntWithDefault("Controller", "DOFContactors", 2); // assume both as standard
     ::SendMessage(GetDlgItem(IDC_DOF_CONTACTORS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Sound FX");
@@ -1002,6 +1026,9 @@ void KeysConfigDialog::OnOK()
 
     selected = ::SendMessage(GetDlgItem(IDC_DOF_FORCEDISABLE).GetHwnd(), BM_GETCHECK, 0, 0);
     SaveValueBool("Controller", "ForceDisableB2S", selected != 0);
+
+    selected = ::SendMessage(GetDlgItem(IDC_CAP_EXTDMD).GetHwnd(), BM_GETCHECK, 0, 0);
+    SaveValueBool("Player", "CaptureExternalDMD", selected != 0);
 
     CDialog::OnOK();
 }

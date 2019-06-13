@@ -505,6 +505,7 @@ Player::Player(bool _cameraMode) : cameraMode(_cameraMode)
    m_stereo3Denabled = LoadValueBoolWithDefault("Player", "Stereo3DEnabled", (m_stereo3D != 0));
    m_stereo3DY = LoadValueBoolWithDefault("Player", "Stereo3DYAxis", false);
    m_scaleFX_DMD = LoadValueBoolWithDefault("Player", "ScaleFXDMD", false);
+   m_capExtDMD = LoadValueBoolWithDefault("Player", "CaptureExternalDMD", false);
    m_disableDWM = LoadValueBoolWithDefault("Player", "DisableDWM", false);
    m_useNvidiaApi = LoadValueBoolWithDefault("Player", "UseNVidiaAPI", false);
    m_bloomOff = LoadValueBoolWithDefault("Player", "ForceBloomOff", false);
@@ -1676,8 +1677,8 @@ HRESULT Player::Init(PinTable * const ptable, const HWND hwndProgress, const HWN
 #ifdef FPS
    m_limiter.Init(m_pin3d.m_pd3dPrimaryDevice, m_maxPrerenderedFrames);
 #endif
-   VertexBuffer::UploadBuffers();
-   IndexBuffer::UploadBuffers();
+   //VertexBuffer::UploadBuffers();
+   //IndexBuffer::UploadBuffers();
    Render(); //!! why here already? potentially not all initialized yet??
 
 #if (_WIN32_WINNT >= 0x0500)
@@ -3682,7 +3683,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
       CHECKD3D(error = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture));
       vr::Texture_t rightEyeTexture = { (void *)rightTexture->texture, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
       CHECKD3D(error = vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture));
-      glFlush(); // Flush as recommended by OpenVR: If called from an OpenGL app, consider adding a glFlush after submitting both frames to signal the driver to start processing, otherwise it may wait until the command buffer fills up, causing the app to miss frames.
+      //glFlush(); // Flush as recommended by OpenVR: If called from an OpenGL app, consider adding a glFlush after submitting both frames to signal the driver to start processing, otherwise it may wait until the command buffer fills up, causing the app to miss frames.
    }
 #endif
    return;
