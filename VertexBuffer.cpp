@@ -3,7 +3,7 @@
 #include "RenderDevice.h"
 #include "Shader.h"
 
-#define COMBINE_BUFFERS 1
+#define COMBINE_BUFFERS 0
 
 static unsigned int fvfToSize(const DWORD fvf)
 {
@@ -109,8 +109,12 @@ void VertexBuffer::setD3DDevice(IDirect3DDevice9* pD3DDevice) {
 void VertexBuffer::bind()
 {
 #ifdef ENABLE_SDL
-   if (!isUploaded)
-      UploadData();
+   if (!isUploaded) {
+      if (sharedBuffer)
+         UploadBuffers();
+      else
+         UploadData();
+   }
    if (m_curVertexBuffer==nullptr || this->Array != m_curVertexBuffer->Array || this->Buffer != m_curVertexBuffer->Buffer)
    {
       CHECKD3D(glBindVertexArray(this->Array));

@@ -1330,6 +1330,11 @@ void VPinball::ParseCommand(size_t code, HWND hwnd, size_t notify)
       m_videoOptDialog.DoModal(m_hwnd);
       break;
    }
+   case ID_EDIT_VROPTIONS:
+   {
+      m_vrOptDialog.DoModal(m_hwnd);
+      break;
+   }
    case ID_TABLE_TABLEINFO:
    {
       ptCur = GetActiveTable();
@@ -2966,6 +2971,8 @@ void VPinball::CloseAllDialogs()
       m_editorOptDialog.Destroy();
    if (m_videoOptDialog.IsWindow())
       m_videoOptDialog.Destroy();
+   if (m_vrOptDialog.IsWindow())
+      m_vrOptDialog.Destroy();
    if (m_collectionMngDlg.IsWindow())
       m_collectionMngDlg.Destroy();
    if (m_physicsOptDialog.IsWindow())

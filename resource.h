@@ -549,6 +549,7 @@
 #define IDR_REGISTRY2                   387
 #define IDC_StretchMonitor              388
 #define DISPID_IMAGEMAPPING             389
+#define IDC_SSSLIDER                    389
 #define IDD_PROPTABLE_LIGHTSOURCES      390
 #define IDD_SEARCH_SELECT_ELEMENT       391
 #define IDD_DRAWING_ORDER               392
@@ -694,6 +695,7 @@
 #define IDC_BULB_INTENSITY_SCALE        451
 #define IDC_TEX_COMPRESS                452
 #define IDC_IMAGE_MODE                  453
+#define IDC_SCALE_TO_CM                 453
 #define IDC_EDGE_FACTOR_UI              454
 #define IDC_REFLECT_ON_BALLS            455
 #define IDC_NUDGE_STRENGTH              456
@@ -813,8 +815,11 @@
 #define IDS_UNHIDEALL                   552
 #define IDC_VR_DISABLE_PREVIEW          552
 #define IDS_HIDE                        553
+#define IDC_VR_SCALE                    553
 #define IDC_MODIFY3DSTEREO              554
+#define IDC_NEAR_PLANE                  554
 #define IDC_DMD2                        555
+#define IDC_FAR_PLANE                   555
 #define IDC_ADDBLEND                    556
 #define IDC_DMD                         557
 #define IDC_LIGHTAMBIENT                558
@@ -839,6 +844,7 @@
 #define IDC_AUTOSAVE                    589
 #define IDC_ENABLE_SSR                  590
 #define IDC_BLOOM_OFF                   591
+#define IDC_TURN_VR_ON                  592
 #define IDD_PROPPOINT_POSITION_WITHZ    601
 #define IDD_PROPRUBBER_PHYSICS          602
 #define IDC_RUBBER                      602
@@ -867,6 +873,7 @@
 #define IDD_SOUND_POSITION              629
 #define IDD_SOUND_POSITION_DIALOG       629
 #define IDR_BLANK_TABLE                 630
+#define IDD_VR_OPTIONS                  630
 #define IDB_KICKER_WILLIAMS             640
 #define IDB_KICKER_GOTTLIEB             645
 #define IDB_BITMAP4                     646
@@ -1024,6 +1031,10 @@
 #define IDC_COMBO_BLIT                  832
 #define IDC_COMBO_TEXTURE               833
 #define IDC_CAP_EXTDMD                  834
+#define IDC_VR_SCALE_LABEL              835
+#define IDC_SSSLIDER_LABEL              836
+#define IDC_NEAR_LABEL                  837
+#define IDC_FAR_LABEL                   838
 #define DISPID_Gate_Height1             1142
 #define DISPID_Image                    1500
 #define DISPID_Image2                   1501
@@ -1189,7 +1200,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        652
 #define _APS_NEXT_COMMAND_VALUE         4024
-#define _APS_NEXT_CONTROL_VALUE         834
+#define _APS_NEXT_CONTROL_VALUE         839
 #define _APS_NEXT_SYMED_VALUE           188
 #endif
 #endif

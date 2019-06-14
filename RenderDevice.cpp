@@ -557,6 +557,25 @@ static void CheckForD3DLeak(IDirect3DDevice9* d3d)
 #endif
 #endif
 
+bool RenderDevice::isVRinstalled()
+{
+#ifdef ENABLE_VR
+   return vr::VR_IsRuntimeInstalled();
+#else
+   return false;
+#endif
+}
+
+bool RenderDevice::isVRturnedOn()
+{
+#ifdef ENABLE_VR
+   return vr::VR_IsHmdPresent();
+#else
+   return false;
+#endif
+}
+
+
 void RenderDevice::InitVR() {
 #ifdef ENABLE_VR
    vr::EVRInitError VRError = vr::VRInitError_None;
@@ -592,8 +611,8 @@ void RenderDevice::InitVR() {
 
    matEye2Head.Invert();
 
-   float nearPlane = LoadValueFloatWithDefault("PlayerVR", "nearPlane", 0.05f);
-   float farPlane = LoadValueFloatWithDefault("PlayerVR", "farPlane", 5.0f);
+   float nearPlane = LoadValueFloatWithDefault("PlayerVR", "nearPlane", 5.0f) / 100.0f;
+   float farPlane = LoadValueFloatWithDefault("PlayerVR", "farPlane", 500.0f) / 100.0f;
 
    mat44 = m_pHMD->GetProjectionMatrix(vr::Eye_Left, nearPlane, farPlane);//5cm to 5m should be a reasonable range
    for (int i = 0;i < 4;i++)
@@ -645,9 +664,9 @@ void RenderDevice::InitVR() {
 }
 
 #ifdef ENABLE_SDL
-RenderDevice::RenderDevice(HWND* const hwnd, const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice)
+RenderDevice::RenderDevice(HWND* const hwnd, const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice)
    : m_texMan(*this), m_width(width), m_height(height), m_fullscreen(fullscreen),
-   m_colorDepth(colordepth), m_vsync(VSync), m_useAA(useAA), m_stereo3D(stereo3D), m_FXAA(FXAA),
+   m_colorDepth(colordepth), m_vsync(VSync), m_AAfactor(AAfactor), m_stereo3D(stereo3D), m_FXAA(FXAA),
    m_ssRefl(ss_refl), m_useNvidiaApi(useNvidiaApi), m_disableDwm(disable_dwm), m_BWrendering(BWrendering)
 {
 #ifdef ENABLE_VR
@@ -691,7 +710,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    int disp_x, disp_y, disp_w, disp_h;
    getDisplaySetupByID(m_adapter, disp_x, disp_y, disp_w, disp_h);
 
-   bool disableVRPreview = (m_stereo3D == STEREO_VR) && (LoadValueIntWithDefault("Player", "VRPreviewDisabled", 0) > 0);
+   bool disableVRPreview = (m_stereo3D == STEREO_VR) && (LoadValueIntWithDefault("PlayerVR", "VRPreviewDisabled", 0) > 0);
 
    if (disableVRPreview == 0)
       m_sdl_playfieldHwnd = SDL_CreateWindow(
@@ -727,8 +746,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_Buf_height = fbHeight;
       m_Buf_widthBlur = m_Buf_width / 3;
       m_Buf_heightBlur = m_Buf_height / 3;
-      m_Buf_width = m_Buf_width * (m_useAA ? 1.5 : 1);
-      m_Buf_height = m_Buf_height * (m_useAA ? 1.5 : 1);
+      m_Buf_width = (int)(m_Buf_width * m_AAfactor);
+      m_Buf_height = (int)(m_Buf_height * m_AAfactor);
       break;
    case STEREO_TB:
    case STEREO_INT:
@@ -736,25 +755,35 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_Buf_height = fbHeight * 2;
       m_Buf_widthBlur = m_Buf_width / 3;
       m_Buf_heightBlur = m_Buf_height / 3;
-      m_Buf_width = m_Buf_width * (m_useAA ? 1.5 : 1);
-      m_Buf_height = m_Buf_height * (m_useAA ? 1.5 : 1);
+      m_Buf_width = (int)(m_Buf_width * m_AAfactor);
+      m_Buf_height = (int)(m_Buf_height * m_AAfactor);
       break;
    case STEREO_SBS:
       m_Buf_width = fbWidth * 2;
       m_Buf_height = fbHeight;
       m_Buf_widthBlur = m_Buf_width / 3;
       m_Buf_heightBlur = m_Buf_height / 3;
-      m_Buf_width = m_Buf_width * (m_useAA ? 1.5 : 1);
-      m_Buf_height = m_Buf_height * (m_useAA ? 1.5 : 1);
+      m_Buf_width = (int)(m_Buf_width * m_AAfactor);
+      m_Buf_height = (int)(m_Buf_height * m_AAfactor);
       break;
 #ifdef ENABLE_VR
    case STEREO_VR:
+      if (LoadValueBoolWithDefault("PlayerVR", "scaleToFixedWidth", false)) {
+         float width = 0.0f;
+         g_pplayer->m_ptable->get_Width(&width);
+         m_scale = LoadValueFloatWithDefault("PlayerVR", "scaleAbsolute", 55.0f) *0.01f / width;
+      }
+      else {
+         m_scale = 0.000540425f * LoadValueFloatWithDefault("PlayerVR", "scaleRelative", 1.0f);
+      }
+      if (m_scale <= 0)
+         m_scale = 0.000540425f;// Scale factor for VPUnits to Meters
       InitVR();
       m_Buf_width = m_Buf_width * 2;
       m_Buf_widthBlur = m_Buf_width / 3;
       m_Buf_heightBlur = m_Buf_height / 3;
-      m_Buf_width = m_Buf_width * (m_useAA ? 1.5 : 1);
-      m_Buf_height = m_Buf_height * (m_useAA ? 1.5 : 1);
+      m_Buf_width = (int)(m_Buf_width * m_AAfactor);
+      m_Buf_height = (int)(m_Buf_height * m_AAfactor);
       break;
 #endif
    default:
@@ -766,7 +795,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 
    CHECKD3D();
 
-   if (m_vsync > refreshrate)
+   if (m_stereo3D == STEREO_VR || m_vsync > refreshrate)
       m_vsync = 0;
    SDL_GL_SetSwapInterval(m_vsync);
 
@@ -2254,20 +2283,20 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
             break;
          case STEREO_TB:
          case STEREO_INT:
-            CHECKD3D(glViewport(0, 0, texture->width, texture->height / 2.0f)); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
-            viewPorts[2] = viewPorts[6] = texture->width;
-            viewPorts[3] = viewPorts[7] = texture->height/2.0f;
+            CHECKD3D(glViewport(0, 0, texture->width, texture->height / 2)); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
+            viewPorts[2] = viewPorts[6] = (float)texture->width;
+            viewPorts[3] = viewPorts[7] = (float)texture->height/2.0f;
             viewPorts[4] = 0.0f;
-            viewPorts[5] = texture->height / 2.0f;
+            viewPorts[5] = (float)texture->height / 2.0f;
             CHECKD3D(glViewportArrayv(0, 2, viewPorts));
             lightShader->SetBool("ignoreStereo", false);
             break;
          case STEREO_SBS:
          case STEREO_VR:
-            CHECKD3D(glViewport(0, 0, texture->width / 2.0f, texture->height)); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
-            viewPorts[2] = viewPorts[6] = texture->width / 2.0f;
-            viewPorts[3] = viewPorts[7] = texture->height;
-            viewPorts[4] = texture->width / 2.0f;
+            CHECKD3D(glViewport(0, 0, texture->width / 2, texture->height)); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
+            viewPorts[2] = viewPorts[6] = (float)texture->width / 2.0f;
+            viewPorts[3] = viewPorts[7] = (float)texture->height;
+            viewPorts[4] = (float)texture->width / 2.0f;
             viewPorts[5] = 0.0f;
             CHECKD3D(glViewportArrayv(0, 2, viewPorts));
             lightShader->SetBool("ignoreStereo", false);
@@ -2379,14 +2408,14 @@ void RenderDevice::SetRenderStateCulling(RenderStateValue cull) {
       else if (cull == CULL_CW)
          cull = CULL_CCW;
    }
+   if (renderStateCache[RenderStates::CULLMODE] == CULL_NONE && (cull != CULL_NONE))
+      CHECKD3D(glEnable(GL_CULL_FACE));
    if (SetRenderStateCache(CULLMODE, cull)) return;
 #ifdef ENABLE_SDL
    if (cull == CULL_NONE) {
      CHECKD3D(glDisable(GL_CULL_FACE));
    }
    else {
-      //if (renderStateCache[RenderStates::CULLMODE] == CULL_NONE) // If enabled culling will not always be enabled correctly?!
-         CHECKD3D(glEnable(GL_CULL_FACE));
       CHECKD3D(glFrontFace(cull));
       CHECKD3D(glCullFace(GL_FRONT));
    }
@@ -2565,7 +2594,7 @@ void RenderDevice::DrawIndexedPrimitiveVB(const PrimitveTypes type, const DWORD 
    ib->bind();
 #ifdef ENABLE_SDL
 
-   int offset = (ib->getIndexFormat() == ib->getOffset() + IndexBuffer::FMT_INDEX16 ? 2 : 4) * startIndex;
+   int offset = ib->getOffset() + (ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? 2 : 4) * startIndex;
    //CHECKD3D(glDrawElementsInstancedBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, m_stereo3D != STEREO_OFF ? 2 : 1, vb->getOffset() + startVertex)); // Do instancing in geometry shader instead
    CHECKD3D(glDrawElementsBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, vb->getOffset() + startVertex));
 #else
@@ -2582,7 +2611,7 @@ void RenderDevice::UpdateVRPosition()
 {
 #ifdef ENABLE_VR
    if (!m_pHMD) return;
-   const float scale = 0.000540425f;// Scale factor for VPUnits to Meters
+
    vr::VRCompositor()->WaitGetPoses(m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, NULL, 0);
 
    for (int device = 0; device < vr::k_unMaxTrackedDeviceCount; device++) {
@@ -2621,8 +2650,8 @@ void RenderDevice::recenterTable()
    //hmdPosition;
    orientation = -RADTOANG(atan2(hmdPosition.mDeviceToAbsoluteTracking.m[0][2], hmdPosition.mDeviceToAbsoluteTracking.m[0][0]));
    if (orientation < 0.0f) orientation += 360.0f;
-   float w = 0.0540425f*0.5*(g_pplayer->m_ptable->m_right - g_pplayer->m_ptable->m_left);
-   float h = 0.0540425f*(g_pplayer->m_ptable->m_bottom - g_pplayer->m_ptable->m_top) + 20.0f;
+   float w = 100.f*m_scale*0.5f*(g_pplayer->m_ptable->m_right - g_pplayer->m_ptable->m_left);
+   float h = 100.f*m_scale*(g_pplayer->m_ptable->m_bottom - g_pplayer->m_ptable->m_top) + 20.0f;
    float c = cos(ANGTORAD(orientation));
    float s = sin(ANGTORAD(orientation));
    tablex = 100.0f*hmdPosition.mDeviceToAbsoluteTracking.m[0][3] - c * w + s * h;
@@ -2645,10 +2674,10 @@ void RenderDevice::updateTableMatrix()
    m_tableWorld.RotateXMatrix(ANGTORAD(-slope));
    tmp.SetIdentity();
    //Convert from VPX scale and coords to VR
-   float scale = 0.000540425f;
-   tmp.m[0][0] = -scale;  tmp.m[0][1] = 0.0f;  tmp.m[0][2] = 0.0f;
-   tmp.m[1][0] = 0.0f;  tmp.m[1][1] = 0.0f;  tmp.m[1][2] = -scale;
-   tmp.m[2][0] = 0.0f;  tmp.m[2][1] = scale;  tmp.m[2][2] = 0.0f;
+
+   tmp.m[0][0] = -m_scale;  tmp.m[0][1] = 0.0f;  tmp.m[0][2] = 0.0f;
+   tmp.m[1][0] = 0.0f;  tmp.m[1][1] = 0.0f;  tmp.m[1][2] = -m_scale;
+   tmp.m[2][0] = 0.0f;  tmp.m[2][1] = m_scale;  tmp.m[2][2] = 0.0f;
    m_tableWorld = m_tableWorld * tmp;
    tmp.SetIdentity();
    tmp.RotateYMatrix(ANGTORAD(180 - orientation -roomOrientation));//Rotate table around VR height axis
@@ -2839,7 +2868,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    }
    if (data)
    {
-      float num_mips = std::log2(float(std::max(Width, Height))) + 1;
+      int num_mips = (int)std::log2(float(std::max(Width, Height))) + 1;
       CHECKD3D(glTexStorage2D(GL_TEXTURE_2D, num_mips, Format, Width, Height));
       CHECKD3D(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Width, Height, col_format, col_type, data));
       //CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, tex->format, Width, Height, 0, col_format, col_type, data)); // Use TexStorage instead

@@ -2,15 +2,26 @@
 #include "resource.h"
 #include "VideoOptionsDialog.h"
 
-#ifdef ENABLE_VR
-#include "openvr.h"
-#endif
-
 #define GET_WINDOW_MODES		WM_USER+100
 #define GET_FULLSCREENMODES		WM_USER+101
 #define RESET_SIZELIST_CONTENT	WM_USER+102
 
 const int rgwindowsize[] = { 640, 720, 800, 912, 1024, 1152, 1280, 1600 };  // windowed resolutions for selection list
+
+const float AAfactors[] = { 0.5f, 0.75f, 1.0f, 1.25f, 4.0f/3.0f, 1.5f, 1.75f, 2.0f }; // factor is applied to width and to height, so 2.0f increases pixel count by 4. Additional values can be added.
+const int AAfactorCount = 8;
+
+size_t VideoOptionsDialog::getBestMatchingAAfactorIndex(float f)
+{
+   float delta = fabs(f - AAfactors[0]);
+   size_t bestMatch = 0;
+   for (size_t i = 1; i < AAfactorCount; ++i)
+      if (fabs(f - AAfactors[i]) < delta) {
+         delta = fabs(f - AAfactors[i]);
+         bestMatch = i;
+      }
+   return bestMatch;
+}
 
 VideoOptionsDialog::VideoOptionsDialog() : CDialog(IDD_VIDEO_OPTIONS)
 {
@@ -66,7 +77,10 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
    float nudgeStrength = 2e-2f;
    sprintf_s(tmp, 256, "%f", nudgeStrength);
    SetDlgItemTextA(IDC_NUDGE_STRENGTH, tmp);
-   SendMessage(GetDlgItem(IDC_AA_ALL_TABLES).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
+
+   SendMessage(GetDlgItem(IDC_SSSLIDER).GetHwnd(), TBM_SETPOS, TRUE, getBestMatchingAAfactorIndex(1.0f));
+   SetDlgItemText(IDC_SSSLIDER_LABEL, "Supersampling Factor: 1.0");
+
    SendMessage(GetDlgItem(IDC_DYNAMIC_DN).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_DYNAMIC_AO).GetHwnd(), BM_SETCHECK, profile == 2 ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_ENABLE_AO).GetHwnd(), BM_SETCHECK, true ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -86,7 +100,6 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
    SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_BG_SET).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_SETCURSEL, 0, 0);
-   updateStereoVisibility(0);
    SendMessage(GetDlgItem(IDC_3D_STEREO_Y).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    float stereo3DOfs = 0.0f;
    sprintf_s(tmp, 256, "%f", stereo3DOfs);
@@ -97,21 +110,6 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
    float stereo3DZPD = 0.5f;
    sprintf_s(tmp, 256, "%f", stereo3DZPD);
    SetDlgItemTextA(IDC_3D_STEREO_ZPD, tmp);
-   float vrSlope = 6.5f;
-   sprintf_s(tmp, 256, "%f0.1", vrSlope);
-   SetDlgItemTextA(IDC_VR_SLOPE, tmp);
-   float vrOrientation = 0.0f;
-   sprintf_s(tmp, 256, "%f0.1", vrOrientation);
-   SetDlgItemTextA(IDC_3D_VR_ORIENTATION, tmp);
-   float vrX = 0.0f;
-   sprintf_s(tmp, 256, "%f0.1", vrX);
-   SetDlgItemTextA(IDC_VR_OFFSET_X, tmp);
-   float vrY = 0.0f;
-   sprintf_s(tmp, 256, "%f0.1", vrY);
-   SetDlgItemTextA(IDC_VR_OFFSET_Y, tmp);
-   float vrZ = 80.0f;
-   sprintf_s(tmp, 256, "%0.1f", vrZ);
-   SetDlgItemTextA(IDC_VR_OFFSET_Z, tmp);
    SendMessage(GetDlgItem(IDC_USE_NVIDIA_API_CHECK).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_BLOOM_OFF).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_DISABLE_DWM).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -124,15 +122,13 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
    SendMessage(GetDlgItem(IDC_StretchNo).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);
    SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_SETCURSEL, 1, 0);
    SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_SETCURSEL, 0, 0);
-   //AMD Debug
-   SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_SETCURSEL, 1, 0);
-   SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_SETCURSEL, 0, 0);
 }
 
 void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes, const VideoMode* curSelMode)
 {
    const HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
    SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
+
    int bestMatch = 0; // to find closest matching res
    int bestMatchingPoints = 0; // dto.
 
@@ -146,15 +142,8 @@ void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes,
    {
       char szT[128];
 
-#ifdef ENABLE_SDL
       if (modes[i].depth) // i.e. is this windowed or not
-         sprintf_s(szT, "%d x %d (%dHz) %s", modes[i].width, modes[i].height, modes[i].refreshrate, (modes[i].depth == 32) ? "32bit" :
-            (modes[i].depth == 30) ? "HDR" :
-            (modes[i].depth == 16) ? "16bit" : "");
-#else
-      if (modes[i].depth)
          sprintf_s(szT, "%d x %d (%dHz)", modes[i].width, modes[i].height, /*modes[i].depth,*/ modes[i].refreshrate);
-#endif
       else
          sprintf_s(szT, "%d x %d", modes[i].width, modes[i].height);
 
@@ -177,30 +166,6 @@ void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes,
    SendMessage(hwndList, LB_SETCURSEL, bestMatch, 0);
 }
 
-void VideoOptionsDialog::updateStereoVisibility(int stereo3D) {
-   if (stereo3D == STEREO_INT || stereo3D == STEREO_SBS) stereo3D = STEREO_TB;
-   GetDlgItem(IDC_3D_STEREO_Y).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
-   GetDlgItem(IDC_3D_STEREO_OFS).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
-   GetDlgItem(IDC_3D_STEREO_OFS_LABEL).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
-   GetDlgItem(IDC_3D_STEREO_MS).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
-   GetDlgItem(IDC_3D_STEREO_MS_LABEL).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
-   GetDlgItem(IDC_3D_STEREO_ZPD).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
-   GetDlgItem(IDC_3D_STEREO_ZPD_LABEL).ShowWindow(stereo3D == STEREO_TB ? SW_SHOW : SW_HIDE);
-
-   GetDlgItem(IDC_VR_DISABLE_PREVIEW).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
-   GetDlgItem(IDC_VR_SLOPE).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
-   GetDlgItem(IDC_VR_SLOPE_LABEL).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
-   GetDlgItem(IDC_3D_VR_ORIENTATION).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
-   GetDlgItem(IDC_3D_VR_ORIENTATION_LABEL).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
-   GetDlgItem(IDC_VR_OFFSET_X).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
-   GetDlgItem(IDC_VR_OFFSET_X_LABEL).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
-   GetDlgItem(IDC_VR_OFFSET_Y).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
-   GetDlgItem(IDC_VR_OFFSET_Y_LABEL).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
-   GetDlgItem(IDC_VR_OFFSET_Z).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
-   GetDlgItem(IDC_VR_OFFSET_Z_LABEL).ShowWindow(stereo3D == STEREO_VR ? SW_SHOW : SW_HIDE);
-
-   GetDlgItem(IDC_HEADTRACKING).ShowWindow(stereo3D != STEREO_VR ? SW_SHOW : SW_HIDE);
-}
 
 BOOL VideoOptionsDialog::OnInitDialog()
 {
@@ -257,17 +222,12 @@ BOOL VideoOptionsDialog::OnInitDialog()
       AddToolTip("Switches all tables to use the respective Cabinet display setup.\r\nAlso useful if a 270 degree rotated Desktop monitor is used.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_FXAACB).GetHwnd();
       AddToolTip("Enables post-processed Anti-Aliasing.\r\nThis delivers smoother images, at the cost of slight blurring.\r\n'Quality FXAA' and 'Quality SMAA' are recommended and lead to less artifacts,\nbut will harm performance on low-end graphics cards.", hwndDlg, toolTipHwnd, controlHwnd);
-      controlHwnd = GetDlgItem(IDC_AA_ALL_TABLES).GetHwnd();
-      AddToolTip("Enable 1.5x SuperSampling. Good AA for VR.\r\nThis delivers very good quality, but can slow down performance significantly.", hwndDlg, toolTipHwnd, controlHwnd);
+      controlHwnd = GetDlgItem(IDC_SSSLIDER).GetHwnd();
+      AddToolTip("Enables brute-force Up/Downsampling.\r\nThis delivers very good quality, but slows down performance significantly.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_OVERWRITE_BALL_IMAGE_CHECK).GetHwnd();
       AddToolTip("When checked it overwrites the ball image/decal image(s) for every table.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
       AddToolTip("Select Display for Video output.", hwndDlg, toolTipHwnd, controlHwnd);
-      //AMD Debug
-      controlHwnd = GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd();
-      AddToolTip("Pixel format for VR Rendering.", hwndDlg, toolTipHwnd, controlHwnd);
-      controlHwnd = GetDlgItem(IDC_COMBO_BLIT).GetHwnd();
-      AddToolTip("Blitting technique for VR Rendering.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_HEADTRACKING).GetHwnd();
       AddToolTip("Enable BAM Headtracking. See https://www.ravarcade.pl", hwndDlg, toolTipHwnd, controlHwnd);
    }
@@ -275,11 +235,11 @@ BOOL VideoOptionsDialog::OnInitDialog()
    const int maxTexDim = LoadValueIntWithDefault("Player", "MaxTexDimension", 0); // default: Don't resize textures
    switch (maxTexDim)
    {
-   case 3072:SendMessage(GetDlgItem(IDC_Tex3072).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);       break;
+   case 3072:SendMessage(GetDlgItem(IDC_Tex3072).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);      break;
    case 512: // legacy, map to 1024 nowadays
-   case 1024:SendMessage(GetDlgItem(IDC_Tex1024).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);       break;
-   case 2048:SendMessage(GetDlgItem(IDC_Tex2048).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);       break;
-   default:	SendMessage(GetDlgItem(IDC_TexUnlimited).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);   break;
+   case 1024:SendMessage(GetDlgItem(IDC_Tex1024).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);      break;
+   case 2048:SendMessage(GetDlgItem(IDC_Tex2048).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);      break;
+   default:	SendMessage(GetDlgItem(IDC_TexUnlimited).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0); break;
    }
 
    const bool reflection = LoadValueBoolWithDefault("Player", "BallReflection", true);
@@ -289,13 +249,13 @@ BOOL VideoOptionsDialog::OnInitDialog()
    SendMessage(GetDlgItem(IDC_GLOBAL_TRAIL_CHECK).GetHwnd(), BM_SETCHECK, trail ? BST_CHECKED : BST_UNCHECKED, 0);
 
    const int vsync = LoadValueIntWithDefault("Player", "AdaptiveVSync", 0);
-
    SetDlgItemInt(IDC_ADAPTIVE_VSYNC, vsync, FALSE);
 
    const int maxPrerenderedFrames = LoadValueIntWithDefault("Player", "MaxPrerenderedFrames", 0);
    SetDlgItemInt(IDC_MAX_PRE_FRAMES, maxPrerenderedFrames, FALSE);
 
    char tmp[256];
+
    const float ballAspecRatioOffsetX = LoadValueFloatWithDefault("Player", "BallCorrectionX", 0.f);
    sprintf_s(tmp, 256, "%f", ballAspecRatioOffsetX);
    SetDlgItemTextA(IDC_CORRECTION_X, tmp);
@@ -316,8 +276,17 @@ BOOL VideoOptionsDialog::OnInitDialog()
    sprintf_s(tmp, 256, "%f", nudgeStrength);
    SetDlgItemTextA(IDC_NUDGE_STRENGTH, tmp);
 
-   const int useAA = LoadValueIntWithDefault("Player", "USEAA", 0);
-   SendMessage(GetDlgItem(IDC_AA_ALL_TABLES).GetHwnd(), BM_SETCHECK, (useAA != 0) ? BST_CHECKED : BST_UNCHECKED, 0);
+   const float AAfactor = LoadValueFloatWithDefault("Player", "AAFactor", LoadValueBoolWithDefault("Player", "USEAA", false) ? 1.5f : 1.0f);
+   const HWND hwndSSSlider = GetDlgItem(IDC_SSSLIDER).GetHwnd();
+   SendMessage(hwndSSSlider, TBM_SETRANGE, fTrue, MAKELONG(0, AAfactorCount-1));
+   SendMessage(hwndSSSlider, TBM_SETTICFREQ, 1, 0);
+   SendMessage(hwndSSSlider, TBM_SETLINESIZE, 0, 1);
+   SendMessage(hwndSSSlider, TBM_SETPAGESIZE, 0, 1);
+   SendMessage(hwndSSSlider, TBM_SETTHUMBLENGTH, 5, 0);
+   SendMessage(hwndSSSlider, TBM_SETPOS, TRUE, getBestMatchingAAfactorIndex(AAfactor));
+   char newText[32];
+   sprintf_s(newText, "Supersampling Factor: %.2f", AAfactor);
+   SetDlgItemText(IDC_SSSLIDER_LABEL, newText);
 
    const int useDN = LoadValueIntWithDefault("Player", "DynamicDayNight", 0);
    SendMessage(GetDlgItem(IDC_DYNAMIC_DN).GetHwnd(), BM_SETCHECK, (useDN != 0) ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -355,8 +324,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
       ::EnableWindow(GetDlgItem(IDC_BALL_DECAL_EDIT).GetHwnd(), FALSE);
    }
 
-   const int fxaa = LoadValueIntWithDefault("Player", "FXAA", 0);
-
+   const int fxaa = LoadValueIntWithDefault("Player", "FXAA", 2);
    SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Disabled");
    SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Fast FXAA");
    SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Standard FXAA");
@@ -372,41 +340,12 @@ BOOL VideoOptionsDialog::OnInitDialog()
    const int bgset = LoadValueIntWithDefault("Player", "BGSet", 0);
    SendMessage(GetDlgItem(IDC_BG_SET).GetHwnd(), BM_SETCHECK, (bgset != 0) ? BST_CHECKED : BST_UNCHECKED, 0);
 
-   int stereo3D;
-
-   //Try to remain compatible with VPX in the registry
-   hr = LoadValueInt("Player", "Stereo3DVR", &stereo3D);
-   if (hr != S_OK || stereo3D != STEREO_VR) {
-      hr = LoadValueInt("Player", "Stereo3D", &stereo3D);
-      if (hr != S_OK)
-         stereo3D = STEREO_OFF;
-      //This should only happens once for users that have used the old VPVR version
-      if (stereo3D == STEREO_VR) {
-         stereo3D = 0;
-         SaveValueInt("Player", "Stereo3D", stereo3D);
-         stereo3D = STEREO_VR;
-      }
-   }
-
+   const int stereo3D = LoadValueIntWithDefault("Player", "Stereo3D", 0);
    SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Disabled");
    SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"TB (Top / Bottom)");
    SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Interlaced (e.g. LG TVs)");
    SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"SBS (Side by Side)");
-#ifdef ENABLE_VR
-   SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Steam VR");
-#endif
    SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_SETCURSEL, stereo3D, 0);
-
-   if (stereo3D == STEREO_VR)
-   {
-      ::EnableWindow(GetDlgItem(IDC_FXAACB).GetHwnd(), FALSE);
-      ::EnableWindow(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), FALSE);
-   }
-   else
-   {
-      ::EnableWindow(GetDlgItem(IDC_FXAACB).GetHwnd(), TRUE);
-      ::EnableWindow(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), TRUE);
-   }
 
    const bool stereo3DY = LoadValueBoolWithDefault("Player", "Stereo3DYAxis", false);
    SendMessage(GetDlgItem(IDC_3D_STEREO_Y).GetHwnd(), BM_SETCHECK, stereo3DY ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -414,29 +353,6 @@ BOOL VideoOptionsDialog::OnInitDialog()
    const float stereo3DOfs = LoadValueFloatWithDefault("Player", "Stereo3DOffset", 0.f);
    sprintf_s(tmp, 256, "%f", stereo3DOfs);
    SetDlgItemTextA(IDC_3D_STEREO_OFS, tmp);
-
-   int disableVRPreview = LoadValueFloatWithDefault("Player", "VRPreviewDisabled", 0);
-   SendMessage(GetDlgItem(IDC_VR_DISABLE_PREVIEW).GetHwnd(), BM_SETCHECK, disableVRPreview ? BST_CHECKED : BST_UNCHECKED, 0);
-
-   float vrSlope = LoadValueFloatWithDefault("Player", "VRSlope", 6.5f);
-   sprintf_s(tmp, 256, "%0.2f", vrSlope);
-   SetDlgItemTextA(IDC_VR_SLOPE, tmp);
-
-   float vrOrientation = LoadValueFloatWithDefault("Player", "VROrientation", 0.0f);
-   sprintf_s(tmp, 256, "%0.1f", vrOrientation);
-   SetDlgItemTextA(IDC_3D_VR_ORIENTATION, tmp);
-
-   float vrX = LoadValueFloatWithDefault("Player", "VRTableX", 0.0f);
-   sprintf_s(tmp, 256, "%0.1f", vrX);
-   SetDlgItemTextA(IDC_VR_OFFSET_X, tmp);
-
-   float vrY = LoadValueFloatWithDefault("Player", "VRTableY", 0.0f);
-   sprintf_s(tmp, 256, "%0.1f", vrY);
-   SetDlgItemTextA(IDC_VR_OFFSET_Y, tmp);
-
-   float vrZ = LoadValueFloatWithDefault("Player", "VRTableZ", 80.0f);
-   sprintf_s(tmp, 256, "%0.1f", vrZ);
-   SetDlgItemTextA(IDC_VR_OFFSET_Z, tmp);
 
    const float stereo3DMS = LoadValueFloatWithDefault("Player", "Stereo3DMaxSeparation", 0.03f);
    sprintf_s(tmp, 256, "%f", stereo3DMS);
@@ -446,7 +362,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
    sprintf_s(tmp, 256, "%f", stereo3DZPD);
    SetDlgItemTextA(IDC_3D_STEREO_ZPD, tmp);
 
-   int bamHeadtracking = LoadValueIntWithDefault("Player", "BAMheadTracking", 0);
+   const int bamHeadtracking = LoadValueIntWithDefault("Player", "BAMheadTracking", 0);
    SendMessage(GetDlgItem(IDC_HEADTRACKING).GetHwnd(), BM_SETCHECK, bamHeadtracking ? BST_CHECKED : BST_UNCHECKED, 0);
 
    const bool disableDWM = LoadValueBoolWithDefault("Player", "DisableDWM", false);
@@ -478,8 +394,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
    hr = LoadValueInt("Player", "Display", &display);
    std::vector<DisplayConfig> displays;
    getDisplayList(displays);
-
-   if ((hr != S_OK) || ((int)displays.size() <= display) || (display<-1))
+   if ((hr != S_OK) || ((int)displays.size() <= display))
       display = -1;
 
    SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_RESETCONTENT, 0, 0);
@@ -500,15 +415,16 @@ BOOL VideoOptionsDialog::OnInitDialog()
 
    const int heightcur = LoadValueIntWithDefault("Player", "Height", widthcur * 9 / 16);
 
+   const HWND hwndFullscreen = GetDlgItem(IDC_FULLSCREEN).GetHwnd();
    if (fullscreen)
    {
-      SendMessage(hwndDlg, GET_FULLSCREENMODES, widthcur << 16 | refreshrate | (display << 10), heightcur << 16 | depthcur);//Assumtion is that there are less than 64 displays and the refresh rate is lower than 1024
-      SendMessage(GetDlgItem(IDC_FULLSCREEN).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);
+      SendMessage(hwndDlg, GET_FULLSCREENMODES, widthcur << 16 | refreshrate, heightcur << 16 | depthcur);
+      SendMessage(hwndFullscreen, BM_SETCHECK, BST_CHECKED, 0);
    }
    else
    {
       SendMessage(hwndDlg, GET_WINDOW_MODES, widthcur, heightcur);
-      SendMessage(GetDlgItem(IDC_FULLSCREEN).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
+      SendMessage(hwndFullscreen, BM_SETCHECK, BST_UNCHECKED, 0);
    }
 
    const int alphaRampsAccuracy = LoadValueIntWithDefault("Player", "AlphaRampAccuracy", 10);
@@ -521,7 +437,6 @@ BOOL VideoOptionsDialog::OnInitDialog()
    SendMessage(hwndARASlider, TBM_SETPOS, TRUE, alphaRampsAccuracy);
 
    const int ballStretchMode = LoadValueIntWithDefault("Player", "BallStretchMode", 0);
-
    switch (ballStretchMode)
    {
    case 0:  SendMessage(GetDlgItem(IDC_StretchNo).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);      break;
@@ -542,22 +457,6 @@ BOOL VideoOptionsDialog::OnInitDialog()
    SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"10:16 (R)");
    SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"10:21 (R)");
    SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_SETCURSEL, selected, 0);
-
-   //AMD Debugging
-   SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"RGB 8");
-   SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"RGBA 8");
-   SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"RGB 16F");
-   SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"RGBA 16F");
-   int textureModeVR = LoadValueIntWithDefault("Player", "textureModeVR", 1);
-   SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_SETCURSEL, textureModeVR, 0);
-
-   SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Blit");
-   SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"BlitNamed");
-   SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Shader");
-   int blitModeVR = LoadValueIntWithDefault("Player", "blitModeVR", 0);
-   SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_SETCURSEL, blitModeVR, 0);
-
-   updateStereoVisibility(stereo3D);
 
    return TRUE;
 }
@@ -720,6 +619,15 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
       SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
       break;
    }
+   case WM_HSCROLL:
+   {
+      int pos = wParam >> 16;
+      const float AAfactor = ((pos) < AAfactorCount) ? AAfactors[pos] : 1.0f;
+      char newText[32];
+      sprintf_s(newText, "Supersampling Factor: %.2f", AAfactor);
+      SetDlgItemText(IDC_SSSLIDER_LABEL, newText);
+      break;
+   }
    }
 
    return DialogProcDefault(uMsg, wParam, lParam);
@@ -814,21 +722,18 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
    case IDC_DISPLAY_ID:
    {
       const size_t checked = SendDlgItemMessage(IDC_FULLSCREEN, BM_GETCHECK, 0, 0);
-      size_t index = (int)SendMessage(GetDlgItem(IDC_SIZELIST).GetHwnd(), LB_GETCURSEL, 0, 0);
+      const size_t index = SendMessage(GetDlgItem(IDC_SIZELIST).GetHwnd(), LB_GETCURSEL, 0, 0);
       if (allVideoModes.size() == 0) {
-         HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
-         HWND hwndDisplay = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
-         int display = SendMessage(hwndDisplay, CB_GETCURSEL, 0, 0);
+         const HWND hwndDisplay = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
+         const int display = (int)SendMessage(hwndDisplay, CB_GETCURSEL, 0, 0);
          EnumerateDisplayModes(display, allVideoModes);
-
       }
       if (allVideoModes.size() > index) {
-         VideoMode * pvm = &allVideoModes[index];
+         const VideoMode* const pvm = &allVideoModes[index];
          if (checked)
             SendMessage(GET_FULLSCREENMODES, (pvm->width << 16) | pvm->refreshrate, (pvm->height << 16) | pvm->depth);
          else
             SendMessage(GET_WINDOW_MODES, pvm->width, pvm->height);
-
       }
       else
          SendMessage(checked ? GET_FULLSCREENMODES : GET_WINDOW_MODES, 0, 0);
@@ -838,22 +743,6 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
    {
       const size_t checked = SendDlgItemMessage(IDC_FULLSCREEN, BM_GETCHECK, 0, 0);
       SendMessage(checked ? GET_FULLSCREENMODES : GET_WINDOW_MODES, 0, 0);
-      break;
-   }
-   case IDC_3D_STEREO:
-   {
-      int stereo3D = SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_GETCURSEL, 0, 0);
-      if (stereo3D>=0) updateStereoVisibility(stereo3D);
-      if (stereo3D == STEREO_VR)
-      {
-         ::EnableWindow(GetDlgItem(IDC_FXAACB).GetHwnd(), FALSE);
-         ::EnableWindow(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), FALSE);
-      }
-      else
-      {
-         ::EnableWindow(GetDlgItem(IDC_FXAACB).GetHwnd(), TRUE);
-         ::EnableWindow(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), TRUE);
-      }
       break;
    }
    default:
@@ -881,9 +770,10 @@ void VideoOptionsDialog::OnOK()
    const size_t display = SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
    SaveValueInt("Player", "Display", display);
 
-   size_t video10bit = SendMessage(GetDlgItem(IDC_10BIT_VIDEO).GetHwnd(), BM_GETCHECK, 0, 0);
-   SaveValueInt("Player", "Render10Bit", video10bit);
+   const bool video10bit = (SendMessage(GetDlgItem(IDC_10BIT_VIDEO).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
+   SaveValueBool("Player", "Render10Bit", video10bit);
 
+   //const HWND maxTexDimUnlimited = GetDlgItem(hwndDlg, IDC_TexUnlimited);
    int maxTexDim = 0;
    if (SendMessage(GetDlgItem(IDC_Tex3072).GetHwnd(), BM_GETCHECK, 0, 0) == BST_CHECKED)
       maxTexDim = 3072;
@@ -921,9 +811,10 @@ void VideoOptionsDialog::OnOK()
    tmpStr = GetDlgItemTextA(IDC_NUDGE_STRENGTH);
    SaveValueString("Player", "NudgeStrength", tmpStr.c_str());
 
-   size_t fxaa = SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_GETCURSEL, 0, 0);
+   const HWND hwndFXAA = GetDlgItem(IDC_FXAACB).GetHwnd();
+   size_t fxaa = SendMessage(hwndFXAA, CB_GETCURSEL, 0, 0);
    if (fxaa == LB_ERR)
-      fxaa = 0;
+      fxaa = 2;
    SaveValueInt("Player", "FXAA", fxaa);
 
    const bool scaleFX_DMD = (SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
@@ -932,8 +823,10 @@ void VideoOptionsDialog::OnOK()
    const size_t BGSet = SendMessage(GetDlgItem(IDC_BG_SET).GetHwnd(), BM_GETCHECK, 0, 0);
    SaveValueInt("Player", "BGSet", BGSet);
 
-   const size_t useAA = SendMessage(GetDlgItem(IDC_AA_ALL_TABLES).GetHwnd(), BM_GETCHECK, 0, 0);
-   SaveValueInt("Player", "USEAA", useAA);
+   const size_t AAfactorIndex = SendMessage(GetDlgItem(IDC_SSSLIDER).GetHwnd(), TBM_GETPOS, 0, 0);
+   const float AAfactor = (AAfactorIndex < AAfactorCount) ? AAfactors[AAfactorIndex] : 1.0f;
+   SaveValueBool("Player", "USEAA", AAfactor > 1.0f);
+   SaveValueFloat("Player", "AAFactor", AAfactor);
 
    const bool useDN = (SendMessage(GetDlgItem(IDC_DYNAMIC_DN).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
    SaveValueBool("Player", "DynamicDayNight", useDN);
@@ -952,24 +845,8 @@ void VideoOptionsDialog::OnOK()
 
    size_t stereo3D = SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_GETCURSEL, 0, 0);
    if (stereo3D == LB_ERR)
-      stereo3D = STEREO_OFF;
-#ifdef ENABLE_VR
-   if ((stereo3D == STEREO_VR) && !vr::VR_IsRuntimeInstalled()) {
-      MessageBox("SteamVR Runtime not found. Please install SteamVR.", "SteamVR", MB_OK);
-      stereo3D = STEREO_OFF;
-   }
-#endif
-   if (stereo3D != STEREO_VR)
-      SaveValueInt("Player", "Stereo3D", stereo3D);
-   SaveValueInt("Player", "Stereo3DVR", stereo3D);
-
-   //AMD Debugging
-   size_t textureModeVR = SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_GETCURSEL, 0, 0);
-   SaveValueInt("Player", "textureModeVR", textureModeVR);
-
-   size_t blitModeVR = SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_GETCURSEL, 0, 0);
-   SaveValueInt("Player", "blitModeVR", blitModeVR);
-
+      stereo3D = 0;
+   SaveValueInt("Player", "Stereo3D", stereo3D);
    SaveValueInt("Player", "Stereo3DEnabled", stereo3D);
 
    const bool stereo3DY = (SendMessage(GetDlgItem(IDC_3D_STEREO_Y).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
@@ -987,26 +864,8 @@ void VideoOptionsDialog::OnOK()
    const size_t alphaRampsAccuracy = SendMessage(GetDlgItem(IDC_ARASlider).GetHwnd(), TBM_GETPOS, 0, 0);
    SaveValueInt("Player", "AlphaRampAccuracy", alphaRampsAccuracy);
 
-   size_t disableVRPreview = SendMessage(GetDlgItem(IDC_VR_DISABLE_PREVIEW).GetHwnd(), BM_GETCHECK, 0, 0);
-   SaveValueInt("Player", "VRPreviewDisabled", disableVRPreview);
-
    tmpStr = GetDlgItemTextA(IDC_3D_STEREO_OFS);
    SaveValueString("Player", "Stereo3DOffset", tmpStr.c_str());
-
-   tmpStr = GetDlgItemTextA(IDC_VR_SLOPE);
-   SaveValueString("Player", "VRSlope", tmpStr.c_str());
-
-   tmpStr = GetDlgItemTextA(IDC_3D_VR_ORIENTATION);
-   SaveValueString("Player", "VROrientation", tmpStr.c_str());
-
-   tmpStr = GetDlgItemTextA(IDC_VR_OFFSET_X);
-   SaveValueString("Player", "VRTableX", tmpStr.c_str());
-
-   tmpStr = GetDlgItemTextA(IDC_VR_OFFSET_Y);
-   SaveValueString("Player", "VRTableY", tmpStr.c_str());
-
-   tmpStr = GetDlgItemTextA(IDC_VR_OFFSET_Z);
-   SaveValueString("Player", "VRTableZ", tmpStr.c_str());
 
    tmpStr = GetDlgItemTextA(IDC_3D_STEREO_MS);
    SaveValueString("Player", "Stereo3DMaxSeparation", tmpStr.c_str());
@@ -1026,6 +885,7 @@ void VideoOptionsDialog::OnOK()
    const bool bloomOff = (SendMessage(GetDlgItem(IDC_BLOOM_OFF).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
    SaveValueBool("Player", "ForceBloomOff", bloomOff);
 
+   //HWND hwndBallStretchNo = GetDlgItem(hwndDlg, IDC_StretchNo);
    int ballStretchMode = 0;
    if (SendMessage(GetDlgItem(IDC_StretchYes).GetHwnd(), BM_GETCHECK, 0, 0) == BST_CHECKED)
       ballStretchMode = 1;
@@ -1053,7 +913,6 @@ void VideoOptionsDialog::OnOK()
       SaveValueBool("Player", "OverwriteBallImage", false);
 
    CDialog::OnOK();
-
 }
 
 void VideoOptionsDialog::OnClose()

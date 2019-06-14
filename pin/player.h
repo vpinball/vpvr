@@ -413,7 +413,7 @@ public:
    int m_VSync; // targeted refresh rate in Hz, if larger refresh rate it will limit FPS by uSleep() //!! currently does not work adaptively as it would require IDirect3DDevice9Ex which is not supported on WinXP
    int m_maxPrerenderedFrames;
    int m_FXAA;
-   bool m_AA;
+   float m_AAfactor;
 
    bool m_dynamicAO;
    bool m_disableAO;

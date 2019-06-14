@@ -89,7 +89,7 @@ class RenderDevice
 {
 public:
 
-RenderDevice(HWND* const hwnd, const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice = NULL);
+RenderDevice(HWND* const hwnd, const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice = NULL);
 
 #ifdef ENABLE_SDL
    enum RenderStates
@@ -271,6 +271,9 @@ RenderDevice(HWND* const hwnd, const int width, const int height, const bool ful
    D3DTexture* DuplicateTextureSingleChannel(RenderTarget* src);
    D3DTexture* DuplicateDepthTexture(RenderTarget* src);
 
+   static bool isVRinstalled();
+   static bool isVRturnedOn();
+
 #ifndef ENABLE_SDL
    void SetRenderTarget(RenderTarget* surf, bool ignoreStereo = false);
    void SetZBuffer(D3DTexture* surf);
@@ -387,7 +390,7 @@ RenderDevice(HWND* const hwnd, const int width, const int height, const bool ful
    bool         m_fullscreen;
    int          m_colorDepth;
    int          m_vsync;
-   bool         m_useAA;
+   float        m_AAfactor;
    int          m_stereo3D;
    bool         m_ssRefl;
    bool         m_disableDwm;
@@ -468,6 +471,7 @@ private:
    Matrix3D m_tableWorld;
    Matrix3D m_roomWorld;
    vr::TrackedDevicePose_t *m_rTrackedDevicePose;
+   float m_scale;
 
 #endif
 

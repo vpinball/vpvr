@@ -1,10 +1,10 @@
-#ifndef H_VIDEO_OPTIONS_DIALOG
-#define  H_VIDEO_OPTIONS_DIALOG
+#ifndef H_VR_OPTIONS_DIALOG
+#define  H_VR_OPTIONS_DIALOG
 
-class VideoOptionsDialog : public CDialog
+class VROptionsDialog : public CDialog
 {
 public:
-   VideoOptionsDialog();
+   VROptionsDialog();
 
 protected:
    virtual BOOL OnInitDialog();
@@ -15,11 +15,11 @@ protected:
 
 private:
    void AddToolTip(char *text, HWND parentHwnd, HWND toolTipHwnd, HWND controlHwnd);
-   void ResetVideoPreferences(const unsigned int profile); // 0 = default, 1 = lowend PC, 2 = highend PC
+   void ResetVideoPreferences(); // 0 = default, 1 = lowend PC, 2 = highend PC
    void FillVideoModesList(const std::vector<VideoMode>& modes, const VideoMode* curSelMode = 0);
    size_t getBestMatchingAAfactorIndex(float f);
 
    std::vector<VideoMode> allVideoModes;
 };
 
-#endif 
+#endif

@@ -1502,7 +1502,7 @@ void PinTable::ReadAccelerometerCalibration()
    m_tblAccelMaxY = LoadValueIntWithDefault("Player", "PBWAccelMaxY", 100) * JOYRANGEMX / 100;
 
    // bug!! If tilt sensitiivty is not set, it's supposed to disable analog tilting, see KeysConfigDialog.cpp
-   plumb_set_sensitivity((float)LoadValueIntWithDefault("Player", "TiltSensitivity", 0.40f) * (float)(1.0 / 1000.0));
+   plumb_set_sensitivity((float)LoadValueIntWithDefault("Player", "TiltSensitivity", 400) * (float)(1.0 / 1000.0));
 
    if (g_pplayer)
       g_pplayer->m_pininput.LoadSettings();

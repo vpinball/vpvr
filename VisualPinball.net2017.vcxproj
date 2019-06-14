@@ -716,6 +716,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
   <ItemGroup>
     <ClCompile Include="backGlass.cpp" />
     <ClCompile Include="BlackBox.cpp" />
+    <ClCompile Include="captureExt.cpp" />
     <ClCompile Include="codeviewedit.cpp" />
     <ClCompile Include="CrashHandler.cpp" />
     <ClCompile Include="Debugger.cpp" />
@@ -733,6 +734,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <ClCompile Include="Dialogs\SoundDialog.cpp" />
     <ClCompile Include="Dialogs\TableInfoDialog.cpp" />
     <ClCompile Include="dialogs\VideoOptionsDialog.cpp" />
+    <ClCompile Include="dialogs\VROptionsDialog.cpp" />
     <ClCompile Include="flasher.cpp" />
     <ClCompile Include="glad.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -1927,6 +1929,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <ClInclude Include="ballex.h" />
     <ClInclude Include="BlackBox.h" />
     <ClInclude Include="bumper.h" />
+    <ClInclude Include="captureExt.h" />
     <ClInclude Include="codeview.h" />
     <ClInclude Include="codeviewedit.h" />
     <ClInclude Include="CrashHandler.h" />
@@ -1946,6 +1949,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <ClInclude Include="Dialogs\SoundDialog.h" />
     <ClInclude Include="Dialogs\TableInfoDialog.h" />
     <ClInclude Include="dialogs\VideoOptionsDialog.h" />
+    <ClInclude Include="dialogs\VROptionsDialog.h" />
     <ClInclude Include="dispid.h" />
     <ClInclude Include="dispreel.h" />
     <ClInclude Include="disputil.h" />

@@ -491,27 +491,53 @@ Player::Player(bool _cameraMode) : cameraMode(_cameraMode)
    m_current_renderstage = 0;
    m_dmdstate = 0;
 
-   m_maxPrerenderedFrames = LoadValueIntWithDefault("Player", "MaxPrerenderedFrames", 0);
-   m_NudgeShake = LoadValueFloatWithDefault("Player", "NudgeStrength", 2e-2f);
-   m_FXAA = LoadValueIntWithDefault("Player", "FXAA", Disabled);
+   ;
+   bool useVR = RenderDevice::isVRinstalled() && (LoadValueBoolWithDefault("PlayerVR", "AskToTurnOn", true) || RenderDevice::isVRturnedOn());
+   while (useVR && !RenderDevice::isVRturnedOn()) {
+      useVR = MessageBox(nullptr, "VR drivers detected, but the HMD is turned off. Disable VR?", "Please turn VR on", MB_YESNO) == IDNO;
+   }
+
    m_fTrailForBalls = LoadValueBoolWithDefault("Player", "BallTrail", true);
    m_fReflectionForBalls = LoadValueBoolWithDefault("Player", "BallReflection", true);
-   m_AA = LoadValueBoolWithDefault("Player", "USEAA", false);
-   m_dynamicAO = LoadValueBoolWithDefault("Player", "DynamicAO", false);
-   m_disableAO = LoadValueBoolWithDefault("Player", "DisableAO", false);
-   m_ss_refl = LoadValueBoolWithDefault("Player", "SSRefl", false);
-   m_pf_refl = LoadValueBoolWithDefault("Player", "PFRefl", true);
-   m_stereo3D = LoadValueIntWithDefault("Player", "Stereo3DVR", LoadValueIntWithDefault("Player", "Stereo3D", 0));
-   m_stereo3Denabled = LoadValueBoolWithDefault("Player", "Stereo3DEnabled", (m_stereo3D != 0));
-   m_stereo3DY = LoadValueBoolWithDefault("Player", "Stereo3DYAxis", false);
-   m_scaleFX_DMD = LoadValueBoolWithDefault("Player", "ScaleFXDMD", false);
    m_capExtDMD = LoadValueBoolWithDefault("Player", "CaptureExternalDMD", false);
-   m_disableDWM = LoadValueBoolWithDefault("Player", "DisableDWM", false);
-   m_useNvidiaApi = LoadValueBoolWithDefault("Player", "UseNVidiaAPI", false);
-   m_bloomOff = LoadValueBoolWithDefault("Player", "ForceBloomOff", false);
    m_BWrendering = LoadValueIntWithDefault("Player", "BWRendering", 0);
    m_fDetectScriptHang = LoadValueBoolWithDefault("Player", "DetectHang", false);
-   m_VSync = (m_stereo3D == STEREO_VR) ? 0 : LoadValueIntWithDefault("Player", "AdaptiveVSync", 0); //Disable VSync for VR
+
+   if (useVR) {
+      m_stereo3D = STEREO_VR;
+      m_maxPrerenderedFrames = 0;
+      m_NudgeShake = LoadValueFloatWithDefault("PlayerVR", "NudgeStrength", 2e-2f);
+      m_FXAA = LoadValueIntWithDefault("PlayerVR", "FXAA", Disabled);
+      m_AAfactor = LoadValueFloatWithDefault("PlayerVR", "AAFactor", LoadValueBoolWithDefault("Player", "USEAA", false) ? 1.5f : 1.0f);
+      m_dynamicAO = LoadValueBoolWithDefault("PlayerVR", "DynamicAO", false);
+      m_disableAO = LoadValueBoolWithDefault("PlayerVR", "DisableAO", false);
+      m_ss_refl = LoadValueBoolWithDefault("PlayerVR", "SSRefl", false);
+      m_pf_refl = LoadValueBoolWithDefault("PlayerVR", "PFRefl", true);
+      m_scaleFX_DMD = LoadValueBoolWithDefault("PlayerVR", "ScaleFXDMD", false);
+      m_disableDWM = false;
+      m_useNvidiaApi = false;
+      m_bloomOff = LoadValueBoolWithDefault("PlayerVR", "ForceBloomOff", false);
+      m_VSync = 0; //Disable VSync for VR
+   }
+   else {
+      m_stereo3D = LoadValueIntWithDefault("Player", "Stereo3D", STEREO_OFF);
+      m_maxPrerenderedFrames = LoadValueIntWithDefault("Player", "MaxPrerenderedFrames", 0);
+      m_NudgeShake = LoadValueFloatWithDefault("Player", "NudgeStrength", 2e-2f);
+      m_FXAA = LoadValueIntWithDefault("Player", "FXAA", Disabled);
+      m_AAfactor = LoadValueFloatWithDefault("Player", "AAFactor", LoadValueBoolWithDefault("Player", "USEAA", false) ? 1.5f : 1.0f);
+      m_dynamicAO = LoadValueBoolWithDefault("Player", "DynamicAO", false);
+      m_disableAO = LoadValueBoolWithDefault("Player", "DisableAO", false);
+      m_ss_refl = LoadValueBoolWithDefault("Player", "SSRefl", false);
+      m_pf_refl = LoadValueBoolWithDefault("Player", "PFRefl", true);
+      m_stereo3Denabled = LoadValueBoolWithDefault("Player", "Stereo3DEnabled", (m_stereo3D != 0));
+      m_stereo3DY = LoadValueBoolWithDefault("Player", "Stereo3DYAxis", false);
+      m_scaleFX_DMD = LoadValueBoolWithDefault("Player", "ScaleFXDMD", false);
+      m_disableDWM = LoadValueBoolWithDefault("Player", "DisableDWM", false);
+      m_useNvidiaApi = LoadValueBoolWithDefault("Player", "UseNVidiaAPI", false);
+      m_bloomOff = LoadValueBoolWithDefault("Player", "ForceBloomOff", false);
+      m_VSync = LoadValueIntWithDefault("Player", "AdaptiveVSync", 0);
+   }
+
 #ifdef ENABLE_BAM
    m_headTracking = LoadValueIntWithDefault("Player", "BAMheadTracking", 0) != 0;
 #endif
@@ -1304,7 +1330,7 @@ HRESULT Player::Init(PinTable * const ptable, const HWND hwndProgress, const HWN
    int vsync = (m_stereo3D == STEREO_VR || m_ptable->m_TableAdaptiveVSync == -1) ? m_VSync : m_ptable->m_TableAdaptiveVSync;
 
    // In VR we will ignore AA settings other than SuperSampling as well as Screenspace Reflections since they dont work
-   const bool useAA = (m_AA && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
+   const float AAfactor = ((m_ptable->m_useAA == -1) || (m_ptable->m_useAA == 1)) ? m_AAfactor : 1.0f;
    const unsigned int FXAA = (m_stereo3D == STEREO_VR) ? 0 : (m_ptable->m_useFXAA == -1) ? m_FXAA : m_ptable->m_useFXAA;
    const bool ss_refl = (m_stereo3D == STEREO_VR) ? false : (m_ss_refl && (m_ptable->m_useSSR == -1)) || (m_ptable->m_useSSR == 1);
    if (m_stereo3D == STEREO_VR)
@@ -1317,7 +1343,7 @@ HRESULT Player::Init(PinTable * const ptable, const HWND hwndProgress, const HWN
 
    // colordepth & refreshrate are only defined if fullscreen is true.
    const HRESULT hr = m_pin3d.InitPin3D(&m_playfieldHwnd, m_fFullScreen, m_width, m_height, colordepth,
-      m_refreshrate, vsync, useAA, m_stereo3D, FXAA, !m_disableAO, ss_refl);
+      m_refreshrate, vsync, AAfactor, m_stereo3D, FXAA, !m_disableAO, ss_refl);
    if (hr != S_OK)
    {
       char szfoo[64];
@@ -1916,7 +1942,7 @@ void Player::InitGameplayWindow()
    wcex.lpszMenuName = NULL;
    RegisterClassEx(&wcex);
 
-   m_fFullScreen = LoadValueBoolWithDefault("Player", "FullScreen", IsWindows10_1803orAbove());
+   m_fFullScreen = (m_stereo3D == STEREO_VR) ? false : LoadValueBoolWithDefault("Player", "FullScreen", IsWindows10_1803orAbove());
 
    // command line override
    if (disEnableTrueFullscreen == 0)
@@ -1924,13 +1950,13 @@ void Player::InitGameplayWindow()
    else if (disEnableTrueFullscreen == 1)
       m_fFullScreen = true;
 
-   m_width = LoadValueIntWithDefault("Player", "Width", m_fFullScreen ? DEFAULT_PLAYER_FS_WIDTH : DEFAULT_PLAYER_WIDTH);
-   m_height = LoadValueIntWithDefault("Player", "Height", m_width * 9 / 16);
+   m_width = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "Width", m_fFullScreen ? DEFAULT_PLAYER_FS_WIDTH : DEFAULT_PLAYER_WIDTH);
+   m_height = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "Height", m_width * 9 / 16);
 
    int x = 0;
    int y = 0;
 
-   int display = LoadValueIntWithDefault("Player", "Display", -1);
+   int display = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "Display", -1);
    display = (display < getNumberOfDisplays()) ? display : -1;
 
    // command line override
@@ -1966,8 +1992,8 @@ void Player::InitGameplayWindow()
       // is this a non-fullscreen window? -> get previously saved window position
       if ((m_height != m_screenheight) || (m_width != m_screenwidth))
       {
-         const int xn = LoadValueIntWithDefault("Player", "WindowPosX", x); //!! does this handle multi-display correctly like this?
-         const int yn = LoadValueIntWithDefault("Player", "WindowPosY", y);
+         const int xn = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "WindowPosX", x); //!! does this handle multi-display correctly like this?
+         const int yn = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "WindowPosY", y);
 
          RECT r;
          r.left = xn;
@@ -3595,7 +3621,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
    }
    static int disableVRPreview = -1;
    if (disableVRPreview == -1) {
-      disableVRPreview = LoadValueIntWithDefault("Player", "VRPreviewDisabled", 0);
+      disableVRPreview = LoadValueIntWithDefault("PlayerVR", "VRPreviewDisabled", 0);
    }
 #endif
    switch (stereo3D) {
@@ -3934,7 +3960,7 @@ void Player::UpdateHUD()
 
 void Player::PostProcess(const bool ambientOcclusion)
 {
-   const bool useAA = (m_AA && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
+   const bool useAA = ((m_AAfactor != 1.0) && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
    const bool SMAA = (((m_FXAA == Quality_SMAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
    const bool DLAA = (((m_FXAA == Standard_DLAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_DLAA));
    const bool NFAA = (((m_FXAA == Fast_NFAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_NFAA));
@@ -4462,7 +4488,7 @@ void Player::Render()
 
    // limit framerate if requested by user (vsync Hz higher than refreshrate of gfxcard/monitor)
    localvsync = (m_ptable->m_TableAdaptiveVSync == -1) ? m_VSync : m_ptable->m_TableAdaptiveVSync;
-   if (localvsync > m_refreshrate)
+   if (m_stereo3D != STEREO_VR && localvsync > m_refreshrate)
    {
       timeforframe = usec() - timeforframe;
       if (timeforframe < 1000000ull / localvsync)
@@ -4503,8 +4529,8 @@ void Player::Render()
             // Save position of non-fullscreen player window to registry, and only if it was potentially moved around (i.e. when caption was already visible)
             if (m_ShowWindowedCaption)
             {
-               HRESULT hr = SaveValueInt("Player", "WindowPosX", x);
-               hr = SaveValueInt("Player", "WindowPosY", y + captionheight);
+               HRESULT hr = SaveValueInt((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "WindowPosX", x);
+               hr = SaveValueInt((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "WindowPosY", y + captionheight);
             }
 
             m_ShowWindowedCaption = !m_ShowWindowedCaption;

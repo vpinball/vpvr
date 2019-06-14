@@ -136,6 +136,10 @@
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="backGlass.cpp" />
+    <ClCompile Include="dialogs\VROptionsDialog.cpp">
+      <Filter>dialogs</Filter>
+    </ClCompile>
+    <ClCompile Include="captureExt.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="vpinball.rc">
@@ -1079,6 +1083,12 @@
     </ClInclude>
     <ClInclude Include="inc\rapidxml_utils.hpp">
       <Filter>inc</Filter>
+    </ClInclude>
+    <ClInclude Include="dialogs\VROptionsDialog.h">
+      <Filter>dialogs</Filter>
+    </ClInclude>
+    <ClInclude Include="captureExt.h">
+      <Filter>headers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

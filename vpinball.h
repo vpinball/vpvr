@@ -11,6 +11,7 @@
 #include "SoundDialog.h"
 #include "EditorOptionsDialog.h"
 #include "VideoOptionsDialog.h"
+#include "VROptionsDialog.h"
 #include "AudioOptionsDialog.h"
 #include "CollectionManagerDialog.h"
 #include "PhysicsOptionsDialog.h"
@@ -203,6 +204,7 @@ private:
    SoundDialog m_soundMngDlg;
    AudioOptionsDialog m_audioOptDialog;
    VideoOptionsDialog m_videoOptDialog;
+   VROptionsDialog m_vrOptDialog;
    EditorOptionsDialog m_editorOptDialog;
    CollectionManagerDialog m_collectionMngDlg;
    PhysicsOptionsDialog m_physicsOptDialog;

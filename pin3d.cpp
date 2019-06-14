@@ -298,20 +298,15 @@ void EnvmapPrecalc(const void* /*const*/ __restrict envmap, const DWORD env_xres
 
 HRESULT Pin3D::InitPrimary(HWND *hwnd, const bool fullScreen, const int colordepth, int &refreshrate, const int VSync, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
 {
-   const unsigned int display = LoadValueIntWithDefault("Player", "Display", 0);
-#ifdef ENABLE_VR
-   if ((stereo3D == STEREO_VR) && !vr::VR_IsHmdPresent()) {
-	   MessageBox(m_hwnd,"Please start SteamVR or go to Video Options to disable VR support.", "SteamVR", MB_OK);
-	   return E_FAIL;
-   }
-#endif
+   const unsigned int display = LoadValueIntWithDefault(stereo3D == STEREO_VR ? "PlayerVR" : "Player", "Display", 0);
+
    std::vector<DisplayConfig> displays;
    getDisplayList(displays);
    int adapter = 0;
    for (std::vector<DisplayConfig>::iterator dispConf = displays.begin(); dispConf != displays.end(); dispConf++)
       if (display == dispConf->display) adapter = dispConf->adapter;
 
-   m_pd3dPrimaryDevice = new RenderDevice(hwnd, m_viewPort.Width, m_viewPort.Height, fullScreen, colordepth, VSync, m_useAA, stereo3D, FXAA, ss_refl, g_pplayer->m_useNvidiaApi, g_pplayer->m_disableDWM, g_pplayer->m_BWrendering);
+   m_pd3dPrimaryDevice = new RenderDevice(hwnd, m_viewPort.Width, m_viewPort.Height, fullScreen, colordepth, VSync, m_AAfactor, stereo3D, FXAA, ss_refl, g_pplayer->m_useNvidiaApi, g_pplayer->m_disableDWM, g_pplayer->m_BWrendering);
    try {
       m_pd3dPrimaryDevice->CreateDevice(refreshrate, display);
    }
@@ -326,10 +321,10 @@ HRESULT Pin3D::InitPrimary(HWND *hwnd, const bool fullScreen, const int colordep
    *hwnd = m_pd3dPrimaryDevice->getHwnd();
 #endif
 
-   const bool forceAniso = LoadValueBoolWithDefault("Player", "ForceAnisotropicFiltering", true);
+   const bool forceAniso = (stereo3D == STEREO_VR) ? true : LoadValueBoolWithDefault("Player", "ForceAnisotropicFiltering", true);
    m_pd3dPrimaryDevice->ForceAnisotropicFiltering(forceAniso);
 
-   const bool compressTextures = LoadValueBoolWithDefault("Player", "CompressTextures", false);
+   const bool compressTextures = (stereo3D == STEREO_VR) ? false : LoadValueBoolWithDefault("Player", "CompressTextures", false);
    m_pd3dPrimaryDevice->CompressTextures(compressTextures);
 
    m_pd3dPrimaryDevice->SetViewport(&m_viewPort);
@@ -379,10 +374,10 @@ HRESULT Pin3D::InitPrimary(HWND *hwnd, const bool fullScreen, const int colordep
    return S_OK;
 }
 
-HRESULT Pin3D::InitPin3D(HWND *hwnd, const bool fullScreen, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
+HRESULT Pin3D::InitPin3D(HWND *hwnd, const bool fullScreen, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
 {
    m_proj.m_stereo3D = m_stereo3D = stereo3D;
-   m_useAA = useAA;
+   m_AAfactor = AAfactor;
 
    // set the viewport for the newly created device
    m_viewPort.X = 0;
