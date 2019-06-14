@@ -150,6 +150,8 @@ float3 FBColorGrade(float3 color)
 
 #include "FXAAStereoAO.fxh"
 
+#include "SSR.fxh"
+
 ////vs_main_no_trafo
 
 in vec3 vPosition;
@@ -452,6 +454,7 @@ fb_bloom_horiz19x19h:P0:vs_main_no_trafo():ps_main_fb_bloom_horiz19x19h()
 fb_bloom_vert19x19h:P0:vs_main_no_trafo():ps_main_fb_bloom_vert19x19h()
 //fb_bloom_horiz27x27:P0:vs_main_no_trafo():ps_main_fb_bloom_horiz27x27()
 //fb_bloom_vert27x27:P0:vs_main_no_trafo():ps_main_fb_bloom_vert27x27()
-//
+SSReflection:P0:vs_main_no_trafo():ps_main_fb_ss_refl()
+
 
 fb_mirror:P0:vs_main_no_trafo():ps_main_fb_mirror()
