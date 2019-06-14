@@ -66,19 +66,19 @@ void VROptionsDialog::ResetVideoPreferences() // 0 = default, 1 = lowend PC, 2 =
    SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
 
    const float vrSlope = 6.5f;
-   sprintf_s(tmp, 256, "%f0.1", vrSlope);
+   sprintf_s(tmp, 256, "%0.1f", vrSlope);
    SetDlgItemTextA(IDC_VR_SLOPE, tmp);
    
    const float vrOrientation = 0.0f;
-   sprintf_s(tmp, 256, "%f0.1", vrOrientation);
+   sprintf_s(tmp, 256, "%0.1f", vrOrientation);
    SetDlgItemTextA(IDC_3D_VR_ORIENTATION, tmp);
    
    const float vrX = 0.0f;
-   sprintf_s(tmp, 256, "%f0.1", vrX);
+   sprintf_s(tmp, 256, "%0.1f", vrX);
    SetDlgItemTextA(IDC_VR_OFFSET_X, tmp);
    
    const float vrY = 0.0f;
-   sprintf_s(tmp, 256, "%f0.1", vrY);
+   sprintf_s(tmp, 256, "%0.1f", vrY);
    SetDlgItemTextA(IDC_VR_OFFSET_Y, tmp);
    
    const float vrZ = 80.0f;
@@ -101,11 +101,11 @@ void VROptionsDialog::ResetVideoPreferences() // 0 = default, 1 = lowend PC, 2 =
    SetDlgItemTextA(IDC_VR_SCALE, tmp);
 
    const float vrNearPlane = 5.0f;
-   sprintf_s(tmp, 256, "%f0.1", vrNearPlane);
+   sprintf_s(tmp, 256, "%0.1f", vrNearPlane);
    SetDlgItemTextA(IDC_NEAR_PLANE, tmp);
 
    const float vrFarPlane = 500.0f;
-   sprintf_s(tmp, 256, "%f0.1", vrFarPlane);
+   sprintf_s(tmp, 256, "%0.1f", vrFarPlane);
    SetDlgItemTextA(IDC_FAR_PLANE, tmp);
 
    //AMD Debug
@@ -247,11 +247,11 @@ BOOL VROptionsDialog::OnInitDialog()
    SetDlgItemTextA(IDC_VR_SCALE, tmp);
 
    const float vrNearPlane = LoadValueFloatWithDefault("PlayerVR", "nearPlane", 5.0f);
-   sprintf_s(tmp, 256, "%f0.1", vrNearPlane);
+   sprintf_s(tmp, 256, "%0.1f", vrNearPlane);
    SetDlgItemTextA(IDC_NEAR_PLANE, tmp);
 
    const float vrFarPlane = LoadValueFloatWithDefault("PlayerVR", "farPlane", 500.0f);
-   sprintf_s(tmp, 256, "%f0.1", vrFarPlane);
+   sprintf_s(tmp, 256, "%0.1f", vrFarPlane);
    SetDlgItemTextA(IDC_FAR_PLANE, tmp);
 
    const float vrSlope = LoadValueFloatWithDefault("Player", "VRSlope", 6.5f);
@@ -614,7 +614,7 @@ void VROptionsDialog::OnOK()
    SaveValueInt("PlayerVR", "ForceBloomOff", bloomOff);
    
    const size_t askToTurnOn = SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), BM_GETCHECK, 0, 0);
-   SaveValueInt("PlayerVR", "AskToTurnOn", bloomOff);
+   SaveValueInt("PlayerVR", "AskToTurnOn", askToTurnOn);
 
    CDialog::OnOK();
 
