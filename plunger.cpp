@@ -316,7 +316,7 @@ void Plunger::RenderSetup()
    const float stroke = m_d.m_stroke;
    const float beginy = m_d.m_v.y;
    const float endy = m_d.m_v.y - stroke;
-   m_cframes = (int)((float)PLUNGER_FRAME_COUNT * (stroke*(float)(1.0 / 80.0))) + 1; // 25 frames per 80 units travel
+   m_cframes = (int)(stroke*(float)(PLUNGER_FRAME_COUNT / 80.0)) + 1; // 25 frames per 80 units travel
    const float inv_scale = (m_cframes > 1) ? (1.0f / (float)(m_cframes - 1)) : 0.0f;
    const float dyPerFrame = (endy - beginy) * inv_scale;
    const int circlePoints = (m_d.m_type == PlungerTypeFlat) ? 0 : 24;
@@ -1087,7 +1087,7 @@ STDMETHODIMP Plunger::MotionDevice(int *pVal)
    return S_OK;
 }
 
-STDMETHODIMP Plunger::Position(int *pVal) // 0..25
+STDMETHODIMP Plunger::Position(float *pVal) // 0..25
 {
    if (g_pplayer->m_pininput.uShockType == USHOCKTYPE_PBWIZARD ||
       g_pplayer->m_pininput.uShockType == USHOCKTYPE_ULTRACADE ||
@@ -1097,7 +1097,7 @@ STDMETHODIMP Plunger::Position(int *pVal) // 0..25
       const float range = (float)JOYRANGEMX * (1.0f - m_d.m_parkPosition) - (float)JOYRANGEMN *m_d.m_parkPosition; // final range limit
       float tmp = (g_pplayer->m_curMechPlungerPos < 0.f) ? g_pplayer->m_curMechPlungerPos*m_d.m_parkPosition : (g_pplayer->m_curMechPlungerPos*(1.0f - m_d.m_parkPosition));
       tmp = tmp / range + m_d.m_parkPosition;           //scale and offset
-      *pVal = (int)(tmp*25.f);
+      *pVal = tmp * 25.f;
    }
 
    else if (g_pplayer->m_pininput.uShockType == USHOCKTYPE_GENERIC)
@@ -1130,7 +1130,7 @@ STDMETHODIMP Plunger::Position(int *pVal) // 0..25
          const float range = (float)JOYRANGEMX * (1.0f - m_d.m_parkPosition) - (float)JOYRANGEMN *m_d.m_parkPosition; // final range limit
          tmp = tmp / range + m_d.m_parkPosition;           //scale and offset
       }
-      *pVal = (int)(tmp*25.f);
+      *pVal = tmp * 25.f;
    }
 
    else // non-mechanical
@@ -1138,7 +1138,7 @@ STDMETHODIMP Plunger::Position(int *pVal) // 0..25
       const PlungerMoverObject& pa = m_phitplunger->m_plungerMover;
       const float frame = (pa.m_pos - pa.m_frameStart) / (pa.m_frameEnd - pa.m_frameStart);
 
-      *pVal = (int)(25.f - saturate(frame)*25.f); //!! somehow if m_mechPlunger is enabled this will only deliver a value 25 - 0..20??
+      *pVal = 25.f - saturate(frame)*25.f; //!! somehow if m_mechPlunger is enabled this will only deliver a value 25 - 0..20??
    }
 
    //      float range = (float)JOYRANGEMX * (1.0f - m_d.m_parkPosition) - (float)JOYRANGEMN *m_d.m_parkPosition; // final range limit

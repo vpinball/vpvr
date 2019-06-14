@@ -1,6 +1,27 @@
 SDL2 / VR Changelog
 ------------------------
 
+- Splitted the Video settings to the old Video settings menu and a VR settings menu. Also different registry entries are used for
+  various entries like Stereo mode, display, resolution, postprocessing etc. Ball rendering and Day/Night cycle is used for both.
+
+- Auto detect if SteamVR drivers are installed. If not desktop mode is started up. If VR drivers are installed and the HMD is turned
+  on, VPVR starts in VR mode. Otherwise a prompt shows up to choose between VR mode and desktop mode (can be disabled).
+
+- Supersampling can now be adjusted with a slider from 0.5 (downsampling) up to 2.0. The factor describes the scaling in X and Y direction
+  so 2.0 increases the pixelcount by factor 4.
+
+- Scaling of the table is now possible in VR settings. You can either set a factor (e.g. 1.1 increases the table by 10%) or you can
+  scale all tables to a fixed width (in centimeters) to match your PinSim Controller. The scaling factor has no lower/upper limit so yes
+  you can scale up the table to play soccer. Or be attacked by a giant rolling Indy-Trap. Or scale it down to matchbox size. If it gets
+  weird I warned you. If you have issues locating the table or getting nightmares, it is NOT my fault. Default values are the box unchecked
+  and 1 (ONE).
+
+- The near/far plane can be adjusted now (in centimeters). Both planes are like walls in front of you. Everything between you and the near
+  plane, and everything behind the farplane is invisible. Might be helpful if you have a room around your table or changed the scaling too
+  much. Depending on the GPU having too small values for the near plane or too large values for the far plane, Z-fighting might occur.
+
+- Some bug fixes.
+
 - More fixes and performance improvements by Rawnei
 
 - Added support for BAM Headtracking (Thanks to Rafal from ravarcade.pl). Usage:
@@ -113,8 +134,9 @@ Next steps:
 	5. Go back to step 1 because of step 2,3 and 4
 		
   
-VP 10.6.0 Changelog (trunk R3719)
+VP 10.6.0 Changelog (trunk R3725)
 ------------------------
+- support 'Add Point' hotkey (F10 normal and F11 for smooth point) for rubbers
 
 - fix lighting of the reflection of the playfield on the ball (before it was more or less ignoring the real lightsources and using a wrong lookup from the environment)
 

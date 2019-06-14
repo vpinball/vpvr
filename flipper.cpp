@@ -1240,9 +1240,7 @@ STDMETHODIMP Flipper::put_EOSTorqueAngle(float newVal)
 STDMETHODIMP Flipper::get_StartAngle(float *pVal)
 {
    if (m_phitflipper)
-   {
       *pVal = RADTOANG(m_phitflipper->m_flipperMover.m_angleStart);
-   }
    else
       *pVal = m_d.m_StartAngle;
 
@@ -1252,9 +1250,7 @@ STDMETHODIMP Flipper::get_StartAngle(float *pVal)
 STDMETHODIMP Flipper::put_StartAngle(float newVal)
 {
    if (m_phitflipper)
-   {
       m_phitflipper->m_flipperMover.SetStartAngle(ANGTORAD(newVal));
-   }
    else
    {
       STARTUNDO
@@ -1280,9 +1276,7 @@ STDMETHODIMP Flipper::get_EndAngle(float *pVal)
 STDMETHODIMP Flipper::put_EndAngle(float newVal)
 {
    if (m_phitflipper)
-   {
       m_phitflipper->m_flipperMover.SetEndAngle(ANGTORAD(newVal));
-   }
    else
    {
       STARTUNDO
@@ -1423,9 +1417,7 @@ void Flipper::GetDialogPanes(vector<PropertyPane*> &pvproppane)
 STDMETHODIMP Flipper::get_Mass(float *pVal)
 {
     if (m_phitflipper)
-    {
        *pVal = m_phitflipper->m_flipperMover.GetMass();
-    }
     else
         *pVal = m_d.m_mass;
 
@@ -1554,9 +1546,7 @@ STDMETHODIMP Flipper::put_RubberWidth(float newVal)
 STDMETHODIMP Flipper::get_Strength(float *pVal)
 {
    if (m_phitflipper)
-   {
       *pVal = m_phitflipper->m_flipperMover.GetStrength();
-   }
    else
       *pVal = m_d.m_strength;
 
@@ -1573,9 +1563,7 @@ STDMETHODIMP Flipper::put_Strength(float newVal)
    else
    {
       STARTUNDO
-
       m_d.m_strength = newVal;
-
       STOPUNDO
    }
 
@@ -1765,9 +1753,7 @@ STDMETHODIMP Flipper::put_Height(float newVal)
 STDMETHODIMP Flipper::get_Return(float *pVal)
 {
    if (m_phitflipper)
-   {
       *pVal = m_phitflipper->m_flipperMover.GetReturnRatio();
-   }
    else
        *pVal = m_d.m_return;
 
@@ -1835,9 +1821,7 @@ STDMETHODIMP Flipper::put_Image(BSTR newVal)
    }
 
    STARTUNDO
-
    strcpy_s(m_d.m_szImage,szImage);
-   
    STOPUNDO
 
    return S_OK;
@@ -1853,9 +1837,7 @@ STDMETHODIMP Flipper::get_ReflectionEnabled(VARIANT_BOOL *pVal)
 STDMETHODIMP Flipper::put_ReflectionEnabled(VARIANT_BOOL newVal)
 {
    STARTUNDO
-
    m_d.m_fReflectionEnabled = VBTOF(newVal);
-
    STOPUNDO
 
    return S_OK;
