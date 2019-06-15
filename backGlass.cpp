@@ -247,6 +247,7 @@ void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DM
       g_pplayer->m_ptable->get_Width(&tableWidth);
       tableWidth *= backglass_scale;
       float scale = 0.5f;// 0.5 => use 50% of the height of the grill.
+      m_pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
       if (m_backgroundTexture && backglass_grill_height > 0) {
          //DMD is centered in the Grill of the backglass
          float dmd_height = backglass_scale * scale * (float)backglass_grill_height / (float)backglass_width;
@@ -255,7 +256,6 @@ void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DM
          float dmd_y = (tableWidth * (float)backglass_grill_height*(0.5f - scale / 2.0f) / (float)backglass_width);
          m_pd3dDevice->DMDShader->SetVector("quadOffsetScale", dmd_x, dmd_y, dmd_width, dmd_height);
          m_pd3dDevice->SetRenderState(RenderDevice::ZENABLE, FALSE);
-         m_pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
          zDisabled = true;
       }
       else if (m_pd3dDevice->m_stereo3D == STEREO_VR) {//Place it somewhere at the bottom

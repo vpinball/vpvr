@@ -1071,7 +1071,6 @@
     <ClInclude Include="TextureManager.h">
       <Filter>headers</Filter>
     </ClInclude>
-    <ClInclude Include="backGlass.h" />
     <ClInclude Include="inc\rapidxml.hpp">
       <Filter>inc</Filter>
     </ClInclude>
@@ -1088,6 +1087,9 @@
       <Filter>dialogs</Filter>
     </ClInclude>
     <ClInclude Include="captureExt.h">
+      <Filter>headers</Filter>
+    </ClInclude>
+    <ClInclude Include="backGlass.h">
       <Filter>headers</Filter>
     </ClInclude>
   </ItemGroup>
