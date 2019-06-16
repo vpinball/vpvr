@@ -566,35 +566,59 @@ bool RenderDevice::isVRinstalled()
 #endif
 }
 
+vr::IVRSystem* RenderDevice::m_pHMD = nullptr;
+
 bool RenderDevice::isVRturnedOn()
 {
 #ifdef ENABLE_VR
-   return vr::VR_IsHmdPresent();
-#else
-   return false;
+   if (vr::VR_IsHmdPresent()) {
+      vr::EVRInitError VRError = vr::VRInitError_None;
+      if (!m_pHMD)
+         m_pHMD = vr::VR_Init(&VRError, vr::VRApplication_Scene);
+      if (VRError == vr::VRInitError_None && vr::VRCompositor()) {
+         for (int device = 0; device < vr::k_unMaxTrackedDeviceCount; device++) {
+            if ((m_pHMD->GetTrackedDeviceClass(device) == vr::TrackedDeviceClass_HMD)) {
+               return true;
+            }
+         }
+      } else {
+         m_pHMD = nullptr;
+      }
+   }
 #endif
+   return false;
 }
 
+void RenderDevice::turnVROff()
+{
+   if (m_pHMD)
+   {
+      vr::VR_Shutdown();
+      m_pHMD = nullptr;
+   }
+}
 
 void RenderDevice::InitVR() {
 #ifdef ENABLE_VR
    vr::EVRInitError VRError = vr::VRInitError_None;
-   m_pHMD = vr::VR_Init(&VRError, vr::VRApplication_Scene);
-   if (VRError != vr::VRInitError_None) {
-      m_pHMD = NULL;
-      char buf[1024];
-      sprintf_s(buf, sizeof(buf), "Unable to init VR runtime: %s", vr::VR_GetVRInitErrorAsEnglishDescription(VRError));
-      std::runtime_error vrInitFailed(buf);
-      throw(vrInitFailed);
-   }
-   if (!vr::VRCompositor())
+   if (!m_pHMD) {
+      m_pHMD = vr::VR_Init(&VRError, vr::VRApplication_Scene);
       if (VRError != vr::VRInitError_None) {
-         m_pHMD = NULL;
+         m_pHMD = nullptr;
          char buf[1024];
-         sprintf_s(buf, sizeof(buf), "Unable to init VR compositor: %s", vr::VR_GetVRInitErrorAsEnglishDescription(VRError));
+         sprintf_s(buf, sizeof(buf), "Unable to init VR runtime: %s", vr::VR_GetVRInitErrorAsEnglishDescription(VRError));
          std::runtime_error vrInitFailed(buf);
          throw(vrInitFailed);
       }
+      if (!vr::VRCompositor())
+         if (VRError != vr::VRInitError_None) {
+            m_pHMD = NULL;
+            char buf[1024];
+            sprintf_s(buf, sizeof(buf), "Unable to init VR compositor: %s", vr::VR_GetVRInitErrorAsEnglishDescription(VRError));
+            std::runtime_error vrInitFailed(buf);
+            throw(vrInitFailed);
+         }
+   }
    m_pHMD->GetRecommendedRenderTargetSize(&m_Buf_width, &m_Buf_height);
    vr::HmdMatrix34_t mat34;
    vr::HmdMatrix44_t mat44;
@@ -983,8 +1007,7 @@ RenderDevice::~RenderDevice()
 
    if (m_pHMD)
    {
-      vr::VR_Shutdown();
-      m_pHMD = NULL;
+      turnVROff();
       SaveValueFloat("Player", "VRSlope", slope);
       SaveValueFloat("Player", "VROrientation", orientation);
       SaveValueFloat("Player", "VRTableX", tablex);

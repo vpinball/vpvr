@@ -497,6 +497,8 @@ Player::Player(bool _cameraMode) : cameraMode(_cameraMode)
       useVR = MessageBox(nullptr, "VR drivers detected, but the HMD is turned off. Disable VR?", "Please turn VR on", MB_YESNO) == IDNO;
    }
 
+   if (!useVR) RenderDevice::turnVROff();
+
    m_fTrailForBalls = LoadValueBoolWithDefault("Player", "BallTrail", true);
    m_fReflectionForBalls = LoadValueBoolWithDefault("Player", "BallReflection", true);
    m_capExtDMD = LoadValueBoolWithDefault("Player", "CaptureExternalDMD", false);

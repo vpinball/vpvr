@@ -273,6 +273,7 @@ RenderDevice(HWND* const hwnd, const int width, const int height, const bool ful
 
    static bool isVRinstalled();
    static bool isVRturnedOn();
+   static void turnVROff();
 
 #ifndef ENABLE_SDL
    void SetRenderTarget(RenderTarget* surf, bool ignoreStereo = false);
@@ -465,7 +466,7 @@ private:
    //VR/Stereo Stuff
 
 #ifdef ENABLE_VR
-   vr::IVRSystem *m_pHMD;
+   static vr::IVRSystem *m_pHMD;
    Matrix3D m_matProj[2];
    Matrix3D m_matView;
    Matrix3D m_tableWorld;
