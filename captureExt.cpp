@@ -43,7 +43,7 @@ bool captureExternalDMD()
             else
             {
                BaseTexture* dmdTex = g_pplayer->m_texdmd->CreateFromHBitmap(dmdBitMap);
-               memcpy(g_pplayer->m_texdmd->data(), dmdTex->data(), sizeof(g_pplayer->m_texdmd->m_data));
+               memcpy(g_pplayer->m_texdmd->data(), dmdTex->data(), g_pplayer->m_texdmd->m_data.size());
                g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.SetDirty(g_pplayer->m_texdmd);
                delete dmdTex;
             }
