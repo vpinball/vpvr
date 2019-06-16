@@ -240,7 +240,8 @@ void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DM
       if (captureExternalDMD())
          m_pd3dDevice->DMDShader->SetTechnique("basic_DMD_ext");
 
-      m_pd3dDevice->DMDShader->SetTexture("Texture0", m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, false), false);
+      if (g_pplayer->m_texdmd != NULL)
+         m_pd3dDevice->DMDShader->SetTexture("Texture0", m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, false), false);
       //      m_pd3dPrimaryDevice->DMDShader->SetVector("quadOffsetScale", 0.0f, -1.0f, backglass_scale, backglass_scale*(float)backglass_height / (float)backglass_width);
       bool zDisabled = false;
       float tableWidth;
