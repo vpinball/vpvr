@@ -491,9 +491,9 @@ Player::Player(bool _cameraMode) : cameraMode(_cameraMode)
    m_current_renderstage = 0;
    m_dmdstate = 0;
 
-   ;
-   bool useVR = RenderDevice::isVRinstalled() && (LoadValueBoolWithDefault("PlayerVR", "AskToTurnOn", true) || RenderDevice::isVRturnedOn());
-   while (useVR && !RenderDevice::isVRturnedOn()) {
+   const int vrDetectionMode = LoadValueIntWithDefault("PlayerVR", "AskToTurnOn", 0);
+   bool useVR = (vrDetectionMode !=2) && RenderDevice::isVRinstalled() && (vrDetectionMode==0 || RenderDevice::isVRturnedOn());
+   while (useVR && (vrDetectionMode==1) && !RenderDevice::isVRturnedOn()) {
       useVR = MessageBox(nullptr, "VR drivers detected, but the HMD is turned off. Disable VR?", "Please turn VR on", MB_YESNO) == IDNO;
    }
 

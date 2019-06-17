@@ -86,7 +86,7 @@ void VROptionsDialog::ResetVideoPreferences() // 0 = default, 1 = lowend PC, 2 =
    SetDlgItemTextA(IDC_VR_OFFSET_Z, tmp);
 
    SendMessage(GetDlgItem(IDC_BLOOM_OFF).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
-   SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), BM_SETCHECK, true ? BST_CHECKED : BST_UNCHECKED, 0);
+   SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), CB_SETCURSEL, 1, 0);
    SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_SETCURSEL, 0, 0);
 
    SendMessage(GetDlgItem(IDC_VR_DISABLE_PREVIEW).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
@@ -169,7 +169,7 @@ BOOL VROptionsDialog::OnInitDialog()
       HWND controlHwnd = GetDlgItem(IDC_BLOOM_OFF).GetHwnd();
       AddToolTip("Forces the bloom filter to be always off. Only for very low-end graphics cards.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_TURN_VR_ON).GetHwnd();
-      AddToolTip("When launching a table show a popup when VR is turned off. Otherwise desktop mode is launched. If VR is on, VPVR starts always in VR mode.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip("Disable Autodetect if Visual Pinball does not start up.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_NUDGE_STRENGTH).GetHwnd();
       AddToolTip("Changes the visual effect/screen shaking when nudging the table.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_DYNAMIC_AO).GetHwnd();
@@ -277,8 +277,11 @@ BOOL VROptionsDialog::OnInitDialog()
    const int bloomOff = LoadValueIntWithDefault("PlayerVR", "ForceBloomOff", LoadValueIntWithDefault("Player", "ForceBloomOff", false));
    SendMessage(GetDlgItem(IDC_BLOOM_OFF).GetHwnd(), BM_SETCHECK, bloomOff ? BST_CHECKED : BST_UNCHECKED, 0);
 
-   const bool askToTurnOn = LoadValueIntWithDefault("PlayerVR", "AskToTurnOn", true);
-   SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), BM_SETCHECK, askToTurnOn ? BST_CHECKED : BST_UNCHECKED, 0);
+   const int askToTurnOn = LoadValueIntWithDefault("PlayerVR", "AskToTurnOn", 1);
+   SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"VR enabled");
+   SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"VR autodetect");
+   SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"VR disabled");
+   SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), CB_SETCURSEL, askToTurnOn, 0);
 
    int display;
    HRESULT hr = LoadValueInt("PlayerVR", "Display", &display);
@@ -613,7 +616,7 @@ void VROptionsDialog::OnOK()
    const size_t bloomOff = SendMessage(GetDlgItem(IDC_BLOOM_OFF).GetHwnd(), BM_GETCHECK, 0, 0);
    SaveValueInt("PlayerVR", "ForceBloomOff", bloomOff);
    
-   const size_t askToTurnOn = SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), BM_GETCHECK, 0, 0);
+   const size_t askToTurnOn = SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), CB_GETCURSEL, 0, 0);
    SaveValueInt("PlayerVR", "AskToTurnOn", askToTurnOn);
 
    CDialog::OnOK();
