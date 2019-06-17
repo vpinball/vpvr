@@ -1,85 +1,100 @@
 #pragma once
 #include "typeDefs3D.h"
-#include <thread>
-#include <iostream>
-#include <mutex>
-#include <queue>
 
 bool captureExternalDMD();
 void captureWindow(int w, int h, int offsetLeft, int offsetTop);
 
-class ThreadPool
-{
+// ThreadPool implementation from progschj https://github.com/progschj/ThreadPool
+#include <vector>
+#include <queue>
+#include <memory>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <future>
+#include <functional>
+#include <stdexcept>
+
+class ThreadPool {
 public:
+   ThreadPool(size_t);
+   template<class F, class... Args>
+   auto enqueue(F&& f, Args&&... args)
+      ->std::future<typename std::result_of<F(Args...)>::type>;
+   ~ThreadPool();
+private:
+   // need to keep track of threads so we can join them
+   std::vector< std::thread > workers;
+   // the task queue
+   std::queue< std::function<void()> > tasks;
 
-   ThreadPool(int threads) : shutdown_(false)
-   {
-      // Create the specified number of threads
-      threads_.reserve(threads);
-      for (int i = 0; i < threads; ++i)
-         threads_.emplace_back(std::bind(&ThreadPool::threadEntry, this, i));
-   }
-
-   ~ThreadPool()
-   {
-      {
-         // Unblock any threads and tell them to stop
-         std::unique_lock <std::mutex> l(lock_);
-
-         shutdown_ = true;
-         condVar_.notify_all();
-      }
-
-      // Wait for all threads to stop
-      std::cerr << "Joining threads" << std::endl;
-      for (auto& thread : threads_)
-         thread.join();
-   }
-
-   void doJob(std::function <void(void)> func)
-   {
-      // Place a job on the queu and unblock a thread
-      std::unique_lock <std::mutex> l(lock_);
-
-      jobs_.emplace(std::move(func));
-      condVar_.notify_one();
-   }
-
-protected:
-
-   void threadEntry(int i)
-   {
-      std::function <void(void)> job;
-
-      while (1)
-      {
-         {
-            std::unique_lock <std::mutex> l(lock_);
-
-            while (!shutdown_ && jobs_.empty())
-               condVar_.wait(l);
-
-            if (jobs_.empty())
-            {
-               // No jobs to do and we are shutting down
-               std::cerr << "Thread " << i << " terminates" << std::endl;
-               return;
-            }
-
-            std::cerr << "Thread " << i << " does a job" << std::endl;
-            job = std::move(jobs_.front());
-            jobs_.pop();
-         }
-
-         // Do the job without holding any locks
-         job();
-      }
-
-   }
-
-   std::mutex lock_;
-   std::condition_variable condVar_;
-   bool shutdown_;
-   std::queue <std::function <void(void)>> jobs_;
-   std::vector <std::thread> threads_;
+   // synchronization
+   std::mutex queue_mutex;
+   std::condition_variable condition;
+   bool stop;
 };
+
+// the constructor just launches some amount of workers
+inline ThreadPool::ThreadPool(size_t threads)
+   : stop(false)
+{
+   for (size_t i = 0; i < threads; ++i)
+      workers.emplace_back(
+         [this]
+         {
+            for (;;)
+            {
+               std::function<void()> task;
+
+               {
+                  std::unique_lock<std::mutex> lock(this->queue_mutex);
+                  this->condition.wait(lock,
+                     [this] { return this->stop || !this->tasks.empty(); });
+                  if (this->stop && this->tasks.empty())
+                     return;
+                  task = std::move(this->tasks.front());
+                  this->tasks.pop();
+               }
+
+               task();
+            }
+         }
+         );
+}
+
+// add new work item to the pool
+template<class F, class... Args>
+auto ThreadPool::enqueue(F&& f, Args&&... args)
+-> std::future<typename std::result_of<F(Args...)>::type>
+{
+   using return_type = typename std::result_of<F(Args...)>::type;
+
+   auto task = std::make_shared< std::packaged_task<return_type()> >(
+      std::bind(std::forward<F>(f), std::forward<Args>(args)...)
+      );
+
+   std::future<return_type> res = task->get_future();
+   {
+      std::unique_lock<std::mutex> lock(queue_mutex);
+
+      // don't allow enqueueing after stopping the pool
+      if (stop)
+         throw std::runtime_error("enqueue on stopped ThreadPool");
+
+      tasks.emplace([task]() { (*task)(); });
+   }
+   condition.notify_one();
+   return res;
+}
+
+// the destructor joins all threads
+inline ThreadPool::~ThreadPool()
+{
+   {
+      std::unique_lock<std::mutex> lock(queue_mutex);
+      stop = true;
+   }
+   condition.notify_all();
+   for (std::thread &worker : workers)
+      worker.join();
+}

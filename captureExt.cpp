@@ -3,7 +3,7 @@
 
 HBITMAP dmdBitMap;
 bool dmdCaptureRunning = false;
-ThreadPool threadPool (1);
+ThreadPool threadPool (2);
 
 // Experimental function to capture external DMD from Freezy, UltraDMD or P-ROC (CCC)
 bool captureExternalDMD()
@@ -26,12 +26,11 @@ bool captureExternalDMD()
 
          if (!dmdCaptureRunning)
          {
-            threadPool.doJob(std::bind(captureWindow, w, h, rt.left, rt.top));
+            threadPool.enqueue(std::bind(captureWindow, w, h, rt.left, rt.top));
          }
-
          if (dmdBitMap != NULL)
          {
-            if (g_pplayer->m_texdmd == NULL || (g_pplayer->m_texdmd->width() != w && g_pplayer->m_texdmd->height() != h))
+            if (g_pplayer->m_texdmd == NULL || (g_pplayer->m_texdmd->width() != w || g_pplayer->m_texdmd->height() != h))
             {
                if (g_pplayer->m_texdmd != NULL)
                {
@@ -46,11 +45,11 @@ bool captureExternalDMD()
                memcpy(g_pplayer->m_texdmd->data(), dmdTex->data(), g_pplayer->m_texdmd->m_data.size());
                g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.SetDirty(g_pplayer->m_texdmd);
                delete dmdTex;
+               dmdTex = NULL;
             }
             success = true;
          }
       }
-      DeleteObject(target);
    }
 
    return success;
@@ -62,12 +61,15 @@ void captureWindow(int w, int h, int offsetLeft, int offsetTop)
 
    HDC dcTarget = GetDC(HWND_DESKTOP); // Freezy is WPF so need to capture the window through desktop
    HDC dcTemp = CreateCompatibleDC(NULL);
-   dmdBitMap = CreateCompatibleBitmap(dcTarget, w, h);
-   HGDIOBJ holdBitmap = SelectObject(dcTemp, dmdBitMap);
+   if (g_pplayer->m_texdmd != NULL && (g_pplayer->m_texdmd->width() != w || g_pplayer->m_texdmd->height() != h))
+      dmdBitMap = NULL;
+   if (dmdBitMap == NULL)
+      dmdBitMap = CreateCompatibleBitmap(dcTarget, w, h);
+   HANDLE hOld = SelectObject(dcTemp, dmdBitMap);
    // BitBlt the desktop can be a pretty expensive operation, is there a faster way to capture WPF window from c++?
    BitBlt(dcTemp, 0, 0, w, h, dcTarget, offsetLeft, offsetTop, SRCCOPY);
-   SelectObject(dcTemp, holdBitmap);
-   DeleteObject(holdBitmap);
+   SelectObject(dcTemp, hOld);
+   DeleteObject(hOld);
    DeleteDC(dcTemp);
    ReleaseDC(HWND_DESKTOP, dcTarget);
 
