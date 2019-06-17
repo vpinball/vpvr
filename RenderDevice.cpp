@@ -574,7 +574,7 @@ bool RenderDevice::isVRturnedOn()
    if (vr::VR_IsHmdPresent()) {
       vr::EVRInitError VRError = vr::VRInitError_None;
       if (!m_pHMD)
-         m_pHMD = vr::VR_Init(&VRError, vr::VRApplication_Scene);
+         m_pHMD = vr::VR_Init(&VRError, vr::VRApplication_Background);
       if (VRError == vr::VRInitError_None && vr::VRCompositor()) {
          for (int device = 0; device < vr::k_unMaxTrackedDeviceCount; device++) {
             if ((m_pHMD->GetTrackedDeviceClass(device) == vr::TrackedDeviceClass_HMD)) {

@@ -492,12 +492,9 @@ Player::Player(bool _cameraMode) : cameraMode(_cameraMode)
    m_dmdstate = 0;
 
    const int vrDetectionMode = LoadValueIntWithDefault("PlayerVR", "AskToTurnOn", 0);
-   bool useVR = (vrDetectionMode !=2) && RenderDevice::isVRinstalled() && (vrDetectionMode==0 || RenderDevice::isVRturnedOn());
-   while (useVR && (vrDetectionMode==1) && !RenderDevice::isVRturnedOn()) {
-      useVR = MessageBox(nullptr, "VR drivers detected, but the HMD is turned off. Disable VR?", "Please turn VR on", MB_YESNO) == IDNO;
-   }
-
-   if (!useVR) RenderDevice::turnVROff();
+   bool useVR = (vrDetectionMode !=2) && RenderDevice::isVRinstalled();
+   if (useVR && (vrDetectionMode==1) && !RenderDevice::isVRturnedOn())
+      useVR = MessageBox(nullptr, "VR headset detected but SteamVR is not running.\n\nTurn VR on?", "VR Headset Detected", MB_YESNO) == IDYES;
 
    m_fTrailForBalls = LoadValueBoolWithDefault("Player", "BallTrail", true);
    m_fReflectionForBalls = LoadValueBoolWithDefault("Player", "BallReflection", true);
