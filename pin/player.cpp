@@ -1352,10 +1352,63 @@ HRESULT Player::Init(PinTable * const ptable, const HWND hwndProgress, const HWN
 
    if (m_fFullScreen)
       SetWindowPos(m_playfieldHwnd, NULL, 0, 0, m_width, m_height, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
+   else
+   {
+#ifdef ENABLE_SDL
+      // SDL Window appears after InitPin3D, set window default position and flags
+      int x = 0;
+      int y = 0;
+
+      int display = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "Display", -1);
+      display = (display < getNumberOfDisplays()) ? display : -1;
+
+      getDisplaySetupByID(display, x, y, m_screenwidth, m_screenheight);
+      m_refreshrate = 0; // The default
+
+      // constrain window to screen
+      if (m_width > m_screenwidth)
+      {
+         m_width = m_screenwidth;
+         m_height = m_width * 9 / 16;
+      }
+
+      if (m_height > m_screenheight)
+      {
+         m_height = m_screenheight;
+         m_width = m_height * 16 / 9;
+      }
+      x += (m_screenwidth - m_width) / 2;
+      y += (m_screenheight - m_height) / 2;
+
+      // is this a non-fullscreen window? -> get previously saved window position
+      if ((m_height != m_screenheight) || (m_width != m_screenwidth))
+      {
+         const int xn = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "WindowPosX", x); //!! does this handle multi-display correctly like this?
+         const int yn = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "WindowPosY", y);
+
+         RECT r;
+         r.left = xn;
+         r.top = yn;
+         r.right = xn + m_width;
+         r.bottom = yn + m_height;
+         if (MonitorFromRect(&r, MONITOR_DEFAULTTONULL) != NULL) // window is visible somewhere, so use the coords from the registry
+         {
+            x = xn;
+            y = yn;
+         }
+      }
+
+      const int captionheight = GetSystemMetrics(SM_CYCAPTION);
+      int windowflags = WS_POPUP;
+      m_ShowWindowedCaption = false;
+      SetWindowLong(m_playfieldHwnd, GWL_STYLE, windowflags);
+      SetWindowPos(m_playfieldHwnd, NULL, x, m_ShowWindowedCaption ? (y + captionheight) : (y - captionheight), m_width, m_height + (m_ShowWindowedCaption ? 0 : captionheight), SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+      ShowWindow(m_playfieldHwnd, SW_SHOW);
+#endif
+   }
 
    m_pininput.Init(m_playfieldHwnd);
 
-   //
    const unsigned int lflip = get_vk(m_rgKeys[eLeftFlipperKey]);
    const unsigned int rflip = get_vk(m_rgKeys[eRightFlipperKey]);
 
@@ -4515,12 +4568,16 @@ void Player::Render()
 
             // Add/Remove a pretty window border and standard control boxes.
             const int windowflags = m_ShowWindowedCaption ? WS_POPUP : (WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_CLIPCHILDREN);
+#ifndef ENABLE_SDL
             const int windowflagsex = m_ShowWindowedCaption ? 0 : WS_EX_OVERLAPPEDWINDOW;
+#endif
 
             //!! does not respect borders so far!!! -> remove them or change width/height accordingly ?? otherwise ignore as eventually it will be restored anyway??
             //!! like this the render window is scaled and thus implicitly blurred though!
             SetWindowLong(m_playfieldHwnd, GWL_STYLE, windowflags);
+#ifndef ENABLE_SDL
             SetWindowLong(m_playfieldHwnd, GWL_EXSTYLE, windowflagsex);
+#endif
             SetWindowPos(m_playfieldHwnd, NULL, x, m_ShowWindowedCaption ? (y + captionheight) : (y - captionheight), m_width, m_height + (m_ShowWindowedCaption ? 0 : captionheight), SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
             ShowWindow(m_playfieldHwnd, SW_SHOW);
 
