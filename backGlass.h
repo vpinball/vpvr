@@ -17,6 +17,12 @@ private:
    D3DTexture* m_backgroundTexture;
    int backglass_dmd_x;
    int backglass_dmd_y;
+   int backglass_dmd_width;
+   int backglass_dmd_height;
+   float dmd_height;
+   float dmd_width;
+   float dmd_x;
+   float dmd_y;
    int backglass_grill_height;
    int backglass_width;
    int backglass_height;
