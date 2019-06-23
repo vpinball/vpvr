@@ -521,6 +521,7 @@ public:
    int m_dmdx;
    int m_dmdy;
    BaseTexture* m_texdmd;
+   BaseTexture* m_texPUP = NULL;
 
    unsigned int m_current_renderstage; // currently only used for bulb lights
    unsigned int m_dmdstate; // used to distinguish different flasher/DMD rendering mode states
@@ -634,6 +635,7 @@ public:
 
    bool m_scaleFX_DMD;
    bool m_capExtDMD;
+   bool m_capPUP;
 
    bool m_toogle_DTFS;
 

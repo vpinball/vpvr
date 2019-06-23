@@ -2,7 +2,11 @@
 #include "typeDefs3D.h"
 
 bool captureExternalDMD();
-void captureWindow(int w, int h, int offsetLeft, int offsetTop);
+void captureDMDWindow(int w, int h, int offsetLeft, int offsetTop);
+void processdmdBitMap(int w, int h);
+bool capturePUP();
+void capturePUPWindow(int w, int h, int offsetLeft, int offsetTop);
+void processPUPBitMap(int w, int h);
 
 // ThreadPool implementation from progschj https://github.com/progschj/ThreadPool
 #include <vector>

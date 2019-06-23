@@ -499,6 +499,7 @@ Player::Player(bool _cameraMode) : cameraMode(_cameraMode)
    m_fTrailForBalls = LoadValueBoolWithDefault("Player", "BallTrail", true);
    m_fReflectionForBalls = LoadValueBoolWithDefault("Player", "BallReflection", true);
    m_capExtDMD = LoadValueBoolWithDefault("Player", "CaptureExternalDMD", false);
+   m_capPUP = LoadValueBoolWithDefault("Player", "CapturePUP", false);
    m_BWrendering = LoadValueIntWithDefault("Player", "BWRendering", 0);
    m_fDetectScriptHang = LoadValueBoolWithDefault("Player", "DetectHang", false);
 

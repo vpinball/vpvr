@@ -286,6 +286,8 @@ BOOL KeysConfigDialog::OnInitDialog()
       HWND controlHwnd = GetDlgItem(IDC_USE_NVIDIA_API_CHECK).GetHwnd();
       controlHwnd = GetDlgItem(IDC_CAP_EXTDMD).GetHwnd();
       AddToolTip("Attempt to capture External DMD window such as Freezy, UltraDMD or P-ROC.\r\n\r\nFor Freezy DmdDevice.ini need to have 'stayontop = true'.", hwndDlg, toolTipHwnd, controlHwnd);
+      controlHwnd = GetDlgItem(IDC_CAP_PUP).GetHwnd();
+      AddToolTip("Attempt to capture PUP player window and display it as a Backglass in VR.", hwndDlg, toolTipHwnd, controlHwnd);
    }
 
     bool on = LoadValueBoolWithDefault("Player", "PBWDefaultLayout", false);
@@ -439,6 +441,9 @@ BOOL KeysConfigDialog::OnInitDialog()
 
     on = LoadValueBoolWithDefault("Player", "CaptureExternalDMD", false);
     ::SendMessage(GetDlgItem(IDC_CAP_EXTDMD).GetHwnd(), BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
+
+    on = LoadValueBoolWithDefault("Player", "CapturePUP", false);
+    ::SendMessage(GetDlgItem(IDC_CAP_PUP).GetHwnd(), BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
 
     int selected = LoadValueIntWithDefault("Controller", "DOFContactors", 2); // assume both as standard
     ::SendMessage(GetDlgItem(IDC_DOF_CONTACTORS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Sound FX");
@@ -1029,6 +1034,9 @@ void KeysConfigDialog::OnOK()
 
     selected = ::SendMessage(GetDlgItem(IDC_CAP_EXTDMD).GetHwnd(), BM_GETCHECK, 0, 0);
     SaveValueBool("Player", "CaptureExternalDMD", selected != 0);
+
+    selected = ::SendMessage(GetDlgItem(IDC_CAP_PUP).GetHwnd(), BM_GETCHECK, 0, 0);
+    SaveValueBool("Player", "CapturePUP", selected != 0);
 
     CDialog::OnOK();
 }

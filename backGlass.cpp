@@ -192,6 +192,20 @@ void BackGlass::Render()
 {
    PinTable * const ptable = g_pplayer->m_ptable;
 
+   if (g_pplayer->m_capPUP && capturePUP())
+   {
+      m_backgroundTexture = m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texPUP, true);
+      backglass_width = m_backgroundTexture->width;
+      backglass_height = m_backgroundTexture->height;
+      float tableWidth, glassHeight;
+      g_pplayer->m_ptable->get_Width(&tableWidth);
+      g_pplayer->m_ptable->get_GlassHeight(&glassHeight);
+      if (backglass_width > 0 && backglass_height > 0)
+         m_pd3dDevice->DMDShader->SetVector("backBoxSize", tableWidth * (0.5f - backglass_scale / 2.0f), glassHeight, backglass_scale * tableWidth, backglass_scale * tableWidth / (float)backglass_width*(float)backglass_height);
+      else
+         m_pd3dDevice->DMDShader->SetVector("backBoxSize", tableWidth * (0.5f - backglass_scale / 2.0f), glassHeight, backglass_scale * tableWidth, backglass_scale * tableWidth / 16.0f*9.0f);
+   }
+
    if (m_backgroundTexture)
       m_pd3dDevice->DMDShader->SetTexture("Texture0", m_backgroundTexture, false);
    else if (m_backgroundFallback)

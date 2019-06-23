@@ -1035,6 +1035,7 @@
 #define IDC_SSSLIDER_LABEL              836
 #define IDC_NEAR_LABEL                  837
 #define IDC_FAR_LABEL                   838
+#define IDC_CAP_PUP                     839
 #define DISPID_Gate_Height1             1142
 #define DISPID_Image                    1500
 #define DISPID_Image2                   1501
