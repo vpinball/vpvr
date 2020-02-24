@@ -3,7 +3,7 @@
 // only used for loading and saving
 struct SaveMaterial
 {
-   char szName[32];
+   char szName[MAXNAMEBUFFER];
    COLORREF cBase; // can be overriden by texture on object itself
    COLORREF cGlossy; // specular of glossy layer
    COLORREF cClearcoat; // specular of clearcoat layer
@@ -19,39 +19,82 @@ struct SaveMaterial
 
 struct SavePhysicsMaterial
 {
-    char szName[32];
-    float fElasticity;
-    float fElasticityFallOff;
-    float fFriction;
-    float fScatterAngle;
+   char szName[MAXNAMEBUFFER];
+   float fElasticity;
+   float fElasticityFallOff;
+   float fFriction;
+   float fScatterAngle;
 };
 
 class Material
 {
 public:
 
-   inline Material()
+   inline Material() :
+      m_fWrapLighting(0.0f)
+      , m_fRoughness(0.0f)
+      , m_fGlossyImageLerp(1.0f)
+      , m_fThickness(0.05f)
+      , m_fEdge(1.0f)
+      , m_fEdgeAlpha(1.0f)
+      , m_fOpacity(1.0f)
+      , m_cBase(0xB469FF)
+      , m_cGlossy(0)
+      , m_cClearcoat(0)
+      , m_bIsMetal(false)
+      , m_bOpacityActive(false)
+      , m_fElasticity(0.0f)
+      , m_fElasticityFalloff(0.0f)
+      , m_fFriction(0.0f)
+      , m_fScatterAngle(0.0f)
    {
-      m_fWrapLighting = 0.0f;
-      m_fRoughness = 0.0f;
-      m_fGlossyImageLerp = 1.0f;
-      m_fThickness = 0.05f;
-      m_fEdge = 1.0f;
-      m_fEdgeAlpha = 1.0f;
-      m_fOpacity = 1.0f;
-      m_cBase = 0xB469FF;
-      m_cGlossy = 0;
-      m_cClearcoat = 0;
-      m_bIsMetal = false;
-      m_bOpacityActive = false;
+      memset(m_szName, 0, MAXNAMEBUFFER);
+      strcpy_s(m_szName, "m_dummyMaterial");
+   }
 
-      m_fElasticity = 0.0f;
-      m_fElasticityFalloff = 0.0f;
-      m_fFriction = 0.0f;
-      m_fScatterAngle = 0.0f;
+   inline Material(float wrapLighting, float roughness, float glossyImageLerp, float thickness, float edge, float edgeAlpha, float opacity,
+      COLORREF base, COLORREF glossy, COLORREF clearcoat, bool isMetal, bool opacityActive,
+      float elasticity, float elasticityFalloff, float friction, float scatterAngle) :
+      m_fWrapLighting(wrapLighting)
+      , m_fRoughness(roughness)
+      , m_fGlossyImageLerp(glossyImageLerp)
+      , m_fThickness(thickness)
+      , m_fEdge(edge)
+      , m_fEdgeAlpha(edgeAlpha)
+      , m_fOpacity(opacity)
+      , m_cBase(base)
+      , m_cGlossy(glossy)
+      , m_cClearcoat(clearcoat)
+      , m_bIsMetal(isMetal)
+      , m_bOpacityActive(opacityActive)
+      , m_fElasticity(elasticity)
+      , m_fElasticityFalloff(elasticityFalloff)
+      , m_fFriction(friction)
+      , m_fScatterAngle(scatterAngle)
+   {
+      memset(m_szName, 0, MAXNAMEBUFFER);
+      strcpy_s(m_szName, "m_dummyMaterial");
+   }
 
-      memset(m_szName, 0, 32);
-      strcat_s(m_szName, "dummyMaterial");
+   inline Material(const Material * const pmat) :
+      m_fWrapLighting(pmat->m_fWrapLighting)
+      , m_fRoughness(pmat->m_fRoughness)
+      , m_fGlossyImageLerp(pmat->m_fGlossyImageLerp)
+      , m_fThickness(pmat->m_fThickness)
+      , m_fEdge(pmat->m_fEdge)
+      , m_fEdgeAlpha(pmat->m_fEdgeAlpha)
+      , m_fOpacity(pmat->m_fOpacity)
+      , m_cBase(pmat->m_cBase)
+      , m_cGlossy(pmat->m_cGlossy)
+      , m_cClearcoat(pmat->m_cClearcoat)
+      , m_bIsMetal(pmat->m_bIsMetal)
+      , m_bOpacityActive(pmat->m_bOpacityActive)
+      , m_fElasticity(pmat->m_fElasticity)
+      , m_fElasticityFalloff(pmat->m_fElasticityFalloff)
+      , m_fFriction(pmat->m_fFriction)
+      , m_fScatterAngle(pmat->m_fScatterAngle)
+   {
+      memcpy(m_szName, pmat->m_szName, MAXNAMEBUFFER);
    }
 
    inline unsigned long long hash() const
@@ -75,13 +118,13 @@ public:
       return h.ull;
 
       /*return ((unsigned long long)(h.uc[0]&  1)<< 0) | ((unsigned long long)(h.uc[1]&  1)<< 1) | ((unsigned long long)(h.uc[2]&  1)<< 2) | ((unsigned long long)(h.uc[3]&  1)<< 3) | ((unsigned long long)(h.uc[4]&  1)<< 4) | ((unsigned long long)(h.uc[5]&  1)<< 5) | ((unsigned long long)(h.uc[6]&  1)<< 6) | ((unsigned long long)(h.uc[7]&  1)<< 7) |
-        ((unsigned long long)(h.uc[0]&  2)<< 8) | ((unsigned long long)(h.uc[1]&  2)<< 9) | ((unsigned long long)(h.uc[2]&  2)<<10) | ((unsigned long long)(h.uc[3]&  2)<<11) | ((unsigned long long)(h.uc[4]&  2)<<12) | ((unsigned long long)(h.uc[5]&  2)<<13) | ((unsigned long long)(h.uc[6]&  2)<<14) | ((unsigned long long)(h.uc[7]&  2)<<15) |
-        ((unsigned long long)(h.uc[0]&  4)<<16) | ((unsigned long long)(h.uc[1]&  4)<<17) | ((unsigned long long)(h.uc[2]&  4)<<18) | ((unsigned long long)(h.uc[3]&  4)<<19) | ((unsigned long long)(h.uc[4]&  4)<<20) | ((unsigned long long)(h.uc[5]&  4)<<21) | ((unsigned long long)(h.uc[6]&  4)<<22) | ((unsigned long long)(h.uc[7]&  4)<<23) |
-        ((unsigned long long)(h.uc[0]&  8)<<24) | ((unsigned long long)(h.uc[1]&  8)<<25) | ((unsigned long long)(h.uc[2]&  8)<<26) | ((unsigned long long)(h.uc[3]&  8)<<27) | ((unsigned long long)(h.uc[4]&  8)<<28) | ((unsigned long long)(h.uc[5]&  8)<<29) | ((unsigned long long)(h.uc[6]&  8)<<30) | ((unsigned long long)(h.uc[7]&  8)<<31) |
-        ((unsigned long long)(h.uc[0]& 16)<<32) | ((unsigned long long)(h.uc[1]& 16)<<33) | ((unsigned long long)(h.uc[2]& 16)<<34) | ((unsigned long long)(h.uc[3]& 16)<<35) | ((unsigned long long)(h.uc[4]& 16)<<36) | ((unsigned long long)(h.uc[5]& 16)<<37) | ((unsigned long long)(h.uc[6]& 16)<<38) | ((unsigned long long)(h.uc[7]& 16)<<39) |
-        ((unsigned long long)(h.uc[0]& 32)<<40) | ((unsigned long long)(h.uc[1]& 32)<<41) | ((unsigned long long)(h.uc[2]& 32)<<42) | ((unsigned long long)(h.uc[3]& 32)<<43) | ((unsigned long long)(h.uc[4]& 32)<<44) | ((unsigned long long)(h.uc[5]& 32)<<45) | ((unsigned long long)(h.uc[6]& 32)<<46) | ((unsigned long long)(h.uc[7]& 32)<<47) |
-        ((unsigned long long)(h.uc[0]& 64)<<48) | ((unsigned long long)(h.uc[1]& 64)<<49) | ((unsigned long long)(h.uc[2]& 64)<<50) | ((unsigned long long)(h.uc[3]& 64)<<51) | ((unsigned long long)(h.uc[4]& 64)<<52) | ((unsigned long long)(h.uc[5]& 64)<<53) | ((unsigned long long)(h.uc[6]& 64)<<54) | ((unsigned long long)(h.uc[7]& 64)<<55) |
-        ((unsigned long long)(h.uc[0]&128)<<56) | ((unsigned long long)(h.uc[1]&128)<<57) | ((unsigned long long)(h.uc[2]&128)<<58) | ((unsigned long long)(h.uc[3]&128)<<59) | ((unsigned long long)(h.uc[4]&128)<<60) | ((unsigned long long)(h.uc[5]&128)<<61) | ((unsigned long long)(h.uc[6]&128)<<62) | ((unsigned long long)(h.uc[7]&128)<<63);*/
+      ((unsigned long long)(h.uc[0]&  2)<< 8) | ((unsigned long long)(h.uc[1]&  2)<< 9) | ((unsigned long long)(h.uc[2]&  2)<<10) | ((unsigned long long)(h.uc[3]&  2)<<11) | ((unsigned long long)(h.uc[4]&  2)<<12) | ((unsigned long long)(h.uc[5]&  2)<<13) | ((unsigned long long)(h.uc[6]&  2)<<14) | ((unsigned long long)(h.uc[7]&  2)<<15) |
+      ((unsigned long long)(h.uc[0]&  4)<<16) | ((unsigned long long)(h.uc[1]&  4)<<17) | ((unsigned long long)(h.uc[2]&  4)<<18) | ((unsigned long long)(h.uc[3]&  4)<<19) | ((unsigned long long)(h.uc[4]&  4)<<20) | ((unsigned long long)(h.uc[5]&  4)<<21) | ((unsigned long long)(h.uc[6]&  4)<<22) | ((unsigned long long)(h.uc[7]&  4)<<23) |
+      ((unsigned long long)(h.uc[0]&  8)<<24) | ((unsigned long long)(h.uc[1]&  8)<<25) | ((unsigned long long)(h.uc[2]&  8)<<26) | ((unsigned long long)(h.uc[3]&  8)<<27) | ((unsigned long long)(h.uc[4]&  8)<<28) | ((unsigned long long)(h.uc[5]&  8)<<29) | ((unsigned long long)(h.uc[6]&  8)<<30) | ((unsigned long long)(h.uc[7]&  8)<<31) |
+      ((unsigned long long)(h.uc[0]& 16)<<32) | ((unsigned long long)(h.uc[1]& 16)<<33) | ((unsigned long long)(h.uc[2]& 16)<<34) | ((unsigned long long)(h.uc[3]& 16)<<35) | ((unsigned long long)(h.uc[4]& 16)<<36) | ((unsigned long long)(h.uc[5]& 16)<<37) | ((unsigned long long)(h.uc[6]& 16)<<38) | ((unsigned long long)(h.uc[7]& 16)<<39) |
+      ((unsigned long long)(h.uc[0]& 32)<<40) | ((unsigned long long)(h.uc[1]& 32)<<41) | ((unsigned long long)(h.uc[2]& 32)<<42) | ((unsigned long long)(h.uc[3]& 32)<<43) | ((unsigned long long)(h.uc[4]& 32)<<44) | ((unsigned long long)(h.uc[5]& 32)<<45) | ((unsigned long long)(h.uc[6]& 32)<<46) | ((unsigned long long)(h.uc[7]& 32)<<47) |
+      ((unsigned long long)(h.uc[0]& 64)<<48) | ((unsigned long long)(h.uc[1]& 64)<<49) | ((unsigned long long)(h.uc[2]& 64)<<50) | ((unsigned long long)(h.uc[3]& 64)<<51) | ((unsigned long long)(h.uc[4]& 64)<<52) | ((unsigned long long)(h.uc[5]& 64)<<53) | ((unsigned long long)(h.uc[6]& 64)<<54) | ((unsigned long long)(h.uc[7]& 64)<<55) |
+      ((unsigned long long)(h.uc[0]&128)<<56) | ((unsigned long long)(h.uc[1]&128)<<57) | ((unsigned long long)(h.uc[2]&128)<<58) | ((unsigned long long)(h.uc[3]&128)<<59) | ((unsigned long long)(h.uc[4]&128)<<60) | ((unsigned long long)(h.uc[5]&128)<<61) | ((unsigned long long)(h.uc[6]&128)<<62) | ((unsigned long long)(h.uc[7]&128)<<63);*/
 
       /*const unsigned char* const p = reinterpret_cast<const unsigned char*>( &(this->m_fWrapLighting) );
       unsigned int h = 2166136261;
@@ -92,7 +135,7 @@ public:
       return (unsigned long long)h;*/
    }
 
-   char m_szName[32];
+   char m_szName[MAXNAMEBUFFER];
    float m_fWrapLighting;
    float m_fRoughness;
    float m_fGlossyImageLerp;

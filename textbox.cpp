@@ -31,8 +31,8 @@ HRESULT Textbox::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
 void Textbox::SetDefaults(bool fromMouseClick)
 {
    //Textbox is always located on backdrop
-   m_fBackglass = true;
-   m_d.m_fVisible = true;
+   m_backglass = true;
+   m_d.m_visible = true;
 
    FONTDESC fd;
    fd.cbSizeofstruct = sizeof(FONTDESC);
@@ -43,11 +43,11 @@ void Textbox::SetDefaults(bool fromMouseClick)
       m_d.m_backcolor = RGB(0, 0, 0);
       m_d.m_fontcolor = RGB(255, 255, 255);
       m_d.m_intensity_scale = 1.0f;
-      m_d.m_tdr.m_fTimerEnabled = false;
+      m_d.m_tdr.m_TimerEnabled = false;
       m_d.m_tdr.m_TimerInterval = 100;
       m_d.m_talign = TextAlignRight;
-      m_d.m_fTransparent = false;
-      m_d.m_IsDMD = false;
+      m_d.m_transparent = false;
+      m_d.m_isDMD = false;
       lstrcpy(m_d.sztext, "0");
 
       fd.cySize.int64 = (LONGLONG)(14.25f * 10000.0f);
@@ -63,11 +63,11 @@ void Textbox::SetDefaults(bool fromMouseClick)
       m_d.m_backcolor = LoadValueIntWithDefault("DefaultProps\\TextBox", "BackColor", RGB(0, 0, 0));
       m_d.m_fontcolor = LoadValueIntWithDefault("DefaultProps\\TextBox", "FontColor", RGB(255, 255, 255));
       m_d.m_intensity_scale = LoadValueFloatWithDefault("DefaultProps\\TextBox", "IntensityScale", 1.0f);
-      m_d.m_tdr.m_fTimerEnabled = LoadValueBoolWithDefault("DefaultProps\\TextBox", "TimerEnabled", false) ? true : false;
+      m_d.m_tdr.m_TimerEnabled = LoadValueBoolWithDefault("DefaultProps\\TextBox", "TimerEnabled", false) ? true : false;
       m_d.m_tdr.m_TimerInterval = LoadValueIntWithDefault("DefaultProps\\TextBox", "TimerInterval", 100);
       m_d.m_talign = (TextAlignment)LoadValueIntWithDefault("DefaultProps\\TextBox", "TextAlignment", TextAlignRight);
-      m_d.m_fTransparent = LoadValueBoolWithDefault("DefaultProps\\TextBox", "Transparent", false);
-      m_d.m_IsDMD = LoadValueBoolWithDefault("DefaultProps\\TextBox", "DMD", false);
+      m_d.m_transparent = LoadValueBoolWithDefault("DefaultProps\\TextBox", "Transparent", false);
+      m_d.m_isDMD = LoadValueBoolWithDefault("DefaultProps\\TextBox", "DMD", false);
 
       const float fontSize = LoadValueFloatWithDefault("DefaultProps\\TextBox", "FontSize", 14.25f);
       fd.cySize.int64 = (LONGLONG)(fontSize * 10000.0f);
@@ -108,15 +108,15 @@ void Textbox::WriteRegDefaults()
 
    SaveValueInt("DefaultProps\\TextBox", "BackColor", m_d.m_backcolor);
    SaveValueInt("DefaultProps\\TextBox", "FontColor", m_d.m_fontcolor);
-   SaveValueBool("DefaultProps\\TextBox", "TimerEnabled", m_d.m_tdr.m_fTimerEnabled);
+   SaveValueBool("DefaultProps\\TextBox", "TimerEnabled", m_d.m_tdr.m_TimerEnabled);
    SaveValueInt("DefaultProps\\TextBox", "TimerInterval", m_d.m_tdr.m_TimerInterval);
-   SaveValueBool("DefaultProps\\TextBox", "Transparent", m_d.m_fTransparent);
-   SaveValueBool("DefaultProps\\TextBox", "DMD", m_d.m_IsDMD);
+   SaveValueBool("DefaultProps\\TextBox", "Transparent", m_d.m_transparent);
+   SaveValueBool("DefaultProps\\TextBox", "DMD", m_d.m_isDMD);
 
    FONTDESC fd;
    fd.cbSizeofstruct = sizeof(FONTDESC);
    m_pIFont->get_Size(&fd.cySize);
-   m_pIFont->get_Name(&fd.lpstrName);
+   m_pIFont->get_Name(&fd.lpstrName); //!! BSTR
    m_pIFont->get_Weight(&fd.sWeight);
    m_pIFont->get_Charset(&fd.sCharset);
    m_pIFont->get_Italic(&fd.fItalic);
@@ -137,6 +137,48 @@ void Textbox::WriteRegDefaults()
    SaveValueInt("DefaultProps\\TextBox", "FontStrikeThrough", fd.fStrikethrough);
 
    SaveValueString("DefaultProps\\TextBox", "Text", m_d.sztext);
+}
+
+static char fontName[MAXTOKEN];
+char * Textbox::GetFontName()
+{
+   if (m_pIFont)
+   {
+      CComBSTR bstr;
+      /*HRESULT hr =*/ m_pIFont->get_Name(&bstr);
+
+      WideCharToMultiByte(CP_ACP, 0, bstr, -1, fontName, LF_FACESIZE, NULL, NULL);
+      return fontName;
+   }
+   return NULL;
+}
+
+HFONT Textbox::GetFont()
+{
+   LOGFONT lf;
+   ZeroMemory(&lf, sizeof(lf));
+
+   lf.lfHeight = -72;
+   lf.lfCharSet = DEFAULT_CHARSET;
+   lf.lfQuality = NONANTIALIASED_QUALITY;
+
+   CComBSTR bstr;
+   HRESULT hr = m_pIFont->get_Name(&bstr);
+
+   WideCharToMultiByte(CP_ACP, 0, bstr, -1, lf.lfFaceName, LF_FACESIZE, NULL, NULL);
+
+   BOOL bl;
+   hr = m_pIFont->get_Bold(&bl);
+
+   lf.lfWeight = bl ? FW_BOLD : FW_NORMAL;
+
+   hr = m_pIFont->get_Italic(&bl);
+
+   lf.lfItalic = (BYTE)bl;
+
+   HFONT hFont = CreateFontIndirect(&lf);
+
+   return hFont;
 }
 
 STDMETHODIMP Textbox::InterfaceSupportsErrorInfo(REFIID riid)
@@ -184,7 +226,7 @@ void Textbox::GetTimers(vector<HitTimer*> &pvht)
 
    m_phittimer = pht;
 
-   if (m_d.m_tdr.m_fTimerEnabled)
+   if (m_d.m_tdr.m_TimerEnabled)
       pvht.push_back(pht);
 }
 
@@ -213,15 +255,15 @@ void Textbox::RenderDynamic()
 {
    TRACE_FUNCTION();
 
-   const bool dmd = (m_d.m_IsDMD || strstr(m_d.sztext, "DMD") != NULL); //!! second part is VP10.0 legacy
+   const bool dmd = (m_d.m_isDMD || strstr(m_d.sztext, "DMD") != NULL); //!! second part is VP10.0 legacy
 
-   if (!m_d.m_fVisible || (dmd && !g_pplayer->m_texdmd))
+   if (!m_d.m_visible || (dmd && !g_pplayer->m_texdmd))
       if (!g_pplayer->m_capExtDMD || (FindWindowA(NULL, "Virtual DMD") == NULL && FindWindowA("pygame", NULL) == NULL)) // If DMD capture is enabled check for external DMD window
          return;
 
-   RenderDevice * const pd3dDevice = m_fBackglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+   RenderDevice * const pd3dDevice = m_backglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
-   if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_fReflectionEnabled)
+   if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_reflectionEnabled)
       pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
    else
       pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
@@ -245,7 +287,7 @@ void Textbox::RenderDynamic()
    if (dmd)
    {
       pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
-      g_pplayer->m_pin3d.backGlass->DMDdraw(x, y, width, height,
+      g_pplayer->m_pin3d.m_backGlass->DMDdraw(x, y, width, height,
          m_d.m_fontcolor, m_d.m_intensity_scale); //!! replace??!
    }
    else
@@ -260,7 +302,7 @@ void Textbox::RenderDynamic()
          pd3dDevice->SetRenderState(RenderDevice::ALPHATESTENABLE, RenderDevice::RS_FALSE);
       }
 
-   //if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_fReflectionEnabled)
+   //if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_reflectionEnabled)
    //	pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 }
 
@@ -302,14 +344,14 @@ void Textbox::PreRenderText()
    bmi.bmiHeader.biSizeImage = 0;
 
    void *bits;
-   HBITMAP hbm = CreateDIBSection(0, &bmi, DIB_RGB_COLORS, &bits, NULL, 0);
+   const HBITMAP hbm = CreateDIBSection(0, &bmi, DIB_RGB_COLORS, &bits, NULL, 0);
    assert(hbm);
 
-   HDC hdc = CreateCompatibleDC(NULL);
-   HBITMAP oldBmp = (HBITMAP)SelectObject(hdc, hbm);
+   const HDC hdc = CreateCompatibleDC(NULL);
+   const HBITMAP oldBmp = (HBITMAP)SelectObject(hdc, hbm);
 
-   HBRUSH hbrush = CreateSolidBrush(m_d.m_backcolor);
-   HBRUSH hbrushold = (HBRUSH)SelectObject(hdc, hbrush);
+   const HBRUSH hbrush = CreateSolidBrush(m_d.m_backcolor);
+   const HBRUSH hbrushold = (HBRUSH)SelectObject(hdc, hbrush);
    PatBlt(hdc, 0, 0, width, height, PATCOPY);
    SelectObject(hdc, hbrushold);
    DeleteObject(hbrush);
@@ -359,7 +401,7 @@ void Textbox::PreRenderText()
    {
       for (int l = 0; l < m_texture->width(); l++)
       {
-         if (m_d.m_fTransparent && (((*(D3DCOLOR *)pch) & 0xFFFFFF) == m_d.m_backcolor))
+         if (m_d.m_transparent && (((*(D3DCOLOR *)pch) & 0xFFFFFF) == m_d.m_backcolor))
             *(D3DCOLOR *)pch = 0x00000000; // set to black & alpha full transparent
          else
             *(D3DCOLOR *)pch |= 0xFF000000;
@@ -390,11 +432,6 @@ void Textbox::MoveOffset(const float dx, const float dy)
    m_d.m_v2.y += dy;
 }
 
-Vertex2D Textbox::GetCenter() const
-{
-   return m_d.m_v1;
-}
-
 void Textbox::PutCenter(const Vertex2D& pv)
 {
    m_d.m_v2.x = pv.x + m_d.m_v2.x - m_d.m_v1.x;
@@ -412,13 +449,9 @@ STDMETHODIMP Textbox::get_BackColor(OLE_COLOR *pVal)
 
 STDMETHODIMP Textbox::put_BackColor(OLE_COLOR newVal)
 {
-   STARTUNDO
+   m_d.m_backcolor = newVal;
 
-      m_d.m_backcolor = newVal;
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Textbox::get_FontColor(OLE_COLOR *pVal)
@@ -430,19 +463,14 @@ STDMETHODIMP Textbox::get_FontColor(OLE_COLOR *pVal)
 
 STDMETHODIMP Textbox::put_FontColor(OLE_COLOR newVal)
 {
-   STARTUNDO
+   m_d.m_fontcolor = newVal;
 
-      m_d.m_fontcolor = newVal;
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Textbox::get_Text(BSTR *pVal)
 {
    WCHAR wz[512];
-
    MultiByteToWideChar(CP_ACP, 0, (char *)m_d.sztext, -1, wz, 512);
    *pVal = SysAllocString(wz);
 
@@ -453,20 +481,15 @@ STDMETHODIMP Textbox::put_Text(BSTR newVal)
 {
    if (lstrlenW(newVal) < 512)
    {
-      STARTUNDO
-
-         WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.sztext, 512, NULL, NULL);
-
+      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.sztext, 512, NULL, NULL);
       if (g_pplayer)
          PreRenderText();
-
-      STOPUNDO
    }
 
    return S_OK;
 }
 
-HRESULT Textbox::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
+HRESULT Textbox::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupForPlay)
 {
    BiffWriter bw(pstm, hcrypthash);
 
@@ -476,12 +499,12 @@ HRESULT Textbox::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
    bw.WriteInt(FID(CLRF), m_d.m_fontcolor);
    bw.WriteFloat(FID(INSC), m_d.m_intensity_scale);
    bw.WriteString(FID(TEXT), m_d.sztext);
-   bw.WriteBool(FID(TMON), m_d.m_tdr.m_fTimerEnabled);
+   bw.WriteBool(FID(TMON), m_d.m_tdr.m_TimerEnabled);
    bw.WriteInt(FID(TMIN), m_d.m_tdr.m_TimerInterval);
    bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
    bw.WriteInt(FID(ALGN), m_d.m_talign);
-   bw.WriteBool(FID(TRNS), m_d.m_fTransparent);
-   bw.WriteBool(FID(IDMD), m_d.m_IsDMD);
+   bw.WriteBool(FID(TRNS), m_d.m_transparent);
+   bw.WriteBool(FID(IDMD), m_d.m_isDMD);
 
    ISelect::SaveData(pstm, hcrypthash);
 
@@ -508,61 +531,24 @@ HRESULT Textbox::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version
    return S_OK;
 }
 
-BOOL Textbox::LoadToken(int id, BiffReader *pbr)
+bool Textbox::LoadToken(const int id, BiffReader * const pbr)
 {
-   if (id == FID(PIID))
+   switch (id)
    {
-      pbr->GetInt((int *)pbr->m_pdata);
-   }
-   else if (id == FID(VER1))
-   {
-      pbr->GetStruct(&m_d.m_v1, sizeof(Vertex2D));
-   }
-   else if (id == FID(VER2))
-   {
-      pbr->GetStruct(&m_d.m_v2, sizeof(Vertex2D));
-   }
-   else if (id == FID(CLRB))
-   {
-      pbr->GetInt(&m_d.m_backcolor);
-   }
-   else if (id == FID(CLRF))
-   {
-      pbr->GetInt(&m_d.m_fontcolor);
-   }
-   else if (id == FID(INSC))
-   {
-      pbr->GetFloat(&m_d.m_intensity_scale);
-   }
-   else if (id == FID(TMON))
-   {
-      pbr->GetBool(&m_d.m_tdr.m_fTimerEnabled);
-   }
-   else if (id == FID(TMIN))
-   {
-      pbr->GetInt(&m_d.m_tdr.m_TimerInterval);
-   }
-   else if (id == FID(TEXT))
-   {
-      pbr->GetString(m_d.sztext);
-   }
-   else if (id == FID(NAME))
-   {
-      pbr->GetWideString((WCHAR *)m_wzName);
-   }
-   else if (id == FID(ALGN))
-   {
-      pbr->GetInt(&m_d.m_talign);
-   }
-   else if (id == FID(TRNS))
-   {
-      pbr->GetBool(&m_d.m_fTransparent);
-   }
-   else if (id == FID(IDMD))
-   {
-      pbr->GetBool(&m_d.m_IsDMD);
-   }
-   else if (id == FID(FONT))
+   case FID(PIID): pbr->GetInt((int *)pbr->m_pdata); break;
+   case FID(VER1): pbr->GetStruct(&m_d.m_v1, sizeof(Vertex2D)); break;
+   case FID(VER2): pbr->GetStruct(&m_d.m_v2, sizeof(Vertex2D)); break;
+   case FID(CLRB): pbr->GetInt(&m_d.m_backcolor); break;
+   case FID(CLRF): pbr->GetInt(&m_d.m_fontcolor); break;
+   case FID(INSC): pbr->GetFloat(&m_d.m_intensity_scale); break;
+   case FID(TMON): pbr->GetBool(&m_d.m_tdr.m_TimerEnabled); break;
+   case FID(TMIN): pbr->GetInt(&m_d.m_tdr.m_TimerInterval); break;
+   case FID(TEXT): pbr->GetString(m_d.sztext); break;
+   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(ALGN): pbr->GetInt(&m_d.m_talign); break;
+   case FID(TRNS): pbr->GetBool(&m_d.m_transparent); break;
+   case FID(IDMD): pbr->GetBool(&m_d.m_isDMD); break;
+   case FID(FONT):
    {
       if (!m_pIFont)
       {
@@ -582,13 +568,12 @@ BOOL Textbox::LoadToken(int id, BiffReader *pbr)
       m_pIFont->QueryInterface(IID_IPersistStream, (void **)&ips);
 
       ips->Load(pbr->m_pistream);
-   }
-   else
-   {
-      ISelect::LoadToken(id, pbr);
-   }
 
-   return fTrue;
+      break;
+   }
+   default: ISelect::LoadToken(id, pbr); break;
+   }
+   return true;
 }
 
 HRESULT Textbox::InitPostLoad()
@@ -631,13 +616,9 @@ STDMETHODIMP Textbox::get_Width(float *pVal)
 
 STDMETHODIMP Textbox::put_Width(float newVal)
 {
-   STARTUNDO
+   m_d.m_v2.x = m_d.m_v1.x + newVal;
 
-      m_d.m_v2.x = m_d.m_v1.x + newVal;
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Textbox::get_Height(float *pVal)
@@ -649,13 +630,9 @@ STDMETHODIMP Textbox::get_Height(float *pVal)
 
 STDMETHODIMP Textbox::put_Height(float newVal)
 {
-   STARTUNDO
+   m_d.m_v2.y = m_d.m_v1.y + newVal;
 
-      m_d.m_v2.y = m_d.m_v1.y + newVal;
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Textbox::get_X(float *pVal)
@@ -668,16 +645,11 @@ STDMETHODIMP Textbox::get_X(float *pVal)
 
 STDMETHODIMP Textbox::put_X(float newVal)
 {
-   STARTUNDO
-
-      const float delta = newVal - m_d.m_v1.x;
-
+   const float delta = newVal - m_d.m_v1.x;
    m_d.m_v1.x += delta;
    m_d.m_v2.x += delta;
 
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Textbox::get_Y(float *pVal)
@@ -689,16 +661,11 @@ STDMETHODIMP Textbox::get_Y(float *pVal)
 
 STDMETHODIMP Textbox::put_Y(float newVal)
 {
-   STARTUNDO
-
-      const float delta = newVal - m_d.m_v1.y;
-
+   const float delta = newVal - m_d.m_v1.y;
    m_d.m_v1.y += delta;
    m_d.m_v2.y += delta;
 
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Textbox::get_IntensityScale(float *pVal)
@@ -710,33 +677,9 @@ STDMETHODIMP Textbox::get_IntensityScale(float *pVal)
 
 STDMETHODIMP Textbox::put_IntensityScale(float newVal)
 {
-   STARTUNDO
+   m_d.m_intensity_scale = newVal;
 
-      m_d.m_intensity_scale = newVal;
-
-   STOPUNDO
-
-      return S_OK;
-}
-
-void Textbox::GetDialogPanes(vector<PropertyPane*> &pvproppane)
-{
-   PropertyPane *pproppane;
-
-   pproppane = new PropertyPane(IDD_PROP_NAME, NULL);
-   pvproppane.push_back(pproppane);
-
-   pproppane = new PropertyPane(IDD_PROPTEXTBOX_VISUALS, IDS_VISUALS);
-   pvproppane.push_back(pproppane);
-
-   pproppane = new PropertyPane(IDD_PROPTEXTBOX_POSITION, IDS_POSITION);
-   pvproppane.push_back(pproppane);
-
-   pproppane = new PropertyPane(IDD_PROPTEXTBOX_STATE, IDS_STATE);
-   pvproppane.push_back(pproppane);
-
-   pproppane = new PropertyPane(IDD_PROP_TIMER, IDS_MISC);
-   pvproppane.push_back(pproppane);
+   return S_OK;
 }
 
 STDMETHODIMP Textbox::get_Alignment(TextAlignment *pVal)
@@ -748,63 +691,49 @@ STDMETHODIMP Textbox::get_Alignment(TextAlignment *pVal)
 
 STDMETHODIMP Textbox::put_Alignment(TextAlignment newVal)
 {
-   STARTUNDO
+   m_d.m_talign = newVal;
 
-      m_d.m_talign = newVal;
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Textbox::get_IsTransparent(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_fTransparent);
+   *pVal = FTOVB(m_d.m_transparent);
 
    return S_OK;
 }
 
 STDMETHODIMP Textbox::put_IsTransparent(VARIANT_BOOL newVal)
 {
-   STARTUNDO
+   m_d.m_transparent = VBTOb(newVal);
 
-      m_d.m_fTransparent = VBTOF(newVal);
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Textbox::get_DMD(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_IsDMD);
+   *pVal = FTOVB(m_d.m_isDMD);
 
    return S_OK;
 }
 
 STDMETHODIMP Textbox::put_DMD(VARIANT_BOOL newVal)
 {
-   STARTUNDO
+   m_d.m_isDMD = VBTOb(newVal);
 
-      m_d.m_IsDMD = VBTOF(newVal);
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Textbox::get_Visible(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_fVisible);
+   *pVal = FTOVB(m_d.m_visible);
 
    return S_OK;
 }
 
 STDMETHODIMP Textbox::put_Visible(VARIANT_BOOL newVal)
 {
-   STARTUNDO
-      m_d.m_fVisible = VBTOF(newVal);
-   STOPUNDO
+   m_d.m_visible = VBTOb(newVal);
 
-      return S_OK;
+   return S_OK;
 }

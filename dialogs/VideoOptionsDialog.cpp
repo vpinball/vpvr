@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+#include "stdafx.h"
 #include "resource.h"
 #include "VideoOptionsDialog.h"
 
@@ -27,14 +27,14 @@ VideoOptionsDialog::VideoOptionsDialog() : CDialog(IDD_VIDEO_OPTIONS)
 {
 }
 
-void VideoOptionsDialog::AddToolTip(char *text, HWND parentHwnd, HWND toolTipHwnd, HWND controlHwnd)
+void VideoOptionsDialog::AddToolTip(const char * const text, HWND parentHwnd, HWND toolTipHwnd, HWND controlHwnd)
 {
    TOOLINFO toolInfo = { 0 };
    toolInfo.cbSize = sizeof(toolInfo);
    toolInfo.hwnd = parentHwnd;
    toolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
    toolInfo.uId = (UINT_PTR)controlHwnd;
-   toolInfo.lpszText = text;
+   toolInfo.lpszText = (char*)text;
    SendMessage(toolTipHwnd, TTM_ADDTOOL, 0, (LPARAM)&toolInfo);
 }
 
@@ -187,7 +187,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
       controlHwnd = GetDlgItem(IDC_ADAPTIVE_VSYNC).GetHwnd();
       AddToolTip("1-activates VSYNC for every frame (avoids tearing)\r\n2-adaptive VSYNC, waits only for fast frames (e.g. over 60fps)\r\nor set it to e.g. 60 or 120 to limit the fps to that value (energy saving/less heat)", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_MAX_PRE_FRAMES).GetHwnd();
-      AddToolTip("Experiment with 1 or 2 for a chance of lag reduction at the price of a bit of performance.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip("Leave at 0 if you have enabled 'Low Latency' or 'Anti Lag' settings in the graphics driver.\r\nOtherwise experiment with 1 or 2 for a chance of lag reduction at the price of a bit of framerate.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_StretchMonitor).GetHwnd();
       AddToolTip("If played in cabinet mode and you get an egg shaped ball activate this.\r\nFor screen ratios other than 16:9 you may have to adjust the offsets.\r\nNormally you have to set the Y offset (around 1.5) but you have to experiment.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_NUDGE_STRENGTH).GetHwnd();
@@ -399,7 +399,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
 
    SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_RESETCONTENT, 0, 0);
 
-   for (std::vector<DisplayConfig>::iterator dispConf = displays.begin(); dispConf != displays.end(); dispConf++)
+   for (std::vector<DisplayConfig>::iterator dispConf = displays.begin(); dispConf != displays.end(); ++dispConf)
    {
       if (display == -1 && dispConf->isPrimary)
          display = dispConf->display;
@@ -439,10 +439,10 @@ BOOL VideoOptionsDialog::OnInitDialog()
    const int ballStretchMode = LoadValueIntWithDefault("Player", "BallStretchMode", 0);
    switch (ballStretchMode)
    {
+   default:
    case 0:  SendMessage(GetDlgItem(IDC_StretchNo).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);      break;
    case 1:  SendMessage(GetDlgItem(IDC_StretchYes).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);     break;
    case 2:  SendMessage(GetDlgItem(IDC_StretchMonitor).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0); break;
-   default: SendMessage(GetDlgItem(IDC_StretchNo).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);      break;
    }
 
    // set selected Monitors
@@ -656,21 +656,11 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
    }
    case IDC_OVERWRITE_BALL_IMAGE_CHECK:
    {
-      const bool overwriteEnabled = IsDlgButtonChecked(IDC_OVERWRITE_BALL_IMAGE_CHECK) == BST_CHECKED;
-      if (overwriteEnabled)
-      {
-         ::EnableWindow(GetDlgItem(IDC_BROWSE_BALL_IMAGE).GetHwnd(), TRUE);
-         ::EnableWindow(GetDlgItem(IDC_BROWSE_BALL_DECAL).GetHwnd(), TRUE);
-         ::EnableWindow(GetDlgItem(IDC_BALL_IMAGE_EDIT).GetHwnd(), TRUE);
-         ::EnableWindow(GetDlgItem(IDC_BALL_DECAL_EDIT).GetHwnd(), TRUE);
-      }
-      else
-      {
-         ::EnableWindow(GetDlgItem(IDC_BROWSE_BALL_IMAGE).GetHwnd(), FALSE);
-         ::EnableWindow(GetDlgItem(IDC_BROWSE_BALL_DECAL).GetHwnd(), FALSE);
-         ::EnableWindow(GetDlgItem(IDC_BALL_IMAGE_EDIT).GetHwnd(), FALSE);
-         ::EnableWindow(GetDlgItem(IDC_BALL_DECAL_EDIT).GetHwnd(), FALSE);
-      }
+      const BOOL overwriteEnabled = (IsDlgButtonChecked(IDC_OVERWRITE_BALL_IMAGE_CHECK) == BST_CHECKED) ? TRUE : FALSE;
+      ::EnableWindow(GetDlgItem(IDC_BROWSE_BALL_IMAGE).GetHwnd(), overwriteEnabled);
+      ::EnableWindow(GetDlgItem(IDC_BROWSE_BALL_DECAL).GetHwnd(), overwriteEnabled);
+      ::EnableWindow(GetDlgItem(IDC_BALL_IMAGE_EDIT).GetHwnd(), overwriteEnabled);
+      ::EnableWindow(GetDlgItem(IDC_BALL_DECAL_EDIT).GetHwnd(), overwriteEnabled);
       break;
    }
    case IDC_BROWSE_BALL_IMAGE:
@@ -682,7 +672,7 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       ZeroMemory(&ofn, sizeof(OPENFILENAME));
       ofn.lStructSize = sizeof(OPENFILENAME);
       ofn.hInstance = g_hinst;
-      ofn.hwndOwner = g_pvp->m_hwnd;
+      ofn.hwndOwner = g_pvp->GetHwnd();
       // TEXT
       ofn.lpstrFilter = "Bitmap, JPEG, PNG, TGA, EXR, HDR Files (.bmp/.jpg/.png/.tga/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.tga;*.exr;*.hdr\0";
       ofn.lpstrFile = szFileName;
@@ -705,7 +695,7 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       ZeroMemory(&ofn, sizeof(OPENFILENAME));
       ofn.lStructSize = sizeof(OPENFILENAME);
       ofn.hInstance = g_hinst;
-      ofn.hwndOwner = g_pvp->m_hwnd;
+      ofn.hwndOwner = g_pvp->GetHwnd();
       // TEXT
       ofn.lpstrFilter = "Bitmap, JPEG, PNG, TGA, EXR, HDR Files (.bmp/.jpg/.png/.tga/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.tga;*.exr;*.hdr\0";
       ofn.lpstrFile = szFileName;
@@ -768,7 +758,7 @@ void VideoOptionsDialog::OnOK()
       SaveValueInt("Player", "RefreshRate", pvm->refreshrate);
    }
    const size_t display = SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
-   SaveValueInt("Player", "Display", display);
+   SaveValueInt("Player", "Display", (int)display);
 
    const bool video10bit = (SendMessage(GetDlgItem(IDC_10BIT_VIDEO).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
    SaveValueBool("Player", "Render10Bit", video10bit);
@@ -815,13 +805,13 @@ void VideoOptionsDialog::OnOK()
    size_t fxaa = SendMessage(hwndFXAA, CB_GETCURSEL, 0, 0);
    if (fxaa == LB_ERR)
       fxaa = 2;
-   SaveValueInt("Player", "FXAA", fxaa);
+   SaveValueInt("Player", "FXAA", (int)fxaa);
 
    const bool scaleFX_DMD = (SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
    SaveValueBool("Player", "ScaleFXDMD", scaleFX_DMD);
 
    const size_t BGSet = SendMessage(GetDlgItem(IDC_BG_SET).GetHwnd(), BM_GETCHECK, 0, 0);
-   SaveValueInt("Player", "BGSet", BGSet);
+   SaveValueInt("Player", "BGSet", (int)BGSet);
 
    const size_t AAfactorIndex = SendMessage(GetDlgItem(IDC_SSSLIDER).GetHwnd(), TBM_GETPOS, 0, 0);
    const float AAfactor = (AAfactorIndex < AAfactorCount) ? AAfactors[AAfactorIndex] : 1.0f;
@@ -846,8 +836,8 @@ void VideoOptionsDialog::OnOK()
    size_t stereo3D = SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_GETCURSEL, 0, 0);
    if (stereo3D == LB_ERR)
       stereo3D = 0;
-   SaveValueInt("Player", "Stereo3D", stereo3D);
-   SaveValueInt("Player", "Stereo3DEnabled", stereo3D);
+   SaveValueInt("Player", "Stereo3D", (int)stereo3D);
+   SaveValueInt("Player", "Stereo3DEnabled", (int)stereo3D);
 
    const bool stereo3DY = (SendMessage(GetDlgItem(IDC_3D_STEREO_Y).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
    SaveValueBool("Player", "Stereo3DYAxis", stereo3DY);
@@ -862,7 +852,7 @@ void VideoOptionsDialog::OnOK()
    SaveValueBool("Player", "SoftwareVertexProcessing", softwareVP);
 
    const size_t alphaRampsAccuracy = SendMessage(GetDlgItem(IDC_ARASlider).GetHwnd(), TBM_GETPOS, 0, 0);
-   SaveValueInt("Player", "AlphaRampAccuracy", alphaRampsAccuracy);
+   SaveValueInt("Player", "AlphaRampAccuracy", (int)alphaRampsAccuracy);
 
    tmpStr = GetDlgItemTextA(IDC_3D_STEREO_OFS);
    SaveValueString("Player", "Stereo3DOffset", tmpStr.c_str());
@@ -898,7 +888,7 @@ void VideoOptionsDialog::OnOK()
    size_t selected = SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_GETCURSEL, 0, 0);
    if (selected == LB_ERR)
       selected = 1; // assume a 16:9 Monitor as standard
-   SaveValueInt("Player", "BallStretchMonitor", selected);
+   SaveValueInt("Player", "BallStretchMonitor", (int)selected);
 
    const bool overwriteEnabled = IsDlgButtonChecked(IDC_OVERWRITE_BALL_IMAGE_CHECK) == BST_CHECKED;
    if (overwriteEnabled)

@@ -37,6 +37,8 @@ class PinTable;
 
 class IEditable;
 
+class TimerDataRoot;
+
 struct PropertyPane;
 
 enum SelectState
@@ -49,6 +51,23 @@ enum SelectState
 INT_PTR CALLBACK RotateProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK ScaleProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 INT_PTR CALLBACK TranslateProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+class BaseProperty // not everything in here is used in all of the derived classes, but it simplifies the UI code!
+{
+public:
+   char  m_szImage[MAXTOKEN];
+   char  m_szMaterial[MAXNAMEBUFFER];
+   char  m_szPhysicsMaterial[MAXNAMEBUFFER];
+   float m_elasticity;
+   float m_friction;
+   float m_scatter;
+   float m_threshold;
+   bool  m_collidable;
+   bool  m_hitEvent;
+   bool  m_overwritePhysics;
+   bool  m_reflectionEnabled;
+   bool  m_visible;
+};
 
 // ISelect is the subclass for anything that can be manipulated with the mouse.
 // and that has a property sheet.
@@ -66,7 +85,7 @@ public:
 
    // Things to override
    virtual void MoveOffset(const float dx, const float dy);
-   virtual void EditMenu(HMENU hmenu);
+   virtual void EditMenu(CMenu &menu);
    virtual void DoCommand(int icmd, int x, int y);
    virtual void SetObjectPos();
 
@@ -80,7 +99,6 @@ public:
    static void GetTypeNameForType(ItemTypeEnum type, WCHAR * buf);
 
    virtual IDispatch *GetDispatch() = 0;
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane) = 0;
    virtual ItemTypeEnum GetItemType() const = 0;
 
    virtual void Delete() = 0;
@@ -109,13 +127,12 @@ public:
 
    virtual IEditable *GetIEditable() = 0;
 
-   virtual BOOL LoadToken(int id, BiffReader *pbr);
+   virtual bool LoadToken(const int id, BiffReader * const pbr);
    HRESULT SaveData(IStream *pstm, HCRYPTHASH hcrypthash);
 
    virtual int GetSelectLevel() { return 1; }
-   virtual bool LoadMesh() { return false; }
-   virtual void ExportMesh() {}
-   virtual void UpdatePropertyPanes() {}
+   virtual bool LoadMeshDialog() { return false; }
+   virtual void ExportMeshDialog() {}
    virtual void AddPoint(int x, int y, const bool smooth) {}
 
    POINT m_ptLast;
@@ -124,9 +141,11 @@ public:
 
    int m_menuid; // context menu to use
 
-   int m_layerIndex;
+   string m_layerName;
 
-   bool m_fDragging;
-   bool m_fMarkedForUndo;
-   bool m_fLocked; // Can not be dragged in the editor
+   bool m_dragging;
+   bool m_markedForUndo;
+   bool m_locked; // Can not be dragged in the editor
+
+   unsigned char m_layerIndex; //!! deprecated, leave it here for compatibility reasons. To load old tables to new layer handling
 };

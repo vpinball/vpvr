@@ -51,6 +51,7 @@ uniform sampler2D Texture3; // bulb light buffer
 uniform sampler2D Texture4; // normal map
 
 uniform bool hdrEnvTextures;
+uniform bool objectSpaceNormalMap;
 uniform bool is_metal;
 uniform bool doNormalMapping;
 
@@ -63,7 +64,7 @@ uniform vec4 cGlossy_ImageLerp;
 //!! Gemstones are 0.05-0.17
 //!! Metals have high specular reflectance: 0.5-1.0
 
-uniform float fAlphaTestValue;
+uniform float alphaTestValue;
 
 out vec4 color;
 
@@ -87,7 +88,15 @@ mat3 TBN_trafo(vec3 N, vec3 V, vec2 uv)
 
 vec3 normal_map(vec3 N, vec3 V, vec2 uv)
 {
-    return normalize((TBN_trafo(N, V, uv) * (textureLod(Texture4, uv, 0).xyz * (255./127.) - (128./127.))));
+   vec3 tn = tex2D(Texture4, uv).xyz * (255./127.) - (128./127.); // Note that Blender apparently does export tangent space normalmaps for Z (Blue) at full range, so 0..255 -> 0..1, which misses an option for here!
+
+   if (objectSpaceNormalMap)
+   {
+      tn.z = -tn.z; // this matches the object space, +X +Y +Z, export/baking in Blender with our trafo setup
+      return normalize( mul(tn, matWorldViewInverseTranspose).xyz );
+   } else // tangent space
+      return normalize( mul(TBN_trafo(N, V, uv),
+                            tn) );
 }
 
 //------------------------------------
@@ -320,7 +329,7 @@ in vec3 normal;
 void main() {
    vec4 pixel = textureLod(Texture0, tex01, 0);
 
-      if (pixel.a <= fAlphaTestValue)
+      if (pixel.a <= alphaTestValue)
          discard;           //stop the pixel shader if alpha test should reject pixel
 
    pixel.a = clamp(pixel.a * cBase_Alpha.a, 0.0, 1.0);
@@ -364,7 +373,7 @@ void main() {
 in vec2 tex0;
 
 void main() {
-   if (textureLod(Texture0, tex0, 0).a <= fAlphaTestValue)
+   if (textureLod(Texture0, tex0, 0).a <= alphaTestValue)
       discard;           //stop the pixel shader if alpha test should reject pixel
 
    color = vec4(0., 0., 0., 1.);
@@ -385,7 +394,7 @@ in vec2 tex01;
 void main() {
    vec4 pixel = textureLod(Texture0, tex01, 0);
 
-   if (pixel.a <= fAlphaTestValue) discard;
+   if (pixel.a <= alphaTestValue) discard;
 
    pixel.a = clamp(pixel.a * cBase_Alpha.a, 0.0, 1.0);
    float3 t = InvGamma(pixel.xyz); // DX9: uses automatic sRGB trafo instead in sampler! - still missing in OpenGL so we still need InvGamma

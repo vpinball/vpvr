@@ -5,20 +5,18 @@
 #if !defined(AFX_DECAL_H__447B3CE2_C9EA_4ED1_AA3D_A8328F6DFD48__INCLUDED_)
 #define AFX_DECAL_H__447B3CE2_C9EA_4ED1_AA3D_A8328F6DFD48__INCLUDED_
 
-class DecalData
+class DecalData : public BaseProperty
 {
 public:
    Vertex2D m_vCenter;
    float m_width, m_height;
    float m_rotation;
-   char m_szImage[MAXTOKEN];
    char m_szSurface[MAXTOKEN];
    DecalType m_decaltype;
    char m_sztext[MAXSTRING];
    SizingType m_sizingtype;
    COLORREF m_color;
-   char m_szMaterial[32];
-   bool m_fVerticalText;
+   bool m_verticalText;
 };
 
 class Decal :
@@ -70,34 +68,32 @@ public:
 
    STANDARD_NOSCRIPT_EDITABLE_DECLARES(Decal, eItemDecal, DECAL, VIEW_PLAYFIELD | VIEW_BACKGLASS)
 
-   virtual void MoveOffset(const float dx, const float dy);
+      virtual void MoveOffset(const float dx, const float dy) { m_d.m_vCenter.x += dx; m_d.m_vCenter.y += dy; }
    virtual void SetObjectPos();
    // Multi-object manipulation
-   virtual Vertex2D GetCenter() const;
-   virtual void PutCenter(const Vertex2D& pv);
+   virtual Vertex2D GetCenter() const { return m_d.m_vCenter; }
+   virtual void PutCenter(const Vertex2D& pv) { m_d.m_vCenter = pv; }
    virtual float GetDepth(const Vertex3Ds& viewDir) const;
-   virtual bool IsTransparent() const;
-
+   virtual bool IsTransparent() const { return !m_backglass; }
    virtual void Rotate(const float ang, const Vertex2D& pvCenter, const bool useElementCenter);
 
    STDMETHOD(get_Name)(BSTR *pVal) { return E_FAIL; }
+   char *GetFontName();
+   HFONT GetFont();
 
    virtual void WriteRegDefaults();
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
 
    virtual ItemTypeEnum HitableGetItemType() const { return eItemDecal; }
 
    DecalData m_d;
+   IFont *m_pIFont;
 
 private:
    void EnsureSize();
-   HFONT GetFont();
    void GetTextSize(int * const px, int * const py);
 
    void PreRenderText();
    void RenderObject();
-
-   IFont *m_pIFont;
 
    PinTable *m_ptable;
 

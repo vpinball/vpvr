@@ -5,10 +5,10 @@ IEditable::IEditable()
 {
    m_phittimer = NULL;
 
-   m_fBackglass = false;
+   m_backglass = false;
    m_isVisible = true;
    VariantInit(&m_uservalue);
-   m_fSingleEvents = true;
+   m_singleEvents = true;
 }
 
 IEditable::~IEditable()
@@ -55,16 +55,16 @@ HRESULT IEditable::put_TimerEnabled(VARIANT_BOOL newVal, BOOL *pte)
 {
    STARTUNDO
 
-      const BOOL fNew = VBTOF(newVal);
+      const BOOL val = VBTOF(newVal);
 
-   if (fNew != *pte && m_phittimer)
+   if (val != *pte && m_phittimer)
    {
       // to avoid problems with timers dis/enabling themselves, store all the changes in a list
       bool found = false;
       for (size_t i = 0; i < g_pplayer->m_changed_vht.size(); ++i)
          if (g_pplayer->m_changed_vht[i].m_timer == m_phittimer)
          {
-            g_pplayer->m_changed_vht[i].enabled = !!fNew;
+            g_pplayer->m_changed_vht[i].m_enabled = !!val;
             found = true;
             break;
          }
@@ -72,18 +72,18 @@ HRESULT IEditable::put_TimerEnabled(VARIANT_BOOL newVal, BOOL *pte)
       if (!found)
       {
          TimerOnOff too;
-         too.enabled = !!fNew;
+         too.m_enabled = !!val;
          too.m_timer = m_phittimer;
          g_pplayer->m_changed_vht.push_back(too);
       }
 
-      if (fNew)
+      if (val)
          m_phittimer->m_nextfire = g_pplayer->m_time_msec + m_phittimer->m_interval;
       else
          m_phittimer->m_nextfire = 0xFFFFFFFF; // fakes the disabling of the timer, until it will be catched by the cleanup via m_changed_vht
    }
 
-   *pte = fNew;
+   *pte = val;
 
    STOPUNDO
 
@@ -98,7 +98,7 @@ HRESULT IEditable::put_TimerInterval(long newVal, int *pti)
 
    if (m_phittimer)
    {
-      m_phittimer->m_interval = newVal >= 0 ? max(newVal, MAX_TIMER_MSEC_INTERVAL) : -1;
+      m_phittimer->m_interval = newVal >= 0 ? max(newVal, (long)MAX_TIMER_MSEC_INTERVAL) : -1;
       m_phittimer->m_nextfire = g_pplayer->m_time_msec + m_phittimer->m_interval;
    }
 
@@ -131,17 +131,17 @@ void IEditable::BeginPlay()
    m_vEventCollection.clear();
    m_viEventCollection.clear();
 
-   m_fSingleEvents = true;
+   m_singleEvents = true;
    for (size_t i = 0; i < m_vCollection.size(); i++)
    {
       Collection * const pcol = m_vCollection[i];
-      if (pcol->m_fFireEvents)
+      if (pcol->m_fireEvents)
       {
          m_vEventCollection.push_back(pcol);
          m_viEventCollection.push_back(m_viCollection[i]);
       }
-      if (pcol->m_fStopSingleEvents)
-         m_fSingleEvents = false;
+      if (pcol->m_stopSingleEvents)
+         m_singleEvents = false;
    }
 }
 
@@ -190,6 +190,49 @@ void IEditable::Undelete()
       Collection * const pcollection = m_vCollection[i];
       pcollection->m_visel.AddElement(GetISelect());
    }
+}
+
+char *IEditable::GetName()
+{
+   WCHAR *elemName = NULL;
+   if (GetItemType() == eItemDecal)
+      return "Decal";
+
+   IScriptable *const pscript = GetScriptable();
+   if (pscript)
+      elemName = pscript->m_wzName;
+
+   if (elemName)
+   {
+      static char elementName[256];
+      WideCharToMultiByte(CP_ACP, 0, elemName, -1, elementName, 256, NULL, NULL);
+      return elementName;
+   }
+   return NULL;
+}
+
+void IEditable::SetName(const char* name)
+{
+   const int l = lstrlen(name);
+   if ((l > MAXNAMEBUFFER) || (l < 1))
+      return;
+
+   if (GetItemType() == eItemDecal)
+      return;
+
+   PinTable* const pt = GetPTable();
+   if (pt == nullptr)
+      return;
+
+   WCHAR newName[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, name, -1, newName, MAXNAMEBUFFER);
+   STARTUNDO
+      lstrcpynW(GetScriptable()->m_wzName, newName, MAXNAMEBUFFER);
+   pt->m_pcv->ReplaceName(GetScriptable(), newName);
+   g_pvp->GetLayersListDialog()->UpdateElement(this);
+   g_pvp->SetPropSel(&GetPTable()->m_vmultisel);
+   STOPUNDO
+
 }
 
 void IEditable::InitScript()

@@ -3,14 +3,15 @@
 
 ISelect::ISelect()
 {
-   m_fDragging = false;
-   m_fMarkedForUndo = false;
+   m_dragging = false;
+   m_markedForUndo = false;
    m_selectstate = eNotSelected;
 
-   m_fLocked = false;
+   m_locked = false;
 
    m_menuid = -1;
    m_layerIndex = 0;
+   m_layerName = "";
 }
 
 void ISelect::SetObjectPos()
@@ -20,25 +21,25 @@ void ISelect::SetObjectPos()
 
 void ISelect::OnLButtonDown(int x, int y)
 {
-   m_fDragging = true;
-   m_fMarkedForUndo = false; // So we will be marked when and if we are dragged
+   m_dragging = true;
+   m_markedForUndo = false; // So we will be marked when and if we are dragged
    m_ptLast.x = x;
    m_ptLast.y = y;
 
-   SetCapture(GetPTable()->m_hwnd);
+   GetPTable()->SetMouseCapture();
 
    SetObjectPos();
 }
 
 void ISelect::OnLButtonUp(int x, int y)
 {
-   m_fDragging = false;
+   m_dragging = false;
 
    ReleaseCapture();
 
-   if (m_fMarkedForUndo)
+   if (m_markedForUndo)
    {
-      m_fMarkedForUndo = false;
+      m_markedForUndo = false;
       STOPUNDOSELECT
    }
 }
@@ -53,25 +54,23 @@ void ISelect::OnRButtonUp(int x, int y)
 
 void ISelect::OnMouseMove(int x, int y)
 {
-   PinTable * const ptable = GetPTable();
-   const float inv_zoom = 1.0f / ptable->m_zoom;
-
    if ((x == m_ptLast.x) && (y == m_ptLast.y))
-   {
       return;
-   }
 
-   if (m_fDragging && !GetIEditable()->GetISelect()->m_fLocked) // For drag points, follow the lock of the parent
+   if (m_dragging && !GetIEditable()->GetISelect()->m_locked) // For drag points, follow the lock of the parent
    {
-      if (!m_fMarkedForUndo)
+      PinTable * const ptable = GetPTable();
+      const float inv_zoom = 1.0f / ptable->m_zoom;
+
+      if (!m_markedForUndo)
       {
-         m_fMarkedForUndo = true;
+         m_markedForUndo = true;
          STARTUNDOSELECT
       }
       MoveOffset((x - m_ptLast.x)*inv_zoom, (y - m_ptLast.y)*inv_zoom);
-      
-      GetPTable()->SetDirtyDraw();
-      
+
+      ptable->SetDirtyDraw();
+
       m_ptLast.x = x;
       m_ptLast.y = y;
       SetObjectPos();
@@ -83,7 +82,7 @@ void ISelect::MoveOffset(const float dx, const float dy)
    // Implement in child class to enable dragging
 }
 
-void ISelect::EditMenu(HMENU hmenu)
+void ISelect::EditMenu(CMenu &menu)
 {
 }
 
@@ -94,15 +93,15 @@ void ISelect::DoCommand(int icmd, int x, int y)
    if ((icmd & 0x0000FFFF) == ID_SELECT_ELEMENT)
    {
       const int ksshift = GetKeyState(VK_SHIFT);
-      const int ksctrl = GetKeyState(VK_CONTROL);
+      //const int ksctrl = GetKeyState(VK_CONTROL);
 
       PinTable * const currentTable = GetPTable();
       const int i = (icmd & 0x00FF0000) >> 16;
       ISelect * const pisel = currentTable->m_allHitElements[i];
 
-      const bool fAdd = ((ksshift & 0x80000000) != 0);
+      const bool add = ((ksshift & 0x80000000) != 0);
 
-      if (pisel == (ISelect *)currentTable && fAdd)
+      if (pisel == (ISelect *)currentTable && add)
       {
          // Can not include the table in multi-select
          // and table will not be unselected, because the
@@ -112,14 +111,14 @@ void ISelect::DoCommand(int icmd, int x, int y)
          return;
       }
 
-      currentTable->AddMultiSel(pisel, fAdd, fTrue, fTrue);
+      currentTable->AddMultiSel(pisel, add, true, true);
       return;
    }
    if (((icmd & 0x000FFFFF) >= 0x40000) && ((icmd & 0x000FFFFF) < 0x40020))
    {
       /*add to collection*/
-      const int ksshift = GetKeyState(VK_SHIFT);
-      const int ksctrl = GetKeyState(VK_CONTROL);
+      //const int ksshift = GetKeyState(VK_SHIFT);
+      //const int ksctrl = GetKeyState(VK_CONTROL);
 
       PinTable * const currentTable = GetPTable();
       const int i = icmd & 0x000000FF;
@@ -133,13 +132,16 @@ void ISelect::DoCommand(int icmd, int x, int y)
    case ID_EDIT_DRAWINGORDER_SELECT:
       g_pvp->ShowDrawingOrderDialog(true);
       break;
+   case ID_ASSIGN_TO_LAYER:
+   {
+      g_pvp->GetLayersListDialog()->OnAssignButton();
+      break;
+   }
    case ID_DRAWINFRONT:
    {
       PinTable * const ptable = GetPTable();
       RemoveFromVectorSingle(ptable->m_vedit, piedit);
       ptable->m_vedit.push_back(piedit);
-      RemoveFromVectorSingle(ptable->m_layer[m_layerIndex], piedit);
-      ptable->m_layer[m_layerIndex].push_back(piedit);
       ptable->SetDirtyDraw();
       break;
    }
@@ -148,8 +150,6 @@ void ISelect::DoCommand(int icmd, int x, int y)
       PinTable * const ptable = GetPTable();
       RemoveFromVectorSingle(ptable->m_vedit, piedit);
       ptable->m_vedit.insert(ptable->m_vedit.begin(), piedit);
-      RemoveFromVectorSingle(ptable->m_layer[m_layerIndex], piedit);
-      ptable->m_layer[m_layerIndex].insert(ptable->m_layer[m_layerIndex].begin(), piedit);
       ptable->SetDirtyDraw();
       break;
    }
@@ -158,9 +158,9 @@ void ISelect::DoCommand(int icmd, int x, int y)
       break;
    case ID_LOCK:
       STARTUNDOSELECT
-      m_fLocked = !m_fLocked;
+         m_locked = !m_locked;
       STOPUNDOSELECT
-      break;
+         break;
 
    case IDC_COPY:
    {
@@ -177,61 +177,6 @@ void ISelect::DoCommand(int icmd, int x, int y)
       GetPTable()->Paste(true, x, y);
       break;
    }
-   case ID_ASSIGNTO_LAYER1:
-   {
-      GetPTable()->AssignToLayer(piedit, 0);
-      break;
-   }
-   case ID_ASSIGNTO_LAYER2:
-   {
-      GetPTable()->AssignToLayer(piedit, 1);
-      break;
-   }
-   case ID_ASSIGNTO_LAYER3:
-   {
-      GetPTable()->AssignToLayer(piedit, 2);
-      break;
-   }
-   case ID_ASSIGNTO_LAYER4:
-   {
-      GetPTable()->AssignToLayer(piedit, 3);
-      break;
-   }
-   case ID_ASSIGNTO_LAYER5:
-   {
-      GetPTable()->AssignToLayer(piedit, 4);
-      break;
-   }
-   case ID_ASSIGNTO_LAYER6:
-   {
-      GetPTable()->AssignToLayer(piedit, 5);
-      break;
-   }
-   case ID_ASSIGNTO_LAYER7:
-   {
-      GetPTable()->AssignToLayer(piedit, 6);
-      break;
-   }
-   case ID_ASSIGNTO_LAYER8:
-   {
-      GetPTable()->AssignToLayer(piedit, 7);
-      break;
-   }
-   case ID_ASSIGNTO_LAYER9:
-   {
-      GetPTable()->AssignToLayer(piedit, 8);
-      break;
-   }
-   case ID_ASSIGNTO_LAYER10:
-   {
-      GetPTable()->AssignToLayer(piedit, 9);
-      break;
-   }
-   case ID_ASSIGNTO_LAYER11:
-   {
-      GetPTable()->AssignToLayer(piedit, 10);
-      break;
-   }
    /*default:
    psel->DoCommand(command, x, y);
    break;*/
@@ -243,16 +188,8 @@ void ISelect::DoCommand(int icmd, int x, int y)
 
 void ISelect::SetSelectFormat(Sur *psur)
 {
-   DWORD color;
-
-   if (m_fLocked)
-   {
-      color = g_pvp->m_elemSelectLockedColor;
-   }
-   else
-   {
-      color = g_pvp->m_elemSelectColor;//GetSysColor(COLOR_HIGHLIGHT);
-   }
+   const DWORD color = m_locked ? g_pvp->m_elemSelectLockedColor
+      : g_pvp->m_elemSelectColor;//GetSysColor(COLOR_HIGHLIGHT);
 
    psur->SetBorderColor(color, false, 4);
    psur->SetLineColor(color, false, 4);
@@ -260,7 +197,7 @@ void ISelect::SetSelectFormat(Sur *psur)
 
 void ISelect::SetMultiSelectFormat(Sur *psur)
 {
-   const DWORD color = m_fLocked ?
+   const DWORD color = m_locked ?
       g_pvp->m_elemSelectLockedColor :
       g_pvp->m_elemSelectColor;//GetSysColor(COLOR_HIGHLIGHT);
 
@@ -280,7 +217,7 @@ void ISelect::FlipY(const Vertex2D& pvCenter)
 
    Vertex2D vCenter = GetCenter();
    const float delta = vCenter.y - pvCenter.y;
-   vCenter.y -= delta * 2;
+   vCenter.y -= delta * 2.f;
    PutCenter(vCenter);
 }
 
@@ -290,7 +227,7 @@ void ISelect::FlipX(const Vertex2D& pvCenter)
 
    Vertex2D vCenter = GetCenter();
    const float delta = vCenter.x - pvCenter.x;
-   vCenter.x -= delta * 2;
+   vCenter.x -= delta * 2.f;
    PutCenter(vCenter);
 }
 
@@ -358,28 +295,39 @@ void ISelect::GetTypeNameForType(ItemTypeEnum type, WCHAR * buf)
       strID = EditableRegistry::GetTypeNameStringID(type); break;
    }
 
-   const int len = LoadStringW(g_hinst, strID, buf, 256);
+   /*const int len =*/ LoadStringW(g_hinst, strID, buf, 256);
 }
 
-BOOL ISelect::LoadToken(int id, BiffReader *pbr)
+bool ISelect::LoadToken(const int id, BiffReader * const pbr)
 {
-   if (id == FID(LOCK))
+   switch (id)
    {
-      pbr->GetBool(&m_fLocked);
-   }
-   else if (id == FID(LAYR))
+   case FID(LOCK): pbr->GetBool(&m_locked); break;
+   case FID(LAYR):
    {
-      pbr->GetInt(&m_layerIndex);
+      int tmp;
+      pbr->GetInt(&tmp);
+      m_layerIndex = (char)tmp;
+      break;
    }
-   return fTrue;
+   case FID(LANR):
+   {
+      char name[MAX_PATH];
+      pbr->GetString(name);
+      m_layerName = string(name);
+      break;
+   }
+   }
+   return true;
 }
 
 HRESULT ISelect::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
 {
    BiffWriter bw(pstm, hcrypthash);
 
-   bw.WriteBool(FID(LOCK), m_fLocked);
+   bw.WriteBool(FID(LOCK), m_locked);
    bw.WriteInt(FID(LAYR), m_layerIndex);
+   bw.WriteString(FID(LANR), m_layerName.c_str());
 
    return S_OK;
 }

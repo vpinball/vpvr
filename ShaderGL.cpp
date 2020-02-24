@@ -362,7 +362,7 @@ bool Shader::compileGLShader(const char* fileNameRoot, string shaderCodeName, st
 
 //Check if technique is valid and replace %PARAMi% with the values in the function header
 string analyzeFunction(const char* shaderCodeName, string technique, string functionName, std::map<string, string> &values) {
-   int start, end;
+   size_t start, end;
    start = functionName.find("(");
    end = functionName.find(")");
    if ((start == string::npos) || (end == string::npos) || (start > end)) {

@@ -24,10 +24,10 @@ public:
    RampImageAlignment m_imagealignment;
    char m_szImageA[MAXTOKEN];
    char m_szImageB[MAXTOKEN];
-   bool m_fDisplayTexture;
-   bool m_IsVisible;
-   bool m_fAddBlend;
-   bool m_IsDMD;
+   bool m_displayTexture;
+   bool m_isVisible;
+   bool m_addBlend;
+   bool m_isDMD;
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -75,8 +75,6 @@ public:
       // ISupportsErrorInfo
       STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
 
-      virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-      virtual void GetPointDialogPanes(vector<PropertyPane*> &pvproppane);
       virtual void ClearForOverwrite();
 
       virtual void RenderBlueprint(Sur *psur, const bool solid);
@@ -95,7 +93,7 @@ public:
       virtual void PutCenter(const Vertex2D& pv) { m_d.m_vCenter = pv; }
       virtual void DoCommand(int icmd, int x, int y);
 
-      virtual bool IsTransparent() const { return !m_d.m_IsDMD; }
+      virtual bool IsTransparent() const { return !m_d.m_isDMD; }
       virtual float GetDepth(const Vertex3Ds& viewDir) const
       {
          return m_d.m_depthBias + viewDir.x * m_d.m_vCenter.x + viewDir.y * m_d.m_vCenter.y + viewDir.z * m_d.m_height;
@@ -112,30 +110,33 @@ public:
 			  tex = pinB;
 		  return (unsigned long long)tex;
       }
-      virtual bool IsDMD() const { return m_d.m_IsDMD; }
+      virtual bool IsDMD() const { return m_d.m_isDMD; }
       virtual ItemTypeEnum HitableGetItemType() const { return eItemFlasher; }
 
-      virtual void UpdatePropertyPanes();
-
       virtual void WriteRegDefaults();
+
+      void SetAlpha(const long value);
+      void SetFilterAmount(const long value);
+
+      FlasherData m_d;
+
+private:
       void UpdateMesh();
       void InitShape();
 
-      FlasherData m_d;
-      unsigned int numVertices;
-      int numPolys;
-      float minx, maxx, miny, maxy;
-      Vertex3D_TexelOnly *vertices;
+      PinTable *m_ptable;
 
-      VertexBuffer *dynamicVertexBuffer;
-      IndexBuffer *dynamicIndexBuffer;
-      
-	  PropertyPane *m_propVisual;
-	  
-	  bool dynamicVertexBufferRegenerate;
+      unsigned int m_numVertices;
+      int m_numPolys;
+      float m_minx, m_maxx, m_miny, m_maxy;
+      Vertex3D_TexelOnly *m_vertices;
 
-private:
-   PinTable * m_ptable;
+      VertexBuffer *m_dynamicVertexBuffer;
+      IndexBuffer *m_dynamicIndexBuffer;
+
+      PropertyPane *m_propVisual;
+
+      bool m_dynamicVertexBufferRegenerate;
 
 	  // IFlasher
 public:

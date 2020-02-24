@@ -14,7 +14,7 @@ class TimerDataRoot
 {
 public:
    int m_TimerInterval;
-   bool m_fTimerEnabled;
+   bool m_TimerEnabled;
 };
 
 class TimerData
@@ -61,8 +61,6 @@ public:
       CONNECTION_POINT_ENTRY(DIID_ITimerEvents)
    END_CONNECTION_POINT_MAP()
 
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
    virtual void MoveOffset(const float dx, const float dy);
    virtual void SetObjectPos();
    // Multi-object manipulation
@@ -85,16 +83,15 @@ public:
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
 
    // ITimer
-public:
    STDMETHOD(get_Interval)(/*[out, retval]*/ long *pVal);
    STDMETHOD(put_Interval)(/*[in]*/ long newVal);
    STDMETHOD(get_Enabled)(/*[out, retval]*/ VARIANT_BOOL *pVal);
    STDMETHOD(put_Enabled)(/*[in]*/ VARIANT_BOOL newVal);
 
-private:
-   PinTable *m_ptable;
-
    TimerData m_d;
+
+private:
+   PinTable * m_ptable;
 };
 
 #endif // !defined(AFX_TIMER_H__932D477C_A594_4941_906D_8BF11A68C838__INCLUDED_)

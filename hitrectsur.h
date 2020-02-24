@@ -21,11 +21,11 @@ public:
    virtual void Arc(const float x, const float y, const float radius, const float pt1x, const float pt1y, const float pt2x, const float pt2y);
    virtual void Image(const float x, const float y, const float x2, const float y2, HDC hdcSrc, const int width, const int height);
 
-   virtual void SetObject(ISelect *psel);
+   virtual void SetObject(ISelect * const psel);
 
    virtual void SetFillColor(const int rgb);
-   virtual void SetBorderColor(const int rgb, const bool fDashed, const int width);
-   virtual void SetLineColor(const int rgb, const bool fDashed, const int width);
+   virtual void SetBorderColor(const int rgb, const bool dashed, const int width);
+   virtual void SetLineColor(const int rgb, const bool dashed, const int width);
 
 private:
    void FailObject();
@@ -38,5 +38,5 @@ private:
    vector<ISelect*> *m_pvsel;
    vector<ISelect*> m_vselFailed;
 
-   bool m_fFailedAlready; // Object has already been discounted from selection
+   bool m_failedAlready; // Object has already been discounted from selection
 };

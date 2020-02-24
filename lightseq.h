@@ -98,8 +98,6 @@ public:
       CONNECTION_POINT_ENTRY(DIID_ILightSeqEvents)
    END_CONNECTION_POINT_MAP()
 
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
    void RenderOutline(Sur * const psur);
    virtual void MoveOffset(const float dx, const float dy);
    virtual void SetObjectPos();
@@ -157,13 +155,39 @@ public:
    STDMETHOD(Play)(/*[in]*/ SequencerState Animation, /*[in]*/ long TailLength, /*[in]*/ long Repeat, /*[in]*/ long Pause);
    STDMETHOD(StopPlay)();
 
-   void		Animate();
+   float    GetX() const { return m_d.m_vCenter.x; }
+   void     SetX(const float value)
+   {
+      if ((value < 0.f) || (value >= (float)EDITOR_BG_WIDTH))
+         return;
+
+      m_d.m_vCenter.x = value;
+      // set the center point of the grid for effects which start from the center
+      m_GridXCenter = floorf(m_d.m_vCenter.x * (float)(1.0 / LIGHTSEQGRIDSCALE));
+      m_GridXCenterAdjust = abs(m_lightSeqGridWidth / 2 - (int)m_GridXCenter);
+   }
+   float    GetY() const { return m_d.m_vCenter.y; }
+   void     SetY(const float value)
+   {
+      if ((value < 0.f) || (value >= (float)(2 * EDITOR_BG_WIDTH)))
+         return;
+
+      m_d.m_vCenter.y = value;
+      // set the center point of the grid for effects which start from the center
+      m_GridYCenter = floorf(m_d.m_vCenter.y * (float)(1.0 / LIGHTSEQGRIDSCALE));
+      m_GridYCenterAdjust = abs(m_lightSeqGridHeight / 2 - (int)m_GridYCenter);
+   }
+
+   long     GetUpdateInterval() const { return m_d.m_updateinterval; }
+   void     SetUpdateInterval(const long value) { m_d.m_updateinterval = max((long)1, value); }
+
+   void     Animate();
 
    LightSeqAnimObject m_lightseqanim;
+   LightSeqData m_d;
 
 private:
    PinTable * m_ptable;
-   LightSeqData       m_d;
 
    void		SetupTracers(const SequencerState Animation, long TailLength, long Repeat, long Pause);
    bool		ProcessTracer(_tracer * const pTracer, const LightState State);

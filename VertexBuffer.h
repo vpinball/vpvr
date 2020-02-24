@@ -11,7 +11,7 @@ public:
    {
       WRITEONLY,
       NOOVERWRITE,
-      DISCARDCONTENTS = D3DLOCK_DISCARD
+      DISCARDCONTENTS
    };
 
    void lock(const unsigned int offsetToLock, const unsigned int sizeToLock, void **dataBuffer, const DWORD flags);

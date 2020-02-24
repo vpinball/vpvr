@@ -1,7 +1,6 @@
-#include "StdAfx.h"
+#include "stdafx.h"
 #include "resource.h"
 #include "TableInfoDialog.h"
-
 
 TableInfoDialog::TableInfoDialog() : CDialog(IDD_TABLEINFO)
 {
@@ -14,9 +13,9 @@ void TableInfoDialog::OnClose()
 
 BOOL TableInfoDialog::OnInitDialog()
 {
-   CCO(PinTable) *const pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+   CCO(PinTable) * const pt = g_pvp->GetActiveTable();
 
-   /*
+/*
    HWND hwndParent = GetParent().GetHwnd();
    CRect rcDlg;
    RECT rcMain;
@@ -24,22 +23,38 @@ BOOL TableInfoDialog::OnInitDialog()
    rcDlg = GetWindowRect();
 
    SetWindowPos( NULL,
-   (rcMain.right + rcMain.left) / 2 - (rcDlg.right - rcDlg.left) / 2,
-   (rcMain.bottom + rcMain.top) / 2 - (rcDlg.bottom - rcDlg.top) / 2,
-   0, 0, SWP_NOOWNERZORDER | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE/ * | SWP_NOMOVE* /);
-   */
+      (rcMain.right + rcMain.left) / 2 - (rcDlg.right - rcDlg.left) / 2,
+      (rcMain.bottom + rcMain.top) / 2 - (rcDlg.bottom - rcDlg.top) / 2,
+      0, 0, SWP_NOOWNERZORDER | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE/ * | SWP_NOMOVE* /);
+*/
+   AttachItem(IDC_TABLENAME, m_tableNameEdit);
+   AttachItem(IDC_TABLEAUTHOR, m_authorEdit);
+   AttachItem(IDC_VERSION, m_versionEdit);
+   AttachItem(IDC_RELEASE, m_releaseEdit);
+   AttachItem(IDC_EMAIL, m_emailEdit);
+   AttachItem(IDC_WEBSITE, m_websiteEdit);
+   AttachItem(IDC_BLURB, m_blurbEdit);
+   AttachItem(IDC_DESCRIPTION, m_descriptionEdit);
+   AttachItem(IDC_RULES, m_rulesEdits);
+   AttachItem(IDC_DATE_SAVED, m_dateSavedEdit);
+   AttachItem(IDC_CUSTOMNAME, m_customNameEdit);
+   AttachItem(IDC_CUSTOMVALUE, m_customValueEdit);
+   AttachItem(IDC_CUSTOMLIST, m_customListView);
 
-   SendDlgItemMessage(IDC_BLURB, EM_LIMITTEXT, 100, 0);
+   m_blurbEdit.LimitText(100);
+   m_tableNameEdit.SetWindowText(pt->m_szTableName.c_str());
+   m_authorEdit.SetWindowText(pt->m_szAuthor.c_str());
+   m_versionEdit.SetWindowText(pt->m_szVersion.c_str());
+   m_releaseEdit.SetWindowText(pt->m_szReleaseDate.c_str());
+   m_emailEdit.SetWindowText(pt->m_szAuthorEMail.c_str());
+   m_websiteEdit.SetWindowText(pt->m_szWebSite.c_str());
+   m_blurbEdit.SetWindowText(pt->m_szBlurb.c_str());
+   m_descriptionEdit.SetWindowText(pt->m_szDescription.c_str());
+   m_rulesEdits.SetWindowText(pt->m_szRules.c_str());
 
-   SetDlgItemText(IDC_TABLENAME, pt->m_szTableName);
-   SetDlgItemText(IDC_TABLEAUTHOR, pt->m_szAuthor);
-   SetDlgItemText(IDC_VERSION, pt->m_szVersion);
-   SetDlgItemText(IDC_RELEASE, pt->m_szReleaseDate);
-   SetDlgItemText(IDC_EMAIL, pt->m_szAuthorEMail);
-   SetDlgItemText(IDC_WEBSITE, pt->m_szWebSite);
-   SetDlgItemText(IDC_BLURB, pt->m_szBlurb);
-   SetDlgItemText(IDC_DESCRIPTION, pt->m_szDescription);
-   SetDlgItemText(IDC_RULES, pt->m_szRules);
+   char buffer[256];
+   sprintf_s(buffer, "%s Revision %u", !pt->m_szDateSaved.empty() ? pt->m_szDateSaved.c_str() : "N.A.", pt->m_numTimesSaved);
+   m_dateSavedEdit.SetWindowText(buffer);
 
    // Init list of images
 
@@ -57,7 +72,8 @@ BOOL TableInfoDialog::OnInitDialog()
 
    ::SendMessage(hwndList, CB_SELECTSTRING, ~0u, (LPARAM)pt->m_szScreenShot);
 
-   ListView_SetExtendedListViewStyle(GetDlgItem(IDC_CUSTOMLIST).GetHwnd(), LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+   //ListView_SetExtendedListViewStyle(GetDlgItem(IDC_CUSTOMLIST).GetHwnd(), LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+   m_customListView.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
    // Set up custom info list
    {
@@ -66,14 +82,14 @@ BOOL TableInfoDialog::OnInitDialog()
       LocalString ls3(IDS_NAME);
       lvcol.pszText = ls3.m_szbuffer;// = "Name";
       lvcol.cx = 90;
-      ListView_InsertColumn(GetDlgItem(IDC_CUSTOMLIST).GetHwnd(), 0, &lvcol);
+      m_customListView.InsertColumn(0,lvcol);
 
       LocalString ls2(IDS_VALUE);
       lvcol.pszText = ls2.m_szbuffer; // = "Value";
       lvcol.cx = 100;
-      ListView_InsertColumn(GetDlgItem(IDC_CUSTOMLIST).GetHwnd(), 1, &lvcol);
+      m_customListView.InsertColumn(1, lvcol);
 
-      pt->ListCustomInfo(GetDlgItem(IDC_CUSTOMLIST).GetHwnd());
+      pt->ListCustomInfo(m_customListView.GetHwnd());
    }
 
    return TRUE;
@@ -81,50 +97,45 @@ BOOL TableInfoDialog::OnInitDialog()
 
 INT_PTR TableInfoDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-   CCO(PinTable) *const pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
-
    switch (uMsg)
    {
-   case WM_NOTIFY:
-   {
-      LPNMHDR pnmhdr = (LPNMHDR)lParam;
-      switch (pnmhdr->code)
+      case WM_NOTIFY:
       {
-      case LVN_ITEMCHANGING:
-      {
-         NMLISTVIEW * const plistview = (LPNMLISTVIEW)lParam;
-         if ((plistview->uNewState & LVIS_SELECTED) != (plistview->uOldState & LVIS_SELECTED))
+         LPNMHDR pnmhdr = (LPNMHDR)lParam;
+         switch (pnmhdr->code)
          {
-            if (plistview->uNewState & LVIS_SELECTED)
+            case LVN_ITEMCHANGING:
             {
-               const int sel = plistview->iItem;
-               char szT[MAXSTRING];
+               NMLISTVIEW * const plistview = (LPNMLISTVIEW)lParam;
+               if ((plistview->uNewState & LVIS_SELECTED) != (plistview->uOldState & LVIS_SELECTED))
+               {
+                  if (plistview->uNewState & LVIS_SELECTED)
+                  {
+                     const int sel = plistview->iItem;
 
-               ListView_GetItemText(GetDlgItem(IDC_CUSTOMLIST).GetHwnd(), sel, 0, szT, MAXSTRING);
-               ::SetWindowText(GetDlgItem(IDC_CUSTOMNAME).GetHwnd(), szT);
+                     CString name = m_customListView.GetItemText(sel, 0, MAXSTRING);
+                     m_customNameEdit.SetWindowText(name.c_str());
 
-               ListView_GetItemText(GetDlgItem(IDC_CUSTOMLIST).GetHwnd(), sel, 1, szT, MAXSTRING);
-               ::SetWindowText(GetDlgItem(IDC_CUSTOMVALUE).GetHwnd(), szT);
+                     CString value = m_customListView.GetItemText(sel, 1, MAXSTRING);
+                     m_customValueEdit.SetWindowText(value.c_str());
+                  }
+               }
+               break;
             }
          }
          break;
       }
-      }
-      break;
-   }
    }
    return DialogProcDefault(uMsg, wParam, lParam);
-
 }
 
-void TableInfoDialog::VPGetDialogItemText(int nIDDlgItem, char **psztext)
+void TableInfoDialog::VPGetDialogItemText(CEdit &edit, char **psztext)
 {
-   const HWND hwndItem = GetDlgItem(nIDDlgItem);
-
-   const int length = ::GetWindowTextLength(hwndItem);
+    const int length = edit.GetWindowTextLength();
    *psztext = new char[length + 1];
 
-   ::GetWindowText(hwndItem, *psztext, length + 1);
+   CString txt = edit.GetWindowText();
+   strcpy_s((char*)(*psztext), length+1, txt.c_str());
 }
 
 
@@ -134,92 +145,70 @@ BOOL TableInfoDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 
    switch (LOWORD(wParam))
    {
-   case IDC_ADD:
-   {
-      CCO(PinTable) *const pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
-      char *szCustomName;
-      VPGetDialogItemText(IDC_CUSTOMNAME, &szCustomName);
-      if (szCustomName[0] != '\0')
+      case IDC_ADD:
       {
-         LVFINDINFO lvfi;
-         lvfi.flags = LVFI_STRING;
-         lvfi.psz = szCustomName;
+         CCO(PinTable) * const pt = g_pvp->GetActiveTable();
+         char *szCustomName;
+         VPGetDialogItemText(m_customNameEdit, &szCustomName);
+         if (szCustomName[0] != '\0')
+         {
+            LVFINDINFO lvfi;
+            lvfi.flags = LVFI_STRING;
+            lvfi.psz = szCustomName;
 
-         const int found = ListView_FindItem(GetDlgItem(IDC_CUSTOMLIST).GetHwnd(), -1, &lvfi);
+            const int found = m_customListView.FindItem(lvfi, -1);
 
-         if (found != -1)
-            ListView_DeleteItem(GetDlgItem(IDC_CUSTOMLIST).GetHwnd(), found);
+            if (found != -1)
+               m_customListView.DeleteItem(found);
 
-         char *szCustomValue;
-         VPGetDialogItemText(IDC_CUSTOMVALUE, &szCustomValue);
-         pt->AddListItem(GetDlgItem(IDC_CUSTOMLIST).GetHwnd(), szCustomName, szCustomValue, NULL);
-         delete[] szCustomValue;
+            char *szCustomValue;
+            VPGetDialogItemText(m_customValueEdit, &szCustomValue);
+            pt->AddListItem(m_customListView.GetHwnd(), szCustomName, szCustomValue, NULL);
+            delete[] szCustomValue;
+         }
+         delete[] szCustomName;
+         break;
       }
-      delete[] szCustomName;
-      break;
-   }
-   case IDC_DELETE:
-   {
-      const int sel = ListView_GetNextItem(GetDlgItem(IDC_CUSTOMLIST).GetHwnd(), -1, LVNI_SELECTED);
-      ListView_DeleteItem(GetDlgItem(IDC_CUSTOMLIST).GetHwnd(), sel);
-      break;
-   }
-   case IDC_GOWEBSITE:
-   {
-      char *szT;
-      VPGetDialogItemText(IDC_WEBSITE, &szT);
-      OpenURL(szT);
-      delete[] szT;
-      break;
-   }
-   case IDC_SENDMAIL:
-   {
-      char *szEMail;
-      char *szTableName;
-      char szMail[] = "mailto:";
-      char szHeaders[] = "?subject=";
-      VPGetDialogItemText(IDC_EMAIL, &szEMail);
-      VPGetDialogItemText(IDC_TABLENAME, &szTableName);
-      char * const szLong = new char[lstrlen(szMail) + lstrlen(szEMail) + lstrlen(szHeaders) + lstrlen(szTableName) + 1];
-      lstrcpy(szLong, szMail);
-      lstrcat(szLong, szEMail);
-      lstrcat(szLong, szHeaders);
-      lstrcat(szLong, szTableName);
-      OpenURL(szLong);
-      delete[] szLong;
-      delete[] szEMail;
-      delete[] szTableName;
-      break;
-   }
-   default:
-      return FALSE;
+      case IDC_DELETE:
+      {
+         const int sel = m_customListView.GetNextItem(-1, LVNI_SELECTED);
+         m_customListView.DeleteItem(sel);
+         break;
+      }
+      case IDC_GOWEBSITE:
+      {
+         CString url = m_websiteEdit.GetWindowText();
+         OpenURL(url.c_str());
+         break;
+      }
+      case IDC_SENDMAIL:
+      {
+         CString email = m_emailEdit.GetWindowText();
+         CString tableName = m_tableNameEdit.GetWindowText();
+
+         CString url = CString("mailto:") + email + CString("?subject=") + tableName;
+         OpenURL(url.c_str());
+         break;
+      }
+      default: 
+         return FALSE;
    }
    return TRUE;
 }
 
 void TableInfoDialog::OnOK()
 {
-   CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
-   //HWND hwndDlg = GetHwnd();
-   SAFE_VECTOR_DELETE(pt->m_szTableName);
-   SAFE_VECTOR_DELETE(pt->m_szAuthor);
-   SAFE_VECTOR_DELETE(pt->m_szVersion);
-   SAFE_VECTOR_DELETE(pt->m_szReleaseDate);
-   SAFE_VECTOR_DELETE(pt->m_szAuthorEMail);
-   SAFE_VECTOR_DELETE(pt->m_szWebSite);
-   SAFE_VECTOR_DELETE(pt->m_szBlurb);
-   SAFE_VECTOR_DELETE(pt->m_szDescription);
-   SAFE_VECTOR_DELETE(pt->m_szRules);
+   CCO(PinTable) * const pt = g_pvp->GetActiveTable();
 
-   VPGetDialogItemText(IDC_TABLENAME, &pt->m_szTableName);
-   VPGetDialogItemText(IDC_TABLEAUTHOR, &pt->m_szAuthor);
-   VPGetDialogItemText(IDC_VERSION, &pt->m_szVersion);
-   VPGetDialogItemText(IDC_RELEASE, &pt->m_szReleaseDate);
-   VPGetDialogItemText(IDC_EMAIL, &pt->m_szAuthorEMail);
-   VPGetDialogItemText(IDC_WEBSITE, &pt->m_szWebSite);
-   VPGetDialogItemText(IDC_BLURB, &pt->m_szBlurb);
-   VPGetDialogItemText(IDC_DESCRIPTION, &pt->m_szDescription);
-   VPGetDialogItemText(IDC_RULES, &pt->m_szRules);
+   pt->m_szTableName = m_tableNameEdit.GetWindowText();
+   pt->m_szAuthor = m_authorEdit.GetWindowText();
+   pt->m_szVersion = m_versionEdit.GetWindowText();
+   pt->m_szReleaseDate = m_releaseEdit.GetWindowText();
+   pt->m_szAuthorEMail = m_authorEdit.GetWindowText();
+   pt->m_szWebSite = m_websiteEdit.GetWindowText();
+   pt->m_szBlurb = m_blurbEdit.GetWindowText();
+   pt->m_szDescription = m_descriptionEdit.GetWindowText();
+   pt->m_szRules = m_rulesEdits.GetWindowTextA();
 
    const HWND hwndList = GetDlgItem(IDC_SCREENSHOT).GetHwnd();
 
@@ -241,19 +230,18 @@ void TableInfoDialog::OnOK()
    pt->m_vCustomInfoTag.clear();
    pt->m_vCustomInfoContent.clear();
 
-   const int customcount = ListView_GetItemCount(GetDlgItem(IDC_CUSTOMLIST).GetHwnd());
+   const int customcount = m_customListView.GetItemCount();
    for (int i = 0; i < customcount; i++)
    {
-      char szT[MAXSTRING];
-      ListView_GetItemText(GetDlgItem(IDC_CUSTOMLIST).GetHwnd(), i, 0, szT, MAXSTRING);
+      const CString name = m_customListView.GetItemText(i, 0, MAXSTRING);
 
-      char * const szName = new char[lstrlen(szT) + 1];
-      lstrcpy(szName, szT);
+      char * const szName = new char[name.GetLength() + 1];
+      lstrcpy(szName, name.c_str());
       pt->m_vCustomInfoTag.push_back(szName);
 
-      ListView_GetItemText(GetDlgItem(IDC_CUSTOMLIST).GetHwnd(), i, 1, szT, MAXSTRING);
-      char * const szValue = new char[lstrlen(szT) + 1];
-      lstrcpy(szValue, szT);
+      const CString value = m_customListView.GetItemText(i, 1, MAXSTRING);
+      char * const szValue = new char[value.GetLength() + 1];
+      lstrcpy(szValue, value.c_str());
       pt->m_vCustomInfoContent.push_back(szValue);
    }
 

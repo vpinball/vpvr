@@ -1,6 +1,7 @@
 #include "StdAfx.h"
 #include "RenderDevice.h"
 #include "Shader.h"
+#include "inc\ThreadPool.h"
 #ifdef ENABLE_BAM
 #include "BAM\BAM_ViewPortSetup.h"
 #include "BAM\BAM_Tracker.h"
@@ -17,28 +18,27 @@ Pin3D::Pin3D()
    m_pd3dPrimaryDevice = NULL;
    m_pd3dSecondaryDevice = NULL;
    m_envRadianceTexture = NULL;
-   tableVBuffer = NULL;
-   backGlass = NULL;
+   m_tableVBuffer = NULL;
+   m_backGlass = NULL;
 
-   m_camx = 0.f;
-   m_camy = 0.f;
-   m_camz = 0.f;
+   m_cam.x = 0.f;
+   m_cam.y = 0.f;
+   m_cam.z = 0.f;
    m_inc  = 0.f;
 }
 
 Pin3D::~Pin3D()
 {
-#ifdef FPS
    m_gpu_profiler.Shutdown();
-#endif
+
    m_pd3dPrimaryDevice->UnSetZBuffer();
    m_pd3dPrimaryDevice->FreeShader();
 
-   pinballEnvTexture.FreeStuff();
+   m_pinballEnvTexture.FreeStuff();
 
-   envTexture.FreeStuff();
+   m_builtinEnvTexture.FreeStuff();
 
-   aoDitherTexture.FreeStuff();
+   m_aoDitherTexture.FreeStuff();
 
    if (m_envRadianceTexture)
    {
@@ -47,8 +47,8 @@ Pin3D::~Pin3D()
       m_envRadianceTexture = NULL;
    }
 
-   if (tableVBuffer)
-      tableVBuffer->release();
+   if (m_tableVBuffer)
+      m_tableVBuffer->release();
 
    SAFE_RELEASE(m_pddsAOBackBuffer);
    SAFE_RELEASE(m_pddsAOBackTmpBuffer);
@@ -72,13 +72,13 @@ Pin3D::~Pin3D()
    m_pd3dPrimaryDevice = NULL;
    m_pd3dSecondaryDevice = NULL;
 
-   if (backGlass) {
-      delete backGlass;
-      backGlass = NULL;
+   if (m_backGlass) {
+      delete m_backGlass;
+      m_backGlass = NULL;
    }
 }
 
-void Pin3D::TransformVertices(const Vertex3D_NoTex2 * rgv, const WORD * rgi, int count, Vertex2D * rgvout) const
+void Pin3D::TransformVertices(const Vertex3D_NoTex2 * const __restrict rgv, const WORD * const __restrict rgi, const int count, Vertex2D * const __restrict rgvout) const
 {
    // Get the width and height of the viewport. This is needed to scale the
    // transformed vertices to fit the render window.
@@ -198,115 +198,225 @@ void EnvmapPrecalc(const void* /*const*/ __restrict envmap, const DWORD env_xres
    // not the fastest solution, could do a "cosine convolution" over the picture instead (where also just 1024 or x samples could be used per pixel)
    //!! (note though that even 4096 samples can be too low if very bright spots (i.e. sun) in the image! see Delta_2k.hdr -> thus pre-filter enabled above!)
    // but with this implementation one can also have custom maps/LUTs for glossy, etc. later-on
-   for (unsigned int y = 0; y < rad_env_yres; ++y)
-      for (unsigned int x = 0; x < rad_env_xres; ++x)
-      {
-         // trafo from envmap to normal direction
-         const float phi = (float)x / (float)rad_env_xres * (float)(2.0*M_PI) + (float)M_PI;
-         const float theta = (float)y / (float)rad_env_yres * (float)M_PI;
-         const Vertex3Ds n(sinf(theta) * cosf(phi), sinf(theta) * sinf(phi), cosf(theta));
+   {
+      ThreadPool pool(8);
 
-         // draw x samples over hemisphere and collect cosine weighted environment map samples
-         float sum[3];
-         sum[0] = sum[1] = sum[2] = 0.0f;
+      for (unsigned int y = 0; y < rad_env_yres; ++y) {
+         pool.enqueue([y, rad_env_xres, rad_env_yres, isHDR, envmap, env_xres, env_yres, rad_envmap] {
+            for (unsigned int x = 0; x < rad_env_xres; ++x)
+            {
+               // trafo from envmap to normal direction
+               const float phi = (float)x / (float)rad_env_xres * (float)(2.0*M_PI) + (float)M_PI;
+               const float theta = (float)y / (float)rad_env_yres * (float)M_PI;
+               const Vertex3Ds n(sinf(theta) * cosf(phi), sinf(theta) * sinf(phi), cosf(theta));
 
-         const unsigned int num_samples = 4096;
-         for (unsigned int s = 0; s < num_samples; ++s)
-         {
-            //!! discard directions pointing below the playfield?? or give them another "average playfield" color??
+               // draw x samples over hemisphere and collect cosine weighted environment map samples
+
+               float sum[3];
+               sum[0] = sum[1] = sum[2] = 0.0f;
+
+               const unsigned int num_samples = 4096;
+               for (unsigned int s = 0; s < num_samples; ++s)
+               {
+                  //!! discard directions pointing below the playfield?? or give them another "average playfield" color??
 #define USE_ENVMAP_PRECALC_COSINE
 #ifndef USE_ENVMAP_PRECALC_COSINE
-            //!! as we do not use importance sampling on the environment, just not being smart -could- be better for high frequency environments
-            Vertex3Ds l = sphere_sample((float)s*(float)(1.0 / num_samples), radical_inverse(s)); // QMC hammersley point set
-            float NdotL = l.Dot(n);
-            if (NdotL < 0.0f) // flip if on backside of hemisphere
-            {
-               NdotL = -NdotL;
-               l = -l;
-            }
+                  //!! as we do not use importance sampling on the environment, just not being smart -could- be better for high frequency environments
+                  Vertex3Ds l = sphere_sample((float)s*(float)(1.0 / num_samples), radical_inverse(s)); // QMC hammersley point set
+                  float NdotL = l.Dot(n);
+                  if (NdotL < 0.0f) // flip if on backside of hemisphere
+                  {
+                     NdotL = -NdotL;
+                     l = -l;
+                  }
 #else
-            //Vertex3Ds cos_hemisphere_sample(const Vertex3Ds &normal, Vertex2D uv) { float theta = (float)(2.*M_PI) * uv.x; uv.y = 2.f * uv.y - 1.f; Vertex3Ds spherePoint(sqrt(1.f - uv.y * uv.y) * Vertex2D(cosf(theta), sinf(theta)), uv.y); return normalize(normal + spherePoint); }
-            const Vertex3Ds l = rotate_to_vector_upper(cos_hemisphere_sample((float)s*(float)(1.0 / num_samples), radical_inverse(s)), n); // QMC hammersley point set
+                  //Vertex3Ds cos_hemisphere_sample(const Vertex3Ds &normal, Vertex2D uv) { float theta = (float)(2.*M_PI) * uv.x; uv.y = 2.f * uv.y - 1.f; Vertex3Ds spherePoint(sqrt(1.f - uv.y * uv.y) * Vertex2D(cosf(theta), sinf(theta)), uv.y); return normalize(normal + spherePoint); }
+                  const Vertex3Ds l = rotate_to_vector_upper(cos_hemisphere_sample((float)s*(float)(1.0 / num_samples), radical_inverse(s)), n); // QMC hammersley point set
 #endif
-            // trafo from light direction to envmap
-            // approximations seem to be good enough!
-            const float u = atan2_approx_div2PI(l.y, l.x) + 0.5f; //atan2f(l.y, l.x) * (float)(0.5 / M_PI) + 0.5f;
-            const float v = acos_approx_divPI(l.z); //acosf(l.z) * (float)(1.0 / M_PI);
+                                                                                                                                                 // trafo from light direction to envmap
+                                                                                                                                                 // approximations seem to be good enough!
+                  const float u = atan2_approx_div2PI(l.y, l.x) + 0.5f; //atan2f(l.y, l.x) * (float)(0.5 / M_PI) + 0.5f;
+                  const float v = acos_approx_divPI(l.z); //acosf(l.z) * (float)(1.0 / M_PI);
 
-            float r, g, b;
-            if (isHDR)
-            {
-               unsigned int offs = ((int)(u*(float)env_xres) + (int)(v*(float)env_yres)*env_xres) * 3;
-               if (offs >= env_yres * env_xres * 3)
-                  offs = 0;
-               r = ((float*)envmap)[offs];
-               g = ((float*)envmap)[offs + 1];
-               b = ((float*)envmap)[offs + 2];
-            }
-            else
-            {
-               unsigned int offs = (int)(u*(float)env_xres) + (int)(v*(float)env_yres)*env_xres;
-               if (offs >= env_yres * env_xres)
-                  offs = 0;
-               const DWORD rgb = ((DWORD*)envmap)[offs];
-               r = invGammaApprox((float)(rgb & 255) * (float)(1.0 / 255.0));
-               g = invGammaApprox((float)(rgb & 65280) * (float)(1.0 / 65280.0));
-               b = invGammaApprox((float)(rgb & 16711680) * (float)(1.0 / 16711680.0));
-            }
+                  float r, g, b;
+                  if (isHDR)
+                  {
+                     unsigned int offs = ((int)(u*(float)env_xres) + (int)(v*(float)env_yres)*env_xres) * 3;
+                     if (offs >= env_yres * env_xres * 3)
+                        offs = 0;
+                     r = ((float*)envmap)[offs];
+                     g = ((float*)envmap)[offs + 1];
+                     b = ((float*)envmap)[offs + 2];
+                  }
+                  else
+                  {
+                     unsigned int offs = (int)(u*(float)env_xres) + (int)(v*(float)env_yres)*env_xres;
+                     if (offs >= env_yres * env_xres)
+                        offs = 0;
+                     const DWORD rgb = ((DWORD*)envmap)[offs];
+                     r = invGammaApprox((float)(rgb & 255) * (float)(1.0 / 255.0));
+                     g = invGammaApprox((float)(rgb & 65280) * (float)(1.0 / 65280.0));
+                     b = invGammaApprox((float)(rgb & 16711680) * (float)(1.0 / 16711680.0));
+                  }
 #ifndef USE_ENVMAP_PRECALC_COSINE
-            sum[0] += r * NdotL;
-            sum[1] += g * NdotL;
-            sum[2] += b * NdotL;
+                  sum[0] += r * NdotL;
+                  sum[1] += g * NdotL;
+                  sum[2] += b * NdotL;
 #else
-            sum[0] += r;
-            sum[1] += g;
-            sum[2] += b;
+                  sum[0] += r;
+                  sum[1] += g;
+                  sum[2] += b;
 #endif
-         }
+               }
 
-         // average all samples
+
+               // average all samples
 #ifndef USE_ENVMAP_PRECALC_COSINE
-         sum[0] *= (float)(2.0 / num_samples); // pre-divides by PI for final radiance/color lookup in shader
-         sum[1] *= (float)(2.0 / num_samples);
-         sum[2] *= (float)(2.0 / num_samples);
+               sum[0] *= (float)(2.0 / num_samples); // pre-divides by PI for final radiance/color lookup in shader
+               sum[1] *= (float)(2.0 / num_samples);
+               sum[2] *= (float)(2.0 / num_samples);
 #else
-         sum[0] *= (float)(1.0 / num_samples); // pre-divides by PI for final radiance/color lookup in shader
-         sum[1] *= (float)(1.0 / num_samples);
-         sum[2] *= (float)(1.0 / num_samples);
+               sum[0] *= (float)(1.0 / num_samples); // pre-divides by PI for final radiance/color lookup in shader
+               sum[1] *= (float)(1.0 / num_samples);
+               sum[2] *= (float)(1.0 / num_samples);
 #endif
-         if (isHDR)
-         {
-            const unsigned int offs = (y*rad_env_xres + x) * 3;
-            ((float*)rad_envmap)[offs] = sum[0];
-            ((float*)rad_envmap)[offs + 1] = sum[1];
-            ((float*)rad_envmap)[offs + 2] = sum[2];
-         }
-         else
-         {
-            sum[0] = gammaApprox(sum[0]);
-            sum[1] = gammaApprox(sum[1]);
-            sum[2] = gammaApprox(sum[2]);
-            ((DWORD*)rad_envmap)[y*rad_env_xres + x] = ((int)(sum[0] * 255.0f)) | (((int)(sum[1] * 255.0f)) << 8) | (((int)(sum[2] * 255.0f)) << 16);
-         }
+               if (isHDR)
+               {
+                  const unsigned int offs = (y*rad_env_xres + x) * 3;
+                  ((float*)rad_envmap)[offs] = sum[0];
+                  ((float*)rad_envmap)[offs + 1] = sum[1];
+                  ((float*)rad_envmap)[offs + 2] = sum[2];
+               }
+               else
+               {
+                  sum[0] = gammaApprox(sum[0]);
+                  sum[1] = gammaApprox(sum[1]);
+                  sum[2] = gammaApprox(sum[2]);
+                  ((DWORD*)rad_envmap)[y*rad_env_xres + x] = ((int)(sum[0] * 255.0f)) | (((int)(sum[1] * 255.0f)) << 8) | (((int)(sum[2] * 255.0f)) << 16);
+               }
+            }
+         });
       }
+   }
+
+   /* ///!!! QA-test above multithreading implementation.
+   //!! this is exactly the same code as above, so can be deleted at some point, as it only checks the multithreaded results with a singlethreaded implementation!
+   for (unsigned int y = 0; y < rad_env_yres; ++y)
+   for (unsigned int x = 0; x < rad_env_xres; ++x)
+   {
+   // trafo from envmap to normal direction
+   const float phi = (float)x / (float)rad_env_xres * (float)(2.0*M_PI) + (float)M_PI;
+   const float theta = (float)y / (float)rad_env_yres * (float)M_PI;
+   const Vertex3Ds n(sinf(theta) * cosf(phi), sinf(theta) * sinf(phi), cosf(theta));
+
+   // draw x samples over hemisphere and collect cosine weighted environment map samples
+   float sum[3];
+   sum[0] = sum[1] = sum[2] = 0.0f;
+
+   const unsigned int num_samples = 4096;
+   for (unsigned int s = 0; s < num_samples; ++s)
+   {
+   //!! discard directions pointing below the playfield?? or give them another "average playfield" color??
+   #define USE_ENVMAP_PRECALC_COSINE
+   #ifndef USE_ENVMAP_PRECALC_COSINE
+   //!! as we do not use importance sampling on the environment, just not being smart -could- be better for high frequency environments
+   Vertex3Ds l = sphere_sample((float)s*(float)(1.0 / num_samples), radical_inverse(s)); // QMC hammersley point set
+   float NdotL = l.Dot(n);
+   if (NdotL < 0.0f) // flip if on backside of hemisphere
+   {
+   NdotL = -NdotL;
+   l = -l;
+   }
+   #else
+   //Vertex3Ds cos_hemisphere_sample(const Vertex3Ds &normal, Vertex2D uv) { float theta = (float)(2.*M_PI) * uv.x; uv.y = 2.f * uv.y - 1.f; Vertex3Ds spherePoint(sqrt(1.f - uv.y * uv.y) * Vertex2D(cosf(theta), sinf(theta)), uv.y); return normalize(normal + spherePoint); }
+   const Vertex3Ds l = rotate_to_vector_upper(cos_hemisphere_sample((float)s*(float)(1.0 / num_samples), radical_inverse(s)), n); // QMC hammersley point set
+   #endif
+   // trafo from light direction to envmap
+   // approximations seem to be good enough!
+   const float u = atan2_approx_div2PI(l.y, l.x) + 0.5f; //atan2f(l.y, l.x) * (float)(0.5 / M_PI) + 0.5f;
+   const float v = acos_approx_divPI(l.z); //acosf(l.z) * (float)(1.0 / M_PI);
+
+   float r, g, b;
+   if (isHDR)
+   {
+   unsigned int offs = ((int)(u*(float)env_xres) + (int)(v*(float)env_yres)*env_xres) * 3;
+   if (offs >= env_yres * env_xres * 3)
+   offs = 0;
+   r = ((float*)envmap)[offs];
+   g = ((float*)envmap)[offs + 1];
+   b = ((float*)envmap)[offs + 2];
+   }
+   else
+   {
+   unsigned int offs = (int)(u*(float)env_xres) + (int)(v*(float)env_yres)*env_xres;
+   if (offs >= env_yres * env_xres)
+   offs = 0;
+   const DWORD rgb = ((DWORD*)envmap)[offs];
+   r = invGammaApprox((float)(rgb & 255) * (float)(1.0 / 255.0));
+   g = invGammaApprox((float)(rgb & 65280) * (float)(1.0 / 65280.0));
+   b = invGammaApprox((float)(rgb & 16711680) * (float)(1.0 / 16711680.0));
+   }
+   #ifndef USE_ENVMAP_PRECALC_COSINE
+   sum[0] += r * NdotL;
+   sum[1] += g * NdotL;
+   sum[2] += b * NdotL;
+   #else
+   sum[0] += r;
+   sum[1] += g;
+   sum[2] += b;
+   #endif
+   }
+
+   // average all samples
+   #ifndef USE_ENVMAP_PRECALC_COSINE
+   sum[0] *= (float)(2.0 / num_samples); // pre-divides by PI for final radiance/color lookup in shader
+   sum[1] *= (float)(2.0 / num_samples);
+   sum[2] *= (float)(2.0 / num_samples);
+   #else
+   sum[0] *= (float)(1.0 / num_samples); // pre-divides by PI for final radiance/color lookup in shader
+   sum[1] *= (float)(1.0 / num_samples);
+   sum[2] *= (float)(1.0 / num_samples);
+   #endif
+   if (isHDR)
+   {
+   const unsigned int offs = (y*rad_env_xres + x) * 3;
+   if (((float*)rad_envmap)[offs] != sum[0] ||
+   ((float*)rad_envmap)[offs + 1] != sum[1] ||
+   ((float*)rad_envmap)[offs + 2] != sum[2])
+   {
+   char tmp[911];
+   sprintf(tmp, "%d %d %f=%f %f=%f %f=%f ", x, y, ((float*)rad_envmap)[offs], sum[0], ((float*)rad_envmap)[offs + 1], sum[1], ((float*)rad_envmap)[offs + 2], sum[2]);
+   ::OutputDebugString(tmp);
+   }
+   }
+   else
+   {
+   sum[0] = gammaApprox(sum[0]);
+   sum[1] = gammaApprox(sum[1]);
+   sum[2] = gammaApprox(sum[2]);
+   if (
+   ((DWORD*)rad_envmap)[y*rad_env_xres + x] != ((int)(sum[0] * 255.0f)) | (((int)(sum[1] * 255.0f)) << 8) | (((int)(sum[2] * 255.0f)) << 16))
+   ::MessageBox(NULL, "Not OK", "Not OK", MB_OK);
+   }
+   }
+
+   ///!!! */
 
 #ifdef PREFILTER_ENVMAP_DIFFUSE
    if (isHDR && (env_xres > 64))
       free((void*)envmap);
 #endif
 }
-
-HRESULT Pin3D::InitPrimary(HWND *hwnd, const bool fullScreen, const int colordepth, int &refreshrate, const int VSync, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
+HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
 {
    const unsigned int display = LoadValueIntWithDefault(stereo3D == STEREO_VR ? "PlayerVR" : "Player", "Display", 0);
 
    std::vector<DisplayConfig> displays;
    getDisplayList(displays);
    int adapter = 0;
-   for (std::vector<DisplayConfig>::iterator dispConf = displays.begin(); dispConf != displays.end(); dispConf++)
+   for (std::vector<DisplayConfig>::iterator dispConf = displays.begin(); dispConf != displays.end(); ++dispConf)
       if (display == dispConf->display) adapter = dispConf->adapter;
-
-   m_pd3dPrimaryDevice = new RenderDevice(hwnd, m_viewPort.Width, m_viewPort.Height, fullScreen, colordepth, VSync, m_AAfactor, stereo3D, FXAA, ss_refl, g_pplayer->m_useNvidiaApi, g_pplayer->m_disableDWM, g_pplayer->m_BWrendering);
+   m_pd3dPrimaryDevice = new RenderDevice(m_viewPort.Width, m_viewPort.Height, fullScreen, colordepth, VSync, AAfactor, stereo3D, FXAA, ss_refl, g_pplayer->m_useNvidiaApi, g_pplayer->m_disableDWM, g_pplayer->m_BWrendering);
    try {
       m_pd3dPrimaryDevice->CreateDevice(refreshrate, display);
    }
@@ -318,7 +428,7 @@ HRESULT Pin3D::InitPrimary(HWND *hwnd, const bool fullScreen, const int colordep
       return E_FAIL;
 
 #ifdef ENABLE_SDL
-   *hwnd = m_pd3dPrimaryDevice->getHwnd();
+   g_pplayer->m_playfieldHwnd = m_pd3dPrimaryDevice->getHwnd();
 #endif
 
    const bool forceAniso = (stereo3D == STEREO_VR) ? true : LoadValueBoolWithDefault("Player", "ForceAnisotropicFiltering", true);
@@ -374,7 +484,7 @@ HRESULT Pin3D::InitPrimary(HWND *hwnd, const bool fullScreen, const int colordep
    return S_OK;
 }
 
-HRESULT Pin3D::InitPin3D(HWND *hwnd, const bool fullScreen, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
+HRESULT Pin3D::InitPin3D(const bool fullScreen, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
 {
    m_proj.m_stereo3D = m_stereo3D = stereo3D;
    m_AAfactor = AAfactor;
@@ -387,22 +497,22 @@ HRESULT Pin3D::InitPin3D(HWND *hwnd, const bool fullScreen, const int width, con
    m_viewPort.MinZ = 0.0f;
    m_viewPort.MaxZ = 1.0f;
 
-   if ((InitPrimary(hwnd, fullScreen, colordepth, refreshrate, VSync, stereo3D, FXAA, useAO, ss_refl)))
+   if ((InitPrimary(fullScreen, colordepth, refreshrate, VSync, AAfactor, stereo3D, FXAA, useAO, ss_refl)))
       return E_FAIL;
 
    m_pd3dSecondaryDevice = m_pd3dPrimaryDevice;
 
-   backGlass = new BackGlass(m_pd3dSecondaryDevice, g_pplayer->m_ptable->GetDecalsEnabled()
+   m_backGlass = new BackGlass(m_pd3dSecondaryDevice, g_pplayer->m_ptable->GetDecalsEnabled()
       ? g_pplayer->m_ptable->GetImage(g_pplayer->m_ptable->m_BG_szImage[g_pplayer->m_ptable->m_BG_current_set]) : NULL);
 
-   pinballEnvTexture.CreateFromResource(IDB_BALL);
+   m_pinballEnvTexture.CreateFromResource(IDB_BALL);
 
-   aoDitherTexture.CreateFromResource(IDB_AO_DITHER);
+   m_aoDitherTexture.CreateFromResource(IDB_AO_DITHER);
 
    m_envTexture = g_pplayer->m_ptable->GetImage(g_pplayer->m_ptable->m_szEnvImage);
-   envTexture.CreateFromResource(IDB_ENV);
+   m_builtinEnvTexture.CreateFromResource(IDB_ENV);
 
-   Texture * const envTex = m_envTexture ? m_envTexture : &envTexture;
+   Texture * const envTex = m_envTexture ? m_envTexture : &m_builtinEnvTexture;
 
    const unsigned int envTexHeight = min(envTex->m_pdsBuffer->height(), 256) / 8;
    const unsigned int envTexWidth = envTexHeight * 2;
@@ -579,14 +689,14 @@ void Pin3D::DrawBackground()
       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, FALSE);
 
-      if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_fReflectionEnabled)
+      if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_reflectionEnabled)
          m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
 
       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
 
       g_pplayer->Spritedraw(0.f, 0.f, 1.f, 1.f, 0xFFFFFFFF, pin, ptable->m_ImageBackdropNightDay ? sqrtf(g_pplayer->m_globalEmissionScale) : 1.0f);
 
-      if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_fReflectionEnabled)
+      if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_reflectionEnabled)
          m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 
       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, TRUE);
@@ -699,7 +809,7 @@ void Pin3D::InitLayoutFS()
    m_proj.m_rcviewport.right = m_viewPort.Width;
    m_proj.m_rcviewport.bottom = m_viewPort.Height;
 
-   const float aspect = (float)m_viewPort.Width / (float)m_viewPort.Height; //(float)(4.0/3.0);
+   //const float aspect = (float)m_viewPort.Width / (float)m_viewPort.Height; //(float)(4.0/3.0);
 
    //m_proj.FitCameraToVerticesFS(vvertex3D, aspect, rotation, inclination, FOV, g_pplayer->m_ptable->m_BG_xlatez[g_pplayer->m_ptable->m_BG_current_set], g_pplayer->m_ptable->m_BG_layback[g_pplayer->m_ptable->m_BG_current_set]);
    const float yof = g_pplayer->m_ptable->m_bottom*0.5f + g_pplayer->m_ptable->m_BG_xlatey[g_pplayer->m_ptable->m_BG_current_set];
@@ -814,9 +924,9 @@ void Pin3D::InitLayout(const bool FSS_mode, const float xpixoff, const float ypi
    // within 50-60 deg and 40-50 FOV in editor.
    // these values were tested against all known video modes upto 1920x1080 
    // in landscape and portrait on the display
-   const float camx = m_camx;
-   const float camy = m_camy + (FSS_mode ? 500.0f : 0.f);
-         float camz = m_camz;
+   const float camx = m_cam.x;
+   const float camy = m_cam.y + (FSS_mode ? 500.0f : 0.f);
+         float camz = m_cam.z;
    const float inc  = m_inc  + (FSS_mode ? 0.2f : 0.f);
 
    if (FSS_mode)
@@ -880,7 +990,7 @@ void Pin3D::InitLayout(const bool FSS_mode, const float xpixoff, const float ypi
    //!! FSS: camy = 0.0f;
 
    m_proj.TranslateView(g_pplayer->m_ptable->m_BG_xlatex[g_pplayer->m_ptable->m_BG_current_set] - m_proj.m_vertexcamera.x + camx, g_pplayer->m_ptable->m_BG_xlatey[g_pplayer->m_ptable->m_BG_current_set] - m_proj.m_vertexcamera.y + camy, -m_proj.m_vertexcamera.z + camz);
-   if (g_pplayer->cameraMode && (g_pplayer->m_ptable->m_BG_current_set == 0 || g_pplayer->m_ptable->m_BG_current_set == 2)) // DT & FSS
+   if (g_pplayer->m_cameraMode && (g_pplayer->m_ptable->m_BG_current_set == 0 || g_pplayer->m_ptable->m_BG_current_set == 2)) // DT & FSS
       m_proj.RotateView(inclination, 0, rotation);
    else
    {
@@ -941,11 +1051,11 @@ void Pin3D::InitPlayfieldGraphics()
    const IEditable * const piEdit = g_pplayer->m_ptable->GetElementByName("playfield_mesh");
    if (piEdit == NULL)
    {
-      assert(tableVBuffer == NULL);
-      VertexBuffer::CreateVertexBuffer(4, 0, MY_D3DFVF_NOTEX2_VERTEX, &tableVBuffer);
+      assert(m_tableVBuffer == NULL);
+      VertexBuffer::CreateVertexBuffer(4, 0, MY_D3DFVF_NOTEX2_VERTEX, &m_tableVBuffer);
 
       Vertex3D_NoTex2 *buffer;
-      tableVBuffer->lock(0, 0, (void**)&buffer, USAGE_STATIC);
+      m_tableVBuffer->lock(0, 0, (void**)&buffer, USAGE_STATIC);
 
       unsigned int offs = 0;
       for (unsigned int y = 0; y <= 1; ++y)
@@ -963,10 +1073,10 @@ void Pin3D::InitPlayfieldGraphics()
             buffer[offs].nz = 1.f;
          }
 
-      tableVBuffer->unlock();
+      m_tableVBuffer->unlock();
    }
    else
-      g_pplayer->m_fMeshAsPlayfield = true;
+      g_pplayer->m_meshAsPlayfield = true;
 }
 
 void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
@@ -974,7 +1084,7 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
    TRACE_FUNCTION();
 
    const Material * const mat = g_pplayer->m_ptable->GetMaterial(g_pplayer->m_ptable->m_szPlayfieldMaterial);
-   Texture * const pin = (depth_only && (!mat || !mat->m_bOpacityActive)) ? NULL : g_pplayer->m_ptable->GetImage((char *)g_pplayer->m_ptable->m_szImage);
+   Texture * const pin = (depth_only && !mat->m_bOpacityActive) ? NULL : g_pplayer->m_ptable->GetImage((char *)g_pplayer->m_ptable->m_szImage);
 
    if (depth_only)
    {
@@ -1009,20 +1119,20 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
    }
    m_pd3dPrimaryDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
 
-   if (!g_pplayer->m_fMeshAsPlayfield)
+   if (!g_pplayer->m_meshAsPlayfield)
    {
-      assert(tableVBuffer != NULL);
+      assert(m_tableVBuffer != NULL);
       m_pd3dPrimaryDevice->basicShader->Begin(0);
-      m_pd3dPrimaryDevice->DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_NOTEX2_VERTEX, tableVBuffer, 0, 4, true);
+      m_pd3dPrimaryDevice->DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_NOTEX2_VERTEX, m_tableVBuffer, 0, 4, true);
       m_pd3dPrimaryDevice->basicShader->End();
    }
    else
    {
       const IEditable * const piEdit = g_pplayer->m_ptable->GetElementByName("playfield_mesh");
       Primitive * const pPrim = (Primitive *)piEdit;
-      pPrim->m_d.m_fVisible = true;  // temporary enable the otherwise invisible playfield
+      pPrim->m_d.m_visible = true;  // temporary enable the otherwise invisible playfield
       pPrim->RenderObject();
-      pPrim->m_d.m_fVisible = false; // restore
+      pPrim->m_d.m_visible = false; // restore
    }
 
    if (pin)
@@ -1054,7 +1164,7 @@ void Pin3D::EnableAlphaBlend(const bool additiveBlending, const bool set_dest_bl
       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::BLENDOP, RenderDevice::BLENDOP_ADD);
 }
 
-void Pin3D::Flip(bool vsync)
+void Pin3D::Flip(const bool vsync)
 {
    m_pd3dPrimaryDevice->Flip(vsync);
 }
@@ -1070,7 +1180,7 @@ Vertex3Ds Pin3D::Unproject(const Vertex3Ds& point)
    p.x = 2.0f * (point.x - (float)m_viewPort.X) / (float)m_viewPort.Width - 1.0f;
    p.y = 1.0f - 2.0f * (point.y - (float)m_viewPort.Y) / (float)m_viewPort.Height;
    p.z = (point.z - m_viewPort.MinZ) / (m_viewPort.MaxZ - m_viewPort.MinZ);
-   p3 = m2.MultiplyVector(p);
+   p3 = m2.MulVector(p);
    return p3;
 }
 
@@ -1137,7 +1247,7 @@ void PinProjection::FitCameraToVerticesFS(std::vector<Vertex3Ds>& pvvertex3D, fl
    float maxxintercept = -FLT_MAX;
    float minxintercept = FLT_MAX;
 
-   const Matrix3D laybackTrans = ComputeLaybackTransform(layback);
+   //const Matrix3D laybackTrans = ComputeLaybackTransform(layback);
 
    for (size_t i = 0; i < pvvertex3D.size(); ++i)
    {
@@ -1201,7 +1311,7 @@ void PinProjection::FitCameraToVertices(std::vector<Vertex3Ds>& pvvertex3D, floa
 
    for (size_t i = 0; i < pvvertex3D.size(); ++i)
    {
-      Vertex3Ds v = laybackTrans.MultiplyVector(pvvertex3D[i]);
+      Vertex3Ds v = laybackTrans.MulVector(pvvertex3D[i]);
 
       // Rotate vertex about x axis according to incoming inclination
       float temp = v.y;
@@ -1244,7 +1354,7 @@ void PinProjection::ComputeNearFarPlane(std::vector<Vertex3Ds>& verts)
 
    for (size_t i = 0; i < verts.size(); ++i)
    {
-      const float tempz = matWorldView.MultiplyVector(verts[i]).z;
+      const float tempz = matWorldView.MulVector(verts[i]).z;
 
       // Extend z-range if necessary
       m_rznear = min(m_rznear, tempz);
@@ -1309,14 +1419,15 @@ void PinProjection::TransformVertices(const Vertex3Ds * const rgv, const WORD * 
    }
 }
 
+
 #ifdef ENABLE_BAM
-// #ravarcade: All code bellow will add BAM view and BAM head tracking.
+// #ravarcade: All code below will add BAM view and BAM head tracking.
 // Most of it is copy of
 //-----------------------------------------------------------------------
 
 BAM_Tracker::BAM_Tracker_Client BAM;
 
-void Mat4Mul(float *O, float *A, float *B)
+void Mat4Mul(float * const __restrict O, const float * const __restrict A, const float * const __restrict B)
 {
    O[0] = A[0] * B[0] + A[1] * B[4] + A[2] * B[8] + A[3] * B[12];
    O[1] = A[0] * B[1] + A[1] * B[5] + A[2] * B[9] + A[3] * B[13];
@@ -1339,30 +1450,30 @@ void Mat4Mul(float *O, float *A, float *B)
    O[15] = A[12] * B[3] + A[13] * B[7] + A[14] * B[11] + A[15] * B[15];
 }
 
-void Mat4Mul(float *OA, float *B)
+void Mat4Mul(float * const __restrict OA, const float * const __restrict B)
 {
    float A[16];
    memcpy_s(A, sizeof(A), OA, sizeof(A));
    Mat4Mul(OA, A, B);
 }
 
-void CreateProjectionAndViewMatrix(float *P, float *V)
+void CreateProjectionAndViewMatrix(float * const __restrict P, float * const __restrict V)
 {
    const float degToRad = 0.01745329251f;
 
    // VPX stuffs
-   auto &t = g_pplayer->m_ptable;
-   int resolutionWidth = g_pplayer->m_pin3d.m_viewPort.Width;
-   int resolutionHeight = g_pplayer->m_pin3d.m_viewPort.Height;
-   int rotation = static_cast<int>(g_pplayer->m_ptable->m_BG_rotation[g_pplayer->m_ptable->m_BG_current_set] / 90.0f);
-   bool stereo3D = g_pplayer->m_stereo3D;
-   float tableLength = t->m_bottom;
-   float tableWidth = t->m_right;
-   float tableGlass = t->m_glassheight;
-   float minSlope = (t->m_overridePhysics ? t->m_fOverrideMinSlope : t->m_angletiltMin);
-   float maxSlope = (t->m_overridePhysics ? t->m_fOverrideMaxSlope : t->m_angletiltMax);
-   float slope = minSlope + (maxSlope - minSlope) * t->m_globalDifficulty;
-   float angle = -slope * degToRad;
+   const PinTable* const t = g_pplayer->m_ptable;
+   const int resolutionWidth = g_pplayer->m_pin3d.m_viewPort.Width;
+   const int resolutionHeight = g_pplayer->m_pin3d.m_viewPort.Height;
+   const int rotation = static_cast<int>(g_pplayer->m_ptable->m_BG_rotation[g_pplayer->m_ptable->m_BG_current_set] / 90.0f);
+   //const bool stereo3D = g_pplayer->m_stereo3D;
+   const float tableLength = t->m_bottom;
+   const float tableWidth = t->m_right;
+   const float tableGlass = t->m_glassheight;
+   const float minSlope = (t->m_overridePhysics ? t->m_fOverrideMinSlope : t->m_angletiltMin);
+   const float maxSlope = (t->m_overridePhysics ? t->m_fOverrideMaxSlope : t->m_angletiltMax);
+   const float slope = minSlope + (maxSlope - minSlope) * t->m_globalDifficulty;
+   const float angle = -slope * degToRad;
 
    // Data from config file (Settings):
    float DisplaySize;
@@ -1386,7 +1497,7 @@ void CreateProjectionAndViewMatrix(float *P, float *V)
    ViewerPositionY = (float)y;
    ViewerPositionZ = (float)z;
 
-   double w = DisplayNativeWidth, h = DisplayNativeHeight;
+   const double w = DisplayNativeWidth, h = DisplayNativeHeight;
    DisplaySize = (float)(sqrt(w*w + h * h) / 25.4); // [mm] -> [inchs]
 
                                                     // constant params for this project
@@ -1406,7 +1517,7 @@ void CreateProjectionAndViewMatrix(float *P, float *V)
 
    // Build View matrix from parts: Translation, Scale, Rotation
    // .. but first View Matrix has camera position
-   float VT[16] = {
+   const float VT[16] = {
       1, 0, 0, 0,
       0, 1, 0, 0,
       0, 0, 1, 0,
@@ -1414,27 +1525,27 @@ void CreateProjectionAndViewMatrix(float *P, float *V)
    };
 
    // --- Scale, ... some math
-   float pixelsToMillimeters = (float)(25.4*DisplaySize / sqrt(DisplayNativeWidth*DisplayNativeWidth + DisplayNativeHeight * DisplayNativeHeight));
-   float pixelsToMillimetersX = pixelsToMillimeters * DisplayNativeWidth / resolutionWidth;
-   float pixelsToMillimetersY = pixelsToMillimeters * DisplayNativeHeight / resolutionHeight;
-   float ptm = rotation & 1 ? pixelsToMillimetersX : pixelsToMillimetersY;
-   float tableLengthInMillimeters = ptm * tableLength;
-   float displayLengthInMillimeters = ptm * (rotation & 1 ? pixelsToMillimeters * DisplayNativeWidth : pixelsToMillimeters * DisplayNativeHeight);
+   const float pixelsToMillimeters = (float)(25.4*DisplaySize / sqrt(DisplayNativeWidth*DisplayNativeWidth + DisplayNativeHeight * DisplayNativeHeight));
+   const float pixelsToMillimetersX = pixelsToMillimeters * DisplayNativeWidth / resolutionWidth;
+   const float pixelsToMillimetersY = pixelsToMillimeters * DisplayNativeHeight / resolutionHeight;
+   const float ptm = rotation & 1 ? pixelsToMillimetersX : pixelsToMillimetersY;
+   const float tableLengthInMillimeters = ptm * tableLength;
+   const float displayLengthInMillimeters = ptm * (rotation & 1 ? pixelsToMillimeters * DisplayNativeWidth : pixelsToMillimeters * DisplayNativeHeight);
 
    // --- Scale world to fit in screen
-   float scale = displayLengthInMillimeters / tableLengthInMillimeters; // calc here scale
-   float S[16] = {
+   const float scale = displayLengthInMillimeters / tableLengthInMillimeters; // calc here scale
+   const float S[16] = {
       scale, 0, 0, 0,
       0, scale, 0, 0,
       0, 0, scale, 0,
-      0, 0, 0, 1
+      0, 0, 0, 1.f
    };
    /// ===
 
    // --- Translation to desired world element (playfield center or glass center)
-   float _S = sinf(angle);
-   float _C = cosf(angle);
-   float T[16] = {
+   const float _S = sinf(angle);
+   const float _C = cosf(angle);
+   const float T[16] = {
       1, 0, 0, 0,
       0, -1, 0, 0,
       0, 0, 1, 0,
@@ -1445,7 +1556,7 @@ void CreateProjectionAndViewMatrix(float *P, float *V)
    /// ===
 
    // --- Rotate world to make playfield or glass parallel to screen
-   float R[16] = {
+   const float R[16] = {
       1, 0, 0, 0,
       0, _C, -_S, 0,
       0, _S, _C, 0,
@@ -1461,7 +1572,7 @@ void CreateProjectionAndViewMatrix(float *P, float *V)
 
 void Pin3D::UpdateBAMHeadTracking()
 {
-   // If BAM tracker is not runnign, we will not do anything.
+   // If BAM tracker is not running, we will not do anything.
    if (BAM.IsBAMTrackerPresent())
       CreateProjectionAndViewMatrix(&m_proj.m_matProj[0]._11, &m_proj.m_matView._11);
 }

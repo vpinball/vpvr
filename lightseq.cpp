@@ -37,18 +37,18 @@ void LightSeq::SetDefaults(bool fromMouseClick)
 
    m_d.m_vCenter.x = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\LightSequence", "CenterX", EDITOR_BG_WIDTH / 2) : (EDITOR_BG_WIDTH / 2);
    m_d.m_vCenter.y = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\LightSequence", "CenterY", (2 * EDITOR_BG_WIDTH) / 2) : ((2 * EDITOR_BG_WIDTH) / 2);
-   m_d.m_tdr.m_fTimerEnabled = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\LightSequence", "TimerEnabled", false) : false;
+   m_d.m_tdr.m_TimerEnabled = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\LightSequence", "TimerEnabled", false) : false;
    m_d.m_tdr.m_TimerInterval = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\LightSequence", "TimerInterval", 100) : 100;
 }
 
 void LightSeq::WriteRegDefaults()
 {
-   MAKE_ANSIPTR_FROMWIDE(strTmp2, (WCHAR *)m_d.m_wzCollection);
+   MAKE_ANSIPTR_FROMWIDE(strTmp, (WCHAR *)m_d.m_wzCollection);
    SaveValueInt("DefaultProps\\LightSequence", "UpdateInterval", m_d.m_updateinterval);
-   SaveValueString("DefaultProps\\LightSequence", "Collection", strTmp2);
+   SaveValueString("DefaultProps\\LightSequence", "Collection", strTmp);
    SaveValueFloat("DefaultProps\\LightSequence", "CenterX", m_d.m_vCenter.x);
    SaveValueFloat("DefaultProps\\LightSequence", "CenterY", m_d.m_vCenter.y);
-   SaveValueBool("DefaultProps\\LightSequence", "TimerEnabled", m_d.m_tdr.m_fTimerEnabled);
+   SaveValueBool("DefaultProps\\LightSequence", "TimerEnabled", m_d.m_tdr.m_TimerEnabled);
    SaveValueInt("DefaultProps\\LightSequence", "TimerInterval", m_d.m_tdr.m_TimerInterval);
 }
 
@@ -169,7 +169,7 @@ void LightSeq::GetTimers(vector<HitTimer*> &pvht)
 
    m_phittimer = pht;
 
-   if (m_d.m_tdr.m_fTimerEnabled)
+   if (m_d.m_tdr.m_TimerEnabled)
       pvht.push_back(pht);
 }
 
@@ -280,7 +280,7 @@ void LightSeq::RenderSetup()
          pLight->get_X(&x);
          pLight->get_Y(&y);
 
-         if (pLight->m_fBackglass)
+         if (pLight->m_backglass)
          {
             // if the light is on the backglass then scale up its Y position
             y *= 2.666f; // 2 little devils ;-)
@@ -306,17 +306,17 @@ void LightSeq::RenderStatic()
 {
 }
 
-// This function is called during Animate(). It basically check to see if the update
+// This function is called during Animate(). It basically checks to see if the update
 // interval has expired and if so handles the light effect
 void LightSeq::Animate()
 {
    if (m_playInProgress)
    {
-      if (g_pplayer->m_time_msec >= m_timeNextUpdate)
+      while (g_pplayer->m_time_msec >= m_timeNextUpdate && m_playInProgress)
       {
          if (!m_pauseInProgress)
          {
-            m_timeNextUpdate = g_pplayer->m_time_msec + m_updateRate;
+            m_timeNextUpdate += m_updateRate;
             // process the head tracers
             const bool th1finished = ProcessTracer(&m_th1, LightStateOn);
             const bool th2finished = ProcessTracer(&m_th2, LightStateOn);
@@ -371,13 +371,11 @@ void LightSeq::Animate()
          const int Tail = m_queue.Tail;
          // set the update rate for this sequence
          m_updateRate = m_queue.Data[Tail].UpdateRate;
-         // set up the tracers
+         // set up the tracers and start the ball rolling again
          SetupTracers(m_queue.Data[Tail].Animation,
             m_queue.Data[Tail].TailLength,
             m_queue.Data[Tail].Repeat,
             m_queue.Data[Tail].Pause);
-         // and start the ball rolling again
-         m_playInProgress = true;
       }
    }
 }
@@ -398,7 +396,7 @@ STDMETHODIMP LightSeq::InterfaceSupportsErrorInfo(REFIID riid)
    return S_FALSE;
 }
 
-HRESULT LightSeq::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
+HRESULT LightSeq::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupForPlay)
 {
    BiffWriter bw(pstm, hcrypthash);
 
@@ -407,12 +405,12 @@ HRESULT LightSeq::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
    bw.WriteFloat(FID(CTRX), m_d.m_vCenter.x);
    bw.WriteFloat(FID(CTRY), m_d.m_vCenter.y);
    bw.WriteInt(FID(UPTM), m_d.m_updateinterval);
-   bw.WriteBool(FID(TMON), m_d.m_tdr.m_fTimerEnabled);
+   bw.WriteBool(FID(TMON), m_d.m_tdr.m_TimerEnabled);
    bw.WriteInt(FID(TMIN), m_d.m_tdr.m_TimerInterval);
 
    bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
 
-   bw.WriteBool(FID(BGLS), m_fBackglass);
+   bw.WriteBool(FID(BGLS), m_backglass);
 
    bw.WriteTag(FID(ENDB));
 
@@ -431,73 +429,28 @@ HRESULT LightSeq::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int versio
    return S_OK;
 }
 
-BOOL LightSeq::LoadToken(int id, BiffReader *pbr)
+bool LightSeq::LoadToken(const int id, BiffReader * const pbr)
 {
-   if (id == FID(PIID))
+   switch (id)
    {
-      pbr->GetInt((int *)pbr->m_pdata);
+   case FID(PIID): pbr->GetInt((int *)pbr->m_pdata); break;
+   case FID(VCEN): pbr->GetStruct(&m_d.m_v, sizeof(Vertex2D)); break;
+   case FID(COLC): pbr->GetWideString((WCHAR *)m_d.m_wzCollection); break;
+   case FID(CTRX): pbr->GetFloat(&m_d.m_vCenter.x); break;
+   case FID(CTRY): pbr->GetFloat(&m_d.m_vCenter.y); break;
+   case FID(UPTM): pbr->GetInt(&m_d.m_updateinterval); break;
+   case FID(TMON): pbr->GetBool(&m_d.m_tdr.m_TimerEnabled); break;
+   case FID(TMIN): pbr->GetInt(&m_d.m_tdr.m_TimerInterval); break;
+   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(BGLS): pbr->GetBool(&m_backglass); break;
    }
-   else if (id == FID(VCEN))
-   {
-      pbr->GetStruct(&m_d.m_v, sizeof(Vertex2D));
-   }
-   else if (id == FID(COLC))
-   {
-      pbr->GetWideString((WCHAR *)m_d.m_wzCollection);
-   }
-   else if (id == FID(CTRX))
-   {
-      pbr->GetFloat(&m_d.m_vCenter.x);
-   }
-   else if (id == FID(CTRY))
-   {
-      pbr->GetFloat(&m_d.m_vCenter.y);
-   }
-   else if (id == FID(UPTM))
-   {
-      pbr->GetInt(&m_d.m_updateinterval);
-   }
-   else if (id == FID(TMON))
-   {
-      pbr->GetBool(&m_d.m_tdr.m_fTimerEnabled);
-   }
-   else if (id == FID(TMIN))
-   {
-      pbr->GetInt(&m_d.m_tdr.m_TimerInterval);
-   }
-   else if (id == FID(NAME))
-   {
-      pbr->GetWideString((WCHAR *)m_wzName);
-   }
-   else if (id == FID(BGLS))
-   {
-      pbr->GetBool(&m_fBackglass);
-   }
-   return fTrue;
+   return true;
 }
 
 HRESULT LightSeq::InitPostLoad()
 {
    return S_OK;
 }
-
-void LightSeq::GetDialogPanes(vector<PropertyPane*> &pvproppane)
-{
-   PropertyPane *pproppane;
-
-   pproppane = new PropertyPane(IDD_PROP_NAME, NULL);
-   pvproppane.push_back(pproppane);
-
-   pproppane = new PropertyPane(IDD_PROPLIGHTSEQ_POSITION, IDS_POSITION);
-   pvproppane.push_back(pproppane);
-
-   pproppane = new PropertyPane(IDD_PROPLIGHTSEQ_STATE, IDS_STATE);
-   pvproppane.push_back(pproppane);
-
-   pproppane = new PropertyPane(IDD_PROP_TIMER, IDS_MISC);
-   pvproppane.push_back(pproppane);
-}
-
 
 STDMETHODIMP LightSeq::get_Collection(BSTR *pVal)
 {
@@ -511,70 +464,57 @@ STDMETHODIMP LightSeq::get_Collection(BSTR *pVal)
 
 STDMETHODIMP LightSeq::put_Collection(BSTR newVal)
 {
-   STARTUNDO
-      memcpy(m_d.m_wzCollection, (void *)newVal, sizeof(m_d.m_wzCollection));
-   STOPUNDO
+   memcpy(m_d.m_wzCollection, (void *)newVal, sizeof(m_d.m_wzCollection));
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP LightSeq::get_CenterX(float *pVal)
 {
-   *pVal = m_d.m_vCenter.x;
+   *pVal = GetX();
 
    return S_OK;
 }
 
 STDMETHODIMP LightSeq::put_CenterX(float newVal)
 {
-   if ((newVal < 0.0f) || (newVal >= (float)EDITOR_BG_WIDTH))
+   if ((newVal < 0.f) || (newVal >= (float)EDITOR_BG_WIDTH))
       return E_FAIL;
 
-   STARTUNDO
-      m_d.m_vCenter.x = newVal;
-   // set the centre point of the grid for effects which start from the center
-   m_GridXCenter = floorf(m_d.m_vCenter.x * (float)(1.0 / LIGHTSEQGRIDSCALE));
-   m_GridXCenterAdjust = abs(m_lightSeqGridWidth / 2 - (int)m_GridXCenter);
-   STOPUNDO
+   SetX(newVal);
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP LightSeq::get_CenterY(float *pVal)
 {
-   *pVal = m_d.m_vCenter.y;
+   *pVal = GetY();
 
    return S_OK;
 }
 
 STDMETHODIMP LightSeq::put_CenterY(float newVal)
 {
-   if ((newVal < 0) || (newVal >= (float)(2 * EDITOR_BG_WIDTH)))
+   if ((newVal < 0.f) || (newVal >= (float)(2 * EDITOR_BG_WIDTH)))
       return E_FAIL;
 
-   STARTUNDO
-      m_d.m_vCenter.y = newVal;
-   // set the centre point of the grid for effects which start from the center
-   m_GridYCenter = floorf(m_d.m_vCenter.y * (float)(1.0 / LIGHTSEQGRIDSCALE));
-   m_GridYCenterAdjust = abs(m_lightSeqGridHeight / 2 - (int)m_GridYCenter);
-   STOPUNDO
+   SetY(newVal);
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP LightSeq::get_UpdateInterval(long *pVal)
 {
-   *pVal = m_d.m_updateinterval;
+   *pVal = GetUpdateInterval();
 
    return S_OK;
 }
 
 STDMETHODIMP LightSeq::put_UpdateInterval(long newVal)
 {
-   STARTUNDO
-      m_d.m_updateinterval = max(1, newVal);
-   STOPUNDO
-      return S_OK;
+   SetUpdateInterval(newVal);
+
+   return S_OK;
 }
 
 STDMETHODIMP LightSeq::Play(SequencerState Animation, long TailLength, long Repeat, long Pause)
@@ -583,17 +523,13 @@ STDMETHODIMP LightSeq::Play(SequencerState Animation, long TailLength, long Repe
 
    // sanity check the parameters
    if (TailLength < 0)
-   {
       TailLength = 0;
-   }
+
    if (Repeat <= 0)
-   {
       Repeat = 1;
-   }
+
    if (Pause < 0)
-   {
       Pause = 0;
-   }
 
    // 'all lights on' and 'all lights off' are directly processed and not put into the queue
    if (Animation == SeqAllOn)
@@ -663,11 +599,12 @@ STDMETHODIMP LightSeq::StopPlay()
             Light * const pLight = (Light *)m_pcollection->m_visel.ElementAt(i);
             LightState state;
             pLight->get_State(&state);
-            pLight->m_fLockedByLS = false;
+            pLight->m_lockedByLS = false;
             pLight->put_State(state);
          }
       }
    }
+
    return S_OK;
 }
 
@@ -1458,7 +1395,7 @@ void LightSeq::SetupTracers(const SequencerState Animation, long TailLength, lon
       m_th2.frameCount = 180;
       break;
 
-      // unknown/supported animation (should happen as the animation is a enum, but hey!)
+      // unknown/supported animation (shouldn't happen as the animation is a enum, but hey!)
    default:
       // cause it to expire in 1 frame and move onto the next animation
       m_th1.length = 0;
@@ -1485,7 +1422,7 @@ void LightSeq::SetupTracers(const SequencerState Animation, long TailLength, lon
       m_tt2.delay = TailLength;
    }
 
-   // are we are in inverse mode (tail is the lead) or not?
+   // are we in inverse mode (tail is the lead) or not?
    if (inverse)
    {
       _tracer	temp;
@@ -1558,7 +1495,7 @@ bool LightSeq::ProcessTracer(_tracer * const pTracer, const LightState State)
             SetElementToState(randomLight, state);
          }
 
-         pTracer->frameCount -= 1;
+         pTracer->frameCount--;
          if (pTracer->frameCount == 0)
          {
             // nullify this tracer
@@ -1582,7 +1519,7 @@ bool LightSeq::ProcessTracer(_tracer * const pTracer, const LightState State)
             y += pTracer->processStepY;
          }
 
-         pTracer->frameCount -= 1;
+         pTracer->frameCount--;
          if (pTracer->frameCount == 0)
          {
             // nullify this tracer
@@ -1609,7 +1546,7 @@ bool LightSeq::ProcessTracer(_tracer * const pTracer, const LightState State)
             const float y = pTracer->y - cs * pTracer->radius;
             VerifyAndSetGridElement((int)x, (int)y, State);
          }
-         pTracer->frameCount -= 1;
+         pTracer->frameCount--;
          if (pTracer->frameCount == 0)
          {
             // nullify this tracer
@@ -1655,7 +1592,7 @@ bool LightSeq::ProcessTracer(_tracer * const pTracer, const LightState State)
                y = pTracer->y - cs4 * fi;
                VerifyAndSetGridElement((int)x, (int)y, State);
             }
-         pTracer->frameCount -= 1;
+         pTracer->frameCount--;
          if (pTracer->frameCount == 0)
          {
             // nullify this tracer
@@ -1668,13 +1605,10 @@ bool LightSeq::ProcessTracer(_tracer * const pTracer, const LightState State)
             pTracer->angle += pTracer->stepAngle;
             // process any wrap around
             if (pTracer->angle >= 360.0f)
-            {
                pTracer->angle -= 360.0f;
-            }
-            if (pTracer->angle < 0.0f)
-            {
+
+            if (pTracer->angle < 0.f)
                pTracer->angle += 360.0f;
-            }
          }
          break;
       }
@@ -1688,7 +1622,8 @@ bool LightSeq::ProcessTracer(_tracer * const pTracer, const LightState State)
    {
       pTracer->delay -= 1;
    }
-   return (rc);
+
+   return rc;
 }
 
 void LightSeq::SetAllLightsToState(const LightState State)
@@ -1697,9 +1632,7 @@ void LightSeq::SetAllLightsToState(const LightState State)
    {
       const int size = m_pcollection->m_visel.Size();
       for (int i = 0; i < size; ++i)
-      {
          SetElementToState(i, State);
-      }
    }
 }
 
@@ -1712,7 +1645,7 @@ void LightSeq::SetElementToState(const int index, const LightState State)
    if (type == eItemLight)
    {
       Light * const pLight = (Light *)m_pcollection->m_visel.ElementAt(index);
-      pLight->m_fLockedByLS = true;
+      pLight->m_lockedByLS = true;
       pLight->setLightState(State);
    }
 }
@@ -1733,9 +1666,7 @@ bool LightSeq::VerifyAndSetGridElement(const int x, const int y, const LightStat
       return true;
    }
    else
-   {
       return false;
-   }
 }
 
 LightState LightSeq::GetElementState(const int index) const
@@ -1819,7 +1750,7 @@ LightState LightSeq::GetElementState(const int index) const
             }
          }
 
-         pTracer->frameCount -= 1;
+         pTracer->frameCount--;
          if (pTracer->frameCount == 0)
          {
             // nullify this tracer

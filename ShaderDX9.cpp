@@ -44,10 +44,10 @@ bool Shader::Load(const BYTE* shaderCodeName, UINT codeSize)
       if (pBufferErrors)
       {
          LPVOID pCompileErrors = pBufferErrors->GetBufferPointer();
-         MessageBox(NULL, (const char*)pCompileErrors, "Compile Error", MB_OK | MB_ICONEXCLAMATION);
+         g_pvp->MessageBox((const char*)pCompileErrors, "Compile Error", MB_OK | MB_ICONEXCLAMATION);
       }
       else
-         MessageBox(NULL, "Unknown Error", "Compile Error", MB_OK | MB_ICONEXCLAMATION);
+         g_pvp->MessageBox("Unknown Error", "Compile Error", MB_OK | MB_ICONEXCLAMATION);
 
       return false;
    }

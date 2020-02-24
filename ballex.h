@@ -1,12 +1,9 @@
-// Ball.h : Declaration of the CBall
 #pragma once
 
-#include "resource.h"       // main symbols
+#include "resource.h"
 
 class Ball;
 
-/////////////////////////////////////////////////////////////////////////////
-// CBall
 class BallEx :
    public CComObjectRootEx<CComSingleThreadModel>,
    public CComCoClass<BallEx, &CLSID_Ball>,
@@ -48,11 +45,11 @@ public:
    STDMETHOD(get_VelX)(/*[out, retval]*/ float *pVal);
    STDMETHOD(put_VelX)(/*[in]*/ float newVal);
    STDMETHOD(get_AngVelZ)(/*[out, retval]*/ float *pVal);
-   STDMETHOD(put_AngVelZ)(/*[in]*/ float newVal);
+   STDMETHOD(put_AngVelZ)(/*[out, retval]*/ float newVal) { return S_OK; }; // No-op to not break tables.
    STDMETHOD(get_AngVelY)(/*[out, retval]*/ float *pVal);
-   STDMETHOD(put_AngVelY)(/*[in]*/ float newVal);
+   STDMETHOD(put_AngVelY)(/*[out, retval]*/ float newVal) { return S_OK; }; // No-op to not break tables.
    STDMETHOD(get_AngVelX)(/*[out, retval]*/ float *pVal);
-   STDMETHOD(put_AngVelX)(/*[in]*/ float newVal);
+   STDMETHOD(put_AngVelX)(/*[out, retval]*/ float newVal) { return S_OK; }; // No-op to not break tables.
    STDMETHOD(get_AngMomZ)(/*[out, retval]*/ float *pVal);
    STDMETHOD(put_AngMomZ)(/*[in]*/ float newVal);
    STDMETHOD(get_AngMomY)(/*[out, retval]*/ float *pVal);
@@ -83,14 +80,15 @@ public:
    STDMETHOD(get_Visible)(/*[out, retval]*/ VARIANT_BOOL *pVal);
    STDMETHOD(put_Visible)(/*[in]*/ VARIANT_BOOL newVal);
 
-   virtual void FireGroupEvent(int dispid) {}
-   virtual IDispatch *GetDispatch() { return ((IDispatch *) this); }
-   virtual IDebugCommands *GetDebugCommands() { return (IDebugCommands *) this; }
+   virtual void FireGroupEvent(const int dispid) {}
+   virtual IDispatch *GetDispatch() { return ((IDispatch *)this); }
+   virtual IDebugCommands *GetDebugCommands() { return (IDebugCommands *)this; }
 
    // IDebugCommands
    virtual void GetDebugCommands(std::vector<int> & pvids, std::vector<int> & pvcommandid);
    virtual void RunDebugCommand(int id);
 
    Ball *m_pball;
+private:
    VARIANT m_uservalue;
 };

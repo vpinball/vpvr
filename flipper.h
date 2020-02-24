@@ -9,7 +9,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // Flipper     // main symbols
 
-class FlipperData
+class FlipperData : public BaseProperty
 {
 public:
    float m_BaseRadius;
@@ -21,31 +21,25 @@ public:
    float m_EndAngle;
    float m_height;
    Vertex2D m_Center;
-   char m_szImage[MAXTOKEN];
-
    TimerDataRoot m_tdr;
 
    char m_szSurface[MAXTOKEN];
    COLORREF m_color;
-   char m_szMaterial[32];
 
    COLORREF m_rubbercolor;
-   char m_szRubberMaterial[32];
+   char m_szRubberMaterial[MAXNAMEBUFFER];
    float m_rubberthickness;
    float m_rubberheight;
    float m_rubberwidth;
 
    float m_mass;
    float m_strength;
-   float m_elasticity;
    float m_elasticityFalloff;
-   float m_friction;
    float m_return;
    float m_rampUp;
    float m_torqueDamping;
    float m_torqueDampingAngle;
 
-   float m_scatter; // scatter angle on hit
    //float m_angleEOS; // angle at which EOS switch opens, as measured from EOS parked position //!! reenable?
 
    float m_OverrideMass;
@@ -60,9 +54,7 @@ public:
    float m_OverrideScatterAngle;
    int m_OverridePhysics;
 
-   bool  m_fVisible;
-   bool  m_fEnabled;
-   bool  m_fReflectionEnabled;
+   bool  m_enabled;
 };
 
 class Flipper :
@@ -83,69 +75,116 @@ public:
    Flipper();
    virtual ~Flipper();
 
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
    STANDARD_EDITABLE_DECLARES(Flipper, eItemFlipper, FLIPPER, 1)
 
-      BEGIN_COM_MAP(Flipper)
-         COM_INTERFACE_ENTRY(IFlipper)
-         COM_INTERFACE_ENTRY(IDispatch)
-         COM_INTERFACE_ENTRY_IMPL(IConnectionPointContainer)
-         COM_INTERFACE_ENTRY(IPerPropertyBrowsing)
-         COM_INTERFACE_ENTRY(IProvideClassInfo)
-         COM_INTERFACE_ENTRY(IProvideClassInfo2)
-      END_COM_MAP()
+   BEGIN_COM_MAP(Flipper)
+      COM_INTERFACE_ENTRY(IFlipper)
+      COM_INTERFACE_ENTRY(IDispatch)
+      COM_INTERFACE_ENTRY_IMPL(IConnectionPointContainer)
+      COM_INTERFACE_ENTRY(IPerPropertyBrowsing)
+      COM_INTERFACE_ENTRY(IProvideClassInfo)
+      COM_INTERFACE_ENTRY(IProvideClassInfo2)
+   END_COM_MAP()
 
-      BEGIN_CONNECTION_POINT_MAP(Flipper)
-         CONNECTION_POINT_ENTRY(DIID_IFlipperEvents)
-      END_CONNECTION_POINT_MAP()
+   BEGIN_CONNECTION_POINT_MAP(Flipper)
+      CONNECTION_POINT_ENTRY(DIID_IFlipperEvents)
+   END_CONNECTION_POINT_MAP()
 
-      virtual void MoveOffset(const float dx, const float dy);
-      virtual void SetObjectPos();
-      // Multi-object manipulation
-      virtual Vertex2D GetCenter() const;
-      virtual void PutCenter(const Vertex2D& pv);
-      virtual void SetDefaultPhysics(bool fromMouseClick);
-      virtual void ExportMesh(FILE *f);
+   virtual void MoveOffset(const float dx, const float dy);
+   virtual void SetObjectPos();
+   // Multi-object manipulation
+   virtual Vertex2D GetCenter() const;
+   virtual void PutCenter(const Vertex2D& pv);
+   virtual void SetDefaultPhysics(bool fromMouseClick);
+   virtual void ExportMesh(FILE *f);
 
-      virtual unsigned long long GetMaterialID() const
+   virtual unsigned long long GetMaterialID() const
+   {
+      const unsigned long long m1 = m_ptable->GetMaterial(m_d.m_szMaterial)->hash();
+      const unsigned long long m2 = m_ptable->GetMaterial(m_d.m_szRubberMaterial)->hash();
+      if (m1 == m2 || (m_d.m_rubberthickness <= 0.f))
+         return m1;
+      else
+         return 0;
+   }
+   virtual unsigned long long GetImageID() const { return (unsigned long long)(m_ptable->GetImage(m_d.m_szImage)); }
+   virtual ItemTypeEnum HitableGetItemType() const { return eItemFlipper; }
+   virtual void WriteRegDefaults();
+
+   //DECLARE_NOT_AGGREGATABLE(Flipper) 
+   // Remove the comment from the line above if you don't want your object to 
+   // support aggregation. 
+
+   DECLARE_REGISTRY_RESOURCEID(IDR_FLIPPER)
+   // ISupportsErrorInfo
+   STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
+
+   float     GetElastacityFalloff() const
+   {
+      return m_phitflipper ? m_phitflipper->m_elasticityFalloff : m_d.m_elasticityFalloff;
+   }
+   void      SetElastacityFalloff(const float newVal)
+   {
+      if (m_phitflipper)
       {
-		  const unsigned long long m1 = m_ptable->GetMaterial(m_d.m_szMaterial)->hash();
-		  const unsigned long long m2 = m_ptable->GetMaterial(m_d.m_szRubberMaterial)->hash();
-		  if (m1 == m2 || (m_d.m_rubberthickness <= 0.f))
-			  return m1;
-		  else
-			  return 0;
+         if (!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
+            m_phitflipper->m_elasticityFalloff = newVal;
       }
-      virtual unsigned long long GetImageID() const { return (unsigned long long)(m_ptable->GetImage(m_d.m_szImage)); }
-      virtual ItemTypeEnum HitableGetItemType() const { return eItemFlipper; }
+      else
+      {
+         m_d.m_elasticityFalloff = newVal;
+      }
+   }
+   float     GetRampUp() const
+   {
+      return (m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)) ? m_d.m_OverrideCoilRampUp : m_d.m_rampUp;
+   }
+   void      SetRampUp(const float value)
+   {
+      if (m_phitflipper)
+      {
+         if (!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
+            m_d.m_rampUp = value;
+      }
+      else
+      {
+         m_d.m_rampUp = value;
+      }
+   }
+   void      SetReturn(const float value)
+   {
+      if (m_phitflipper)
+      {
+         if (!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
+            m_d.m_return = clamp(value, 0.0f, 1.0f);
+      }
+      else
+         m_d.m_return = clamp(value, 0.0f, 1.0f);
+   }
+   float     GetFlipperRadiusMin() const { return m_d.m_FlipperRadiusMin; }
+   void      SetFlipperRadiusMin(const float value)
+   {
+      m_d.m_FlipperRadiusMin = max(value, 0.0f);
+   }
 
-      void SetVertices(const float basex, const float basey, const float angle, Vertex2D * const pvEndCenter, Vertex2D * const rgvTangents, const float baseradius, const float endradius) const;
+   void UpdateUnitsInfo();
 
-      void GenerateBaseMesh(Vertex3D_NoTex2 *buf);
-      void UpdateUnitsInfo();
+   FlipperData m_d;
+   PinTable *m_ptable;
 
-      void UpdatePhysicsSettings();
+private:
+   void SetVertices(const float basex, const float basey, const float angle, Vertex2D * const pvEndCenter, Vertex2D * const rgvTangents, const float baseradius, const float endradius) const;
 
-      virtual void WriteRegDefaults();
+   void GenerateBaseMesh(Vertex3D_NoTex2 *buf);
 
-      //DECLARE_NOT_AGGREGATABLE(Flipper) 
-      // Remove the comment from the line above if you don't want your object to 
-      // support aggregation. 
+   void UpdatePhysicsSettings();
 
-      DECLARE_REGISTRY_RESOURCEID(IDR_FLIPPER)
-      // ISupportsErrorInfo
-      STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
+   VertexBuffer *m_vertexBuffer;
+   IndexBuffer *m_indexBuffer;
 
-      FlipperData m_d;
-      VertexBuffer *vertexBuffer;
-      IndexBuffer *indexBuffer;
+   HitFlipper *m_phitflipper;
 
-      HitFlipper *m_phitflipper;
-
-      PinTable *m_ptable;
-
-      // IFlipper
+   // IFlipper
 public:
    STDMETHOD(get_Elasticity)(/*[out, retval]*/ float *pVal);
    STDMETHOD(put_Elasticity)(/*[in]*/ float newVal);

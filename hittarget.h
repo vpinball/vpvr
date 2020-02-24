@@ -19,40 +19,28 @@
 //  ObjRotY = 7
 //  ObjRotZ = 8
 
-class HitTargetData
+class HitTargetData : public BaseProperty
 {
 public:
    Vertex3Ds m_vPosition;
    Vertex3Ds m_vSize;
    float m_rotZ;
-   char m_szImage[MAXTOKEN];
    TargetType m_targetType;
-   char m_szMaterial[32];
-   char m_szPhysicsMaterial[32];
 
    TimerDataRoot m_tdr;
 
-   float m_threshold;			// speed at which ball needs to hit to register a hit
-
-   float m_elasticity;
    float m_elasticityFalloff;
-   float m_friction;
-   float m_scatter;
    float m_dropSpeed;
    U32   m_time_msec;
-   int   m_RaiseDelay;
+   int   m_raiseDelay;
 
    float m_depthBias;      // for determining depth sorting
-   float m_fDisableLightingTop; // was bool, now 0..1
-   float m_fDisableLightingBelow; // 0..1
-   bool m_fVisible;
+   float m_disableLightingTop; // was bool, now 0..1
+   float m_disableLightingBelow; // 0..1
 
-   bool m_fUseHitEvent;
-   bool m_fCollidable;
-   bool m_fReflectionEnabled;
+   bool m_useHitEvent;
    bool m_legacy;
    bool m_isDropped;
-   bool m_fOverwritePhysics;
 };
 
 class HitTarget :
@@ -171,45 +159,40 @@ public:
 
    //STDMETHOD(get_Name)(BSTR *pVal) {return E_FAIL;}
 
-   //virtual HRESULT InitVBA(BOOL fNew, int id, WCHAR *wzName);
+   //virtual HRESULT InitVBA(BOOL fNew, int id, WCHAR * const wzName);
    virtual void WriteRegDefaults();
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
    virtual bool IsTransparent() const;
    virtual float GetDepth(const Vertex3Ds& viewDir) const;
    virtual unsigned long long GetMaterialID() const { return m_ptable->GetMaterial(m_d.m_szMaterial)->hash(); }
    virtual unsigned long long GetImageID() const { return (unsigned long long)(m_ptable->GetImage(m_d.m_szImage)); }
    virtual ItemTypeEnum HitableGetItemType() const { return eItemHitTarget; }
 
-   virtual void UpdatePropertyPanes();
    virtual void SetDefaultPhysics(bool fromMouseClick);
    virtual void ExportMesh(FILE *f);
 
    void GenerateMesh(std::vector<Vertex3D_NoTex2> &buf);
    void TransformVertices();
    void SetMeshType(const TargetType type);
-
-   static INT_PTR CALLBACK ObjImportProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
-   PinTable        *m_ptable;
+   void UpdateEditorView();
 
    HitTargetData    m_d;
-   const Vertex3D_NoTex2 *m_vertices; // pointer just to the existing hittargets hardcoded in arrays
-   const WORD      *m_indices;        // dto.
-   unsigned int     m_numVertices;
-   unsigned int     m_numIndices;
+
    bool             m_hitEvent;
 
 private:        // private member functions
 
-   void UpdateEditorView();
-
    void UpdateAnimation();
-   bool BrowseFor3DMeshFile();
    void RenderObject();
    void UpdateTarget();
    void SetupHitObject(vector<HitObject*> &pvho, HitObject * obj, const bool setHitObject = true);
    void AddHitEdge(vector<HitObject*> &pvho, std::set< std::pair<unsigned, unsigned> >& addedEdges, const unsigned i, const unsigned j, const Vertex3Ds &vi, const Vertex3Ds &vj, const bool setHitObject = true);
+
+   PinTable        *m_ptable;
+
+   const Vertex3D_NoTex2 *m_vertices; // pointer just to the existing hittargets hardcoded in arrays
+   const WORD      *m_indices;        // dto.
+   unsigned int     m_numVertices;
+   unsigned int     m_numIndices;
 
    PropertyPane *m_propVisual;
    PropertyPane *m_propPosition;
@@ -217,12 +200,12 @@ private:        // private member functions
 
    std::vector<HitObject*> m_vhoCollidable; // Objects to that may be collide selectable
 
-   VertexBuffer *vertexBuffer;
-   IndexBuffer *indexBuffer;
+   VertexBuffer *m_vertexBuffer;
+   IndexBuffer *m_indexBuffer;
 
    // Vertices for editor display & hit shape
-   std::vector<Vertex3Ds> vertices;
-   std::vector<Vertex3D_NoTex2> transformedVertices;
+   std::vector<Vertex3Ds> m_hitUIVertices;
+   std::vector<Vertex3D_NoTex2> m_transformedVertices;
    U32   m_timeStamp;
    float m_moveAnimationOffset;
    bool  m_moveAnimation;

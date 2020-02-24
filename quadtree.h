@@ -8,7 +8,7 @@ public:
    HitQuadtree()
    {
       m_unique = NULL;
-      m_fLeaf = true;
+      m_leaf = true;
       lefts = 0;
       rights = 0;
       tops = 0;
@@ -19,17 +19,17 @@ public:
 
    ~HitQuadtree();
 
-   void AddElement(HitObject *pho)         { m_vho.push_back(pho); }
+   void AddElement(HitObject *pho) { m_vho.push_back(pho); }
    void Initialize();
    void Initialize(const FRect3D& bounds);
 
-   void HitTestBall(Ball * const pball, CollisionEvent& coll) const;
-   void HitTestXRay(Ball * const pball, vector<HitObject*> &pvhoHit, CollisionEvent& coll) const;
+   void HitTestBall(const Ball * const pball, CollisionEvent& coll) const;
+   void HitTestXRay(const Ball * const pball, vector<HitObject*> &pvhoHit, CollisionEvent& coll) const;
 
 private:
 
    void CreateNextLevel(const FRect3D& bounds, const unsigned int level, unsigned int level_empty);
-   void HitTestBallSse(Ball * const pball, CollisionEvent& coll) const;
+   void HitTestBallSse(const Ball * const pball, CollisionEvent& coll) const;
 
    Primitive* m_unique; // everything below/including this node shares the same original primitive object (just for early outs if not collidable)
 
@@ -46,7 +46,7 @@ private:
    float* __restrict zlows;
    float* __restrict zhighs;
 
-   bool m_fLeaf;
+   bool m_leaf;
 
 #if !defined(NDEBUG) && defined(PRINT_DEBUG_COLLISION_TREE)
 public:
@@ -59,7 +59,7 @@ public:
       sprintf_s(msg, "[%f %f], items=%u", m_vcenter.x, m_vcenter.y, m_vho.size());
       strcat_s(indent, msg);
       OutputDebugString(indent);
-      if (!m_fLeaf)
+      if (!m_leaf)
       {
          m_children[0]->DumpTree(indentLevel + 1);
          m_children[1]->DumpTree(indentLevel + 1);

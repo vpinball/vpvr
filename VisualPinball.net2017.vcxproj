@@ -714,6 +714,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="audioplayer.cpp" />
     <ClCompile Include="backGlass.cpp" />
     <ClCompile Include="BlackBox.cpp" />
     <ClCompile Include="captureExt.cpp" />
@@ -728,11 +729,54 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <ClCompile Include="dialogs\EditorOptionsDialog.cpp" />
     <ClCompile Include="Dialogs\ImageDialog.cpp" />
     <ClCompile Include="dialogs\KeysConfigDialog.cpp" />
+    <ClCompile Include="dialogs\LayersListDialog.cpp" />
     <ClCompile Include="Dialogs\MaterialDialog.cpp" />
     <ClCompile Include="dialogs\PhysicsOptionsDialog.cpp" />
+    <ClCompile Include="dialogs\Properties\BackglassCameraProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\BackglassVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\BumperPhysicsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\BumperVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\DecalVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\DispreelStateProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\DispreelVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\DragpointVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\FlasherVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\FlipperPhysicsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\FlipperVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\GatePhysicsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\GateVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\HitTargetPhysicsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\HitTargetVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\KickerPhysicsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\KickerVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\LichtseqStatesProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\LightStatesProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\LightVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\PlungerPhysicsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\PlungerVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\PrimitivePhysicsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\PrimitivePositionProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\PrimitiveVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\PropertyDialog.cpp" />
+    <ClCompile Include="dialogs\Properties\RampPhysicsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\RampVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\RubberPhysicsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\RubberVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\SpinnerPhysicsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\SpinnerVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\TableCustomProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\TableLightsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\TablePhysicsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\TableVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\TextboxVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\TriggerPhysicsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\TriggerVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\WallPhysicsProperty.cpp" />
+    <ClCompile Include="dialogs\Properties\WallVisualsProperty.cpp" />
     <ClCompile Include="Dialogs\SearchSelectDialog.cpp" />
     <ClCompile Include="Dialogs\SoundDialog.cpp" />
     <ClCompile Include="Dialogs\TableInfoDialog.cpp" />
+    <ClCompile Include="dialogs\ToolbarDialog.cpp" />
     <ClCompile Include="dialogs\VideoOptionsDialog.cpp" />
     <ClCompile Include="dialogs\VROptionsDialog.cpp" />
     <ClCompile Include="flasher.cpp" />
@@ -751,10 +795,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="hittarget.cpp" />
-    <ClCompile Include="inc\gpuprofiler.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">true</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="inc\gpuprofiler.cpp" />
     <ClCompile Include="inc\miniz.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">true</ExcludedFromBuild>
@@ -1462,24 +1503,6 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release_SDL|x64'">MinSpace</Optimization>
     </ClCompile>
     <ClCompile Include="primitive.cpp" />
-    <ClCompile Include="propbrowser.cpp">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">Disabled</Optimization>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">Disabled</Optimization>
-      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">EnableFastChecks</BasicRuntimeChecks>
-      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">EnableFastChecks</BasicRuntimeChecks>
-      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">EnableFastChecks</BasicRuntimeChecks>
-      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">EnableFastChecks</BasicRuntimeChecks>
-      <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</BrowseInformation>
-      <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">true</BrowseInformation>
-      <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</BrowseInformation>
-      <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">true</BrowseInformation>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MinSpace</Optimization>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">MinSpace</Optimization>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MinSpace</Optimization>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release_SDL|x64'">MinSpace</Optimization>
-    </ClCompile>
     <ClCompile Include="quadtree.cpp" />
     <ClCompile Include="ramp.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
@@ -1743,24 +1766,6 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MinSpace</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release_SDL|x64'">MinSpace</Optimization>
     </ClCompile>
-    <ClCompile Include="xaudplayer.cpp">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">Disabled</Optimization>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">Disabled</Optimization>
-      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">EnableFastChecks</BasicRuntimeChecks>
-      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">EnableFastChecks</BasicRuntimeChecks>
-      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">EnableFastChecks</BasicRuntimeChecks>
-      <BasicRuntimeChecks Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">EnableFastChecks</BasicRuntimeChecks>
-      <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</BrowseInformation>
-      <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">true</BrowseInformation>
-      <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</BrowseInformation>
-      <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">true</BrowseInformation>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">MinSpace</Optimization>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">MinSpace</Optimization>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MinSpace</Optimization>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release_SDL|x64'">MinSpace</Optimization>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Midl Include="vpinball.idl">
@@ -1925,6 +1930,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <Image Include="res\toolbar.bmp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="audioplayer.h" />
     <ClInclude Include="backGlass.h" />
     <ClInclude Include="ballex.h" />
     <ClInclude Include="BlackBox.h" />
@@ -1943,11 +1949,54 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <ClInclude Include="dialogs\EditorOptionsDialog.h" />
     <ClInclude Include="Dialogs\ImageDialog.h" />
     <ClInclude Include="dialogs\KeysConfigDialog.h" />
+    <ClInclude Include="dialogs\LayersListDialog.h" />
     <ClInclude Include="dialogs\MaterialDialog.h" />
     <ClInclude Include="dialogs\PhysicsOptionsDialog.h" />
+    <ClInclude Include="dialogs\Properties\BackglassCameraProperty.h" />
+    <ClInclude Include="dialogs\Properties\BackglassVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\BumperPhysicsProperty.h" />
+    <ClInclude Include="dialogs\Properties\BumperVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\DecalVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\DispreelStateProperty.h" />
+    <ClInclude Include="dialogs\Properties\DispreelVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\DragpointVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\FlasherVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\FlipperPhysicsProperty.h" />
+    <ClInclude Include="dialogs\Properties\FlipperVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\GatePhysicsProperty.h" />
+    <ClInclude Include="dialogs\Properties\GateVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\HitTargetPhysicsProperty.h" />
+    <ClInclude Include="dialogs\Properties\HitTargetVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\KickerPhysicsProperty.h" />
+    <ClInclude Include="dialogs\Properties\KickerVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\LightseqStatesProperty.h" />
+    <ClInclude Include="dialogs\Properties\LightStatesProperty.h" />
+    <ClInclude Include="dialogs\Properties\LightVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\PlungerPhysicsProperty.h" />
+    <ClInclude Include="dialogs\Properties\PlungerVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\PrimitivePhysicsProperty.h" />
+    <ClInclude Include="dialogs\Properties\PrimitivePositionProperty.h" />
+    <ClInclude Include="dialogs\Properties\PrimitiveVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\PropertyDialog.h" />
+    <ClInclude Include="dialogs\Properties\RampPhysicsProperty.h" />
+    <ClInclude Include="dialogs\Properties\RampVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\RubberPhysicsProperty.h" />
+    <ClInclude Include="dialogs\Properties\RubberVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\SpinnerPhysicsProperty.h" />
+    <ClInclude Include="dialogs\Properties\SpinnerVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\TableCustomProperty.h" />
+    <ClInclude Include="dialogs\Properties\TableLightsProperty.h" />
+    <ClInclude Include="dialogs\Properties\TablePhysicsProperty.h" />
+    <ClInclude Include="dialogs\Properties\TableVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\TextboxVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\TriggerPhysicsProperty.h" />
+    <ClInclude Include="dialogs\Properties\TriggerVisualsProperty.h" />
+    <ClInclude Include="dialogs\Properties\WallPhysicsProperty.h" />
+    <ClInclude Include="dialogs\Properties\WallVisualsProperty.h" />
     <ClInclude Include="Dialogs\SearchSelectDialog.h" />
     <ClInclude Include="Dialogs\SoundDialog.h" />
     <ClInclude Include="Dialogs\TableInfoDialog.h" />
+    <ClInclude Include="dialogs\ToolbarDialog.h" />
     <ClInclude Include="dialogs\VideoOptionsDialog.h" />
     <ClInclude Include="dialogs\VROptionsDialog.h" />
     <ClInclude Include="dispid.h" />
@@ -2124,7 +2173,6 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <ClInclude Include="plumb.h" />
     <ClInclude Include="plunger.h" />
     <ClInclude Include="primitive.h" />
-    <ClInclude Include="propbrowser.h" />
     <ClInclude Include="quadtree.h" />
     <ClInclude Include="ramp.h" />
     <ClInclude Include="regutil.h" />

@@ -48,55 +48,40 @@ public:
 //  ObjRotY = 7
 //  ObjRotZ = 8
 
-class PrimitiveData
+class PrimitiveData : public BaseProperty
 {
 public:
    int m_Sides;
    Vertex3Ds m_vPosition;
    Vertex3Ds m_vSize;
    float m_aRotAndTra[9];
-   char m_szImage[MAXTOKEN];
    char m_szNormalMap[MAXTOKEN];
    char m_meshFileName[256];
 
-   char m_szMaterial[32];
    COLORREF m_SideColor;
-   char m_szPhysicsMaterial[32];
-
    TimerDataRoot m_tdr;
 
-   float m_threshold;			// speed at which ball needs to hit to register a hit
-   float m_elasticity;
    float m_elasticityFalloff;
-   float m_friction;
-   float m_scatter;
-
    float m_depthBias;      // for determining depth sorting
 
    float m_edgeFactorUI;   // for drawing the mesh in the editorUI
-   float m_collision_reductionFactor; //0=none..1=pow(num_vertices,0.75)
+   float m_collision_reductionFactor; // 0=none..1=pow(num_vertices,0.75)
 
-   int  m_FrameAmount;
-
-   float m_fDisableLightingTop; // was bool, now 0..1
-   float m_fDisableLightingBelow; // 0..1
+   float m_disableLightingTop;   // was bool, now 0..1
+   float m_disableLightingBelow; // 0..1
 
    bool m_useAsPlayfield;
 
    bool m_use3DMesh;
-   bool m_fVisible;
-   bool m_DrawTexturesInside;
+   bool m_drawTexturesInside;
    bool m_staticRendering;
 
-   bool m_fHitEvent;
-   bool m_fCollidable;
-   bool m_fToy;
-   bool m_fSkipRendering;
-   bool m_fGroupdRendering;
-   bool m_fReflectionEnabled;
-   bool m_fOverwritePhysics;
-   bool m_fBackfacesEnabled;
-   bool m_fDisplayTexture;     // in editor
+   bool m_toy;
+   bool m_skipRendering;
+   bool m_groupdRendering;
+   bool m_backfacesEnabled;
+   bool m_displayTexture;     // in editor
+   bool m_objectSpaceNormalMap; // matches the +X,+Y,+Z object space export/baking of Blender
 };
 
 class Primitive :
@@ -235,6 +220,8 @@ public:
    STDMETHOD(ContinueAnim)(float speed);
    STDMETHOD(ShowFrame)(float frame);
    STDMETHOD(get_HitThreshold)(/*[out, retval]*/ float *pVal);
+   STDMETHOD(get_ObjectSpaceNormalMap)(/*[out, retval]*/ VARIANT_BOOL *pVal);
+   STDMETHOD(put_ObjectSpaceNormalMap)(/*[in]*/ VARIANT_BOOL newVal);
 
    Primitive();
    virtual ~Primitive();
@@ -268,14 +255,12 @@ public:
 
    //STDMETHOD(get_Name)(BSTR *pVal) {return E_FAIL;}
 
-   //virtual HRESULT InitVBA(BOOL fNew, int id, WCHAR *wzName);
+   //virtual HRESULT InitVBA(BOOL fNew, int id, WCHAR * const wzName);
    virtual void WriteRegDefaults();
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
    //!! here starts the more general primitive stuff:
 
-   virtual bool LoadMesh();
-   virtual void ExportMesh();
+   virtual bool LoadMeshDialog();
+   virtual void ExportMeshDialog();
 
    virtual bool IsTransparent() const;
    virtual float GetDepth(const Vertex3Ds& viewDir) const;
@@ -283,7 +268,6 @@ public:
    virtual unsigned long long GetImageID() const { return (unsigned long long)(m_ptable->GetImage(m_d.m_szImage)); }
    virtual ItemTypeEnum HitableGetItemType() const { return eItemPrimitive; }
 
-   virtual void UpdatePropertyPanes();
    virtual void SetDefaultPhysics(bool fromMouseClick);
    virtual void ExportMesh(FILE *f);
    virtual void RenderBlueprint(Sur *psur, const bool solid);
@@ -294,44 +278,44 @@ public:
    void TransformVertices();
    void RenderObject();
    void UpdateMeshInfo();
+   void UpdateEditorView();
 
    static INT_PTR CALLBACK ObjImportProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
    Mesh m_mesh;
 
    PrimitiveData m_d;
-   Matrix3D fullMatrix;
+
+private:
+   PinTable * m_ptable;
+
+   Matrix3D m_fullMatrix;
    int m_numGroupVertices;
    int m_numGroupIndices;
    float m_currentFrame;
    float m_speed;
-   bool m_DoAnimation;
-   bool m_Endless;
+   bool m_doAnimation;
+   bool m_endless;
 
-private:        // private member functions
-   PinTable * m_ptable;
-
-   int numIndices;         // only used during loading
-   int numVertices;        // only used during loading
+   int m_numIndices;         // only used during loading
+   int m_numVertices;        // only used during loading
 #ifdef COMPRESS_MESHES
-   int compressedIndices;  // only used during loading
-   int compressedVertices; // only used during loading
-   int compressedAnimationVertices; // only used during loading
+   int m_compressedIndices;  // only used during loading
+   int m_compressedVertices; // only used during loading
+   int m_compressedAnimationVertices; // only used during loading
 #endif
 
-   void UpdateEditorView();
 
    bool BrowseFor3DMeshFile();
    void SetupHitObject(vector<HitObject*> &pvho, HitObject * obj);
    void AddHitEdge(vector<HitObject*> &pvho, std::set< std::pair<unsigned, unsigned> >& addedEdges, const unsigned i, const unsigned j, const Vertex3Ds &vi, const Vertex3Ds &vj);
 
    void CalculateBuiltinOriginal();
+   void WaitForMeshDecompression();
 
    PropertyPane *m_propVisual;
    PropertyPane *m_propPosition;
    PropertyPane *m_propPhysics;
-
-private:        // private data members
 
    std::vector<HitObject*> m_vhoCollidable; // Objects to that may be collide selectable
 
@@ -376,14 +360,13 @@ private:        // private data members
                                             // 13 * float * 2 (additional middle points at top and bottom)
                                             // = nothing...
 
-                                            // Vertices for editor display
-   std::vector<Vertex3Ds> vertices;
-   std::vector<float> normals; // only z component actually
+                                            // Vertices for editor display & hit shape
+   std::vector<Vertex3Ds> m_vertices;
+   std::vector<float> m_normals; // only z component actually
 
-
-   VertexBuffer *vertexBuffer;
-   IndexBuffer *indexBuffer;
-   bool vertexBufferRegenerate;
+   VertexBuffer *m_vertexBuffer;
+   IndexBuffer *m_indexBuffer;
+   bool m_vertexBufferRegenerate;
 };
 
 #endif // !defined(AFX_PRIMITIVE_H__31CD2D6B-9BDD-4B1B-BC62-B9DE588A0CAA__INCLUDED_)

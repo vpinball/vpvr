@@ -7,26 +7,20 @@
 
 #include "resource.h"       // main symbols
 
-class SpinnerData
+class SpinnerData : public BaseProperty
 {
 public:
    Vertex2D m_vCenter;
    float m_length;
    float m_rotation;
-   char m_szMaterial[32];
    TimerDataRoot m_tdr;
    float m_height;
    float m_damping;
    float m_angleMax;
    float m_angleMin;
-   float m_elasticity;
    //float m_friction;
-   float m_scatter;
-   char m_szImage[MAXTOKEN];
    char m_szSurface[MAXTOKEN];
-   bool m_fShowBracket;
-   bool m_fVisible;
-   bool m_fReflectionEnabled;
+   bool m_showBracket;
 };
 
 class HitSpinner;
@@ -75,8 +69,6 @@ public:
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
 
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
    virtual void MoveOffset(const float dx, const float dy);
    virtual void SetObjectPos();
    // Multi-object manipulation
@@ -90,24 +82,26 @@ public:
    virtual void ExportMesh(FILE *f);
 
    virtual void WriteRegDefaults();
-   void UpdatePlate(Vertex3D_NoTex2 * const vertBuffer);
    void UpdateUnitsInfo();
 
    SpinnerData m_d;
-   float m_posZ;
 
    HitSpinner *m_phitspinner;
 
 private:
-   PinTable * m_ptable;
+   void UpdatePlate(Vertex3D_NoTex2 * const vertBuffer);
 
-   VertexBuffer * bracketVertexBuffer;
-   IndexBuffer *bracketIndexBuffer;
-   VertexBuffer *plateVertexBuffer;
-   IndexBuffer *plateIndexBuffer;
-   Matrix3D fullMatrix;
+   PinTable *m_ptable;
 
-   float vertexBuffer_spinneranimangle;
+   VertexBuffer *m_bracketVertexBuffer;
+   IndexBuffer *m_bracketIndexBuffer;
+   VertexBuffer *m_plateVertexBuffer;
+   IndexBuffer *m_plateIndexBuffer;
+   Matrix3D m_fullMatrix;
+
+   float m_posZ;
+
+   float m_vertexBuffer_spinneranimangle;
 
    // ISpinner
 public:

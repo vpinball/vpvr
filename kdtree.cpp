@@ -114,10 +114,10 @@ void HitKD::FillFromVector(vector<HitObject*> &vho)
    m_rootNode.m_start = 0;
    m_rootNode.m_items = m_num_items;
 
-   for (unsigned i = 0; i < m_num_items; ++i)
+   for (unsigned int i = 0; i < m_num_items; ++i)
    {
       HitObject * const pho = vho[i];
-      pho->CalcHitBBox(); //!! omit, as already calced?!
+      pho->CalcHitBBox(); // need to update here, as only done lazily for some objects (i.e. balls!)
       m_rootNode.m_rectbounds.Extend(pho->m_hitBBox);
 
       m_org_idx[i] = i;
@@ -138,10 +138,10 @@ void HitKD::FillFromIndices()
    m_rootNode.m_start = 0;
    m_rootNode.m_items = m_num_items;
 
-   for (unsigned i = 0; i < m_num_items; ++i)
+   for (unsigned int i = 0; i < m_num_items; ++i)
    {
       HitObject * const pho = GetItemAt(i);
-      pho->CalcHitBBox(); //!! omit, as already calced?!
+      pho->CalcHitBBox(); // need to update here, as only done lazily for some objects (i.e. balls!)
       m_rootNode.m_rectbounds.Extend(pho->m_hitBBox);
    }
 
@@ -160,7 +160,7 @@ void HitKD::FillFromIndices(const FRect3D& initialBounds)
    m_rootNode.m_start = 0;
    m_rootNode.m_items = m_num_items;
 
-   // assume that CalcHitBBox() was already called on the hit objects
+   //!! assume that CalcHitBBox() was already called on the hit objects, NOT THE CASE FOR BALLS THOUGH!
 
 #ifdef DEBUGPHYSICS
    g_pplayer->c_kDObjects = m_num_items;
@@ -386,7 +386,7 @@ collisions
 
 */
 
-void HitKDNode::HitTestBall(Ball * const pball, CollisionEvent& coll) const
+void HitKDNode::HitTestBall(const Ball * const pball, CollisionEvent& coll) const
 {
 #ifdef KDTREE_SSE_LEAFTEST
    /// with SSE optimizations ///////////////////////
@@ -449,7 +449,7 @@ void HitKDNode::HitTestBall(Ball * const pball, CollisionEvent& coll) const
 }
 
 #ifdef KDTREE_SSE_LEAFTEST
-void HitKDNode::HitTestBallSse(Ball * const pball, CollisionEvent& coll) const
+void HitKDNode::HitTestBallSse(const Ball * const pball, CollisionEvent& coll) const
 {
    const HitKDNode* stack[128]; //!! should be enough, but better implement test in construction to not exceed this
    unsigned int stackpos = 0;
@@ -474,10 +474,10 @@ void HitKDNode::HitTestBallSse(Ball * const pball, CollisionEvent& coll) const
    const __m128 bzlow = _mm_set1_ps(pball->m_hitBBox.zlow);
    const __m128 bzhigh = _mm_set1_ps(pball->m_hitBBox.zhigh);*/
 
-   const __m128 posx = _mm_set1_ps(pball->m_pos.x);
-   const __m128 posy = _mm_set1_ps(pball->m_pos.y);
-   const __m128 posz = _mm_set1_ps(pball->m_pos.z);
-   const __m128 rsqr = _mm_set1_ps(pball->m_rcHitRadiusSqr);
+   const __m128 posx = _mm_set1_ps(pball->m_d.m_pos.x);
+   const __m128 posy = _mm_set1_ps(pball->m_d.m_pos.y);
+   const __m128 posz = _mm_set1_ps(pball->m_d.m_pos.z);
+   const __m128 rsqr = _mm_set1_ps(pball->HitRadiusSqr());
 
    const bool traversal_order = (rand_mt_01() < 0.5f); // swaps test order in leafs randomly
    const unsigned int dt = traversal_order ? 1 : -1;
@@ -607,6 +607,8 @@ void HitKDNode::HitTestXRay(const Ball * const pball, vector<HitObject*> &pvhoHi
    const unsigned int org_items = (m_items & 0x3FFFFFFF);
    const unsigned int axis = (m_items >> 30);
 
+   const float rcHitRadiusSqr = pball->HitRadiusSqr();
+
    for (unsigned i = m_start; i < m_start + org_items; i++)
    {
 #ifdef DEBUGPHYSICS
@@ -615,12 +617,12 @@ void HitKDNode::HitTestXRay(const Ball * const pball, vector<HitObject*> &pvhoHi
       HitObject * const pho = m_hitoct->GetItemAt(i);
       if ((pball != pho) && // ball cannot hit itself
                             /*fRectIntersect3D(pball->m_hitBBox, pho->m_hitBBox) &&*/ //!! do bbox test before to save alu-instructions? or not to save registers? -> currently not, as just sphere vs sphere
-         fRectIntersect3D(pball->m_pos, pball->m_rcHitRadiusSqr, pho->m_hitBBox))
+         fRectIntersect3D(pball->m_d.m_pos, rcHitRadiusSqr, pho->m_hitBBox))
       {
 #ifdef DEBUGPHYSICS
          g_pplayer->c_deepTested++;
 #endif
-         const float newtime = pho->HitTest(pball, coll.m_hittime, coll);
+         const float newtime = pho->HitTest(pball->m_d, coll.m_hittime, coll);
          if (newtime >= 0)
             pvhoHit.push_back(pho);
       }

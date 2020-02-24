@@ -10,14 +10,14 @@ enum WordType { eUnknown, eClass, eSub, eFunction, ePropGet, ePropLet, ePropSet,
 class UserData
 {
 public:
-   string UniqueKey;
-   int LineNum; //Line No. Declaration
-   string KeyName; //Name
+   string m_uniqueKey;
+   int m_lineNum;             // Line No. Declaration
+   string m_keyName;          // Name
    WordType eTyping;
-   string UniqueParent;
-   vector<string> Children; //Unique key
-   string Description;//Brief Description
-   string Comment;
+   string m_uniqueParent;
+   vector<string> m_children; // Unique key
+   string m_description;      // Brief Description
+   string m_comment;
 
    UserData();
    UserData(const int LineNo, const string &Desc, const string &Name, const WordType TypeIn);
@@ -38,17 +38,20 @@ public:
 class CVPrefrence
 {
 public:
-   const char* szControlName;
-   const char *szRegName;
-   LOGFONT LogFont;
-   int PointSize;
-   COLORREF rgb;
-   int SciKeywordID;
+   LOGFONT m_logFont;
+   int m_pointSize;
+   COLORREF m_rgb;
+   int m_sciKeywordID;
    int IDC_ChkBox_code;
    int IDC_ColorBut_code;
    int IDC_Font_code;
-   bool Highlight;
 
+private:
+   const char* szControlName; // unused
+   const char *szRegName;
+   bool m_highlight;
+
+public:
    CVPrefrence();
    CVPrefrence* FillCVPreference(
       const char* szCtrlNameIn, const COLORREF crTextColor,

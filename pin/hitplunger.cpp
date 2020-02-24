@@ -22,7 +22,7 @@ HitPlunger::HitPlunger(const float x, const float y, const float x2, const float
    m_plungerMover.m_fireTimer = 0;
    m_plungerMover.m_autoFireTimer = 0;
 
-   m_plungerMover.m_fStrokeEventsArmed = false;
+   m_plungerMover.m_strokeEventsArmed = false;
    m_plungerMover.m_speed = 0.0f;
    m_plungerMover.m_travelLimit = frameTop;
    m_plungerMover.m_scatterVelocity = pPlunger->m_d.m_scatterVelocity;
@@ -45,14 +45,14 @@ HitPlunger::HitPlunger(const float x, const float y, const float x2, const float
    m_plungerMover.m_linesegEnd.m_hitBBox.zlow = zheight;
    m_plungerMover.m_linesegEnd.m_hitBBox.zhigh = zheight + PLUNGERHEIGHT;
 
-   m_plungerMover.m_jointBase[0].m_hitBBox.zlow = zheight;
-   m_plungerMover.m_jointBase[0].m_hitBBox.zhigh = zheight + PLUNGERHEIGHT;
-   m_plungerMover.m_jointBase[1].m_hitBBox.zlow = zheight;
-   m_plungerMover.m_jointBase[1].m_hitBBox.zhigh = zheight + PLUNGERHEIGHT;
-   m_plungerMover.m_jointEnd[0].m_hitBBox.zlow = zheight;
-   m_plungerMover.m_jointEnd[0].m_hitBBox.zhigh = zheight + PLUNGERHEIGHT;
-   m_plungerMover.m_jointEnd[1].m_hitBBox.zlow = zheight;
-   m_plungerMover.m_jointEnd[1].m_hitBBox.zhigh = zheight + PLUNGERHEIGHT;
+   m_plungerMover.m_jointBase[0].m_zlow = zheight;
+   m_plungerMover.m_jointBase[0].m_zhigh = zheight + PLUNGERHEIGHT;
+   m_plungerMover.m_jointBase[1].m_zlow = zheight;
+   m_plungerMover.m_jointBase[1].m_zhigh = zheight + PLUNGERHEIGHT;
+   m_plungerMover.m_jointEnd[0].m_zlow = zheight;
+   m_plungerMover.m_jointEnd[0].m_zhigh = zheight + PLUNGERHEIGHT;
+   m_plungerMover.m_jointEnd[1].m_zlow = zheight;
+   m_plungerMover.m_jointEnd[1].m_zhigh = zheight + PLUNGERHEIGHT;
 
    m_plungerMover.SetObjects(m_plungerMover.m_pos);
 }
@@ -164,21 +164,21 @@ void PlungerMoverObject::UpdateDisplacements(const float dtime)
    // fire an Start/End of Stroke events, as appropriate
    const float strokeEventLimit = m_frameLen / 50.0f;
    const float strokeEventHysteresis = strokeEventLimit * 2.0f;
-   if (m_fStrokeEventsArmed && m_pos + dx > m_frameStart - strokeEventLimit)
+   if (m_strokeEventsArmed && m_pos + dx > m_frameStart - strokeEventLimit)
    {
       m_plunger->FireVoidEventParm(DISPID_LimitEvents_BOS, fabsf(m_speed));
-      m_fStrokeEventsArmed = false;
+      m_strokeEventsArmed = false;
    }
-   else if (m_fStrokeEventsArmed && m_pos + dx < m_frameEnd + strokeEventLimit)
+   else if (m_strokeEventsArmed && m_pos + dx < m_frameEnd + strokeEventLimit)
    {
       m_plunger->FireVoidEventParm(DISPID_LimitEvents_EOS, fabsf(m_speed));
-      m_fStrokeEventsArmed = false;
+      m_strokeEventsArmed = false;
    }
    else if (m_pos > m_frameEnd + strokeEventHysteresis
       && m_pos < m_frameStart - strokeEventHysteresis)
    {
       // away from the limits - arm the stroke events
-      m_fStrokeEventsArmed = true;
+      m_strokeEventsArmed = true;
    }
 
    // update the display
@@ -190,6 +190,20 @@ void PlungerMoverObject::PullBack(float speed)
    // start the pull by applying the artificial "pull force"
    m_speed = 0.0f;
    m_pullForce = speed;
+   // deactivate the retract code
+   m_addRetractMotion = false;
+}
+
+
+void PlungerMoverObject::PullBackandRetract(float speed)
+{
+   // start the pull by applying the artificial "pull force"
+   m_speed = 0.0f;
+   m_pullForce = speed;
+   // activate the retract code
+   m_addRetractMotion = true;
+   m_retractMotion = false;
+   m_initialSpeed = speed;
 }
 
 void PlungerMoverObject::Fire(float startPos)
@@ -230,6 +244,8 @@ void PlungerMoverObject::Fire(float startPos)
 
    // enter Fire mode for long enough for the process to complete
    m_fireTimer = 200;
+
+   m_retractMotion = false;
 }
 
 void PlungerMoverObject::UpdateVelocities()
@@ -362,9 +378,58 @@ void PlungerMoverObject::UpdateVelocities()
       // pull force value.
       m_speed += m_pullForce / m_mass;
 
-      // if we're already at the maximum retracted position, stop
-      if (m_pos >= m_frameStart)
-         m_speed = 0.0f;
+      if (!m_addRetractMotion)
+      {
+         // this is the normal PullBack branch
+
+         // if we're already at the maximum retracted position, stop
+         if (m_pos > m_frameStart)
+         {
+            m_speed = 0.0f;
+            m_pos = m_frameStart;
+         }
+         // if we're already at the minimum retracted position, stop
+         if (m_pos < (m_frameEnd + (m_restPos * m_frameLen)))
+         {
+            m_speed = 0.0f;
+            m_pos = m_frameEnd + (m_restPos * m_frameLen);
+         }
+      }
+      else
+      {
+         // this is the PullBackandRetract branch
+
+         // after reaching the max. position the plunger should retract until it reaches the min. position and then start again
+         // if we're already at the maximum retracted position, reverse
+         if ((m_pos >= m_frameStart) && (m_pullForce > 0))
+         {
+            m_speed = 0.0f;
+            m_pos = m_frameStart;
+            m_retractWaitLoop++;
+            if (m_retractWaitLoop > 1000)
+            {
+               m_pullForce = -m_initialSpeed;
+               m_pos = m_frameStart;
+               m_retractMotion = true;
+               m_retractWaitLoop = 0;
+            }
+         }
+         // if we're already at the minimum retracted position, start again
+         if ((m_pos <= (m_frameEnd + (m_restPos * m_frameLen))) && (m_pullForce <= 0))
+         {
+            m_speed = 0.0f;
+            m_pullForce = m_initialSpeed;
+            m_pos = m_frameEnd + (m_restPos * m_frameLen);
+         }
+         // reset retract motion indicator only after the rest position has been left, to avoid ball interactions
+         // use a linear pullback motion
+         if ((m_pos > (1.0f + m_frameEnd + (m_restPos * m_frameLen))) && (m_pullForce > 0))
+         {
+            m_retractMotion = false;
+            m_speed = 2.0f * m_pullForce;
+         }
+      }
+
    }
    else if (dmech > ReleaseThreshold)
    {
@@ -508,12 +573,10 @@ void PlungerMoverObject::UpdateVelocities()
    }
 }
 
-float HitPlunger::HitTest(const Ball * pball_, const float dtime, CollisionEvent& coll) const
+float HitPlunger::HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const
 {
-   Ball * const pball = const_cast<Ball*>(pball_);   // HACK; needed below // evil cast to non-const, but not so expensive as constructor for full copy (and avoids screwing with the ball IDs)
-
    float hittime = dtime; //start time
-   bool fHit = false;
+   bool hit = false;
 
    // If we got here, then the ball is close enough to the plunger
    // to where we should animate the button's light.
@@ -521,41 +584,41 @@ float HitPlunger::HitTest(const Ball * pball_, const float dtime, CollisionEvent
    g_pplayer->m_LastPlungerHit = g_pplayer->m_time_msec;
 
    // We are close enable the plunger light.
-   CollisionEvent hit;
+   CollisionEvent ce;
    float newtime;
 
    // Check for hits on the non-moving parts, like the side of back
    // of the plunger.  These are just like hitting a wall.
    // Check all and find the nearest collision.
 
-   newtime = m_plungerMover.m_linesegBase.HitTest(pball, dtime, hit);
+   newtime = m_plungerMover.m_linesegBase.HitTest(ball, dtime, ce);
    if (newtime >= 0.f && newtime <= hittime)
    {
-      fHit = true;
+      hit = true;
       hittime = newtime;
-      coll = hit;
+      coll = ce;
       coll.m_hitvel.x = 0.f;
       coll.m_hitvel.y = 0.f;
    }
 
    for (int i = 0; i < 2; i++)
    {
-      newtime = m_plungerMover.m_linesegSide[i].HitTest(pball, hittime, hit);
+      newtime = m_plungerMover.m_linesegSide[i].HitTest(ball, hittime, ce);
       if (newtime >= 0.f && newtime <= hittime)
       {
-         fHit = true;
+         hit = true;
          hittime = newtime;
-         coll = hit;
+         coll = ce;
          coll.m_hitvel.x = 0.f;
          coll.m_hitvel.y = 0.f;
       }
 
-      newtime = m_plungerMover.m_jointBase[i].HitTest(pball, hittime, hit);
+      newtime = m_plungerMover.m_jointBase[i].HitTest(ball, hittime, ce);
       if (newtime >= 0.f && newtime <= hittime)
       {
-         fHit = true;
+         hit = true;
          hittime = newtime;
-         coll = hit;
+         coll = ce;
          coll.m_hitvel.x = 0.f;
          coll.m_hitvel.y = 0.f;
       }
@@ -571,75 +634,66 @@ float HitPlunger::HitTest(const Ball * pball_, const float dtime, CollisionEvent
    // calculation in an inertial frame where the tip is stationary.  To
    // do this, just adjust the ball speed to what it looks like in the
    // tip's rest frame.
-   //
-   // Note that we're about to cast the const Ball* to non-const and change
-   // the object's contents.  This is bad practice, but we do it intentionally,
-   // for speed.  Past versions made a local copy of the Ball instance, which 
-   // is technically the correct way to do this, but it takes longer and
-   // messes with the ball IDs.  Before changing the speed value in the
-   // (nominally) const Ball instance, save the old value so that we can
-   // restore it when we're done.
-   const float oldvely = pball->m_vel.y;   // save the old velocity value
-   pball->m_vel.y -= m_plungerMover.m_speed;     // WARNING! EVIL OVERRIDE OF CONST INSTANCE POINTER!!!
 
-                                                 // Figure the impulse from hitting the moving end.
-                                                 // Calculate this as the product of the plunger speed and the
-                                                 // momentum transfer factor, which essentially models the plunger's
-                                                 // mass in abstract units.  In practical terms, this lets table
-                                                 // authors fine-tune the plunger's strength in terms of the amount
-                                                 // of energy it transfers when striking a ball.  Note that table
-                                                 // authors can also adjust the strength via the release speed,
-                                                 // but that's also used for the visual animation, so it's not
-                                                 // always possible to get the right combination of visuals and
-                                                 // physics purely by adjusting the speed.  The momentum transfer
-                                                 // factor provides a way to tweak the physics without affecting
-                                                 // the visuals.
-                                                 //
-                                                 // Further adjust the transfered momentum by the ball's mass
-                                                 // (which is likewise in abstract units).  Divide by the ball's
-                                                 // mass, since a heavier ball will have less velocity transfered
-                                                 // for a given amount of momentum (p=mv -> v=p/m).
-                                                 //
-                                                 // Note that both the plunger momentum transfer factor and the
-                                                 // ball's mass are expressed in relative units, where 1.0f is
-                                                 // the baseline and default.  Older tables that were designed
-                                                 // before these properties existed won't be affected since we'll
-                                                 // multiply the legacy calculation by 1.0/1.0 == 1.0.  (Set an
-                                                 // arbitrary lower bound to prevent division by zero and/or crazy
-                                                 // physics.)
-   const float ballMass = (pball->m_mass > 0.05f ? pball->m_mass : 0.05f);
+   BallS ball_tmp = ball;
+   ball_tmp.m_vel.y -= m_plungerMover.m_speed;
+
+   // Figure the impulse from hitting the moving end.
+   // Calculate this as the product of the plunger speed and the
+   // momentum transfer factor, which essentially models the plunger's
+   // mass in abstract units.  In practical terms, this lets table
+   // authors fine-tune the plunger's strength in terms of the amount
+   // of energy it transfers when striking a ball.  Note that table
+   // authors can also adjust the strength via the release speed,
+   // but that's also used for the visual animation, so it's not
+   // always possible to get the right combination of visuals and
+   // physics purely by adjusting the speed.  The momentum transfer
+   // factor provides a way to tweak the physics without affecting
+   // the visuals.
+   //
+   // Further adjust the transfered momentum by the ball's mass
+   // (which is likewise in abstract units).  Divide by the ball's
+   // mass, since a heavier ball will have less velocity transfered
+   // for a given amount of momentum (p=mv -> v=p/m).
+   //
+   // Note that both the plunger momentum transfer factor and the
+   // ball's mass are expressed in relative units, where 1.0f is
+   // the baseline and default.  Older tables that were designed
+   // before these properties existed won't be affected since we'll
+   // multiply the legacy calculation by 1.0/1.0 == 1.0.  (Set an
+   // arbitrary lower bound to prevent division by zero and/or crazy
+   // physics.)
+   const float ballMass = (ball.m_mass > 0.05f ? ball.m_mass : 0.05f);
    const float xferRatio = m_pplunger->m_d.m_momentumXfer / ballMass;
    const float deltay = m_plungerMover.m_speed * xferRatio;
 
    // check the moving bits
-   newtime = m_plungerMover.m_linesegEnd.HitTest(pball, hittime, hit);
+   newtime = m_plungerMover.m_linesegEnd.HitTest(ball_tmp, hittime, ce);
    if (newtime >= 0.f && newtime <= hittime)
    {
-      fHit = true;
+      hit = true;
       hittime = newtime;
-      coll = hit;
+      coll = ce;
       coll.m_hitvel.x = 0.f;
       coll.m_hitvel.y = deltay;
    }
 
    for (int i = 0; i < 2; i++)
    {
-      newtime = m_plungerMover.m_jointEnd[i].HitTest(pball, hittime, hit);
+      newtime = m_plungerMover.m_jointEnd[i].HitTest(ball_tmp, hittime, ce);
       if (newtime >= 0.f && newtime <= hittime)
       {
-         fHit = true;
+         hit = true;
          hittime = newtime;
-         coll = hit;
+         coll = ce;
          coll.m_hitvel.x = 0.f;
          coll.m_hitvel.y = deltay;
       }
    }
 
-   // restore the original ball velocity (WARNING! CONST POINTER OVERRIDE!)
-   pball->m_vel.y = oldvely;
-
-   // check for a hit
-   if (fHit)
+   // check only if the plunger is not in a controlled retract motion
+   // and check for a hit
+   if (hit && !m_plungerMover.m_retractMotion)
    {
       // We hit the ball.  Set a travel limit to freeze the plunger at
       // its current position for the next displacement update.  This
@@ -693,7 +747,7 @@ void HitPlunger::Collide(const CollisionEvent& coll)
 {
    Ball * const pball = coll.m_ball;
 
-   float dot = (pball->m_vel.x - coll.m_hitvel.x)* coll.m_hitnormal.x + (pball->m_vel.y - coll.m_hitvel.y) * coll.m_hitnormal.y;
+   float dot = (pball->m_d.m_vel.x - coll.m_hitvel.x)* coll.m_hitnormal.x + (pball->m_d.m_vel.y - coll.m_hitvel.y) * coll.m_hitnormal.y;
 
    if (dot >= -C_LOWNORMVEL)             // nearly receding ... make sure of conditions
    {                                     // otherwise if clearly approaching .. process the collision
@@ -716,7 +770,7 @@ void HitPlunger::Collide(const CollisionEvent& coll)
       {
          hdist = C_DISP_LIMIT;
       }                                         // crossing ramps, delta noise
-      pball->m_pos += hdist * coll.m_hitnormal;    // push along norm, back to free area (use the norm, but is not correct)
+      pball->m_d.m_pos += hdist * coll.m_hitnormal;    // push along norm, back to free area (use the norm, but is not correct)
    }
 #endif
 
@@ -750,23 +804,23 @@ void HitPlunger::Collide(const CollisionEvent& coll)
       // isn't entirely unreasonable physically - you could look at it as
       // accounting for the spring tension and friction.
       const float reverseImpulseFudgeFactor = .22f;
-      m_plungerMover.m_reverseImpulse = pball->m_vel.y * impulse
-         * (pball->m_mass / m_plungerMover.m_mass)
+      m_plungerMover.m_reverseImpulse = pball->m_d.m_vel.y * impulse
+         * (pball->m_d.m_mass / m_plungerMover.m_mass)
          * reverseImpulseFudgeFactor;
    }
 
    // update the ball speed for the impulse
-   pball->m_vel += impulse * coll.m_hitnormal;
+   pball->m_d.m_vel += impulse * coll.m_hitnormal;
 
-   pball->m_vel *= 0.999f;           //friction all axiz     //!! TODO: fix this
+   pball->m_d.m_vel *= 0.999f;           //friction all axiz     //!! TODO: fix this
 
    const float scatter_vel = m_plungerMover.m_scatterVelocity * g_pplayer->m_ptable->m_globalDifficulty;// apply dificulty weighting
 
-   if (scatter_vel > 0.f && fabsf(pball->m_vel.y) > scatter_vel) //skip if low velocity 
+   if (scatter_vel > 0.f && fabsf(pball->m_d.m_vel.y) > scatter_vel) //skip if low velocity 
    {
       float scatter = rand_mt_m11();                                                          // -1.0f..1.0f
       scatter *= (1.0f - scatter * scatter)*2.59808f * scatter_vel;     // shape quadratic distribution and scale
-      pball->m_vel.y += scatter;
+      pball->m_d.m_vel.y += scatter;
    }
 
 #ifdef C_DYNAMIC

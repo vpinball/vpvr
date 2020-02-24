@@ -8,7 +8,9 @@
 #include "resource.h"       // main symbols
 #include "RenderDevice.h"
 
-class LightData
+#define NUM_RGB_BLINK_PATTERN 33
+
+class LightData : public BaseProperty
 {
 public:
    Vertex2D m_vCenter;
@@ -31,46 +33,15 @@ public:
    //float m_borderwidth;
    //COLORREF m_bordercolor;
    char m_szSurface[MAXTOKEN];
-   char m_szOffImage[MAXTOKEN];
 
    float m_depthBias; // for determining depth sorting
    float m_bulbHaloHeight;
 
-   bool m_fVisible;
    bool m_imageMode;  // true = pass through/no lighting, false = use surface material
    bool m_BulbLight;
    bool m_showBulbMesh;
    bool m_showReflectionOnBall;
    bool m_staticBulbMesh;
-};
-
-class LightCenter : public ISelect
-{
-public:
-   LightCenter(Light *plight);
-   virtual HRESULT GetTypeName(BSTR *pVal);
-   virtual IDispatch *GetDispatch();
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
-   virtual void Delete();
-   virtual void Uncreate();
-
-   virtual int GetSelectLevel();
-
-   virtual IEditable *GetIEditable();
-
-   virtual PinTable *GetPTable();
-
-   virtual BOOL LoadToken(int id, BiffReader *pbr) { return fTrue; }
-
-   virtual Vertex2D GetCenter() const;
-   virtual void PutCenter(const Vertex2D& pv);
-
-   virtual void MoveOffset(const float dx, const float dy);
-
-   virtual ItemTypeEnum GetItemType() const { return eItemLightCenter; }
-
-   Light *m_plight;
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -118,8 +89,6 @@ public:
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
 
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
    void RenderOutline(Sur * const psur);
    virtual void RenderBlueprint(Sur *psur, const bool solid);
 
@@ -128,10 +97,9 @@ public:
 
    virtual void ClearForOverwrite();
 
-   void UpdateLightShapeHeight();
    void PrepareMoversCustom();
 
-   virtual void EditMenu(HMENU hmenu);
+   virtual void EditMenu(CMenu &menu);
    virtual void DoCommand(int icmd, int x, int y);
 
    virtual void FlipY(const Vertex2D& pvCenter);
@@ -147,15 +115,15 @@ public:
    virtual void PutPointCenter(const Vertex2D& pv);
 
    virtual bool IsTransparent() const { return m_d.m_BulbLight || (m_surfaceMaterial && m_surfaceMaterial->m_bOpacityActive); }
-   virtual bool RenderToLightBuffer() const { return m_d.m_BulbLight && (m_d.m_transmissionScale > 0.f) && !m_fBackglass; }
+   virtual bool RenderToLightBuffer() const { return m_d.m_BulbLight && (m_d.m_transmissionScale > 0.f) && !m_backglass; }
    virtual float GetDepth(const Vertex3Ds& viewDir) const;
    virtual unsigned long long GetMaterialID() const { return m_surfaceMaterial ? m_surfaceMaterial->hash() : 64 - 2; } //!! 2 = some constant number
-   virtual unsigned long long GetImageID() const { return (m_d.m_BulbLight ? 0 : (unsigned long long)(m_ptable->GetImage(m_d.m_szOffImage))); }
+   virtual unsigned long long GetImageID() const { return (m_d.m_BulbLight ? 0 : (unsigned long long)(m_ptable->GetImage(m_d.m_szImage))); }
    virtual ItemTypeEnum HitableGetItemType() const { return eItemLight; }
-   virtual void UpdatePropertyPanes();
    virtual void AddPoint(int x, int y, const bool smooth);
 
    virtual void WriteRegDefaults();
+
    void FreeBuffers();
 
    void InitShape();
@@ -163,37 +131,71 @@ public:
    void RenderBulbMesh();
 
    LightData m_d;
+
    LightState m_realState;
-   std::vector<RenderVertex> m_vvertex;
-
-   float m_initSurfaceHeight;
    float m_surfaceHeight;
-   bool  m_updateLightShape;
-   bool  m_fLockedByLS;
+   bool  m_lockedByLS;
+   char m_rgblinkpattern[NUM_RGB_BLINK_PATTERN];
+   int m_blinkinterval;
 
-   // Run-time
 private:
-   PinTable * m_ptable;
 
-   Material * m_surfaceMaterial;
+   class LightCenter : public ISelect
+   {
+   public:
+      LightCenter(Light *plight) : m_plight(plight) { }
+      virtual HRESULT GetTypeName(BSTR *pVal) { return m_plight->GetTypeName(pVal); }
+      virtual IDispatch *GetDispatch() { return m_plight->GetDispatch(); }
+
+      virtual void Delete() { m_plight->Delete(); }
+      virtual void Uncreate() { m_plight->Uncreate(); }
+
+      virtual int GetSelectLevel() { return (m_plight->m_d.m_shape == ShapeCircle) ? 1 : 2; } // Don't select light bulb twice if we have drag points
+
+      virtual IEditable *GetIEditable() { return (IEditable *)m_plight; }
+
+      virtual PinTable *GetPTable() { return m_plight->GetPTable(); }
+
+      virtual bool LoadToken(const int id, BiffReader * const pbr) { return true; }
+
+      virtual Vertex2D GetCenter() const { return m_plight->m_d.m_vCenter; }
+      virtual void PutCenter(const Vertex2D& pv) { m_plight->m_d.m_vCenter = pv; }
+
+      virtual void MoveOffset(const float dx, const float dy) {
+         m_plight->m_d.m_vCenter.x += dx;
+         m_plight->m_d.m_vCenter.y += dy;
+      }
+
+      virtual ItemTypeEnum GetItemType() const { return eItemLightCenter; }
+
+   private:
+      Light * m_plight;
+   };
+
+
+   PinTable *m_ptable;
+
+   Material *m_surfaceMaterial;
    Texture  *m_surfaceTexture;
 
    LightCenter m_lightcenter;
 
-   unsigned int customMoverVertexNum;
-   unsigned int customMoverIndexNum;
-   VertexBuffer *customMoverVBuffer;
-   IndexBuffer  *customMoverIBuffer;
-   VertexBuffer *bulbLightVBuffer;
-   IndexBuffer  *bulbLightIndexBuffer;
-   VertexBuffer *bulbSocketVBuffer;
-   IndexBuffer  *bulbSocketIndexBuffer;
+   unsigned int m_customMoverVertexNum;
+   unsigned int m_customMoverIndexNum;
+   VertexBuffer *m_customMoverVBuffer;
+   IndexBuffer  *m_customMoverIBuffer;
+   VertexBuffer *m_bulbLightVBuffer;
+   IndexBuffer  *m_bulbLightIndexBuffer;
+   VertexBuffer *m_bulbSocketVBuffer;
+   IndexBuffer  *m_bulbSocketIndexBuffer;
    PropertyPane *m_propVisual;
-   // ILight
 
-   Texture *GetDisplayTexture();
+   std::vector<RenderVertex> m_vvertex;
 
-   bool m_roundLight;
+   float m_initSurfaceHeight;
+   bool  m_updateBulbLightHeight;
+
+   bool  m_roundLight; // pre-VPX compatibility
 
 public:
    STDMETHOD(get_Surface)(/*[out, retval]*/ BSTR *pVal);
@@ -252,8 +254,6 @@ public:
 
    // was: class IBlink
 private:
-   char m_rgblinkpattern[33];
-   int m_blinkinterval;
    int m_duration;
    int m_finalState;
 

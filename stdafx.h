@@ -19,6 +19,8 @@
 
 //#define DEBUG_NUDGE // debug new nudge code
 
+//#define ONLY_USE_BASS
+
 //#define DEBUG_NO_SOUND
 //#define DEBUG_REFCOUNT_TRIGGER
 
@@ -60,28 +62,24 @@
 
 #define ADAPT_VSYNC_FACTOR 0.95 // safety factor where vsync is turned off (f.e. drops below 60fps * 0.95 = 57fps)
 
-#define ACCURATETIMERS 1        // if commented out, timers will only be triggered as often as frames are rendered (e.g. they can fall behind)
+#define ACCURATETIMERS          // if undefd, timers will only be triggered as often as frames are rendered (e.g. they can fall behind)
 #define MAX_TIMER_MSEC_INTERVAL 1 // amount of msecs to wait (at least) until same timer can be triggered again (e.g. they can fall behind, if set to > 1, as update cycle is 1000Hz)
 #define MAX_TIMERS_MSEC_OVERALL 5 // amount of msecs that all timers combined can take per frame (e.g. they can fall behind, if set to < somelargevalue)
 
-#ifndef ENABLE_SDL
-#define FPS 1                   // Enable FPS computation (default 'F11')
-#endif
-#define STEPPING 1              // Enable Physics stepping
+#define STEPPING                // enable Physics stepping
 
 #if defined(_DEBUG) && defined(STEPPING)
- #define MOUSEPAUSE 1
+#define MOUSEPAUSE
 #endif
 
-//#define PLAYBACK
+//#define PLAYBACK              // bitrotted, also how to record the playback to c:\badlog.txt ?? via LOG ??
+//#define LOG                   // bitrotted, will record stuff into c:\log.txt
 
-//#define LOG
+//#define EVENPHYSICSTIME       // bitrotted, most likely not functional anymore
 
-//#define DEBUGPHYSICS
+//#define DEBUGPHYSICS          // enables detailed physics/collision handling output for the 'F11' stats/debug texts
 
-//#define EVENPHYSICSTIME
-
-#define DEBUG_BALL_SPIN
+#define DEBUG_BALL_SPIN         // enables dots glued to balls if in 'F11' mode
 
 //VR Support
 
@@ -118,8 +116,6 @@
 
 #define _ATL_APARTMENT_THREADED
 
-#include "main.h"
-
 //#include <vld.h>
 #ifdef _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
@@ -129,40 +125,8 @@
  #define WM_MENURBUTTONUP                0x0122
  #define WM_UNINITMENUPOPUP              0x0125
 #endif
+#include "main.h"
 
-//#include <wxx_appcore.h>		// Add CCriticalSection, CObject, CWinThread, CWinApp
-//#include <wxx_archive.h>		// Add CArchive
-//#include <wxx_commondlg.h>		// Add CCommonDialog, CColorDialog, CFileDialog, CFindReplace, CFontDialog 
-//#include <wxx_controls.h>		// Add CAnimation, CComboBox, CComboBoxEx, CDateTime, CHeader, CHotKey, CIPAddress, CProgressBar, CSpinButton, CScrollBar, CSlider, CToolTip
-//#include <wxx_cstring.h>		// Add CString, CStringA, CStringW
-//#include <wxx_ddx.h>			// Add CDataExchange
-#include <wxx_dialog.h>			// Add CDialog, CResizer
-//#include <wxx_dockframe.h>		// Add CDockFrame, CMDIDockFrame
-//#include <wxx_docking.h>		// Add CDocker, CDockContainer
-//#include <wxx_exception.h>		// Add CException, CFileException, CNotSupportedException, CResourceException, CUserException, CWinException
-//#include <wxx_file.h>			// Add CFile
-//#include <wxx_frame.h>			// Add CFrame
-//#include <wxx_gdi.h>			// Add CDC, CGDIObject, CBitmap, CBrush, CFont, CPalatte, CPen, CRgn
-//#include <wxx_imagelist.h>		// Add CImageList
-//#include <wxx_listview.h>		// Add CListView
-//#include <wxx_mdi.h>			// Add CMDIChild, CMDIFrame, CDockMDIFrame
-//#include <wxx_printdialogs.h>	// Add CPageSetupDialog, CPrintSetupDialog
-//#include <wxx_propertysheet.h>	// Add CPropertyPage, CPropertySheet
-//#include <wxx_rebar.h>			// Add CRebar
-//#include <wxx_regkey.h>			// Add CRegKey
-//#include <wxx_ribbon.h>		// Add CRibbon, CRibbonFrame
-#include <wxx_richedit.h>		// Add CRichEdit
-//#include <wxx_shared_ptr.h>		// Add Shared_Ptr
-//#include <wxx_socket.h>			// Add CSocket
-//#include <wxx_statusbar.h>		// Add CStatusBar
-//#include <wxx_stdcontrols.h>	// Add CButton, CEdit, CListBox
-//#include <wxx_tab.h>			// Add CTab, CTabbedMDI
-//#include <wxx_taskdialog.h>	// Add CTaskDialog
-//#include <wxx_time.h>			// Add CTime
-//#include <wxx_toolbar.h>		// Add CToolBar
-//#include <wxx_treeview.h>		// Add CTreeView
-//#include <wxx_webbrowser.h>		// Add CAXWindow, CWebBrowser
-#include <wxx_wincore.h>
 
 //{{AFX_INSERT_LOCATION}}
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.

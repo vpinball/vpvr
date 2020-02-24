@@ -21,6 +21,9 @@
 #include "SoundDialog.h"
 #include "AboutDialog.h"
 #include "DrawingOrderDialog.h"
+#include "ToolbarDialog.h"
+#include "LayersListDialog.h"
+#include "Properties/PropertyDialog.h"
 
 #define CURRENT_FILE_FORMAT_VERSION 1060
 #define NO_ENCRYPTION_FORMAT_VERSION 1050
@@ -33,76 +36,100 @@
 
 
 class PinTable;
+class PinTableMDI;
 
-class VPinball : public CWnd
+class VPinball : public CMDIDockFrame
 {
 public:
+   enum TIMER_IDS
+   {
+      TIMER_ID_AUTOSAVE = 12345,
+      TIMER_ID_CLOSE_TABLE = 12346
+   };
+
+   enum CopyPasteModes
+   {
+      COPY = 0,
+      PASTE = 1,
+      PASTE_AT = 2
+   };
+
    VPinball();
    virtual ~VPinball();
 
+   void Init();
    void Quit();
 
-   void Init();
-   void InitPinDirectSound();
-   void RegisterClasses();
-   void CreateSideBar();
-   HWND CreateLayerToolbar(HWND hwndParent, unsigned int &buttonwidth, unsigned int &buttonheight);
-   HWND CreateToolbar(TBBUTTON *p_tbbutton, int count, HWND hwndParent, unsigned int &buttonwidth, unsigned int &buttonheight);
+private:
    void CreateMDIClient();
 
-   void ParseCommand(size_t code, HWND hwnd, size_t notify);
-   void ReInitPinDirectSound();
-   void SetLayerStatus(int layerNumber);
-
-   CComObject<PinTable> *GetActiveTable();
+   void ShowSearchSelect();
+   void SetDefaultPhysics();
+   void SetViewSolidOutline(size_t viewId);
+   void ShowGridView();
+   void ShowBackdropView();
+   void AddControlPoint();
+   void AddSmoothControlPoint();
+   void SaveTable(const bool saveAs);
+   void OpenNewTable(size_t tableId);
+   void ProcessDeleteElement();
+   void OpenRecentFile(const size_t menuId);
+   void CopyPasteElement(const CopyPasteModes mode);
    void InitTools();
    void InitRegValues();
+   bool CanClose();
+   void GetMyPath();
+   void UpdateRecentFileList(char *szfilename);
+
+   bool ApcHost_OnTranslateMessage(MSG* pmsg);
+   bool processKeyInputForDialogs(MSG *pmsg);
+
+   void SetEnablePalette();
+
+   void ShowSubDialog(CDialog &dlg);
+
+   void CloseAllDialogs();
+
+
+public:
+   void AddMDITable(PinTableMDI* mdiTable);
+   CMenu GetMainMenu(int id);
+   void ToggleScriptEditor();
+   void ToggleBackglassView();
+   BOOL ParseCommand(size_t code, size_t notify);
+   void ReInitSound();
+
+   CComObject<PinTable> *GetActiveTable();
    bool LoadFile();
    void LoadFileName(char *szFileName);
    void SetClipboard(vector<IStream*> * const pvstm);
-
-   bool CanClose();
 
    void DoPlay(const bool _cameraMode);
 
    void SetPosCur(float x, float y);
    void SetObjectPosCur(float x, float y);
    void ClearObjectPosCur();
-   float ConvertToUnit(float value);
+   float ConvertToUnit(const float value);
    void SetPropSel(VectorProtected<ISelect> *pvsel);
 
    void DeletePropSel();
-   void SetActionCur(char *szaction);
+   void SetActionCur(const char * const szaction);
    void SetCursorCur(HINSTANCE hInstance, LPCTSTR lpCursorName);
-
-   void GetMyPath();
-   void UpdateRecentFileList(char *szfilename);
 
    STDMETHOD(QueryInterface)(REFIID riid, void** ppvObj);
    STDMETHOD_(ULONG, AddRef)();
    STDMETHOD_(ULONG, Release)();
-   //inline IDispatch *GetDispatch() {return (IVPinball *)this;}
 
-   HRESULT CheckTypeInfo(UINT itinfo, LCID lcid);
-   ITypeInfo **GetTinfoClsAddr() { return &m_ptinfoCls; }
-   ITypeInfo **GetTinfoIntAddr() { return &m_ptinfoInt; }
+   STDMETHOD(PlaySound)(BSTR bstr);
 
-   //virtual IDispatch *GetPrimary() {return this->GetDispatch(); }
+   STDMETHOD(FireKnocker)(int Count);
+   STDMETHOD(QuitPlayer)(int CloseType);
 
-   virtual HRESULT GetTypeLibInfo(HINSTANCE *phinstOut, const GUID **pplibidOut,
-      SHORT *pwMajLibOut, SHORT *pwMinLibOut,
-      const CLSID **ppclsidOut, const IID **ppiidOut,
-      ITypeLib ***ppptlOut);
+   void MainMsgLoop();
 
-   HRESULT MainMsgLoop();
-   HRESULT ApcHost_OnIdle(BOOL* pfContinue);
-   HRESULT ApcHost_OnTranslateMessage(MSG* pmsg, BOOL* pfConsumed);
-   BOOL    processKeyInputForDialogs(MSG *pmsg);
-
-   bool CloseTable(PinTable *ppt);
+   bool CloseTable(PinTable * const ppt);
 
    void SetEnableToolbar();
-   void SetEnablePalette();
    void SetEnableMenuItems();
 
    void EnsureWorkerThread();
@@ -112,35 +139,40 @@ public:
    static void SetOpenMinimized();
    void ShowDrawingOrderDialog(bool select);
 
-   void CloseAllDialogs();
+   void SetStatusBarElementInfo(const char * const info);
+   void SetStatusBarUnitInfo(const char * const info, const bool isUnit);
+
+   bool OpenFileDialog(const char *initDir, char *filename, const char *fileFilter, const char *defaultExt, DWORD flags, int &fileOffset);
+   CDockProperty *GetPropertiesDocker();
+   CDockToolbar *GetToolbarDocker();
+   CDockLayers *GetLayersDocker();
+   void CreateDocker();
+   LayersListDialog *GetLayersListDialog()
+   {
+      return m_layersListDialog;
+   }
 
    ULONG m_cref;
-   ITypeInfo *m_ptinfoCls;
-   ITypeInfo *m_ptinfoInt;
-
-   HWND m_hwnd;
-   HWND m_toolTipHwnd;
 
    vector< CComObject<PinTable>* > m_vtable;
    CComObject<PinTable> *m_ptableActive;
 
-   HWND m_hwndSideBar;
-   HWND m_hwndSideBarScroll;
-   HWND m_hwndSideBarLayers;
-   HWND m_hwndWork;
-   HWND m_hwndToolbarMain;
-   HWND m_hwndToolbarPalette;
-   HWND m_hwndToolbarLayers;
+   //    HWND m_hwndSideBar;
+   //    HWND m_hwndSideBarScroll;
+   //    HWND m_hwndSideBarLayers;
+   //    HWND m_hwndWork;
+   //    HWND m_hwndToolbarMain;
+   //    HWND m_hwndToolbarPalette;
+   //    HWND m_hwndToolbarLayers;
    HWND m_hwndStatusBar;
 
    int m_palettescroll;
 
-   SmartBrowser m_sb;
+   //SmartBrowser m_sb;
 
    vector<IStream*> m_vstmclipboard;
 
-   PinDirectSound m_pds; //!! delete as soon as all on BASS
-   PinDirectSound *m_pbackglassds; //!! delete
+   AudioMusicPlayer m_ps;
 
    int m_ToolCur; // Palette button currently pressed
 
@@ -148,12 +180,10 @@ public:
 
    CodeViewer *m_pcv; // Currently active code window
 
-   bool m_fBackglassView; // Whether viewing the playfield or screen layout
+   bool m_backglassView; // Whether viewing the playfield or screen layout
 
-   bool m_fPropertiesFloating;
-
-   bool m_fAlwaysDrawDragPoints;
-   bool m_fAlwaysDrawLightCenters;
+   bool m_alwaysDrawDragPoints;
+   bool m_alwaysDrawLightCenters;
    int m_gridSize;
    int m_convertToUnit; //0=Inches, 1=Millimeters, 2=VPUnits
 
@@ -163,19 +193,10 @@ public:
    WCHAR m_wzMyPath[MAX_PATH];
    char m_currentTablePath[MAX_PATH];
 
-   STDMETHOD(PlaySound)(BSTR bstr);
-
-   STDMETHOD(FireKnocker)(int Count);
-   STDMETHOD(QuitPlayer)(int CloseType);
-
    int m_autosaveTime;
    static bool m_open_minimized;
 
-   HMENU GetMainMenu(int id);
-   void SetStatusBarElementInfo(const char *info);
-   void SetStatusBarUnitInfo(const char *info, const bool isUnit);
-
-   Material dummyMaterial;
+   Material m_dummyMaterial;
    COLORREF m_elemSelectColor;
    COLORREF m_elemSelectLockedColor;
    COLORREF m_backgroundColor;
@@ -185,14 +206,26 @@ public:
    static WCHAR *m_customParameters[MAX_CUSTOM_PARAM_INDEX];
 
 protected:
+   virtual void PreCreate(CREATESTRUCT& cs);
+   virtual void PreRegisterClass(WNDCLASS& wc);
    virtual void OnClose();
-#if 0
+   virtual void OnDestroy();
    virtual int  OnCreate(CREATESTRUCT& cs);
+   virtual LRESULT OnPaint(UINT msg, WPARAM wparam, LPARAM lparam);
+   virtual void OnInitialUpdate();
+   virtual BOOL OnCommand(WPARAM wparam, LPARAM lparam);
    virtual LRESULT WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam);
-#endif 
+   virtual LRESULT OnMDIActivated(UINT msg, WPARAM wparam, LPARAM lparam);
+   virtual CDocker *NewDockerFromID(int id);
+
 
 private:
-   void ShowSubDialog(CDialog &dlg);
+
+   CDockProperty * GetDefaultPropertiesDocker();
+   CDockLayers *GetDefaultLayersDocker();
+   CDockToolbar *GetDefaultToolbarDocker();
+
+   CMenu m_mainMenu;
    char m_szRecentTableList[LAST_OPENED_TABLE_COUNT + 1][MAX_PATH];
 
    HANDLE m_workerthread;
@@ -212,6 +245,12 @@ private:
    DimensionDialog m_dimensionDialog;
    MaterialDialog m_materialDialog;
    AboutDialog m_aboutDialog;
+   ToolbarDialog *m_toolbarDialog;
+   PropertyDialog *m_propertyDialog;
+   CDockToolbar *m_dockToolbar;
+   CDockProperty *m_dockProperties;
+   LayersListDialog *m_layersListDialog;
+   CDockLayers *m_dockLayers;
 };
 
 #endif // !defined(AFX_VPINBALL_H__4D32616D_55B5_4FE0_87D9_3D4CB0BE3C76__INCLUDED_)

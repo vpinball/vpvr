@@ -21,9 +21,9 @@ public:
    char sztext[MAXSTRING];
    TimerDataRoot m_tdr;
    TextAlignment m_talign;
-   bool m_fTransparent;
-   bool m_fVisible;
-   bool m_IsDMD;
+   bool m_transparent;
+   bool m_visible;
+   bool m_isDMD;
 };
 
 class Textbox :
@@ -62,12 +62,10 @@ public:
 
    STANDARD_EDITABLE_DECLARES(Textbox, eItemTextbox, TEXTBOX, 2)
 
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
    virtual void MoveOffset(const float dx, const float dy);
    virtual void SetObjectPos();
    // Multi-object manipulation
-   virtual Vertex2D GetCenter() const;
+   virtual Vertex2D GetCenter() const { return m_d.m_v1; }
    virtual void PutCenter(const Vertex2D& pv);
    virtual ItemTypeEnum HitableGetItemType() const { return eItemTextbox; }
 
@@ -76,20 +74,22 @@ public:
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
 
    virtual void WriteRegDefaults();
+   char *GetFontName();
+   HFONT GetFont();
 
+   IFont *m_pIFont;
+
+   TextboxData m_d;
 private:
    void PreRenderText();
 
    PinTable *m_ptable;
 
-   TextboxData m_d;
 
    BaseTexture *m_texture;
 
-   IFont *m_pIFont;
 
    IFont *m_pIFontPlay; // Our font, scaled to match play window resolution
-   HFONT m_hfont;
 
    // ITextbox
 public:

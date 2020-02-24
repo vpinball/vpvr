@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef ENABLE_SDL
+typedef struct D3DXVECTOR4 vec4;
+#endif
+
 // 2D vector
 class Vertex2D
 {
@@ -97,7 +101,7 @@ public:
 
    bool IsZero() const
    {
-      return fabsf(x) < FLT_MIN && fabsf(y) < FLT_MIN;
+      return fabsf(x) <= FLT_MIN && fabsf(y) <= FLT_MIN;
    }
 };
 
@@ -197,6 +201,7 @@ public:
    {
       return x*pv.x + y*pv.y + z*pv.z;
    }
+
    float Dot(const Vertex3D_NoTex2 &pv) const
    {
       return x*pv.x + y*pv.y + z*pv.z;
@@ -214,7 +219,7 @@ public:
 
    bool IsZero() const
    {
-      return fabsf(x) < FLT_MIN && fabsf(y) < FLT_MIN && fabsf(z) < FLT_MIN;
+      return fabsf(x) <= FLT_MIN && fabsf(y) <= FLT_MIN && fabsf(z) <= FLT_MIN;
    }
 
    // access the x/y components as a 2D vector

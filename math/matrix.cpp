@@ -65,9 +65,6 @@ void Matrix3D::Invert()
 
 void RotateAround(const Vertex3Ds &pvAxis, Vertex3D_NoTex2 * const pvPoint, const int count, const float angle)
 {
-   const float rsin = sinf(angle);
-   const float rcos = cosf(angle);
-
    Matrix3 mat;
    mat.RotationAroundAxis(pvAxis, angle);
 
@@ -95,9 +92,6 @@ void RotateAround(const Vertex3Ds &pvAxis, Vertex3D_NoTex2 * const pvPoint, cons
 
 void RotateAround(const Vertex3Ds &pvAxis, Vertex3Ds * const pvPoint, const int count, const float angle)
 {
-   const float rsin = sinf(angle);
-   const float rcos = cosf(angle);
-
    Matrix3 mat;
    mat.RotationAroundAxis(pvAxis, angle);
 
@@ -274,7 +268,7 @@ void Matrix3D::GetRotationPart(Matrix3D& rot)
    rot._41 = rot._42 = rot._43 = 0.0f; rot._44 = 1.0f;
 }
 
-Vertex3Ds Matrix3D::MultiplyVector(const Vertex3Ds &v) const
+Vertex3Ds Matrix3D::MulVector(const Vertex3Ds &v) const
 {
    // Transform it through the current matrix set
    const float xp = _11 * v.x + _21 * v.y + _31 * v.z + _41;
@@ -378,7 +372,6 @@ Matrix3D Matrix3D::MatrixRotationYawPitchRoll(float yaw, float pitch, float roll
 
 Matrix3::Matrix3()
 {
-   Identity();
 }
 
 Matrix3::Matrix3(float _11, float _12, float _13, float _21, float _22, float _23, float _31, float _32, float _33)
@@ -402,14 +395,14 @@ void Matrix3::scaleZ(const float factor)
    m_d[2][2] *= factor;
 }
 
-void Matrix3::CreateSkewSymmetric(const Vertex3Ds &pv3D)
+void Matrix3::SkewSymmetric(const Vertex3Ds &pv3D)
 {
    m_d[0][0] = 0; m_d[0][1] = -pv3D.z; m_d[0][2] = pv3D.y;
    m_d[1][0] = pv3D.z; m_d[1][1] = 0; m_d[1][2] = -pv3D.x;
    m_d[2][0] = -pv3D.y; m_d[2][1] = pv3D.x; m_d[2][2] = 0;
 }
 
-void Matrix3::MultiplyScalar(const float scalar)
+void Matrix3::MulScalar(const float scalar)
 {
    for (int i = 0; i < 3; ++i)
       for (int l = 0; l < 3; ++l)
@@ -439,23 +432,33 @@ Matrix3 Matrix3::operator* (const Matrix3& m) const
    );
 }
 
-void Matrix3::MultiplyMatrix(const Matrix3 * const pmat1, const Matrix3 * const pmat2)
+void Matrix3::MulMatrices(const Matrix3& pmat1, const Matrix3& pmat2)
 {
    Matrix3 matans;
    for (int i = 0; i < 3; ++i)
       for (int l = 0; l < 3; ++l)
-         matans.m_d[i][l] = pmat1->m_d[i][0] * pmat2->m_d[0][l] +
-         pmat1->m_d[i][1] * pmat2->m_d[1][l] +
-         pmat1->m_d[i][2] * pmat2->m_d[2][l];
-
+         matans.m_d[i][l] = pmat1.m_d[i][0] * pmat2.m_d[0][l] +
+         pmat1.m_d[i][1] * pmat2.m_d[1][l] +
+         pmat1.m_d[i][2] * pmat2.m_d[2][l];
    *this = matans;
 }
 
-void Matrix3::AddMatrix(const Matrix3 * const pmat1, const Matrix3 * const pmat2)
+void Matrix3::MulMatricesAndMulScalar(const Matrix3& pmat1, const Matrix3& pmat2, const float scalar)
+{
+   Matrix3 matans;
+   for (int i = 0; i < 3; ++i)
+      for (int l = 0; l < 3; ++l)
+         matans.m_d[i][l] = (pmat1.m_d[i][0] * pmat2.m_d[0][l] +
+            pmat1.m_d[i][1] * pmat2.m_d[1][l] +
+            pmat1.m_d[i][2] * pmat2.m_d[2][l])*scalar;
+   *this = matans;
+}
+
+void Matrix3::AddMatrix(const Matrix3& pmat)
 {
    for (int i = 0; i < 3; ++i)
       for (int l = 0; l < 3; ++l)
-         m_d[i][l] = pmat1->m_d[i][l] + pmat2->m_d[i][l];
+         m_d[i][l] += pmat.m_d[i][l];
 }
 
 void Matrix3::OrthoNormalize()
@@ -473,7 +476,7 @@ void Matrix3::OrthoNormalize()
    m_d[2][0] = vX.z; m_d[2][1] = vY.z; m_d[2][2] = vZ.z;
 }
 
-void Matrix3::Transpose(Matrix3 * const pmatOut) const
+/*void Matrix3::Transpose(Matrix3 * const pmatOut) const
 {
    for (int i = 0; i < 3; ++i)
    {
@@ -481,7 +484,7 @@ void Matrix3::Transpose(Matrix3 * const pmatOut) const
       pmatOut->m_d[1][i] = m_d[i][1];
       pmatOut->m_d[2][i] = m_d[i][2];
    }
-}
+}*/
 
 void Matrix3::Identity(const float value)
 {

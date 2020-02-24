@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+#include "stdafx.h"
 #include "resource.h"
 #include "VROptionsDialog.h"
 
@@ -30,14 +30,14 @@ VROptionsDialog::VROptionsDialog() : CDialog(IDD_VR_OPTIONS)
 {
 }
 
-void VROptionsDialog::AddToolTip(char *text, HWND parentHwnd, HWND toolTipHwnd, HWND controlHwnd)
+void VROptionsDialog::AddToolTip(const char * const text, HWND parentHwnd, HWND toolTipHwnd, HWND controlHwnd)
 {
    TOOLINFO toolInfo = { 0 };
    toolInfo.cbSize = sizeof(toolInfo);
    toolInfo.hwnd = parentHwnd;
    toolInfo.uFlags = TTF_IDISHWND | TTF_SUBCLASS;
    toolInfo.uId = (UINT_PTR)controlHwnd;
-   toolInfo.lpszText = text;
+   toolInfo.lpszText = (char*)text;
    SendMessage(toolTipHwnd, TTM_ADDTOOL, 0, (LPARAM)&toolInfo);
 }
 
@@ -88,6 +88,10 @@ void VROptionsDialog::ResetVideoPreferences() // 0 = default, 1 = lowend PC, 2 =
    SendMessage(GetDlgItem(IDC_BLOOM_OFF).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), CB_SETCURSEL, 1, 0);
    SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_SETCURSEL, 0, 0);
+
+   SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_SETCURSEL, 1, 0);
+   SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_SETCURSEL, 1, 0);
+
 
    SendMessage(GetDlgItem(IDC_VR_DISABLE_PREVIEW).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
    
@@ -170,6 +174,10 @@ BOOL VROptionsDialog::OnInitDialog()
       AddToolTip("Forces the bloom filter to be always off. Only for very low-end graphics cards.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_TURN_VR_ON).GetHwnd();
       AddToolTip("Disable Autodetect if Visual Pinball does not start up.", hwndDlg, toolTipHwnd, controlHwnd);
+      controlHwnd = GetDlgItem(IDC_DMD_SOURCE).GetHwnd();
+      AddToolTip("What sources should be used for DMD?\nOnly internal supplied by script/Text Label/Flasher\nScreenreader (see screenreader.ini)\nFrom Shared Memory API", hwndDlg, toolTipHwnd, controlHwnd);
+      controlHwnd = GetDlgItem(IDC_BG_SOURCE).GetHwnd();
+      AddToolTip("What sources should be used for Backglass?\nOnly internal background\nTry to open a directb2s file\ndirectb2s file dialog\nScreenreader (see screenreader.ini)\nFrom Shared Memory API", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_NUDGE_STRENGTH).GetHwnd();
       AddToolTip("Changes the visual effect/screen shaking when nudging the table.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_DYNAMIC_AO).GetHwnd();
@@ -282,6 +290,19 @@ BOOL VROptionsDialog::OnInitDialog()
    SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"VR autodetect");
    SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"VR disabled");
    SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), CB_SETCURSEL, askToTurnOn, 0);
+
+   const int DMDsource = LoadValueIntWithDefault("PlayerVR", "DMDsource", 1);
+   SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"internal text/flasher (via vbscript)");
+   SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Screenreader");
+   SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"SharedMemory API");
+   SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_SETCURSEL, askToTurnOn, 0);
+
+   const int BGsource = LoadValueIntWithDefault("PlayerVR", "BGsource", 1);
+   SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"default table background");
+   SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"directb2s File (auto only)");
+   SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"directb2s File");
+   SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"SharedMemory API");
+   SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_SETCURSEL, askToTurnOn, 0);
 
    int display;
    HRESULT hr = LoadValueInt("PlayerVR", "Display", &display);
@@ -618,6 +639,12 @@ void VROptionsDialog::OnOK()
    
    const size_t askToTurnOn = SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), CB_GETCURSEL, 0, 0);
    SaveValueInt("PlayerVR", "AskToTurnOn", askToTurnOn);
+
+   const size_t dmdSource = SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_GETCURSEL, 0, 0);
+   SaveValueInt("PlayerVR", "AskToTurnOn", dmdSource);
+
+   const size_t bgSource = SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_GETCURSEL, 0, 0);
+   SaveValueInt("PlayerVR", "AskToTurnOn", bgSource);
 
    CDialog::OnOK();
 

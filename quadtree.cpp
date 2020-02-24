@@ -13,7 +13,7 @@ HitQuadtree::~HitQuadtree()
       _aligned_free(zhighs);
    }
 
-   if (!m_fLeaf)
+   if (!m_leaf)
    {
       for (int i = 0; i < 4; i++)
       {
@@ -55,7 +55,7 @@ void HitQuadtree::CreateNextLevel(const FRect3D& bounds, const unsigned int leve
    g_pplayer->c_quadNextlevels++;
 #endif
 
-   m_fLeaf = false;
+   m_leaf = false;
 
    m_vcenter.x = (bounds.left + bounds.right)*0.5f;
    m_vcenter.y = (bounds.top + bounds.bottom)*0.5f;
@@ -193,7 +193,7 @@ collisions
 
 */
 
-void HitQuadtree::HitTestBall(Ball * const pball, CollisionEvent& coll) const
+void HitQuadtree::HitTestBall(const Ball * const pball, CollisionEvent& coll) const
 {
 #if 1   /// with SSE optimizations //////////////////////////
 
@@ -214,29 +214,29 @@ void HitQuadtree::HitTestBall(Ball * const pball, CollisionEvent& coll) const
       }
    }//end for loop
 
-   if (!m_fLeaf)
+   if (!m_leaf)
    {
-      const bool fLeft = (pball->m_hitBBox.left <= m_vcenter.x);
-      const bool fRight = (pball->m_hitBBox.right >= m_vcenter.x);
+      const bool left = (pball->m_hitBBox.left <= m_vcenter.x);
+      const bool right = (pball->m_hitBBox.right >= m_vcenter.x);
 
 #ifdef DEBUGPHYSICS
       g_pplayer->c_tested++;
 #endif
       if (pball->m_hitBBox.top <= m_vcenter.y) // Top
       {
-         if (fLeft)  m_children[0]->HitTestBall(pball, coll);
-         if (fRight) m_children[1]->HitTestBall(pball, coll);
+         if (left)  m_children[0]->HitTestBall(pball, coll);
+         if (right) m_children[1]->HitTestBall(pball, coll);
       }
       if (pball->m_hitBBox.bottom >= m_vcenter.y) // Bottom
       {
-         if (fLeft)  m_children[2]->HitTestBall(pball, coll);
-         if (fRight) m_children[3]->HitTestBall(pball, coll);
+         if (left)  m_children[2]->HitTestBall(pball, coll);
+         if (right) m_children[3]->HitTestBall(pball, coll);
       }
    }
 #endif
 }
 
-void HitQuadtree::HitTestBallSse(Ball * const pball, CollisionEvent& coll) const
+void HitQuadtree::HitTestBallSse(const Ball * const pball, CollisionEvent& coll) const
 {
    const HitQuadtree* stack[128]; //!! should be enough, but better implement test in construction to not exceed this
    unsigned int stackpos = 0;
@@ -252,17 +252,17 @@ void HitQuadtree::HitTestBallSse(Ball * const pball, CollisionEvent& coll) const
    const __m128 bzlow = _mm_set1_ps(pball->m_hitBBox.zlow);
    const __m128 bzhigh = _mm_set1_ps(pball->m_hitBBox.zhigh);
 
-   const __m128 posx = _mm_set1_ps(pball->m_pos.x);
-   const __m128 posy = _mm_set1_ps(pball->m_pos.y);
-   const __m128 posz = _mm_set1_ps(pball->m_pos.z);
-   const __m128 rsqr = _mm_set1_ps(pball->m_rcHitRadiusSqr);
+   const __m128 posx = _mm_set1_ps(pball->m_d.m_pos.x);
+   const __m128 posy = _mm_set1_ps(pball->m_d.m_pos.y);
+   const __m128 posz = _mm_set1_ps(pball->m_d.m_pos.z);
+   const __m128 rsqr = _mm_set1_ps(pball->HitRadiusSqr());
 
    const bool traversal_order = (rand_mt_01() < 0.5f); // swaps test order in leafs randomly
    const size_t dt = traversal_order ? 1 : -1;
 
    do
    {
-      if (current->m_unique == NULL || current->m_unique->m_d.m_fCollidable) // early out if only one unique primitive stored inside all of the subtree/current node that is also not collidable (at the moment)
+      if (current->m_unique == NULL || current->m_unique->m_d.m_collidable) // early out if only one unique primitive stored inside all of the subtree/current node that is also not collidable (at the moment)
       {
          if (current->lefts != 0) // does node contain hitables?
          {
@@ -338,23 +338,23 @@ void HitQuadtree::HitTestBallSse(Ball * const pball, CollisionEvent& coll) const
          //if (stackpos >= 127)
          //	ShowError("Quadtree stack size to be exceeded");
 
-         if (!current->m_fLeaf)
+         if (!current->m_leaf)
          {
 #ifdef DEBUGPHYSICS
             g_pplayer->c_traversed++;
 #endif
-            const bool fLeft = (pball->m_hitBBox.left <= current->m_vcenter.x);
-            const bool fRight = (pball->m_hitBBox.right >= current->m_vcenter.x);
+            const bool left = (pball->m_hitBBox.left <= current->m_vcenter.x);
+            const bool right = (pball->m_hitBBox.right >= current->m_vcenter.x);
 
             if (pball->m_hitBBox.top <= current->m_vcenter.y) // Top
             {
-               if (fLeft)  stack[++stackpos] = current->m_children[0];
-               if (fRight) stack[++stackpos] = current->m_children[1];
+               if (left)  stack[++stackpos] = current->m_children[0];
+               if (right) stack[++stackpos] = current->m_children[1];
             }
             if (pball->m_hitBBox.bottom >= current->m_vcenter.y) // Bottom
             {
-               if (fLeft)  stack[++stackpos] = current->m_children[2];
-               if (fRight) stack[++stackpos] = current->m_children[3];
+               if (left)  stack[++stackpos] = current->m_children[2];
+               if (right) stack[++stackpos] = current->m_children[3];
             }
          }
       }
@@ -367,43 +367,45 @@ void HitQuadtree::HitTestBallSse(Ball * const pball, CollisionEvent& coll) const
    } while (current);
 }
 
-void HitQuadtree::HitTestXRay(Ball * const pball, vector<HitObject*> &pvhoHit, CollisionEvent& coll) const
+void HitQuadtree::HitTestXRay(const Ball * const pball, vector<HitObject*> &pvhoHit, CollisionEvent& coll) const
 {
+   const float rcHitRadiusSqr = pball->HitRadiusSqr();
+
    for (size_t i = 0; i < m_vho.size(); i++)
    {
 #ifdef DEBUGPHYSICS
       g_pplayer->c_tested++;
 #endif
-      if ((pball != m_vho[i]) && fRectIntersect3D(pball->m_hitBBox, m_vho[i]->m_hitBBox) && fRectIntersect3D(pball->m_pos, pball->m_rcHitRadiusSqr, m_vho[i]->m_hitBBox))
+      if ((pball != m_vho[i]) && fRectIntersect3D(pball->m_hitBBox, m_vho[i]->m_hitBBox) && fRectIntersect3D(pball->m_d.m_pos, rcHitRadiusSqr, m_vho[i]->m_hitBBox))
       {
 #ifdef DEBUGPHYSICS
          g_pplayer->c_deepTested++;
 #endif
-         const float newtime = m_vho[i]->HitTest(pball, coll.m_hittime, coll);
-         if (newtime >= 0)
+         const float newtime = m_vho[i]->HitTest(pball->m_d, coll.m_hittime, coll);
+         if (newtime >= 0.f)
          {
             pvhoHit.push_back(m_vho[i]);
          }
       }
    }
 
-   if (!m_fLeaf)
+   if (!m_leaf)
    {
-      const bool fLeft = (pball->m_hitBBox.left <= m_vcenter.x);
-      const bool fRight = (pball->m_hitBBox.right >= m_vcenter.x);
+      const bool left = (pball->m_hitBBox.left <= m_vcenter.x);
+      const bool right = (pball->m_hitBBox.right >= m_vcenter.x);
 
 #ifdef DEBUGPHYSICS
       g_pplayer->c_tested++;
 #endif
       if (pball->m_hitBBox.top <= m_vcenter.y) // Top
       {
-         if (fLeft)  m_children[0]->HitTestXRay(pball, pvhoHit, coll);
-         if (fRight) m_children[1]->HitTestXRay(pball, pvhoHit, coll);
+         if (left)  m_children[0]->HitTestXRay(pball, pvhoHit, coll);
+         if (right) m_children[1]->HitTestXRay(pball, pvhoHit, coll);
       }
       if (pball->m_hitBBox.bottom >= m_vcenter.y) // Bottom
       {
-         if (fLeft)  m_children[2]->HitTestXRay(pball, pvhoHit, coll);
-         if (fRight) m_children[3]->HitTestXRay(pball, pvhoHit, coll);
+         if (left)  m_children[2]->HitTestXRay(pball, pvhoHit, coll);
+         if (right) m_children[3]->HitTestXRay(pball, pvhoHit, coll);
       }
    }
 }

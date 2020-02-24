@@ -387,7 +387,7 @@ void EnumerateDisplayModes(const int display, std::vector<VideoMode>& modes)
 //{
 //   int maxAdapter = SDL_GetNumVideoDrivers();
 //   int display = 0;
-//   for (display = 0; display < getNumberOfDisplays(); display++)
+//   for (display = 0; display < getNumberOfDisplays(); ++display)
 //   {
 //      SDL_Rect displayBounds;
 //      if (SDL_GetDisplayBounds(display, &displayBounds) == 0) {
@@ -401,7 +401,7 @@ void EnumerateDisplayModes(const int display, std::vector<VideoMode>& modes)
 //         displayConf.height = displayBounds.h;
 //
 //         strncpy_s(displayConf.DeviceName, SDL_GetDisplayName(displayConf.display), 32);
-//         strncpy_s(displayConf.GPU_Name, SDL_GetVideoDriver(displayConf.adapter), MAX_DEVICE_IDENTIFIER_STRING);
+//         strncpy_s(displayConf.GPU_Name, SDL_GetVideoDriver(displayConf.adapter), MAX_DEVICE_IDENTIFIER_STRING-1);
 //
 //         displays.push_back(displayConf);
 //      }
@@ -456,19 +456,19 @@ int getDisplayList(std::vector<DisplayConfig>& displays)
       std::map<std::string, DisplayConfig>::iterator display = displayMap.find(adapter.DeviceName);
       if (display != displayMap.end()) {
          display->second.adapter = i;
-         strncpy_s(display->second.GPU_Name, adapter.Description, MAX_DEVICE_IDENTIFIER_STRING);
+         strncpy_s(display->second.GPU_Name, adapter.Description, MAX_DEVICE_IDENTIFIER_STRING-1);
       }
    }
    SAFE_RELEASE(pD3D);
 #endif
    // Apply the same numbering as windows
    int i = 0;
-   for (std::map<std::string, DisplayConfig>::iterator display = displayMap.begin(); display != displayMap.end(); display++)
+   for (std::map<std::string, DisplayConfig>::iterator display = displayMap.begin(); display != displayMap.end(); ++display)
    {
       if (display->second.adapter >= 0) {
          display->second.display = i;
 #ifdef ENABLE_SDL
-         strncpy_s(display->second.GPU_Name, SDL_GetDisplayName(display->second.adapter), MAX_DEVICE_IDENTIFIER_STRING);
+         strncpy_s(display->second.GPU_Name, SDL_GetDisplayName(display->second.adapter), MAX_DEVICE_IDENTIFIER_STRING-1);
 #endif
          displays.push_back(display->second);
       }
@@ -481,7 +481,7 @@ bool getDisplaySetupByID(const int display, int &x, int &y, int &width, int &hei
 {
    std::vector<DisplayConfig> displays;
    getDisplayList(displays);
-   for (std::vector<DisplayConfig>::iterator displayConf = displays.begin(); displayConf != displays.end(); displayConf++) {
+   for (std::vector<DisplayConfig>::iterator displayConf = displays.begin(); displayConf != displays.end(); ++displayConf) {
       if ((display == -1 && displayConf->isPrimary) || display == displayConf->display) {
          x = displayConf->left;
          y = displayConf->top;
@@ -501,7 +501,7 @@ int getPrimaryDisplay()
 {
    std::vector<DisplayConfig> displays;
    getDisplayList(displays);
-   for (std::vector<DisplayConfig>::iterator displayConf = displays.begin(); displayConf != displays.end(); displayConf++) {
+   for (std::vector<DisplayConfig>::iterator displayConf = displays.begin(); displayConf != displays.end(); ++displayConf) {
       if (displayConf->isPrimary) {
          return displayConf->adapter;
       }
@@ -511,7 +511,7 @@ int getPrimaryDisplay()
 
 ////////////////////////////////////////////////////////////////////
 
-#define CHECKNVAPI(s) { NvAPI_Status hr = (s); if (hr != NVAPI_OK) { NvAPI_ShortString ss; NvAPI_GetErrorMessage(hr,ss); MessageBox(NULL, ss, "NVAPI", MB_OK | MB_ICONEXCLAMATION); } }
+#define CHECKNVAPI(s) { NvAPI_Status hr = (s); if (hr != NVAPI_OK) { NvAPI_ShortString ss; NvAPI_GetErrorMessage(hr,ss); g_pvp->MessageBox(ss, "NVAPI", MB_OK | MB_ICONEXCLAMATION); } }
 static bool NVAPIinit = false; //!! meh
 
 bool RenderDevice::m_INTZ_support = false;
@@ -551,7 +551,7 @@ static void CheckForD3DLeak(IDirect3DDevice9* d3d)
    HRESULT hr = d3d->Reset(&pp);
    if (FAILED(hr))
    {
-      MessageBox(0, "WARNING! Direct3D resource leak detected!", "Visual Pinball", MB_ICONWARNING);
+      g_pvp->MessageBox("WARNING! Direct3D resource leak detected!", "Visual Pinball", MB_ICONWARNING);
    }
 }
 #endif
@@ -688,7 +688,7 @@ void RenderDevice::InitVR() {
 }
 
 #ifdef ENABLE_SDL
-RenderDevice::RenderDevice(HWND* const hwnd, const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice)
+RenderDevice::RenderDevice(const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice)
    : m_texMan(*this), m_width(width), m_height(height), m_fullscreen(fullscreen),
    m_colorDepth(colordepth), m_vsync(VSync), m_AAfactor(AAfactor), m_stereo3D(stereo3D), m_FXAA(FXAA),
    m_ssRefl(ss_refl), m_useNvidiaApi(useNvidiaApi), m_disableDwm(disable_dwm), m_BWrendering(BWrendering)
@@ -837,7 +837,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
    m_pOffscreenBackBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
 
-   if ((g_pplayer != NULL) && (g_pplayer->m_ptable->m_fReflectElementsOnPlayfield || (g_pplayer->m_fReflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1)))
+   if ((g_pplayer != NULL) && (g_pplayer->m_ptable->m_reflectElementsOnPlayfield || (g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1)))
          m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
 
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
@@ -1206,7 +1206,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 #ifdef USE_D3D9EX
    params.PresentationInterval = (m_pD3DEx && (m_vsync != 1)) ? D3DPRESENT_INTERVAL_IMMEDIATE : (!!m_vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE); //!! or have a special mode to force normal vsync?
 #else
-   params.PresentationInterval = !!VSync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
+   params.PresentationInterval = !!m_vsync ? D3DPRESENT_INTERVAL_ONE : D3DPRESENT_INTERVAL_IMMEDIATE;
 #endif
 
    // check if our HDR texture format supports/does sRGB conversion on texture reads, which must NOT be the case as we always set SRGBTexture=true independent of the format!
@@ -1337,8 +1337,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 
    if (g_pplayer != NULL)
    {
-      const bool drawBallReflection = ((g_pplayer->m_fReflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
-      if (g_pplayer->m_ptable->m_fReflectElementsOnPlayfield || drawBallReflection)
+      const bool drawBallReflection = ((g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
+      if (g_pplayer->m_ptable->m_reflectElementsOnPlayfield || drawBallReflection)
       {
          hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pMirrorTmpBufferTexture, NULL); //!! colorFormat::RGBA32?
          if (FAILED(hr))
@@ -1498,8 +1498,8 @@ RenderDevice::~RenderDevice()
 
    if (g_pplayer)
    {
-      const bool drawBallReflection = ((g_pplayer->m_fReflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
-      if (g_pplayer->m_ptable->m_fReflectElementsOnPlayfield || drawBallReflection)
+      const bool drawBallReflection = ((g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
+      if (g_pplayer->m_ptable->m_reflectElementsOnPlayfield || drawBallReflection)
          SAFE_RELEASE(m_pMirrorTmpBufferTexture);
    }
    SAFE_RELEASE(m_pBloomBufferTexture);
@@ -1635,7 +1635,7 @@ void RenderDevice::EndScene()
 #endif
 }
 
-static void FlushGPUCommandBuffer(IDirect3DDevice9* pd3dDevice)
+/*static void FlushGPUCommandBuffer(IDirect3DDevice9* pd3dDevice)
 {
    IDirect3DQuery9* pEventQuery;
    pd3dDevice->CreateQuery(D3DQUERYTYPE_EVENT, &pEventQuery);
@@ -1647,7 +1647,7 @@ static void FlushGPUCommandBuffer(IDirect3DDevice9* pd3dDevice)
          ;
       SAFE_RELEASE(pEventQuery);
    }
-}
+}*/
 
 bool RenderDevice::SetMaximumPreRenderedFrames(const DWORD frames)
 {
@@ -2424,7 +2424,7 @@ void RenderDevice::SetRenderState(const RenderStates p1, DWORD p2)
 }
 
 void RenderDevice::SetRenderStateCulling(RenderStateValue cull) {
-   if (g_pplayer && (g_pplayer->m_ptable->m_tblMirrorEnabled ^ g_pplayer->m_ptable->m_fReflectionEnabled))
+   if (g_pplayer && (g_pplayer->m_ptable->m_tblMirrorEnabled ^ g_pplayer->m_ptable->m_reflectionEnabled))
    {
       if (cull == CULL_CCW)
          cull = CULL_CW;

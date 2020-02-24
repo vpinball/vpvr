@@ -11,11 +11,10 @@
 // DispReel
 
 // add data in this class is persisted with the table
-class DispReelData
+class DispReelData : public BaseProperty
 {
 public:
    Vertex2D    m_v1, m_v2;          // position on map (top right corner)
-   char        m_szImage[MAXTOKEN]; // image to use for the decals.
    int         m_imagesPerGridRow;
    int         m_reelcount;         // number of individual reel in the set
    float       m_width, m_height;   // size of each reel
@@ -29,19 +28,8 @@ public:
    COLORREF    m_backcolor;         // colour of the background
 
    TimerDataRoot m_tdr;             // timer information
-   bool        m_fTransparent;      // is the background transparent
-   bool        m_fUseImageGrid;
-   bool        m_fVisible;
-};
-
-class ReelInfo
-{
-public:
-   int     currentValue;       // current digit value
-   int     motorPulses;        // number of motor pulses received for this reel (can be negative)
-   int     motorStepCount;     // when equal to zero then at a whole letter
-   float   motorCalcStep;      // calculated steping rate of motor
-   float   motorOffset;        // frame value of motor (where to display the reel)
+   bool        m_transparent;       // is the background transparent
+   bool        m_useImageGrid;
 };
 
 class DispReel :
@@ -82,9 +70,7 @@ public:
 
    STANDARD_EDITABLE_DECLARES(DispReel, eItemDispReel, DISPREEL, 2)
 
-      virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
-   virtual void MoveOffset(const float dx, const float dy);
+      virtual void MoveOffset(const float dx, const float dy);
    virtual void SetObjectPos();
    // Multi-object manipulation
    virtual Vertex2D GetCenter() const;
@@ -92,35 +78,106 @@ public:
 
    virtual ItemTypeEnum HitableGetItemType() const { return eItemDispReel; }
 
+   virtual void WriteRegDefaults();
+
    DECLARE_REGISTRY_RESOURCEID(IDR_DISP_REEL)
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
 
-   void        Animate();
+   int     GetImagesPerGridRow() const { return m_d.m_imagesPerGridRow; }
+   void    SetImagesPerGridRow(const int amount) { m_d.m_imagesPerGridRow = max(1, amount); }
+   int     GetReels() const { return m_d.m_reelcount; }
+   void    SetReels(const int reels)
+   {
+      m_d.m_reelcount = min(max(1, reels), MAX_REELS); // must have at least 1 reel and a max of MAX_REELS
+      m_d.m_v2.x = m_d.m_v1.x + getBoxWidth();
+      m_d.m_v2.y = m_d.m_v1.y + getBoxHeight();
+   }
+   int     GetRange() const { return m_d.m_digitrange; }
+   void    SetRange(const int newRange)
+   {
+      m_d.m_digitrange = max(0, newRange);                        // must have at least 1 digit (0 is a digit)
+      if (m_d.m_digitrange > 512 - 1) m_d.m_digitrange = 512 - 1; // and a max of 512 (0->511) //!! 512 requested by highrise
+   }
+   float   GetX() const { return m_d.m_v1.x; }
+   void    SetX(const float x)
+   {
+      const float delta = x - m_d.m_v1.x;
+      m_d.m_v1.x += delta;
+      m_d.m_v2.x = m_d.m_v1.x + getBoxWidth();
+   }
+   float   GetY() const { return m_d.m_v1.y; }
+   void    SetY(const float y)
+   {
+      const float delta = y - m_d.m_v1.y;
+      m_d.m_v1.y += delta;
+      m_d.m_v2.y = m_d.m_v1.y + getBoxHeight();
+   }
+   float   GetWidth() const { return m_d.m_width; }
+   void    SetWidth(const float width)
+   {
+      m_d.m_width = max(0.0f, width);
+      m_d.m_v2.x = m_d.m_v1.x + getBoxWidth();
 
-   virtual void WriteRegDefaults();
+   }
+
+   float   GetHeight() const { return m_d.m_height; }
+   void    SetHeight(const float height)
+   {
+      m_d.m_height = max(0.0f, height);
+      m_d.m_v2.y = m_d.m_v1.y + getBoxHeight();
+   }
+   float   GetSpacing() const { return m_d.m_reelspacing; }
+   void    SetSpacing(const float newSpace)
+   {
+      m_d.m_reelspacing = max(0.0f, newSpace);
+      m_d.m_v2.x = m_d.m_v1.x + getBoxWidth();
+      m_d.m_v2.y = m_d.m_v1.y + getBoxHeight();
+   }
+   int     GetMotorSteps() const { return m_d.m_motorsteps; }
+   void    SetMotorSteps(const int steps)
+   {
+      m_d.m_motorsteps = max(1, steps); // must have at least 1 step)
+   }
+   int     GetUpdateInterval() const { return m_d.m_updateinterval; }
+   void    SetUpdateInterval(const int interval)
+   {
+      m_d.m_updateinterval = max((int)5, interval);
+   }
+
+   void    Animate();
 
    DispReelAnimObject m_dispreelanim;
 
    DispReelData m_d;
 
 private:
-   PinTable * m_ptable;
+   float   getBoxWidth() const;
+   float   getBoxHeight() const;
+
+   PinTable    *m_ptable;
 
    float       m_renderwidth, m_renderheight;     // size of each reel (rendered)
 
+   struct ReelInfo
+   {
+      int     currentValue;       // current digit value
+      int     motorPulses;        // number of motor pulses received for this reel (can be negative)
+      int     motorStepCount;     // when equal to zero then at a whole letter
+      float   motorCalcStep;      // calculated steping rate of motor
+      float   motorOffset;        // frame value of motor (where to display the reel)
+   };
    ReelInfo    m_reelInfo[MAX_REELS];
 
    float       m_reeldigitwidth;  // size of the individual reel digits (in bitmap form)
    float       m_reeldigitheight;
-   U32         m_timenextupdate;
+   U32         m_timeNextUpdate;
 
    struct TexCoordRect
    {
       float u_min, u_max;
       float v_min, v_max;
    };
-
    std::vector<TexCoordRect> m_digitTexCoords;
 
    // IDispReel
@@ -163,10 +220,6 @@ public:
    STDMETHOD(AddValue)(/*[in]*/ long Value);
    STDMETHOD(SetValue)(/*[in]*/ long Value);
    STDMETHOD(SpinReel)(/*[in]*/ long ReelNumber, /*[in]*/ long PulseCount);
-
-private:
-   float   getBoxWidth() const;
-   float   getBoxHeight() const;
 };
 
 #endif // !defined(AFX_DISPREEL_H__1052EB33_4F53_460B_AAB8_09D3C517F225__INCLUDED_)

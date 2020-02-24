@@ -53,15 +53,15 @@ public:
 
    Vertex2D m_zeroAngNorm;  // base norms at zero degrees
 
-   short m_EnableRotateEvent; // -1,0,1
+   short m_enableRotateEvent; // -1,0,1
 
    bool m_direction;
 
    bool m_solState;         // is solenoid enabled?
    bool m_isInContact;
 
-   bool m_fEnabled;
-   bool m_fVisible;
+   bool m_enabled;
+   bool m_visible;
    bool m_lastHitFace;
 
 #ifdef DEBUG_FLIPPERS
@@ -76,7 +76,7 @@ public:
       const float zlow, const float zhigh, Flipper* const pflipper);
    ~HitFlipper() { /*m_pflipper->m_phitflipper = NULL;*/ }
 
-   virtual float HitTest(const Ball * const pball, const float dtime, CollisionEvent& coll) const;
+   virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const;
    virtual int GetType() const { return eFlipper; }
    virtual void Collide(const CollisionEvent& coll);
    virtual void Contact(CollisionEvent& coll, const float dtime);
@@ -85,11 +85,13 @@ public:
 
    void UpdatePhysicsFromFlipper();
 
-   float HitTestFlipperFace(const Ball * const pball, const float dtime, CollisionEvent& coll, const bool face1) const;
-   float HitTestFlipperEnd(const Ball * const pball, const float dtime, CollisionEvent& coll) const;
+   float HitTestFlipperFace(const BallS& ball, const float dtime, CollisionEvent& coll, const bool face1) const;
+   float HitTestFlipperEnd(const BallS& ball, const float dtime, CollisionEvent& coll) const;
 
    float GetHitTime() const { return m_flipperMover.GetHitTime(); }
 
    FlipperMoverObject m_flipperMover;
+
+private:
    U32 m_last_hittime;
 };

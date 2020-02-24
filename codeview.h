@@ -5,6 +5,8 @@
 #include <activdbg.h>
 #include <atlcom.h>
 #include "codeviewedit.h"
+#include "scintilla.h"
+#include "scilexer.h"
 
 #define MAX_FIND_LENGTH 81
 #define MAX_LINE_LENGTH 2048
@@ -22,6 +24,7 @@ class IScriptable
 {
 public:
    IScriptable();
+
    STDMETHOD(get_Name)(BSTR *pVal) = 0;
    virtual IDispatch *GetDispatch() = 0;
    virtual ISelect *GetISelect() = 0;
@@ -68,11 +71,11 @@ public:
    CodeViewDispatch();
    ~CodeViewDispatch();
 
-   WCHAR m_wzName[32];
+   WCHAR m_wzName[MAXNAMEBUFFER];
    IUnknown *m_punk;
    IDispatch *m_pdisp;
    IScriptable *m_piscript;
-   bool m_fGlobal;
+   bool m_global;
 
    // for VectorSortString
    int SortAgainst(const CodeViewDispatch * const pcvd/*void *pvoid*/) const;
@@ -102,9 +105,9 @@ public:
 
    void Create();
    void Destroy();
-   void SetVisible(const bool fVisible);
+   void SetVisible(const bool visible);
 
-   void SetEnabled(const bool fEnabled);
+   void SetEnabled(const bool enabled);
 
    void SetClean(const SaveDirtyState sds);
 
@@ -112,7 +115,7 @@ public:
    STDMETHOD(CleanUpScriptEngine)();
    STDMETHOD(InitializeScriptEngine)();
 
-   HRESULT AddItem(IScriptable * const piscript, const bool fGlobal);
+   HRESULT AddItem(IScriptable * const piscript, const bool global);
    void RemoveItem(IScriptable * const piscript);
    HRESULT ReplaceName(IScriptable * const piscript, WCHAR * const wzNew);
    void SelectItem(IScriptable * const piscript);
@@ -121,6 +124,7 @@ public:
    void Start();
 
    void EndSession();
+
    HRESULT AddTemporaryItem(const BSTR bstr, IDispatch * const pdisp);
 
    STDMETHOD(GetItemInfo)(LPCOLESTR pstrName, DWORD dwReturnMask,
@@ -205,42 +209,9 @@ public:
       COM_INTERFACE_ENTRY(IServiceProvider)
    END_COM_MAP()
 
-   IScriptableHost *m_psh;
-
-   IActiveScript* m_pScript;
-
-   VectorSortString<CodeViewDispatch*> m_vcvd;
-
-   bool m_fScriptError; // Whether a script error has occured - used for polling from the game
-
-   bool m_visible;
-   bool m_minimized;
-
-private:
-
-   IActiveScriptParse * m_pScriptParse;
-   IActiveScriptDebug* m_pScriptDebug;
-   FINDREPLACE m_findreplacestruct;
-   char szFindString[MAX_FIND_LENGTH];
-   char szReplaceString[MAX_FIND_LENGTH];
-
-   VectorSortString<CodeViewDispatch*> m_vcvdTemp; // Objects added through script
-
-   bool ParseOKLineLength(const size_t LineLen);
-   void ParseDelimtByColon(string &result, string &wholeline);
-   void ParseFindConstruct(size_t &Pos, const string &UCLine, WordType &Type, int &ConstructSize);
-   bool ParseStructureName(vector<UserData> *ListIn, UserData ud, const string &UCline, const string &line, const int Lineno);
-
-   size_t SureFind(const string &LineIn, const string &ToFind);
-   void RemoveByVal(string &line);
-   void RemoveNonVBSChars(string &line);
-   string ExtractWordOperand(const string &line, const size_t StartPos);
-
-public:
-   // Edit Class
-   void ColorLine(const int line);
    void UncolorError();
-   void ColorError(const int line, const int nchar);
+   void ParseForFunction();
+
    void ShowFindDialog();
    void ShowFindReplaceDialog();
    void Find(const FINDREPLACE * const pfr);
@@ -251,91 +222,133 @@ public:
    void LoadFromFile(const char *filename);
    void SetCaption(const char * const szCaption);
 
-   // WIP VBS page parse
-   void ParseVPCore();
-   void ParseForFunction();
-
-   void ReadLineToParseBrain(string wholeline, const int linecount, vector<UserData> *ListIn);
    bool ShowTooltip(SCNotification *Scn);
    void ShowAutoComplete(SCNotification *pSCN);
-   string ValidChars;
-   string VBValidChars;
 
-   // CodeViewer Preferences
-   vector<CVPrefrence*> *lPrefsList;
-   CVPrefrence *prefDefault;
-   CVPrefrence *prefEverythingElse;
-   CVPrefrence *prefVBS;
-   CVPrefrence *prefComps;
-   CVPrefrence *prefSubs;
-   CVPrefrence *prefComments;
-   CVPrefrence *prefLiterals;
-   CVPrefrence *prefVPcore;
-   COLORREF g_PrefCols[16];
-   COLORREF crBackColor;
-   bool StopErrorDisplay;
-   //bool ParentTreeInvalid;
-   bool DisplayAutoComplete;
-   void GetMembers(vector<UserData>* ListIn, const string &StrIn);
-   //TODO: int TabStop;
-   int DisplayAutoCompleteLength;
-   bool DwellDisplay;
-   bool DwellHelp;
-   int DwellDisplayTime;
-
-   void GetWordUnderCaret();
-   void InitPreferences();
    void UpdateRegWithPrefs();
    void UpdatePrefsfromReg();
-   void UpdateScinFromPrefs();
 
-   // keyword lists
-   bool g_ToolTipActive;
-   string vbsKeyWords;
-   vector<string> *AutoCompList;
-   // Dictionaries
-   vector<UserData> *VBwordsDict;
-   vector<UserData> *PageConstructsDict;
-   vector<UserData> *ComponentsDict;
-   vector<UserData> *VP_CoreDict;
-   vector<UserData> *CurrentMembers;
-   string AutoCompString;
-   string AutoCompMembersString;
-   Sci_TextRange WordUnderCaret;
-   Sci_TextRange CurrentConstruct;
+   void GetWordUnderCaret();
 
    void ListEventsFromItem();
    void FindCodeFromEvent();
    void TellHostToSelectItem();
-   void GetParamsFromEvent(const UINT iEvent, char * const szParams);
+
+   void UpdateScinFromPrefs();
 
    void MarginClick(const int position, const int modifiers);
 
    void EvaluateScriptStatement(const char * const szScript);
    void AddToDebugOutput(const char * const szText);
 
+   IScriptableHost *m_psh;
+
+   IActiveScript* m_pScript;
+
+   VectorSortString<CodeViewDispatch*> m_vcvd;
+
+   COLORREF m_prefCols[16];
+   COLORREF m_bgColor;
+   CVPrefrence *m_prefEverythingElse;
+   vector<CVPrefrence*> *m_lPrefsList;
+
+   int m_displayAutoCompleteLength;
+   bool m_scriptError; // Whether a script error has occured - used for polling from the game
+
+   bool m_visible;
+   bool m_minimized;
+
+   bool m_displayAutoComplete;
+   bool m_toolTipActive;
+   bool m_stopErrorDisplay;
+   bool m_dwellHelp;
+   bool m_dwellDisplay;
+   int m_dwellDisplayTime;
+
+   vector<UserData> *m_pageConstructsDict;
+   Sci_TextRange m_wordUnderCaret;
+
    CComObject<DebuggerModule> *m_pdm; // Object to expose to script for global functions
                                       //ULONG m_cref;
 
    HWND m_hwndMain;
    HWND m_hwndScintilla;
-   HWND m_hwndStatus;
    HWND m_hwndFind;
+   HWND m_hwndStatus;
+   HWND m_hwndFunctionList;
+
+   HACCEL m_haccel; // Accelerator keys
+
+   int m_errorLineNumber;
+
+   FINDREPLACE m_findreplaceold; // the last thing found/replaced
+
+   SaveDirtyState m_sdsDirty;
+   bool m_ignoreDirty;
+
+private:
+   bool ParseOKLineLength(const size_t LineLen);
+   void ParseDelimtByColon(string &result, string &wholeline);
+   void ParseFindConstruct(size_t &Pos, const string &UCLine, WordType &Type, int &ConstructSize);
+   bool ParseStructureName(vector<UserData> *ListIn, UserData ud, const string &UCline, const string &line, const int Lineno);
+
+   size_t SureFind(const string &LineIn, const string &ToFind);
+   void RemoveByVal(string &line);
+   void RemoveNonVBSChars(string &line);
+   string ExtractWordOperand(const string &line, const size_t StartPos);
+
+   void ColorLine(const int line);
+   void ColorError(const int line, const int nchar);
+
+   void ParseVPCore();
+
+   void ReadLineToParseBrain(string wholeline, const int linecount, vector<UserData> *ListIn);
+
+   void GetMembers(vector<UserData>* ListIn, const string &StrIn);
+
+   void InitPreferences();
+
+   void GetParamsFromEvent(const UINT iEvent, char * const szParams);
+
+   IActiveScriptParse* m_pScriptParse;
+   IActiveScriptDebug* m_pScriptDebug;
+   FINDREPLACE m_findreplacestruct;
+   char szFindString[MAX_FIND_LENGTH];
+   char szReplaceString[MAX_FIND_LENGTH];
+
+   VectorSortString<CodeViewDispatch*> m_vcvdTemp; // Objects added through script
+
+   string m_validChars;
+   string m_VBvalidChars;
+
+   // CodeViewer Preferences
+   CVPrefrence *prefDefault;
+   CVPrefrence *prefVBS;
+   CVPrefrence *prefComps;
+   CVPrefrence *prefSubs;
+   CVPrefrence *prefComments;
+   CVPrefrence *prefLiterals;
+   CVPrefrence *prefVPcore;
+   //bool ParentTreeInvalid;
+   //TODO: int TabStop;
+
+   // keyword lists
+   string m_vbsKeyWords;
+   vector<string> *m_autoCompList;
+   // Dictionaries
+   vector<UserData> *m_VBwordsDict;
+   vector<UserData> *m_componentsDict;
+   vector<UserData> *m_VPcoreDict;
+   vector<UserData> *m_currentMembers;
+   string m_autoCompString;
+   string m_autoCompMembersString;
+   Sci_TextRange m_currentConstruct;
 
    HWND m_hwndItemList;
    HWND m_hwndItemText;
    HWND m_hwndEventList;
    HWND m_hwndEventText;
-   HWND m_hwndFunctionList;
    HWND m_hwndFunctionText;
-
-   SaveDirtyState m_sdsDirty;
-   bool m_fIgnoreDirty;
-   HACCEL m_haccel; // Accelerator keys
-
-   FINDREPLACE m_findreplaceold; // the last thing found/replaced
-
-   int m_errorLineNumber;
 };
 
 class Collection :
@@ -357,9 +370,9 @@ public:
    virtual ISelect *GetISelect();
 
    //ILoadable
-   virtual HRESULT SaveData(IStream *pstm, HCRYPTHASH hcrypthash);
+   virtual HRESULT SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupForPlay);
    virtual HRESULT LoadData(IStream *pstm, PinTable *ppt, int version, HCRYPTHASH hcrypthash, HCRYPTKEY hcryptkey);
-   virtual BOOL LoadToken(int id, BiffReader *pbr);
+   virtual bool LoadToken(const int id, BiffReader * const pbr);
 
    STDMETHOD(get_Count)(long __RPC_FAR *plCount);
    STDMETHOD(get_Item)(long index, IDispatch __RPC_FAR * __RPC_FAR *ppidisp);
@@ -379,9 +392,9 @@ public:
 
    VectorProtected<ISelect> m_visel;
 
-   bool m_fFireEvents;
-   bool m_fStopSingleEvents;
-   bool m_fGroupElements;
+   bool m_fireEvents;
+   bool m_stopSingleEvents;
+   bool m_groupElements;
 };
 
 class OMCollectionEnum :
@@ -410,7 +423,7 @@ private:
 
 // general string helpers:
 
-inline bool FIsWhitespace(const char ch)
+inline bool IsWhitespace(const char ch)
 {
    return (ch == ' ' || ch == 9/*tab*/);
 }

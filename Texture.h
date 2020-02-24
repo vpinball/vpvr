@@ -19,7 +19,7 @@ public:
    { }
 
    BaseTexture(const int w, const int h, const Format format = RGBA)
-      : m_width(w), m_height(h), m_realWidth(w), m_realHeight(h), m_format(format), m_data((format == RGBA ? 4 : 3 * 4) * (w*h))
+      : m_width(w), m_height(h), m_data((format == RGBA ? 4 : 3 * 4) * (w*h)), m_realWidth(w), m_realHeight(h), m_format(format)
    { }
 
    int width() const { return m_width; }
@@ -30,6 +30,7 @@ public:
 private:
    int m_width;
    int m_height;
+
 public:
    std::vector<BYTE> m_data;
    int m_realWidth, m_realHeight;
@@ -59,7 +60,7 @@ public:
    virtual ~Texture();
 
    // ILoadable callback
-   virtual BOOL LoadToken(int id, BiffReader *pbr);
+   virtual bool LoadToken(const int id, BiffReader * const pbr);
 
    HRESULT SaveToStream(IStream *pstream, PinTable *pt);
    HRESULT LoadFromStream(IStream *pstream, int version, PinTable *pt);

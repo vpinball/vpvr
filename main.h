@@ -17,7 +17,6 @@
 #ifdef _DEBUG
 #define D3D_DEBUG_INFO
 #endif
-#include <d3d9.h>
 
 //#include <richedit.h>
 //#include <atlcom.h>
@@ -41,10 +40,49 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <commdlg.h>
+
 using std::string;
 using std::vector;
 
-#include "HELPERS.H"
+#include <dlgs.h>
+#include <cderr.h>
+#include <wxx_appcore.h>		// Add CCriticalSection, CObject, CWinThread, CWinApp
+//#include <wxx_archive.h>		// Add CArchive
+#include <wxx_commondlg.h>		// Add CCommonDialog, CColorDialog, CFileDialog, CFindReplace, CFontDialog 
+#include <wxx_scrollview.h>
+//#include <wxx_controls.h>		// Add CAnimation, CComboBox, CComboBoxEx, CDateTime, CHeader, CHotKey, CIPAddress, CProgressBar, CSpinButton, CScrollBar, CSlider, CToolTip
+//#include <wxx_cstring.h>		// Add CString, CStringA, CStringW
+//#include <wxx_ddx.h>			// Add CDataExchange
+//#include <wxx_dialog.h>			// Add CDialog, CResizer
+//#include <wxx_dockframe.h>		// Add CDockFrame, CMDIDockFrame
+//#include <wxx_docking.h>		// Add CDocker, CDockContainer
+//#include <wxx_exception.h>		// Add CException, CFileException, CNotSupportedException, CResourceException, CUserException, CWinException
+//#include <wxx_file.h>			// Add CFile
+//#include <wxx_frame.h>			// Add CFrame
+//#include <wxx_gdi.h>			// Add CDC, CGDIObject, CBitmap, CBrush, CFont, CPalatte, CPen, CRgn
+//#include <wxx_imagelist.h>		// Add CImageList
+#include <wxx_listview.h>		// Add CListView
+//#include <wxx_mdi.h>			// Add CMDIChild, CMDIFrame, CDockMDIFrame
+//#include <wxx_printdialogs.h>	// Add CPageSetupDialog, CPrintSetupDialog
+//#include <wxx_propertysheet.h>	// Add CPropertyPage, CPropertySheet
+//#include <wxx_rebar.h>			// Add CRebar
+//#include <wxx_regkey.h>			// Add CRegKey
+//#include <wxx_ribbon.h>		// Add CRibbon, CRibbonFrame
+#include <wxx_richedit.h>		// Add CRichEdit
+//#include <wxx_shared_ptr.h>		// Add Shared_Ptr
+//#include <wxx_socket.h>			// Add CSocket
+//#include <wxx_statusbar.h>		// Add CStatusBar
+//#include <wxx_stdcontrols.h>	// Add CButton, CEdit, CListBox
+//#include <wxx_tab.h>			// Add CTab, CTabbedMDI
+//#include <wxx_taskdialog.h>	// Add CTaskDialog
+//#include <wxx_time.h>			// Add CTime
+//#include <wxx_toolbar.h>		// Add CToolBar
+#include <wxx_treeview.h>		// Add CTreeView
+//#include <wxx_webbrowser.h>		// Add CAXWindow, CWebBrowser
+#include <wxx_wincore.h>
+
+#include "helpers.h"
 
 #include "def.h"
 
@@ -54,9 +92,6 @@ using std::vector;
 #include "math/bbox.h"
 
 #include "resource.h"
-
-#include "Scintilla.h"
-#include "scilexer.h"
 
 #include "memutil.h"
 #include "disputil.h"
@@ -69,43 +104,42 @@ using std::vector;
 #include "vpinball_i.h"
 #include "regutil.h"
 
-#include "IDebug.h"
+#include "idebug.h"
 
-#include "EventProxy.h"
+#include "eventproxy.h"
 
 #include "worker.h"
 
-#include "XAudPlayer.h"
-#include "media/FileIO.h"
-#include "PinUndo.h"
-#include "ISelect.h"
+#include "audioplayer.h"
+#include "media/fileio.h"
+#include "pinundo.h"
+#include "iselect.h"
 
-#include "IEditable.h"
-#include "PropBrowser.h"
-#include "CodeView.h"
+#include "ieditable.h"
+#include "codeview.h"
 
 #include "media/lzwreader.h"
 #include "media/lzwwriter.h"
 
 #include "media/wavread.h"
 
-#include "PinInput.h"
-#include "PinSound.h"
-#include "PinBinary.h"
+#include "pininput.h"
+#include "pinsound.h"
+#include "pinbinary.h"
 
-#include "VPinball.h"
-#include "PinTable.h"
+#include "vpinball.h"
+#include "pintable.h"
 
-#include "Mesh.h"
+#include "mesh.h"
 #include "pin/collide.h"
-#include "Pin3D.h"
+#include "pin3d.h"
 
 #include "sur.h"
 #include "paintsur.h"
 #include "hitsur.h"
 #include "hitrectsur.h"
 
-#include "BallEx.h"
+#include "ballex.h"
 
 #include "pin/collideex.h"
 #include "pin/ball.h"
@@ -117,7 +151,7 @@ using std::vector;
 
 #include "color.h"
 
-#include "DragPoint.h"
+#include "dragpoint.h"
 #include "timer.h"
 #include "surface.h"
 #include "flipper.h"
@@ -126,15 +160,15 @@ using std::vector;
 #include "dispreel.h"
 #include "lightseq.h"
 #include "bumper.h"
-#include "Trigger.h"
-#include "Light.h"
-#include "Kicker.h"
-#include "Decal.h"
-#include "Primitive.h"
+#include "trigger.h"
+#include "light.h"
+#include "kicker.h"
+#include "decal.h"
+#include "primitive.h"
 #include "hittarget.h"
-#include "Gate.h"
-#include "Spinner.h"
-#include "Ramp.h"
+#include "gate.h"
+#include "spinner.h"
+#include "ramp.h"
 #include "flasher.h"
 #include "rubber.h"
 #include "mixer.h"
@@ -152,14 +186,15 @@ using std::vector;
 
 #include "editablereg.h"
 
+#include <typeDefs3D.h>
+
+
 __forceinline float getBGxmult()
 {
-   return (float)g_pplayer->m_width * (float)(1.0 / EDITOR_BG_WIDTH)
-      * (g_pplayer->m_pin3d.m_AAfactor);
+   return g_pplayer->m_AAfactor;
 }
 
 __forceinline float getBGymult()
 {
-   return getBGxmult() /
-      (((float)g_pplayer->m_screenwidth / (float)g_pplayer->m_screenheight) / (float)((double)EDITOR_BG_WIDTH / EDITOR_BG_HEIGHT));
+   return g_pplayer->m_AAfactor;
 }

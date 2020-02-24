@@ -42,7 +42,7 @@ void IHaveDragPoints::FlipPointY(const Vertex2D& pvCenter)
 {
    STARTUNDOSELECT
 
-   Vertex2D newcenter = GetPointCenter();
+      Vertex2D newcenter = GetPointCenter();
 
    for (size_t i = 0; i < m_vdpoint.size(); i++)
    {
@@ -64,7 +64,7 @@ void IHaveDragPoints::FlipPointX(const Vertex2D& pvCenter)
 {
    STARTUNDOSELECT
 
-   Vertex2D newcenter = GetPointCenter();
+      Vertex2D newcenter = GetPointCenter();
 
    for (size_t i = 0; i < m_vdpoint.size(); i++)
    {
@@ -85,19 +85,19 @@ void IHaveDragPoints::FlipPointX(const Vertex2D& pvCenter)
 void IHaveDragPoints::RotateDialog()
 {
    DialogBoxParam(g_hinst, MAKEINTRESOURCE(IDD_ROTATE),
-      g_pvp->m_hwnd, RotateProc, (size_t)this->GetIEditable()->GetISelect());//(long)this);
+      g_pvp->GetHwnd(), RotateProc, (size_t)this->GetIEditable()->GetISelect());//(long)this);
 }
 
 void IHaveDragPoints::ScaleDialog()
 {
    DialogBoxParam(g_hinst, MAKEINTRESOURCE(IDD_SCALE),
-      g_pvp->m_hwnd, ScaleProc, (size_t)this->GetIEditable()->GetISelect());
+      g_pvp->GetHwnd(), ScaleProc, (size_t)this->GetIEditable()->GetISelect());
 }
 
 void IHaveDragPoints::TranslateDialog()
 {
    DialogBoxParam(g_hinst, MAKEINTRESOURCE(IDD_TRANSLATE),
-      g_pvp->m_hwnd, TranslateProc, (size_t)this->GetIEditable()->GetISelect());
+      g_pvp->GetHwnd(), TranslateProc, (size_t)this->GetIEditable()->GetISelect());
 }
 
 void IHaveDragPoints::RotatePoints(const float ang, const Vertex2D& pvCenter, const bool useElementCenter)
@@ -106,58 +106,58 @@ void IHaveDragPoints::RotatePoints(const float ang, const Vertex2D& pvCenter, co
 
    STARTUNDOSELECT
 
-   if (useElementCenter)
-   {
-      /* Don't use the pvCenter anymore! pvCenter is the mouse position when rotating is activated.
-      Because the mouse position (rotation center) isn't shown in the editor use the element's center returned by GetPointCenter() */
-      const float centerx = newcenter.x;
-      const float centery = newcenter.y;
-
-      const float sn = sinf(ANGTORAD(ang));
-      const float cs = cosf(ANGTORAD(ang));
-
-      for (size_t i = 0; i < m_vdpoint.size(); i++)
+      if (useElementCenter)
       {
-         DragPoint * const pdp1 = m_vdpoint[i];
-         const float dx = pdp1->m_v.x - centerx;
-         const float dy = pdp1->m_v.y - centery;
-         const float dx2 = cs * dx - sn * dy;
-         const float dy2 = cs * dy + sn * dx;
-         pdp1->m_v.x = centerx + dx2;
-         pdp1->m_v.y = centery + dy2;
+         /* Don't use the pvCenter anymore! pvCenter is the mouse position when rotating is activated.
+         Because the mouse position (rotation center) isn't shown in the editor use the element's center returned by GetPointCenter() */
+         const float centerx = newcenter.x;
+         const float centery = newcenter.y;
+
+         const float sn = sinf(ANGTORAD(ang));
+         const float cs = cosf(ANGTORAD(ang));
+
+         for (size_t i = 0; i < m_vdpoint.size(); i++)
+         {
+            DragPoint * const pdp1 = m_vdpoint[i];
+            const float dx = pdp1->m_v.x - centerx;
+            const float dy = pdp1->m_v.y - centery;
+            const float dx2 = cs * dx - sn * dy;
+            const float dy2 = cs * dy + sn * dx;
+            pdp1->m_v.x = centerx + dx2;
+            pdp1->m_v.y = centery + dy2;
+         }
       }
-   }
-   else
-   {
-      const float centerx = pvCenter.x;
-      const float centery = pvCenter.y;
-
-      const float sn = sinf(ANGTORAD(ang));
-      const float cs = cosf(ANGTORAD(ang));
-
-      for (size_t i = 0; i < m_vdpoint.size(); i++)
+      else
       {
-         DragPoint * const pdp1 = m_vdpoint[i];
-         const float dx = pdp1->m_v.x - centerx;
-         const float dy = pdp1->m_v.y - centery;
-         const float dx2 = cs * dx - sn * dy;
-         const float dy2 = cs * dy + sn * dx;
-         pdp1->m_v.x = centerx + dx2;
-         pdp1->m_v.y = centery + dy2;
-      }
+         const float centerx = pvCenter.x;
+         const float centery = pvCenter.y;
 
-      // Move object center as well (if rotating around object center,
-      // this will have no effect)
-      {
-         const float dx = newcenter.x - centerx;
-         const float dy = newcenter.y - centery;
-         const float dx2 = cs * dx - sn * dy;
-         const float dy2 = cs * dy + sn * dx;
-         newcenter.x = centerx + dx2;
-         newcenter.y = centery + dy2;
-         PutPointCenter(newcenter);
+         const float sn = sinf(ANGTORAD(ang));
+         const float cs = cosf(ANGTORAD(ang));
+
+         for (size_t i = 0; i < m_vdpoint.size(); i++)
+         {
+            DragPoint * const pdp1 = m_vdpoint[i];
+            const float dx = pdp1->m_v.x - centerx;
+            const float dy = pdp1->m_v.y - centery;
+            const float dx2 = cs * dx - sn * dy;
+            const float dy2 = cs * dy + sn * dx;
+            pdp1->m_v.x = centerx + dx2;
+            pdp1->m_v.y = centery + dy2;
+         }
+
+         // Move object center as well (if rotating around object center,
+         // this will have no effect)
+         {
+            const float dx = newcenter.x - centerx;
+            const float dy = newcenter.y - centery;
+            const float dx2 = cs * dx - sn * dy;
+            const float dy2 = cs * dy + sn * dx;
+            newcenter.x = centerx + dx2;
+            newcenter.y = centery + dy2;
+            PutPointCenter(newcenter);
+         }
       }
-   }
 
    STOPUNDOSELECT
 }
@@ -168,46 +168,46 @@ void IHaveDragPoints::ScalePoints(const float scalex, const float scaley, const 
 
    STARTUNDOSELECT
 
-   if (useElementCenter)
-   {
-      /* Don't use the pvCenter anymore! pvCenter is the mouse position when scaling is activated.
-      Because the mouse position (scaling center) isn't shown in the editor use the element's center returned by GetPointCenter() */
-      const float centerx = newcenter.x;
-      const float centery = newcenter.y;
-
-      for (size_t i = 0; i < m_vdpoint.size(); i++)
+      if (useElementCenter)
       {
-         DragPoint * const pdp1 = m_vdpoint[i];
-         const float dx = (pdp1->m_v.x - centerx) * scalex;
-         const float dy = (pdp1->m_v.y - centery) * scaley;
-         pdp1->m_v.x = centerx + dx;
-         pdp1->m_v.y = centery + dy;
-      }
-   }
-   else
-   {
-      const float centerx = pvCenter.x;
-      const float centery = pvCenter.y;
+         /* Don't use the pvCenter anymore! pvCenter is the mouse position when scaling is activated.
+         Because the mouse position (scaling center) isn't shown in the editor use the element's center returned by GetPointCenter() */
+         const float centerx = newcenter.x;
+         const float centery = newcenter.y;
 
-      for (size_t i = 0; i < m_vdpoint.size(); i++)
-      {
-         DragPoint * const pdp1 = m_vdpoint[i];
-         const float dx = (pdp1->m_v.x - centerx) * scalex;
-         const float dy = (pdp1->m_v.y - centery) * scaley;
-         pdp1->m_v.x = centerx + dx;
-         pdp1->m_v.y = centery + dy;
+         for (size_t i = 0; i < m_vdpoint.size(); i++)
+         {
+            DragPoint * const pdp1 = m_vdpoint[i];
+            const float dx = (pdp1->m_v.x - centerx) * scalex;
+            const float dy = (pdp1->m_v.y - centery) * scaley;
+            pdp1->m_v.x = centerx + dx;
+            pdp1->m_v.y = centery + dy;
+         }
       }
+      else
+      {
+         const float centerx = pvCenter.x;
+         const float centery = pvCenter.y;
 
-      // Move object center as well (if scaling from object center,
-      // this will have no effect)
-      {
-         const float dx = (newcenter.x - centerx) * scalex;
-         const float dy = (newcenter.y - centery) * scaley;
-         newcenter.x = centerx + dx;
-         newcenter.y = centery + dy;
-         PutPointCenter(newcenter);
+         for (size_t i = 0; i < m_vdpoint.size(); i++)
+         {
+            DragPoint * const pdp1 = m_vdpoint[i];
+            const float dx = (pdp1->m_v.x - centerx) * scalex;
+            const float dy = (pdp1->m_v.y - centery) * scaley;
+            pdp1->m_v.x = centerx + dx;
+            pdp1->m_v.y = centery + dy;
+         }
+
+         // Move object center as well (if scaling from object center,
+         // this will have no effect)
+         {
+            const float dx = (newcenter.x - centerx) * scalex;
+            const float dy = (newcenter.y - centery) * scaley;
+            newcenter.x = centerx + dx;
+            newcenter.y = centery + dy;
+            PutPointCenter(newcenter);
+         }
       }
-   }
 
    STOPUNDOSELECT
 }
@@ -216,12 +216,12 @@ void IHaveDragPoints::TranslatePoints(const Vertex2D &pvOffset)
 {
    STARTUNDOSELECT
 
-   for (size_t i = 0; i < m_vdpoint.size(); i++)
-   {
-      DragPoint * const pdp1 = m_vdpoint[i];
-      pdp1->m_v.x += pvOffset.x;
-      pdp1->m_v.y += pvOffset.y;
-   }
+      for (size_t i = 0; i < m_vdpoint.size(); i++)
+      {
+         DragPoint * const pdp1 = m_vdpoint[i];
+         pdp1->m_v.x += pvOffset.x;
+         pdp1->m_v.y += pvOffset.y;
+      }
 
    Vertex2D newcenter = GetPointCenter();
 
@@ -241,33 +241,25 @@ void IHaveDragPoints::ReverseOrder()
    // Reverse order of points (switches winding, reverses inside/outside)
    std::reverse(m_vdpoint.begin(), m_vdpoint.end());
 
-   const bool fSlingshotTemp = m_vdpoint[0]->m_fSlingshot;
+   const bool slingshotTemp = m_vdpoint[0]->m_slingshot;
 
    for (size_t i = 0; i < m_vdpoint.size() - 1; i++)
    {
       DragPoint * const pdp1 = m_vdpoint[i];
       const DragPoint * const pdp2 = m_vdpoint[i + 1];
 
-      pdp1->m_fSlingshot = pdp2->m_fSlingshot;
+      pdp1->m_slingshot = pdp2->m_slingshot;
    }
 
-   m_vdpoint[m_vdpoint.size() - 1]->m_fSlingshot = fSlingshotTemp;
+   m_vdpoint[m_vdpoint.size() - 1]->m_slingshot = slingshotTemp;
 }
 
-void IHaveDragPoints::GetPointDialogPanes(vector<PropertyPane*> &pvproppane)
-{
-   m_propVisuals = new PropertyPane(IDD_PROPPOINT_VISUALS, IDS_VISUALS);
-   pvproppane.push_back(m_propVisuals);
-
-   m_propPosition = new PropertyPane(IDD_PROPPOINT_POSITION, IDS_POSITION);
-   pvproppane.push_back(m_propPosition);
-}
 
 void IHaveDragPoints::GetTextureCoords(const std::vector<RenderVertex> & vv, float **ppcoords)
 {
    std::vector<int> vitexpoints;
    std::vector<int> virenderpoints;
-   bool m_fNoCoords = false;
+   bool noCoords = false;
 
    const int cpoints = (int)vv.size();
    int icontrolpoint = 0;
@@ -278,9 +270,9 @@ void IHaveDragPoints::GetTextureCoords(const std::vector<RenderVertex> & vv, flo
    for (int i = 0; i < cpoints; ++i)
    {
       const RenderVertex * const prv = &vv[i];
-      if (prv->fControlPoint)
+      if (prv->controlPoint)
       {
-         if (!m_vdpoint[icontrolpoint]->m_fAutoTexture)
+         if (!m_vdpoint[icontrolpoint]->m_autoTexture)
          {
             vitexpoints.push_back(icontrolpoint);
             virenderpoints.push_back(i);
@@ -296,7 +288,7 @@ void IHaveDragPoints::GetTextureCoords(const std::vector<RenderVertex> & vv, flo
       vitexpoints.push_back(0);
       virenderpoints.push_back(0);
 
-      m_fNoCoords = true;
+      noCoords = true;
    }
 
    // Wrap the array around so we cover the last section
@@ -310,7 +302,7 @@ void IHaveDragPoints::GetTextureCoords(const std::vector<RenderVertex> & vv, flo
 
       float starttexcoord;
       float endtexcoord;
-      if (m_fNoCoords)
+      if (noCoords)
       {
          starttexcoord = 0.0f;
          endtexcoord = 1.0f;
@@ -324,9 +316,7 @@ void IHaveDragPoints::GetTextureCoords(const std::vector<RenderVertex> & vv, flo
       const float deltacoord = endtexcoord - starttexcoord;
 
       if (endrenderpoint <= startrenderpoint)
-      {
          endrenderpoint += cpoints;
-      }
 
       float totallength = 0.0f;
       for (int l = startrenderpoint; l < endrenderpoint; ++l)
@@ -368,7 +358,7 @@ void IHaveDragPoints::ClearPointsForOverwrite()
       if (m_vdpoint[i]->m_selectstate != eNotSelected/*GetPTable()->m_pselcur == m_vdpoint[i]*/)
       {
          //GetPTable()->SetSel(GetPTable());
-         GetPTable()->AddMultiSel(GetPTable(), fFalse, fTrue);
+         GetPTable()->AddMultiSel(GetPTable(), false, true, false);
       }
 
       m_vdpoint[i]->Release();
@@ -387,9 +377,9 @@ HRESULT IHaveDragPoints::SavePointData(IStream *pstm, HCRYPTHASH hcrypthash)
       CComObject<DragPoint> * const pdp = m_vdpoint[i];
       bw.WriteStruct(FID(VCEN), &(pdp->m_v), sizeof(Vertex2D));
       bw.WriteFloat(FID(POSZ), pdp->m_v.z);
-      bw.WriteBool(FID(SMTH), pdp->m_fSmooth);
-      bw.WriteBool(FID(SLNG), pdp->m_fSlingshot);
-      bw.WriteBool(FID(ATEX), pdp->m_fAutoTexture);
+      bw.WriteBool(FID(SMTH), pdp->m_smooth);
+      bw.WriteBool(FID(SLNG), pdp->m_slingshot);
+      bw.WriteBool(FID(ATEX), pdp->m_autoTexture);
       bw.WriteFloat(FID(TEXC), pdp->m_texturecoord);
 
       ((ISelect *)pdp)->SaveData(pstm, hcrypthash);
@@ -421,14 +411,14 @@ void IHaveDragPoints::LoadPointToken(int id, BiffReader *pbr, int version)
 void DragPoint::Init(IHaveDragPoints *pihdp, const float x, const float y, const float z, const bool smooth)
 {
    m_pihdp = pihdp;
-   m_fSmooth = smooth;
+   m_smooth = smooth;
 
-   m_fSlingshot = false;
+   m_slingshot = false;
    m_v.x = x;
    m_v.y = y;
    m_v.z = z;
    m_calcHeight = 0.0f;
-   m_fAutoTexture = true;
+   m_autoTexture = true;
    m_texturecoord = 0.0f;
    m_menuid = (pihdp->GetIEditable()->GetItemType() == eItemRubber) ? IDR_POINTMENU_SMOOTH : IDR_POINTMENU;
 }
@@ -467,11 +457,11 @@ void DragPoint::PutCenter(const Vertex2D& pv)
    m_v.y = pv.y;
 }
 
-void DragPoint::EditMenu(HMENU hmenu)
+void DragPoint::EditMenu(CMenu &menu)
 {
-   CheckMenuItem(hmenu, ID_POINTMENU_SMOOTH, MF_BYCOMMAND | (m_fSmooth ? MF_CHECKED : MF_UNCHECKED));
+   menu.CheckMenuItem(ID_POINTMENU_SMOOTH, MF_BYCOMMAND | (m_smooth ? MF_CHECKED : MF_UNCHECKED));
    //EnableMenuItem(hmenu, ID_POINTMENU_SLINGSHOT, MF_BYCOMMAND | (m_fSmooth ? MF_GRAYED : MF_ENABLED));
-   CheckMenuItem(hmenu, ID_POINTMENU_SLINGSHOT, MF_BYCOMMAND | ((m_fSlingshot && !m_fSmooth) ? MF_CHECKED : MF_UNCHECKED));
+   menu.CheckMenuItem(ID_POINTMENU_SLINGSHOT, MF_BYCOMMAND | ((m_slingshot && !m_smooth) ? MF_CHECKED : MF_UNCHECKED));
 }
 
 void DragPoint::Delete()
@@ -504,15 +494,15 @@ void DragPoint::DoCommand(int icmd, int x, int y)
       pedit->BeginUndo();
       pedit->MarkForUndo();
 
-      m_fSmooth = !m_fSmooth;
+      m_smooth = !m_smooth;
       const int index2 = (FindIndexOf(m_pihdp->m_vdpoint, (CComObject<DragPoint> *)this) - 1 + (int)m_pihdp->m_vdpoint.size()) % (int)m_pihdp->m_vdpoint.size();
-      if (m_fSmooth && m_fSlingshot)
+      if (m_smooth && m_slingshot)
       {
-         m_fSlingshot = false;
+         m_slingshot = false;
       }
-      if (m_fSmooth && m_pihdp->m_vdpoint[index2]->m_fSlingshot)
+      if (m_smooth && m_pihdp->m_vdpoint[index2]->m_slingshot)
       {
-         m_pihdp->m_vdpoint[index2]->m_fSlingshot = false;
+         m_pihdp->m_vdpoint[index2]->m_slingshot = false;
       }
 
       pedit->EndUndo();
@@ -525,12 +515,12 @@ void DragPoint::DoCommand(int icmd, int x, int y)
       pedit->BeginUndo();
       pedit->MarkForUndo();
 
-      m_fSlingshot = !m_fSlingshot;
-      if (m_fSlingshot)
+      m_slingshot = !m_slingshot;
+      if (m_slingshot)
       {
-         m_fSmooth = false;
+         m_smooth = false;
          const int index2 = (FindIndexOf(m_pihdp->m_vdpoint, (CComObject<DragPoint> *)this) + 1) % m_pihdp->m_vdpoint.size();
-         m_pihdp->m_vdpoint[index2]->m_fSmooth = false;
+         m_pihdp->m_vdpoint[index2]->m_smooth = false;
       }
 
       pedit->EndUndo();
@@ -565,48 +555,24 @@ STDMETHODIMP DragPoint::InterfaceSupportsErrorInfo(REFIID riid)
    return S_FALSE;
 }
 
-BOOL DragPoint::LoadToken(int id, BiffReader *pbr)
+bool DragPoint::LoadToken(const int id, BiffReader * const pbr)
 {
-   if (id == FID(VCEN))
+   switch (id)
    {
-      pbr->GetStruct(&m_v, sizeof(Vertex2D));
+   case FID(VCEN): pbr->GetStruct(&m_v, sizeof(Vertex2D)); break;
+   case FID(POSZ): pbr->GetFloat(&m_v.z); break;
+   case FID(SMTH): pbr->GetBool(&m_smooth); break;
+   case FID(SLNG): pbr->GetBool(&m_slingshot); break;
+   case FID(ATEX): pbr->GetBool(&m_autoTexture); break;
+   case FID(TEXC): pbr->GetFloat(&m_texturecoord); break;
+   default: ISelect::LoadToken(id, pbr); break;
    }
-   else if (id == FID(POSZ))
-   {
-      pbr->GetFloat(&m_v.z);
-   }
-   else if (id == FID(SMTH))
-   {
-      pbr->GetBool(&m_fSmooth);
-   }
-   else if (id == FID(SLNG))
-   {
-      pbr->GetBool(&m_fSlingshot);
-   }
-   else if (id == FID(ATEX))
-   {
-      pbr->GetBool(&m_fAutoTexture);
-   }
-   else if (id == FID(TEXC))
-   {
-      pbr->GetFloat(&m_texturecoord);
-   }
-   else
-   {
-      ISelect::LoadToken(id, pbr);
-   }
-
-   return fTrue;
+   return true;
 }
 
 IDispatch *DragPoint::GetDispatch()
 {
    return (IDispatch *)this;
-}
-
-void DragPoint::GetDialogPanes(vector<PropertyPane*> &pvproppane)
-{
-   m_pihdp->GetPointDialogPanes(pvproppane);
 }
 
 void DragPoint::Copy()
@@ -630,7 +596,6 @@ STDMETHODIMP DragPoint::get_X(float *pVal)
 STDMETHODIMP DragPoint::put_X(float newVal)
 {
    STARTUNDOSELECT
-
       m_v.x = newVal;
    STOPUNDOSELECT
 
@@ -647,9 +612,7 @@ STDMETHODIMP DragPoint::get_Y(float *pVal)
 STDMETHODIMP DragPoint::put_Y(float newVal)
 {
    STARTUNDOSELECT
-
       m_v.y = newVal;
-
    STOPUNDOSELECT
 
       return S_OK;
@@ -665,9 +628,7 @@ STDMETHODIMP DragPoint::get_Z(float *pVal)
 STDMETHODIMP DragPoint::put_Z(float newVal)
 {
    STARTUNDOSELECT
-
       m_v.z = newVal;
-
    STOPUNDOSELECT
 
       return S_OK;
@@ -682,7 +643,7 @@ STDMETHODIMP DragPoint::get_CalcHeight(float *pVal)
 
 STDMETHODIMP DragPoint::get_Smooth(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_fSmooth);
+   *pVal = FTOVB(m_smooth);
 
    return S_OK;
 }
@@ -690,9 +651,7 @@ STDMETHODIMP DragPoint::get_Smooth(VARIANT_BOOL *pVal)
 STDMETHODIMP DragPoint::put_Smooth(VARIANT_BOOL newVal)
 {
    STARTUNDOSELECT
-
-      m_fSmooth = VBTOF(newVal);
-
+      m_smooth = VBTOb(newVal);
    STOPUNDOSELECT
 
       return S_OK;
@@ -700,7 +659,7 @@ STDMETHODIMP DragPoint::put_Smooth(VARIANT_BOOL newVal)
 
 STDMETHODIMP DragPoint::get_IsAutoTextureCoordinate(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_fAutoTexture);
+   *pVal = FTOVB(m_autoTexture);
 
    return S_OK;
 }
@@ -708,9 +667,7 @@ STDMETHODIMP DragPoint::get_IsAutoTextureCoordinate(VARIANT_BOOL *pVal)
 STDMETHODIMP DragPoint::put_IsAutoTextureCoordinate(VARIANT_BOOL newVal)
 {
    STARTUNDOSELECT
-
-      m_fAutoTexture = VBTOF(newVal);
-
+      m_autoTexture = VBTOb(newVal);
    STOPUNDOSELECT
 
       return S_OK;
@@ -726,9 +683,7 @@ STDMETHODIMP DragPoint::get_TextureCoordinateU(float *pVal)
 STDMETHODIMP DragPoint::put_TextureCoordinateU(float newVal)
 {
    STARTUNDOSELECT
-
       m_texturecoord = newVal;
-
    STOPUNDOSELECT
 
       return S_OK;
@@ -905,10 +860,8 @@ INT_PTR CALLBACK ScaleProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
       SendDlgItemMessage(hwndDlg, IDC_SQUARE, BM_SETCHECK, TRUE, 0);
 
-      const HWND hwndEdit = GetDlgItem(hwndDlg, IDC_SCALEY);
-      const HWND hwndText = GetDlgItem(hwndDlg, IDC_STATIC_SCALEY);
-      EnableWindow(hwndEdit, FALSE);
-      EnableWindow(hwndText, FALSE);
+      EnableWindow(GetDlgItem(hwndDlg, IDC_SCALEY), FALSE);
+      EnableWindow(GetDlgItem(hwndDlg, IDC_STATIC_SCALEY), FALSE);
    }
    return TRUE;
    break;
@@ -1043,11 +996,8 @@ INT_PTR CALLBACK ScaleProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
          case IDC_SQUARE:
          {
             const size_t checked = SendDlgItemMessage(hwndDlg, IDC_SQUARE, BM_GETCHECK, 0, 0);
-            const HWND hwndEdit = GetDlgItem(hwndDlg, IDC_SCALEY);
-            const HWND hwndText = GetDlgItem(hwndDlg, IDC_STATIC_SCALEY);
-
-            EnableWindow(hwndEdit, !(checked == BST_CHECKED));
-            EnableWindow(hwndText, !(checked == BST_CHECKED));
+            EnableWindow(GetDlgItem(hwndDlg, IDC_SCALEY), !(checked == BST_CHECKED));
+            EnableWindow(GetDlgItem(hwndDlg, IDC_STATIC_SCALEY), !(checked == BST_CHECKED));
          }
          break;
          }

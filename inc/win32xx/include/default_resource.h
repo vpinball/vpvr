@@ -59,18 +59,28 @@
 #define IDW_FILE_MRU_FILE16              81
 
 // Cursor Resources
-#define IDW_SPLITH                       82
-#define IDW_SPLITV                       83
+// #define IDW_SPLITH                       82  //self defined in own resource
+// #define IDW_SPLITV                       83
 #define IDW_TRACK4WAY                    84
 
 // Docking Bitmap Resources
-#define IDW_SDBOTTOM                     85
+/*
+#define IDW_SDBOTTOM                     85    //self defined in own resource
 #define IDW_SDCENTER                     86
 #define IDW_SDLEFT                       87
 #define IDW_SDMIDDLE                     88
 #define IDW_SDRIGHT                      89
 #define IDW_SDTOP                        90
+*/
 
+// Print Preview Resources
+#define IDW_PRINTPREVIEW                 91
+#define IDW_PREVIEWPRINT                 92
+#define IDW_PREVIEWSETUP                 93
+#define IDW_PREVIEWPREV                  94
+#define IDW_PREVIEWNEXT                  95
+#define IDW_PREVIEWCLOSE                 96
+#define IDW_PREVIEWPANE                  97
 
 // A generic ID for any static control
 #ifndef IDC_STATIC
@@ -90,7 +100,7 @@
 // * When more than one static control is used in a dialog, the controls should
 //   have a unique ID, unless a resource ID of -1 is used.
 //
-// * Users of Win32++ are advised to begin their resource IDs from 100 to
+// * Users of Win32++ are advised to begin their resource IDs from 120 to
 //   allow for possible expansion of Win32++.
 
 

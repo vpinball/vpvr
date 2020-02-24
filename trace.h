@@ -2,7 +2,7 @@
 
 #ifdef ENABLE_TRACE
 
-#include <d3d9.h>
+#include "typeDefs3D.h"
 
 #define _STR(x)    # x
 #define STR(x)     _STR(x)

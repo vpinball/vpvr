@@ -67,7 +67,7 @@ void Shader::SetMaterial(const Material * const mat)
       fEdge = 1.0f;
       fEdgeAlpha = 1.0f;
       fOpacity = 1.0f;
-      cBase = g_pvp->dummyMaterial.m_cBase;
+      cBase = g_pvp->m_dummyMaterial.m_cBase;
       cGlossy = 0;
       cClearcoat = 0;
       bIsMetal = false;
@@ -148,7 +148,7 @@ void Shader::SetAlphaTestValue(const float value)
    if (currentAlphaTestValue != value)
    {
       currentAlphaTestValue = value;
-      SetFloat("fAlphaTestValue", value);
+      SetFloat("alphaTestValue", value);
    }
 }
 

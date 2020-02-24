@@ -9,8 +9,9 @@ class IScriptable;
 
 class IFireEvents
 {
+
 public:
-   virtual void FireGroupEvent(int dispid) = 0;
+   virtual void FireGroupEvent(const int dispid) = 0;
    virtual IDispatch *GetDispatch() = 0;
    virtual IDebugCommands *GetDebugCommands() = 0;
 
@@ -18,45 +19,45 @@ public:
 };
 
 #define STARTUNDO \
-	if (g_fKeepUndoRecords) \
-   		{ \
+	if (g_keepUndoRecords) \
+		{ \
 		BeginUndo(); \
 		MarkForUndo(); \
-   		}
+		}
 
 #define STOPUNDO \
-	if (g_fKeepUndoRecords) \
-   		{ \
+	if (g_keepUndoRecords) \
+		{ \
 		EndUndo(); \
 		SetDirtyDraw(); \
-   		}
+		}
 
 #define STARTUNDOSELECT \
-	if (g_fKeepUndoRecords) \
-   		{ \
+	if (g_keepUndoRecords) \
+		{ \
 		GetIEditable()->BeginUndo(); \
 		GetIEditable()->MarkForUndo(); \
-   		}
+		}
 
 #define STOPUNDOSELECT \
-	if (g_fKeepUndoRecords) \
-   		{ \
+	if (g_keepUndoRecords) \
+		{ \
 		GetIEditable()->EndUndo(); \
 		GetIEditable()->SetDirtyDraw(); \
-   		}
+		}
 
 
 #define INITVBA(ItemType) \
-	virtual HRESULT InitVBA(BOOL fNew, int id, WCHAR *wzName) \
+	virtual HRESULT InitVBA(BOOL fNew, int id, WCHAR * const wzName) \
 		{ \
 		WCHAR wzUniqueName[128]; \
 		if (fNew && !wzName) \
-      			{ \
+			{ \
 				{ \
 				GetPTable()->GetUniqueName(ItemType, wzUniqueName); \
 				WideStrCopy(wzUniqueName, (WCHAR *)m_wzName);/*lstrcpyW((WCHAR *)m_wzName, wzUniqueName);*/ \
 				} \
-      			} \
+			} \
 		InitScript(); \
 		return S_OK; \
 		}
@@ -93,26 +94,26 @@ public:
 		} \
 	STDMETHOD(put_Name)(/*[in]*/ BSTR newVal) \
 		{ \
-		int len = lstrlenW(newVal); \
-		if (len > 32 || len < 1) \
-      			{ \
+		const int len = lstrlenW(newVal); \
+		if (len > MAXNAMEBUFFER || len < 1) \
+			{ \
 			return E_FAIL; \
-      			} \
+			} \
 		if (GetPTable()->m_pcv->ReplaceName(this, newVal) == S_OK) \
-      			{ \
+			{ \
 			WideStrCopy(newVal, (WCHAR *)m_wzName);/*lstrcpyW((WCHAR *)m_wzName, newVal);*/ \
 			return S_OK; \
-      			} \
+			} \
 		return E_FAIL; \
 		} \
 	STDMETHOD(get_TimerInterval)(/*[out, retval]*/ long *pVal) {*pVal = m_d.m_tdr.m_TimerInterval; return S_OK;} \
 	STDMETHOD(put_TimerInterval)(/*[in]*/ long newVal) {return IEditable::put_TimerInterval(newVal, &m_d.m_tdr.m_TimerInterval);} \
-	STDMETHOD(get_TimerEnabled)(/*[out, retval]*/ VARIANT_BOOL *pVal) {*pVal = FTOVB(m_d.m_tdr.m_fTimerEnabled); return S_OK;} \
-	STDMETHOD(put_TimerEnabled)(/*[in]*/ VARIANT_BOOL newVal) {BOOL tmp; const HRESULT res = IEditable::put_TimerEnabled(newVal, &tmp); m_d.m_tdr.m_fTimerEnabled = (tmp != 0); return res;} \
+	STDMETHOD(get_TimerEnabled)(/*[out, retval]*/ VARIANT_BOOL *pVal) {*pVal = FTOVB(m_d.m_tdr.m_TimerEnabled); return S_OK;} \
+	STDMETHOD(put_TimerEnabled)(/*[in]*/ VARIANT_BOOL newVal) {BOOL tmp; const HRESULT res = IEditable::put_TimerEnabled(newVal, &tmp); m_d.m_tdr.m_TimerEnabled = (tmp != 0); return res;} \
 	STDMETHOD(get_UserValue)(VARIANT *pVal) {return IEditable::get_UserValue(pVal);} \
 	STDMETHOD(put_UserValue)(VARIANT *newVal) {return IEditable::put_UserValue(newVal);} \
 	virtual IScriptable *GetScriptable() {return (IScriptable *)this;} \
-	virtual void FireGroupEvent(int dispid) {FireVoidGroupEvent(dispid);}
+	virtual void FireGroupEvent(const int dispid) {FireVoidGroupEvent(dispid);}
 
 // used above, do not invoke directly
 #define _STANDARD_DISPATCH_INDEPENDANT_EDITABLE_DECLARES(T, ItemType) \
@@ -134,40 +135,40 @@ public:
         return obj; \
     } \
 	HRESULT Init(PinTable *ptable, float x, float y, bool fromMouseClick); \
-   INITVBA(ItemType) \
-   virtual void UIRenderPass1(Sur * const psur); \
-   virtual void UIRenderPass2(Sur * const psur); \
-   virtual PinTable *GetPTable() {return m_ptable;} \
-   virtual void GetHitShapes(vector<HitObject*> &pvho); \
-   virtual void GetHitShapesDebug(vector<HitObject*> &pvho); \
-   virtual void GetTimers(vector<HitTimer*> &pvht); \
-   virtual void EndPlay(); \
-   virtual void Delete() {IEditable::Delete();} \
-   virtual void Uncreate() {IEditable::Uncreate();} \
-   virtual HRESULT SaveData(IStream *pstm, HCRYPTHASH hcrypthash); \
-   virtual ItemTypeEnum GetItemType() const { return ItemType; } \
-   virtual HRESULT InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version, HCRYPTHASH hcrypthash, HCRYPTKEY hcryptkey); \
-   virtual HRESULT InitPostLoad(); \
-   virtual BOOL LoadToken(int id, BiffReader *pbr); \
-   virtual IDispatch *GetDispatch() {return static_cast<IDispatch *>(this);} \
-   virtual IEditable *GetIEditable() {return static_cast<IEditable*>(this);} \
-   virtual ISelect *GetISelect() {return static_cast<ISelect*>(this);} \
-   virtual Hitable *GetIHitable() {return static_cast<Hitable *>(this);} \
-   virtual void RenderSetup(); \
-   virtual void RenderStatic(); \
-   virtual void RenderDynamic(); \
-   STDMETHOD(GetDisplayString)(DISPID dispID, BSTR *pbstr) {return hrNotImplemented;}\
-   STDMETHOD(MapPropertyToPage)(DISPID dispID, CLSID *pclsid) {return hrNotImplemented;} \
-   STDMETHOD(GetPredefinedStrings)(DISPID dispID, CALPOLESTR *pcaStringsOut, CADWORD *pcaCookiesOut) {return GetPTable()->GetPredefinedStrings(dispID, pcaStringsOut, pcaCookiesOut, this);} \
-   STDMETHOD(GetPredefinedValue)(DISPID dispID, DWORD dwCookie, VARIANT *pVarOut) {return GetPTable()->GetPredefinedValue(dispID, dwCookie, pVarOut, this);} \
-   virtual void SetDefaults(bool fromMouseClick);
+	INITVBA(ItemType) \
+	virtual void UIRenderPass1(Sur * const psur); \
+	virtual void UIRenderPass2(Sur * const psur); \
+	virtual PinTable *GetPTable() {return m_ptable;} \
+	virtual void GetHitShapes(vector<HitObject*> &pvho); \
+	virtual void GetHitShapesDebug(vector<HitObject*> &pvho); \
+	virtual void GetTimers(vector<HitTimer*> &pvht); \
+	virtual void EndPlay(); \
+	virtual void Delete() {IEditable::Delete();} \
+	virtual void Uncreate() {IEditable::Uncreate();} \
+	virtual HRESULT SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupForPlay); \
+	virtual ItemTypeEnum GetItemType() const { return ItemType; } \
+	virtual HRESULT InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version, HCRYPTHASH hcrypthash, HCRYPTKEY hcryptkey); \
+	virtual HRESULT InitPostLoad(); \
+	virtual bool LoadToken(const int id, BiffReader * const pbr); \
+	virtual IDispatch *GetDispatch() {return static_cast<IDispatch *>(this);} \
+	virtual IEditable *GetIEditable() {return static_cast<IEditable*>(this);} \
+	virtual ISelect *GetISelect() {return static_cast<ISelect*>(this);} \
+	virtual Hitable *GetIHitable() {return static_cast<Hitable *>(this);} \
+	virtual void RenderSetup(); \
+	virtual void RenderStatic(); \
+	virtual void RenderDynamic(); \
+	STDMETHOD(GetDisplayString)(DISPID dispID, BSTR *pbstr) {return hrNotImplemented;}\
+	STDMETHOD(MapPropertyToPage)(DISPID dispID, CLSID *pclsid) {return hrNotImplemented;} \
+	STDMETHOD(GetPredefinedStrings)(DISPID dispID, CALPOLESTR *pcaStringsOut, CADWORD *pcaCookiesOut) {return GetPTable()->GetPredefinedStrings(dispID, pcaStringsOut, pcaCookiesOut, this);} \
+	STDMETHOD(GetPredefinedValue)(DISPID dispID, DWORD dwCookie, VARIANT *pVarOut) {return GetPTable()->GetPredefinedValue(dispID, dwCookie, pVarOut, this);} \
+	virtual void SetDefaults(bool fromMouseClick);
 
 #define _STANDARD_EDITABLE_CONSTANTS(ItTy, ResName, AllwdViews) \
-    static const ItemTypeEnum ItemType = ItTy; \
-    static const int TypeNameID = IDS_TB_##ResName; \
-    static const int ToolID = ID_INSERT_##ResName; \
-    static const int CursorID = IDC_##ResName; \
-    static const unsigned AllowedViews = AllwdViews;
+	static const ItemTypeEnum ItemType = ItTy; \
+	static const int TypeNameID = IDS_TB_##ResName; \
+	static const int ToolID = ID_INSERT_##ResName; \
+	static const int CursorID = IDC_##ResName; \
+	static const unsigned AllowedViews = AllwdViews;
 
 
 class EventProxyBase;
@@ -208,11 +209,11 @@ public:
 
    virtual Hitable *GetIHitable();
 
-   virtual HRESULT SaveData(IStream *pstm, HCRYPTHASH hcrypthash) = 0;
+   virtual HRESULT SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupForPlay) = 0;
    virtual void ClearForOverwrite();
    virtual HRESULT InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version, HCRYPTHASH hcrypthash, HCRYPTKEY hcryptkey) = 0;
    virtual HRESULT InitPostLoad() = 0;
-   virtual HRESULT InitVBA(BOOL fNew, int id, WCHAR *wzName) = 0;
+   virtual HRESULT InitVBA(BOOL fNew, int id, WCHAR * const wzName) = 0;
    virtual ISelect *GetISelect() = 0;
    virtual void SetDefaults(bool fromMouseClick) = 0;
    virtual IScriptable *GetScriptable() = 0;
@@ -227,7 +228,8 @@ public:
    void MarkForUndo();
    void MarkForDelete();
    void Undelete();
-
+   char *GetName();
+   void SetName(const char* name);
    void Delete();
    void Uncreate();
 
@@ -253,8 +255,8 @@ public:
    vector<Collection*> m_vEventCollection;
    vector<int> m_viEventCollection;
 
-   bool m_fSingleEvents;
+   bool m_singleEvents;
 
-   bool m_fBackglass; // if the light/decal (+dispreel/textbox is always true) is on the table (false) or a backglass view
+   bool m_backglass; // if the light/decal (+dispreel/textbox is always true) is on the table (false) or a backglass view
    bool m_isVisible;
 };

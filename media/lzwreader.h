@@ -10,14 +10,22 @@ public:
    LZWReader(IStream *pstm, int *bits, int width, int height, int pitch);
    ~LZWReader();
 
-   IStream *m_pstm;
+   short Decoder();
 
-   int m_msDelayCur;
+private:
+   short init_exp(int size);
+   int get_next_code();
+   int get_byte();
+   BYTE *NextLine();
+
+   IStream *m_pstm;
 
    /* output */
    BYTE *m_pbBitsOutCur;
    int m_cbStride;
+#ifdef _DEBUG
    int bad_code_count;
+#endif
 
    /* Static variables */
    int curr_size;                 /* The current code size */
@@ -27,9 +35,9 @@ public:
    int top_slot;                  /* Highest code for current size */
    int slot;                      /* Last read code */
 
-   /* The following static variables are used
-    * for seperating out codes
-    */
+                                  /* The following static variables are used
+                                  * for seperating out codes
+                                  */
    int navail_bytes;              /* # bytes left in block */
    int nbits_left;                /* # bits left in current byte */
    BYTE b1;                       /* Current byte */
@@ -39,14 +47,6 @@ public:
    BYTE stack[MAX_CODES + 1];     /* Stack for storing pixels */
    BYTE suffix[MAX_CODES + 1];    /* Suffix table */
    WCHAR prefix[MAX_CODES + 1];   /* Prefix linked list */
-
-
-   int get_byte();
-   BYTE *NextLine();
-
-   short init_exp(int size);
-   int get_next_code();
-   short Decoder();
 
    int m_cfilebuffer;
    BYTE m_pfilebufferbytes[FILE_BUF_SIZE];

@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+#include "stdafx.h"
 #include "resource.h"
 #include "MaterialDialog.h"
 #include "vpversion.h"
@@ -22,36 +22,20 @@ extern int CALLBACK MyCompProc( LPARAM lSortParam1, LPARAM lSortParam2, LPARAM l
 int MaterialDialog::m_columnSortOrder;
 bool MaterialDialog::m_deletingItem;
 
-void MaterialDialog::DisableAllMaterialDialogItems()
+void MaterialDialog::EnableAllMaterialDialogItems(const BOOL e)
 {
-    ::EnableWindow(GetDlgItem( IDC_DIFFUSE_CHECK ).GetHwnd(), FALSE);
-    ::EnableWindow(GetDlgItem(IDC_DIFFUSE_EDIT).GetHwnd(), FALSE);
-    ::EnableWindow(GetDlgItem(IDC_GLOSSY_EDIT).GetHwnd(), FALSE);
-    ::EnableWindow(GetDlgItem(IDC_GLOSSY_IMGLERP_EDIT).GetHwnd(), FALSE);
-    ::EnableWindow(GetDlgItem(IDC_THICKNESS_EDIT).GetHwnd(), FALSE);
-    ::EnableWindow(GetDlgItem(IDC_SPECULAR_EDIT).GetHwnd(), FALSE);
-    ::EnableWindow(GetDlgItem(IDC_OPACITY_EDIT).GetHwnd(), FALSE);
-    ::EnableWindow(GetDlgItem(IDC_OPACITY_CHECK).GetHwnd(), FALSE);
-    ::EnableWindow(GetDlgItem(IDC_EDGEALPHA_EDIT).GetHwnd(), FALSE);
-    ::EnableWindow(GetDlgItem(IDC_CLONE_BUTTON).GetHwnd(), FALSE);
-    ::EnableWindow(GetDlgItem(IDC_RENAME).GetHwnd(), FALSE);
-    ::EnableWindow(GetDlgItem(IDC_IMPORT).GetHwnd(), FALSE);
-}
-
-void MaterialDialog::EnableAllMaterialDialogItems()
-{
-   ::EnableWindow(GetDlgItem(IDC_DIFFUSE_CHECK).GetHwnd(), TRUE);
-   ::EnableWindow(GetDlgItem(IDC_DIFFUSE_EDIT).GetHwnd(), TRUE);
-   ::EnableWindow(GetDlgItem(IDC_GLOSSY_EDIT).GetHwnd(), TRUE);
-   ::EnableWindow(GetDlgItem(IDC_GLOSSY_IMGLERP_EDIT).GetHwnd(), TRUE);
-   ::EnableWindow(GetDlgItem(IDC_THICKNESS_EDIT).GetHwnd(), TRUE);
-   ::EnableWindow(GetDlgItem(IDC_SPECULAR_EDIT).GetHwnd(), TRUE);
-   ::EnableWindow(GetDlgItem(IDC_OPACITY_EDIT).GetHwnd(), TRUE);
-   ::EnableWindow(GetDlgItem(IDC_OPACITY_CHECK).GetHwnd(), TRUE);
-   ::EnableWindow(GetDlgItem(IDC_EDGEALPHA_EDIT).GetHwnd(), TRUE);
-   ::EnableWindow(GetDlgItem(IDC_CLONE_BUTTON).GetHwnd(), TRUE);
-   ::EnableWindow(GetDlgItem(IDC_RENAME).GetHwnd(), TRUE);
-   ::EnableWindow(GetDlgItem(IDC_IMPORT).GetHwnd(), TRUE);
+   ::EnableWindow(GetDlgItem(IDC_DIFFUSE_CHECK).GetHwnd(), e);
+   ::EnableWindow(GetDlgItem(IDC_DIFFUSE_EDIT).GetHwnd(), e);
+   ::EnableWindow(GetDlgItem(IDC_GLOSSY_EDIT).GetHwnd(), e);
+   ::EnableWindow(GetDlgItem(IDC_GLOSSY_IMGLERP_EDIT).GetHwnd(), e);
+   ::EnableWindow(GetDlgItem(IDC_THICKNESS_EDIT).GetHwnd(), e);
+   ::EnableWindow(GetDlgItem(IDC_SPECULAR_EDIT).GetHwnd(), e);
+   ::EnableWindow(GetDlgItem(IDC_OPACITY_EDIT).GetHwnd(), e);
+   ::EnableWindow(GetDlgItem(IDC_OPACITY_CHECK).GetHwnd(), e);
+   ::EnableWindow(GetDlgItem(IDC_EDGEALPHA_EDIT).GetHwnd(), e);
+   ::EnableWindow(GetDlgItem(IDC_CLONE_BUTTON).GetHwnd(), e);
+   ::EnableWindow(GetDlgItem(IDC_RENAME).GetHwnd(), e);
+   ::EnableWindow(GetDlgItem(IDC_IMPORT).GetHwnd(), e);
 }
 
 float MaterialDialog::getItemText(int id)
@@ -76,13 +60,15 @@ MaterialDialog::MaterialDialog() : CDialog(IDD_MATERIALDIALOG)
 
 BOOL MaterialDialog::OnInitDialog()
 {
-   LVCOLUMN lvcol;
    m_hMaterialList = GetDlgItem(IDC_MATERIAL_LIST).GetHwnd();
-   CCO(PinTable) * const pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+   CCO(PinTable) * const pt = g_pvp->GetActiveTable();
 
    m_columnSortOrder = 1;
    m_deletingItem = false;
    m_resizer.Initialize(*this, CRect(0, 0, 500, 600));
+   AttachItem(IDC_COLOR_BUTTON1, m_colorButton1);
+   AttachItem(IDC_COLOR_BUTTON2, m_colorButton2);
+   AttachItem(IDC_COLOR_BUTTON3, m_colorButton3);
    m_resizer.AddChild(m_hMaterialList, topleft, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
    m_resizer.AddChild(GetDlgItem(IDC_DIFFUSE_CHECK).GetHwnd(), topright, 0);
    m_resizer.AddChild(GetDlgItem(IDC_STATIC_BASE_COLOR).GetHwnd(), topright, 0);
@@ -90,9 +76,9 @@ BOOL MaterialDialog::OnInitDialog()
    m_resizer.AddChild(GetDlgItem(IDC_STATIC_CLEARCOAR_LAYER).GetHwnd(), topright, 0);
    m_resizer.AddChild(GetDlgItem(IDC_STATIC_OPACITY).GetHwnd(), topright, 0);
    m_resizer.AddChild(GetDlgItem(IDC_STATIC_PHYSICS).GetHwnd(), topright, 0);
-   m_resizer.AddChild(GetDlgItem(IDC_COLOR).GetHwnd(), topright, 0);
-   m_resizer.AddChild(GetDlgItem(IDC_COLOR2).GetHwnd(), topright, 0);
-   m_resizer.AddChild(GetDlgItem(IDC_COLOR3).GetHwnd(), topright, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_COLOR_BUTTON1).GetHwnd(), topright, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_COLOR_BUTTON2).GetHwnd(), topright, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_COLOR_BUTTON3).GetHwnd(), topright, 0);
    m_resizer.AddChild(GetDlgItem(IDC_STATIC_WRAP).GetHwnd(), topright, 0);
    m_resizer.AddChild(GetDlgItem(IDC_DIFFUSE_EDIT).GetHwnd(), topright, 0);
    m_resizer.AddChild(GetDlgItem(IDC_STATIC_WRAP_TEXT).GetHwnd(), topright, 0);
@@ -134,6 +120,7 @@ BOOL MaterialDialog::OnInitDialog()
 
    LoadPosition();
    ListView_SetExtendedListViewStyle(m_hMaterialList, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
+   LVCOLUMN lvcol;
    lvcol.mask = LVCF_TEXT | LVCF_WIDTH;
    LocalString ls(IDS_NAME);
    lvcol.pszText = ls.m_szbuffer;// = "Name";
@@ -154,52 +141,143 @@ BOOL MaterialDialog::OnInitDialog()
 
 BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-   CCO(PinTable) * const pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+   CCO(PinTable) * const pt = g_pvp->GetActiveTable();
    UNREFERENCED_PARAMETER(lParam);
-   switch (HIWORD(wParam))
+
+   switch (LOWORD(wParam))
    {
-      case COLOR_CHANGED:
-      {
-         const int count = ListView_GetSelectedCount(m_hMaterialList);
-         if (count > 0)
-         {
-            const size_t color = ::GetWindowLongPtr((HWND)lParam, GWLP_USERDATA);
-            const HWND hwndcolor1 = GetDlgItem(IDC_COLOR).GetHwnd();
-            const HWND hwndcolor2 = GetDlgItem(IDC_COLOR2).GetHwnd();
-            const HWND hwndcolor3 = GetDlgItem(IDC_COLOR3).GetHwnd();
-            int sel = ListView_GetNextItem(m_hMaterialList, -1, LVNI_SELECTED);
-            while (sel != -1)
-            {
+       case IDC_COLOR_BUTTON1:
+       {
+           CHOOSECOLOR cc = m_colorDialog.GetParameters();
+           cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+           m_colorDialog.SetParameters(cc);
+
+           if (ListView_GetSelectedCount(m_hMaterialList))	// if some items are selected???
+           {
+               int sel = ListView_GetNextItem(m_hMaterialList, -1, LVNI_SELECTED);
+               if (sel == -1)
+                   break;
+               
                LVITEM lvitem;
                lvitem.mask = LVIF_PARAM;
                lvitem.iItem = sel;
                lvitem.iSubItem = 0;
                ListView_GetItem(m_hMaterialList, &lvitem);
                Material * const pmat = (Material*)lvitem.lParam;
-               if (hwndcolor1 == (HWND)lParam)
-                  pmat->m_cBase = (COLORREF)color;
-               else if (hwndcolor2 == (HWND)lParam)
-                  pmat->m_cGlossy = (COLORREF)color;
-               else if (hwndcolor3 == (HWND)lParam)
-                  pmat->m_cClearcoat = (COLORREF)color;
+               m_colorDialog.SetColor(pmat->m_cBase);
+               if (m_colorDialog.DoModal(GetHwnd()) == IDOK)
+               {
+                   pmat->m_cBase = m_colorDialog.GetColor();
+                   m_colorButton1.SetColor(pmat->m_cBase);
+                   while (sel != -1)
+                   {
+                       sel = ListView_GetNextItem(m_hMaterialList, sel, LVNI_SELECTED);
+                       if(sel!=-1)
+                       {
+                           LVITEM lvitem;
+                           lvitem.mask = LVIF_PARAM;
+                           lvitem.iItem = sel;
+                           lvitem.iSubItem = 0;
+                           ListView_GetItem(m_hMaterialList, &lvitem);
+                           Material * const pmat = (Material*)lvitem.lParam;
+                           pmat->m_cBase = m_colorDialog.GetColor();
+                       }
+                   }
+                   pt->SetNonUndoableDirty(eSaveDirty);
+               }
+           }
+           break;
+       }
+       case IDC_COLOR_BUTTON2:
+       {
+           CHOOSECOLOR cc = m_colorDialog.GetParameters();
+           cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+           m_colorDialog.SetParameters(cc);
 
-               // The previous selection is now deleted, so look again from the top of the list
-               sel = ListView_GetNextItem(m_hMaterialList, sel, LVNI_SELECTED);
-            }
-            pt->SetNonUndoableDirty(eSaveDirty);
-         }
-         break;
-      }
-   }
+           if (ListView_GetSelectedCount(m_hMaterialList))	// if some items are selected???
+           {
+               int sel = ListView_GetNextItem(m_hMaterialList, -1, LVNI_SELECTED);
+               if (sel == -1)
+                   break;
 
-   switch (LOWORD(wParam))
-   {
+               LVITEM lvitem;
+               lvitem.mask = LVIF_PARAM;
+               lvitem.iItem = sel;
+               lvitem.iSubItem = 0;
+               ListView_GetItem(m_hMaterialList, &lvitem);
+               Material * const pmat = (Material*)lvitem.lParam;
+               m_colorDialog.SetColor(pmat->m_cGlossy);
+               if (m_colorDialog.DoModal(GetHwnd()) == IDOK)
+               {
+                   pmat->m_cGlossy = m_colorDialog.GetColor();
+                   m_colorButton2.SetColor(pmat->m_cGlossy);
+                   while (sel != -1)
+                   {
+                       sel = ListView_GetNextItem(m_hMaterialList, sel, LVNI_SELECTED);
+                       if(sel!=-1)
+                       {
+                           LVITEM lvitem;
+                           lvitem.mask = LVIF_PARAM;
+                           lvitem.iItem = sel;
+                           lvitem.iSubItem = 0;
+                           ListView_GetItem(m_hMaterialList, &lvitem);
+                           Material * const pmat = (Material*)lvitem.lParam;
+                           pmat->m_cGlossy = m_colorDialog.GetColor();
+                       }
+                   }
+                   pt->SetNonUndoableDirty(eSaveDirty);
+               }
+           }
+           break;
+       }
+       case IDC_COLOR_BUTTON3:
+       {
+           CHOOSECOLOR cc = m_colorDialog.GetParameters();
+           cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+           m_colorDialog.SetParameters(cc);
+
+           if (ListView_GetSelectedCount(m_hMaterialList))	// if some items are selected???
+           {
+               int sel = ListView_GetNextItem(m_hMaterialList, -1, LVNI_SELECTED);
+               if (sel == -1)
+                   break;
+
+               LVITEM lvitem;
+               lvitem.mask = LVIF_PARAM;
+               lvitem.iItem = sel;
+               lvitem.iSubItem = 0;
+               ListView_GetItem(m_hMaterialList, &lvitem);
+               Material * const pmat = (Material*)lvitem.lParam;
+               m_colorDialog.SetColor(pmat->m_cClearcoat);
+               if (m_colorDialog.DoModal(GetHwnd()) == IDOK)
+               {
+                   pmat->m_cClearcoat = m_colorDialog.GetColor();
+                   m_colorButton3.SetColor(pmat->m_cClearcoat);
+                   while (sel != -1)
+                   {
+                       sel = ListView_GetNextItem(m_hMaterialList, sel, LVNI_SELECTED);
+                       if(sel!=-1)
+                       {
+                           LVITEM lvitem;
+                           lvitem.mask = LVIF_PARAM;
+                           lvitem.iItem = sel;
+                           lvitem.iSubItem = 0;
+                           ListView_GetItem(m_hMaterialList, &lvitem);
+                           Material * const pmat = (Material*)lvitem.lParam;
+                           pmat->m_cClearcoat = m_colorDialog.GetColor();
+                       }
+                   }
+                   pt->SetNonUndoableDirty(eSaveDirty);
+               }
+           }
+           break;
+       }
+
       case IDC_CLONE_BUTTON:
       {
          if (ListView_GetSelectedCount(m_hMaterialList))	// if some items are selected???
          {
             int sel = ListView_GetNextItem(m_hMaterialList, -1, LVNI_SELECTED);
-            const int selCount = ListView_GetSelectedCount(m_hMaterialList);
             if (sel == -1)
                break;
 
@@ -210,33 +288,12 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                lvitem.iItem = sel;
                lvitem.iSubItem = 0;
                ListView_GetItem(m_hMaterialList, &lvitem);
-               Material * const pNewMat = new Material();
-               Material * const pmat = (Material*)lvitem.lParam;
-               pNewMat->m_bIsMetal = pmat->m_bIsMetal;
-               pNewMat->m_bOpacityActive = pmat->m_bOpacityActive;
-               pNewMat->m_cBase = pmat->m_cBase;
-               pNewMat->m_cClearcoat = pmat->m_cClearcoat;
-               pNewMat->m_cGlossy = pmat->m_cGlossy;
-               pNewMat->m_fEdge = pmat->m_fEdge;
-               pNewMat->m_fEdgeAlpha = pmat->m_fEdgeAlpha;
-               pNewMat->m_fOpacity = pmat->m_fOpacity;
-               pNewMat->m_fRoughness = pmat->m_fRoughness;
-               pNewMat->m_fGlossyImageLerp = pmat->m_fGlossyImageLerp;
-               pNewMat->m_fThickness = pmat->m_fThickness;
-               pNewMat->m_fWrapLighting = pmat->m_fWrapLighting;
-               memcpy(pNewMat->m_szName, pmat->m_szName, 32);
-
-               pNewMat->m_fElasticity = pmat->m_fElasticity;
-               pNewMat->m_fElasticityFalloff = pmat->m_fElasticityFalloff;
-               pNewMat->m_fFriction = pmat->m_fFriction;
-               pNewMat->m_fScatterAngle = pmat->m_fScatterAngle;
+               Material * const pNewMat = new Material((Material*)lvitem.lParam);
                pt->AddMaterial(pNewMat);
                pt->AddListMaterial(m_hMaterialList, pNewMat);
 
                sel = ListView_GetNextItem(m_hMaterialList, sel, LVNI_SELECTED);
             }
-            g_pvp->m_sb.PopulateDropdowns(); // May need to update list of images
-            g_pvp->m_sb.RefreshProperties();
             pt->SetNonUndoableDirty(eSaveDirty);
          }
          break;
@@ -247,41 +304,24 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 
          pt->AddMaterial(pmat);
          pt->AddListMaterial(m_hMaterialList, pmat);
-         g_pvp->m_sb.PopulateDropdowns(); // May need to update list of images
-         g_pvp->m_sb.RefreshProperties();
          pt->SetNonUndoableDirty(eSaveDirty);
 
          break;
       }
       case IDC_IMPORT:
       {
-         char szFileName[4096];
-         char szInitialDir[4096];
+         char szFileName[MAXSTRING];
+         char szInitialDir[MAXSTRING];
          szFileName[0] = '\0';
+         int fileOffset;
+         /*const HRESULT hr =*/ LoadValueString("RecentDir", "MaterialDir", szInitialDir, MAXSTRING);
 
-         OPENFILENAME ofn;
-         ZeroMemory(&ofn, sizeof(OPENFILENAME));
-         ofn.lStructSize = sizeof(OPENFILENAME);
-         ofn.hInstance = g_hinst;
-         ofn.hwndOwner = g_pvp->m_hwnd;
-
-         ofn.lpstrFilter = "Material Files (.mat)\0*.mat\0";
-         ofn.lpstrFile = szFileName;
-         ofn.nMaxFile = 4096;
-         ofn.lpstrDefExt = "mat";
-         ofn.Flags = OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY | OFN_EXPLORER;
-
-         HRESULT hr = LoadValueString("RecentDir", "MaterialDir", szInitialDir, 4096);
-         ofn.lpstrInitialDir = (hr == S_OK) ? szInitialDir : NULL;
-
-         const int ret = GetOpenFileName(&ofn);
-
-         if (ret)
+         if (g_pvp->OpenFileDialog(szInitialDir, szFileName, "Material Files (.mat)\0*.mat\0", "mat", 0, fileOffset))
          {
             int materialCount = 0;
             int versionNumber = 0;
             FILE *f;
-            fopen_s(&f, ofn.lpstrFile, "rb");
+            fopen_s(&f, szFileName, "rb");
 
             fread(&versionNumber, 4, 1, f);
             if (versionNumber != 1)
@@ -293,32 +333,17 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
             fread(&materialCount, 4, 1, f);
             for (int i = 0; i < materialCount; i++)
             {
-               Material * const pmat = new Material();
                SaveMaterial mat;
                fread(&mat, sizeof(SaveMaterial), 1, f);
-               pmat->m_cBase = mat.cBase;
-               pmat->m_cGlossy = mat.cGlossy;
-               pmat->m_cClearcoat = mat.cClearcoat;
-               pmat->m_fWrapLighting = mat.fWrapLighting;
-               pmat->m_fRoughness = mat.fRoughness;
-               pmat->m_fGlossyImageLerp = dequantizeUnsigned<8>(mat.fGlossyImageLerp);
-               pmat->m_fThickness = dequantizeUnsigned<8>(mat.fThickness);
-               pmat->m_fEdge = mat.fEdge;
-               pmat->m_bIsMetal = mat.bIsMetal;
-               pmat->m_fOpacity = mat.fOpacity;
-               pmat->m_bOpacityActive = !!(mat.bOpacityActive_fEdgeAlpha & 1);
-               pmat->m_fEdgeAlpha = dequantizeUnsigned<7>(mat.bOpacityActive_fEdgeAlpha >> 1);
-               memcpy(pmat->m_szName, mat.szName, 32);
 
-               float physicsValue;
-               fread(&physicsValue, sizeof(float), 1, f);
-               pmat->m_fElasticity = physicsValue;
-               fread(&physicsValue, sizeof(float), 1, f);
-               pmat->m_fElasticityFalloff = physicsValue;
-               fread(&physicsValue, sizeof(float), 1, f);
-               pmat->m_fFriction = physicsValue;
-               fread(&physicsValue, sizeof(float), 1, f);
-               pmat->m_fScatterAngle = physicsValue;
+               float elasticity,elasticityFalloff,friction,scatterAngle;
+               fread(&elasticity, sizeof(float), 1, f);
+               fread(&elasticityFalloff, sizeof(float), 1, f);
+               fread(&friction, sizeof(float), 1, f);
+               fread(&scatterAngle, sizeof(float), 1, f);
+
+               Material * const pmat = new Material(mat.fWrapLighting, mat.fRoughness, dequantizeUnsigned<8>(mat.fGlossyImageLerp), dequantizeUnsigned<8>(mat.fThickness), mat.fEdge, dequantizeUnsigned<7>(mat.bOpacityActive_fEdgeAlpha >> 1), mat.fOpacity, mat.cBase, mat.cGlossy, mat.cClearcoat, mat.bIsMetal, !!(mat.bOpacityActive_fEdgeAlpha & 1), elasticity, elasticityFalloff, friction, scatterAngle);
+               memcpy(pmat->m_szName, mat.szName, MAXNAMEBUFFER);
 
                pt->AddMaterial(pmat);
                pt->AddListMaterial(m_hMaterialList, pmat);
@@ -326,8 +351,6 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
             fclose(f);
             SaveValueString("RecentDir", "MaterialDir", szInitialDir);
             pt->SetNonUndoableDirty(eSaveDirty);
-            g_pvp->m_sb.PopulateDropdowns(); // May need to update list of images
-            g_pvp->m_sb.RefreshProperties();
          }
          break;
       }
@@ -345,8 +368,8 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       {
          if (ListView_GetSelectedCount(m_hMaterialList))	// if some items are selected???
          {
-            char szFileName[4096];
-            char szInitialDir[4096];
+            char szFileName[MAXSTRING];
+            char szInitialDir[MAXSTRING];
             int sel = ListView_GetNextItem(m_hMaterialList, -1, LVNI_SELECTED);
             const int selCount = ListView_GetSelectedCount(m_hMaterialList);
             if (sel == -1)
@@ -357,16 +380,16 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
             ZeroMemory(&ofn, sizeof(OPENFILENAME));
             ofn.lStructSize = sizeof(OPENFILENAME);
             ofn.hInstance = g_hinst;
-            ofn.hwndOwner = g_pvp->m_hwnd;
+            ofn.hwndOwner = g_pvp->GetHwnd();
             ofn.lpstrFile = szFileName;
             //TEXT
             ofn.lpstrFilter = "Material Files (.mat)\0*.mat\0";
-            ofn.nMaxFile = 4096;
+            ofn.nMaxFile = MAXSTRING;
             ofn.lpstrDefExt = "mat";
 
-            const HRESULT hr = LoadValueString("RecentDir", "MaterialDir", szInitialDir, 4096);
+            const HRESULT hr = LoadValueString("RecentDir", "MaterialDir", szInitialDir, MAXSTRING);
 
-            if (hr == S_OK)ofn.lpstrInitialDir = szInitialDir;
+            if (hr == S_OK) ofn.lpstrInitialDir = szInitialDir;
             else ofn.lpstrInitialDir = NULL;
 
             ofn.lpstrTitle = "Export materials";
@@ -402,7 +425,8 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                   mat.fOpacity = pmat->m_fOpacity;
                   mat.bOpacityActive_fEdgeAlpha = pmat->m_bOpacityActive ? 1 : 0;
                   mat.bOpacityActive_fEdgeAlpha |= quantizeUnsigned<7>(clamp(pmat->m_fEdgeAlpha, 0.f, 1.f)) << 1;
-                  memcpy(mat.szName, pmat->m_szName, 32);
+                  memcpy(mat.szName, pmat->m_szName, MAXNAMEBUFFER);
+
                   fwrite(&mat, sizeof(SaveMaterial), 1, f);
                   fwrite(&pmat->m_fElasticity, sizeof(float), 1, f);
                   fwrite(&pmat->m_fElasticityFalloff, sizeof(float), 1, f);
@@ -458,8 +482,6 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                }
             }
             pt->SetNonUndoableDirty(eSaveDirty);
-            g_pvp->m_sb.PopulateDropdowns();
-            g_pvp->m_sb.RefreshProperties();
          }
          break;
       }
@@ -473,15 +495,9 @@ INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
     
    switch (uMsg)
    {
-      case GET_COLOR_TABLE:
-      {
-         *((unsigned long **)lParam) = &g_pvp->dummyMaterial.m_cBase;
-         return TRUE;
-      }
-
       case WM_NOTIFY:
       {
-         CCO(PinTable) *const pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+         CCO(PinTable) *const pt = g_pvp->GetActiveTable();
          const LPNMHDR pnmhdr = (LPNMHDR)lParam;
          if (wParam == IDC_MATERIAL_LIST)
          {
@@ -529,7 +545,7 @@ INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                }
                else
                {
-                  char textBuf[32];
+                  char textBuf[MAXNAMEBUFFER];
                   int suffix = 1;
                   do
                   {
@@ -539,8 +555,6 @@ INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                   strncpy_s(pmat->m_szName, textBuf, 31);
                   ListView_SetItemText(m_hMaterialList, pinfo->item.iItem, 0, pmat->m_szName);
                }
-               g_pvp->m_sb.PopulateDropdowns();
-               g_pvp->m_sb.RefreshProperties();
                pt->SetNonUndoableDirty(eSaveDirty);
                return TRUE;
             }
@@ -552,10 +566,10 @@ INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                const int count = ListView_GetSelectedCount(m_hMaterialList);
                if (count > 1)
                {
-                  DisableAllMaterialDialogItems();
+                  EnableAllMaterialDialogItems(FALSE);
                   break;
                }
-               EnableAllMaterialDialogItems();
+               EnableAllMaterialDialogItems(TRUE);
 
                NMLISTVIEW * const plistview = (LPNMLISTVIEW)lParam;
                if ((plistview->uNewState & LVIS_SELECTED) != (plistview->uOldState & LVIS_SELECTED))
@@ -569,12 +583,9 @@ INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                      lvitem.iSubItem = 0;
                      ListView_GetItem(m_hMaterialList, &lvitem);
                      Material * const pmat = (Material*)lvitem.lParam;
-                     HWND hwndColor = GetDlgItem(IDC_COLOR).GetHwnd();
-                     SendMessage(hwndColor, CHANGE_COLOR, 0, pmat->m_cBase);
-                     hwndColor = GetDlgItem(IDC_COLOR2).GetHwnd();
-                     SendMessage(hwndColor, CHANGE_COLOR, 0, pmat->m_cGlossy);
-                     hwndColor = GetDlgItem(IDC_COLOR3).GetHwnd();
-                     SendMessage(hwndColor, CHANGE_COLOR, 0, pmat->m_cClearcoat);
+                     m_colorButton1.SetColor(pmat->m_cBase);
+                     m_colorButton2.SetColor(pmat->m_cGlossy);
+                     m_colorButton3.SetColor(pmat->m_cClearcoat);
                      setItemText(IDC_DIFFUSE_EDIT, pmat->m_fWrapLighting);
                      setItemText(IDC_GLOSSY_EDIT, pmat->m_fRoughness);
                      setItemText(IDC_GLOSSY_IMGLERP_EDIT, pmat->m_fGlossyImageLerp);
@@ -592,8 +603,6 @@ INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                      setItemText(IDC_MAT_ELASTICITY_FALLOFF, pmat->m_fElasticityFalloff);
                      setItemText(IDC_MAT_FRICTION, pmat->m_fFriction);
                      setItemText(IDC_MAT_SCATTER_ANGLE, pmat->m_fScatterAngle);
-
-                     ::InvalidateRect(hwndColor, NULL, FALSE);
                   }
                }
                break;
@@ -606,10 +615,11 @@ INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                    break;
                if (count > 1)
                {
-                  DisableAllMaterialDialogItems();
+                  EnableAllMaterialDialogItems(FALSE);
                   break;
                }
-               EnableAllMaterialDialogItems();
+               EnableAllMaterialDialogItems(TRUE);
+
                NMLISTVIEW * const plistview = (LPNMLISTVIEW)lParam;
                const int sel = plistview->iItem;
                LVITEM lvitem;
@@ -677,12 +687,9 @@ INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                }
                else if ((plistview->uOldState & LVIS_SELECTED) == 0)
                {
-                  HWND hwndColor = GetDlgItem(IDC_COLOR).GetHwnd();
-                  SendMessage(hwndColor, CHANGE_COLOR, 0, pmat->m_cBase);
-                  hwndColor = GetDlgItem(IDC_COLOR2).GetHwnd();
-                  SendMessage(hwndColor, CHANGE_COLOR, 0, pmat->m_cGlossy);
-                  hwndColor = GetDlgItem(IDC_COLOR3).GetHwnd();
-                  SendMessage(hwndColor, CHANGE_COLOR, 0, pmat->m_cClearcoat);
+                  m_colorButton1.SetColor(pmat->m_cBase);
+                  m_colorButton2.SetColor(pmat->m_cGlossy);
+                  m_colorButton3.SetColor(pmat->m_cClearcoat);
                   setItemText(IDC_DIFFUSE_EDIT, pmat->m_fWrapLighting);
                   setItemText(IDC_GLOSSY_EDIT, pmat->m_fRoughness);
                   setItemText(IDC_GLOSSY_IMGLERP_EDIT, pmat->m_fGlossyImageLerp);
@@ -722,6 +729,22 @@ INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
          {
             // Nothing currently selected
          }
+    
+         LPDRAWITEMSTRUCT lpDrawItemStruct = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
+         const UINT nID = static_cast<UINT>(wParam);
+         if (nID == IDC_COLOR_BUTTON1)
+         {
+             m_colorButton1.DrawItem(lpDrawItemStruct);
+         }
+         else if (nID == IDC_COLOR_BUTTON2)
+         {
+             m_colorButton2.DrawItem(lpDrawItemStruct);
+         }
+         else if (nID == IDC_COLOR_BUTTON3)
+         {
+             m_colorButton3.DrawItem(lpDrawItemStruct);
+         }
+
          return TRUE;
       }
    }
@@ -730,7 +753,7 @@ INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void MaterialDialog::OnOK()
 {
-   CCO(PinTable) * const pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+   CCO(PinTable) * const pt = g_pvp->GetActiveTable();
    const int count = ListView_GetSelectedCount(m_hMaterialList);
    if (count > 0)
    {

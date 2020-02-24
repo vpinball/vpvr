@@ -43,7 +43,7 @@ void PinUndo::BeginUndo()
    }
 }
 
-void PinUndo::MarkForUndo(IEditable * const pie)
+void PinUndo::MarkForUndo(IEditable * const pie, const bool backupForPlay)
 {
    if (g_pplayer)
       return;
@@ -62,10 +62,10 @@ void PinUndo::MarkForUndo(IEditable * const pie)
 
    UndoRecord * const pur = m_vur[m_vur.size() - 1];
 
-   pur->MarkForUndo(pie);
+   pur->MarkForUndo(pie, backupForPlay);
 }
 
-void PinUndo::MarkForCreate(IEditable *const pie)
+void PinUndo::MarkForCreate(IEditable * const pie)
 {
    if (m_vur.size() == 0)
    {
@@ -84,7 +84,7 @@ void PinUndo::MarkForCreate(IEditable *const pie)
    pur->MarkForCreate(pie);
 }
 
-void PinUndo::MarkForDelete(IEditable *const pie)
+void PinUndo::MarkForDelete(IEditable * const pie)
 {
    if (m_vur.size() == 0)
    {
@@ -120,7 +120,7 @@ void PinUndo::Undo()
    if (m_vur.size() == m_cleanpoint)
    {
       LocalString ls(IDS_UNDOPASTSAVE);
-      const int result = MessageBox(m_ptable->m_hwnd, ls.m_szbuffer, "Visual Pinball", MB_YESNO);
+      const int result = m_ptable->ShowMessageBox(ls.m_szbuffer);
       if (result != IDYES)
       {
          return;
@@ -151,7 +151,7 @@ void PinUndo::Undo()
 
       int foo2;
       pie->InitLoad(pstm, m_ptable, &foo2, CURRENT_FILE_FORMAT_VERSION, NULL, NULL);
-
+      pie->InitPostLoad();
       // Stream gets released when undo record is deleted
       //pstm->Release();
    }
@@ -210,7 +210,7 @@ UndoRecord::~UndoRecord()
       m_vieDelete[i]->Release();
 }
 
-void UndoRecord::MarkForUndo(IEditable *const pie)
+void UndoRecord::MarkForUndo(IEditable * const pie, const bool backupForPlay)
 {
    if (FindIndexOf(m_vieMark, pie) != -1) // Been marked already
       return;
@@ -226,12 +226,12 @@ void UndoRecord::MarkForUndo(IEditable *const pie)
    DWORD write;
    pstm->Write(&pie, sizeof(IEditable *), &write);
 
-   pie->SaveData(pstm, NULL);
+   pie->SaveData(pstm, NULL, true);
 
    m_vstm.push_back(pstm);
 }
 
-void UndoRecord::MarkForCreate(IEditable *pie)
+void UndoRecord::MarkForCreate(IEditable * const pie)
 {
 #ifdef _DEBUG
    if (FindIndexOf(m_vieCreate, pie) != -1) // Created twice?
@@ -244,7 +244,7 @@ void UndoRecord::MarkForCreate(IEditable *pie)
    m_vieCreate.push_back(pie);
 }
 
-void UndoRecord::MarkForDelete(IEditable *const pie)
+void UndoRecord::MarkForDelete(IEditable * const pie)
 {
 #ifdef _DEBUG
    if (FindIndexOf(m_vieDelete, pie) != -1) // Already deleted - bad thing

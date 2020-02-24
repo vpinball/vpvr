@@ -90,8 +90,8 @@ public:
    void scaleX(const float factor);
    void scaleY(const float factor);
    void scaleZ(const float factor);
-   void CreateSkewSymmetric(const Vertex3Ds &pv3D);
-   void MultiplyScalar(const float scalar);
+   void SkewSymmetric(const Vertex3Ds &pv3D);
+   void MulScalar(const float scalar);
    Matrix3 Matrix3::operator* (const Matrix3& v) const;
    Matrix3 Matrix3::operator+ (const Matrix3& v) const;
    template <class VecType>
@@ -104,22 +104,23 @@ public:
    }
 
    template <class VecType>
-   Vertex3Ds MultiplyVector(const VecType& v) const
+   Vertex3Ds MulVector(const VecType& v) const
    {
       return (*this) * v;
    }
 
    // multiply vector with matrix transpose
    template <class VecType>
-   Vertex3Ds MultiplyVectorT(const VecType& v) const
+   Vertex3Ds MulVectorT(const VecType& v) const
    {
       return Vertex3Ds(
          m_d[0][0] * v.x + m_d[1][0] * v.y + m_d[2][0] * v.z,
          m_d[0][1] * v.x + m_d[1][1] * v.y + m_d[2][1] * v.z,
          m_d[0][2] * v.x + m_d[1][2] * v.y + m_d[2][2] * v.z);
    }
-   void MultiplyMatrix(const Matrix3 * const pmat1, const Matrix3 * const pmat2);
-   void AddMatrix(const Matrix3 * const pmat1, const Matrix3 * const pmat2);
+   void MulMatrices(const Matrix3& pmat1, const Matrix3& pmat2);
+   void MulMatricesAndMulScalar(const Matrix3& pmat1, const Matrix3& pmat2, const float scalar);
+   void AddMatrix(const Matrix3& pmat);
    void OrthoNormalize();
    void Transpose(Matrix3 * const pmatOut) const;
    void Identity(const float value = 1.0f);
@@ -166,7 +167,7 @@ public:
       vOut.y = yp * inv_wp;
       vOut.z = zp * inv_wp;
    }
-   Vertex3Ds MultiplyVector(const Vertex3Ds &v) const;
+   Vertex3Ds MulVector(const Vertex3Ds &v) const;
    Vertex3Ds MultiplyVectorNoTranslate(const Vertex3Ds &v) const;
    template <class VecIn, class VecOut>
    void MultiplyVectorNoTranslate(const VecIn& vIn, VecOut& vOut) const

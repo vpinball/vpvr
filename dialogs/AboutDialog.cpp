@@ -7,12 +7,11 @@
 
 AboutDialog::AboutDialog() : CDialog(IDD_ABOUT)
 {
-   memset(urlString, 0, MAX_PATH);
+   m_urlString[0] = '\0';
 }
 
 AboutDialog::~AboutDialog()
 {
-
 }
 
 void AboutDialog::OnDestroy()
@@ -25,7 +24,7 @@ INT_PTR AboutDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
       case WM_INITDIALOG:
       {
-         HWND hwndDlg = GetHwnd();
+         const HWND hwndDlg = GetHwnd();
          char versionString[256];
          sprintf_s(versionString, "Version %i.%i.%i (Revision %i, %ubit)", VP_VERSION_MAJOR,VP_VERSION_MINOR,VP_VERSION_REV, SVN_REVISION,
 #ifdef _WIN64
@@ -49,12 +48,10 @@ INT_PTR AboutDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             }
             SetDlgItemText(IDC_CHANGELOG, text.c_str());
 
-            HWND hChangelog = ::GetDlgItem(hwndDlg, IDC_CHANGELOG);
-
             HFONT hFont = CreateFont(14, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
                CLIP_DEFAULT_PRECIS, ANTIALIASED_QUALITY, VARIABLE_PITCH, TEXT("Courier New"));
 
-            ::SendMessage(hChangelog,
+            ::SendMessage(::GetDlgItem(hwndDlg, IDC_CHANGELOG),
                WM_SETFONT,
                (WPARAM)hFont,
                MAKELPARAM(TRUE, 0) // Redraw text
@@ -62,18 +59,15 @@ INT_PTR AboutDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
          }
 
 #if !(defined(IMSPANISH) | defined(IMGERMAN) | defined(IMFRENCH))
-         HWND hwndTransName = ::GetDlgItem(hwndDlg, IDC_TRANSNAME);
-         ::ShowWindow(hwndTransName, SW_HIDE);
+         ::ShowWindow(::GetDlgItem(hwndDlg, IDC_TRANSNAME), SW_HIDE);
 #endif
 
 #if !(defined(IMSPANISH))
-         HWND hwndTransSite = ::GetDlgItem(hwndDlg, IDC_TRANSLATEWEBSITE);
-         ::ShowWindow(hwndTransSite, SW_HIDE);
+         ::ShowWindow(::GetDlgItem(hwndDlg, IDC_TRANSLATEWEBSITE), SW_HIDE);
 #endif
       }
       return TRUE;
    }
-
 
    return DialogProcDefault(uMsg, wParam, lParam);
 }
@@ -86,14 +80,13 @@ BOOL AboutDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       case IDC_WEBSITE:
       case IDC_TRANSSITE:
       {
-         HRESULT hr;
          if (LOWORD(wParam) == IDC_WEBSITE)
-            hr = OpenURL("http://www.vpforums.org");
+            /*const HRESULT hr =*/ OpenURL("http://www.vpforums.org");
          else
          {
-            LPCTSTR szSite = GetDlgItem(IDC_TRANSWEBSITE).GetWindowText();
-            strncpy_s(urlString, szSite, MAX_PATH);
-            hr = OpenURL((char*)urlString);
+            const LPCTSTR szSite = GetDlgItem(IDC_TRANSWEBSITE).GetWindowText();
+            strncpy_s(m_urlString, szSite, MAX_PATH-1);
+            /*const HRESULT hr =*/ OpenURL(m_urlString);
          }
          return TRUE;
       }

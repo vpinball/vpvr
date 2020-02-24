@@ -7,40 +7,28 @@
 
 #include "resource.h"       // main symbols
 
-class RampData
+class RampData : public BaseProperty
 {
 public:
-   char m_szMaterial[32];
-   char m_szPhysicsMaterial[32];
    TimerDataRoot m_tdr;
    float m_heightbottom;
    float m_heighttop;
    float m_widthbottom;
    float m_widthtop;
    RampType m_type;
-   char m_szImage[MAXTOKEN];
    RampImageAlignment m_imagealignment;
    float m_leftwallheight;
    float m_rightwallheight;
    float m_leftwallheightvisible;
    float m_rightwallheightvisible;
 
-   float m_threshold;      // speed at which ball needs to hit to register a hit
-   float m_elasticity;
-   float m_friction;
-   float m_scatter;
    float m_wireDiameter;
    float m_wireDistanceX;
    float m_wireDistanceY;
 
    float m_depthBias;      // for determining depth sorting
 
-   bool m_fHitEvent;
-   bool m_fCollidable;
-   bool m_fVisible;
-   bool m_fImageWalls;
-   bool m_fReflectionEnabled;
-   bool m_fOverwritePhysics;
+   bool m_imageWalls;
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -91,8 +79,6 @@ public:
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
 
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
    virtual void RenderBlueprint(Sur *psur, const bool solid);
 
    virtual void ClearForOverwrite();
@@ -123,26 +109,22 @@ public:
    virtual unsigned long long GetMaterialID() const { return m_ptable->GetMaterial(m_d.m_szMaterial)->hash(); }
    virtual unsigned long long GetImageID() const { return (unsigned long long)(m_ptable->GetImage(m_d.m_szImage)); }
    virtual ItemTypeEnum HitableGetItemType() const { return eItemRamp; }
-   virtual void UpdatePropertyPanes();
    virtual void SetDefaultPhysics(bool fromMouseClick);
    virtual void ExportMesh(FILE *f);
    virtual void AddPoint(int x, int y, const bool smooth);
 
    virtual void WriteRegDefaults();
-   void UpdateUnitsInfo();
-
-   // IHaveDragPoints
-   virtual void GetPointDialogPanes(vector<PropertyPane*> &pvproppane);
-   // end IHaveDragPoints
 
    RampData m_d;
 
 private:
-   PinTable * m_ptable;
+   void UpdateUnitsInfo();
 
-   int rampVertex;
-   Vertex2D *rgvInit;    // just for setup/static drawing
-   float *rgheightInit;
+   PinTable *m_ptable;
+
+   int m_rampVertex;
+   Vertex2D *m_rgvInit;    // just for setup/static drawing
+   float *m_rgheightInit;
 
    int m_numVertices;      // this goes along with dynamicVertexBuffer
    int m_numIndices;
@@ -154,9 +136,9 @@ private:
 
    std::vector<HitObject*> m_vhoCollidable; // Objects to that may be collide selectable
 
-   VertexBuffer *dynamicVertexBuffer;
-   IndexBuffer *dynamicIndexBuffer;
-   bool dynamicVertexBufferRegenerate;
+   VertexBuffer *m_dynamicVertexBuffer;
+   IndexBuffer *m_dynamicIndexBuffer;
+   bool m_dynamicVertexBufferRegenerate;
 
    PropertyPane *m_propPhysics;
 
@@ -192,7 +174,6 @@ private:
    void CheckJoint(vector<HitObject*> &pvho, const HitTriangle * const ph3d1, const HitTriangle * const ph3d2);
 
    void RenderStaticHabitrail(const Material * const mat);
-   //void RenderPolygons(const int offset, WORD * const rgicrosssection, const int start, const int stop);
 
    void GenerateVertexBuffer();
 

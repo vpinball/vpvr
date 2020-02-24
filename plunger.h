@@ -9,11 +9,10 @@
 
 const int MAXTIPSHAPE = 256;
 
-class PlungerData
+class PlungerData : public BaseProperty
 {
 public:
    COLORREF m_color;
-   char m_szMaterial[32];
    Vertex2D m_v;
    float m_width;
    float m_height;
@@ -23,7 +22,6 @@ public:
    float m_speedFire;
    float m_mechStrength;
    PlungerType m_type;
-   char m_szImage[MAXTOKEN];
    int m_animFrames;
    TimerDataRoot m_tdr;
    float m_parkPosition;
@@ -41,8 +39,6 @@ public:
    float m_springEndLoops;
    bool m_mechPlunger;
    bool m_autoPlunger;
-   bool m_fVisible;
-   bool m_fReflectionEnabled;
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -95,7 +91,7 @@ struct PlungerDesc
    int n;
 
    // list of lathe coordinates
-   const PlungerCoord *c;
+   PlungerCoord *c;
 };
 
 
@@ -142,8 +138,6 @@ public:
 
    STANDARD_EDITABLE_DECLARES(Plunger, eItemPlunger, PLUNGER, 1)
 
-      virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
    virtual void MoveOffset(const float dx, const float dy);
    virtual void SetObjectPos();
    // Multi-object manipulation
@@ -159,8 +153,12 @@ public:
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
 
    PlungerData m_d;
-   VertexBuffer *vertexBuffer;
-   IndexBuffer *indexBuffer;
+
+private:
+   PinTable * m_ptable;
+
+   VertexBuffer *m_vertexBuffer;
+   IndexBuffer *m_indexBuffer;
 
    HitPlunger *m_phitplunger;
 
@@ -177,9 +175,6 @@ public:
 
    // number of triangle indices per frame
    int m_indicesPerFrame;
-
-private:
-   PinTable * m_ptable;
 
    // IPlunger
 public:
@@ -202,6 +197,8 @@ public:
    STDMETHOD(put_MechStrength)(/*[in]*/ float newVal);
    STDMETHOD(Fire)();
    STDMETHOD(PullBack)();
+   STDMETHOD(PullBackandRetract)();
+
    STDMETHOD(get_Type)(/*[out, retval]*/ PlungerType *pVal);
    STDMETHOD(put_Type)(/*[in]*/ PlungerType newVal);
    STDMETHOD(get_Material)(/*[out, retval]*/ BSTR *pVal);

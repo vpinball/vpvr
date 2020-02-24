@@ -38,16 +38,15 @@ bool PinBinary::ReadFromFile(const char * const szfilename)
    m_pdata = new char[m_cdata];
 
    DWORD read;
+   /*BOOL foo =*/ ReadFile(hFile, m_pdata, m_cdata, &read, NULL);
 
-   /*int fFoo =*/ ReadFile(hFile, m_pdata, m_cdata, &read, NULL);
+   /*foo =*/ CloseHandle(hFile);
 
-   /*fFoo =*/ CloseHandle(hFile);
-
-   strncpy_s(m_szPath, szfilename, MAX_PATH);
+   strncpy_s(m_szPath, szfilename, MAX_PATH - 1);
 
    TitleFromFilename(szfilename, m_szName);
 
-   strncpy_s(m_szInternalName, m_szName, MAXTOKEN);
+   strncpy_s(m_szInternalName, m_szName, MAXTOKEN - 1);
 
    CharLowerBuff(m_szInternalName, lstrlen(m_szInternalName));
    return true;
@@ -61,7 +60,9 @@ bool PinBinary::WriteToFile(const char * const szfilename)
 
    if (hFile == INVALID_HANDLE_VALUE)
    {
-      ShowError("The temporary file could not be written.");
+      char bla[MAXSTRING];
+      sprintf_s(bla, "The temporary file %s could not be written.", szfilename);
+      ShowError(bla);
       return false;
    }
 
@@ -102,31 +103,23 @@ HRESULT PinBinary::LoadFromStream(IStream *pstream, int version)
    return S_OK;
 }
 
-BOOL PinBinary::LoadToken(int id, BiffReader *pbr)
+bool PinBinary::LoadToken(const int id, BiffReader * const pbr)
 {
-   if (id == FID(NAME))
+   switch (id)
    {
-      pbr->GetString(m_szName);
-   }
-   else if (id == FID(INME))
-   {
-      pbr->GetString(m_szInternalName);
-   }
-   else if (id == FID(PATH))
-   {
-      pbr->GetString(m_szPath);
-   }
-   else if (id == FID(SIZE))
+   case FID(NAME): pbr->GetString(m_szName); break;
+   case FID(INME): pbr->GetString(m_szInternalName); break;
+   case FID(PATH): pbr->GetString(m_szPath); break;
+   case FID(SIZE):
    {
       pbr->GetInt(&m_cdata);
       m_pdata = new char[m_cdata];
+      break;
    }
-   else if (id == FID(DATA))
-   {
-      // Size must come before data, otherwise our structure won't be allocated
-      pbr->GetStruct(m_pdata, m_cdata);
+   // Size must come before data, otherwise our structure won't be allocated
+   case FID(DATA): pbr->GetStruct(m_pdata, m_cdata); break;
    }
-   return fTrue;
+   return true;
 }
 
 int CALLBACK EnumFontFamExProc(
@@ -161,15 +154,21 @@ void PinFont::Register()
    while (szEnd > szPath)
    {
       if (*szEnd == '\\')
-      {
          break;
-      }
+
       szEnd--;
    }
 
    *(szEnd + 1) = '\0'; // Get rid of exe name
 
-   lstrcat(szPath, "VPTemp.ttf");
+   static int tempFontNumber = -1;
+   tempFontNumber++;
+
+   lstrcat(szPath, "VPTemp");
+   char tempFontNumber_s[4];
+   _itoa_s(tempFontNumber, tempFontNumber_s, 10);
+   lstrcat(szPath, tempFontNumber_s);
+   lstrcat(szPath, ".ttf");
 
    strcpy_s(m_szTempFile, sizeof(m_szTempFile), szPath);
 
@@ -180,7 +179,7 @@ void PinFont::Register()
 
 void PinFont::UnRegister()
 {
-   /*const BOOL fFoo =*/ RemoveFontResource(m_szTempFile);
+   /*const BOOL foo =*/ RemoveFontResource(m_szTempFile);
 
    DeleteFile(m_szTempFile);
 }

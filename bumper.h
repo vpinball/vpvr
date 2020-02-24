@@ -7,32 +7,27 @@
 
 #include "resource.h"       // main symbols
 
-class BumperData
+class BumperData : public BaseProperty
 {
 public:
    Vertex2D m_vCenter;
    float m_radius;
-   float m_threshold; // speed at which ball needs to hit to register a hit
    float m_force; // force the bumper kicks back with
-   float m_scatter;
    float m_heightScale;
    float m_orientation;
    float m_ringSpeed;
    float m_ringDropOffset;
    U32 m_time_msec;
    TimerDataRoot m_tdr;
-   char m_szCapMaterial[32];
-   char m_szBaseMaterial[32];
-   char m_szSkirtMaterial[32];
-   char m_szRingMaterial[32];
+   char m_szCapMaterial[MAXNAMEBUFFER];
+   char m_szBaseMaterial[MAXNAMEBUFFER];
+   char m_szSkirtMaterial[MAXNAMEBUFFER];
+   char m_szRingMaterial[MAXNAMEBUFFER];
    char m_szSurface[MAXTOKEN];
-   bool m_fCapVisible;
-   bool m_fBaseVisible;
-   bool m_fRingVisible;
-   bool m_fSkirtVisible;
-   bool m_fReflectionEnabled;
-   bool m_fHitEvent;
-   bool m_fCollidable;
+   bool m_capVisible;
+   bool m_baseVisible;
+   bool m_ringVisible;
+   bool m_skirtVisible;
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -86,28 +81,24 @@ public:
    virtual void MoveOffset(const float dx, const float dy);
    virtual void SetObjectPos();
 
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
    // Multi-object manipulation
    virtual Vertex2D GetCenter() const;
    virtual void PutCenter(const Vertex2D& pv);
 
-   virtual void UpdatePropertyPanes();
    virtual void SetDefaultPhysics(bool fromMouseClick);
    virtual void ExportMesh(FILE *f);
    virtual void RenderBlueprint(Sur *psur, const bool solid);
 
-
    virtual unsigned long long GetMaterialID() const
    {
-      if (!m_d.m_fBaseVisible && m_d.m_fCapVisible)
+      if (!m_d.m_baseVisible && m_d.m_capVisible)
          return m_ptable->GetMaterial(m_d.m_szCapMaterial)->hash();
       else
          return 64 - 3; //!! some constant number
    }
    virtual unsigned long long GetImageID() const
    {
-      if (!m_d.m_fBaseVisible && m_d.m_fCapVisible)
+      if (!m_d.m_baseVisible && m_d.m_capVisible)
          return (unsigned long long)&m_capTexture; //!! meh
       else
          return NULL;
@@ -120,7 +111,6 @@ public:
    BumperData m_d;
 
    BumperHitCircle *m_pbumperhitcircle;
-
 
 private:
    void RenderBase(const Material * const baseMaterial);
@@ -153,12 +143,12 @@ private:
    Texture m_skirtTexture;
    Texture m_baseTexture;
    Texture m_capTexture;
-   Material m_ringMaterial;
 
    PropertyPane *m_propVisual;
 
    float   m_baseHeight;
    float   m_skirtCounter;
+   bool    m_updateSkirt;
    bool    m_doSkirtAnimation;
    bool    m_enableSkirtAnimation;
    bool    m_ringDown;

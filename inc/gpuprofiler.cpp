@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "gpuprofiler.h"
-#include <d3d9.h>
+#include "typeDefs3d.h"
 
 #define FLUSH_DATA /*0*/ D3DGETDATA_FLUSH // latter should be a bit less accurate but leading to less failures when getting the data
 #define GET_DATA_RETRIES 10
@@ -12,13 +12,24 @@
  #define DebugPrintf(x, ...)
 #endif
 
+#ifdef ENABLE_SDL
+CGpuProfiler::CGpuProfiler() {}
+CGpuProfiler::~CGpuProfiler() {}
+bool CGpuProfiler::Init(void* const pDevice) { return true; }
+void CGpuProfiler::ResetCounters() {}
+void CGpuProfiler::Shutdown() {}
+void CGpuProfiler::BeginFrame(void* const pDevice) {}
+void CGpuProfiler::Timestamp(GTS gts) {}
+void CGpuProfiler::EndFrame() {}
+void CGpuProfiler::WaitForDataAndUpdate() {}
+#else
 CGpuProfiler::CGpuProfiler ()
 :   m_init(false),
 	m_iFrameQuery(0),
 	m_iFrameCollect(-1),
+	m_frequencyQuery(NULL),
 	m_frameCountAvg(0),
 	m_tBeginAvg(0.0),
-	m_frequencyQuery(NULL),
 	m_device(NULL)
 {
 	memset(m_apQueryTsDisjoint, 0, sizeof(m_apQueryTsDisjoint));
@@ -43,7 +54,7 @@ bool CGpuProfiler::Init (IDirect3DDevice9 * const pDevice)
 
 	if (tsHr != D3D_OK || tsdHr != D3D_OK || tsfHr != D3D_OK)
 	{
-		ErrorPrintf("GPU Profiler: Query not supported");
+		DebugPrintf("GPU Profiler: Query not supported");
 		return false;
 	}
 
@@ -281,3 +292,4 @@ void CGpuProfiler::WaitForDataAndUpdate ()
 		m_tBeginAvg = t;
 	}
 }
+#endif //ENABLE_SDL

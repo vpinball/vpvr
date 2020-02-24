@@ -17,7 +17,7 @@ public:
    HRESULT LoadFromStream(IStream *pstream, int version);
 
    // ILoadable callback
-   virtual BOOL LoadToken(int id, BiffReader *pbr);
+   virtual bool LoadToken(const int id, BiffReader * const pbr);
 
    char m_szName[MAXTOKEN];
    char m_szInternalName[MAXTOKEN];
@@ -30,11 +30,11 @@ public:
 class PinFont : public PinBinary
 {
 public:
-   char m_szTempFile[MAX_PATH]; // temporary file name for registering font
-   char m_szFontName[LF_FACESIZE]; // Name of the font, as would be seen on a system font list
-
    void Register();
    void UnRegister();
+
+private:
+   char m_szTempFile[MAX_PATH]; // temporary file name for registering font
 };
 
 #endif // !defined(AFX_PINBINARY_H__080F5CB3_4174_4B1D_A81E_DCC4CBFE5954__INCLUDED_)

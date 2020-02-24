@@ -28,7 +28,6 @@ private:
     void SavePosition();
 
     HWND hSoundList;
-    bool m_bPlayedSound;
     char m_filename[MAX_PATH];
     char m_initDir[MAX_PATH];
     static int m_columnSortOrder;
@@ -37,11 +36,11 @@ private:
 class SoundPositionDialog : public CDialog
 {
 public:
-	int m_iVolume, m_iFade, m_iBalance;
+	int m_volume, m_fade, m_balance;
 	SoundOutTypes m_cOutputTarget;
 	PinSound *m_pps;
 
-	SoundPositionDialog(PinSound *pps);
+	SoundPositionDialog(PinSound * const pps);
 	virtual ~SoundPositionDialog();
 
 protected:
@@ -63,8 +62,8 @@ private:
 	void GetDialogValues();
 	void ReadValuesFromSliders();
 	void TestSound();
-	int SliderToValue(const int Slider);
-	int ValueToSlider(const int Value);
+	//int SliderToValue(const int Slider);
+	//int ValueToSlider(const int Value);
 };
 
 #endif

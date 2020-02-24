@@ -9,7 +9,7 @@
 #include <sdl2/SDL.h>
 #include <sdl2/SDL_ttf.h>
 #else
-#include <d3d9.h>
+#include <minid3d9.h>
 #include <d3dx9.h>
 #endif
 #ifdef ENABLE_VR
@@ -19,6 +19,9 @@
 #include "math/matrix.h"
 
 #ifdef ENABLE_SDL
+
+#define MAX_DEVICE_IDENTIFIER_STRING 512
+#define D3DADAPTER_DEFAULT 0
 
 enum colorFormat {
    GREY = GL_RED,

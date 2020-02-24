@@ -143,10 +143,10 @@ BaseTexture* BaseTexture::CreateFromFile(const char *szfile)
 BaseTexture* BaseTexture::CreateFromData(const void *data, const size_t size)
 {
    // check the file signature and deduce its format
-   FIMEMORY * const dataHandle = FreeImage_OpenMemory((BYTE*)data, size);
+   FIMEMORY * const dataHandle = FreeImage_OpenMemory((BYTE*)data, (DWORD)size);
    if (!dataHandle)
       return NULL;
-   const FREE_IMAGE_FORMAT fif = FreeImage_GetFileTypeFromMemory(dataHandle, size);
+   const FREE_IMAGE_FORMAT fif = FreeImage_GetFileTypeFromMemory(dataHandle, (int)size);
 
    // check that the plugin has reading capabilities ...
    if ((fif != FIF_UNKNOWN) && FreeImage_FIFSupportsReading(fif)) {
@@ -174,13 +174,14 @@ void BaseTexture::CopyTo_ConvertAlpha(BYTE* const bits) // premultiplies alpha (
 {
    if (m_format == RGB_FP) // Tonemap for 8bpc-Display
    {
+      const float * const __restrict src = (float*)m_data.data();
       unsigned int o = 0;
       for (int j = 0; j < m_height; ++j)
          for (int i = 0; i < m_width; ++i, ++o)
          {
-            const float r = ((float*)m_data.data())[o * 3];
-            const float g = ((float*)m_data.data())[o * 3 + 1];
-            const float b = ((float*)m_data.data())[o * 3 + 2];
+            const float r = src[o * 3];
+            const float g = src[o * 3 + 1];
+            const float b = src[o * 3 + 2];
             const float l = r * 0.176204f + g * 0.812985f + b * 0.0108109f;
             const float n = (l*0.25f + 1.0f) / (l + 1.0f); // overflow is handled by clamp
             bits[o * 4] = (BYTE)(clamp(b*n, 0.f, 1.f) * 255.f);
@@ -251,7 +252,7 @@ static FIBITMAP* HBitmapToFreeImage(HBITMAP hbmp)
    // So we save these infos below. This is needed for palettized images only.
    const int nColors = FreeImage_GetColorsUsed(dib);
    const HDC dc = GetDC(NULL);
-   const int Success = GetDIBits(dc, hbmp, 0, FreeImage_GetHeight(dib),
+   /*const int Success =*/ GetDIBits(dc, hbmp, 0, FreeImage_GetHeight(dib),
       FreeImage_GetBits(dib), FreeImage_GetInfo(dib), DIB_RGB_COLORS);
    ReleaseDC(NULL, dc);
    // restore BITMAPINFO members
@@ -365,33 +366,17 @@ bool Texture::LoadFromMemory(BYTE* const data, const DWORD size)
    return true;
 }
 
-BOOL Texture::LoadToken(int id, BiffReader *pbr)
+bool Texture::LoadToken(const int id, BiffReader * const pbr)
 {
-   if (id == FID(NAME))
+   switch (id)
    {
-      pbr->GetString(m_szName);
-   }
-   else if (id == FID(INME))
-   {
-      pbr->GetString(m_szInternalName);
-   }
-   else if (id == FID(PATH))
-   {
-      pbr->GetString(m_szPath);
-   }
-   else if (id == FID(WDTH))
-   {
-      pbr->GetInt(&m_width);
-   }
-   else if (id == FID(HGHT))
-   {
-      pbr->GetInt(&m_height);
-   }
-   else if (id == FID(ALTV))
-   {
-      pbr->GetFloat(&m_alphaTestValue);
-   }
-   else if (id == FID(BITS))
+   case FID(NAME): pbr->GetString(m_szName); break;
+   case FID(INME): pbr->GetString(m_szInternalName); break;
+   case FID(PATH): pbr->GetString(m_szPath); break;
+   case FID(WDTH): pbr->GetInt(&m_width); break;
+   case FID(HGHT): pbr->GetInt(&m_height); break;
+   case FID(ALTV): pbr->GetFloat(&m_alphaTestValue); break;
+   case FID(BITS):
    {
       if (m_pdsBuffer)
          FreeStuff();
@@ -407,13 +392,14 @@ BOOL Texture::LoadToken(int id, BiffReader *pbr)
 
       // Assume our 32 bit color structure
       // Find out if all alpha values are zero
-      BYTE * const pch = (BYTE *)m_pdsBuffer->data();
+      BYTE * const __restrict pch = (BYTE *)m_pdsBuffer->data();
       bool allAlphaZero = true;
       for (int i = 0; i < m_height; i++)
       {
-         for (int l = 0; l < m_width; l++)
+         unsigned int o = i * lpitch + 3;
+         for (int l = 0; l < m_width; l++, o += 4)
          {
-            if (pch[i*lpitch + 4 * l + 3] != 0)
+            if (pch[o] != 0)
             {
                allAlphaZero = false;
                goto endAlphaCheck;
@@ -425,10 +411,15 @@ BOOL Texture::LoadToken(int id, BiffReader *pbr)
       // all alpha values are 0: set them all to 0xff
       if (allAlphaZero)
          for (int i = 0; i < m_height; i++)
-            for (int l = 0; l < m_width; l++)
-               pch[i*lpitch + 4 * l + 3] = 0xff;
+         {
+            unsigned int o = i * lpitch + 3;
+            for (int l = 0; l < m_width; l++, o += 4)
+               pch[o] = 0xff;
+         }
+
+      break;
    }
-   else if (id == FID(JPEG))
+   case FID(JPEG):
    {
       m_ppb = new PinBinary();
       m_ppb->LoadFromStream(pbr->m_pistream, pbr->m_version);
@@ -436,17 +427,19 @@ BOOL Texture::LoadToken(int id, BiffReader *pbr)
       // m_ppb->m_pdata() is the buffer
       // m_ppb->m_cdata() is the filesize
       return LoadFromMemory((BYTE*)m_ppb->m_pdata, m_ppb->m_cdata);
+      break;
    }
-   else if (id == FID(LINK))
+   case FID(LINK):
    {
       int linkid;
-      PinTable * const pt = (PinTable *)pbr->m_pdata;
       pbr->GetInt(&linkid);
+      PinTable * const pt = (PinTable *)pbr->m_pdata;
       m_ppb = pt->GetImageLinkBinary(linkid);
       return LoadFromMemory((BYTE*)m_ppb->m_pdata, m_ppb->m_cdata);
+      break;
    }
-
-   return fTrue;
+   }
+   return true;
 }
 
 void Texture::FreeStuff()
@@ -488,7 +481,7 @@ void Texture::CreateGDIVersion()
    bmi.bmiHeader.biCompression = BI_RGB;
    bmi.bmiHeader.biSizeImage = 0;
 
-   BYTE *tmp = new BYTE[m_width*m_height * 4];
+   BYTE * const tmp = new BYTE[m_width*m_height * 4];
    m_pdsBuffer->CopyTo_ConvertAlpha(tmp);
 
    SetStretchBltMode(hdcNew, COLORONCOLOR);
@@ -552,14 +545,12 @@ void BaseTexture::SetOpaque()
       return;
 
    // Assume our 32 bit color structure
-   BYTE *pch = data();
+   BYTE *const __restrict pch = data();
 
    for (int i = 0; i < height(); i++)
    {
-      unsigned int offs = 3;
+      unsigned int offs = i * pitch() + 3;
       for (int l = 0; l < width(); l++, offs += 4)
          pch[offs] = 0xff;
-
-      pch += pitch();
    }
 }

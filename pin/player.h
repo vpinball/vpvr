@@ -258,32 +258,25 @@ class NudgeFilterY : public NudgeFilter
 struct TimerOnOff
 {
    HitTimer* m_timer;
-   bool enabled;
+   bool m_enabled;
 };
 
 class Player
 {
 public:
-   Player(bool _cameraMode);
+   Player(const bool cameraMode, PinTable * const ptable, const HWND hwndProgress, const HWND hwndProgressName, HRESULT &hrInit);
    virtual ~Player();
 
-   HRESULT Init(PinTable * const ptable, const HWND hwndProgress, const HWND hwndProgressName);
+private:
    void RenderDynamicMirror(const bool onlyBalls);
    void RenderMirrorOverlay();
    void InitBallShader();
-   void CreateDebugFont();
-   void DebugPrint(int x, int y, LPCSTR text, int stringLen, bool shadow = false);
    void InitGameplayWindow();
    void InitKeys();
-   void InitRegValues();
-
-   void Shutdown();
 
    void InitStatic(HWND hwndProgress);
 
    void UpdatePhysics();
-   void Render();
-   void RenderDynamics();
 
    void DrawBalls();
 
@@ -300,9 +293,11 @@ public:
    void PostProcess(const bool ambientOcclusion);
    void FlipVideoBuffers(const bool vsync);
 
-   void SetScreenOffset(float x, float y);     // set render offset in screen coordinates, e.g., for the nudge shake
-
    void PhysicsSimulateCycle(float dtime);
+
+public:
+   void Render();
+   void RenderDynamics();
 
    Ball *CreateBall(const float x, const float y, const float z, const float vx, const float vy, const float vz, const float radius = 25.0f, const float mass = 1.0f);
    void DestroyBall(Ball *pball);
@@ -310,7 +305,7 @@ public:
    void AddCabinetBoundingHitShapes();
 
    void InitDebugHitStructure();
-   void DoDebugObjectMenu(int x, int y);
+   void DoDebugObjectMenu(const int x, const int y);
 
    void PauseMusic();
    void UnpauseMusic();
@@ -326,8 +321,8 @@ public:
    int  NudgeGetTilt(); // returns non-zero when appropriate to set the tilt switch
 #endif
 
-   void mechPlungerUpdate();
-   void mechPlungerIn(const int z);
+   void MechPlungerUpdate();
+   void MechPlungerIn(const int z);
 
    void SetGravity(float slopeDeg, float strength);
 
@@ -346,13 +341,13 @@ public:
    SDL_Window *m_sdl_backdropHwnd;
 #endif
 
-   IndexBuffer *ballIndexBuffer;
-   VertexBuffer *ballVertexBuffer;
+   IndexBuffer *m_ballIndexBuffer;
+   VertexBuffer *m_ballVertexBuffer;
    VertexBuffer *m_ballTrailVertexBuffer;
    bool m_antiStretchBall;
 
-   bool cameraMode;
-   int backdropSettingActive;
+   bool m_cameraMode;
+   int m_backdropSettingActive;
    PinTable *m_ptable;
 
    Pin3D m_pin3d;
@@ -438,7 +433,7 @@ public:
    int m_MusicVolume;
    int m_SoundVolume;
 
-   XAudPlayer *m_pxap;
+   AudioPlayer *m_audio;
 
    int m_lastcursorx, m_lastcursory; // used for the dumb task of seeing if the mouse has really moved when we get a WM_MOUSEMOVE message
 
@@ -446,34 +441,29 @@ public:
    int m_ModalRefCount;
 
    int m_closeType;                  // if 0 exit player and close application if started minimized, if 1 close application always, 2 is brute force exit
-   bool m_fCloseDown;                // Whether to shut down the player at the end of this frame
-   bool m_fCloseDownDelay;
-   bool m_fShowDebugger;
+   bool m_closeDown;                 // Whether to shut down the player at the end of this frame
+   bool m_closeDownDelay;
+   bool m_showDebugger;
 
-   bool m_ShowWindowedCaption;
+   bool m_showWindowedCaption;
 
-   bool m_fReflectionForBalls;
-   bool m_fTrailForBalls;
+   bool m_reflectionForBalls;
+   bool m_trailForBalls;
 
-   bool m_fThrowBalls;
-   bool m_fBallControl;
-   int  m_DebugBallSize;
-   float m_DebugBallMass;
+   bool m_throwBalls;
+   bool m_ballControl;
+   int  m_debugBallSize;
+   float m_debugBallMass;
 
-   bool m_fDetectScriptHang;
-   bool m_fNoTimeCorrect;               // Used so the frame after debugging does not do normal time correction
+   bool m_detectScriptHang;
+   bool m_noTimeCorrect;                // Used so the frame after debugging does not do normal time correction
 
-   bool m_fDebugMode;
+   bool m_debugMode;
 
-   bool m_DebugBalls;                   // Draw balls in the foreground.
-   bool m_ToggleDebugBalls;
+   bool m_debugBalls;                   // Draw balls in the foreground.
+   bool m_toggleDebugBalls;
 
    bool m_swap_ball_collision_handling; // Swaps the order of ball-ball collision handling around each physics cycle (in regard to the RLC comment block in quadtree.cpp (hopefully ;)))
-
-   U32 m_script_period;
-   U64 m_script_total;
-   U32 m_script_max;
-   U32 m_script_max_total;
 
 #ifdef DEBUGPHYSICS
    U32 c_hitcnts;
@@ -505,17 +495,17 @@ public:
    int m_width, m_height, m_display;
 
    int m_screenwidth, m_screenheight, m_refreshrate;
-   bool m_fFullScreen;
+   bool m_fullScreen;
 
    bool m_touchregion_pressed[8]; // status for each touch region to avoid multitouch double triggers (true = finger on, false = finger off)
 
-   bool m_fDrawCursor;
-   bool m_fGameWindowActive;
-   bool m_fUserDebugPaused;
-   bool m_fDebugWindowActive;
-   bool m_fCabinetMode;
-   bool m_fMeshAsPlayfield;
-   bool m_fRecordContacts;             // flag for DoHitTest()
+   bool m_drawCursor;
+   bool m_gameWindowActive;
+   bool m_userDebugPaused;
+   bool m_debugWindowActive;
+   bool m_cabinetMode;
+   bool m_meshAsPlayfield;
+   bool m_recordContacts;             // flag for DoHitTest()
    std::vector< CollisionEvent > m_contacts;
 
    int m_dmdx;
@@ -528,9 +518,16 @@ public:
 
    int m_overall_frames; // amount of rendered frames since start
 
+#ifdef LOG
+   FILE *m_flog;
+#else
 private:
-   vector<HitObject*> m_vho;
+#endif
    std::vector<MoverObject*> m_vmover; // moving objects for physics simulation
+#ifdef LOG
+private:
+#endif
+   vector<HitObject*> m_vho;
 
    std::vector<Ball*> m_vballDelete;   // Balls to free at the end of the frame
 
@@ -559,7 +556,7 @@ private:
    int m_curAccel_y[PININ_JOYMXCNT];
 
 #ifdef PLAYBACK
-   bool m_fPlayback;
+   bool m_playback;
    FILE *m_fplaylog;
 #endif
 
@@ -575,18 +572,14 @@ private:
 
    int m_pauseRefCount;
 
-   bool m_fPseudoPause;		// Nothing is moving, but we're still redrawing
+   bool m_pseudoPause;		// Nothing is moving, but we're still redrawing
 
    bool m_supportsTouch;    // Display is a touchscreen?
    bool m_showTouchMessage;
 
-#ifdef LOG
-   FILE *m_flog;
-   int m_timestamp;
-#endif
-
    U32 m_phys_iterations;
 
+   // all kinds of stats tracking, incl. FPS measurement
    U32 m_lastfpstime;
    U32 m_cframes;
    float m_fps;
@@ -606,29 +599,46 @@ private:
    U32 m_phys_max;
    U32 m_phys_max_total;
 
+   U32 m_script_period;
+   U64 m_script_total;
+   U32 m_script_max;
+   U32 m_script_max_total;
+
    FrameQueueLimiter m_limiter;
+
+   // only called from ctor
+   HRESULT Init(PinTable * const ptable, const HWND hwndProgress, const HWND hwndProgressName);
+   // only called from dtor
+   void Shutdown();
+
+   void CreateDebugFont();
+   void DebugPrint(int x, int y, LPCSTR text, int stringLen, bool shadow = false);
+
+   void SetScreenOffset(const float x, const float y);     // set render offset in screen coordinates, e.g., for the nudge shake
+
+   bool RenderStaticOnly();
+   bool RenderAOOnly();
+
+   void InitShader();
+   void CalcBallAspectRatio();
+   void GetBallAspectRatio(const Ball * const pball, float &stretchX, float &stretchY, const float zHeight);
+   //void DrawBallReflection(Ball *pball, const float zheight, const bool lowDetailBall);
+   unsigned int ProfilingMode();
 
 public:
    void ToggleFPS();
    void InitFPS();
    bool ShowFPS();
-   bool RenderStaticOnly();
-   bool RenderAOOnly();
-   unsigned int ProfilingMode();
    void UpdateBasicShaderMatrix(const Matrix3D* objectTrafo = NULL);
-   void InitShader();
    void UpdateCameraModeDisplay();
    void UpdateBackdropSettings(const bool up);
    void UpdateBallShaderMatrix();
-   void CalcBallAspectRatio();
-   void GetBallAspectRatio(const Ball * const pball, float &stretchX, float &stretchY, const float zHeight);
-   //void DrawBallReflection(Ball *pball, const float zheight, const bool lowDetailBall);
 
 #ifdef STEPPING
 public:
-   U32 m_PauseTimeTarget;
-   bool m_fPause;
-   bool m_fStep;
+   U32 m_pauseTimeTarget;
+   bool m_pause;
+   bool m_step;
 #endif
 
    unsigned int m_showFPS;
@@ -648,6 +658,7 @@ public:
    Texture *m_ballImage;
    Texture *m_decalImage;
 
+private:
 #ifdef ENABLE_SDL
    TTF_Font *m_pFont;
 #else

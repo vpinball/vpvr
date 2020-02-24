@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+#include "stdafx.h"
 #include "resource.h"
 #include "CollectionManagerDialog.h"
 
@@ -23,7 +23,7 @@ CollectionManagerDialog::CollectionManagerDialog() : CDialog(IDD_COLLECTDIALOG)
 
 BOOL CollectionManagerDialog::OnInitDialog()
 {
-    CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+    CCO(PinTable) * const pt = g_pvp->GetActiveTable();
 
     hListHwnd = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
 
@@ -55,7 +55,7 @@ BOOL CollectionManagerDialog::OnInitDialog()
 
 void CollectionManagerDialog::EditCollection()
 {
-    CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+    CCO(PinTable) * const pt = g_pvp->GetActiveTable();
 
     const int sel = ListView_GetNextItem(hListHwnd, -1, LVNI_SELECTED);
     if (sel != -1)
@@ -82,7 +82,7 @@ void CollectionManagerDialog::EditCollection()
 
 INT_PTR CollectionManagerDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+    CCO(PinTable) * const pt = g_pvp->GetActiveTable();
 
     switch(uMsg)
     {
@@ -118,7 +118,6 @@ INT_PTR CollectionManagerDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lPa
                        char buf[16] = { 0 };
                        sprintf_s(buf, "%i", pcol->m_visel.Size());
                        ListView_SetItemText(hListHwnd, i, 1, buf);
-
                     }
                 }
             }
@@ -151,7 +150,7 @@ INT_PTR CollectionManagerDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lPa
 
 BOOL CollectionManagerDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-    CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
+    CCO(PinTable) * const pt = g_pvp->GetActiveTable();
     UNREFERENCED_PARAMETER(lParam);
 
     switch(LOWORD(wParam))
@@ -323,24 +322,24 @@ BOOL CollectionDialog::OnInitDialog()
 {
     Collection * const pcol = pCurCollection.pcol;
 
-    HWND hwndName = GetDlgItem(IDC_NAME).GetHwnd();
+    const HWND hwndName = GetDlgItem(IDC_NAME).GetHwnd();
 
     char szT[MAX_PATH];
     WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
 
     ::SetWindowText(hwndName, szT);
 
-    HWND hwndFireEvents = GetDlgItem(IDC_FIRE).GetHwnd();
-    ::SendMessage(hwndFireEvents, BM_SETCHECK, pcol->m_fFireEvents ? BST_CHECKED : BST_UNCHECKED, 0);
+    const HWND hwndFireEvents = GetDlgItem(IDC_FIRE).GetHwnd();
+    ::SendMessage(hwndFireEvents, BM_SETCHECK, pcol->m_fireEvents ? BST_CHECKED : BST_UNCHECKED, 0);
 
-    HWND hwndStopSingle = GetDlgItem(IDC_SUPPRESS).GetHwnd();
-    ::SendMessage(hwndStopSingle, BM_SETCHECK, pcol->m_fStopSingleEvents ? BST_CHECKED : BST_UNCHECKED, 0);
+    const HWND hwndStopSingle = GetDlgItem(IDC_SUPPRESS).GetHwnd();
+    ::SendMessage(hwndStopSingle, BM_SETCHECK, pcol->m_stopSingleEvents ? BST_CHECKED : BST_UNCHECKED, 0);
 
-    HWND hwndGroupElements = GetDlgItem(IDC_GROUP_CHECK).GetHwnd();
-    ::SendMessage(hwndGroupElements, BM_SETCHECK, pcol->m_fGroupElements ? BST_CHECKED : BST_UNCHECKED, 0);
+    const HWND hwndGroupElements = GetDlgItem(IDC_GROUP_CHECK).GetHwnd();
+    ::SendMessage(hwndGroupElements, BM_SETCHECK, pcol->m_groupElements ? BST_CHECKED : BST_UNCHECKED, 0);
 
-    HWND hwndOut = GetDlgItem(IDC_OUTLIST).GetHwnd();
-    HWND hwndIn = GetDlgItem(IDC_INLIST).GetHwnd();
+    const HWND hwndOut = GetDlgItem(IDC_OUTLIST).GetHwnd();
+    const HWND hwndIn = GetDlgItem(IDC_INLIST).GetHwnd();
 
     for (int i = 0; i < pcol->m_visel.Size(); i++)
     {
@@ -366,12 +365,8 @@ BOOL CollectionDialog::OnInitDialog()
         // Only process objects not in this collection
         int l;
         for (l = 0; l < pcol->m_visel.Size(); l++)
-        {
             if (pisel == pcol->m_visel.ElementAt(l))
-            {
                 break;
-            }
-        }
 
         if ((l == pcol->m_visel.Size()) && piscript)
             //if (!piedit->m_pcollection)
@@ -387,7 +382,6 @@ BOOL CollectionDialog::OnInitDialog()
 
 BOOL CollectionDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 {
-    CCO(PinTable) *pt = (CCO(PinTable) *)g_pvp->GetActiveTable();
     UNREFERENCED_PARAMETER(lParam);
 
     switch(LOWORD(wParam))
@@ -433,19 +427,8 @@ BOOL CollectionDialog::OnCommand(WPARAM wParam, LPARAM lParam)
         case IDC_IN:
         case IDC_OUT:
         {
-            HWND hwndOut;
-            HWND hwndIn;
-
-            if (LOWORD(wParam) == IDC_IN)
-            {
-                hwndOut = GetDlgItem(IDC_OUTLIST).GetHwnd();
-                hwndIn = GetDlgItem(IDC_INLIST).GetHwnd();
-            }
-            else
-            {
-                hwndOut = GetDlgItem(IDC_INLIST).GetHwnd();
-                hwndIn = GetDlgItem(IDC_OUTLIST).GetHwnd();
-            }
+            const HWND hwndOut = GetDlgItem((LOWORD(wParam) == IDC_IN) ? IDC_OUTLIST : IDC_INLIST).GetHwnd();
+            const HWND hwndIn = GetDlgItem((LOWORD(wParam) == IDC_IN) ? IDC_INLIST : IDC_OUTLIST).GetHwnd();
 
             const size_t count = ::SendMessage(hwndOut, LB_GETSELCOUNT, 0, 0);
             int * const rgsel = new int[count];
@@ -471,6 +454,7 @@ BOOL CollectionDialog::OnCommand(WPARAM wParam, LPARAM lParam)
         }
         break;
     }
+
     return TRUE;
 }
 
@@ -480,11 +464,12 @@ void CollectionDialog::OnOK()
 
     for (int i = 0; i < pcol->m_visel.Size(); i++)
     {
-        const int index = FindIndexOf(pcol->m_visel.ElementAt(i)->GetIEditable()->m_vCollection, pcol);
+        IEditable * const ie = pcol->m_visel.ElementAt(i)->GetIEditable();
+        const int index = FindIndexOf(ie->m_vCollection, pcol);
         if (index != -1)
         {
-            pcol->m_visel.ElementAt(i)->GetIEditable()->m_vCollection.erase (pcol->m_visel.ElementAt(i)->GetIEditable()->m_vCollection.begin()  + index);
-            pcol->m_visel.ElementAt(i)->GetIEditable()->m_viCollection.erase(pcol->m_visel.ElementAt(i)->GetIEditable()->m_viCollection.begin() + index);
+            ie->m_vCollection.erase (ie->m_vCollection.begin()  + index);
+            ie->m_viCollection.erase(ie->m_viCollection.begin() + index);
         }
     }
 
@@ -506,21 +491,17 @@ void CollectionDialog::OnOK()
         }
     }
 
-    HWND hwndFireEvents = GetDlgItem(IDC_FIRE).GetHwnd();
-    const size_t fEvents = ::SendMessage(hwndFireEvents, BM_GETCHECK, 0, 0);
-    pcol->m_fFireEvents = !!fEvents;
+    const size_t fireEvents = ::SendMessage(GetDlgItem(IDC_FIRE).GetHwnd(), BM_GETCHECK, 0, 0);
+    pcol->m_fireEvents = !!fireEvents;
 
-    HWND hwndStopSingle = GetDlgItem(IDC_SUPPRESS).GetHwnd();
-    const size_t fStopSingle = ::SendMessage(hwndStopSingle, BM_GETCHECK, 0, 0);
-    pcol->m_fStopSingleEvents = !!fStopSingle;
+    const size_t stopSingleEvents = ::SendMessage(GetDlgItem(IDC_SUPPRESS).GetHwnd(), BM_GETCHECK, 0, 0);
+    pcol->m_stopSingleEvents = !!stopSingleEvents;
 
-    HWND hwndGroupElements = GetDlgItem(IDC_GROUP_CHECK).GetHwnd();
-    const size_t fGroupElements = ::SendMessage(hwndGroupElements, BM_GETCHECK, 0, 0);
-    pcol->m_fGroupElements = !!fGroupElements;
+    const size_t groupElements = ::SendMessage(GetDlgItem(IDC_GROUP_CHECK).GetHwnd(), BM_GETCHECK, 0, 0);
+    pcol->m_groupElements = !!groupElements;
 
     char szT[MAXSTRING];
-    HWND hwndName = GetDlgItem(IDC_NAME).GetHwnd();
-    ::GetWindowText(hwndName, szT, MAXSTRING);
+    ::GetWindowText(GetDlgItem(IDC_NAME).GetHwnd(), szT, MAXSTRING);
 
     pCurCollection.ppt->SetCollectionName(pcol, szT, NULL, 0);
 

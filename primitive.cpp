@@ -7,6 +7,7 @@
 #include "objloader.h"
 #include "inc\miniz.c"
 #include "inc\progmesh.h"
+#include "inc\ThreadPool.h"
 #include "Shader.h"
 
 // defined in objloader.cpp
@@ -16,6 +17,7 @@ extern void WaveFrontObj_GetIndices(std::vector<unsigned int>& list);
 extern void WaveFrontObj_Save(const char *filename, const char *description, const Mesh& mesh);
 //
 
+ThreadPool *g_pPrimitiveDecompressThreadPool = NULL;
 
 void Mesh::Clear()
 {
@@ -31,12 +33,8 @@ void Mesh::Clear()
 
 bool Mesh::LoadAnimation(const char *fname, const bool flipTV, const bool convertToLeftHanded)
 {
-   WIN32_FIND_DATA data;
-   HANDLE h;
    string name(fname);
-   int frameCounter = 0;
-   size_t idx = name.find_last_of("_");
-   std::vector<string> allFiles;
+   size_t idx = name.find_last_of('_');
    if (idx == string::npos)
    {
       ShowError("Can't find sequence of obj files! The file name of the sequence must be <meshname>_x.obj where x is the frame number!");
@@ -45,7 +43,10 @@ bool Mesh::LoadAnimation(const char *fname, const bool flipTV, const bool conver
    idx++;
    name = name.substr(0, idx);
    string sname = name + "*.obj";
-   h = FindFirstFile(sname.c_str(), &data);
+   WIN32_FIND_DATA data;
+   const HANDLE h = FindFirstFile(sname.c_str(), &data);
+   std::vector<string> allFiles;
+   int frameCounter = 0;
    if (h != INVALID_HANDLE_VALUE)
    {
       do
@@ -79,7 +80,7 @@ bool Mesh::LoadAnimation(const char *fname, const bool flipTV, const bool conver
 
    }
    sname = std::to_string((long long)frameCounter) + " frames imported!";
-   MessageBox(NULL, sname.c_str(), "Info", MB_OK | MB_ICONEXCLAMATION);
+   g_pvp->MessageBox(sname.c_str(), "Info", MB_OK | MB_ICONEXCLAMATION);
    return true;
 }
 
@@ -91,9 +92,9 @@ bool Mesh::LoadWavefrontObj(const char *fname, const bool flipTV, const bool con
    {
       WaveFrontObj_GetVertices(m_vertices);
       WaveFrontObj_GetIndices(m_indices);
-      float maxX = FLT_MIN, minX = FLT_MAX;
-      float maxY = FLT_MIN, minY = FLT_MAX;
-      float maxZ = FLT_MIN, minZ = FLT_MAX;
+      float maxX = -FLT_MAX, minX = FLT_MAX;
+      float maxY = -FLT_MAX, minY = FLT_MAX;
+      float maxZ = -FLT_MAX, minZ = FLT_MAX;
 
       for (size_t i = 0; i < m_vertices.size(); i++)
       {
@@ -124,33 +125,37 @@ void Mesh::SaveWavefrontObj(const char *fname, const char *description)
 
 void Mesh::UploadToVB(VertexBuffer * vb, const float frame)
 {
-   float intPart;
-   const float fractpart = modf(frame, &intPart);
-   const int iFrame = (int)intPart;
-
    if (frame != -1.f)
    {
-      for (size_t i = 0; i < m_vertices.size(); i++)
-      {
-         const VertData &v = m_animationFrames[iFrame].m_frameVerts[i];
-         m_vertices[i].x = v.x;
-         m_vertices[i].y = v.y;
-         m_vertices[i].z = v.z;
-         m_vertices[i].nx = v.nx;
-         m_vertices[i].ny = v.ny;
-         m_vertices[i].nz = v.nz;
+      float intPart;
+      const float fractpart = modf(frame, &intPart);
+      const int iFrame = (int)intPart;
 
-         if (iFrame + 1 < (int)m_animationFrames.size())
+      if (iFrame + 1 < (int)m_animationFrames.size())
+      {
+         for (size_t i = 0; i < m_vertices.size(); i++)
          {
-            const VertData &v2 = m_animationFrames[iFrame + 1].m_frameVerts[i];
-            m_vertices[i].x += (v2.x - m_vertices[i].x)*fractpart;
-            m_vertices[i].y += (v2.y - m_vertices[i].y)*fractpart;
-            m_vertices[i].z += (v2.z - m_vertices[i].z)*fractpart;
-            m_vertices[i].nx += (v2.nx - m_vertices[i].nx)*fractpart;
-            m_vertices[i].ny += (v2.ny - m_vertices[i].ny)*fractpart;
-            m_vertices[i].nz += (v2.nz - m_vertices[i].nz)*fractpart;
+            const VertData& v = m_animationFrames[iFrame].m_frameVerts[i];
+            const VertData& v2 = m_animationFrames[iFrame + 1].m_frameVerts[i];
+            m_vertices[i].x = v.x + (v2.x - v.x) *fractpart;
+            m_vertices[i].y = v.y + (v2.y - v.y) *fractpart;
+            m_vertices[i].z = v.z + (v2.z - v.z) *fractpart;
+            m_vertices[i].nx = v.nx + (v2.nx - v.nx)*fractpart;
+            m_vertices[i].ny = v.ny + (v2.ny - v.ny)*fractpart;
+            m_vertices[i].nz = v.nz + (v2.nz - v.nz)*fractpart;
          }
       }
+      else
+         for (size_t i = 0; i < m_vertices.size(); i++)
+         {
+            const VertData& v = m_animationFrames[iFrame].m_frameVerts[i];
+            m_vertices[i].x = v.x;
+            m_vertices[i].y = v.y;
+            m_vertices[i].z = v.z;
+            m_vertices[i].nx = v.nx;
+            m_vertices[i].ny = v.ny;
+            m_vertices[i].nz = v.nz;
+         }
    }
 
    Vertex3D_NoTex2 *buf;
@@ -163,48 +168,49 @@ void Mesh::UploadToVB(VertexBuffer * vb, const float frame)
 
 Primitive::Primitive()
 {
-   vertexBuffer = 0;
-   vertexBufferRegenerate = true;
-   indexBuffer = 0;
+   m_vertexBuffer = 0;
+   m_vertexBufferRegenerate = true;
+   m_indexBuffer = 0;
    m_d.m_use3DMesh = false;
    m_d.m_meshFileName[0] = 0;
    m_d.m_staticRendering = false;
    m_d.m_edgeFactorUI = 0.25f;
    m_d.m_collision_reductionFactor = 0.f;
    m_d.m_depthBias = 0.0f;
-   m_d.m_fSkipRendering = false;
-   m_d.m_fGroupdRendering = false;
-   m_d.m_fReflectionEnabled = true;
+   m_d.m_skipRendering = false;
+   m_d.m_groupdRendering = false;
+   m_d.m_reflectionEnabled = true;
    m_numGroupIndices = 0;
    m_numGroupVertices = 0;
 
-   numIndices = 0;
-   numVertices = 0;
+   m_numIndices = 0;
+   m_numVertices = 0;
    m_propPhysics = NULL;
    m_propPosition = NULL;
    m_propVisual = NULL;
    memset(m_d.m_szImage, 0, MAXTOKEN);
    memset(m_d.m_szNormalMap, 0, MAXTOKEN);
-   memset(m_d.m_szMaterial, 0, 32);
-   memset(m_d.m_szPhysicsMaterial, 0, 32);
-   m_d.m_fOverwritePhysics = true;
+   memset(m_d.m_szMaterial, 0, MAXNAMEBUFFER);
+   memset(m_d.m_szPhysicsMaterial, 0, MAXNAMEBUFFER);
+   m_d.m_overwritePhysics = true;
    m_d.m_useAsPlayfield = false;
 }
 
 Primitive::~Primitive()
 {
-   if (vertexBuffer)
-      vertexBuffer->release();
-   if (indexBuffer)
-      indexBuffer->release();
+   WaitForMeshDecompression(); //!! needed nowadays due to multithreaded mesh decompression
+   if (m_vertexBuffer)
+      m_vertexBuffer->release();
+   if (m_indexBuffer)
+      m_indexBuffer->release();
 }
 
 void Primitive::CreateRenderGroup(const Collection * const collection)
 {
-   if (!collection->m_fGroupElements)
+   if (!collection->m_groupElements)
       return;
 
-   unsigned int overall_size = 0;
+   size_t overall_size = 0;
    vector<Primitive*> prims;
    vector<Primitive*> renderedPrims;
    for (int i = 0; i < collection->m_visel.Size(); i++)
@@ -227,20 +233,20 @@ void Primitive::CreateRenderGroup(const Collection * const collection)
    // The first primitive in the group is the base primitive
    // this element gets rendered by rendering all other group primitives
    // the rest of the group is marked as skipped rendering
-   const Material * const groupMaterial = g_pplayer->m_ptable->GetMaterial(prims[0]->m_d.m_szMaterial);
-   const Texture * const groupTexel = g_pplayer->m_ptable->GetImage(prims[0]->m_d.m_szImage);
+   const Material * const groupMaterial = m_ptable->GetMaterial(prims[0]->m_d.m_szMaterial);
+   const Texture * const groupTexel = m_ptable->GetImage(prims[0]->m_d.m_szImage);
    m_numGroupVertices = (int)prims[0]->m_mesh.NumVertices();
    m_numGroupIndices = (int)prims[0]->m_mesh.NumIndices();
-   overall_size = (unsigned int)prims[0]->m_mesh.NumIndices();
+   overall_size = prims[0]->m_mesh.NumIndices();
 
    // Now calculate the overall size of indices
    for (size_t i = 1; i < prims.size(); i++)
    {
-      const Material * const mat = g_pplayer->m_ptable->GetMaterial(prims[i]->m_d.m_szMaterial);
-      const Texture * const texel = g_pplayer->m_ptable->GetImage(prims[i]->m_d.m_szImage);
+      const Material * const mat = m_ptable->GetMaterial(prims[i]->m_d.m_szMaterial);
+      const Texture * const texel = m_ptable->GetImage(prims[i]->m_d.m_szImage);
       if (mat == groupMaterial && texel == groupTexel)
       {
-         overall_size += (unsigned int)prims[i]->m_mesh.NumIndices();
+         overall_size += prims[i]->m_mesh.NumIndices();
       }
    }
 
@@ -249,7 +255,7 @@ void Primitive::CreateRenderGroup(const Collection * const collection)
    if (overall_size == prims[0]->m_mesh.NumIndices())
       return;
 
-   prims[0]->m_d.m_fGroupdRendering = true;
+   prims[0]->m_d.m_groupdRendering = true;
    vector<unsigned int> indices(overall_size);
 
    // copy with a loop because memcpy seems to do some strange things with the indices
@@ -259,8 +265,8 @@ void Primitive::CreateRenderGroup(const Collection * const collection)
    renderedPrims.push_back(prims[0]);
    for (size_t i = 1; i < prims.size(); i++)
    {
-      const Material * const mat = g_pplayer->m_ptable->GetMaterial(prims[i]->m_d.m_szMaterial);
-      const Texture * const texel = g_pplayer->m_ptable->GetImage(prims[i]->m_d.m_szImage);
+      const Material * const mat = m_ptable->GetMaterial(prims[i]->m_d.m_szMaterial);
+      const Texture * const texel = m_ptable->GetImage(prims[i]->m_d.m_szImage);
       if (mat == groupMaterial && texel == groupTexel)
       {
          const Mesh &m = prims[i]->m_mesh;
@@ -269,24 +275,24 @@ void Primitive::CreateRenderGroup(const Collection * const collection)
 
          m_numGroupVertices += (int)m.NumVertices();
          m_numGroupIndices += (int)m.NumIndices();
-         prims[i]->m_d.m_fSkipRendering = true;
+         prims[i]->m_d.m_skipRendering = true;
          renderedPrims.push_back(prims[i]);
       }
       else
-         prims[i]->m_d.m_fSkipRendering = false;
+         prims[i]->m_d.m_skipRendering = false;
    }
 
-   if (vertexBuffer)
-      vertexBuffer->release();
-   VertexBuffer::CreateVertexBuffer(m_numGroupVertices, 0, MY_D3DFVF_NOTEX2_VERTEX, &vertexBuffer);
+   if (m_vertexBuffer)
+      m_vertexBuffer->release();
+   VertexBuffer::CreateVertexBuffer(m_numGroupVertices, 0, MY_D3DFVF_NOTEX2_VERTEX, &m_vertexBuffer);
 
-   if (indexBuffer)
-      indexBuffer->release();
-   indexBuffer = IndexBuffer::CreateAndFillIndexBuffer(indices);
+   if (m_indexBuffer)
+      m_indexBuffer->release();
+   m_indexBuffer = IndexBuffer::CreateAndFillIndexBuffer(indices);
 
    unsigned int ofs = 0;
    Vertex3D_NoTex2 *buf;
-   vertexBuffer->lock(0, 0, (void**)&buf, VertexBuffer::WRITEONLY);
+   m_vertexBuffer->lock(0, 0, (void**)&buf, VertexBuffer::WRITEONLY);
    for (size_t i = 0; i < renderedPrims.size(); i++)
    {
       renderedPrims[i]->RecalculateMatrices();
@@ -294,16 +300,16 @@ void Primitive::CreateRenderGroup(const Collection * const collection)
       for (size_t t = 0; t < m.NumVertices(); t++)
       {
          Vertex3D_NoTex2 vt = m.m_vertices[t];
-         renderedPrims[i]->fullMatrix.MultiplyVector(vt, vt);
+         renderedPrims[i]->m_fullMatrix.MultiplyVector(vt, vt);
 
          Vertex3Ds n;
-         renderedPrims[i]->fullMatrix.MultiplyVectorNoTranslateNormal(vt, n);
+         renderedPrims[i]->m_fullMatrix.MultiplyVectorNoTranslateNormal(vt, n);
          vt.nx = n.x; vt.ny = n.y; vt.nz = n.z;
          buf[ofs] = vt;
          ofs++;
       }
    }
-   vertexBuffer->unlock();
+   m_vertexBuffer->unlock();
 
    prims.clear();
    renderedPrims.clear();
@@ -344,9 +350,9 @@ void Primitive::SetDefaults(bool fromMouseClick)
    // colors
    m_d.m_SideColor = fromMouseClick ? LoadValueIntWithDefault(strKeyName, "SideColor", RGB(150, 150, 150)) : RGB(150, 150, 150);
 
-   m_d.m_fVisible = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "Visible", true) : true;
+   m_d.m_visible = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "Visible", true) : true;
    m_d.m_staticRendering = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "StaticRendering", true) : true;
-   m_d.m_DrawTexturesInside = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "DrawTexturesInside", false) : false;
+   m_d.m_drawTexturesInside = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "DrawTexturesInside", false) : false;
 
    // Position (X and Y is already set by the click of the user)
    m_d.m_vPosition.z = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "Position_Z", 0.0f) : 0.0f;
@@ -382,13 +388,14 @@ void Primitive::SetDefaults(bool fromMouseClick)
    m_d.m_edgeFactorUI = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "EdgeFactorUI", 0.25f) : 0.25f;
    m_d.m_collision_reductionFactor = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "CollisionReductionFactor", 0.f) : 0.f;
 
-   m_d.m_fCollidable = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "Collidable", true) : true;
-   m_d.m_fToy = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "IsToy", false) : false;
-   m_d.m_fDisableLightingTop = dequantizeUnsigned<8>(fromMouseClick ? LoadValueIntWithDefault(strKeyName, "DisableLighting", 0) : 0); // stored as uchar for backward compatibility
-   m_d.m_fDisableLightingBelow = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "DisableLightingBelow", 0.f) : 0.f;
-   m_d.m_fReflectionEnabled = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "ReflectionEnabled", true) : true;
-   m_d.m_fBackfacesEnabled = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "BackfacesEnabled", false) : false;
-   m_d.m_fDisplayTexture = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "DisplayTexture", false) : false;
+   m_d.m_collidable = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "Collidable", true) : true;
+   m_d.m_toy = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "IsToy", false) : false;
+   m_d.m_disableLightingTop = dequantizeUnsigned<8>(fromMouseClick ? LoadValueIntWithDefault(strKeyName, "DisableLighting", 0) : 0); // stored as uchar for backward compatibility
+   m_d.m_disableLightingBelow = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "DisableLightingBelow", 0.f) : 0.f;
+   m_d.m_reflectionEnabled = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "ReflectionEnabled", true) : true;
+   m_d.m_backfacesEnabled = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "BackfacesEnabled", false) : false;
+   m_d.m_displayTexture = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "DisplayTexture", false) : false;
+   m_d.m_objectSpaceNormalMap = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "ObjectSpaceNormalMap", false) : false;
 }
 
 void Primitive::WriteRegDefaults()
@@ -396,9 +403,9 @@ void Primitive::WriteRegDefaults()
    static const char strKeyName[] = "DefaultProps\\Primitive";
 
    SaveValueInt(strKeyName, "SideColor", m_d.m_SideColor);
-   SaveValueBool(strKeyName, "Visible", m_d.m_fVisible);
+   SaveValueBool(strKeyName, "Visible", m_d.m_visible);
    SaveValueBool(strKeyName, "StaticRendering", m_d.m_staticRendering);
-   SaveValueBool(strKeyName, "DrawTexturesInside", m_d.m_DrawTexturesInside);
+   SaveValueBool(strKeyName, "DrawTexturesInside", m_d.m_drawTexturesInside);
 
    SaveValueFloat(strKeyName, "Position_Z", m_d.m_vPosition.z);
 
@@ -418,7 +425,7 @@ void Primitive::WriteRegDefaults()
 
    SaveValueString(strKeyName, "Image", m_d.m_szImage);
    SaveValueString(strKeyName, "NormalMap", m_d.m_szNormalMap);
-   SaveValueBool(strKeyName, "HitEvent", m_d.m_fHitEvent);
+   SaveValueBool(strKeyName, "HitEvent", m_d.m_hitEvent);
    SaveValueFloat(strKeyName, "HitThreshold", m_d.m_threshold);
    SaveValueFloat(strKeyName, "Elasticity", m_d.m_elasticity);
    SaveValueFloat(strKeyName, "ElasticityFalloff", m_d.m_elasticityFalloff);
@@ -428,14 +435,15 @@ void Primitive::WriteRegDefaults()
    SaveValueFloat(strKeyName, "EdgeFactorUI", m_d.m_edgeFactorUI);
    SaveValueFloat(strKeyName, "CollisionReductionFactor", m_d.m_collision_reductionFactor);
 
-   SaveValueBool(strKeyName, "Collidable", m_d.m_fCollidable);
-   SaveValueBool(strKeyName, "IsToy", m_d.m_fToy);
-   const int tmp = quantizeUnsigned<8>(clamp(m_d.m_fDisableLightingTop, 0.f, 1.f));
+   SaveValueBool(strKeyName, "Collidable", m_d.m_collidable);
+   SaveValueBool(strKeyName, "IsToy", m_d.m_toy);
+   const int tmp = quantizeUnsigned<8>(clamp(m_d.m_disableLightingTop, 0.f, 1.f));
    SaveValueInt(strKeyName, "DisableLighting", (tmp == 1) ? 0 : tmp); // backwards compatible saving
-   SaveValueFloat(strKeyName, "DisableLightingBelow", m_d.m_fDisableLightingBelow);
-   SaveValueBool(strKeyName, "ReflectionEnabled", m_d.m_fReflectionEnabled);
-   SaveValueBool(strKeyName, "BackfacesEnabled", m_d.m_fBackfacesEnabled);
-   SaveValueBool(strKeyName, "DisplayTexture", m_d.m_fDisplayTexture);
+   SaveValueFloat(strKeyName, "DisableLightingBelow", m_d.m_disableLightingBelow);
+   SaveValueBool(strKeyName, "ReflectionEnabled", m_d.m_reflectionEnabled);
+   SaveValueBool(strKeyName, "BackfacesEnabled", m_d.m_backfacesEnabled);
+   SaveValueBool(strKeyName, "DisplayTexture", m_d.m_displayTexture);
+   SaveValueBool(strKeyName, "ObjectSpaceNormalMap", m_d.m_objectSpaceNormalMap);
 }
 
 void Primitive::GetTimers(vector<HitTimer*> &pvht)
@@ -449,12 +457,12 @@ void Primitive::GetHitShapes(vector<HitObject*> &pvho)
    WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, MAX_PATH, NULL, NULL);
    if (strcmp(name, "playfield_mesh") == 0)
    {
-      m_d.m_fVisible = false;
+      m_d.m_visible = false;
       m_d.m_useAsPlayfield = true;
    }
 
    // playfield can't be a toy
-   if (m_d.m_fToy && !m_d.m_useAsPlayfield)
+   if (m_d.m_toy && !m_d.m_useAsPlayfield)
       return;
 
    RecalculateMatrices();
@@ -462,16 +470,16 @@ void Primitive::GetHitShapes(vector<HitObject*> &pvho)
 
                         //
 
-   const unsigned int reduced_vertices = max((unsigned int)powf((float)vertices.size(), clamp(1.f - m_d.m_collision_reductionFactor, 0.f, 1.f)*0.25f + 0.75f), 420u); //!! 420 = magic
+   const unsigned int reduced_vertices = max((unsigned int)powf((float)m_vertices.size(), clamp(1.f - m_d.m_collision_reductionFactor, 0.f, 1.f)*0.25f + 0.75f), 420u); //!! 420 = magic
 
-   if (reduced_vertices < vertices.size())
+   if (reduced_vertices < m_vertices.size())
    {
-      std::vector<ProgMesh::float3> prog_vertices(vertices.size());
-      for (size_t i = 0; i < vertices.size(); ++i) //!! opt. use original data directly!
+      std::vector<ProgMesh::float3> prog_vertices(m_vertices.size());
+      for (size_t i = 0; i < m_vertices.size(); ++i) //!! opt. use original data directly!
       {
-         prog_vertices[i].x = vertices[i].x;
-         prog_vertices[i].y = vertices[i].y;
-         prog_vertices[i].z = vertices[i].z;
+         prog_vertices[i].x = m_vertices[i].x;
+         prog_vertices[i].y = m_vertices[i].y;
+         prog_vertices[i].z = m_vertices[i].z;
       }
       std::vector<ProgMesh::tridata> prog_indices(m_mesh.NumIndices() / 3);
       {
@@ -511,7 +519,7 @@ void Primitive::GetHitShapes(vector<HitObject*> &pvho)
          const unsigned int i2 = prog_new_indices[i].v[2];
 
          Vertex3Ds rgv3D[3];
-         // NB: HitTriangle wants CCW vertices, but for rendering we have them in CW order
+         // NB: HitTriangle wants CCW m_vertices, but for rendering we have them in CW order
          rgv3D[0].x = prog_vertices[i0].x; rgv3D[0].y = prog_vertices[i0].y; rgv3D[0].z = prog_vertices[i0].z;
          rgv3D[1].x = prog_vertices[i2].x; rgv3D[1].y = prog_vertices[i2].y; rgv3D[1].z = prog_vertices[i2].z;
          rgv3D[2].x = prog_vertices[i1].x; rgv3D[2].y = prog_vertices[i1].y; rgv3D[2].z = prog_vertices[i1].z;
@@ -524,7 +532,7 @@ void Primitive::GetHitShapes(vector<HitObject*> &pvho)
 
       prog_new_indices.clear();
 
-      // add collision vertices
+      // add collision m_vertices
       for (size_t i = 0; i < prog_vertices.size(); ++i)
          SetupHitObject(pvho, new HitPoint(prog_vertices[i].x, prog_vertices[i].y, prog_vertices[i].z));
    }
@@ -540,10 +548,10 @@ void Primitive::GetHitShapes(vector<HitObject*> &pvho)
          const unsigned int i2 = m_mesh.m_indices[i + 2];
 
          Vertex3Ds rgv3D[3];
-         // NB: HitTriangle wants CCW vertices, but for rendering we have them in CW order
-         rgv3D[0] = vertices[i0];
-         rgv3D[1] = vertices[i2];
-         rgv3D[2] = vertices[i1];
+         // NB: HitTriangle wants CCW m_vertices, but for rendering we have them in CW order
+         rgv3D[0] = m_vertices[i0];
+         rgv3D[1] = m_vertices[i2];
+         rgv3D[2] = m_vertices[i1];
          SetupHitObject(pvho, new HitTriangle(rgv3D));
 
          AddHitEdge(pvho, addedEdges, i0, i1, rgv3D[0], rgv3D[2]);
@@ -551,9 +559,9 @@ void Primitive::GetHitShapes(vector<HitObject*> &pvho)
          AddHitEdge(pvho, addedEdges, i2, i0, rgv3D[1], rgv3D[0]);
       }
 
-      // add collision vertices
+      // add collision m_vertices
       for (size_t i = 0; i < m_mesh.NumVertices(); ++i)
-         SetupHitObject(pvho, new HitPoint(vertices[i]));
+         SetupHitObject(pvho, new HitPoint(m_vertices[i]));
    }
 }
 
@@ -578,7 +586,7 @@ void Primitive::SetupHitObject(vector<HitObject*> &pvho, HitObject * obj)
    const Material * const mat = m_ptable->GetMaterial(m_d.m_szPhysicsMaterial);
    if (!m_d.m_useAsPlayfield)
    {
-      if (mat != NULL && !m_d.m_fOverwritePhysics)
+      if (mat != NULL && !m_d.m_overwritePhysics)
       {
          obj->m_elasticity = mat->m_fElasticity;
          obj->m_elasticityFalloff = mat->m_fElasticityFalloff;
@@ -593,7 +601,7 @@ void Primitive::SetupHitObject(vector<HitObject*> &pvho, HitObject * obj)
          obj->m_scatter = ANGTORAD(m_d.m_scatter);
       }
 
-      obj->m_fEnabled = m_d.m_fCollidable;
+      obj->m_enabled = m_d.m_collidable;
    }
    else
    {
@@ -601,14 +609,14 @@ void Primitive::SetupHitObject(vector<HitObject*> &pvho, HitObject * obj)
       obj->m_elasticityFalloff = m_ptable->m_elasticityFalloff;
       obj->SetFriction(m_ptable->m_friction);
       obj->m_scatter = ANGTORAD(m_ptable->m_scatter);
-      obj->m_fEnabled = true;
+      obj->m_enabled = true;
    }
 
    obj->m_threshold = m_d.m_threshold;
    obj->m_ObjType = ePrimitive;
    obj->m_obj = (IFireEvents *)this;
    obj->m_e = true;
-   obj->m_fe = m_d.m_fHitEvent;
+   obj->m_fe = m_d.m_hitEvent;
 
    pvho.push_back(obj);
    m_vhoCollidable.push_back(obj); // remember hit components of primitive
@@ -618,19 +626,19 @@ void Primitive::EndPlay()
 {
    m_vhoCollidable.clear();
 
-   if (vertexBuffer)
+   if (m_vertexBuffer)
    {
-      vertexBuffer->release();
-      vertexBuffer = 0;
-      vertexBufferRegenerate = true;
+      m_vertexBuffer->release();
+      m_vertexBuffer = 0;
+      m_vertexBufferRegenerate = true;
    }
-   if (indexBuffer)
+   if (m_indexBuffer)
    {
-      indexBuffer->release();
-      indexBuffer = 0;
+      m_indexBuffer->release();
+      m_indexBuffer = 0;
    }
-   m_d.m_fSkipRendering = false;
-   m_d.m_fGroupdRendering = false;
+   m_d.m_skipRendering = false;
+   m_d.m_groupdRendering = false;
 
    IEditable::EndPlay();
 }
@@ -668,26 +676,26 @@ void Primitive::RecalculateMatrices()
    tempMatrix.RotateXMatrix(ANGTORAD(m_d.m_aRotAndTra[6]));
    tempMatrix.Multiply(RTmatrix, RTmatrix);
 
-   fullMatrix = Smatrix;
-   RTmatrix.Multiply(fullMatrix, fullMatrix);
-   Tmatrix.Multiply(fullMatrix, fullMatrix);        // fullMatrix = Smatrix * RTmatrix * Tmatrix
+   m_fullMatrix = Smatrix;
+   RTmatrix.Multiply(m_fullMatrix, m_fullMatrix);
+   Tmatrix.Multiply(m_fullMatrix, m_fullMatrix);        // m_fullMatrix = Smatrix * RTmatrix * Tmatrix
    Smatrix.SetScaling(1.0f, 1.0f, m_ptable->m_BG_scalez[m_ptable->m_BG_current_set]);
-   Smatrix.Multiply(fullMatrix, fullMatrix);
+   Smatrix.Multiply(m_fullMatrix, m_fullMatrix);
 }
 
-// recalculate vertices for editor display
+// recalculate m_vertices for editor display
 void Primitive::TransformVertices()
 {
-   vertices.resize(m_mesh.NumVertices());
-   normals.resize(m_mesh.NumVertices());
+   m_vertices.resize(m_mesh.NumVertices());
+   m_normals.resize(m_mesh.NumVertices());
 
    for (size_t i = 0; i < m_mesh.NumVertices(); i++)
    {
-      fullMatrix.MultiplyVector(m_mesh.m_vertices[i], vertices[i]);
+      m_fullMatrix.MultiplyVector(m_mesh.m_vertices[i], m_vertices[i]);
       Vertex3Ds n;
-      fullMatrix.MultiplyVectorNoTranslateNormal(m_mesh.m_vertices[i], n);
+      m_fullMatrix.MultiplyVectorNoTranslateNormal(m_mesh.m_vertices[i], n);
       n.Normalize();
-      normals[i] = n.z;
+      m_normals[i] = n.z;
    }
 }
 
@@ -706,7 +714,7 @@ void Primitive::UIRenderPass2(Sur * const psur)
    psur->SetLineColor(RGB(0, 0, 0), false, 1);
    psur->SetObject(this);
 
-   if (!m_d.m_fDisplayTexture)
+   if (!m_d.m_displayTexture)
    {
       if ((m_d.m_edgeFactorUI <= 0.0f) || (m_d.m_edgeFactorUI >= 1.0f) || !m_d.m_use3DMesh)
       {
@@ -714,9 +722,9 @@ void Primitive::UIRenderPass2(Sur * const psur)
          {
             for (size_t i = 0; i < m_mesh.NumIndices(); i += 3)
             {
-               const Vertex3Ds * const A = &vertices[m_mesh.m_indices[i]];
-               const Vertex3Ds * const B = &vertices[m_mesh.m_indices[i + 1]];
-               const Vertex3Ds * const C = &vertices[m_mesh.m_indices[i + 2]];
+               const Vertex3Ds * const A = &m_vertices[m_mesh.m_indices[i]];
+               const Vertex3Ds * const B = &m_vertices[m_mesh.m_indices[i + 1]];
+               const Vertex3Ds * const C = &m_vertices[m_mesh.m_indices[i + 2]];
                psur->Line(A->x, A->y, B->x, B->y);
                psur->Line(B->x, B->y, C->x, C->y);
                psur->Line(C->x, C->y, A->x, A->y);
@@ -729,13 +737,13 @@ void Primitive::UIRenderPass2(Sur * const psur)
                const size_t numPts = m_mesh.NumIndices() / 3 + 1;
                std::vector<Vertex2D> drawVertices(numPts);
 
-               const Vertex3Ds& A = vertices[m_mesh.m_indices[0]];
+               const Vertex3Ds& A = m_vertices[m_mesh.m_indices[0]];
                drawVertices[0] = Vertex2D(A.x, A.y);
 
                unsigned int o = 1;
                for (size_t i = 0; i < m_mesh.NumIndices(); i += 3, ++o)
                {
-                  const Vertex3Ds& B = vertices[m_mesh.m_indices[i + 1]];
+                  const Vertex3Ds& B = m_vertices[m_mesh.m_indices[i + 1]];
                   drawVertices[o] = Vertex2D(B.x, B.y);
                }
 
@@ -748,12 +756,12 @@ void Primitive::UIRenderPass2(Sur * const psur)
          std::vector<Vertex2D> drawVertices;
          for (size_t i = 0; i < m_mesh.NumIndices(); i += 3)
          {
-            const Vertex3Ds * const A = &vertices[m_mesh.m_indices[i]];
-            const Vertex3Ds * const B = &vertices[m_mesh.m_indices[i + 1]];
-            const Vertex3Ds * const C = &vertices[m_mesh.m_indices[i + 2]];
-            const float An = normals[m_mesh.m_indices[i]];
-            const float Bn = normals[m_mesh.m_indices[i + 1]];
-            const float Cn = normals[m_mesh.m_indices[i + 2]];
+            const Vertex3Ds * const A = &m_vertices[m_mesh.m_indices[i]];
+            const Vertex3Ds * const B = &m_vertices[m_mesh.m_indices[i + 1]];
+            const Vertex3Ds * const C = &m_vertices[m_mesh.m_indices[i + 2]];
+            const float An = m_normals[m_mesh.m_indices[i]];
+            const float Bn = m_normals[m_mesh.m_indices[i + 1]];
+            const float Cn = m_normals[m_mesh.m_indices[i + 2]];
             if (fabsf(An + Bn) < m_d.m_edgeFactorUI)
             {
                drawVertices.push_back(Vertex2D(A->x, A->y));
@@ -781,7 +789,7 @@ void Primitive::UIRenderPass2(Sur * const psur)
    psur->Line(m_d.m_vPosition.x - 10.0f, m_d.m_vPosition.y, m_d.m_vPosition.x + 10.0f, m_d.m_vPosition.y);
    psur->Line(m_d.m_vPosition.x, m_d.m_vPosition.y - 10.0f, m_d.m_vPosition.x, m_d.m_vPosition.y + 10.0f);
 
-   if (m_d.m_fDisplayTexture)
+   if (m_d.m_displayTexture)
    {
       Texture * const ppi = m_ptable->GetImage(m_d.m_szImage);
       if (ppi)
@@ -792,9 +800,9 @@ void Primitive::UIRenderPass2(Sur * const psur)
             std::vector<RenderVertex> vvertex;
             for (size_t i = 0; i < m_mesh.NumIndices(); i += 3)
             {
-               const Vertex3Ds * const A = &vertices[m_mesh.m_indices[i]];
-               const Vertex3Ds * const B = &vertices[m_mesh.m_indices[i + 1]];
-               const Vertex3Ds * const C = &vertices[m_mesh.m_indices[i + 2]];
+               const Vertex3Ds * const A = &m_vertices[m_mesh.m_indices[i]];
+               const Vertex3Ds * const B = &m_vertices[m_mesh.m_indices[i + 1]];
+               const Vertex3Ds * const C = &m_vertices[m_mesh.m_indices[i + 2]];
                RenderVertex rvA;
                RenderVertex rvB;
                RenderVertex rvC;
@@ -819,10 +827,7 @@ void Primitive::UIRenderPass2(Sur * const psur)
 
 void Primitive::RenderBlueprint(Sur *psur, const bool solid)
 {
-   if (solid)
-      psur->SetFillColor(BLUEPRINT_SOLID_COLOR);
-   else
-      psur->SetFillColor(-1);
+   psur->SetFillColor(solid ? BLUEPRINT_SOLID_COLOR : -1);
 
    psur->SetLineColor(RGB(0, 0, 0), false, 1);
    psur->SetObject(this);
@@ -831,9 +836,9 @@ void Primitive::RenderBlueprint(Sur *psur, const bool solid)
    {
       for (size_t i = 0; i < m_mesh.NumIndices(); i += 3)
       {
-         const Vertex3Ds * const A = &vertices[m_mesh.m_indices[i]];
-         const Vertex3Ds * const B = &vertices[m_mesh.m_indices[i + 1]];
-         const Vertex3Ds * const C = &vertices[m_mesh.m_indices[i + 2]];
+         const Vertex3Ds * const A = &m_vertices[m_mesh.m_indices[i]];
+         const Vertex3Ds * const B = &m_vertices[m_mesh.m_indices[i + 1]];
+         const Vertex3Ds * const C = &m_vertices[m_mesh.m_indices[i + 2]];
 
          Vertex2D rv[3];
          rv[0].x = C->x; rv[0].y = C->y;
@@ -849,9 +854,9 @@ void Primitive::RenderBlueprint(Sur *psur, const bool solid)
       {
          for (size_t i = 0; i < m_mesh.NumIndices(); i += 3)
          {
-            const Vertex3Ds * const A = &vertices[m_mesh.m_indices[i]];
-            const Vertex3Ds * const B = &vertices[m_mesh.m_indices[i + 1]];
-            const Vertex3Ds * const C = &vertices[m_mesh.m_indices[i + 2]];
+            const Vertex3Ds * const A = &m_vertices[m_mesh.m_indices[i]];
+            const Vertex3Ds * const B = &m_vertices[m_mesh.m_indices[i + 1]];
+            const Vertex3Ds * const C = &m_vertices[m_mesh.m_indices[i + 2]];
             psur->Line(A->x, A->y, B->x, B->y);
             psur->Line(B->x, B->y, C->x, C->y);
             psur->Line(C->x, C->y, A->x, A->y);
@@ -864,13 +869,13 @@ void Primitive::RenderBlueprint(Sur *psur, const bool solid)
             const size_t numPts = m_mesh.NumIndices() / 3 + 1;
             std::vector<Vertex2D> drawVertices(numPts);
 
-            const Vertex3Ds& A = vertices[m_mesh.m_indices[0]];
+            const Vertex3Ds& A = m_vertices[m_mesh.m_indices[0]];
             drawVertices[0] = Vertex2D(A.x, A.y);
 
             unsigned int o = 1;
             for (size_t i = 0; i < m_mesh.NumIndices(); i += 3, ++o)
             {
-               const Vertex3Ds& B = vertices[m_mesh.m_indices[i + 1]];
+               const Vertex3Ds& B = m_vertices[m_mesh.m_indices[i + 1]];
                drawVertices[o] = Vertex2D(B.x, B.y);
             }
 
@@ -883,12 +888,12 @@ void Primitive::RenderBlueprint(Sur *psur, const bool solid)
       std::vector<Vertex2D> drawVertices;
       for (size_t i = 0; i < m_mesh.NumIndices(); i += 3)
       {
-         const Vertex3Ds * const A = &vertices[m_mesh.m_indices[i]];
-         const Vertex3Ds * const B = &vertices[m_mesh.m_indices[i + 1]];
-         const Vertex3Ds * const C = &vertices[m_mesh.m_indices[i + 2]];
-         const float An = normals[m_mesh.m_indices[i]];
-         const float Bn = normals[m_mesh.m_indices[i + 1]];
-         const float Cn = normals[m_mesh.m_indices[i + 2]];
+         const Vertex3Ds * const A = &m_vertices[m_mesh.m_indices[i]];
+         const Vertex3Ds * const B = &m_vertices[m_mesh.m_indices[i + 1]];
+         const Vertex3Ds * const C = &m_vertices[m_mesh.m_indices[i + 2]];
+         const float An = m_normals[m_mesh.m_indices[i]];
+         const float Bn = m_normals[m_mesh.m_indices[i + 1]];
+         const float Cn = m_normals[m_mesh.m_indices[i + 2]];
          if (fabsf(An + Bn) < m_d.m_edgeFactorUI)
          {
             drawVertices.push_back(Vertex2D(A->x, A->y));
@@ -1018,13 +1023,13 @@ void Primitive::CalculateBuiltinOriginal()
    // 3 per Triangle bottom - we have m_sides triangles
    // 6 per Side at the side (two triangles form a rectangle) - we have m_sides sides
    // == 12 * m_sides
-   // * 2 for both cullings (m_DrawTexturesInside == true)
+   // * 2 for both cullings (m_drawTexturesInside == true)
    // == 24 * m_sides
    // this will also be the initial sorting, when depths, Vertices and Indices are recreated, because calculateRealTimeOriginal is called.
 
    // 2 restore indices
    //   check if anti culling is enabled:
-   if (m_d.m_DrawTexturesInside)
+   if (m_d.m_drawTexturesInside)
    {
       m_mesh.m_indices.resize(m_d.m_Sides * 24);
       // yes: draw everything twice
@@ -1100,13 +1105,14 @@ void Primitive::CalculateBuiltinOriginal()
    //ComputeNormals(m_mesh.m_vertices, m_mesh.m_indices);
 }
 
+// placed in get_X so that this is shown when prim selected
 void Primitive::UpdateMeshInfo()
 {
    if (g_pplayer)
       return;
 
    char tbuf[128];
-   sprintf_s(tbuf, "vertices: %i | polygons: %i", m_mesh.NumVertices(), m_mesh.NumIndices());
+   sprintf_s(tbuf, "vertices: %i | polygons: %i", (int)m_mesh.NumVertices(), (int)m_mesh.NumIndices());
    g_pvp->SetStatusBarUnitInfo(tbuf, false);
 }
 
@@ -1122,22 +1128,22 @@ void Primitive::UpdateEditorView()
 void Primitive::ExportMesh(FILE *f)
 {
    char name[MAX_PATH];
-   if (m_d.m_fVisible)
+   if (m_d.m_visible)
    {
       WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, MAX_PATH, NULL, NULL);
-      Vertex3D_NoTex2 *buf = new Vertex3D_NoTex2[m_mesh.NumVertices()];
+      Vertex3D_NoTex2 *const buf = new Vertex3D_NoTex2[m_mesh.NumVertices()];
       RecalculateMatrices();
       for (size_t i = 0; i < m_mesh.NumVertices(); i++)
       {
          const Vertex3D_NoTex2 &v = m_mesh.m_vertices[i];
          Vertex3Ds vert(v.x, v.y, v.z);
-         vert = fullMatrix.MultiplyVector(vert);
+         vert = m_fullMatrix.MulVector(vert);
          buf[i].x = vert.x;
          buf[i].y = vert.y;
          buf[i].z = vert.z;
 
          vert = Vertex3Ds(v.nx, v.ny, v.nz);
-         vert = fullMatrix.MultiplyVectorNoTranslate(vert);
+         vert = m_fullMatrix.MultiplyVectorNoTranslate(vert);
          buf[i].nx = vert.x;
          buf[i].ny = vert.y;
          buf[i].nz = vert.z;
@@ -1157,35 +1163,35 @@ void Primitive::ExportMesh(FILE *f)
 
 void Primitive::RenderObject()
 {
-   if (!m_d.m_fGroupdRendering)
+   if (!m_d.m_groupdRendering)
    {
       RecalculateMatrices();
 
-      if (vertexBufferRegenerate)
+      if (m_vertexBufferRegenerate)
       {
-         m_mesh.UploadToVB(vertexBuffer, m_currentFrame);
-         if (m_currentFrame != -1.0f && m_DoAnimation)
+         m_mesh.UploadToVB(m_vertexBuffer, m_currentFrame);
+         if (m_currentFrame != -1.0f && m_doAnimation)
          {
             m_currentFrame += m_speed;
             if (m_currentFrame >= (float)m_mesh.m_animationFrames.size())
             {
-               if (m_Endless)
+               if (m_endless)
                   m_currentFrame = 0.0f;
                else
                {
                   m_currentFrame = (float)(m_mesh.m_animationFrames.size() - 1);
-                  m_DoAnimation = false;
-                  vertexBufferRegenerate = false;
+                  m_doAnimation = false;
+                  m_vertexBufferRegenerate = false;
                }
             }
          }
          else
-            vertexBufferRegenerate = false;
+            m_vertexBufferRegenerate = false;
       }
    }
    else
    {
-      fullMatrix.SetIdentity();
+      m_fullMatrix.SetIdentity();
    }
 
    RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
@@ -1197,9 +1203,9 @@ void Primitive::RenderObject()
 
       pd3dDevice->SetRenderStateDepthBias(0.0f);
       pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
-      pd3dDevice->SetRenderStateCulling(m_d.m_fBackfacesEnabled && mat->m_bOpacityActive ? RenderDevice::CULL_CW : RenderDevice::CULL_CCW);
+      pd3dDevice->SetRenderStateCulling(m_d.m_backfacesEnabled && mat->m_bOpacityActive ? RenderDevice::CULL_CW : RenderDevice::CULL_CCW);
 
-      const vec4 tmp(m_d.m_fDisableLightingTop, m_d.m_fDisableLightingBelow, 0.f, 0.f);
+      const vec4 tmp(m_d.m_disableLightingTop, m_d.m_disableLightingBelow, 0.f, 0.f);
       pd3dDevice->basicShader->SetDisableLighting(tmp);
 
       Texture * const pin = m_ptable->GetImage(m_d.m_szImage);
@@ -1211,6 +1217,7 @@ void Primitive::RenderObject()
          pd3dDevice->basicShader->SetTexture("Texture0", pin, false);
          pd3dDevice->basicShader->SetTexture("Texture4", nMap, true);
          pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
+         pd3dDevice->basicShader->SetBool("objectSpaceNormalMap", m_d.m_objectSpaceNormalMap);
          //g_pplayer->m_pin3d.SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
          // accommodate models with UV coords outside of [0,1]
          pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_WRAP);
@@ -1232,24 +1239,24 @@ void Primitive::RenderObject()
       pd3dDevice->basicShader->SetBool("doNormalMapping", nMap);
 
       // set transform
-      g_pplayer->UpdateBasicShaderMatrix(&fullMatrix);
+      g_pplayer->UpdateBasicShaderMatrix(&m_fullMatrix);
 
       // draw the mesh
       pd3dDevice->basicShader->Begin(0);
-      if (m_d.m_fGroupdRendering)
-         pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, vertexBuffer, 0, m_numGroupVertices, indexBuffer, 0, m_numGroupIndices);
+      if (m_d.m_groupdRendering)
+         pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, m_vertexBuffer, 0, m_numGroupVertices, m_indexBuffer, 0, m_numGroupIndices);
       else
-         pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, vertexBuffer, 0, (DWORD)m_mesh.NumVertices(), indexBuffer, 0, (DWORD)m_mesh.NumIndices());
+         pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, m_vertexBuffer, 0, (DWORD)m_mesh.NumVertices(), m_indexBuffer, 0, (DWORD)m_mesh.NumIndices());
       pd3dDevice->basicShader->End();
 
-      if (m_d.m_fBackfacesEnabled && mat->m_bOpacityActive)
+      if (m_d.m_backfacesEnabled && mat->m_bOpacityActive)
       {
          pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
          pd3dDevice->basicShader->Begin(0);
-         if (m_d.m_fGroupdRendering)
-            pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, vertexBuffer, 0, m_numGroupVertices, indexBuffer, 0, m_numGroupIndices);
+         if (m_d.m_groupdRendering)
+            pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, m_vertexBuffer, 0, m_numGroupVertices, m_indexBuffer, 0, m_numGroupIndices);
          else
-            pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, vertexBuffer, 0, (DWORD)m_mesh.NumVertices(), indexBuffer, 0, (DWORD)m_mesh.NumIndices());
+            pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, m_vertexBuffer, 0, (DWORD)m_mesh.NumVertices(), m_indexBuffer, 0, (DWORD)m_mesh.NumIndices());
          pd3dDevice->basicShader->End();
       }
       if (nMap) pd3dDevice->basicShader->SetBool("doNormalMapping", false);//Only place where nMap is used
@@ -1265,14 +1272,14 @@ void Primitive::RenderObject()
    {
       // shader is already fully configured in the playfield rendering case when we arrive here, so we only setup some special primitive params
 
-      const vec4 tmp(m_d.m_fDisableLightingTop, m_d.m_fDisableLightingBelow, 0.f, 0.f);
+      const vec4 tmp(m_d.m_disableLightingTop, m_d.m_disableLightingBelow, 0.f, 0.f);
       pd3dDevice->basicShader->SetDisableLighting(tmp);
 
       //pd3dDevice->SetRenderState(RenderDevice::CULLMODE, D3DCULL_CCW); // don't mess with the render states when doing playfield rendering
       // set transform
-      g_pplayer->UpdateBasicShaderMatrix(&fullMatrix);
+      g_pplayer->UpdateBasicShaderMatrix(&m_fullMatrix);
       pd3dDevice->basicShader->Begin(0);
-      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, vertexBuffer, 0, (DWORD)m_mesh.NumVertices(), indexBuffer, 0, (DWORD)m_mesh.NumIndices());
+      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, m_vertexBuffer, 0, (DWORD)m_mesh.NumVertices(), m_indexBuffer, 0, (DWORD)m_mesh.NumIndices());
       pd3dDevice->basicShader->End();
       // reset transform
       g_pplayer->UpdateBasicShaderMatrix();
@@ -1284,9 +1291,9 @@ void Primitive::RenderDynamic()
 {
    TRACE_FUNCTION();
 
-   if (m_d.m_staticRendering || !m_d.m_fVisible || m_d.m_fSkipRendering)
+   if (m_d.m_staticRendering || !m_d.m_visible || m_d.m_skipRendering)
       return;
-   if (m_ptable->m_fReflectionEnabled && !m_d.m_fReflectionEnabled)
+   if (m_ptable->m_reflectionEnabled && !m_d.m_reflectionEnabled)
       return;
 
    RenderObject();
@@ -1294,26 +1301,26 @@ void Primitive::RenderDynamic()
 
 void Primitive::RenderSetup()
 {
-   if (m_d.m_fGroupdRendering || m_d.m_fSkipRendering)
+   if (m_d.m_groupdRendering || m_d.m_skipRendering)
       return;
 
    m_currentFrame = -1.f;
 
-   if (vertexBuffer)
-      vertexBuffer->release();
+   if (m_vertexBuffer)
+      m_vertexBuffer->release();
 
-   VertexBuffer::CreateVertexBuffer((unsigned int)m_mesh.NumVertices(), 0, MY_D3DFVF_NOTEX2_VERTEX, &vertexBuffer);
+   VertexBuffer::CreateVertexBuffer((unsigned int)m_mesh.NumVertices(), 0, MY_D3DFVF_NOTEX2_VERTEX, &m_vertexBuffer);
 
-   if (indexBuffer)
-      indexBuffer->release();
-   indexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_mesh.m_indices);
+   if (m_indexBuffer)
+      m_indexBuffer->release();
+   m_indexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_mesh.m_indices);
 }
 
 void Primitive::RenderStatic()
 {
-   if (m_d.m_staticRendering && m_d.m_fVisible)
+   if (m_d.m_staticRendering && m_d.m_visible)
    {
-      if (m_ptable->m_fReflectionEnabled && !m_d.m_fReflectionEnabled)
+      if (m_ptable->m_reflectionEnabled && !m_d.m_reflectionEnabled)
          return;
 
       RenderObject();
@@ -1354,7 +1361,7 @@ void Primitive::PutCenter(const Vertex2D& pv)
 // Save and Load
 //////////////////////////////
 
-HRESULT Primitive::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
+HRESULT Primitive::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupForPlay)
 {
    BiffWriter bw(pstm, hcrypthash);
 
@@ -1380,9 +1387,9 @@ HRESULT Primitive::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
    bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
    bw.WriteString(FID(MATR), m_d.m_szMaterial);
    bw.WriteInt(FID(SCOL), m_d.m_SideColor);
-   bw.WriteBool(FID(TVIS), m_d.m_fVisible);
-   bw.WriteBool(FID(DTXI), m_d.m_DrawTexturesInside);
-   bw.WriteBool(FID(HTEV), m_d.m_fHitEvent);
+   bw.WriteBool(FID(TVIS), m_d.m_visible);
+   bw.WriteBool(FID(DTXI), m_d.m_drawTexturesInside);
+   bw.WriteBool(FID(HTEV), m_d.m_hitEvent);
    bw.WriteFloat(FID(THRS), m_d.m_threshold);
    bw.WriteFloat(FID(ELAS), m_d.m_elasticity);
    bw.WriteFloat(FID(ELFO), m_d.m_elasticityFalloff);
@@ -1390,20 +1397,22 @@ HRESULT Primitive::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
    bw.WriteFloat(FID(RSCT), m_d.m_scatter);
    bw.WriteFloat(FID(EFUI), m_d.m_edgeFactorUI);
    bw.WriteFloat(FID(CORF), m_d.m_collision_reductionFactor);
-   bw.WriteBool(FID(CLDRP), m_d.m_fCollidable);
-   bw.WriteBool(FID(ISTO), m_d.m_fToy);
+   bw.WriteBool(FID(CLDRP), m_d.m_collidable);
+   bw.WriteBool(FID(ISTO), m_d.m_toy);
    bw.WriteBool(FID(U3DM), m_d.m_use3DMesh);
    bw.WriteBool(FID(STRE), m_d.m_staticRendering);
-   const int tmp = quantizeUnsigned<8>(clamp(m_d.m_fDisableLightingTop, 0.f, 1.f));
+   const int tmp = quantizeUnsigned<8>(clamp(m_d.m_disableLightingTop, 0.f, 1.f));
    bw.WriteInt(FID(DILI), (tmp == 1) ? 0 : tmp); // backwards compatible saving
-   bw.WriteFloat(FID(DILB), m_d.m_fDisableLightingBelow);
-   bw.WriteBool(FID(REEN), m_d.m_fReflectionEnabled);
-   bw.WriteBool(FID(EBFC), m_d.m_fBackfacesEnabled);
+   bw.WriteFloat(FID(DILB), m_d.m_disableLightingBelow);
+   bw.WriteBool(FID(REEN), m_d.m_reflectionEnabled);
+   bw.WriteBool(FID(EBFC), m_d.m_backfacesEnabled);
    bw.WriteString(FID(MAPH), m_d.m_szPhysicsMaterial);
-   bw.WriteBool(FID(OVPH), m_d.m_fOverwritePhysics);
-   bw.WriteBool(FID(DIPT), m_d.m_fDisplayTexture);
+   bw.WriteBool(FID(OVPH), m_d.m_overwritePhysics);
+   bw.WriteBool(FID(DIPT), m_d.m_displayTexture);
+   bw.WriteBool(FID(OSNM), m_d.m_objectSpaceNormalMap);
 
-   if (m_d.m_use3DMesh)
+   // No need to backup the meshes for play as the script cannot change them 
+   if (m_d.m_use3DMesh && !backupForPlay)
    {
       bw.WriteString(FID(M3DN), m_d.m_meshFileName);
       bw.WriteInt(FID(M3VN), (int)m_mesh.NumVertices());
@@ -1503,217 +1512,102 @@ HRESULT Primitive::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int versi
    m_ptable = ptable;
 
    br.Load();
-   if (!m_d.m_use3DMesh)
-      CalculateBuiltinOriginal();
 
-   unsigned int* tmp = reorderForsyth(m_mesh.m_indices.data(), (int)(m_mesh.NumIndices() / 3), (int)m_mesh.NumVertices());
-   if (tmp != NULL)
+   if (version < 1011) // so that old tables do the reorderForsyth on each load, new tables only on mesh import, so a simple resave of a old table will also skip this step
    {
-      memcpy(m_mesh.m_indices.data(), tmp, m_mesh.NumIndices() * sizeof(unsigned int));
-      delete[] tmp;
+      unsigned int* const tmp = reorderForsyth(m_mesh.m_indices.data(), (int)(m_mesh.NumIndices() / 3), (int)m_mesh.NumVertices());
+      if (tmp != NULL)
+      {
+         memcpy(m_mesh.m_indices.data(), tmp, m_mesh.NumIndices() * sizeof(unsigned int));
+         delete[] tmp;
+      }
    }
 
-   UpdateEditorView();
    return S_OK;
 }
 
-BOOL Primitive::LoadToken(int id, BiffReader *pbr)
+bool Primitive::LoadToken(const int id, BiffReader * const pbr)
 {
-   if (id == FID(PIID))
+   switch (id)
    {
-      pbr->GetInt((int *)pbr->m_pdata);
-   }
-   else if (id == FID(VPOS))
-   {
-      pbr->GetVector3Padded(&m_d.m_vPosition);
-   }
-   else if (id == FID(VSIZ))
-   {
-      pbr->GetVector3Padded(&m_d.m_vSize);
-   }
-   else if (id == FID(RTV0))
-   {
-      pbr->GetFloat(&m_d.m_aRotAndTra[0]);
-   }
-   else if (id == FID(RTV1))
-   {
-      pbr->GetFloat(&m_d.m_aRotAndTra[1]);
-   }
-   else if (id == FID(RTV2))
-   {
-      pbr->GetFloat(&m_d.m_aRotAndTra[2]);
-   }
-   else if (id == FID(RTV3))
-   {
-      pbr->GetFloat(&m_d.m_aRotAndTra[3]);
-   }
-   else if (id == FID(RTV4))
-   {
-      pbr->GetFloat(&m_d.m_aRotAndTra[4]);
-   }
-   else if (id == FID(RTV5))
-   {
-      pbr->GetFloat(&m_d.m_aRotAndTra[5]);
-   }
-   else if (id == FID(RTV6))
-   {
-      pbr->GetFloat(&m_d.m_aRotAndTra[6]);
-   }
-   else if (id == FID(RTV7))
-   {
-      pbr->GetFloat(&m_d.m_aRotAndTra[7]);
-   }
-   else if (id == FID(RTV8))
-   {
-      pbr->GetFloat(&m_d.m_aRotAndTra[8]);
-   }
-   else if (id == FID(IMAG))
-   {
-      pbr->GetString(m_d.m_szImage);
-   }
-   else if (id == FID(NRMA))
-   {
-      pbr->GetString(m_d.m_szNormalMap);
-   }
-   else if (id == FID(SIDS))
-   {
-      pbr->GetInt(&m_d.m_Sides);
-   }
-   else if (id == FID(NAME))
-   {
-      pbr->GetWideString((WCHAR *)m_wzName);
-   }
-   else if (id == FID(MATR))
-   {
-      pbr->GetString(m_d.m_szMaterial);
-   }
-   else if (id == FID(SCOL))
-   {
-      pbr->GetInt(&m_d.m_SideColor);
-   }
-   else if (id == FID(TVIS))
-   {
-      pbr->GetBool(&m_d.m_fVisible);
-   }
-   else if (id == FID(REEN))
-   {
-      pbr->GetBool(&m_d.m_fReflectionEnabled);
-   }
-   else if (id == FID(DTXI))
-   {
-      pbr->GetBool(&m_d.m_DrawTexturesInside);
-   }
-   else if (id == FID(HTEV))
-   {
-      pbr->GetBool(&m_d.m_fHitEvent);
-   }
-   else if (id == FID(THRS))
-   {
-      pbr->GetFloat(&m_d.m_threshold);
-   }
-   else if (id == FID(ELAS))
-   {
-      pbr->GetFloat(&m_d.m_elasticity);
-   }
-   else if (id == FID(ELFO))
-   {
-      pbr->GetFloat(&m_d.m_elasticityFalloff);
-   }
-   else if (id == FID(RFCT))
-   {
-      pbr->GetFloat(&m_d.m_friction);
-   }
-   else if (id == FID(RSCT))
-   {
-      pbr->GetFloat(&m_d.m_scatter);
-   }
-   else if (id == FID(EFUI))
-   {
-      pbr->GetFloat(&m_d.m_edgeFactorUI);
-   }
-   else if (id == FID(CORF))
-   {
-      pbr->GetFloat(&m_d.m_collision_reductionFactor);
-   }
-   else if (id == FID(CLDRP))
-   {
-      pbr->GetBool(&m_d.m_fCollidable);
-   }
-   else if (id == FID(ISTO))
-   {
-      pbr->GetBool(&m_d.m_fToy);
-   }
-   else if (id == FID(MAPH))
-   {
-      pbr->GetString(m_d.m_szPhysicsMaterial);
-   }
-   else if (id == FID(OVPH))
-   {
-      pbr->GetBool(&m_d.m_fOverwritePhysics);
-   }
-   else if (id == FID(STRE))
-   {
-      pbr->GetBool(&m_d.m_staticRendering);
-   }
-   else if (id == FID(DILI))
+   case FID(PIID): pbr->GetInt((int *)pbr->m_pdata); break;
+   case FID(VPOS): pbr->GetVector3Padded(&m_d.m_vPosition); break;
+   case FID(VSIZ): pbr->GetVector3Padded(&m_d.m_vSize); break;
+   case FID(RTV0): pbr->GetFloat(&m_d.m_aRotAndTra[0]); break;
+   case FID(RTV1): pbr->GetFloat(&m_d.m_aRotAndTra[1]); break;
+   case FID(RTV2): pbr->GetFloat(&m_d.m_aRotAndTra[2]); break;
+   case FID(RTV3): pbr->GetFloat(&m_d.m_aRotAndTra[3]); break;
+   case FID(RTV4): pbr->GetFloat(&m_d.m_aRotAndTra[4]); break;
+   case FID(RTV5): pbr->GetFloat(&m_d.m_aRotAndTra[5]); break;
+   case FID(RTV6): pbr->GetFloat(&m_d.m_aRotAndTra[6]); break;
+   case FID(RTV7): pbr->GetFloat(&m_d.m_aRotAndTra[7]); break;
+   case FID(RTV8): pbr->GetFloat(&m_d.m_aRotAndTra[8]); break;
+   case FID(IMAG): pbr->GetString(m_d.m_szImage); break;
+   case FID(NRMA): pbr->GetString(m_d.m_szNormalMap); break;
+   case FID(SIDS): pbr->GetInt(&m_d.m_Sides); break;
+   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(MATR): pbr->GetString(m_d.m_szMaterial); break;
+   case FID(SCOL): pbr->GetInt(&m_d.m_SideColor); break;
+   case FID(TVIS): pbr->GetBool(&m_d.m_visible); break;
+   case FID(REEN): pbr->GetBool(&m_d.m_reflectionEnabled); break;
+   case FID(DTXI): pbr->GetBool(&m_d.m_drawTexturesInside); break;
+   case FID(HTEV): pbr->GetBool(&m_d.m_hitEvent); break;
+   case FID(THRS): pbr->GetFloat(&m_d.m_threshold); break;
+   case FID(ELAS): pbr->GetFloat(&m_d.m_elasticity); break;
+   case FID(ELFO): pbr->GetFloat(&m_d.m_elasticityFalloff); break;
+   case FID(RFCT): pbr->GetFloat(&m_d.m_friction); break;
+   case FID(RSCT): pbr->GetFloat(&m_d.m_scatter); break;
+   case FID(EFUI): pbr->GetFloat(&m_d.m_edgeFactorUI); break;
+   case FID(CORF): pbr->GetFloat(&m_d.m_collision_reductionFactor); break;
+   case FID(CLDR): pbr->GetBool(&m_d.m_collidable); break;
+   case FID(ISTO): pbr->GetBool(&m_d.m_toy); break;
+   case FID(MAPH): pbr->GetString(m_d.m_szPhysicsMaterial); break;
+   case FID(OVPH): pbr->GetBool(&m_d.m_overwritePhysics); break;
+   case FID(STRE): pbr->GetBool(&m_d.m_staticRendering); break;
+   case FID(DILI):
    {
       int tmp;
       pbr->GetInt(&tmp);
-      m_d.m_fDisableLightingTop = (tmp == 1) ? 1.f : dequantizeUnsigned<8>(tmp); // backwards compatible hacky loading!
+      m_d.m_disableLightingTop = (tmp == 1) ? 1.f : dequantizeUnsigned<8>(tmp); // backwards compatible hacky loading!
+      break;
    }
-   else if (id == FID(DILB))
+   case FID(DILB): pbr->GetFloat(&m_d.m_disableLightingBelow); break;
+   case FID(U3DM): pbr->GetBool(&m_d.m_use3DMesh); break;
+   case FID(EBFC): pbr->GetBool(&m_d.m_backfacesEnabled); break;
+   case FID(DIPT): pbr->GetBool(&m_d.m_displayTexture); break;
+   case FID(M3DN): pbr->GetWideString((WCHAR *)m_d.m_meshFileName); break;
+   case FID(M3VN):
    {
-      pbr->GetFloat(&m_d.m_fDisableLightingBelow);
-   }
-   else if (id == FID(U3DM))
-   {
-      pbr->GetBool(&m_d.m_use3DMesh);
-   }
-   else if (id == FID(EBFC))
-   {
-      pbr->GetBool(&m_d.m_fBackfacesEnabled);
-   }
-   else if (id == FID(DIPT))
-   {
-      pbr->GetBool(&m_d.m_fDisplayTexture);
-   }
-   else if (id == FID(M3DN))
-   {
-      pbr->GetWideString((WCHAR *)m_d.m_meshFileName);
-   }
-   else if (id == FID(M3VN))
-   {
-      pbr->GetInt(&numVertices);
+      pbr->GetInt(&m_numVertices);
       if (m_mesh.m_animationFrames.size() > 0)
       {
          for (size_t i = 0; i < m_mesh.m_animationFrames.size(); i++)
             m_mesh.m_animationFrames[i].m_frameVerts.clear();
          m_mesh.m_animationFrames.clear();
       }
+      break;
    }
-   else if (id == FID(M3DX))
+   case FID(M3DX):
    {
       m_mesh.m_vertices.clear();
-      m_mesh.m_vertices.resize(numVertices);
-      pbr->GetStruct(m_mesh.m_vertices.data(), (int)sizeof(Vertex3D_NoTex2)*numVertices);
+      m_mesh.m_vertices.resize(m_numVertices);
+      pbr->GetStruct(m_mesh.m_vertices.data(), (int)sizeof(Vertex3D_NoTex2)*m_numVertices);
+      break;
    }
 #ifdef COMPRESS_MESHES
-   else if (id == FID(M3AY))
-   {
-      pbr->GetInt(&compressedAnimationVertices);
-   }
-   else if (id == FID(M3AX))
+   case FID(M3AY): pbr->GetInt(&m_compressedAnimationVertices); break;
+   case FID(M3AX):
    {
       Mesh::FrameData frameData;
       frameData.m_frameVerts.clear();
-      frameData.m_frameVerts.resize(numVertices);
+      frameData.m_frameVerts.resize(m_numVertices);
 
       /*LZWReader lzwreader(pbr->m_pistream, (int *)m_mesh.m_vertices.data(), sizeof(Vertex3D_NoTex2)*numVertices, 1, sizeof(Vertex3D_NoTex2)*numVertices);
       lzwreader.Decoder();*/
       mz_ulong uclen = (mz_ulong)(sizeof(Mesh::VertData)*m_mesh.NumVertices());
-      mz_uint8 * c = (mz_uint8 *)malloc(compressedAnimationVertices);
-      pbr->GetStruct(c, compressedAnimationVertices);
-      const int error = uncompress((unsigned char *)frameData.m_frameVerts.data(), &uclen, c, compressedAnimationVertices);
+      mz_uint8 * c = (mz_uint8 *)malloc(m_compressedAnimationVertices);
+      pbr->GetStruct(c, m_compressedAnimationVertices);
+      const int error = uncompress((unsigned char *)frameData.m_frameVerts.data(), &uclen, c, m_compressedAnimationVertices);
       if (error != Z_OK)
       {
          char err[128];
@@ -1722,108 +1616,128 @@ BOOL Primitive::LoadToken(int id, BiffReader *pbr)
       }
       free(c);
       m_mesh.m_animationFrames.push_back(frameData);
+      break;
    }
-   else if (id == FID(M3CY))
-   {
-      pbr->GetInt(&compressedVertices);
-   }
-   else if (id == FID(M3CX))
+   case FID(M3CY): pbr->GetInt(&m_compressedVertices); break;
+   case FID(M3CX):
    {
       m_mesh.m_vertices.clear();
-      m_mesh.m_vertices.resize(numVertices);
+      m_mesh.m_vertices.resize(m_numVertices);
       /*LZWReader lzwreader(pbr->m_pistream, (int *)m_mesh.m_vertices.data(), sizeof(Vertex3D_NoTex2)*numVertices, 1, sizeof(Vertex3D_NoTex2)*numVertices);
       lzwreader.Decoder();*/
       mz_ulong uclen = (mz_ulong)(sizeof(Vertex3D_NoTex2)*m_mesh.NumVertices());
-      mz_uint8 * c = (mz_uint8 *)malloc(compressedVertices);
-      pbr->GetStruct(c, compressedVertices);
-      const int error = uncompress((unsigned char *)m_mesh.m_vertices.data(), &uclen, c, compressedVertices);
-      if (error != Z_OK)
-      {
-         char err[128];
-         sprintf_s(err, "Could not uncompress primitive vertex data, error %d", error);
-         ShowError(err);
-      }
-      free(c);
+      mz_uint8 * c = (mz_uint8 *)malloc(m_compressedVertices);
+      pbr->GetStruct(c, m_compressedVertices);
+      if (g_pPrimitiveDecompressThreadPool == NULL)
+         g_pPrimitiveDecompressThreadPool = new ThreadPool(8);
+
+      g_pPrimitiveDecompressThreadPool->enqueue([uclen, c, this] {
+         mz_ulong uclen2 = uclen;
+         const int error = uncompress((unsigned char *)m_mesh.m_vertices.data(), &uclen2, c, m_compressedVertices);
+         if (error != Z_OK)
+         {
+            char err[128];
+            sprintf_s(err, "Could not uncompress primitive vertex data, error %d", error);
+            ShowError(err);
+         }
+         free(c);
+      });
+      break;
    }
 #endif
-   else if (id == FID(M3FN))
+   case FID(M3FN): pbr->GetInt(&m_numIndices); break;
+   case FID(M3DI):
    {
-      pbr->GetInt(&numIndices);
-   }
-   else if (id == FID(M3DI))
-   {
-      m_mesh.m_indices.resize(numIndices);
-      if (numVertices > 65535)
-         pbr->GetStruct(m_mesh.m_indices.data(), (int)sizeof(unsigned int)*numIndices);
+      m_mesh.m_indices.resize(m_numIndices);
+      if (m_numVertices > 65535)
+         pbr->GetStruct(m_mesh.m_indices.data(), (int)sizeof(unsigned int)*m_numIndices);
       else
       {
-         std::vector<WORD> tmp(numIndices);
-         pbr->GetStruct(tmp.data(), (int)sizeof(WORD)*numIndices);
-         for (int i = 0; i < numIndices; ++i)
+         std::vector<WORD> tmp(m_numIndices);
+         pbr->GetStruct(tmp.data(), (int)sizeof(WORD)*m_numIndices);
+         for (int i = 0; i < m_numIndices; ++i)
             m_mesh.m_indices[i] = tmp[i];
       }
+      break;
    }
 #ifdef COMPRESS_MESHES
-   else if (id == FID(M3CJ))
+   case FID(M3CJ): pbr->GetInt(&m_compressedIndices); break;
+   case FID(M3CI):
    {
-      pbr->GetInt(&compressedIndices);
-   }
-   else if (id == FID(M3CI))
-   {
-      m_mesh.m_indices.resize(numIndices);
-      if (numVertices > 65535)
+      m_mesh.m_indices.resize(m_numIndices);
+      if (m_numVertices > 65535)
       {
          //LZWReader lzwreader(pbr->m_pistream, (int *)m_mesh.m_indices.data(), sizeof(unsigned int)*numIndices, 1, sizeof(unsigned int)*numIndices);
          //lzwreader.Decoder();
          mz_ulong uclen = (mz_ulong)(sizeof(unsigned int)*m_mesh.NumIndices());
-         mz_uint8 * c = (mz_uint8 *)malloc(compressedIndices);
-         pbr->GetStruct(c, compressedIndices);
-         const int error = uncompress((unsigned char *)m_mesh.m_indices.data(), &uclen, c, compressedIndices);
-         if (error != Z_OK)
-         {
-            char err[128];
-            sprintf_s(err, "Could not uncompress (large) primitive index data, error %d", error);
-            ShowError(err);
-         }
-         free(c);
+         mz_uint8 * c = (mz_uint8 *)malloc(m_compressedIndices);
+         pbr->GetStruct(c, m_compressedIndices);
+         if (g_pPrimitiveDecompressThreadPool == NULL)
+            g_pPrimitiveDecompressThreadPool = new ThreadPool(8);
+
+         g_pPrimitiveDecompressThreadPool->enqueue([uclen, c, this] {
+            mz_ulong uclen2 = uclen;
+            const int error = uncompress((unsigned char *)m_mesh.m_indices.data(), &uclen2, c, m_compressedIndices);
+            if (error != Z_OK)
+            {
+               char err[128];
+               sprintf_s(err, "Could not uncompress (large) primitive index data, error %d", error);
+               ShowError(err);
+            }
+            free(c);
+         });
       }
       else
       {
-         std::vector<WORD> tmp(numIndices);
-
          //LZWReader lzwreader(pbr->m_pistream, (int *)tmp.data(), sizeof(WORD)*numIndices, 1, sizeof(WORD)*numIndices);
          //lzwreader.Decoder();
          mz_ulong uclen = (mz_ulong)(sizeof(WORD)*m_mesh.NumIndices());
-         mz_uint8 * c = (mz_uint8 *)malloc(compressedIndices);
-         pbr->GetStruct(c, compressedIndices);
-         const int error = uncompress((unsigned char *)tmp.data(), &uclen, c, compressedIndices);
-         if (error != Z_OK)
-         {
-            char err[128];
-            sprintf_s(err, "Could not uncompress (small) primitive index data, error %d", error);
-            ShowError(err);
-         }
-         free(c);
+         mz_uint8 * c = (mz_uint8 *)malloc(m_compressedIndices);
+         pbr->GetStruct(c, m_compressedIndices);
+         if (g_pPrimitiveDecompressThreadPool == NULL)
+            g_pPrimitiveDecompressThreadPool = new ThreadPool(8);
 
-         for (int i = 0; i < numIndices; ++i)
-            m_mesh.m_indices[i] = tmp[i];
+         g_pPrimitiveDecompressThreadPool->enqueue([uclen, c, this] {
+            std::vector<WORD> tmp(m_numIndices);
+
+            mz_ulong uclen2 = uclen;
+            const int error = uncompress((unsigned char *)tmp.data(), &uclen2, c, m_compressedIndices);
+            if (error != Z_OK)
+            {
+               char err[128];
+               sprintf_s(err, "Could not uncompress (small) primitive index data, error %d", error);
+               ShowError(err);
+            }
+            free(c);
+            for (int i = 0; i < m_numIndices; ++i)
+               m_mesh.m_indices[i] = tmp[i];
+         });
       }
+      break;
    }
 #endif
-   else if (id == FID(PIDB))
-   {
-      pbr->GetFloat(&m_d.m_depthBias);
+   case FID(PIDB): pbr->GetFloat(&m_d.m_depthBias); break;
+   case FID(OSNM): pbr->GetBool(&m_d.m_objectSpaceNormalMap); break;
+   default: ISelect::LoadToken(id, pbr); break;
    }
-   else
-   {
-      ISelect::LoadToken(id, pbr);
-   }
+   return true;
+}
 
-   return fTrue;
+void Primitive::WaitForMeshDecompression()
+{
+   if (g_pPrimitiveDecompressThreadPool)
+   {
+      // This will wait for the threads to finish decompressing meshes.
+      delete g_pPrimitiveDecompressThreadPool;
+      g_pPrimitiveDecompressThreadPool = NULL;
+   }
 }
 
 HRESULT Primitive::InitPostLoad()
 {
+   WaitForMeshDecompression(); //!! needed nowadays due to multithreaded mesh decompression
+
+
    if (!m_d.m_use3DMesh)
       CalculateBuiltinOriginal();
 
@@ -1874,10 +1788,10 @@ INT_PTR CALLBACK Primitive::ObjImportProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
             }
             prim->m_mesh.Clear();
             prim->m_d.m_use3DMesh = false;
-            if (prim->vertexBuffer)
+            if (prim->m_vertexBuffer)
             {
-               prim->vertexBuffer->release();
-               prim->vertexBuffer = 0;
+               prim->m_vertexBuffer->release();
+               prim->m_vertexBuffer = 0;
             }
             bool flipTV = false;
             bool convertToLeftHanded = IsDlgButtonChecked(hwndDlg, IDC_CONVERT_COORD_CHECK) == BST_CHECKED;
@@ -1888,23 +1802,20 @@ INT_PTR CALLBACK Primitive::ObjImportProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
             if (importMaterial)
             {
                string filename(szFileName);
-               size_t index = filename.find_last_of(".");
+               size_t index = filename.find_last_of('.');
                if (index != -1)
                {
                   char szMatName[MAXSTRING] = { 0 };
                   memcpy(szMatName, szFileName, index);
                   strcat_s(szMatName, ".mtl");
-                  Material *mat = new Material();
+                  Material * const mat = new Material();
                   if (WaveFrontObjLoadMaterial(szMatName, mat))
                   {
-                     PinTable *pActiveTable = g_pvp->GetActiveTable();
+                     CComObject<PinTable> * const pActiveTable = g_pvp->GetActiveTable();
                      if (pActiveTable)
-                     {
                         pActiveTable->AddMaterial(mat);
-                     }
+
                      strcpy_s(prim->m_d.m_szMaterial, mat->m_szName);
-                     g_pvp->m_sb.PopulateDropdowns(); // May need to update list of images
-                     g_pvp->m_sb.RefreshProperties();
                   }
                }
             }
@@ -1947,6 +1858,12 @@ INT_PTR CALLBACK Primitive::ObjImportProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
                   }
                }
                prim->m_d.m_use3DMesh = true;
+               unsigned int* const tmp = reorderForsyth(prim->m_mesh.m_indices.data(), (int)(prim->m_mesh.NumIndices() / 3), (int)prim->m_mesh.NumVertices());
+               if (tmp != NULL)
+               {
+                  memcpy(prim->m_mesh.m_indices.data(), tmp, prim->m_mesh.NumIndices() * sizeof(unsigned int));
+                  delete[] tmp;
+               }
                prim->UpdateEditorView();
                prim = NULL;
                EndDialog(hwndDlg, TRUE);
@@ -1962,40 +1879,18 @@ INT_PTR CALLBACK Primitive::ObjImportProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
 
             char szFileName[MAXSTRING];
             char szInitialDir[MAXSTRING];
+            int  fileOffset;
             szFileName[0] = '\0';
 
-            OPENFILENAME ofn;
-            ZeroMemory(&ofn, sizeof(OPENFILENAME));
-            ofn.lStructSize = sizeof(OPENFILENAME);
-            ofn.hInstance = g_hinst;
-            ofn.hwndOwner = g_pvp->m_hwnd;
-            // TEXT
-            ofn.lpstrFilter = "Wavefront obj file (*.obj)\0*.obj\0";
-            ofn.lpstrFile = szFileName;
-            ofn.nMaxFile = MAXSTRING;
-            ofn.lpstrDefExt = "obj";
-            ofn.Flags = OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY;
+            /*const HRESULT hr =*/ LoadValueString("RecentDir", "ImportDir", szInitialDir, MAXSTRING);
 
-            const HRESULT hr = LoadValueString("RecentDir", "ImportDir", szInitialDir, MAXSTRING);
-            char szFoo[MAX_PATH];
-            if (hr == S_OK)
-            {
-               ofn.lpstrInitialDir = szInitialDir;
-            }
-            else
-            {
-               lstrcpy(szFoo, "c:\\");
-               ofn.lpstrInitialDir = szFoo;
-            }
-
-            const int ret = GetOpenFileName(&ofn);
             SetForegroundWindow(hwndDlg);
-            if (ret)
+            if (g_pvp->OpenFileDialog(szInitialDir, szFileName, "Wavefront obj file (*.obj)\0*.obj\0", "obj", 0, fileOffset))
             {
                SetDlgItemText(hwndDlg, IDC_FILENAME_EDIT, szFileName);
                SaveValueString("RecentDir", "ImportDir", szInitialDir);
                string filename(szFileName);
-               size_t index = filename.find_last_of("\\");
+               size_t index = filename.find_last_of('\\');
                if (index != -1)
                {
                   index++;
@@ -2020,7 +1915,7 @@ INT_PTR CALLBACK Primitive::ObjImportProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
 
 bool Primitive::BrowseFor3DMeshFile()
 {
-   DialogBoxParam(g_hinst, MAKEINTRESOURCE(IDD_MESH_IMPORT_DIALOG), g_pvp->m_hwnd, ObjImportProc, (size_t)this);
+   DialogBoxParam(g_hinst, MAKEINTRESOURCE(IDD_MESH_IMPORT_DIALOG), g_pvp->GetHwnd(), ObjImportProc, (size_t)this);
 #if 1
    return false;
 #else
@@ -2068,10 +1963,10 @@ bool Primitive::BrowseFor3DMeshFile()
    SaveValueString("RecentDir", "ImportDir", szInitialDir);
    m_mesh.Clear();
    m_d.m_use3DMesh = false;
-   if (vertexBuffer)
+   if (m_vertexBuffer)
    {
-      vertexBuffer->release();
-      vertexBuffer = 0;
+      m_vertexBuffer->release();
+      m_vertexBuffer = 0;
    }
    bool flipTV = false;
    bool convertToLeftHanded = false;
@@ -2112,7 +2007,7 @@ STDMETHODIMP Primitive::get_Image(BSTR *pVal)
 {
    WCHAR wz[512];
 
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage, -1, wz, 32);
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage, -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -2121,7 +2016,7 @@ STDMETHODIMP Primitive::get_Image(BSTR *pVal)
 STDMETHODIMP Primitive::put_Image(BSTR newVal)
 {
    char szImage[MAXTOKEN];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, 32, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, MAXNAMEBUFFER, NULL, NULL);
    const Texture * const tex = m_ptable->GetImage(szImage);
    if (tex && tex->IsHDR())
    {
@@ -2141,8 +2036,7 @@ STDMETHODIMP Primitive::put_Image(BSTR newVal)
 STDMETHODIMP Primitive::get_NormalMap(BSTR *pVal)
 {
    WCHAR wz[512];
-
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szNormalMap, -1, wz, 32);
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szNormalMap, -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -2151,7 +2045,7 @@ STDMETHODIMP Primitive::get_NormalMap(BSTR *pVal)
 STDMETHODIMP Primitive::put_NormalMap(BSTR newVal)
 {
    char szImage[MAXTOKEN];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, 32, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, MAXNAMEBUFFER, NULL, NULL);
    const Texture * const tex = m_ptable->GetImage(szImage);
    if (tex && tex->IsHDR())
    {
@@ -2159,19 +2053,14 @@ STDMETHODIMP Primitive::put_NormalMap(BSTR newVal)
       return E_FAIL;
    }
 
-   STARTUNDO
+   strcpy_s(m_d.m_szNormalMap, szImage);
 
-      strcpy_s(m_d.m_szNormalMap, szImage);
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_MeshFileName(BSTR *pVal)
 {
    WCHAR wz[512];
-
    MultiByteToWideChar(CP_ACP, 0, m_d.m_meshFileName, -1, wz, 256);
    *pVal = SysAllocString(wz);
 
@@ -2180,28 +2069,22 @@ STDMETHODIMP Primitive::get_MeshFileName(BSTR *pVal)
 
 STDMETHODIMP Primitive::put_MeshFileName(BSTR newVal)
 {
-   STARTUNDO
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_meshFileName, 256, NULL, NULL);
 
-      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_meshFileName, 256, NULL, NULL);
-
-   STOPUNDO
-      return S_OK;
+   return S_OK;
 }
 
-bool Primitive::LoadMesh()
+bool Primitive::LoadMeshDialog()
 {
-   bool result = false;
    STARTUNDO
-
-      result = BrowseFor3DMeshFile();
-   vertexBufferRegenerate = true;
-
+      const bool result = BrowseFor3DMeshFile();
+   m_vertexBufferRegenerate = true;
    STOPUNDO
 
       return result;
 }
 
-void Primitive::ExportMesh()
+void Primitive::ExportMeshDialog()
 {
    char szFileName[MAXSTRING];
    char szInitialDir[MAXSTRING];
@@ -2211,7 +2094,7 @@ void Primitive::ExportMesh()
    ZeroMemory(&ofn, sizeof(OPENFILENAME));
    ofn.lStructSize = sizeof(OPENFILENAME);
    ofn.hInstance = g_hinst;
-   ofn.hwndOwner = g_pvp->m_hwnd;
+   ofn.hwndOwner = g_pvp->GetHwnd();
    // TEXT
    ofn.lpstrFilter = "Wavefront obj file (*.obj)\0*.obj\0";
    ofn.lpstrFile = szFileName;
@@ -2233,9 +2116,8 @@ void Primitive::ExportMesh()
 
    const int ret = GetSaveFileName(&ofn);
    if (ret == 0)
-   {
       return;
-   }
+
    char name[MAX_PATH];
    WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, MAX_PATH, NULL, NULL);
    m_mesh.SaveWavefrontObj(ofn.lpstrFile, m_d.m_use3DMesh ? name : "Primitive");
@@ -2243,7 +2125,7 @@ void Primitive::ExportMesh()
 
 bool Primitive::IsTransparent() const
 {
-   if (m_d.m_fSkipRendering)
+   if (m_d.m_skipRendering)
       return false;
 
    return m_ptable->GetMaterial(m_d.m_szMaterial)->m_bOpacityActive;
@@ -2268,18 +2150,14 @@ STDMETHODIMP Primitive::put_Sides(int newVal)
 
    if (m_d.m_Sides != newVal)
    {
-      STARTUNDO
-
-         m_d.m_Sides = newVal;
+      m_d.m_Sides = newVal;
       if (!m_d.m_use3DMesh)
       {
-         vertexBufferRegenerate = true;
+         m_vertexBufferRegenerate = true;
          CalculateBuiltinOriginal();
          RecalculateMatrices();
          TransformVertices();
       }
-
-      STOPUNDO
    }
 
    return S_OK;
@@ -2288,8 +2166,7 @@ STDMETHODIMP Primitive::put_Sides(int newVal)
 STDMETHODIMP Primitive::get_Material(BSTR *pVal)
 {
    WCHAR wz[512];
-
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial, -1, wz, 32);
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial, -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -2297,11 +2174,9 @@ STDMETHODIMP Primitive::get_Material(BSTR *pVal)
 
 STDMETHODIMP Primitive::put_Material(BSTR newVal)
 {
-   STARTUNDO
-      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szMaterial, 32, NULL, NULL);
-   STOPUNDO
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szMaterial, MAXNAMEBUFFER, NULL, NULL);
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_SideColor(OLE_COLOR *pVal)
@@ -2313,49 +2188,40 @@ STDMETHODIMP Primitive::get_SideColor(OLE_COLOR *pVal)
 
 STDMETHODIMP Primitive::put_SideColor(OLE_COLOR newVal)
 {
-   if (m_d.m_SideColor != newVal)
-   {
-      STARTUNDO
-         m_d.m_SideColor = newVal;
-      STOPUNDO
-   }
+   m_d.m_SideColor = newVal;
 
    return S_OK;
 }
 
 STDMETHODIMP Primitive::get_Visible(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_fVisible);
+   *pVal = FTOVB(m_d.m_visible);
 
    return S_OK;
 }
 
 STDMETHODIMP Primitive::put_Visible(VARIANT_BOOL newVal)
 {
-   STARTUNDO
-      m_d.m_fVisible = VBTOF(newVal);
-   STOPUNDO
-      return S_OK;
+   m_d.m_visible = VBTOF(newVal);
+
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_DrawTexturesInside(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_DrawTexturesInside);
+   *pVal = FTOVB(m_d.m_drawTexturesInside);
 
    return S_OK;
 }
 
 STDMETHODIMP Primitive::put_DrawTexturesInside(VARIANT_BOOL newVal)
 {
-   if (m_d.m_DrawTexturesInside != VBTOF(newVal))
+   if (m_d.m_drawTexturesInside != VBTOb(newVal))
    {
-      STARTUNDO
-
-      m_d.m_DrawTexturesInside = VBTOF(newVal);
-      vertexBufferRegenerate = true;
-
-      STOPUNDO
+      m_d.m_drawTexturesInside = VBTOb(newVal);
+      m_vertexBufferRegenerate = true;
    }
+
    return S_OK;
 }
 
@@ -2371,10 +2237,7 @@ STDMETHODIMP Primitive::put_X(float newVal)
 {
    if (m_d.m_vPosition.x != newVal)
    {
-      STARTUNDO
       m_d.m_vPosition.x = newVal;
-      STOPUNDO
-
       UpdateEditorView();
    }
 
@@ -2392,10 +2255,7 @@ STDMETHODIMP Primitive::put_Y(float newVal)
 {
    if (m_d.m_vPosition.y != newVal)
    {
-      STARTUNDO
       m_d.m_vPosition.y = newVal;
-      STOPUNDO
-
       UpdateEditorView();
    }
 
@@ -2413,10 +2273,7 @@ STDMETHODIMP Primitive::put_Z(float newVal)
 {
    if (m_d.m_vPosition.z != newVal)
    {
-      STARTUNDO
       m_d.m_vPosition.z = newVal;
-      STOPUNDO
-
       UpdateEditorView();
    }
 
@@ -2434,10 +2291,7 @@ STDMETHODIMP Primitive::put_Size_X(float newVal)
 {
    if (m_d.m_vSize.x != newVal)
    {
-      STARTUNDO
       m_d.m_vSize.x = newVal;
-      STOPUNDO
-
       UpdateEditorView();
    }
 
@@ -2455,10 +2309,7 @@ STDMETHODIMP Primitive::put_Size_Y(float newVal)
 {
    if (m_d.m_vSize.y != newVal)
    {
-      STARTUNDO
       m_d.m_vSize.y = newVal;
-      STOPUNDO
-
       UpdateEditorView();
    }
 
@@ -2476,10 +2327,7 @@ STDMETHODIMP Primitive::put_Size_Z(float newVal)
 {
    if (m_d.m_vSize.z != newVal)
    {
-      STARTUNDO
       m_d.m_vSize.z = newVal;
-      STOPUNDO
-
       UpdateEditorView();
    }
 
@@ -2506,10 +2354,7 @@ STDMETHODIMP Primitive::put_RotX(float newVal)
 {
    if (m_d.m_aRotAndTra[0] != newVal)
    {
-      STARTUNDO
       m_d.m_aRotAndTra[0] = newVal;
-      STOPUNDO
-
       UpdateEditorView();
    }
 
@@ -2536,10 +2381,7 @@ STDMETHODIMP Primitive::put_RotY(float newVal)
 {
    if (m_d.m_aRotAndTra[1] != newVal)
    {
-      STARTUNDO
       m_d.m_aRotAndTra[1] = newVal;
-      STOPUNDO
-
       UpdateEditorView();
    }
 
@@ -2566,10 +2408,7 @@ STDMETHODIMP Primitive::put_RotZ(float newVal)
 {
    if (m_d.m_aRotAndTra[2] != newVal)
    {
-      STARTUNDO
       m_d.m_aRotAndTra[2] = newVal;
-      STOPUNDO
-
       UpdateEditorView();
    }
 
@@ -2589,6 +2428,7 @@ STDMETHODIMP Primitive::put_RotAndTra3(float newVal)
 STDMETHODIMP Primitive::get_TransX(float *pVal)
 {
    *pVal = m_d.m_aRotAndTra[3];
+
    return S_OK;
 }
 
@@ -2596,10 +2436,7 @@ STDMETHODIMP Primitive::put_TransX(float newVal)
 {
    if (m_d.m_aRotAndTra[3] != newVal)
    {
-      STARTUNDO
       m_d.m_aRotAndTra[3] = newVal;
-      STOPUNDO
-
       UpdateEditorView();
    }
 
@@ -2619,6 +2456,7 @@ STDMETHODIMP Primitive::put_RotAndTra4(float newVal)
 STDMETHODIMP Primitive::get_TransY(float *pVal)
 {
    *pVal = m_d.m_aRotAndTra[4];
+
    return S_OK;
 }
 
@@ -2626,10 +2464,7 @@ STDMETHODIMP Primitive::put_TransY(float newVal)
 {
    if (m_d.m_aRotAndTra[4] != newVal)
    {
-      STARTUNDO
       m_d.m_aRotAndTra[4] = newVal;
-      STOPUNDO
-
       UpdateEditorView();
    }
 
@@ -2649,6 +2484,7 @@ STDMETHODIMP Primitive::put_RotAndTra5(float newVal)
 STDMETHODIMP Primitive::get_TransZ(float *pVal)
 {
    *pVal = m_d.m_aRotAndTra[5];
+
    return S_OK;
 }
 
@@ -2656,10 +2492,7 @@ STDMETHODIMP Primitive::put_TransZ(float newVal)
 {
    if (m_d.m_aRotAndTra[5] != newVal)
    {
-      STARTUNDO
       m_d.m_aRotAndTra[5] = newVal;
-      STOPUNDO
-
       UpdateEditorView();
    }
 
@@ -2679,6 +2512,7 @@ STDMETHODIMP Primitive::put_RotAndTra6(float newVal)
 STDMETHODIMP Primitive::get_ObjRotX(float *pVal)
 {
    *pVal = m_d.m_aRotAndTra[6];
+
    return S_OK;
 }
 
@@ -2686,10 +2520,7 @@ STDMETHODIMP Primitive::put_ObjRotX(float newVal)
 {
    if (m_d.m_aRotAndTra[6] != newVal)
    {
-      STARTUNDO
       m_d.m_aRotAndTra[6] = newVal;
-      STOPUNDO
-
       UpdateEditorView();
    }
 
@@ -2716,10 +2547,7 @@ STDMETHODIMP Primitive::put_ObjRotY(float newVal)
 {
    if (m_d.m_aRotAndTra[7] != newVal)
    {
-      STARTUNDO
       m_d.m_aRotAndTra[7] = newVal;
-      STOPUNDO
-
       UpdateEditorView();
    }
 
@@ -2739,6 +2567,7 @@ STDMETHODIMP Primitive::put_RotAndTra8(float newVal)
 STDMETHODIMP Primitive::get_ObjRotZ(float *pVal)
 {
    *pVal = m_d.m_aRotAndTra[8];
+
    return S_OK;
 }
 
@@ -2746,10 +2575,7 @@ STDMETHODIMP Primitive::put_ObjRotZ(float newVal)
 {
    if (m_d.m_aRotAndTra[8] != newVal)
    {
-      STARTUNDO
       m_d.m_aRotAndTra[8] = newVal;
-      STOPUNDO
-
       UpdateEditorView();
    }
 
@@ -2759,67 +2585,57 @@ STDMETHODIMP Primitive::put_ObjRotZ(float newVal)
 STDMETHODIMP Primitive::get_EdgeFactorUI(float *pVal)
 {
    *pVal = m_d.m_edgeFactorUI;
+
    return S_OK;
 }
 
 STDMETHODIMP Primitive::put_EdgeFactorUI(float newVal)
 {
-   STARTUNDO
-      m_d.m_edgeFactorUI = newVal;
-   STOPUNDO
+   m_d.m_edgeFactorUI = newVal;
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_CollisionReductionFactor(float *pVal)
 {
    *pVal = m_d.m_collision_reductionFactor;
+
    return S_OK;
 }
 
 STDMETHODIMP Primitive::put_CollisionReductionFactor(float newVal)
 {
-   STARTUNDO
-      m_d.m_collision_reductionFactor = newVal;
-   STOPUNDO
+   m_d.m_collision_reductionFactor = newVal;
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_EnableStaticRendering(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_staticRendering);
+   *pVal = FTOVB(m_d.m_staticRendering);
 
    return S_OK;
 }
 
 STDMETHODIMP Primitive::put_EnableStaticRendering(VARIANT_BOOL newVal)
 {
-   STARTUNDO
+   m_d.m_staticRendering = VBTOb(newVal);
 
-      m_d.m_staticRendering = VBTOF(newVal);
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_HasHitEvent(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_fHitEvent);
+   *pVal = FTOVB(m_d.m_hitEvent);
 
    return S_OK;
 }
 
 STDMETHODIMP Primitive::put_HasHitEvent(VARIANT_BOOL newVal)
 {
-   STARTUNDO
+   m_d.m_hitEvent = VBTOb(newVal);
 
-      m_d.m_fHitEvent = VBTOF(newVal);
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_Threshold(float *pVal)
@@ -2831,13 +2647,9 @@ STDMETHODIMP Primitive::get_Threshold(float *pVal)
 
 STDMETHODIMP Primitive::put_Threshold(float newVal)
 {
-   STARTUNDO
+   m_d.m_threshold = newVal;
 
-      m_d.m_threshold = newVal;
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_Elasticity(float *pVal)
@@ -2849,11 +2661,9 @@ STDMETHODIMP Primitive::get_Elasticity(float *pVal)
 
 STDMETHODIMP Primitive::put_Elasticity(float newVal)
 {
-   STARTUNDO
-      m_d.m_elasticity = newVal;
-   STOPUNDO
+   m_d.m_elasticity = newVal;
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_ElasticityFalloff(float *pVal)
@@ -2865,11 +2675,9 @@ STDMETHODIMP Primitive::get_ElasticityFalloff(float *pVal)
 
 STDMETHODIMP Primitive::put_ElasticityFalloff(float newVal)
 {
-   STARTUNDO
-      m_d.m_elasticityFalloff = newVal;
-   STOPUNDO
+   m_d.m_elasticityFalloff = newVal;
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_Friction(float *pVal)
@@ -2881,13 +2689,9 @@ STDMETHODIMP Primitive::get_Friction(float *pVal)
 
 STDMETHODIMP Primitive::put_Friction(float newVal)
 {
-   STARTUNDO
+   m_d.m_friction = clamp(newVal, 0.f, 1.f);
 
-      m_d.m_friction = clamp(newVal, 0.f, 1.f);
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_Scatter(float *pVal)
@@ -2899,39 +2703,28 @@ STDMETHODIMP Primitive::get_Scatter(float *pVal)
 
 STDMETHODIMP Primitive::put_Scatter(float newVal)
 {
-   STARTUNDO
+   m_d.m_scatter = newVal;
 
-      m_d.m_scatter = newVal;
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_Collidable(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB((!g_pplayer || m_vhoCollidable.empty()) ? m_d.m_fCollidable : m_vhoCollidable[0]->m_fEnabled);
+   *pVal = FTOVB((!g_pplayer || m_vhoCollidable.empty()) ? m_d.m_collidable : m_vhoCollidable[0]->m_enabled);
 
    return S_OK;
 }
 
 STDMETHODIMP Primitive::put_Collidable(VARIANT_BOOL newVal)
 {
-   BOOL fNewVal = VBTOF(newVal);
+   const bool val = VBTOb(newVal);
    if (!g_pplayer)
-   {
-      STARTUNDO
-
-         m_d.m_fCollidable = !!fNewVal;
-
-      STOPUNDO
-   }
+      m_d.m_collidable = val;
    else
    {
-      const bool b = !!fNewVal;
-      if (m_vhoCollidable.size() > 0 && m_vhoCollidable[0]->m_fEnabled != b)
+      if (m_vhoCollidable.size() > 0 && m_vhoCollidable[0]->m_enabled != val)
          for (size_t i = 0; i < m_vhoCollidable.size(); i++) //!! costly
-            m_vhoCollidable[i]->m_fEnabled = b; //copy to hit-testing on entities composing the object
+            m_vhoCollidable[i]->m_enabled = val; //copy to hit-testing on entities composing the object
    }
 
    return S_OK;
@@ -2939,117 +2732,104 @@ STDMETHODIMP Primitive::put_Collidable(VARIANT_BOOL newVal)
 
 STDMETHODIMP Primitive::get_IsToy(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_fToy);
+   *pVal = FTOVB(m_d.m_toy);
 
    return S_OK;
 }
 
 STDMETHODIMP Primitive::put_IsToy(VARIANT_BOOL newVal)
 {
-   STARTUNDO
+   m_d.m_toy = VBTOb(newVal);
 
-      m_d.m_fToy = VBTOF(newVal);
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_BackfacesEnabled(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_fBackfacesEnabled);
-
+   *pVal = FTOVB(m_d.m_backfacesEnabled);
    return S_OK;
 }
 
 STDMETHODIMP Primitive::put_BackfacesEnabled(VARIANT_BOOL newVal)
 {
-   STARTUNDO
+   m_d.m_backfacesEnabled = VBTOb(newVal);
 
-      m_d.m_fBackfacesEnabled = VBTOF(newVal);
+   return S_OK;
+}
 
-   STOPUNDO
+STDMETHODIMP Primitive::get_ObjectSpaceNormalMap(VARIANT_BOOL *pVal)
+{
+   *pVal = FTOVB(m_d.m_objectSpaceNormalMap);
+   return S_OK;
+}
 
-      return S_OK;
+STDMETHODIMP Primitive::put_ObjectSpaceNormalMap(VARIANT_BOOL newVal)
+{
+   m_d.m_objectSpaceNormalMap = VBTOb(newVal);
+
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_DisableLighting(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_fDisableLightingTop != 0.f);
+   *pVal = FTOVB(m_d.m_disableLightingTop != 0.f);
 
    return S_OK;
 }
 
 STDMETHODIMP Primitive::put_DisableLighting(VARIANT_BOOL newVal)
 {
-   STARTUNDO
+   m_d.m_disableLightingTop = VBTOb(newVal) ? 1.f : 0;
 
-      m_d.m_fDisableLightingTop = VBTOF(newVal) ? 1.f : 0;
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_BlendDisableLighting(float *pVal)
 {
-   *pVal = m_d.m_fDisableLightingTop;
+   *pVal = m_d.m_disableLightingTop;
 
    return S_OK;
 }
 
 STDMETHODIMP Primitive::put_BlendDisableLighting(float newVal)
 {
-   STARTUNDO
+   m_d.m_disableLightingTop = newVal;
 
-      m_d.m_fDisableLightingTop = newVal;
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_BlendDisableLightingFromBelow(float *pVal)
 {
-   *pVal = m_d.m_fDisableLightingBelow;
+   *pVal = m_d.m_disableLightingBelow;
 
    return S_OK;
 }
 
 STDMETHODIMP Primitive::put_BlendDisableLightingFromBelow(float newVal)
 {
-   STARTUNDO
+   m_d.m_disableLightingBelow = newVal;
 
-      m_d.m_fDisableLightingBelow = newVal;
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_ReflectionEnabled(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_fReflectionEnabled);
+   *pVal = FTOVB(m_d.m_reflectionEnabled);
 
    return S_OK;
 }
 
 STDMETHODIMP Primitive::put_ReflectionEnabled(VARIANT_BOOL newVal)
 {
-   STARTUNDO
+   m_d.m_reflectionEnabled = VBTOb(newVal);
 
-      m_d.m_fReflectionEnabled = VBTOF(newVal);
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_PhysicsMaterial(BSTR *pVal)
 {
    WCHAR wz[512];
-
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szPhysicsMaterial, -1, wz, 32);
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szPhysicsMaterial, -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -3057,75 +2837,65 @@ STDMETHODIMP Primitive::get_PhysicsMaterial(BSTR *pVal)
 
 STDMETHODIMP Primitive::put_PhysicsMaterial(BSTR newVal)
 {
-   STARTUNDO
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szPhysicsMaterial, MAXNAMEBUFFER, NULL, NULL);
 
-      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szPhysicsMaterial, 32, NULL, NULL);
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_OverwritePhysics(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_fOverwritePhysics);
+   *pVal = FTOVB(m_d.m_overwritePhysics);
 
    return S_OK;
 }
 
 STDMETHODIMP Primitive::put_OverwritePhysics(VARIANT_BOOL newVal)
 {
-   STARTUNDO
+   m_d.m_overwritePhysics = VBTOb(newVal);
 
-      m_d.m_fOverwritePhysics = VBTOF(newVal);
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_HitThreshold(float *pVal)
 {
    *pVal = m_currentHitThreshold;
+
    return S_OK;
 }
 
 STDMETHODIMP Primitive::get_DisplayTexture(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_fDisplayTexture);
+   *pVal = FTOVB(m_d.m_displayTexture);
 
    return S_OK;
 }
 
 STDMETHODIMP Primitive::put_DisplayTexture(VARIANT_BOOL newVal)
 {
-   STARTUNDO
+   m_d.m_displayTexture = VBTOb(newVal);
 
-      m_d.m_fDisplayTexture = VBTOF(newVal);
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 
 STDMETHODIMP Primitive::PlayAnim(float startFrame, float speed)
 {
-   int iFrame = (int)startFrame;
    if (m_mesh.m_animationFrames.size() > 0)
    {
-      if (startFrame >= m_mesh.m_animationFrames.size())
+      if ((size_t)startFrame >= m_mesh.m_animationFrames.size())
          startFrame = 0.0f;
-      if (startFrame < 0.0f)
-         startFrame *= 1.0f;
+      //if (startFrame < 0.0f)
+      //   startFrame = -startFrame;
+      if (speed < 0.0f) speed = -speed;
+
+      m_vertexBufferRegenerate = (m_currentFrame != startFrame) || (m_speed != speed) || !m_doAnimation || m_endless;
 
       m_currentFrame = startFrame;
-      if (speed < 0.0f) speed *= -1.0f;
       m_speed = speed;
-      m_DoAnimation = true;
-      m_Endless = false;
-      vertexBufferRegenerate = true;
+      m_doAnimation = true;
+      m_endless = false;
    }
+
    return S_OK;
 }
 
@@ -3133,19 +2903,24 @@ STDMETHODIMP Primitive::PlayAnimEndless(float speed)
 {
    if (m_mesh.m_animationFrames.size() > 0)
    {
+      if (speed < 0.0f) speed = -speed;
+
+      m_vertexBufferRegenerate = (m_currentFrame != 0.f) || (m_speed != speed) || !m_doAnimation || !m_endless;
+
       m_currentFrame = 0.0f;
-      if (speed < 0.0f) speed *= -1.0f;
       m_speed = speed;
-      m_DoAnimation = true;
-      m_Endless = true;
-      vertexBufferRegenerate = true;
+      m_doAnimation = true;
+      m_endless = true;
    }
+
    return S_OK;
 }
+
 STDMETHODIMP Primitive::StopAnim()
 {
-   m_DoAnimation = false;
-   vertexBufferRegenerate = false;
+   m_doAnimation = false;
+   m_vertexBufferRegenerate = false;
+
    return S_OK;
 }
 
@@ -3153,107 +2928,28 @@ STDMETHODIMP Primitive::ContinueAnim(float speed)
 {
    if (m_currentFrame > 0.0f)
    {
-      if (speed < 0.0f) speed *= -1.0f;
+      if (speed < 0.0f) speed = -speed;
+
+      m_vertexBufferRegenerate = (m_speed != speed) || !m_doAnimation;
+
       m_speed = speed;
-      m_DoAnimation = true;
-      vertexBufferRegenerate = true;
+      m_doAnimation = true;
    }
+
    return S_OK;
 }
 
 STDMETHODIMP Primitive::ShowFrame(float frame)
 {
-   int iFrame = (int)frame;
-   m_DoAnimation = false;
-   if (iFrame >= (int)m_mesh.m_animationFrames.size())
+   if ((size_t)frame >= m_mesh.m_animationFrames.size())
       frame = (float)(m_mesh.m_animationFrames.size() - 1);
+
+   m_vertexBufferRegenerate = (m_currentFrame != frame) || m_doAnimation;
+
    m_currentFrame = frame;
-   vertexBufferRegenerate = true;
+   m_doAnimation = false;
+
    return S_OK;
-}
-
-void Primitive::GetDialogPanes(vector<PropertyPane*> &pvproppane)
-{
-   PropertyPane *pproppane;
-
-   pproppane = new PropertyPane(IDD_PROP_NAME, NULL);
-   pvproppane.push_back(pproppane);
-
-   m_propVisual = new PropertyPane(IDD_PROPPRIMITIVE_VISUALS, IDS_VISUALS);
-   pvproppane.push_back(m_propVisual);
-
-   m_propPosition = new PropertyPane(IDD_PROPPRIMITIVE_POSITION, IDS_POSITION_TRANSLATION);
-   pvproppane.push_back(m_propPosition);
-
-   m_propPhysics = new PropertyPane(IDD_PROPPRIMITIVE_PHYSICS, IDS_PHYSICS);
-   pvproppane.push_back(m_propPhysics);
-}
-
-void Primitive::UpdatePropertyPanes()
-{
-   if (m_propVisual == NULL || m_propPosition == NULL || m_propPhysics == NULL)
-      return;
-
-   if (m_d.m_use3DMesh) {
-      EnableWindow(GetDlgItem(m_propVisual->dialogHwnd, 106), FALSE);
-      EnableWindow(GetDlgItem(m_propVisual->dialogHwnd, 101), FALSE);
-   }
-   else {
-      EnableWindow(GetDlgItem(m_propVisual->dialogHwnd, 106), TRUE);
-      EnableWindow(GetDlgItem(m_propVisual->dialogHwnd, 101), TRUE);
-   }
-
-   if (m_d.m_fToy || !m_d.m_fCollidable)
-   {
-      EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 34), FALSE);
-      EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 33), FALSE);
-      EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 110), FALSE);
-      EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 112), FALSE);
-      if (m_d.m_fToy)
-      {
-         EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 481), FALSE);
-         EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 111), FALSE);
-      }
-      else
-      {
-         EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 481), TRUE);
-         EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 111), TRUE);
-      }
-
-      EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 114), FALSE);
-      EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 115), FALSE);
-      EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, IDC_MATERIAL_COMBO4), FALSE);
-      EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, IDC_OVERWRITE_MATERIAL_SETTINGS), FALSE);
-   }
-   else //if (!m_d.m_fToy && m_d.m_fCollidable)
-   {
-      EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, IDC_OVERWRITE_MATERIAL_SETTINGS), TRUE);
-      EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 34), TRUE);
-      EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 111), TRUE);
-      EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 481), TRUE);
-      if (m_d.m_fHitEvent)
-         EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 33), TRUE);
-      else
-         EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 33), FALSE);
-
-      if (m_d.m_fOverwritePhysics)
-      {
-         EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 110), TRUE);
-         EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 112), TRUE);
-         EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 114), TRUE);
-         EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 115), TRUE);
-         EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, IDC_MATERIAL_COMBO4), FALSE);
-      }
-      else
-      {
-         EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 110), FALSE);
-         EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 112), FALSE);
-         EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 114), FALSE);
-         EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, 115), FALSE);
-         EnableWindow(GetDlgItem(m_propPhysics->dialogHwnd, IDC_MATERIAL_COMBO4), TRUE);
-      }
-   }
-
 }
 
 void Primitive::SetDefaultPhysics(bool fromMouseClick)
@@ -3274,14 +2970,7 @@ STDMETHODIMP Primitive::get_DepthBias(float *pVal)
 
 STDMETHODIMP Primitive::put_DepthBias(float newVal)
 {
-   if (m_d.m_depthBias != newVal)
-   {
-      STARTUNDO
-
-         m_d.m_depthBias = newVal;
-
-      STOPUNDO
-   }
+   m_d.m_depthBias = newVal;
 
    return S_OK;
 }

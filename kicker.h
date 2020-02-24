@@ -7,21 +7,19 @@
 
 #include "resource.h"       // main symbols
 
-class KickerData
+class KickerData : public BaseProperty
 {
 public:
    Vertex2D m_vCenter;
    float m_radius;
-   char m_szMaterial[32];
    TimerDataRoot m_tdr;
    char m_szSurface[MAXTOKEN];
    KickerType m_kickertype;
-   float m_scatter;
    float m_hitAccuracy; //kicker hit grabbing object height ... default ballsize*0.7
    float m_orientation;
    float m_hit_height;
-   bool m_fEnabled;
-   bool m_fFallThrough;
+   bool m_enabled;
+   bool m_fallThrough;
    bool m_legacyMode;
 };
 
@@ -72,8 +70,6 @@ public:
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
 
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
    virtual void MoveOffset(const float dx, const float dy);
    virtual void SetObjectPos();
    // Multi-object manipulation
@@ -88,29 +84,30 @@ public:
    virtual ItemTypeEnum HitableGetItemType() const { return eItemKicker; }
 
    virtual void WriteRegDefaults();
-   void GenerateMesh(Vertex3D_NoTex2 *const buf);
-   void UpdateUnitsInfo();
 
    KickerData m_d;
 
-   std::vector<Vertex3Ds> hitMesh;
+   std::vector<Vertex3Ds> m_hitMesh;
 
 private:
+   void GenerateMesh(Vertex3D_NoTex2 *const buf);
+   void UpdateUnitsInfo();
+
    PinTable * m_ptable;
 
    KickerHitCircle *m_phitkickercircle;
 
-   VertexBuffer *vertexBuffer;
-   IndexBuffer  *indexBuffer;
+   VertexBuffer *m_vertexBuffer;
+   IndexBuffer  *m_indexBuffer;
    unsigned int m_numVertices;
    unsigned int m_numIndices;
 
-   Texture texture;
+   Texture m_texture;
 
    float m_baseHeight;
 
-   VertexBuffer *plateVertexBuffer;
-   IndexBuffer *plateIndexBuffer;
+   VertexBuffer *m_plateVertexBuffer;
+   IndexBuffer  *m_plateIndexBuffer;
 
 public:
    // IKicker
@@ -164,7 +161,7 @@ public:
       m_pkicker = NULL;
    }
 
-   virtual float HitTest(const Ball * const pball, const float dtime, CollisionEvent& coll) const;
+   virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const;
    virtual int GetType() const { return eTrigger; }
    virtual void Collide(const CollisionEvent& coll) { DoCollide(coll.m_ball, coll.m_hitnormal, coll.m_hitflag, false); }
 

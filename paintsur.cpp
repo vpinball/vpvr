@@ -58,14 +58,10 @@ void PaintSur::Rectangle2(const int x, const int y, const int x2, const int y2)
    SelectObject(m_hdc, m_hbr);
    SelectObject(m_hdc, m_hpnOutline);
 
-   if (m_fNullBorder)
-   {
+   if (m_nullBorder)
       ::Rectangle(m_hdc, x, y, x2 + 1, y2 + 1);
-   }
    else
-   {
       ::Rectangle(m_hdc, x, y, x2, y2);
-   }
 }
 
 void PaintSur::Ellipse(float centerx, float centery, float radius)
@@ -186,9 +182,9 @@ void PaintSur::Polyline(const Vertex2D * const rgv, const int count)
    SelectObject(m_hdc, m_hpnLine);
 
    /*
-    * There seems to be a known GDI bug where drawing very large polylines in one
-    * call freezes the system shortly, so we batch them into groups of MAX_SUR_PT_CACHE.
-    */
+   * There seems to be a known GDI bug where drawing very large polylines in one
+   * call freezes the system shortly, so we batch them into groups of MAX_SUR_PT_CACHE.
+   */
    //m_ptCache.resize(min(count,MAX_SUR_PT_CACHE+1));
 
    for (int i = 0; i < count; i += MAX_SUR_PT_CACHE)
@@ -210,9 +206,9 @@ void PaintSur::Lines(const Vertex2D * const rgv, const int count)
    SelectObject(m_hdc, m_hpnLine);
 
    /*
-    * There seems to be a known GDI bug where drawing very large polylines in one
-    * call freezes the system shortly, so we batch them into groups of MAX_SUR_PT_CACHE.
-    */
+   * There seems to be a known GDI bug where drawing very large polylines in one
+   * call freezes the system shortly, so we batch them into groups of MAX_SUR_PT_CACHE.
+   */
    //m_ptCache.resize(min(count,MAX_SUR_PT_CACHE)*2);
    //std::vector<DWORD> m_ptCache_idx(min(count,MAX_SUR_PT_CACHE),2);
 
@@ -257,7 +253,7 @@ void PaintSur::Image(const float x, const float y, const float x2, const float y
    StretchBlt(m_hdc, ix, iy, ix2 - ix, iy2 - iy, hdcSrc, 0, 0, width, height, SRCCOPY);
 }
 
-void PaintSur::SetObject(ISelect *psel)
+void PaintSur::SetObject(ISelect * const psel)
 {
    if ((m_psel != NULL) && (psel != NULL)) // m_psel can be null when rendering a blueprint or other item which has no selection feedback
    {
@@ -269,7 +265,7 @@ void PaintSur::SetObject(ISelect *psel)
       {
          psel->SetMultiSelectFormat(this);
       }
-      else if (psel->m_fLocked)
+      else if (psel->m_locked)
       {
          psel->SetLockedFormat(this);
       }
@@ -293,7 +289,7 @@ void PaintSur::SetFillColor(const int rgb)
    }
 }
 
-void PaintSur::SetBorderColor(const int rgb, const bool fDashed, const int width)
+void PaintSur::SetBorderColor(const int rgb, const bool dashed, const int width)
 {
    SelectObject(m_hdc, GetStockObject(BLACK_PEN));
    DeleteObject(m_hpnOutline);
@@ -301,17 +297,17 @@ void PaintSur::SetBorderColor(const int rgb, const bool fDashed, const int width
    if (rgb == -1)
    {
       m_hpnOutline = CreatePen(PS_NULL, width, rgb);
-      m_fNullBorder = true;
+      m_nullBorder = true;
    }
    else
    {
-      const int style = fDashed ? PS_DOT : PS_SOLID;
+      const int style = dashed ? PS_DOT : PS_SOLID;
       m_hpnOutline = CreatePen(style, width, rgb); //!! claims to be leaking mem
-      m_fNullBorder = false;
+      m_nullBorder = false;
    }
 }
 
-void PaintSur::SetLineColor(const int rgb, const bool fDashed, const int width)
+void PaintSur::SetLineColor(const int rgb, const bool dashed, const int width)
 {
    SelectObject(m_hdc, GetStockObject(BLACK_PEN));
    DeleteObject(m_hpnLine);
@@ -324,7 +320,7 @@ void PaintSur::SetLineColor(const int rgb, const bool fDashed, const int width)
    }
    else
    {
-      const int style = fDashed ? PS_DOT : PS_SOLID;
+      const int style = dashed ? PS_DOT : PS_SOLID;
       m_hpnLine = CreatePen(style, width, rgb);
    }
 }

@@ -2,15 +2,15 @@
 
 bool Exists(const char* const filePath)
 {
-	//This will get the file attributes bitlist of the file
-	const DWORD fileAtt = GetFileAttributesA(filePath);
+   //This will get the file attributes bitlist of the file
+   const DWORD fileAtt = GetFileAttributesA(filePath);
 
-	//If an error occurred it will equal to INVALID_FILE_ATTRIBUTES
-	if (fileAtt == INVALID_FILE_ATTRIBUTES)
-		return false;
+   //If an error occurred it will equal to INVALID_FILE_ATTRIBUTES
+   if (fileAtt == INVALID_FILE_ATTRIBUTES)
+      return false;
 
-	//If the path referers to a directory it should also not exists.
-	return ((fileAtt & FILE_ATTRIBUTE_DIRECTORY) == 0);
+   //If the path referers to a directory it should also not exists.
+   return ((fileAtt & FILE_ATTRIBUTE_DIRECTORY) == 0);
 }
 
 void ExtensionFromFilename(const char * const szfilename, char * const szextension)
@@ -139,12 +139,12 @@ bool RawReadFromFile(const char * const szfilename, int *psize, char **pszout)
    *pszout = new char[*psize + 2];
 
    DWORD read;
-   /*BOOL fFoo =*/ ReadFile(hFile, *pszout, *psize, &read, NULL);
+   /*BOOL foo =*/ ReadFile(hFile, *pszout, *psize, &read, NULL);
 
    (*pszout)[*psize] = '\0';
    (*pszout)[*psize + 1] = '\0'; // In case this is a unicode file, end it with a null character properly
 
-   /*fFoo =*/ CloseHandle(hFile);
+   /*foo =*/ CloseHandle(hFile);
 
    return true;
 }
@@ -187,7 +187,7 @@ HRESULT BiffWriter::WriteInt(int id, int value)
    return hr;
 }
 
-HRESULT BiffWriter::WriteString(int id, char *szvalue)
+HRESULT BiffWriter::WriteString(int id, const char * const szvalue)
 {
    ULONG writ = 0;
    HRESULT hr;
@@ -207,7 +207,7 @@ HRESULT BiffWriter::WriteString(int id, char *szvalue)
    return hr;
 }
 
-HRESULT BiffWriter::WriteWideString(int id, WCHAR *wzvalue)
+HRESULT BiffWriter::WriteWideString(int id, const WCHAR * const wzvalue)
 {
    ULONG writ = 0;
    HRESULT hr;
@@ -227,7 +227,7 @@ HRESULT BiffWriter::WriteWideString(int id, WCHAR *wzvalue)
    return hr;
 }
 
-HRESULT BiffWriter::WriteBool(int id, BOOL fvalue)
+HRESULT BiffWriter::WriteBool(int id, BOOL value)
 {
    ULONG writ = 0;
    HRESULT hr;
@@ -238,7 +238,7 @@ HRESULT BiffWriter::WriteBool(int id, BOOL fvalue)
    if (FAILED(hr = WriteBytes(&id, sizeof(int), &writ)))
       return hr;
 
-   hr = WriteBytes(&fvalue, sizeof(BOOL), &writ);
+   hr = WriteBytes(&value, sizeof(BOOL), &writ);
 
    return hr;
 }
@@ -441,16 +441,12 @@ HRESULT BiffReader::Load()
 
       const HRESULT hr = GetInt(&tag);
 
-      bool fContinue = false;
+      bool cont = false;
       if (hr == S_OK)
-      {
-         fContinue = !!m_piloadable->LoadToken(tag, this);
-      }
+         cont = m_piloadable->LoadToken(tag, this);
 
-      if (!fContinue)
-      {
+      if (!cont)
          return E_FAIL;
-      }
 
       if (m_version > 30)
       {

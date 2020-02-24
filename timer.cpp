@@ -23,13 +23,13 @@ HRESULT Timer::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
 
 void Timer::SetDefaults(bool fromMouseClick)
 {
-   m_d.m_tdr.m_fTimerEnabled = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Timer", "TimerEnabled", true) : true;
+   m_d.m_tdr.m_TimerEnabled = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Timer", "TimerEnabled", true) : true;
    m_d.m_tdr.m_TimerInterval = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Timer", "TimerInterval", 100) : 100;
 }
 
 void Timer::WriteRegDefaults()
 {
-   SaveValueBool("DefaultProps\\Timer", "TimerEnabled", m_d.m_tdr.m_fTimerEnabled);
+   SaveValueBool("DefaultProps\\Timer", "TimerEnabled", m_d.m_tdr.m_TimerEnabled);
    SaveValueInt("DefaultProps\\Timer", "TimerInterval", m_d.m_tdr.m_TimerInterval);
 }
 
@@ -99,7 +99,7 @@ void Timer::GetTimers(vector<HitTimer*> &pvht)
 
    m_phittimer = pht;
 
-   if (m_d.m_tdr.m_fTimerEnabled)
+   if (m_d.m_tdr.m_TimerEnabled)
       pvht.push_back(pht);
 }
 
@@ -147,7 +147,7 @@ STDMETHODIMP Timer::InterfaceSupportsErrorInfo(REFIID riid)
 
 STDMETHODIMP Timer::get_Enabled(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_tdr.m_fTimerEnabled);
+   *pVal = FTOVB(m_d.m_tdr.m_TimerEnabled);
 
    return S_OK;
 }
@@ -156,16 +156,16 @@ STDMETHODIMP Timer::put_Enabled(VARIANT_BOOL newVal)
 {
    STARTUNDO
 
-      const bool fNew = VBTOF(newVal);
+      const bool val = VBTOb(newVal);
 
-   if (fNew != m_d.m_tdr.m_fTimerEnabled && m_phittimer)
+   if (val != m_d.m_tdr.m_TimerEnabled && m_phittimer)
    {
       // to avoid problems with timers dis/enabling themselves, store all the changes in a list
       bool found = false;
       for (size_t i = 0; i < g_pplayer->m_changed_vht.size(); ++i)
          if (g_pplayer->m_changed_vht[i].m_timer == m_phittimer)
          {
-            g_pplayer->m_changed_vht[i].enabled = fNew;
+            g_pplayer->m_changed_vht[i].m_enabled = val;
             found = true;
             break;
          }
@@ -173,18 +173,18 @@ STDMETHODIMP Timer::put_Enabled(VARIANT_BOOL newVal)
       if (!found)
       {
          TimerOnOff too;
-         too.enabled = fNew;
+         too.m_enabled = val;
          too.m_timer = m_phittimer;
          g_pplayer->m_changed_vht.push_back(too);
       }
 
-      if (fNew)
+      if (val)
          m_phittimer->m_nextfire = g_pplayer->m_time_msec + m_phittimer->m_interval;
       else
          m_phittimer->m_nextfire = 0xFFFFFFFF; // fakes the disabling of the timer, until it will be catched by the cleanup via m_changed_vht
    }
 
-   m_d.m_tdr.m_fTimerEnabled = fNew;
+   m_d.m_tdr.m_TimerEnabled = val;
 
    STOPUNDO
 
@@ -215,16 +215,16 @@ STDMETHODIMP Timer::put_Interval(long newVal)
       return S_OK;
 }
 
-HRESULT Timer::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
+HRESULT Timer::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupForPlay)
 {
    BiffWriter bw(pstm, hcrypthash);
 
    bw.WriteStruct(FID(VCEN), &m_d.m_v, sizeof(Vertex2D));
-   bw.WriteBool(FID(TMON), m_d.m_tdr.m_fTimerEnabled);
+   bw.WriteBool(FID(TMON), m_d.m_tdr.m_TimerEnabled);
    bw.WriteInt(FID(TMIN), m_d.m_tdr.m_TimerInterval);
    bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
 
-   bw.WriteBool(FID(BGLS), m_fBackglass);
+   bw.WriteBool(FID(BGLS), m_backglass);
 
    ISelect::SaveData(pstm, hcrypthash);
 
@@ -245,52 +245,22 @@ HRESULT Timer::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version, 
    return S_OK;
 }
 
-BOOL Timer::LoadToken(int id, BiffReader *pbr)
+bool Timer::LoadToken(const int id, BiffReader * const pbr)
 {
-   if (id == FID(PIID))
+   switch (id)
    {
-      pbr->GetInt((int *)pbr->m_pdata);
+   case FID(PIID): pbr->GetInt((int *)pbr->m_pdata); break;
+   case FID(VCEN): pbr->GetStruct(&m_d.m_v, sizeof(Vertex2D)); break;
+   case FID(TMON): pbr->GetBool(&m_d.m_tdr.m_TimerEnabled); break;
+   case FID(TMIN): pbr->GetInt(&m_d.m_tdr.m_TimerInterval); break;
+   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(BGLS): pbr->GetBool(&m_backglass); break;
+   default: ISelect::LoadToken(id, pbr); break;
    }
-   else if (id == FID(VCEN))
-   {
-      pbr->GetStruct(&m_d.m_v, sizeof(Vertex2D));
-   }
-   else if (id == FID(TMON))
-   {
-      pbr->GetBool(&m_d.m_tdr.m_fTimerEnabled);
-   }
-   else if (id == FID(TMIN))
-   {
-      pbr->GetInt(&m_d.m_tdr.m_TimerInterval);
-   }
-   else if (id == FID(NAME))
-   {
-      pbr->GetWideString((WCHAR *)m_wzName);
-   }
-   else if (id == FID(BGLS))
-   {
-      pbr->GetBool(&m_fBackglass);
-   }
-   else
-   {
-      ISelect::LoadToken(id, pbr);
-   }
-
-   return fTrue;
+   return true;
 }
 
 HRESULT Timer::InitPostLoad()
 {
    return S_OK;
-}
-
-void Timer::GetDialogPanes(vector<PropertyPane*> &pvproppane)
-{
-   PropertyPane *pproppane;
-
-   pproppane = new PropertyPane(IDD_PROP_NAME, NULL);
-   pvproppane.push_back(pproppane);
-
-   pproppane = new PropertyPane(IDD_PROP_TIMER, IDS_MISC);
-   pvproppane.push_back(pproppane);
 }

@@ -16,8 +16,8 @@
 #define MIN_ZOOM 0.126f // purposely make them offset from powers to 2 to account for roundoff error
 #define MAX_ZOOM 63.9f
 
-#define DISABLE_SCRIPT_EDITING	0x00000002		// cannot open script windows (stops editing and viewing)
-#define DISABLE_EVERYTHING		0x80000000		// everything is off limits (including future locks)
+#define DISABLE_SCRIPT_EDITING  0x00000002 // cannot open script windows (stops editing and viewing)
+#define DISABLE_EVERYTHING      0x80000000 // everything is off limits (including future locks)
 
 #define MAX_LAYERS              11
 
@@ -38,7 +38,27 @@ struct ProtectionData {
 
 class ScriptGlobalTable;
 
+class PinTableMDI :public CMDIChild
+{
+public:
+   PinTableMDI(PinTable *table);
+   virtual ~PinTableMDI();
+   PinTable *GetTable()
+   {
+      return m_table;
+   }
+protected:
+   virtual void PreCreate(CREATESTRUCT &cs);
+   virtual int OnCreate(CREATESTRUCT &cs);
+   virtual void OnClose();
+
+private:
+   PinTable * m_table;
+   CMenu m_menu;
+};
+
 class PinTable :
+   public CWnd,
    public CComObjectRootEx<CComSingleThreadModel>,
    public IDispatchImpl<ITable, &IID_ITable, &LIBID_VPinballLib>,
    public IConnectionPointContainerImpl<PinTable>,
@@ -283,10 +303,11 @@ public:
    void InitPostLoad(VPinball *pvp);
 
    virtual HRESULT GetTypeName(BSTR *pVal);
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
 
-   void CreateTableWindow();
    void SetCaption(const char * const szCaption);
+   void SetMouseCapture();
+   int  ShowMessageBox(const char *text) const;
+   POINT GetScreenPoint() const;
 
    HRESULT InitVBA();
    void CloseVBA();
@@ -302,7 +323,7 @@ public:
    bool GetEMReelsEnabled() const;
 
    void Copy(int x, int y);
-   void Paste(const bool fAtLocation, int x, int y);
+   void Paste(const bool atLocation, const int x, const int y);
 
    void ExportBlueprint();
    void ExportTableMesh();
@@ -312,18 +333,19 @@ public:
    //void FireVoidEvent(int dispid);
    void FireKeyEvent(int dispid, int keycode);
 
-   void Play(const bool _cameraMode);
+   // also creates Player instance
+   void Play(const bool cameraMode);
+   // called before Player instance gets deleted
    void StopPlaying();
 
-   void ImportSound(const HWND hwndListView, const char * const filename, const bool fPlay);
-   void ReImportSound(const HWND hwndListView, PinSound * const pps, const char * const filename, const bool fPlay);
+   void ImportSound(const HWND hwndListView, const char * const filename);
+   void ReImportSound(const HWND hwndListView, PinSound * const pps, const char * const filename);
    bool ExportSound(PinSound * const pps, const char * const filename);
    void ListSounds(HWND hwndListView);
    int AddListSound(HWND hwndListView, PinSound * const pps);
    void RemoveSound(PinSound * const pps);
    HRESULT SaveSoundToStream(PinSound * const pps, IStream *pstm);
    HRESULT LoadSoundFromStream(IStream *pstm, const int LoadFileVersion);
-   void ClearOldSounds();
    bool ExportImage(Texture * const ppi, const char * const filename);
    void ImportImage(HWND hwndListView, const char * const filename);
    void ReImportImage(Texture * const ppi, const char * const filename);
@@ -332,8 +354,8 @@ public:
    void RemoveImage(Texture * const ppi);
    HRESULT LoadImageFromStream(IStream *pstm, int version);
    Texture* GetImage(const char * const szName) const;
-   bool GetImageLink(Texture * const ppi);
-   PinBinary *GetImageLinkBinary(int id);
+   bool GetImageLink(Texture * const ppi) const;
+   PinBinary *GetImageLinkBinary(const int id);
 
    void ListCustomInfo(HWND hwndListView);
    int AddListItem(HWND hwndListView, char *szName, char *szValue1, LPARAM lparam);
@@ -372,25 +394,25 @@ public:
    virtual ItemTypeEnum GetItemType() const { return eItemTable; }
    virtual HRESULT InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version, HCRYPTHASH hcrypthash, HCRYPTKEY hcryptkey);
    virtual HRESULT InitPostLoad();
-   virtual HRESULT InitVBA(BOOL fNew, int id, WCHAR *wzName);
+   virtual HRESULT InitVBA(BOOL fNew, int id, WCHAR * const wzName);
    virtual ISelect *GetISelect();
    virtual void SetDefaults(bool fromMouseClick);
    virtual IScriptable *GetScriptable() { return (IScriptable *)this; }
    virtual void SetDefaultPhysics(bool fromMouseClick);
 
    virtual PinTable *GetPTable() { return this; }
-   char *GetElementName(IEditable *pedit);
+   const char *GetElementName(IEditable *pedit) const;
 
-   IEditable *GetElementByName(const char *name);
+   IEditable *GetElementByName(const char * const name);
    void OnDelete();
 
-   void DoLButtonDown(int x, int y, bool zoomIn = true);
-   void DoLButtonUp(int x, int y);
-   void DoRButtonDown(int x, int y);
-   void FillCollectionContextMenu(HMENU hmenu, HMENU colSubMenu, ISelect *psel);
-   void DoRButtonUp(int x, int y);
+   void DoLeftButtonDown(int x, int y, bool zoomIn = true);
+   void OnLeftButtonUp(int x, int y);
+   void OnRightButtonDown(int x, int y);
+   void FillCollectionContextMenu(CMenu &mainMenu, CMenu &colSubMenu, ISelect *psel);
+   void OnRightButtonUp(int x, int y);
    void DoMouseMove(int x, int y);
-   void DoLDoubleClick(int x, int y);
+   void OnLeftDoubleClick(int x, int y);
    void UseTool(int x, int y, int tool);
    void OnKeyDown(int key);
 
@@ -400,7 +422,7 @@ public:
    void ClearMultiSel(ISelect *newSel = NULL);
    bool MultiSelIsEmpty();
    ISelect *GetSelectedItem() const { return m_vmultisel.ElementAt(0); }
-   void AddMultiSel(ISelect *psel, bool fAdd, bool fUpdate = true, bool fContextClick = false);
+   void AddMultiSel(ISelect *psel, const bool add, const bool update, const bool contextClick);
 
    void BeginAutoSaveCounter();
    void EndAutoSaveCounter();
@@ -409,13 +431,13 @@ public:
    HRESULT TableSave();
    HRESULT SaveAs();
    virtual HRESULT ApcProject_Save();
-   HRESULT Save(const bool fSaveAs);
+   HRESULT Save(const bool saveAs);
    HRESULT SaveToStorage(IStorage *pstg);
    HRESULT SaveInfo(IStorage* pstg, HCRYPTHASH hcrypthash);
    HRESULT SaveCustomInfo(IStorage* pstg, IStream *pstmTags, HCRYPTHASH hcrypthash);
-   HRESULT WriteInfoValue(IStorage* pstg, WCHAR *wzName, char *szValue, HCRYPTHASH hcrypthash);
-   HRESULT ReadInfoValue(IStorage* pstg, WCHAR *wzName, char **pszValue, HCRYPTHASH hcrypthash);
-   HRESULT SaveData(IStream* pstm, HCRYPTHASH hcrypthash);
+   HRESULT WriteInfoValue(IStorage* pstg, const WCHAR * const wzName, const char *szValue, HCRYPTHASH hcrypthash);
+   HRESULT ReadInfoValue(IStorage* pstg, const WCHAR * const wzName, char **pszValue, HCRYPTHASH hcrypthash);
+   HRESULT SaveData(IStream* pstm, HCRYPTHASH hcrypthash, const bool backupForPlay);
    HRESULT LoadGameFromFilename(char *szFileName);
    HRESULT LoadGameFromStorage(IStorage *pstgRoot);
    HRESULT LoadInfo(IStorage* pstg, HCRYPTHASH hcrypthash, int version);
@@ -425,7 +447,7 @@ public:
    virtual IEditable *GetIEditable() { return (IEditable *)this; }
    virtual void Delete() {} // Can't delete table itself
    virtual void Uncreate() {}
-   virtual BOOL LoadToken(int id, BiffReader *pbr);
+   virtual bool LoadToken(const int id, BiffReader * const pbr);
 
    virtual IDispatch *GetPrimary() { return this->GetDispatch(); }
    virtual IDispatch *GetDispatch() { return (IDispatch *)this; }
@@ -456,13 +478,14 @@ public:
    virtual void OnLButtonDown(int x, int y);
    virtual void OnLButtonUp(int x, int y);
    virtual void OnMouseMove(int x, int y);
+   void OnMouseMove(const short x, const short y);
 
    void SetDefaultView();
-   void GetViewRect(FRect *pfrect);
+   void GetViewRect(FRect *pfrect) const;
 
    bool IsNameUnique(const WCHAR * const wzName) const;
-   void GetUniqueName(ItemTypeEnum type, WCHAR *wzUniqueName);
-   void GetUniqueName(WCHAR *prefix, WCHAR *wzUniqueName);
+   void GetUniqueName(ItemTypeEnum type, WCHAR * const wzUniqueName) const;
+   void GetUniqueName(WCHAR * const prefix, WCHAR * const wzUniqueName) const;
    void GetUniqueNamePasting(int type, WCHAR *wzUniqueName);
 
    float GetSurfaceHeight(const char * const szName, float x, float y) const;
@@ -482,18 +505,15 @@ public:
    HRESULT StopSound(BSTR Sound);
    void StopAllSounds();
 
-   void SwitchToLayer(int layerNumber);
-   void AssignToLayer(IEditable *obj, int layerNumber);
-   void AssignMultiToLayer(int layerNumber, int x, int y);
-   void MergeAllLayers();
    void RestoreLayers();
    void BackupLayers();
    void DeleteFromLayer(IEditable *obj);
-   void UpdateCollection(int index);
+   void UpdateCollection(const int index);
    void MoveCollectionUp(CComObject<Collection> *pcol);
    void MoveCollectionDown(CComObject<Collection> *pcol);
 
    int GetDetailLevel() const; // used for rubber, ramp and ball
+   void SetDetailLevel(const int value);
    float GetZPD() const;
    float GetMaxSeparation() const;
    float Get3DOffset() const;
@@ -518,12 +538,12 @@ public:
    END_CONNECTION_POINT_MAP()
 
    void ListMaterials(HWND hwndListView);
-   int AddListMaterial(HWND hwndListView, Material *pmat);
+   int AddListMaterial(HWND hwndListView, Material * const pmat);
    void RemoveMaterial(Material * const pmat);
-   void AddDbgLight(Light *plight);
+   void AddDbgLight(Light * const plight);
    void UpdateDbgLight();
-   void AddMaterial(Material *pmat);
-   void AddDbgMaterial(Material *pmat);
+   void AddMaterial(Material * const pmat);
+   void AddDbgMaterial(Material * const pmat);
    void UpdateDbgMaterial();
 
    bool IsMaterialNameUnique(const char * const name) const;
@@ -531,7 +551,7 @@ public:
    Material* GetSurfaceMaterial(const char * const szName) const;
    Texture* GetSurfaceImage(const char * const szName) const;
 
-   bool GetCollectionIndex(ISelect *element, int &collectionIndex, int &elementIndex);
+   bool GetCollectionIndex(const ISelect * const element, int &collectionIndex, int &elementIndex);
 
    void LockElements();
 
@@ -540,7 +560,6 @@ public:
    char m_szObjFileName[MAXSTRING];
    char m_szTitle[MAX_LINE_LENGTH];
 
-   HWND m_hwnd;
    VPinball *m_pvp;
 
    // editor viewport
@@ -634,14 +653,14 @@ public:
    ProtectionData m_protectionData;
 
    char m_szImage[MAXTOKEN];
-   char m_szPlayfieldMaterial[32];
+   char m_szPlayfieldMaterial[MAXNAMEBUFFER];
    COLORREF m_colorbackdrop;
    bool m_ImageBackdropNightDay;
 
    char m_szImageColorGrade[MAXTOKEN];
 
    char m_szBallImage[MAXTOKEN];
-   char m_szBallImageFront[MAXTOKEN];
+   char m_szBallImageDecal[MAXTOKEN];
    bool m_BallDecalMode;
 
    char m_szEnvImage[MAXTOKEN];
@@ -652,10 +671,19 @@ public:
    vector< IEditable* > m_layer[MAX_LAYERS];
    vector< ISelect* >   m_allHitElements;
 
+
    vector< Texture* > m_vimage;
+   vector<Texture *> GetImageList() const
+   {
+      return m_vimage;
+   }
 
    int m_numMaterials;
    vector< Material* > m_materials;
+   vector<Material *> GetMaterialList() const
+   {
+      return m_materials;
+   }
 
    vector< PinSound* > m_vsound;
 
@@ -664,8 +692,6 @@ public:
    VectorProtected< CComObject<Collection> > m_vcollection;
 
    COLORREF m_rgcolorcustom[16];		// array for the choosecolor in property browser
-
-   vector< PinSoundCopy* > m_voldsound; // copied sounds currently playing
 
    float m_TableSoundVolume;
    float m_TableMusicVolume;
@@ -688,23 +714,25 @@ public:
    SaveDirtyState m_sdsCurrentDirtyState;
 
    // Table info
-   char *m_szTableName;
-   char *m_szAuthor;
-   char *m_szVersion;
-   char *m_szReleaseDate;
-   char *m_szAuthorEMail;
-   char *m_szWebSite;
-   char *m_szBlurb;
-   char *m_szDescription;
-   char *m_szRules;
-   char  m_szScreenShot[MAXTOKEN];
+   std::string m_szTableName;
+   std::string m_szAuthor;
+   std::string m_szVersion;
+   std::string m_szReleaseDate;
+   std::string m_szAuthorEMail;
+   std::string m_szWebSite;
+   std::string m_szBlurb;
+   std::string m_szDescription;
+   std::string m_szRules;
+   char m_szScreenShot[MAXTOKEN];
+   std::string m_szDateSaved;
+   unsigned int m_numTimesSaved;
 
    PinBinary *m_pbTempScreenshot; // Holds contents of screenshot image until the image asks for it
 
    vector<char*> m_vCustomInfoTag;
    vector<char*> m_vCustomInfoContent;
 
-   std::vector<HANDLE> m_vAsyncHandles;
+   vector<HANDLE> m_vAsyncHandles;
 
    int  m_globalDetailLevel;
    int  m_userDetailLevel;
@@ -736,7 +764,7 @@ public:
    HWND  m_hMaterialManager;
    SearchSelectDialog m_searchSelectDlg;
 
-   bool  m_fDirtyDraw; // Whether our background bitmap is up to date
+   bool  m_dirtyDraw; // Whether our background bitmap is up to date
 
    bool  m_activeLayers[MAX_LAYERS];
    bool  m_toggleAllLayers;
@@ -744,13 +772,13 @@ public:
 
    bool  m_renderSolid;
 
-   bool  m_fGrid; // Display grid or not
-   bool  m_fBackdrop;
-   bool  m_fRenderDecals;
-   bool  m_fRenderEMReels;
+   bool  m_grid; // Display grid or not
+   bool  m_backdrop;
+   bool  m_renderDecals;
+   bool  m_renderEMReels;
    bool  m_overwriteGlobalStereo3D;
-   bool  m_fReflectElementsOnPlayfield;
-   bool  m_fReflectionEnabled;
+   bool  m_reflectElementsOnPlayfield;
+   bool  m_reflectionEnabled;
 
    vector<Material*> m_dbgChangedMaterials;
 
@@ -770,6 +798,7 @@ public:
    };
 
    vector<DebugLightData*> m_dbgChangedLights;
+
    float m_backupInclination;
    float m_backupFOV;
    float m_backupRotation;
@@ -788,11 +817,57 @@ public:
    int   m_jolt_trigger_time;
    int   m_tilt_trigger_time;
 #endif
-
+   virtual void OnInitialUpdate();
    virtual LRESULT WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam);
+   virtual void OnClose();
 
+   void SetMouseCursor();
+   void OnLeftButtonDown(const short x, const short y);
+   void OnMouseWheel(const short x, const short y, const short zDelta);
+   void OnSize();
+   void Set3DOffset(const float value);
+   void SetZPD(const float value);
+   void SetMaxSeparation(const float value);
+   bool GetShowDT() const;
+   void SetShowDT(const bool enable);
+   bool GetShowFSS() const;
+   void SetShowFSS(const bool enable);
+   void PutGlobalAlphaAcc(const bool enable);
+   int GetBallTrailStrength() const;
+   void SetBallTrailStrength(const int value);
+   int GetGlobalEmissionScale() const;
+   void SetGlobalEmissionScale(const int value);
+   float GetGlobalDifficulty() const;
+   void SetGlobalDifficulty(const float value);
+   int GetTableSoundVolume() const;
+   void SetTableSoundVolume(const int value);
+   int GetTableMusicVolume() const;
+   void SetTableMusicVolume(const int value);
+   int GetPlayfieldReflectionStrength() const;
+   void SetPlayfieldReflectionStrength(const int value);
+   float GetGravity() const;
+   void SetGravity(const float value);
+   void SetFriction(const float value);
+   void SetPlungerNormalize(const int value);
+   float GetTableWidth() const;
+   void SetTableWidth(const float value);
+   float GetHeight() const;
+   void SetHeight(const float value);
+
+   //HWND m_hMDI;
+   PinTableMDI *m_mdiTable;
+   void SetMDITable(PinTableMDI * const table)
+   {
+      m_mdiTable = table;
+   }
+   PinTableMDI *GetMDITable()
+   {
+      return m_mdiTable;
+   }
+   WCHAR *GetCollectionNameByElement(const ISelect * const element);
+   void RefreshProperties();
 private:
-   std::unordered_map<const char*, Texture*, StringHashFunctor, StringComparator> m_textureMap;      // hash table to speed up texture lookup by name
+   std::unordered_map<const char *, Texture *, StringHashFunctor, StringComparator> m_textureMap;      // hash table to speed up texture lookup by name
    std::unordered_map<const char*, Material*, StringHashFunctor, StringComparator> m_materialMap;    // hash table to speed up material lookup by name
 };
 
@@ -877,20 +952,25 @@ public:
    STDMETHOD(get_VersionMinor)(/*[out, retval]*/ int *pVal);
    STDMETHOD(get_VersionRevision)(/*[out, retval]*/ int *pVal);
 
+   STDMETHOD(UpdateMaterial)(BSTR pVal, float wrapLighting, float roughness, float glossyImageLerp, float thickness, float edge, float edgeAlpha, float opacity,
+      OLE_COLOR base, OLE_COLOR glossy, OLE_COLOR clearcoat, VARIANT_BOOL isMetal, VARIANT_BOOL opacityActive,
+      float elasticity, float elasticityFalloff, float friction, float scatterAngle);
+   STDMETHOD(UpdateMaterialPhysics)(BSTR pVal, float elasticity, float elasticityFalloff, float friction, float scatterAngle);
    STDMETHOD(MaterialColor)(BSTR pVal, OLE_COLOR newVal);
 
    void Init(PinTable *pt);
 
-   virtual IDispatch *GetDispatch();
+   virtual IDispatch *GetDispatch() { return (IDispatch *)this; }
 
    virtual ISelect *GetISelect() { return NULL; }
-
-   bool GetTextFileFromDirectory(char *szfilename, char *dirname, BSTR *pContents);
 
    BEGIN_COM_MAP(ScriptGlobalTable)
       COM_INTERFACE_ENTRY(ITableGlobal)
       COM_INTERFACE_ENTRY(IDispatch)
    END_COM_MAP()
+
+private:
+   bool GetTextFileFromDirectory(const char * const szfilename, const char * const dirname, BSTR *pContents);
 
    PinTable *m_pt;
 };

@@ -7,7 +7,7 @@
 
 #include "resource.h"       // main symbols
 
-class TriggerData
+class TriggerData : public BaseProperty
 {
 public:
    Vertex2D m_vCenter;
@@ -15,7 +15,6 @@ public:
    TimerDataRoot m_tdr;
    char m_szSurface[MAXTOKEN];
    TriggerShape m_shape;
-   char m_szMaterial[32];
    float m_rotation;
    float m_scaleX;
    float m_scaleY;
@@ -23,9 +22,7 @@ public:
    U32 m_time_msec;
    float m_animSpeed;
    float m_wireThickness;
-   bool m_fEnabled;
-   bool m_fVisible;
-   bool m_fReflectionEnabled;
+   bool m_enabled;
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -74,14 +71,12 @@ public:
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
 
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
    virtual void RenderBlueprint(Sur *psur, const bool solid);
 
    virtual void MoveOffset(const float dx, const float dy);
    virtual void SetObjectPos();
 
-   virtual void EditMenu(HMENU hmenu);
+   virtual void EditMenu(CMenu &hmenu);
    virtual void DoCommand(int icmd, int x, int y);
 
    // Multi-object manipulation
@@ -97,7 +92,6 @@ public:
    virtual void PutCenter(const Vertex2D& pv) { PutPointCenter(pv); }
    virtual Vertex2D GetPointCenter() const;
    virtual void PutPointCenter(const Vertex2D& pv);
-   virtual void UpdatePropertyPanes();
    virtual void ExportMesh(FILE *f);
    virtual ItemTypeEnum HitableGetItemType() const { return eItemTrigger; }
 
@@ -107,40 +101,42 @@ public:
 
    virtual void WriteRegDefaults();
 
+   void TriggerAnimationHit();
+   void TriggerAnimationUnhit();
+   void UpdateEditorView();
+
+   TriggerData m_d;
+
+   bool m_hitEnabled;		// for custom shape triggers
+
+private:
    void CurvesToShapes(vector<HitObject*> &pvho);
    void AddLine(vector<HitObject*> &pvho, const RenderVertex &pv1, const RenderVertex &pv2, const float height);
 
    void InitShape(float x, float y);
-   void UpdateEditorView();
-   void TriggerAnimationHit();
-   void TriggerAnimationUnhit();
    void UpdateAnimation();
    void GenerateMesh();
 
-   TriggerData m_d;
+   PinTable *m_ptable;
+
+   TriggerHitCircle *m_ptriggerhitcircle;
+
+   VertexBuffer *m_vertexBuffer;
+   IndexBuffer *m_triggerIndexBuffer;
+   std::vector<Vertex3Ds> m_vertices;
+   const WORD *m_faceIndices;
+   Vertex3D_NoTex2 *m_triggerVertices;
+
+   PropertyPane *m_propVisual;
 
    int m_numVertices;
    int m_numIndices;
-   float animHeightOffset;
-   float vertexBuffer_animHeightOffset;
-   bool hitEvent;
-   bool unhitEvent;
-   bool doAnimation;
-   bool moveDown;
-
-   bool m_hitEnabled;		// for custom shape triggers
-
-   VertexBuffer *vertexBuffer;
-   IndexBuffer *triggerIndexBuffer;
-   std::vector<Vertex3Ds> vertices;
-   const WORD *faceIndices;
-   Vertex3D_NoTex2 *triggerVertices;
-   PropertyPane *m_propVisual;
-
-private:
-   PinTable * m_ptable;
-
-   TriggerHitCircle *m_ptriggerhitcircle;
+   float m_animHeightOffset;
+   float m_vertexBuffer_animHeightOffset;
+   bool m_hitEvent;
+   bool m_unhitEvent;
+   bool m_doAnimation;
+   bool m_moveDown;
 
    // ITrigger
 public:

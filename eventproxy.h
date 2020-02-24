@@ -31,13 +31,13 @@ public:
    }
 
    /*	void FireVoidEventParm(int dispid, unsigned int parm)
-      {
-      CComVariant rgvar[1] = {  CComVariant(parm)};
-      DISPPARAMS dispparams  = {rgvar,NULL,1,0};
+   {
+   CComVariant rgvar[1] = {  CComVariant(parm)};
+   DISPPARAMS dispparams  = {rgvar,NULL,1,0};
 
-      FireDispID(dispid, &dispparams);
-      }
-      */
+   FireDispID(dispid, &dispparams);
+   }
+   */
 
    void FireVoidEventParm(int dispid, char* parm)
    {
@@ -73,7 +73,7 @@ public:
          }
       }
 
-      if (pT->m_fSingleEvents)
+      if (pT->m_singleEvents)
          FireVoidEvent(dispid);
    }
 
@@ -81,8 +81,8 @@ public:
    {
       T* const pT = (T*)this;
       pT->Lock();
-      IUnknown** pp = m_vec.begin();
-      while (pp < m_vec.end())
+      IUnknown** pp = IConnectionPointImpl<T, psrcid, CComDynamicUnkArray>::m_vec.begin();
+      while (pp < IConnectionPointImpl<T, psrcid, CComDynamicUnkArray>::m_vec.end())
       {
          if (*pp != NULL)
          {

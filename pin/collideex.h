@@ -8,7 +8,7 @@ public:
    BumperHitCircle(const Vertex2D& c, const float r, const float zlow, const float zhigh)
       : HitCircle(c, r, zlow, zhigh)
    {
-      m_bumperanim_fHitEvent = true;
+      m_bumperanim_hitEvent = true;
       m_bumperanim_ringAnimOffset = 0.0f;
       m_pbumper = NULL;
    }
@@ -19,7 +19,7 @@ public:
 
    Vertex3Ds m_bumperanim_hitBallPosition;
    float m_bumperanim_ringAnimOffset;
-   bool m_bumperanim_fHitEvent;
+   bool m_bumperanim_hitEvent;
 };
 
 class SlingshotAnimObject : public AnimObject
@@ -28,7 +28,7 @@ public:
    virtual void Animate();
 
    U32 m_TimeReset; // Time at which to pull in slingshot, Zero means the slingshot is currently reset
-   bool m_fAnimations;
+   bool m_animations;
    bool m_iframe;
 };
 
@@ -46,7 +46,7 @@ public:
       m_psurface = NULL;
    }
 
-   virtual float HitTest(const Ball * const pball, const float dtime, CollisionEvent& coll) const;
+   virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const;
    virtual int GetType() const { return eLineSegSlingshot; }
    virtual void Collide(const CollisionEvent& coll);
 
@@ -63,18 +63,19 @@ public:
 class Hit3DPoly : public HitObject
 {
 public:
-   Hit3DPoly(Vertex3Ds * const rgv, const int count);
+   Hit3DPoly(Vertex3Ds * const rgv, const int count); // pointer is copied and content deleted in dtor
    Hit3DPoly(const float x, const float y, const float z, const float r, const int sections); // creates a circular hit poly
    virtual ~Hit3DPoly();
 
-   virtual float HitTest(const Ball * const pball, const float dtime, CollisionEvent& coll) const;
+   virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const;
    virtual int GetType() const { return e3DPoly; }
    virtual void Collide(const CollisionEvent& coll);
    virtual void CalcHitBBox();
 
    void Init(Vertex3Ds * const rgv, const int count);
 
-   Vertex3Ds *m_rgv;
+private:
+   Vertex3Ds * m_rgv;
    Vertex3Ds m_normal;
    int m_cvertex;
 };
@@ -87,7 +88,7 @@ public:
    HitTriangle(const Vertex3Ds rgv[3]);    // vertices in counterclockwise order
    virtual ~HitTriangle() {}
 
-   virtual float HitTest(const Ball * const pball, const float dtime, CollisionEvent& coll) const;
+   virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const;
    virtual int GetType() const { return eTriangle; }
    virtual void Collide(const CollisionEvent& coll);
    virtual void CalcHitBBox();
@@ -108,11 +109,12 @@ public:
    {
    }
 
-   virtual float HitTest(const Ball * const pball, const float dtime, CollisionEvent& coll) const;
+   virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const;
    virtual int GetType() const { return ePlane; }
    virtual void Collide(const CollisionEvent& coll);
    virtual void CalcHitBBox() {}  //!! TODO: this is needed if we want to put it in the quadtree, but then again impossible as infinite area
 
+private:
    Vertex3Ds m_normal;
    float m_d;
 };
@@ -134,7 +136,7 @@ public:
    float m_angleMin;
    float m_elasticity;
    float m_damping;
-   bool m_fVisible;
+   bool m_visible;
 };
 
 class HitSpinner : public HitObject
@@ -142,7 +144,7 @@ class HitSpinner : public HitObject
 public:
    HitSpinner(Spinner * const pspinner, const float height);
 
-   virtual float HitTest(const Ball * const pball, const float dtime, CollisionEvent& coll) const;
+   virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const;
    virtual int GetType() const { return eSpinner; }
    virtual void Collide(const CollisionEvent& coll);
    virtual void Contact(CollisionEvent& coll, const float dtime) { }
@@ -171,8 +173,8 @@ public:
    float m_friction;
    float m_damping;
    float m_gravityfactor;
-   bool m_fVisible;
-   bool m_fOpen;      // True if the table logic is opening the gate, not just the ball passing through
+   bool m_visible;
+   bool m_open;       // True if the table logic is opening the gate, not just the ball passing through
    bool m_forcedMove; // True if the table logic is opening/closing the gate
 };
 
@@ -181,7 +183,7 @@ class HitGate : public HitObject
 public:
    HitGate(Gate * const pgate, const float height);
 
-   virtual float HitTest(const Ball * const pball, const float dtime, CollisionEvent& coll) const;
+   virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const;
    virtual int GetType() const { return eGate; }
    virtual void Collide(const CollisionEvent& coll);
    virtual void Contact(CollisionEvent& coll, const float dtime) { }
@@ -189,16 +191,18 @@ public:
 
    virtual MoverObject *GetMoverObject() { return &m_gateMover; }
 
-   Gate *m_pgate;
-   LineSeg m_lineseg[3];
    GateMoverObject m_gateMover;
    bool m_twoWay;
+
+private:
+   Gate * m_pgate;
+   LineSeg m_lineseg[3];
 };
 
 class TriggerLineSeg : public LineSeg
 {
 public:
-   virtual float HitTest(const Ball * const pball, const float dtime, CollisionEvent& coll) const;
+   virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const;
    virtual int GetType() const { return eTrigger; }
    virtual void Collide(const CollisionEvent& coll);
 
@@ -213,7 +217,7 @@ public:
       m_ptrigger = NULL;
    }
 
-   virtual float HitTest(const Ball * const pball, const float dtime, CollisionEvent& coll) const;
+   virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const;
    virtual int GetType() const { return eTrigger; }
    virtual void Collide(const CollisionEvent& coll);
 
@@ -227,14 +231,13 @@ class HitLine3D : public HitLineZ
 public:
    HitLine3D(const Vertex3Ds& v1, const Vertex3Ds& v2);
 
-   virtual float HitTest(const Ball * const pball, const float dtime, CollisionEvent& coll) const;
+   virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const;
    virtual int GetType() const { return e3DLine; }
    virtual void Collide(const CollisionEvent& coll);
    virtual void CalcHitBBox() { } // already done in constructor
 
 private:
    Matrix3 m_matrix;
-   float m_zlow, m_zhigh;
 };
 
 //

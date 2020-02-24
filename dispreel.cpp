@@ -37,7 +37,7 @@ HRESULT DispReel::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
 void DispReel::SetDefaults(bool fromMouseClick)
 {
    // object is only available on the backglass
-   m_fBackglass = true;
+   m_backglass = true;
 
    // set all the Data defaults
    HRESULT hr;
@@ -50,10 +50,10 @@ void DispReel::SetDefaults(bool fromMouseClick)
    if ((hr != S_OK) || !fromMouseClick)
       m_d.m_szSound[0] = 0;
 
-   m_d.m_fUseImageGrid = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\EMReel", "UseImageGrid", false) : false;
-   m_d.m_fVisible = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\EMReel", "Visible", true) : true;
+   m_d.m_useImageGrid = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\EMReel", "UseImageGrid", false) : false;
+   m_d.m_visible = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\EMReel", "Visible", true) : true;
    m_d.m_imagesPerGridRow = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\EMReel", "ImagesPerRow", 1) : 1;
-   m_d.m_fTransparent = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\EMReel", "Transparent", false) : false;
+   m_d.m_transparent = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\EMReel", "Transparent", false) : false;
    m_d.m_reelcount = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\EMReel", "ReelCount", 5) : 5;
    m_d.m_width = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\EMReel", "Width", 30.0f) : 30.0f;
    m_d.m_height = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\EMReel", "Height", 40.0f) : 40.0f;
@@ -62,7 +62,7 @@ void DispReel::SetDefaults(bool fromMouseClick)
    m_d.m_digitrange = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\EMReel", "DigitRange", 9) : 9;
    m_d.m_updateinterval = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\EMReel", "UpdateInterval", 50) : 50;
    m_d.m_backcolor = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\EMReel", "BackColor", RGB(64, 64, 64)) : RGB(64, 64, 64);
-   m_d.m_tdr.m_fTimerEnabled = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\EMReel", "TimerEnabled", false) : false;
+   m_d.m_tdr.m_TimerEnabled = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\EMReel", "TimerEnabled", false) : false;
    m_d.m_tdr.m_TimerInterval = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\EMReel", "TimerInterval", 100) : 100;
 }
 
@@ -70,10 +70,10 @@ void DispReel::WriteRegDefaults()
 {
    SaveValueString("DefaultProps\\EMReel", "Image", m_d.m_szImage);
    SaveValueString("DefaultProps\\EMReel", "Sound", m_d.m_szSound);
-   SaveValueBool("DefaultProps\\Decal", "UseImageGrid", m_d.m_fUseImageGrid);
-   SaveValueBool("DefaultProps\\Decal", "Visible", m_d.m_fVisible);
+   SaveValueBool("DefaultProps\\Decal", "UseImageGrid", m_d.m_useImageGrid);
+   SaveValueBool("DefaultProps\\Decal", "Visible", m_d.m_visible);
    SaveValueInt("DefaultProps\\Decal", "ImagesPerRow", m_d.m_imagesPerGridRow);
-   SaveValueBool("DefaultProps\\Decal", "Transparent", m_d.m_fTransparent);
+   SaveValueBool("DefaultProps\\Decal", "Transparent", m_d.m_transparent);
    SaveValueInt("DefaultProps\\Decal", "ReelCount", m_d.m_reelcount);
    SaveValueFloat("DefaultProps\\EMReel", "Width", m_d.m_width);
    SaveValueFloat("DefaultProps\\EMReel", "Height", m_d.m_height);
@@ -82,7 +82,7 @@ void DispReel::WriteRegDefaults()
    SaveValueInt("DefaultProps\\Decal", "DigitRange", m_d.m_digitrange);
    SaveValueInt("DefaultProps\\Decal", "UpdateInterval", m_d.m_updateinterval);
    SaveValueInt("DefaultProps\\EMReel", "BackColor", m_d.m_backcolor);
-   SaveValueBool("DefaultProps\\EMReel", "TimerEnabled", m_d.m_tdr.m_fTimerEnabled);
+   SaveValueBool("DefaultProps\\EMReel", "TimerEnabled", m_d.m_tdr.m_TimerEnabled);
    SaveValueInt("DefaultProps\\EMReel", "TimerInterval", m_d.m_tdr.m_TimerInterval);
 }
 
@@ -184,7 +184,7 @@ void DispReel::GetTimers(vector<HitTimer*> &pvht)
 
    m_phittimer = pht;
 
-   if (m_d.m_tdr.m_fTimerEnabled)
+   if (m_d.m_tdr.m_TimerEnabled)
       pvht.push_back(pht);
 }
 
@@ -208,10 +208,10 @@ void DispReel::RenderDynamic()
 {
    TRACE_FUNCTION();
 
-   if (!m_d.m_fVisible || !GetPTable()->GetEMReelsEnabled())
+   if (!m_d.m_visible || !GetPTable()->GetEMReelsEnabled())
       return;
 
-   RenderDevice * const pd3dDevice = m_fBackglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+   RenderDevice * const pd3dDevice = m_backglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
    // get a pointer to the image specified in the object
    Texture * const pin = m_ptable->GetImage(m_d.m_szImage); // pointer to image information from the image manager
@@ -219,7 +219,7 @@ void DispReel::RenderDynamic()
    if (!pin)
       return;
 
-   if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_fReflectionEnabled)
+   if (m_ptable->m_tblMirrorEnabled^m_ptable->m_reflectionEnabled)
       pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
    else
       pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
@@ -265,7 +265,7 @@ void DispReel::RenderDynamic()
    //g_pplayer->m_pin3d.DisableAlphaBlend(); //!! not necessary anymore
    pd3dDevice->SetRenderState(RenderDevice::ALPHATESTENABLE, RenderDevice::RS_FALSE);
 
-   //if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_fReflectionEnabled)
+   //if(m_ptable->m_tblMirrorEnabled^m_ptable->m_reflectionEnabled)
    //	pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 }
 
@@ -293,7 +293,7 @@ void DispReel::RenderSetup()
    int GridCols, GridRows;
 
    // get the number of images per row of the image
-   if (m_d.m_fUseImageGrid)
+   if (m_d.m_useImageGrid)
    {
       GridCols = m_d.m_imagesPerGridRow;
       if (GridCols != 0) // best to be safe
@@ -352,7 +352,7 @@ void DispReel::RenderSetup()
       }
    }
 
-   m_timenextupdate = g_pplayer->m_time_msec + m_d.m_updateinterval;
+   m_timeNextUpdate = g_pplayer->m_time_msec + m_d.m_updateinterval;
 }
 
 void DispReel::RenderStatic()
@@ -364,9 +364,9 @@ void DispReel::RenderStatic()
 // number of motor steps queued up for each reel
 void DispReel::Animate()
 {
-   if (g_pplayer->m_time_msec >= m_timenextupdate)
+   while (g_pplayer->m_time_msec >= m_timeNextUpdate)
    {
-      m_timenextupdate = g_pplayer->m_time_msec + m_d.m_updateinterval;
+      m_timeNextUpdate += m_d.m_updateinterval;
 
       // work out the roll over values
       const int OverflowValue = m_d.m_digitrange;
@@ -389,7 +389,7 @@ void DispReel::Animate()
             if (m_d.m_szSound[0] != 0)
             {
                WCHAR mySound[512];
-               MultiByteToWideChar(CP_ACP, 0, m_d.m_szSound, -1, mySound, 32);
+               MultiByteToWideChar(CP_ACP, 0, m_d.m_szSound, -1, mySound, MAXNAMEBUFFER);
                BSTR mySoundBSTR = SysAllocString(mySound);
                m_ptable->PlaySound(mySoundBSTR, 0, 1.0f, 0.f, 0.f, 0, VARIANT_FALSE, VARIANT_TRUE, 0.f);
                SysFreeString(mySoundBSTR);
@@ -453,12 +453,10 @@ void DispReel::MoveOffset(const float dx, const float dy)
    m_d.m_v2.y += dy;
 }
 
-
 Vertex2D DispReel::GetCenter() const
 {
    return m_d.m_v1;
 }
-
 
 void DispReel::PutCenter(const Vertex2D& pv)
 {
@@ -469,16 +467,16 @@ void DispReel::PutCenter(const Vertex2D& pv)
 }
 
 
-HRESULT DispReel::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
+HRESULT DispReel::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupForPlay)
 {
    BiffWriter bw(pstm, hcrypthash);
 
    bw.WriteStruct(FID(VER1), &m_d.m_v1, sizeof(Vertex2D));
    bw.WriteStruct(FID(VER2), &m_d.m_v2, sizeof(Vertex2D));
    bw.WriteInt(FID(CLRB), m_d.m_backcolor);
-   bw.WriteBool(FID(TMON), m_d.m_tdr.m_fTimerEnabled);
+   bw.WriteBool(FID(TMON), m_d.m_tdr.m_TimerEnabled);
    bw.WriteInt(FID(TMIN), m_d.m_tdr.m_TimerInterval);
-   bw.WriteBool(FID(TRNS), m_d.m_fTransparent);
+   bw.WriteBool(FID(TRNS), m_d.m_transparent);
    bw.WriteString(FID(IMAG), m_d.m_szImage);
    bw.WriteString(FID(SOUN), m_d.m_szSound);
    bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
@@ -489,8 +487,8 @@ HRESULT DispReel::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
    bw.WriteFloat(FID(MSTP), (float)m_d.m_motorsteps);
    bw.WriteFloat(FID(RANG), (float)m_d.m_digitrange);
    bw.WriteInt(FID(UPTM), m_d.m_updateinterval);
-   bw.WriteBool(FID(UGRD), m_d.m_fUseImageGrid);
-   bw.WriteBool(FID(VISI), m_d.m_fVisible);
+   bw.WriteBool(FID(UGRD), m_d.m_useImageGrid);
+   bw.WriteBool(FID(VISI), m_d.m_visible);
    bw.WriteInt(FID(GIPR), m_d.m_imagesPerGridRow);
 
    ISelect::SaveData(pstm, hcrypthash);
@@ -499,7 +497,6 @@ HRESULT DispReel::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
 
    return S_OK;
 }
-
 
 HRESULT DispReel::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version, HCRYPTHASH hcrypthash, HCRYPTKEY hcryptkey)
 {
@@ -513,96 +510,49 @@ HRESULT DispReel::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int versio
    return S_OK;
 }
 
-
-BOOL DispReel::LoadToken(int id, BiffReader *pbr)
+bool DispReel::LoadToken(const int id, BiffReader * const pbr)
 {
-   if (id == FID(PIID))
+   switch (id)
    {
-      pbr->GetInt((int *)pbr->m_pdata);
-   }
-   else if (id == FID(VER1))
-   {
-      pbr->GetStruct(&m_d.m_v1, sizeof(Vertex2D));
-   }
-   else if (id == FID(VER2))
-   {
-      pbr->GetStruct(&m_d.m_v2, sizeof(Vertex2D));
-   }
-   else if (id == FID(WDTH))
-   {
-      pbr->GetFloat(&m_d.m_width);
-   }
-   else if (id == FID(HIGH))
-   {
-      pbr->GetFloat(&m_d.m_height);
-   }
-   else if (id == FID(CLRB))
-   {
-      pbr->GetInt(&m_d.m_backcolor);
-   }
-   else if (id == FID(TMON))
-   {
-      pbr->GetBool(&m_d.m_tdr.m_fTimerEnabled);
-   }
-   else if (id == FID(TMIN))
-   {
-      pbr->GetInt(&m_d.m_tdr.m_TimerInterval);
-   }
-   else if (id == FID(NAME))
-   {
-      pbr->GetWideString((WCHAR *)m_wzName);
-   }
-   else if (id == FID(TRNS))
-   {
-      pbr->GetBool(&m_d.m_fTransparent);
-   }
-   else if (id == FID(IMAG))
-   {
-      pbr->GetString(m_d.m_szImage);
-   }
-   else if (id == FID(RCNT))
+   case FID(PIID): pbr->GetInt((int *)pbr->m_pdata); break;
+   case FID(VER1): pbr->GetStruct(&m_d.m_v1, sizeof(Vertex2D)); break;
+   case FID(VER2): pbr->GetStruct(&m_d.m_v2, sizeof(Vertex2D)); break;
+   case FID(WDTH): pbr->GetFloat(&m_d.m_width); break;
+   case FID(HIGH): pbr->GetFloat(&m_d.m_height); break;
+   case FID(CLRB): pbr->GetInt(&m_d.m_backcolor); break;
+   case FID(TMON): pbr->GetBool(&m_d.m_tdr.m_TimerEnabled); break;
+   case FID(TMIN): pbr->GetInt(&m_d.m_tdr.m_TimerInterval); break;
+   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(TRNS): pbr->GetBool(&m_d.m_transparent); break;
+   case FID(IMAG): pbr->GetString(m_d.m_szImage); break;
+   case FID(RCNT):
    {
       float reel;
       pbr->GetFloat(&reel);
       m_d.m_reelcount = (int)reel;
+      break;
    }
-   else if (id == FID(RSPC))
-   {
-      pbr->GetFloat(&m_d.m_reelspacing);
-   }
-   else if (id == FID(MSTP))
+   case FID(RSPC): pbr->GetFloat(&m_d.m_reelspacing); break;
+   case FID(MSTP):
    {
       float motorsteps;
       pbr->GetFloat(&motorsteps);
       m_d.m_motorsteps = (int)motorsteps;
+      break;
    }
-   else if (id == FID(SOUN))
-   {
-      pbr->GetString(m_d.m_szSound);
-   }
-   else if (id == FID(UGRD))
-   {
-      pbr->GetBool(&m_d.m_fUseImageGrid);
-   }
-   else if (id == FID(VISI))
-   {
-      pbr->GetBool(&m_d.m_fVisible);
-   }
-   else if (id == FID(GIPR))
-   {
-      pbr->GetInt(&m_d.m_imagesPerGridRow);
-   }
-   else if (id == FID(RANG))
+   case FID(SOUN): pbr->GetString(m_d.m_szSound); break;
+   case FID(UGRD): pbr->GetBool(&m_d.m_useImageGrid); break;
+   case FID(VISI): pbr->GetBool(&m_d.m_visible); break;
+   case FID(GIPR): pbr->GetInt(&m_d.m_imagesPerGridRow); break;
+   case FID(RANG):
    {
       float dig;
       pbr->GetFloat(&dig);
       m_d.m_digitrange = (int)dig;
+      break;
    }
-   else if (id == FID(UPTM))
-   {
-      pbr->GetInt(&m_d.m_updateinterval);
-   }
-   else if (id == FID(FONT)) //!! deprecated, only here to support loading of old tables
+   case FID(UPTM): pbr->GetInt(&m_d.m_updateinterval); break;
+   case FID(FONT): //!! deprecated, only here to support loading of old tables
    {
       IFont *pIFont;
       FONTDESC fd;
@@ -623,37 +573,17 @@ BOOL DispReel::LoadToken(int id, BiffReader *pbr)
       ips->Load(pbr->m_pistream);
 
       pIFont->Release();
+
+      break;
    }
-   else
-   {
-      ISelect::LoadToken(id, pbr);
+   default: ISelect::LoadToken(id, pbr); break;
    }
-   return fTrue;
+   return true;
 }
 
 HRESULT DispReel::InitPostLoad()
 {
    return S_OK;
-}
-
-void DispReel::GetDialogPanes(vector<PropertyPane*> &pvproppane)
-{
-   PropertyPane *pproppane;
-
-   pproppane = new PropertyPane(IDD_PROP_NAME, NULL);
-   pvproppane.push_back(pproppane);
-
-   pproppane = new PropertyPane(IDD_PROPDISPREEL_VISUALS, IDS_VISUALS);
-   pvproppane.push_back(pproppane);
-
-   pproppane = new PropertyPane(IDD_PROPDISPREEL_POSITION, IDS_POSITION);
-   pvproppane.push_back(pproppane);
-
-   pproppane = new PropertyPane(IDD_PROPDISPREEL_STATE, IDS_STATE);
-   pvproppane.push_back(pproppane);
-
-   pproppane = new PropertyPane(IDD_PROP_TIMER, IDS_MISC);
-   pvproppane.push_back(pproppane);
 }
 
 // These methods provide the interface to the object through both the editor
@@ -668,74 +598,56 @@ STDMETHODIMP DispReel::get_BackColor(OLE_COLOR *pVal)
 
 STDMETHODIMP DispReel::put_BackColor(OLE_COLOR newVal)
 {
-   STARTUNDO
-      m_d.m_backcolor = newVal;
-   STOPUNDO
+   m_d.m_backcolor = newVal;
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP DispReel::get_Reels(float *pVal)
 {
-   *pVal = (float)m_d.m_reelcount;
+   *pVal = (float)GetReels();
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::put_Reels(float newVal)
 {
-   STARTUNDO
-
-   m_d.m_reelcount = min(max(1, (int)newVal), MAX_REELS); // must have at least 1 reel and a max of MAX_REELS
-   m_d.m_v2.x = m_d.m_v1.x + getBoxWidth();
-   m_d.m_v2.y = m_d.m_v1.y + getBoxHeight();
-
-   STOPUNDO
+   SetReels((int)newVal);
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::get_Width(float *pVal)
 {
-   *pVal = m_d.m_width;
+   *pVal = GetWidth();
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::put_Width(float newVal)
 {
-   STARTUNDO
-
-   m_d.m_width = max(0.0f, newVal);
-   m_d.m_v2.x = m_d.m_v1.x + getBoxWidth();
-
-   STOPUNDO
+   SetWidth(newVal);
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::get_Height(float *pVal)
 {
-   *pVal = m_d.m_height;
+   *pVal = GetHeight();
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::put_Height(float newVal)
 {
-   STARTUNDO
-
-   m_d.m_height = max(0.0f, newVal);
-   m_d.m_v2.y = m_d.m_v1.y + getBoxHeight();
-
-   STOPUNDO
+   SetHeight(newVal);
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::get_X(float *pVal)
 {
-   *pVal = m_d.m_v1.x;
+   *pVal = GetX();
    g_pvp->SetStatusBarUnitInfo("", true);
 
    return S_OK;
@@ -743,49 +655,35 @@ STDMETHODIMP DispReel::get_X(float *pVal)
 
 STDMETHODIMP DispReel::put_X(float newVal)
 {
-   STARTUNDO
-
-   const float delta = newVal - m_d.m_v1.x;
-   m_d.m_v1.x += delta;
-   m_d.m_v2.x = m_d.m_v1.x + getBoxWidth();
-
-   STOPUNDO
+   SetX(newVal);
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::get_Y(float *pVal)
 {
-   *pVal = m_d.m_v1.y;
+   *pVal = GetY();
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::put_Y(float newVal)
 {
-   STARTUNDO
-
-   const float delta = newVal - m_d.m_v1.y;
-   m_d.m_v1.y += delta;
-   m_d.m_v2.y = m_d.m_v1.y + getBoxHeight();
-
-   STOPUNDO
+   SetY(newVal);
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::get_IsTransparent(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_fTransparent);
+   *pVal = FTOVB(m_d.m_transparent);
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::put_IsTransparent(VARIANT_BOOL newVal)
 {
-   STARTUNDO
-   m_d.m_fTransparent = VBTOF(newVal);
-   STOPUNDO
+   m_d.m_transparent = VBTOb(newVal);
 
    return S_OK;
 }
@@ -793,7 +691,7 @@ STDMETHODIMP DispReel::put_IsTransparent(VARIANT_BOOL newVal)
 STDMETHODIMP DispReel::get_Image(BSTR *pVal)
 {
    OLECHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage, -1, wz, 32);
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage, -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -802,38 +700,28 @@ STDMETHODIMP DispReel::get_Image(BSTR *pVal)
 STDMETHODIMP DispReel::put_Image(BSTR newVal)
 {
    char szImage[MAXTOKEN];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, 32, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, MAXNAMEBUFFER, NULL, NULL);
    const Texture * const tex = m_ptable->GetImage(szImage);
    if (tex && tex->IsHDR())
    {
-       ShowError("Cannot use a HDR image (.exr/.hdr) here");
-       return E_FAIL;
+      ShowError("Cannot use a HDR image (.exr/.hdr) here");
+      return E_FAIL;
    }
 
-   STARTUNDO
-
-   strcpy_s(m_d.m_szImage,szImage);
-
-   STOPUNDO
+   strcpy_s(m_d.m_szImage, szImage);
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::get_Spacing(float *pVal)
 {
-   *pVal = m_d.m_reelspacing;
+   *pVal = GetSpacing();
    return S_OK;
 }
 
 STDMETHODIMP DispReel::put_Spacing(float newVal)
 {
-   STARTUNDO
-
-   m_d.m_reelspacing = max(0.0f, newVal);
-   m_d.m_v2.x = m_d.m_v1.x + getBoxWidth();
-   m_d.m_v2.y = m_d.m_v1.y + getBoxHeight();
-
-   STOPUNDO
+   SetSpacing(newVal);
 
    return S_OK;
 }
@@ -841,7 +729,7 @@ STDMETHODIMP DispReel::put_Spacing(float newVal)
 STDMETHODIMP DispReel::get_Sound(BSTR *pVal)
 {
    OLECHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSound, -1, wz, 32);
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSound, -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -849,119 +737,97 @@ STDMETHODIMP DispReel::get_Sound(BSTR *pVal)
 
 STDMETHODIMP DispReel::put_Sound(BSTR newVal)
 {
-   STARTUNDO
-      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSound, 32, NULL, NULL);
-   STOPUNDO
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSound, MAXNAMEBUFFER, NULL, NULL);
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP DispReel::get_Steps(float *pVal)
 {
-   *pVal = (float)m_d.m_motorsteps;
+   *pVal = (float)GetMotorSteps();
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::put_Steps(float newVal)
 {
-   STARTUNDO
-   m_d.m_motorsteps = max(1, (int)newVal); // must have at least 1 step
-   STOPUNDO
+   SetMotorSteps((int)newVal);
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::get_Range(float *pVal)
 {
-   *pVal = (float)m_d.m_digitrange;
+   *pVal = (float)GetRange();
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::put_Range(float newVal)
 {
-   STARTUNDO
-
-   m_d.m_digitrange = max(0, (int)newVal);                     // must have at least 1 digit (0 is a digit)
-   if (m_d.m_digitrange > 512 - 1) m_d.m_digitrange = 512 - 1;  // and a max of 512 (0->511) //!! 512 requested by highrise
-
-   STOPUNDO
+   SetRange((int)newVal);
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::get_UpdateInterval(long *pVal)
 {
-   *pVal = m_d.m_updateinterval;
+   *pVal = GetUpdateInterval();
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::put_UpdateInterval(long newVal)
 {
-   STARTUNDO
-
-      m_d.m_updateinterval = max(5, newVal);
+   SetUpdateInterval((int)newVal);
    if (g_pplayer)
-      m_timenextupdate = g_pplayer->m_time_msec + m_d.m_updateinterval;
+      m_timeNextUpdate = g_pplayer->m_time_msec + m_d.m_updateinterval;
 
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP DispReel::get_UseImageGrid(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_fUseImageGrid);
+   *pVal = FTOVB(m_d.m_useImageGrid);
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::put_UseImageGrid(VARIANT_BOOL newVal)
 {
-   STARTUNDO
-   m_d.m_fUseImageGrid = VBTOF(newVal);
-   STOPUNDO
+   m_d.m_useImageGrid = VBTOb(newVal);
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::get_Visible(VARIANT_BOOL *pVal)
 {
-   *pVal = (VARIANT_BOOL)FTOVB(m_d.m_fVisible);
+   *pVal = FTOVB(m_d.m_visible);
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::put_Visible(VARIANT_BOOL newVal)
 {
-   STARTUNDO
-   m_d.m_fVisible = VBTOF(newVal);
-   STOPUNDO
+   m_d.m_visible = VBTOb(newVal);
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::get_ImagesPerGridRow(long *pVal)
 {
-   *pVal = m_d.m_imagesPerGridRow;
+   *pVal = GetImagesPerGridRow();
 
    return S_OK;
 }
 
 STDMETHODIMP DispReel::put_ImagesPerGridRow(long newVal)
 {
-   STARTUNDO
-   m_d.m_imagesPerGridRow = max(1, newVal);
-   STOPUNDO
+   SetImagesPerGridRow((int)newVal);
 
    return S_OK;
 }
 
-
-// function Methods available for the scripters.
-//
 STDMETHODIMP DispReel::AddValue(long Value)
 {
    const bool bNegative = (Value < 0);
@@ -991,7 +857,6 @@ STDMETHODIMP DispReel::AddValue(long Value)
 
    return S_OK;
 }
-
 
 STDMETHODIMP DispReel::SetValue(long Value)
 {
@@ -1024,11 +889,10 @@ STDMETHODIMP DispReel::SetValue(long Value)
    }
 
    // force a immediate screen update
-   m_timenextupdate = g_pplayer->m_time_msec;
+   m_timeNextUpdate = g_pplayer->m_time_msec;
 
    return S_OK;
 }
-
 
 STDMETHODIMP DispReel::ResetToZero()
 {
@@ -1053,7 +917,6 @@ STDMETHODIMP DispReel::ResetToZero()
    return S_OK;
 }
 
-
 STDMETHODIMP DispReel::SpinReel(long ReelNumber, long PulseCount)
 {
    if ((ReelNumber >= 1) && (ReelNumber <= m_d.m_reelcount))
@@ -1067,8 +930,6 @@ STDMETHODIMP DispReel::SpinReel(long ReelNumber, long PulseCount)
 }
 
 
-// Private functions
-//
 float DispReel::getBoxWidth() const
 {
    const float width = (float)m_d.m_reelcount * m_d.m_width
@@ -1076,7 +937,6 @@ float DispReel::getBoxWidth() const
       + m_d.m_reelspacing;	// spacing also includes edges
    return width;
 }
-
 
 float DispReel::getBoxHeight() const
 {

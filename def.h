@@ -31,6 +31,10 @@ __forceinline int max(const int x, const int y)
 {
    return x < y ? y : x;
 }
+__forceinline long max(const long x, const long y)
+{
+   return x < y ? y : x;
+}
 __forceinline unsigned int min(const unsigned int x, const unsigned int y)
 {
    return x < y ? x : y;
@@ -75,15 +79,9 @@ __forceinline T saturate(const T x)
 }
 
 template <typename T>
-inline void RemoveFromVector(std::vector<T>& v, const T& val)
-{
-   v.erase(std::remove(v.begin(), v.end(), val), v.end());
-}
-
-template <typename T>
 inline void RemoveFromVectorSingle(std::vector<T>& v, const T& val)
 {
-   std::vector<T>::const_iterator it = std::find(v.begin(), v.end(), val);
+   typename std::vector<T>::const_iterator it = std::find(v.begin(), v.end(), val);
    if (it != v.end())
       v.erase(it);
 }
@@ -91,7 +89,7 @@ inline void RemoveFromVectorSingle(std::vector<T>& v, const T& val)
 template <typename T>
 inline int FindIndexOf(const std::vector<T>& v, const T& val)
 {
-   std::vector<T>::const_iterator it = std::find(v.begin(), v.end(), val);
+   typename std::vector<T>::const_iterator it = std::find(v.begin(), v.end(), val);
    if (it != v.end())
       return (int)(it - v.begin());
    else
@@ -116,7 +114,7 @@ typedef double          F64;
 typedef unsigned _int64 U64;
 typedef _int64          S64;
 
-#define MAXNAMEBUFFER 33
+#define MAXNAMEBUFFER 32
 #define MAXSTRING 1024 // usually used for paths,filenames,etc
 #define MAXTOKEN (32*4)
 
@@ -215,7 +213,8 @@ public:
 #define RADTOANG(x) ((x) *(float)(180.0/M_PI))
 
 #define VBTOF(x) ((x) ? fTrue : fFalse)
-#define FTOVB(x) ((x) ? -1 : 0)
+#define VBTOb(x) (!!(x))
+#define FTOVB(x) ((x) ? (VARIANT_BOOL)-1 : (VARIANT_BOOL)0)
 
 __forceinline __m128 rcpps(const __m128 &T) //Newton Raphson
 {
@@ -390,7 +389,7 @@ int WzSzStrCmp(const WCHAR *wz1, const char *sz2);
 void WideStrCat(const WCHAR *wzin, WCHAR *wzout);
 int WzSzStrnCmp(const WCHAR *wz1, const char *sz2, const int count);
 
-HRESULT OpenURL(char *szURL);
+HRESULT OpenURL(const char * const szURL);
 
 WCHAR *MakeWide(const char * const sz);
 char *MakeChar(const WCHAR * const wz);

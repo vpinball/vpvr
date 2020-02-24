@@ -1,7 +1,7 @@
 #pragma once
 
 #include <map>
-#include "typeDefs3D.h"
+#include "typedefs3D.h"
 
 #include "Material.h"
 #include "Texture.h"
@@ -89,7 +89,7 @@ class RenderDevice
 {
 public:
 
-RenderDevice(HWND* const hwnd, const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice = NULL);
+RenderDevice(const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice = NULL);
 
 #ifdef ENABLE_SDL
    enum RenderStates
@@ -376,7 +376,12 @@ RenderDevice(HWND* const hwnd, const int width, const int height, const bool ful
    void CreateVertexDeclaration(const VertexElement * const element, VertexDeclaration ** declaration);
    void SetVertexDeclaration(VertexDeclaration * declaration);
 
-#ifndef ENABLE_SDL
+#ifdef ENABLE_SDL
+   inline void* GetCoreDevice() const
+   {
+      return nullptr;
+   }
+#else
    inline IDirect3DDevice9* GetCoreDevice() const
    {
       return m_pD3DDevice;

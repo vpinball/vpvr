@@ -10,29 +10,22 @@
 /////////////////////////////////////////////////////////////////////////////
 // Gate
 
-class GateData
+class GateData : public BaseProperty
 {
 public:
    Vertex2D m_vCenter;
    float m_length;
    float m_height;
    float m_rotation;
-   char m_szMaterial[32];
    TimerDataRoot m_tdr;
-   float m_elasticity;
-   float m_friction;
    float m_damping;
    float m_gravityfactor;
-   float m_scatter;
    char m_szSurface[MAXTOKEN];
    float m_angleMin;
    float m_angleMax;
    GateType m_type;
-   bool m_fShowBracket;
-   bool m_fCollidable;
-   bool m_fVisible;
+   bool m_showBracket;
    bool m_twoWay;
-   bool m_fReflectionEnabled;
 };
 
 class Gate :
@@ -82,8 +75,6 @@ public:
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
 
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
    virtual void MoveOffset(const float dx, const float dy);
    virtual void SetObjectPos();
    // Multi-object manipulation
@@ -98,33 +89,34 @@ public:
    virtual ItemTypeEnum HitableGetItemType() const { return eItemGate; }
 
    virtual void WriteRegDefaults();
+
+   GateData m_d;
+
+private:
    void UpdateWire();
    void RenderObject();
    void GenerateBracketMesh(Vertex3D_NoTex2 *buf);
    void GenerateWireMesh(Vertex3D_NoTex2 *buf);
    void UpdateUnitsInfo();
 
-   GateData m_d;
-
-private:
    PinTable * m_ptable;
 
    LineSeg *m_plineseg;
    HitGate *m_phitgate;
 
-   VertexBuffer *wireVertexBuffer;
-   IndexBuffer *wireIndexBuffer;
+   VertexBuffer *m_wireVertexBuffer;
+   IndexBuffer *m_wireIndexBuffer;
    float m_vertexbuffer_angle;
 
-   VertexBuffer *bracketVertexBuffer;
-   IndexBuffer *bracketIndexBuffer;
+   VertexBuffer *m_bracketVertexBuffer;
+   IndexBuffer *m_bracketIndexBuffer;
 
    const Vertex3D_NoTex2 *m_vertices;
    const WORD            *m_indices;
    unsigned int m_numVertices;
    unsigned int m_numIndices;
 
-   float baseHeight;
+   float m_baseHeight;
 
    // IGate
 public:

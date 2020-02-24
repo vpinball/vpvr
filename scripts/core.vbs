@@ -1,8 +1,15 @@
 Option Explicit
-Const VPinMAMEDriverVer = 3.57
+Const VPinMAMEDriverVer = 3.58
 '=======================
 ' VPinMAME driver core.
 '=======================
+'
+' New in 3.58 (Update by mfuegemann, DJRobX)
+' - Add PullbackandRetract to cvpmImpulseP
+' - Added joctronic.vbs
+' - Added s8_StillCrazy.vbs (System 8/Still Crazy)
+' - Added constant (vpmFourStepSol) for new 4-solenoid stepper motor mech type used by High Roller Casino, Starship Troopers, and Playboy
+'
 ' New in 3.57 (Update by nFozzy, DJRobX, chepas, Gaston)
 ' - Beta 1 NF fastflips 2
 ' - Add UsePdbLeds(top of script)/ChangedPDLEDs(controller)/PDLedCallback(callback) support and PDB.vbs especially for VP-PROC
@@ -341,7 +348,7 @@ Const VPinMAMEDriverVer = 3.57
 ' New in 3.10
 '   - Public release
 ' Put this at the top of the table file
-'LoadVPM "02000000", "xxx.VBS", 3.57 ' adapt 02000000 and 3.57 to the actually required minimum VPinMAME- and core scripts versions
+'LoadVPM "02000000", "xxx.VBS", 3.58 ' adapt 02000000 and 3.58 to the actually required minimum VPinMAME- and core scripts versions
 'Const cGameName    = "xxxx" ' PinMAME short game name
 'Const UseSolenoids = True
 'Const UseLamps     = True
@@ -361,7 +368,7 @@ Const VPinMAMEDriverVer = 3.57
 '	On Error Resume Next
 '		If ScriptEngineMajorVersion < 5 Then MsgBox "VB Script Engine 5.0 or higher required"
 '		ExecuteGlobal GetTextFile(VBSfile)
-'		If Err Then MsgBox "Unable to open " & VBSfile & ". Ensure that it is in the same folder as this table. " & vbNewLine & Err.Description : Err.Clear
+'		If Err Then MsgBox "Unable to open " & VBSfile & ". Ensure that it is in the Scripts folder of Visual Pinball. " & vbNewLine & Err.Description : Err.Clear
 '		Set Controller = CreateObject("VPinMAME.Controller")
 '		If Err Then MsgBox "Can't Load VPinMAME." & vbNewLine & Err.Description
 '		If VPMver>"" Then If Controller.Version < VPMver Or Err Then MsgBox "VPinMAME ver " & VPMver & " required." : Err.Clear
@@ -2070,6 +2077,7 @@ Const vpmMechOneSol    = &H00
 Const vpmMechOneDirSol = &H10
 Const vpmMechTwoDirSol = &H20
 Const vpmMechStepSol   = &H40
+Const vpmFourStepSol   = &H60
 Const vpmMechSlow      = &H00
 Const vpmMechFast      = &H80
 Const vpmMechStepSw    = &H00
@@ -2461,7 +2469,7 @@ Class cvpmImpulseP
 		End If
 	End Sub
 
- 
+
 	Public Property Let PlungeOn(aEnabled) : mEnabled = aEnabled : End Property
 	Public Property Get PlungeOn
 		If Solenoid > 0 Then PlungeOn = Controller.Solenoid(Solenoid) Else PlungeOn = mEnabled
@@ -2542,20 +2550,26 @@ Class cvpmImpulseP
 		Pull = 0 : IMPowerOut = 0 : IMPowerTrans = 0 : mCount = 0
 		If BallOn = 1 Then : PlaySound mExitSndBall : Else : PlaySound mExitSnd : End If
 	End Sub
-	
+
 	Public Sub Pullback     ' Pull Plunger
 		Pull = 0 : IMPowerOut = 0 : IMPowerTrans = 0 : mCount = 0 ' reinitialize to be sure
 		Pull = 1 : NeedUpdate = True
-    		PlaySound mEntrySnd
+		PlaySound mEntrySnd
 	End Sub
-	
+
+	Public Sub PullbackandRetract     ' Pull Plunger and retract
+		Pull = 0 : IMPowerOut = 0 : IMPowerTrans = 0 : mCount = 0 ' reinitialize to be sure
+		Pull = 1 : NeedUpdate = True
+		PlaySound mEntrySnd
+	End Sub
+
 	Public Sub Switch(aSw)
 		SwitchOn = True
 		SwitchNum = aSw
 	End Sub
-	
-    Public Sub InitEntrySnd(aNoBall) : mEntrySnd = aNoBall : End Sub
-    Public Sub InitExitSnd(aBall, aNoBall)  : mExitSndBall = aBall  : mExitSnd = aNoBall  : End Sub
+
+	Public Sub InitEntrySnd(aNoBall) : mEntrySnd = aNoBall : End Sub
+	Public Sub InitExitSnd(aBall, aNoBall)  : mExitSndBall = aBall  : mExitSnd = aNoBall  : End Sub
 End Class
 
 Set vpmTimer = New cvpmTimer

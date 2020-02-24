@@ -7,6 +7,9 @@ public:
    {
       // clear the mech plunger reading history
       m_mech0 = m_mech1 = m_mech2 = 0.0f;
+      m_addRetractMotion = false;
+      m_retractMotion = false;
+      m_retractWaitLoop = 0;
    }
 
    virtual void UpdateDisplacements(const float dtime);
@@ -21,6 +24,8 @@ public:
    void PullBack(float speed);
    void Fire(float startPos);
    void Fire() { Fire((m_pos - m_frameEnd) / (m_frameStart - m_frameEnd)); }
+
+   void PullBackandRetract(float speed);
 
    // our associated plunger object
    Plunger* m_plunger;
@@ -206,7 +211,7 @@ public:
    // *close* to one of the ends without having to actually reach the
    // exact end, and ensures that we don't fire the event repeatedly
    // if we stop at one of the ends for a while.
-   bool m_fStrokeEventsArmed;
+   bool m_strokeEventsArmed;
 
    // Recent history of mechanical plunger readings.  We keep the
    // last few distinct readings so that we can make a better guess
@@ -228,6 +233,13 @@ public:
    // the plunger strikes the ball, to simulate the mechanical
    // randomness in a real plunger)
    float m_scatterVelocity;
+
+   // retract motion
+   float m_initialSpeed;
+   int   m_retractWaitLoop;
+
+   bool  m_addRetractMotion;
+   bool  m_retractMotion;
 };
 
 class HitPlunger : public HitObject
@@ -239,7 +251,7 @@ public:
       Plunger * const pPlunger);
    ~HitPlunger() {}
 
-   virtual float HitTest(const Ball * const pball, const float dtime, CollisionEvent& coll) const;
+   virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const;
    virtual int GetType() const { return ePlunger; }
    virtual void Collide(const CollisionEvent& coll);
    virtual void CalcHitBBox();

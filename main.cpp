@@ -122,7 +122,7 @@ PCHAR* CommandLineToArgvA(PCHAR CmdLine, int* _argc)
    i = 0;
    j = 0;
 
-   while (a = CmdLine[i]) {
+   while ((a = CmdLine[i])) {
       if (in_QM) {
          if (a == '\"') {
             in_QM = FALSE;
@@ -183,18 +183,18 @@ class VPApp : public CWinApp
 {
 private:
    HINSTANCE theInstance;
-   HRESULT hRes;
-   bool bRun;
-   bool fPlay;
-   bool fExtractPov;
-   bool fFile;
-   bool fExtractScript;
+   bool run;
+   bool play;
+   bool extractPov;
+   bool file;
+   bool extractScript;
    TCHAR szTableFileName[MAXSTRING];
 
 public:
    VPApp(HINSTANCE hInstance)
    {
       theInstance = GetInstanceHandle();
+      SetResourceHandle(theInstance);
    }
 
    virtual ~VPApp()
@@ -227,18 +227,18 @@ public:
 
       g_hinst = theInstance;
 #if _WIN32_WINNT >= 0x0400 & defined(_ATL_FREE_THREADED)
-      hRes = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+      const HRESULT hRes = CoInitializeEx(NULL, COINIT_MULTITHREADED);
 #else
-      hRes = CoInitialize(NULL);
+      const HRESULT hRes = CoInitialize(NULL);
 #endif
       _ASSERTE(SUCCEEDED(hRes));
       _Module.Init(ObjectMap, theInstance, &LIBID_VPinballLib);
 
-      fFile = false;
-      fPlay = false;
-      fExtractPov = false;
-      bRun = true;
-      fExtractScript = false;
+      file = false;
+      play = false;
+      extractPov = false;
+      run = true;
+      extractScript = false;
 
       memset(szTableFileName, 0, MAXSTRING);
 
@@ -246,9 +246,9 @@ public:
       const bool stos = LoadValueBoolWithDefault("Editor", "SelectTableOnStart", true);
       if (stos)
       {
-         fFile = true;
-         fPlay = true;
-         fExtractPov = false;
+         file = true;
+         play = true;
+         extractPov = false;
       }
 
       int nArgs;
@@ -260,8 +260,9 @@ public:
             || lstrcmpi(szArglist[i], _T("-Help")) == 0 || lstrcmpi(szArglist[i], _T("/Help")) == 0
             || lstrcmpi(szArglist[i], _T("-?")) == 0 || lstrcmpi(szArglist[i], _T("/?")) == 0)
          {
-            ShowError("-UnregServer  Unregister VP functions\n-RegServer  Register VP functions\n\n-DisableTrueFullscreen  Force-disable True Fullscreen setting\n\n-EnableTrueFullscreen  Force-enable True Fullscreen setting\n\n-Edit [filename]  load file into VP\n-Play [filename]  load and play file\n-Pov [filename]  load, export pov and close\n-ExtractVBS [filename]  load, export table script and close\n-c1 [customparam] .. -c9 [customparam]  custom user parameters that can be accessed in the script via GetCustomParam(X)");
-            bRun = false;
+            ::MessageBox(NULL, "-UnregServer  Unregister VP functions\n-RegServer  Register VP functions\n\n-DisableTrueFullscreen  Force-disable True Fullscreen setting\n\n-EnableTrueFullscreen  Force-enable True Fullscreen setting\n\n-Edit [filename]  load file into VP\n-Play [filename]  load and play file\n-Pov [filename]  load, export pov and close\n-ExtractVBS [filename]  load, export table script and close\n-c1 [customparam] .. -c9 [customparam]  custom user parameters that can be accessed in the script via GetCustomParam(X)",
+               "VPinball Usage", MB_OK);
+            run = false;
             break;
          }
 
@@ -270,19 +271,19 @@ public:
          if (lstrcmpi(szArglist[i], _T("-UnregServer")) == 0 || lstrcmpi(szArglist[i], _T("/UnregServer")) == 0)
          {
             _Module.UpdateRegistryFromResource(IDR_VPINBALL, FALSE);
-            const HRESULT nRet = _Module.UnregisterServer(TRUE);
-            if (nRet != S_OK)
+            const HRESULT ret = _Module.UnregisterServer(TRUE);
+            if (ret != S_OK)
                ShowError("Unregister VP functions failed");
-            bRun = false;
+            run = false;
             break;
          }
          if (lstrcmpi(szArglist[i], _T("-RegServer")) == 0 || lstrcmpi(szArglist[i], _T("/RegServer")) == 0)
          {
             _Module.UpdateRegistryFromResource(IDR_VPINBALL, TRUE);
-            const HRESULT nRet = _Module.RegisterServer(TRUE);
-            if (nRet != S_OK)
+            const HRESULT ret = _Module.RegisterServer(TRUE);
+            if (ret != S_OK)
                ShowError("Register VP functions failed");
-            bRun = false;
+            run = false;
             break;
          }
 
@@ -320,7 +321,7 @@ public:
             const size_t len = strlen(szArglist[i + 1]);
             VPinball::m_customParameters[customIdx - 1] = new WCHAR[len + 1];
 
-            MultiByteToWideChar(CP_ACP, 0, szArglist[i + 1], len, VPinball::m_customParameters[customIdx - 1], len + 1);
+            MultiByteToWideChar(CP_ACP, 0, szArglist[i + 1], (int)len, VPinball::m_customParameters[customIdx - 1], (int)len + 1);
             VPinball::m_customParameters[customIdx - 1][len] = L'\0';
 
             ++i; // two params processed
@@ -338,10 +339,10 @@ public:
 
          if ((editfile || playfile || extractpov || extractscript) && (i + 1 < nArgs))
          {
-            fFile = true;
-            fPlay = playfile;
-            fExtractPov = extractpov;
-            fExtractScript = extractscript;
+            file = true;
+            play = playfile;
+            extractPov = extractpov;
+            extractScript = extractscript;
 
             // Remove leading - or /
             char* filename;
@@ -416,15 +417,15 @@ public:
 
    virtual int Run()
    {
-      if (bRun)
+      if (run)
       {
 #if _WIN32_WINNT >= 0x0400 & defined(_ATL_FREE_THREADED)
-         hRes = _Module.RegisterClassObjects(CLSCTX_LOCAL_SERVER,
+         const HRESULT hRes = _Module.RegisterClassObjects(CLSCTX_LOCAL_SERVER,
             REGCLS_MULTIPLEUSE | REGCLS_SUSPENDED);
          _ASSERTE(SUCCEEDED(hRes));
          hRes = CoResumeClassObjects();
 #else
-         hRes = _Module.RegisterClassObjects(CLSCTX_LOCAL_SERVER,
+         const HRESULT hRes = _Module.RegisterClassObjects(CLSCTX_LOCAL_SERVER,
             REGCLS_MULTIPLEUSE);
 #endif
          _ASSERTE(SUCCEEDED(hRes));
@@ -458,10 +459,10 @@ public:
 
          g_pvp = new VPinball();
          g_pvp->AddRef();
-         g_pvp->Init();
+         g_pvp->Create(NULL);
          g_haccel = LoadAccelerators(g_hinst, MAKEINTRESOURCE(IDR_VPACCEL));
 
-         if (fFile)
+         if (file)
          {
             bool lf = true;
             if (szTableFileName[0] != '\0')
@@ -469,7 +470,7 @@ public:
             else
                lf = g_pvp->LoadFile();
 
-            if (fExtractScript && lf)
+            if (extractScript && lf)
             {
                TCHAR szScriptFilename[MAX_PATH];
                strcpy_s(szScriptFilename, szTableFileName);
@@ -482,7 +483,7 @@ public:
                }
                g_pvp->Quit();
             }
-            if (fExtractPov && lf)
+            if (extractPov && lf)
             {
                TCHAR szPOVFilename[MAX_PATH];
                strcpy_s(szPOVFilename, szTableFileName);
@@ -496,7 +497,7 @@ public:
                g_pvp->Quit();
             }
 
-            if (fPlay && lf)
+            if (play && lf)
                g_pvp->DoPlay(false);
          }
 
@@ -504,6 +505,10 @@ public:
          g_pvp->MainMsgLoop();
 
          g_pvp->Release();
+
+         // delete g_pvp;
+         // Above causes frequent crashing!  COM objects should self destruct when they reach refcount 0?!
+         g_pvp = NULL;
 
          DestroyAcceleratorTable(g_haccel);
 

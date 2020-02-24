@@ -7,31 +7,19 @@
 
 #include "resource.h"       // main symbols
 
-class RubberData
+class RubberData : public BaseProperty
 {
 public:
-   char m_szMaterial[32];
-   char m_szPhysicsMaterial[32];
    TimerDataRoot m_tdr;
    float m_height;
    float m_hitHeight;
    int m_thickness;
-   char m_szImage[MAXTOKEN];
-   float m_elasticity;
    float m_elasticityFalloff;
-   float m_friction;
-   float m_scatter;
    float m_rotX;
    float m_rotY;
    float m_rotZ;
-   bool m_fHitEvent;
    bool m_staticRendering;
    bool m_showInEditor;
-
-   bool m_fCollidable;
-   bool m_fVisible;
-   bool m_fReflectionEnabled;
-   bool m_fOverwritePhysics;
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -81,8 +69,6 @@ public:
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
 
-   virtual void GetDialogPanes(vector<PropertyPane*> &pvproppane);
-
    virtual void RenderBlueprint(Sur *psur, const bool solid);
 
    virtual void ClearForOverwrite();
@@ -112,38 +98,34 @@ public:
    virtual unsigned long long GetMaterialID() const { return m_ptable->GetMaterial(m_d.m_szMaterial)->hash(); }
    virtual unsigned long long GetImageID() const { return (unsigned long long)(m_ptable->GetImage(m_d.m_szImage)); }
    virtual ItemTypeEnum HitableGetItemType() const { return eItemRubber; }
-   virtual void UpdatePropertyPanes();
    virtual void SetDefaultPhysics(bool fromMouseClick);
    virtual void ExportMesh(FILE *f);
 
-   // IHaveDragPoints
-   virtual void GetPointDialogPanes(vector<PropertyPane*> &pvproppane);
-   // end IHaveDragPoints
-
    virtual void WriteRegDefaults();
-   void AddHitEdge(vector<HitObject*> &pvho, std::set< std::pair<unsigned, unsigned> >& addedEdges, const unsigned i, const unsigned j);
-   void SetupHitObject(vector<HitObject*> &pvho, HitObject * obj);
-   void UpdateUnitsInfo();
 
    RubberData m_d;
 
 private:
-   PinTable * m_ptable;
+   void AddHitEdge(vector<HitObject*> &pvho, std::set< std::pair<unsigned, unsigned> >& addedEdges, const unsigned i, const unsigned j);
+   void SetupHitObject(vector<HitObject*> &pvho, HitObject * obj);
+   void UpdateUnitsInfo();
 
-   Vertex2D * rgvInit;    // just for setup/static drawing
+   PinTable *m_ptable;
+
+   Vertex2D *m_rgvInit;    // just for setup/static drawing
 
    int m_numVertices;      // this goes along with dynamicVertexBuffer
    int m_numIndices;
 
    std::vector<HitObject*> m_vhoCollidable; // Objects to that may be collide selectable
    std::vector<Vertex3D_NoTex2> m_vertices;
-   std::vector<WORD> ringIndices;
+   std::vector<WORD> m_ringIndices;
 
-   Vertex3Ds middlePoint;
+   Vertex3Ds m_middlePoint;
 
-   VertexBuffer *dynamicVertexBuffer;
-   IndexBuffer *dynamicIndexBuffer;
-   bool dynamicVertexBufferRegenerate;
+   VertexBuffer *m_dynamicVertexBuffer;
+   IndexBuffer *m_dynamicIndexBuffer;
+   bool m_dynamicVertexBufferRegenerate;
 
    PropertyPane *m_propVisual;
    PropertyPane *m_propPhysics;
