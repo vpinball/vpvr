@@ -56,7 +56,7 @@ Changelog:
 10.2:
 - add GameTime and SystemTime to get the exact time in millisecond resolution
 - extend TimerInterval of each element by a special '-1' value which makes it dependent on the FPS that a user can reach, so the timer is only triggered exactly once per frame
-- add MaterialColor to the table element
+- add MaterialColor to the globals
 - extend PlayMusic with optional volume (0..1) and better document PlaySound
 - add Duration and BulbHaloHeight property to the light element
 - add PlayAnim,PlayAnimEndless,StopAnim,ContinueAnim & ShowFrame to the primitive element for animation use
@@ -153,7 +153,11 @@ VersionRevision - VP version revision
 GetBalls(Ball) - returns all Balls on the table
 GetElements(Editable) - returns all Elements on the table
 GetElementByName(string) - returns a certain Element, based on the name
-MaterialColor(string,OLE_COLOR) - change base color of a material
+UpdateMaterial(string, float wrapLighting, float roughness, float glossyImageLerp, float thickness, float edge, float edgeAlpha, float opacity,
+               OLE_COLOR base, OLE_COLOR glossy, OLE_COLOR clearcoat, VARIANT_BOOL isMetal, VARIANT_BOOL opacityActive,
+               float elasticity, float elasticityFalloff, float friction, float scatterAngle) - updates all parameters of a material (same input ranges as used in the material editor)
+UpdateMaterialPhysics(string, float elasticity, float elasticityFalloff, float friction, float scatterAngle) - update only the physics parameters of a material (same input ranges as used in the material editor)
+MaterialColor(string,OLE_COLOR) - change only the base color of a material
 
 LoadValue(string,string,VARIANT) - load a value for tablename,valuename,value
 SaveValue(string,string,VARIANT) - save a value for tablename,valuename,value
@@ -595,9 +599,10 @@ Methods
 -------
 
 Pullback() - start retracting the plunger at the speed given by PullSpeed; continues automatically until Fire() is called
+PullBackandRetract() - start retracting the plunger at the linear speed given by PullSpeed; wait for 1 second at the maximum position; move back towards the resting position; continues automatically until Fire() is called. Can be used instead of Pullback()
 Fire() - fire the plunger from the current position (for an auto-plunger, immediately pulls back all the way and fires with full strength)
 CreateBall(IBall **ball) - create a new ball located at the tip of the plunger
-Position() - returns an integer (0 to 25) with the current position of the (mechanical or digital) plunger
+Position() - returns a float (0 to 25) with the current position of the (mechanical or digital) plunger
 MotionDevice() - returns a non-zero integer with the type of special input device attached, or 0 if none is attached (1=Pinball Wizard, 2=Ultracade, 3=SideWinder, 4=VirtuaPin plunger kit, 5=Generic/other)
 
 
@@ -634,6 +639,7 @@ RotAndTra8(float) or ObjRotZ(float) - rotates the Z axis of the primitive's loca
                                won't have an effect. This is useful for objects like posts or static toys, because this won't have an impact of the perfomance
 HasHitEvent(bool) - enables the support for a hit event in the script (it's the same as for walls)
 Threshold(float) - hit threshold for firing the hit event
+HitThreshold(float) - holds the current hit threshold if a ball has hit the primitive
 Collidable(bool) - enables/disables collision detection, this can be used from within the script.
 Elasticity(float)
 ElasticityFalloff(float)
@@ -832,9 +838,9 @@ Z(float)
 VelX(float)
 VelY(float)
 VelZ(float)
-AngVelX(float)
-AngVelY(float)
-AngVelZ(float)
+*AngVelX(float) - note that writing to this is supported for legacy reasons, but is and was always ignored 
+*AngVelY(float) - note that writing to this is supported for legacy reasons, but is and was always ignored 
+*AngVelZ(float) - note that writing to this is supported for legacy reasons, but is and was always ignored 
 AngMomX(float)
 AngMomY(float)
 AngMomZ(float)
@@ -891,8 +897,10 @@ Variables
 *HasHitEvent(bool)           - if set a hit event is fired when the ball hits the drop/hit target without animation. An additional dropped/raised event
                                is fired for drop targets after the mesh animation is over.
 *Collidable(bool)
+Threshold(float)             - hit threshold for firing the hit event
+HitThreshold(float)          - holds the current hit threshold if a ball has hit the target
 Visible(bool)
-Material(string)
+*Material(string)
 Image(string) - texture name
 Elasticity(float)
 ElasticityFalloff(float)

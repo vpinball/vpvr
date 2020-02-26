@@ -266,12 +266,12 @@ void Plunger::RenderDynamic()
 const static PlungerCoord modernCoords[] =
 {
    { 0.20f, 0.0f, 0.00f, 1.0f, 0.0f },  // tip
-{ 0.30f, 3.0f, 0.11f, 1.0f, 0.0f },  // tip
-{ 0.35f, 5.0f, 0.14f, 1.0f, 0.0f },  // tip
-{ 0.35f, 23.0f, 0.19f, 1.0f, 0.0f },  // tip
-{ 0.45f, 23.0f, 0.21f, 0.8f, 0.0f },  // ring
-{ 0.25f, 24.0f, 0.25f, 0.3f, 0.0f },  // shaft
-{ 0.25f, 100.0f, 1.00f, 0.3f, 0.0f }   // shaft
+   { 0.30f, 3.0f, 0.11f, 1.0f, 0.0f },  // tip
+   { 0.35f, 5.0f, 0.14f, 1.0f, 0.0f },  // tip
+   { 0.35f, 23.0f, 0.19f, 1.0f, 0.0f },  // tip
+   { 0.45f, 23.0f, 0.21f, 0.8f, 0.0f },  // ring
+   { 0.25f, 24.0f, 0.25f, 0.3f, 0.0f },  // shaft
+   { 0.25f, 100.0f, 1.00f, 0.3f, 0.0f }   // shaft
 };
 const static PlungerDesc modernDesc = {
    sizeof(modernCoords) / sizeof(modernCoords[0]), (PlungerCoord*)modernCoords
@@ -526,7 +526,7 @@ void Plunger::RenderSetup()
    }
 
    // figure the relative spring gauge, in terms of the overall width
-   float springGaugeRel = springGauge / m_d.m_width;
+   const float springGaugeRel = springGauge / m_d.m_width;
 
    if (m_vertexBuffer)
       m_vertexBuffer->release();
@@ -584,7 +584,7 @@ void Plunger::RenderSetup()
                   // position and scale in each frame, so we need to figure the
                   // proportional point of the texture at our cut-off point on
                   // the object surface.
-                  const float ratio = (float(i) * inv_scale);
+                  const float ratio = float(i) * inv_scale;
                   tv = (pm - 1)->tv + (tv - (pm - 1)->tv)*ratio;
                }
 

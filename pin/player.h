@@ -635,7 +635,6 @@ public:
    void UpdateBallShaderMatrix();
 
 #ifdef STEPPING
-public:
    U32 m_pauseTimeTarget;
    bool m_pause;
    bool m_step;

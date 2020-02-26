@@ -82,7 +82,10 @@ void Trigger::UpdateEditorView()
          meshVertices = triggerStar;
       }
       else
+      {
          ShowError("Unknown Trigger type");
+         return;
+      }
 
       m_vertices.resize(m_numVertices);
       Matrix3D fullMatrix;
@@ -845,7 +848,7 @@ void Trigger::DoCommand(int icmd, int x, int y)
       Vertex2D vOut;
       ClosestPointOnPolygon(vvertex, v, vOut, iSeg, true);
 
-      // Go through m_vertices (including iSeg itself) counting control points until iSeg
+      // Go through vertices (including iSeg itself) counting control points until iSeg
       int icp = 0;
       for (int i = 0; i < (iSeg + 1); i++)
          if (vvertex[i].controlPoint)

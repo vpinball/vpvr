@@ -49,7 +49,7 @@ public:
       , m_fScatterAngle(0.0f)
    {
       memset(m_szName, 0, MAXNAMEBUFFER);
-      strcpy_s(m_szName, "m_dummyMaterial");
+      strcpy_s(m_szName, "dummyMaterial");
    }
 
    inline Material(float wrapLighting, float roughness, float glossyImageLerp, float thickness, float edge, float edgeAlpha, float opacity,
@@ -73,7 +73,7 @@ public:
       , m_fScatterAngle(scatterAngle)
    {
       memset(m_szName, 0, MAXNAMEBUFFER);
-      strcpy_s(m_szName, "m_dummyMaterial");
+      strcpy_s(m_szName, "dummyMaterial");
    }
 
    inline Material(const Material * const pmat) :

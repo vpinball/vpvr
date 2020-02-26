@@ -48,7 +48,7 @@ struct DisplayConfig
    int width;
    int height;
    bool isPrimary;
-   char DeviceName[32];
+   char DeviceName[CCHDEVICENAME];
    char GPU_Name[MAX_DEVICE_IDENTIFIER_STRING];
 };
 
@@ -232,7 +232,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
       TEX_MIRROR = D3DTADDRESS_MIRROR
    };
 
-   enum PrimitveTypes {
+   enum PrimitiveTypes {
       TRIANGLEFAN = D3DPT_TRIANGLEFAN,
       TRIANGLESTRIP = D3DPT_TRIANGLESTRIP,
       TRIANGLELIST = D3DPT_TRIANGLELIST,
@@ -436,12 +436,13 @@ private:
    D3DTexture* m_pMirrorTmpBufferTexture;
    D3DTexture* m_pReflectionBufferTexture;
 
+   static const DWORD TEXTURE_SAMPLERS = 8;
    static const DWORD TEXTURE_STATE_CACHE_SIZE = 256;
    static const DWORD TEXTURE_SAMPLER_CACHE_SIZE = 14;
 
    std::map<RenderStates, DWORD> renderStateCache;          // for caching
-   DWORD textureStateCache[8][TEXTURE_STATE_CACHE_SIZE];     // dto.
-   DWORD textureSamplerCache[8][TEXTURE_SAMPLER_CACHE_SIZE]; // dto.
+   DWORD textureStateCache[TEXTURE_SAMPLERS][TEXTURE_STATE_CACHE_SIZE];     // dto.
+   DWORD textureSamplerCache[TEXTURE_SAMPLERS][TEXTURE_SAMPLER_CACHE_SIZE]; // dto.
 
    VertexDeclaration *currentDeclaration; // for caching
 

@@ -461,6 +461,8 @@ void Primitive::GetHitShapes(vector<HitObject*> &pvho)
       m_d.m_useAsPlayfield = true;
    }
 
+   //
+
    // playfield can't be a toy
    if (m_d.m_toy && !m_d.m_useAsPlayfield)
       return;
@@ -519,7 +521,7 @@ void Primitive::GetHitShapes(vector<HitObject*> &pvho)
          const unsigned int i2 = prog_new_indices[i].v[2];
 
          Vertex3Ds rgv3D[3];
-         // NB: HitTriangle wants CCW m_vertices, but for rendering we have them in CW order
+         // NB: HitTriangle wants CCW vertices, but for rendering we have them in CW order
          rgv3D[0].x = prog_vertices[i0].x; rgv3D[0].y = prog_vertices[i0].y; rgv3D[0].z = prog_vertices[i0].z;
          rgv3D[1].x = prog_vertices[i2].x; rgv3D[1].y = prog_vertices[i2].y; rgv3D[1].z = prog_vertices[i2].z;
          rgv3D[2].x = prog_vertices[i1].x; rgv3D[2].y = prog_vertices[i1].y; rgv3D[2].z = prog_vertices[i1].z;
@@ -532,7 +534,7 @@ void Primitive::GetHitShapes(vector<HitObject*> &pvho)
 
       prog_new_indices.clear();
 
-      // add collision m_vertices
+      // add collision vertices
       for (size_t i = 0; i < prog_vertices.size(); ++i)
          SetupHitObject(pvho, new HitPoint(prog_vertices[i].x, prog_vertices[i].y, prog_vertices[i].z));
    }
@@ -548,7 +550,7 @@ void Primitive::GetHitShapes(vector<HitObject*> &pvho)
          const unsigned int i2 = m_mesh.m_indices[i + 2];
 
          Vertex3Ds rgv3D[3];
-         // NB: HitTriangle wants CCW m_vertices, but for rendering we have them in CW order
+         // NB: HitTriangle wants CCW vertices, but for rendering we have them in CW order
          rgv3D[0] = m_vertices[i0];
          rgv3D[1] = m_vertices[i2];
          rgv3D[2] = m_vertices[i1];
@@ -559,7 +561,7 @@ void Primitive::GetHitShapes(vector<HitObject*> &pvho)
          AddHitEdge(pvho, addedEdges, i2, i0, rgv3D[1], rgv3D[0]);
       }
 
-      // add collision m_vertices
+      // add collision vertices
       for (size_t i = 0; i < m_mesh.NumVertices(); ++i)
          SetupHitObject(pvho, new HitPoint(m_vertices[i]));
    }
@@ -683,7 +685,7 @@ void Primitive::RecalculateMatrices()
    Smatrix.Multiply(m_fullMatrix, m_fullMatrix);
 }
 
-// recalculate m_vertices for editor display
+// recalculate vertices for editor display
 void Primitive::TransformVertices()
 {
    m_vertices.resize(m_mesh.NumVertices());
@@ -1190,9 +1192,7 @@ void Primitive::RenderObject()
       }
    }
    else
-   {
       m_fullMatrix.SetIdentity();
-   }
 
    RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
@@ -1397,7 +1397,7 @@ HRESULT Primitive::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool bac
    bw.WriteFloat(FID(RSCT), m_d.m_scatter);
    bw.WriteFloat(FID(EFUI), m_d.m_edgeFactorUI);
    bw.WriteFloat(FID(CORF), m_d.m_collision_reductionFactor);
-   bw.WriteBool(FID(CLDRP), m_d.m_collidable);
+   bw.WriteBool(FID(CLDR), m_d.m_collidable);
    bw.WriteBool(FID(ISTO), m_d.m_toy);
    bw.WriteBool(FID(U3DM), m_d.m_use3DMesh);
    bw.WriteBool(FID(STRE), m_d.m_staticRendering);
@@ -2024,13 +2024,9 @@ STDMETHODIMP Primitive::put_Image(BSTR newVal)
       return E_FAIL;
    }
 
-   STARTUNDO
+   strcpy_s(m_d.m_szImage, szImage);
 
-      strcpy_s(m_d.m_szImage, szImage);
-
-   STOPUNDO
-
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_NormalMap(BSTR *pVal)

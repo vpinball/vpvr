@@ -18,8 +18,8 @@ Ramp::Ramp()
    m_propPosition = NULL;
    m_propPhysics = NULL;
    memset(m_d.m_szImage, 0, MAXTOKEN);
-   memset(m_d.m_szMaterial, 0, 32);
-   memset(m_d.m_szPhysicsMaterial, 0, 32);
+   memset(m_d.m_szMaterial, 0, MAXNAMEBUFFER);
+   memset(m_d.m_szPhysicsMaterial, 0, MAXNAMEBUFFER);
    m_d.m_hitEvent = false;
    m_d.m_overwritePhysics = true;
    m_rgheightInit = NULL;
@@ -1094,7 +1094,7 @@ void Ramp::GenerateWireMesh(Vertex3D_NoTex2 **meshBuf1, Vertex3D_NoTex2 **meshBu
    delete[] tmpPoints;
 }
 
-void Ramp::prepareHabitrail()
+void Ramp::PrepareHabitrail()
 {
    m_dynamicVertexBufferRegenerate = false;
    Vertex3D_NoTex2 *tmpBuf1 = NULL;
@@ -1202,11 +1202,10 @@ void Ramp::prepareHabitrail()
 
 void Ramp::RenderSetup()
 {
-   RenderDevice *pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
    if (m_d.m_visible)
    {
       if (isHabitrail())
-         prepareHabitrail();
+         PrepareHabitrail();
       else
          GenerateVertexBuffer();
    }
@@ -1286,7 +1285,7 @@ HRESULT Ramp::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupFo
    bw.WriteFloat(FID(ELAS), m_d.m_elasticity);
    bw.WriteFloat(FID(RFCT), m_d.m_friction);
    bw.WriteFloat(FID(RSCT), m_d.m_scatter);
-   bw.WriteBool(FID(CLDRP), m_d.m_collidable);
+   bw.WriteBool(FID(CLDR), m_d.m_collidable);
    bw.WriteBool(FID(RVIS), m_d.m_visible);
    bw.WriteFloat(FID(RADB), m_d.m_depthBias);
    bw.WriteFloat(FID(RADI), m_d.m_wireDiameter);
@@ -1959,6 +1958,7 @@ void Ramp::ExportMesh(FILE *f)
    if (m_d.m_visible)
    {
       WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, MAX_PATH, NULL, NULL);
+      WaveFrontObj_WriteObjectName(f, name);
       if (!isHabitrail())
       {
          Vertex3D_NoTex2 *rampMesh = NULL;

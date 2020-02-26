@@ -499,8 +499,8 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
       // 21:9 aspect ratio resolution:   3440*1440
       // 4:3  aspect ratio resolutions:  1280*1024
       const unsigned int num_portrait_modes = 15;
-      const int portrait_modes_width[num_portrait_modes] = { 720, 720, 1024, 768, 800, 900, 900,1050,1050,1080,1200,1440,1440,1600,2160 };
-      const int portrait_modes_height[num_portrait_modes] = { 1024,1280, 1280,1366,1280,1440,1600,1600,1680,1920,1920,2560,3440,2560,3840 };
+      const int portrait_modes_width[num_portrait_modes] =  { 720, 720, 1024, 768, 800, 900, 900,1050,1050,1080,1200,1440,1440,1600,2160};
+      const int portrait_modes_height[num_portrait_modes] = {1024,1280, 1280,1366,1280,1440,1600,1600,1680,1920,1920,2560,3440,2560,3840};
 
       for (unsigned int i = 0; i < num_portrait_modes; ++i)
          if ((portrait_modes_width[i] <= screenwidth) && (portrait_modes_height[i] <= screenheight))

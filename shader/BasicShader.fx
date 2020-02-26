@@ -134,8 +134,7 @@ float3 normal_map(const float3 N, const float3 V, const float2 uv)
    {
       tn.z = -tn.z; // this matches the object space, +X +Y +Z, export/baking in Blender with our trafo setup
       return normalize(mul(tn, matWorldViewInverseTranspose).xyz);
-   }
-   else // tangent space
+   } else // tangent space
       return normalize(mul(TBN_trafo(N, V, uv),
          tn));
 }

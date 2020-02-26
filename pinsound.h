@@ -27,10 +27,8 @@ typedef vector<DSAudioDevice*> DSAudioDevices;
 BOOL CALLBACK DSEnumCallBack(LPGUID guid, LPCSTR desc, LPCSTR mod, LPVOID list);
 
 enum SoundOutTypes : char { SNDOUT_TABLE = 0, SNDOUT_BACKGLASS = 1 };
-enum SoundConfigTypes : int {
-   SNDCFG_SND3D2CH = 0, SNDCFG_SND3DALLREAR = 1, SNDCFG_SND3DFRONTISREAR = 2,
-   SNDCFG_SND3DFRONTISFRONT = 3, SNDCFG_SND3D6CH = 4
-};
+enum SoundConfigTypes : int { SNDCFG_SND3D2CH = 0, SNDCFG_SND3DALLREAR = 1, SNDCFG_SND3DFRONTISREAR = 2, 
+                              SNDCFG_SND3DFRONTISFRONT = 3, SNDCFG_SND3D6CH = 4};
 
 // Surround modes
 // ==============

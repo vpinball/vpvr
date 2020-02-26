@@ -179,12 +179,12 @@ public:
 
    bool             m_hitEvent;
 
-private:        // private member functions
+private:
 
    void UpdateAnimation();
    void RenderObject();
    void UpdateTarget();
-   void SetupHitObject(vector<HitObject*> &pvho, HitObject * obj, const bool setHitObject = true);
+   void SetupHitObject(vector<HitObject*> &pvho, HitObject * obj, const bool setHitObject);
    void AddHitEdge(vector<HitObject*> &pvho, std::set< std::pair<unsigned, unsigned> >& addedEdges, const unsigned i, const unsigned j, const Vertex3Ds &vi, const Vertex3Ds &vj, const bool setHitObject = true);
 
    PinTable        *m_ptable;

@@ -377,8 +377,6 @@ void Flasher::RenderSetup()
       delete[] m_vertices;
    m_vertices = new Vertex3D_TexelOnly[m_numVertices];
 
-   Pin3D * const ppin3d = &g_pplayer->m_pin3d;
-
    m_minx = FLT_MAX;
    m_miny = FLT_MAX;
    m_maxx = -FLT_MAX;
@@ -1191,7 +1189,6 @@ void Flasher::RenderDynamic()
 
           if (!m_d.m_addBlend)
           {
-             flasherMode = 1.f;
              flasherData.x = pinA->m_alphaTestValue * (float)(1.0 / 255.0);
              flasherData.y = pinB->m_alphaTestValue * (float)(1.0 / 255.0);
           }

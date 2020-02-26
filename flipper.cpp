@@ -259,7 +259,7 @@ void Flipper::UpdatePhysicsSettings()
 }
 
 void Flipper::GetHitShapes(vector<HitObject*> &pvho)
- {
+{
    UpdatePhysicsSettings();
 
    //

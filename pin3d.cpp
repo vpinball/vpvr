@@ -418,7 +418,7 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
       if (display == dispConf->display) adapter = dispConf->adapter;
    m_pd3dPrimaryDevice = new RenderDevice(m_viewPort.Width, m_viewPort.Height, fullScreen, colordepth, VSync, AAfactor, stereo3D, FXAA, ss_refl, g_pplayer->m_useNvidiaApi, g_pplayer->m_disableDWM, g_pplayer->m_BWrendering);
    try {
-      m_pd3dPrimaryDevice->CreateDevice(refreshrate, display);
+      m_pd3dPrimaryDevice->CreateDevice(refreshrate, adapter);
    }
    catch (...) {
       return E_FAIL;

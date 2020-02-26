@@ -428,7 +428,6 @@ void Surface::SetupHitObject(vector<HitObject*> &pvho, HitObject * const obj)
       obj->m_elasticity = m_d.m_elasticity;
       obj->SetFriction(m_d.m_friction);
       obj->m_scatter = ANGTORAD(m_d.m_scatter);
-      obj->m_enabled = m_d.m_collidable;
    }
 
    obj->m_enabled = m_d.m_collidable;
@@ -841,7 +840,7 @@ void Surface::PrepareWallsAtHeight()
    memcpy(verts, sideBuf.data(), sizeof(Vertex3D_NoTex2)*m_numVertices * 4);
 
    if (topBottomBuf.size() > 0)
-      //if (m_d.m_fVisible) // Visible could still be set later if rendered dynamically
+      //if (m_d.m_visible) // Visible could still be set later if rendered dynamically
    {
       memcpy(verts + m_numVertices * 4, topBottomBuf.data(), sizeof(Vertex3D_NoTex2)*m_numVertices * 3);
    }

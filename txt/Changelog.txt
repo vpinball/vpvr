@@ -166,6 +166,8 @@ FEATURES:
 
 FIXES:
 
+- fix slightly wrong flipper mesh (visible for very short flippers)
+
 - fix some broken insert lights if playfield reflections are disabled
 
 - fix OBJ-exported names for all ramp types
@@ -291,6 +293,7 @@ ELSE:
 - see core scripts (header of core.vbs) for the respective changelog (version 3.57)
 - see CommandReference.txt for the changelog of all the scripting properties/interface changes
 
+- remove Visual Studio 2010 & 2012 & 2013 support, add Visual Studio 2019 support
 
 VP 10.5.0 Changelog
 ------------------------

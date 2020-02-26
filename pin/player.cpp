@@ -157,38 +157,38 @@ static pSetGestureConfig SetGestureConfig = NULL;
 
 #define STATIC_PRERENDER_ITERATIONS /*32*/64/*128*/
 /*   static const float xyLDBNbnot[STATIC_PRERENDER_ITERATIONS*2] = {
-0.00000f,0.00000f,
-0.23151f,0.02134f,
-0.36499f,0.09920f,
-0.72093f,0.06583f,
-0.10915f,0.14369f,
-0.28712f,0.25492f,
-0.56520f,0.15482f,
-0.79879f,0.23268f,
-0.97676f,0.14925f,
-0.14252f,0.35503f,
-0.34274f,0.44402f,
-0.46509f,0.31054f,
-0.65419f,0.33279f,
-0.83216f,0.41621f,
-0.98788f,0.34947f,
-0.00905f,0.46626f,
-0.20926f,0.52188f,
-0.38723f,0.62199f,
-0.54296f,0.47739f,
-0.66531f,0.57749f,
-0.82103f,0.60530f,
-0.07578f,0.64423f,
-0.13140f,0.79996f,
-0.27600f,0.72209f,
-0.53183f,0.68873f,
-0.68756f,0.77771f,
-0.96563f,0.69429f,
-0.17589f,0.97793f,
-0.32049f,0.92231f,
-0.48734f,0.85557f,
-0.67643f,0.95568f,
-0.85440f,0.82776f};*/
+     0.00000f,0.00000f,
+     0.23151f,0.02134f,
+     0.36499f,0.09920f,
+     0.72093f,0.06583f,
+     0.10915f,0.14369f,
+     0.28712f,0.25492f,
+     0.56520f,0.15482f,
+     0.79879f,0.23268f,
+     0.97676f,0.14925f,
+     0.14252f,0.35503f,
+     0.34274f,0.44402f,
+     0.46509f,0.31054f,
+     0.65419f,0.33279f,
+     0.83216f,0.41621f,
+     0.98788f,0.34947f,
+     0.00905f,0.46626f,
+     0.20926f,0.52188f,
+     0.38723f,0.62199f,
+     0.54296f,0.47739f,
+     0.66531f,0.57749f,
+     0.82103f,0.60530f,
+     0.07578f,0.64423f,
+     0.13140f,0.79996f,
+     0.27600f,0.72209f,
+     0.53183f,0.68873f,
+     0.68756f,0.77771f,
+     0.96563f,0.69429f,
+     0.17589f,0.97793f,
+     0.32049f,0.92231f,
+     0.48734f,0.85557f,
+     0.67643f,0.95568f,
+     0.85440f,0.82776f};*/
 
 static const float xyLDBNbnot[STATIC_PRERENDER_ITERATIONS * 2] = {
    0.00000f,0.00000f,
@@ -257,134 +257,134 @@ static const float xyLDBNbnot[STATIC_PRERENDER_ITERATIONS * 2] = {
    0.91753f,0.97515f };
 
 /*   static const float xyLDBNbnot[STATIC_PRERENDER_ITERATIONS*2] = {
-0.00000f,0.00000f,
-0.01267f,0.07171f,
-0.10232f,0.04930f,
-0.18638f,0.01007f,
-0.28725f,0.02688f,
-0.43295f,0.08292f,
-0.50579f,0.00447f,
-0.53942f,0.07732f,
-0.66830f,0.03249f,
-0.75796f,0.06611f,
-0.88685f,0.01568f,
-0.98211f,0.05490f,
-0.07431f,0.14456f,
-0.15836f,0.13335f,
-0.22000f,0.09413f,
-0.30406f,0.13896f,
-0.36010f,0.08852f,
-0.52260f,0.16137f,
-0.61226f,0.12775f,
-0.69632f,0.11654f,
-0.78598f,0.17258f,
-0.84202f,0.09973f,
-0.91487f,0.11094f,
-0.99332f,0.15577f,
-0.01827f,0.18379f,
-0.13034f,0.23422f,
-0.23681f,0.18939f,
-0.33208f,0.22301f,
-0.41613f,0.17818f,
-0.48898f,0.22862f,
-0.59545f,0.24543f,
-0.67951f,0.20060f,
-0.77477f,0.25103f,
-0.88124f,0.19499f,
-0.97090f,0.23982f,
-0.04629f,0.27345f,
-0.08551f,0.34630f,
-0.19759f,0.26784f,
-0.25923f,0.31828f,
-0.35449f,0.30707f,
-0.43855f,0.29586f,
-0.52821f,0.31267f,
-0.62347f,0.33509f,
-0.70753f,0.28465f,
-0.80840f,0.32388f,
-0.89245f,0.27905f,
-0.99892f,0.32948f,
-0.06310f,0.42475f,
-0.16397f,0.35750f,
-0.24242f,0.43035f,
-0.32087f,0.39113f,
-0.41053f,0.38552f,
-0.47778f,0.41354f,
-0.56743f,0.39673f,
-0.64589f,0.43596f,
-0.71313f,0.37431f,
-0.81400f,0.40794f,
-0.90366f,0.36871f,
-0.97651f,0.41914f,
-0.00006f,0.45837f,
-0.10653f,0.52001f,
-0.16817f,0.45277f,
-0.29145f,0.51441f,
-0.35870f,0.48079f,
-0.44836f,0.50320f,
-0.54362f,0.49199f,
-0.62768f,0.53122f,
-0.73975f,0.46397f,
-0.87424f,0.47518f,
-0.95269f,0.49760f,
-0.01687f,0.54803f,
-0.16257f,0.61527f,
-0.20179f,0.54243f,
-0.26904f,0.60967f,
-0.36430f,0.58165f,
-0.46517f,0.59286f,
-0.54922f,0.58726f,
-0.70052f,0.55363f,
-0.79018f,0.53682f,
-0.80139f,0.62088f,
-0.88545f,0.57044f,
-0.07291f,0.70493f,
-0.07851f,0.62648f,
-0.20739f,0.68252f,
-0.30826f,0.68812f,
-0.39792f,0.66571f,
-0.49319f,0.67131f,
-0.60526f,0.64890f,
-0.69492f,0.63209f,
-0.77337f,0.71054f,
-0.86303f,0.69933f,
-0.93028f,0.63769f,
-0.01126f,0.73856f,
-0.14575f,0.76097f,
-0.24102f,0.77218f,
-0.31387f,0.79459f,
-0.40353f,0.74976f,
-0.48758f,0.76658f,
-0.57724f,0.72735f,
-0.68371f,0.72175f,
-0.72294f,0.80020f,
-0.82941f,0.77778f,
-0.93588f,0.75537f,
-0.06730f,0.81701f,
-0.11774f,0.88986f,
-0.19058f,0.85624f,
-0.28024f,0.88425f,
-0.38671f,0.83942f,
-0.47637f,0.86184f,
-0.56603f,0.83382f,
-0.63888f,0.80580f,
-0.76777f,0.87305f,
-0.84622f,0.86744f,
-0.91347f,0.84503f,
-0.02808f,0.90667f,
-0.10092f,0.97952f,
-0.18498f,0.96831f,
-0.26343f,0.97391f,
-0.36990f,0.92348f,
-0.45956f,0.94589f,
-0.55483f,0.91788f,
-0.65009f,0.89546f,
-0.70613f,0.95710f,
-0.80699f,0.96271f,
-0.90786f,0.95150f,
-0.99192f,0.91227f,
-0.00566f,0.99072f,
-0.61086f,0.98512f};*/
+     0.00000f,0.00000f,
+     0.01267f,0.07171f,
+     0.10232f,0.04930f,
+     0.18638f,0.01007f,
+     0.28725f,0.02688f,
+     0.43295f,0.08292f,
+     0.50579f,0.00447f,
+     0.53942f,0.07732f,
+     0.66830f,0.03249f,
+     0.75796f,0.06611f,
+     0.88685f,0.01568f,
+     0.98211f,0.05490f,
+     0.07431f,0.14456f,
+     0.15836f,0.13335f,
+     0.22000f,0.09413f,
+     0.30406f,0.13896f,
+     0.36010f,0.08852f,
+     0.52260f,0.16137f,
+     0.61226f,0.12775f,
+     0.69632f,0.11654f,
+     0.78598f,0.17258f,
+     0.84202f,0.09973f,
+     0.91487f,0.11094f,
+     0.99332f,0.15577f,
+     0.01827f,0.18379f,
+     0.13034f,0.23422f,
+     0.23681f,0.18939f,
+     0.33208f,0.22301f,
+     0.41613f,0.17818f,
+     0.48898f,0.22862f,
+     0.59545f,0.24543f,
+     0.67951f,0.20060f,
+     0.77477f,0.25103f,
+     0.88124f,0.19499f,
+     0.97090f,0.23982f,
+     0.04629f,0.27345f,
+     0.08551f,0.34630f,
+     0.19759f,0.26784f,
+     0.25923f,0.31828f,
+     0.35449f,0.30707f,
+     0.43855f,0.29586f,
+     0.52821f,0.31267f,
+     0.62347f,0.33509f,
+     0.70753f,0.28465f,
+     0.80840f,0.32388f,
+     0.89245f,0.27905f,
+     0.99892f,0.32948f,
+     0.06310f,0.42475f,
+     0.16397f,0.35750f,
+     0.24242f,0.43035f,
+     0.32087f,0.39113f,
+     0.41053f,0.38552f,
+     0.47778f,0.41354f,
+     0.56743f,0.39673f,
+     0.64589f,0.43596f,
+     0.71313f,0.37431f,
+     0.81400f,0.40794f,
+     0.90366f,0.36871f,
+     0.97651f,0.41914f,
+     0.00006f,0.45837f,
+     0.10653f,0.52001f,
+     0.16817f,0.45277f,
+     0.29145f,0.51441f,
+     0.35870f,0.48079f,
+     0.44836f,0.50320f,
+     0.54362f,0.49199f,
+     0.62768f,0.53122f,
+     0.73975f,0.46397f,
+     0.87424f,0.47518f,
+     0.95269f,0.49760f,
+     0.01687f,0.54803f,
+     0.16257f,0.61527f,
+     0.20179f,0.54243f,
+     0.26904f,0.60967f,
+     0.36430f,0.58165f,
+     0.46517f,0.59286f,
+     0.54922f,0.58726f,
+     0.70052f,0.55363f,
+     0.79018f,0.53682f,
+     0.80139f,0.62088f,
+     0.88545f,0.57044f,
+     0.07291f,0.70493f,
+     0.07851f,0.62648f,
+     0.20739f,0.68252f,
+     0.30826f,0.68812f,
+     0.39792f,0.66571f,
+     0.49319f,0.67131f,
+     0.60526f,0.64890f,
+     0.69492f,0.63209f,
+     0.77337f,0.71054f,
+     0.86303f,0.69933f,
+     0.93028f,0.63769f,
+     0.01126f,0.73856f,
+     0.14575f,0.76097f,
+     0.24102f,0.77218f,
+     0.31387f,0.79459f,
+     0.40353f,0.74976f,
+     0.48758f,0.76658f,
+     0.57724f,0.72735f,
+     0.68371f,0.72175f,
+     0.72294f,0.80020f,
+     0.82941f,0.77778f,
+     0.93588f,0.75537f,
+     0.06730f,0.81701f,
+     0.11774f,0.88986f,
+     0.19058f,0.85624f,
+     0.28024f,0.88425f,
+     0.38671f,0.83942f,
+     0.47637f,0.86184f,
+     0.56603f,0.83382f,
+     0.63888f,0.80580f,
+     0.76777f,0.87305f,
+     0.84622f,0.86744f,
+     0.91347f,0.84503f,
+     0.02808f,0.90667f,
+     0.10092f,0.97952f,
+     0.18498f,0.96831f,
+     0.26343f,0.97391f,
+     0.36990f,0.92348f,
+     0.45956f,0.94589f,
+     0.55483f,0.91788f,
+     0.65009f,0.89546f,
+     0.70613f,0.95710f,
+     0.80699f,0.96271f,
+     0.90786f,0.95150f,
+     0.99192f,0.91227f,
+     0.00566f,0.99072f,
+     0.61086f,0.98512f};*/
 
 //
 //
@@ -435,7 +435,7 @@ INT_PTR CALLBACK PauseProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 extern INT_PTR CALLBACK DebuggerProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 
-Player::Player(const bool m_cameraMode, PinTable * const ptable, const HWND hwndProgress, const HWND hwndProgressName, HRESULT &hrInit) : m_cameraMode(m_cameraMode)
+Player::Player(const bool cameraMode, PinTable * const ptable, const HWND hwndProgress, const HWND hwndProgressName, HRESULT &hrInit) : m_cameraMode(cameraMode)
 {
    {
       int regs[4];
@@ -815,7 +815,6 @@ void Player::Shutdown()
 
 void Player::InitFPS()
 {
-#ifdef FPS
    m_lastfpstime = m_time_msec;
    m_cframes = 0;
    m_fps = 0.0f;
@@ -837,7 +836,6 @@ void Player::InitFPS()
    m_script_total = 0;
    m_script_max = 0;
    m_script_max_total = 0;
-#endif
 }
 
 void Player::ToggleFPS()
@@ -922,6 +920,7 @@ void Player::RecomputePseudoPauseState()
 
 void Player::AddCabinetBoundingHitShapes()
 {
+   // simple outer borders:
    LineSeg *plineseg;
 
    plineseg = new LineSeg(Vertex2D(m_ptable->m_right, m_ptable->m_top), Vertex2D(m_ptable->m_right, m_ptable->m_bottom), m_ptable->m_tableheight, m_ptable->m_glassheight);
@@ -1407,6 +1406,7 @@ HRESULT Player::Init(PinTable * const ptable, const HWND hwndProgress, const HWN
 
    m_pininput.Init(m_playfieldHwnd);
 
+   //
    const unsigned int lflip = get_vk(m_rgKeys[eLeftFlipperKey]);
    const unsigned int rflip = get_vk(m_rgKeys[eRightFlipperKey]);
 
@@ -1533,8 +1533,7 @@ HRESULT Player::Init(PinTable * const ptable, const HWND hwndProgress, const HWN
          {
             DispReel * const dispReel = (DispReel*)pe;
             m_vanimate.push_back(&dispReel->m_dispreelanim);
-         }
-         else
+         } else
             if (pe->GetItemType() == eItemLightSeq)
             {
                LightSeq * const lightseq = (LightSeq*)pe;
@@ -1832,7 +1831,7 @@ void Player::RenderDynamicMirror(const bool onlyBalls)
    if (!onlyBalls)
    {
       // Draw non-transparent objects.
-      for (unsigned int i = 0; i < m_vHitNonTrans.size(); ++i)
+      for (size_t i = 0; i < m_vHitNonTrans.size(); ++i)
          m_vHitNonTrans[i]->RenderDynamic();
    }
 
@@ -1888,6 +1887,7 @@ void Player::InitStatic(HWND hwndProgress)
 {
    TRACE_FUNCTION();
 
+   // Start the frame.
    for (size_t i = 0; i < m_vhitables.size(); ++i)
    {
       Hitable * const ph = m_vhitables[i];
@@ -2006,10 +2006,6 @@ void Player::InitGameplayWindow()
 
    int display = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "Display", -1);
    display = (display < getNumberOfDisplays()) ? display : -1;
-
-   // command line override
-   if (disEnableTrueFullscreen)
-      m_fullScreen = false;
 
    if (m_fullScreen)
    {
@@ -2348,8 +2344,8 @@ int Player::NudgeGetTilt()
 
 void Player::NudgeUpdate()      // called on every integral physics frame
 {
-   m_NudgeX = 0.0f;   // accumulate over joysticks, these acceleration values are used in update ball velocity calculations
-   m_NudgeY = 0.0f;   // and are required to be acceleration values (not velocity or displacement)
+   m_NudgeX = 0.f;   // accumulate over joysticks, these acceleration values are used in update ball velocity calculations
+   m_NudgeY = 0.f;   // and are required to be acceleration values (not velocity or displacement)
 
    if (!m_ptable->m_tblAccelerometer) return;       // electronic accelerometer disabled 
 
@@ -2387,7 +2383,7 @@ const float IIR_b[IIR_Order + 1] = {
    -1.0546654f,
    0.1873795f };
 
-void Player::MechPlungerUpdate()        // called on every integral physics frame, only really triggered if before mechPlungerIn() was called, which again relies on USHOCKTYPE_GENERIC,USHOCKTYPE_ULTRACADE,USHOCKTYPE_PBWIZARD,USHOCKTYPE_VIRTUAPIN,USHOCKTYPE_SIDEWINDER being used
+void Player::MechPlungerUpdate()        // called on every integral physics frame, only really triggered if before MechPlungerIn() was called, which again relies on USHOCKTYPE_GENERIC,USHOCKTYPE_ULTRACADE,USHOCKTYPE_PBWIZARD,USHOCKTYPE_VIRTUAPIN,USHOCKTYPE_SIDEWINDER being used
 {
    static int init = IIR_Order;    // first time call
    static float x[IIR_Order + 1] = { 0, 0, 0, 0, 0 };
@@ -2858,7 +2854,6 @@ void Player::PhysicsSimulateCycle(float dtime) // move physics forward to this t
             ) //&& rand_mt_01() < 0.95f)
             {
             pball->m_angularmomentum *= 0.05f; // do not kill spin completely, otherwise stuck balls will happen during regular gameplay
-            pball->m_angularvelocity *= 0.05f;
             }*/
 
             const Vertex3Ds diff_pos = pball->m_oldpos[p0] - pball->m_d.m_pos;
@@ -3764,7 +3759,7 @@ void Player::UpdateHUD()
       DebugPrint(m_width / 2 - 320, 10, szFoo, len2, true);
    }
 
-   if (!m_closeDown && m_supportsTouch && (usec() < m_StartTime_usec + 12e+6)) // show for max. 12 seconds
+   if (!m_closeDown && m_supportsTouch && m_showTouchMessage && (usec() < m_StartTime_usec + 12e+6)) // show for max. 12 seconds
    {
       char szFoo[256];
       int len2 = sprintf_s(szFoo, "You can use Touch controls on this display: bottom left area to Start Game, bottom right area to use the Plunger");
@@ -5114,8 +5109,8 @@ void Player::DoDebugObjectMenu(const int x, const int y)
    // clipping plane (z=0) and the far clipping plane (z=1) to get the whole
    // range we need to hit test
    Vertex3Ds v3d, v3d2;
-   mat3D.MultiplyVector(Vertex3Ds(xcoord, ycoord, 0.0f), v3d);
-   mat3D.MultiplyVector(Vertex3Ds(xcoord, ycoord, 1.0f), v3d2);
+   mat3D.MultiplyVector(Vertex3Ds(xcoord, ycoord, 0.f), v3d);
+   mat3D.MultiplyVector(Vertex3Ds(xcoord, ycoord, 1.f), v3d2);
 
    // Create a ray (ball) that travels in 3D space from the screen pixel at
    // the near clipping plane to the far clipping plane, and find what
@@ -5123,7 +5118,7 @@ void Player::DoDebugObjectMenu(const int x, const int y)
    Ball ballT;
    ballT.m_d.m_pos = v3d;
    ballT.m_d.m_vel = v3d2 - v3d;
-   ballT.m_d.m_radius = 0;
+   ballT.m_d.m_radius = 0.f;
    ballT.m_coll.m_hittime = 1.0f;
    ballT.CalcHitBBox(); // need to update here, as only done lazily
 
@@ -5397,7 +5392,7 @@ LRESULT CALLBACK PlayerWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
    return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-void ShutDownPlayer()
+static void ShutDownPlayer()
 {
    if (g_pplayer->m_audio)
       g_pplayer->m_audio->MusicPause();

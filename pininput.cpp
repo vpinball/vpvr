@@ -1083,7 +1083,7 @@ void PinInput::ProcessThrowBalls(const DIDEVICEOBJECTDATA * __restrict input)
                     pBall->m_d.m_pos.y = vert.y;
                     pBall->m_d.m_vel.x = vx;
                     pBall->m_d.m_vel.y = vy;
-                    pBall->Init(1.0f);
+                    pBall->Init(1.f);
                     break;
                  }
               }

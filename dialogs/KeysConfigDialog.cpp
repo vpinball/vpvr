@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+#include "stdafx.h"
 #include "resource.h"
 #include "KeysConfigDialog.h"
 
@@ -302,7 +302,7 @@ BOOL KeysConfigDialog::OnInitDialog()
     int key = LoadValueIntWithDefault("Player", "PBWRotationValue", 0);
     SetDlgItemInt( IDC_GLOBALROTATION, key, FALSE);
 
-    on = LoadValueBoolWithDefault("Player", "TiltSensCB", 0);
+    on = LoadValueBoolWithDefault("Player", "TiltSensCB", false);
     ::SendMessage(GetDlgItem(IDC_CBGLOBALTILT).GetHwnd(), BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
 
     key = LoadValueIntWithDefault("Player", "TiltSensValue", 400);
@@ -319,6 +319,9 @@ BOOL KeysConfigDialog::OnInitDialog()
 
     on = LoadValueBoolWithDefault("Player", "ReversePlungerAxis", false);
     ::SendMessage(GetDlgItem(IDC_ReversePlunger).GetHwnd(), BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
+
+    on = LoadValueBoolWithDefault("Player", "PlungerRetract", true);
+    ::SendMessage(GetDlgItem(IDC_PLUNGERRETRACT).GetHwnd(), BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
 
     on = LoadValueBoolWithDefault("Player", "LRAxisFlip", false);
     ::SendMessage(GetDlgItem(IDC_LRAXISFLIP).GetHwnd(), BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -965,10 +968,13 @@ void KeysConfigDialog::OnOK()
     selected = ::SendMessage(GetDlgItem(IDC_ReversePlunger).GetHwnd(), BM_GETCHECK, 0, 0);
     SaveValueBool("Player", "ReversePlungerAxis", selected != 0);
 
+    selected = ::SendMessage(GetDlgItem(IDC_PLUNGERRETRACT).GetHwnd(), BM_GETCHECK, 0, 0);
+    SaveValueBool("Player", "PlungerRetract", selected != 0);
+
     selected = ::SendMessage(GetDlgItem(IDC_GLOBALACCEL).GetHwnd(), BM_GETCHECK, 0, 0);
     SaveValueBool("Player", "PBWEnabled", selected != 0);
 
-    selected = ::SendMessage(GetDlgItem(IDC_GLOBALNMOUNT), BM_GETCHECK, 0, 0);
+    selected = ::SendMessage(GetDlgItem(IDC_GLOBALNMOUNT).GetHwnd(), BM_GETCHECK, 0, 0);
     SaveValueBool("Player", "PBWNormalMount", selected != 0);
 
     selected = ::SendMessage(GetDlgItem(IDC_CBGLOBALROTATION).GetHwnd(), BM_GETCHECK, 0, 0);
@@ -997,7 +1003,7 @@ void KeysConfigDialog::OnOK()
     for (unsigned int i = 0; i < eCKeys; ++i) if (regkey_idc[i] != -1)
     {        
         const size_t key = ::GetWindowLongPtr(GetDlgItem(regkey_idc[i]).GetHwnd(), GWLP_USERDATA);
-        SaveValueInt("Player", regkey_string[i], key);
+        SaveValueInt("Player", regkey_string[i], (int)key);
     }
 
     SetValue(IDC_JOYCUSTOM1, "Player", "JoyCustom1Key");
@@ -1058,12 +1064,12 @@ HWND KeysConfigDialog::GetItemHwnd(int nID)
     return GetDlgItem(nID).GetHwnd();
 }
 
-void KeysConfigDialog::SetValue(int nID, char *regKey, char *regValue)
+void KeysConfigDialog::SetValue(int nID, const char * const regKey, const char * const regValue)
 {
     size_t selected = ::SendMessage(GetDlgItem(nID).GetHwnd(), CB_GETCURSEL, 0, 0);
     if (selected == LB_ERR)
         selected = 2; // assume both as standard
-    SaveValueInt(regKey, regValue, selected);
+    SaveValueInt(regKey, regValue, (int)selected);
 }
 
 void KeysConfigDialog::StartTimer(int nID)

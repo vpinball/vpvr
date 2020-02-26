@@ -2250,8 +2250,7 @@ void CodeViewer::ReadLineToParseBrain(string wholeline, const int linecount, vec
          UD.m_keyName = sSubName;
          //UserData ud(linecount, line, sSubName, Type);
          if (!ParseStructureName(ListIn, UD, UCline, line, linecount))
-         {/*A critical brain error occured */
-         }
+            {/*A critical brain error occured */}
       }// if ( idx != string::npos)
    }// while (wholeline.length > 1) 
 }

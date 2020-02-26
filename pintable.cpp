@@ -680,15 +680,15 @@ STDMETHODIMP ScriptGlobalTable::get_ShowFSS(VARIANT_BOOL *pVal)
 
 /*STDMETHODIMP PinTable::put_ShowFSS(VARIANT_BOOL newVal)
 {
-STARTUNDO
-m_BG_enable_FSS = VBTOb(newVal);
-if (m_BG_enable_FSS)
-m_BG_current_set = FULL_SINGLE_SCREEN;
-else
-LoadValueInt("Player", "BGSet", (int*)&m_BG_current_set);
-STOPUNDO
+   STARTUNDO
+   m_BG_enable_FSS = VBTOb(newVal);
+   if (m_BG_enable_FSS)
+      m_BG_current_set = FULL_SINGLE_SCREEN;
+   else
+      LoadValueInt("Player", "BGSet", (int*)&m_BG_current_set);
+   STOPUNDO
 
-return S_OK;
+   return S_OK;
 }*/
 
 STDMETHODIMP ScriptGlobalTable::UpdateMaterial(BSTR pVal, float wrapLighting, float roughness, float glossyImageLerp, float thickness, float edge, float edgeAlpha, float opacity,
@@ -996,7 +996,7 @@ void upscale(DWORD * const data, const unsigned int xres, const unsigned int yre
          g_res[o] = res;
          g_hori[o] = hori;
          g_vert[o] = vert;
-         g_or[o] = ori ;
+         g_or[o] = ori;
       }
    }
 
@@ -1464,12 +1464,11 @@ PinTable::PinTable()
 
    ReadAccelerometerCalibration();
 
-   m_tblAutoStart = LoadValueIntWithDefault("Player", "Autostart", 0);
-
+   m_tblAutoStart = LoadValueIntWithDefault("Player", "Autostart", 0) * 10;
    m_tblAutoStartRetry = LoadValueIntWithDefault("Player", "AutostartRetry", 0) * 10;
    m_tblAutoStartEnabled = LoadValueBoolWithDefault("Player", "asenable", false);
 
-   m_tblVolmod = LoadValueIntWithDefault("Player", "Volmod", 1000) * (float)(1.0 / 1000.0);
+   m_tblVolmod = (float)LoadValueIntWithDefault("Player", "Volmod", 1000) * (float)(1.0 / 1000.0);
 
    m_tblExitConfirm = LoadValueIntWithDefault("Player", "Exitconfirm", 120) * 1000 / 60;
 
@@ -1511,10 +1510,10 @@ void PinTable::ReadAccelerometerCalibration()
    m_tblAccelerometer = LoadValueBoolWithDefault("Player", "PBWEnabled", true); // true if electronic accelerometer enabled
    m_tblAccelNormalMount = LoadValueBoolWithDefault("Player", "PBWNormalMount", true); // true is normal mounting (left hand coordinates)
 
-   if (LoadValueIntWithDefault("Player", "PBWRotationCB", 0) != 0)
-   {
-      m_tblAccelAngle = (float)LoadValueIntWithDefault("Player", "PBWRotationValue", 0); // 0 degrees rotated counterclockwise (GUI is lefthand coordinates)
-   }
+   m_tblAccelAngle = 0.0f;			// 0 degrees rotated counterclockwise (GUI is lefthand coordinates)
+   const bool accel = LoadValueBoolWithDefault("Player", "PBWRotationCB", false);
+   if (accel)
+      m_tblAccelAngle = (float)LoadValueIntWithDefault("Player", "PBWRotationValue", 0);
 
    m_tblAccelAmpX = dequantizeUnsignedPercentNoClamp(LoadValueIntWithDefault("Player", "PBWAccelGainX", 150));
    m_tblAccelAmpY = dequantizeUnsignedPercentNoClamp(LoadValueIntWithDefault("Player", "PBWAccelGainY", 150));
@@ -1522,7 +1521,7 @@ void PinTable::ReadAccelerometerCalibration()
    m_tblAccelMaxX = LoadValueIntWithDefault("Player", "PBWAccelMaxX", 100) * JOYRANGEMX / 100;
    m_tblAccelMaxY = LoadValueIntWithDefault("Player", "PBWAccelMaxY", 100) * JOYRANGEMX / 100;
 
-   // bug!! If tilt sensitiivty is not set, it's supposed to disable analog tilting, see KeysConfigDialog.cpp
+   // bug!! If tilt sensitivity is not set, it's supposed to disable analog tilting, see KeysConfigDialog.cpp
    plumb_set_sensitivity((float)LoadValueIntWithDefault("Player", "TiltSensitivity", 400) * (float)(1.0 / 1000.0));
 
    if (g_pplayer)
@@ -2321,6 +2320,7 @@ void PinTable::StopPlaying()
    g_pvp->ShowWindow(1);
    UpdateDbgMaterial();
    UpdateDbgLight();
+   SetDirtyDraw();
 
    BeginAutoSaveCounter();
 }
@@ -2349,8 +2349,7 @@ HRESULT PinTable::SaveAs()
 
 HRESULT PinTable::ApcProject_Save()
 {
-   const bool fSaveAs = (!m_szFileName[0]);
-   return Save(fSaveAs);
+   return Save(!m_szFileName[0]);
 }
 
 
@@ -2712,7 +2711,7 @@ HRESULT PinTable::SaveToStorage(IStorage *pstgRoot)
             {
                char szSuffix[32], szStmName[64];
                strcpy_s(szStmName, sizeof(szStmName), "Collection");
-               _itoa_s((int)i, szSuffix, sizeof(szSuffix), 10);
+               _itoa_s(i, szSuffix, sizeof(szSuffix), 10);
                strcat_s(szStmName, sizeof(szStmName), szSuffix);
 
                MAKE_WIDEPTR_FROMANSI(wszStmName, szStmName);
@@ -3618,8 +3617,6 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
          {
             int ctotalitems = csubobj + csounds + ctextures + cfonts;
             int cloadeditems = 0;
-            ctotalitems = csubobj + csounds + ctextures + cfonts;
-            cloadeditems = 0;
             ::SendMessage(hwndProgressBar, PBM_SETRANGE, 0, MAKELPARAM(0, ctotalitems));
 
             for (int i = 0; i < csubobj; i++)
@@ -4559,11 +4556,11 @@ void PinTable::SetMyScrollInfo()
 
    const CRect rc = GetClientRect();
 
-   HitSur * const phs = new HitSur(NULL, m_zoom, m_offset.x, m_offset.y, rc.right - rc.left, rc.bottom - rc.top, 0, 0, NULL);
+   const HitSur phs(NULL, m_zoom, m_offset.x, m_offset.y, rc.right - rc.left, rc.bottom - rc.top, 0, 0, NULL);
 
    Vertex2D rgv[2];
-   rgv[0] = phs->ScreenToSurface(rc.left, rc.top);
-   rgv[1] = phs->ScreenToSurface(rc.right, rc.bottom);
+   rgv[0] = phs.ScreenToSurface(rc.left, rc.top);
+   rgv[1] = phs.ScreenToSurface(rc.right, rc.bottom);
 
    SCROLLINFO si;
    ZeroMemory(&si, sizeof(SCROLLINFO));
@@ -6734,8 +6731,8 @@ STDMETHODIMP PinTable::put_Name(BSTR newVal)
 {
    //GetIApcProjectItem()->put_Name(newVal);
 
-   const int len = lstrlenW(newVal);
-   if ((len > MAXNAMEBUFFER) || (len < 1))
+   const int l = lstrlenW(newVal);
+   if ((l > MAXNAMEBUFFER) || (l < 1))
    {
       return E_FAIL;
    }
@@ -7278,7 +7275,7 @@ Material* PinTable::GetMaterial(const char * const szName) const
 void PinTable::AddMaterial(Material * const pmat)
 {
    int suffix = 1;
-   if (pmat->m_szName[0] == 0 || !strcmp(pmat->m_szName, "m_dummyMaterial"))
+   if (pmat->m_szName[0] == 0 || !strcmp(pmat->m_szName, "dummyMaterial"))
       strcpy_s(pmat->m_szName, "Material");
 
    if (!IsMaterialNameUnique(pmat->m_szName) || !strcmp(pmat->m_szName, "Material"))
@@ -9473,10 +9470,10 @@ STDMETHODIMP PinTable::get_OverridePhysics(PhysicsSet *pVal)
 STDMETHODIMP PinTable::put_OverridePhysics(PhysicsSet newVal)
 {
    STARTUNDO
-      m_overridePhysics = (int)newVal;
+   m_overridePhysics = (int)newVal;
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP PinTable::get_OverridePhysicsFlippers(VARIANT_BOOL *pVal)
@@ -9489,10 +9486,10 @@ STDMETHODIMP PinTable::get_OverridePhysicsFlippers(VARIANT_BOOL *pVal)
 STDMETHODIMP PinTable::put_OverridePhysicsFlippers(VARIANT_BOOL newVal)
 {
    STARTUNDO
-      m_overridePhysicsFlipper = VBTOb(newVal);
+   m_overridePhysicsFlipper = VBTOb(newVal);
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP PinTable::ImportPhysics()
@@ -10034,10 +10031,10 @@ STDMETHODIMP PinTable::put_BallFrontDecal(BSTR newVal)
    }
 
    STARTUNDO
-      strcpy_s(m_szBallImageDecal, szImage);
+   strcpy_s(m_szBallImageDecal, szImage);
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP PinTable::FireKnocker(int Count)

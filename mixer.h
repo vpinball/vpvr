@@ -8,4 +8,3 @@ void mixer_get_volume();
 void mixer_update();
 
 void mixer_draw();
-

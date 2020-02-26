@@ -577,7 +577,7 @@ void Rubber::AddHitEdge(vector<HitObject*> &pvho, std::set< std::pair<unsigned, 
 void Rubber::SetupHitObject(vector<HitObject*> &pvho, HitObject * obj)
 {
    const Material *const mat = m_ptable->GetMaterial(m_d.m_szPhysicsMaterial);
-   if (mat != NULL && !m_d.m_overwritePhysics)
+   if (!m_d.m_overwritePhysics)
    {
       obj->m_elasticity = mat->m_fElasticity;
       obj->m_elasticityFalloff = mat->m_fElasticityFalloff;
@@ -722,7 +722,7 @@ HRESULT Rubber::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backup
    bw.WriteFloat(FID(ELFO), m_d.m_elasticityFalloff);
    bw.WriteFloat(FID(RFCT), m_d.m_friction);
    bw.WriteFloat(FID(RSCT), m_d.m_scatter);
-   bw.WriteBool(FID(CLDRP), m_d.m_collidable);
+   bw.WriteBool(FID(CLDR), m_d.m_collidable);
    bw.WriteBool(FID(RVIS), m_d.m_visible);
    bw.WriteBool(FID(ESTR), m_d.m_staticRendering);
    bw.WriteBool(FID(ESIE), m_d.m_showInEditor);
@@ -1233,6 +1233,8 @@ void Rubber::RenderObject()
       UpdateRubber(true, m_d.m_height);
 
    RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
+   pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_CLAMP);
 
    const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
    pd3dDevice->basicShader->SetMaterial(mat);

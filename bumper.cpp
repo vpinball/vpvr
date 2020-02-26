@@ -353,6 +353,7 @@ void Bumper::UpdateRing()
 void Bumper::RenderBase(const Material * const baseMaterial)
 {
    RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    pd3dDevice->basicShader->SetMaterial(baseMaterial);
    pd3dDevice->basicShader->SetTexture("Texture0", &m_baseTexture, false);
    g_pplayer->m_pin3d.EnableAlphaBlend(false);
@@ -558,12 +559,12 @@ void Bumper::RenderDynamic()
       pd3dDevice->basicShader->SetTechnique("basic_with_texture");
       pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
       pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
-      RenderSocket( mat);
+      RenderSocket(mat);
    }
 
    if (m_d.m_baseVisible)
    {
-      const Material *mat = m_ptable->GetMaterial(m_d.m_szBaseMaterial);
+      const Material * const mat = m_ptable->GetMaterial(m_d.m_szBaseMaterial);
       if (mat->m_bOpacityActive)
       {
          pd3dDevice->basicShader->SetTechnique("basic_with_texture");
@@ -748,6 +749,7 @@ void Bumper::GenerateCapMesh(Vertex3D_NoTex2 *buf)
 void Bumper::RenderSetup()
 {
    RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    m_d.m_time_msec = g_pplayer->m_time_msec;
 
    m_baseHeight = m_ptable->GetSurfaceHeight(m_d.m_szSurface, m_d.m_vCenter.x, m_d.m_vCenter.y) * m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
@@ -837,7 +839,7 @@ void Bumper::RenderStatic()
 
    if (m_d.m_baseVisible)
    {
-      const Material *mat = m_ptable->GetMaterial(m_d.m_szBaseMaterial);
+      const Material * const mat = m_ptable->GetMaterial(m_d.m_szBaseMaterial);
       if (!mat->m_bOpacityActive)
       {
          pd3dDevice->basicShader->SetTechnique("basic_with_texture");

@@ -211,15 +211,15 @@ void DispReel::RenderDynamic()
    if (!m_d.m_visible || !GetPTable()->GetEMReelsEnabled())
       return;
 
-   RenderDevice * const pd3dDevice = m_backglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
-
    // get a pointer to the image specified in the object
    Texture * const pin = m_ptable->GetImage(m_d.m_szImage); // pointer to image information from the image manager
 
    if (!pin)
       return;
 
-   if (m_ptable->m_tblMirrorEnabled^m_ptable->m_reflectionEnabled)
+   RenderDevice * const pd3dDevice = m_fBackglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
+   if (m_ptable->m_tblMirrorEnabled^m_ptable->m_fReflectionEnabled)
       pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
    else
       pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);

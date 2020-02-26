@@ -218,7 +218,7 @@ static VertexDeclaration* fvfToDecl(const DWORD fvf)
    }
 }
 
-static UINT ComputePrimitiveCount(const RenderDevice::PrimitveTypes type, const int vertexCount)
+static UINT ComputePrimitiveCount(const RenderDevice::PrimitiveTypes type, const int vertexCount)
 {
    switch (type)
    {
@@ -1222,7 +1222,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    m_autogen_mipmap = (caps.Caps2 & D3DCAPS2_CANAUTOGENMIPMAP) != 0;
    if (m_autogen_mipmap)
       m_autogen_mipmap = (m_pD3D->CheckDeviceFormat(m_adapter, devtype, params.BackBufferFormat, textureUsage::AUTOMIPMAP, D3DRTYPE_TEXTURE, (D3DFORMAT)(colorFormat::RGBA8)) == D3D_OK);
-   m_autogen_mipmap = false;//!! done to support sRGB/gamma correct generation of mipmaps which is not possible with auto gen mipmap in DX9!
+
+   //m_autogen_mipmap = false; //!! could be done to support correct sRGB/gamma correct generation of mipmaps which is not possible with auto gen mipmap in DX9! at the moment disabled, as the sRGB software path is super slow for similar mipmap filter quality
 
 
 #ifndef DISABLE_FORCE_NVIDIA_OPTIMUS
@@ -1312,7 +1313,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       refreshrate = mode.RefreshRate;
    }
 
-   /*if (fullscreen)
+   /*if (m_fullscreen)
        hr = m_pD3DDevice->SetDialogBoxMode(TRUE);*/ // needs D3DPRESENTFLAG_LOCKABLE_BACKBUFFER, but makes rendering slower on some systems :/
 
        // Retrieve a reference to the back buffer.
@@ -1893,7 +1894,7 @@ void RenderDevice::CopyDepth(D3DTexture* dest, RenderTarget* src)
       m_pD3DDevice->SetRenderState(RenderDevice:ZWRITEENABLE, RenderDevice::RS_FALSE);
       m_pD3DDevice->SetRenderState(RenderDevice::COLORWRITEENABLE, 0);
       vec3 vDummyPoint(0.0f, 0.0f, 0.0f);
-      m_pD3DDevice->DrawPrimitiveUP(D3DPT_POINTLIST, 1, vDummyPoint, sizeof(vec3));
+      m_pD3DDevice->DrawPrimitiveUP(RenderDevice::POINTLIST, 1, vDummyPoint, sizeof(vec3));
       m_pD3DDevice->SetRenderState(RenderDevice:ZWRITEENABLE, RenderDevice::RS_TRUE);
       m_pD3DDevice->SetRenderState(RenderDevice:ZENABLE, RenderDevice::RS_TRUE);
       m_pD3DDevice->SetRenderState(RenderDevice::COLORWRITEENABLE, 0x0F);
@@ -2016,8 +2017,8 @@ D3DTexture* RenderDevice::CreateSystemTexture(const int texwidth, const int texh
       //for (int y = 0; y < texheight; ++y)
       //   memcpy(pdest + y*locked.Pitch, surf->data() + y*surf->pitch(), 4 * texwidth);
 
-      float * const pdest = (float*)locked.pBits;
-      float * const psrc = (float*)data;
+      float * const __restrict pdest = (float*)locked.pBits;
+      const float * const __restrict psrc = (float*)(surf->data());
       for (int i = 0; i < texwidth*texheight; ++i)
       {
          pdest[i * 4] = psrc[i * 3];
@@ -2037,7 +2038,7 @@ D3DTexture* RenderDevice::CreateSystemTexture(const int texwidth, const int texh
       sysRect.left = 0;
       sysRect.right = texwidth;
       sysRect.bottom = texheight;
-      CHECKD3D(D3DXLoadSurfaceFromMemory(sysSurf, NULL, NULL, data, (D3DFORMAT)(colorFormat::RGBA), pitch, NULL, &sysRect, D3DX_FILTER_NONE, 0));
+      CHECKD3D(D3DXLoadSurfaceFromMemory(sysSurf, NULL, NULL, surf->data, (D3DFORMAT)(colorFormat::RGBA), surf->pitch, NULL, &sysRect, D3DX_FILTER_NONE, 0));
       SAFE_RELEASE_NO_RCC(sysSurf);
    }
 
@@ -2250,7 +2251,7 @@ void RenderDevice::SetTextureFilter(const DWORD texUnit, DWORD mode)
 #ifndef ENABLE_SDL
 void RenderDevice::SetTextureStageState(const DWORD p1, const D3DTEXTURESTAGESTATETYPE p2, const DWORD p3)
 {
-   if ((unsigned int)p2 < TEXTURE_STATE_CACHE_SIZE && p1 < 8)
+   if ((unsigned int)p2 < TEXTURE_STATE_CACHE_SIZE && p1 < TEXTURE_SAMPLERS)
    {
       if (textureStateCache[p1][p2] == p3)
       {
@@ -2434,6 +2435,7 @@ void RenderDevice::SetRenderStateCulling(RenderStateValue cull) {
    if (renderStateCache[RenderStates::CULLMODE] == CULL_NONE && (cull != CULL_NONE))
       CHECKD3D(glEnable(GL_CULL_FACE));
    if (SetRenderStateCache(CULLMODE, cull)) return;
+
 #ifdef ENABLE_SDL
    if (cull == CULL_NONE) {
      CHECKD3D(glDisable(GL_CULL_FACE));
@@ -2450,6 +2452,7 @@ void RenderDevice::SetRenderStateCulling(RenderStateValue cull) {
 
 void RenderDevice::SetRenderStateDepthBias(float bias) {
    if (SetRenderStateCache(DEPTHBIAS, *((DWORD*)&bias))) return;
+
 #ifdef ENABLE_SDL
    if (bias == 0.0f) {
       CHECKD3D(glDisable(GL_POLYGON_OFFSET_FILL));
@@ -2466,6 +2469,7 @@ void RenderDevice::SetRenderStateDepthBias(float bias) {
 
 void RenderDevice::SetRenderStateClipPlane0(bool enabled) {
    if (SetRenderStateCache(CLIPPLANEENABLE, enabled ? 1 : 0)) return;
+
 #ifdef ENABLE_SDL
    //TODO Needs to be done in shader
 #else
@@ -2477,22 +2481,12 @@ void RenderDevice::SetRenderStateAlphaTestFunction(DWORD testValue, RenderStateV
 #ifdef ENABLE_SDL
    //TODO Needs to be done in shader
 #else 
-   if (enabled) {
       if (!SetRenderStateCache(ALPHAREF, testValue))
          CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)RenderStates::ALPHAREF, testValue));
-      if (!SetRenderStateCache(ALPHATESTENABLE, FALSE))
-         CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)RenderStates::ALPHATESTENABLE, TRUE));
+   if (!SetRenderStateCache(ALPHATESTENABLE, enabled ? RS_TRUE : RS_FALSE))
+      CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)RenderStates::ALPHATESTENABLE, enabled ? RS_TRUE : RS_FALSE));
       if (!SetRenderStateCache(ALPHAFUNC, Z_GREATEREQUAL))
          CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)RenderStates::ALPHAFUNC, Z_GREATEREQUAL));
-   }
-   else {
-      if (!SetRenderStateCache(ALPHAREF, testValue))
-         CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)RenderStates::ALPHAREF, testValue));
-      if (!SetRenderStateCache(ALPHATESTENABLE, FALSE))
-         CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)RenderStates::ALPHATESTENABLE, FALSE));
-      if (!SetRenderStateCache(ALPHAFUNC, Z_GREATEREQUAL))
-         CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)RenderStates::ALPHAFUNC, Z_GREATEREQUAL));
-   }
 #endif
 }
 

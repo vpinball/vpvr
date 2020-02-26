@@ -397,7 +397,7 @@ void SpinnerMoverObject::UpdateDisplacements(const float dtime)
             m_pspinner->FireGroupEvent(DISPID_SpinnerEvents_Spin);
       }
 
-      while (m_angle >(float)(2.0*M_PI))
+      while (m_angle > (float)(2.0*M_PI))
          m_angle -= (float)(2.0*M_PI);
       while (m_angle < 0.0f)
          m_angle += (float)(2.0*M_PI);
