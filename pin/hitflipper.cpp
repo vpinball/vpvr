@@ -555,11 +555,9 @@ float HitFlipper::HitTestFlipperEnd(const BallS& ball, const float dtime, Collis
    if (bnv >= 0.f)
       return -1.0f; // not hit ... ball is receding from face already, must have been embedded or shallow angled
 
-   if (fabsf(bnv) <= C_CONTACTVEL && bfend <= (float)PHYS_TOUCH)
-   {
-      coll.m_isContact = true;
+   coll.m_isContact = (fabsf(bnv) <= C_CONTACTVEL && bfend <= (float)PHYS_TOUCH);
+   if (coll.m_isContact)
       coll.m_hit_org_normalvelocity = bnv;
-   }
 
    coll.m_hitdistance = bfend;			//actual contact distance ..
                                        //coll.m_hitRigid = true;				// collision type
@@ -721,11 +719,9 @@ float HitFlipper::HitTestFlipperFace(const BallS& ball, const float dtime, Colli
 
    const float bnv = dv.x*coll.m_hitnormal.x + dv.y*coll.m_hitnormal.y; // dot Normal to delta v
 
-   if (fabsf(bnv) <= C_CONTACTVEL && bffnd <= (float)PHYS_TOUCH)
-   {
-      coll.m_isContact = true;
+   coll.m_isContact = (fabsf(bnv) <= C_CONTACTVEL && bffnd <= (float)PHYS_TOUCH);
+   if (coll.m_isContact)
       coll.m_hit_org_normalvelocity = bnv;
-   }
    else if (bnv > C_LOWNORMVEL)
       return -1.0f; // not hit ... ball is receding from endradius already, must have been embedded
 

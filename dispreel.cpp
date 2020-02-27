@@ -217,9 +217,9 @@ void DispReel::RenderDynamic()
    if (!pin)
       return;
 
-   RenderDevice * const pd3dDevice = m_fBackglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+   RenderDevice * const pd3dDevice = m_backglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
-   if (m_ptable->m_tblMirrorEnabled^m_ptable->m_fReflectionEnabled)
+   if (m_ptable->m_tblMirrorEnabled^m_ptable->m_reflectionEnabled)
       pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
    else
       pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);

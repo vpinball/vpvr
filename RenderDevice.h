@@ -157,7 +157,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
       TEX_MIRROR = GL_MIRRORED_REPEAT
    };
 
-   enum PrimitveTypes {
+   enum PrimitiveTypes {
       TRIANGLEFAN = GL_TRIANGLE_FAN,
       TRIANGLESTRIP = GL_TRIANGLE_STRIP,
       TRIANGLELIST = GL_TRIANGLES,
@@ -335,8 +335,8 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    void DrawTexturedQuad();
    void DrawTexturedQuadPostProcess();
    
-   void DrawPrimitiveVB(const PrimitveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, bool stereo);
-   void DrawIndexedPrimitiveVB(const PrimitveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, IndexBuffer* ib, const DWORD startIndex, const DWORD indexCount);
+   void DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, bool stereo);
+   void DrawIndexedPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, IndexBuffer* ib, const DWORD startIndex, const DWORD indexCount);
 
    void SetViewport(const ViewPort*);
    void GetViewport(ViewPort*);
@@ -405,7 +405,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    UINT         m_adapter;
 
 private:
-   void DrawPrimitive(const PrimitveTypes type, const DWORD fvf, const void* vertices, const DWORD vertexCount);
+   void DrawPrimitive(const PrimitiveTypes type, const DWORD fvf, const void* vertices, const DWORD vertexCount);
 
    void UploadAndSetSMAATextures();
    D3DTexture* m_SMAAsearchTexture;

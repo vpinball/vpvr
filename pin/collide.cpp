@@ -1,5 +1,10 @@
 #include "stdafx.h"
 
+#ifdef USE_EMBREE
+#include <mutex>
+static std::mutex mtx;
+#endif
+
 
 float c_hardScatter = 0.0f;
 
@@ -11,8 +16,8 @@ void HitObject::FireHitEvent(Ball * const pball)
    if (m_obj && m_fe && m_enabled)
    {
       // is this the same place as last event? if same then ignore it
-      const float dist_ls = (pball->m_eventPos - pball->m_d.m_pos).LengthSquared();
-      pball->m_eventPos = pball->m_d.m_pos;    // remember last collision position
+      const float dist_ls = (pball->m_lastEventPos - pball->m_d.m_pos).LengthSquared();
+      pball->m_lastEventPos = pball->m_d.m_pos;    // remember last collision position
 
       const float normalDist = (m_ObjType == eHitTarget) ? 0.0f   // hit targets when used with a captured ball have always a too small distance
          : 0.25f; //!! magic distance
@@ -44,7 +49,7 @@ float LineSeg::HitTestBasic(const BallS& ball, const float dtime, CollisionEvent
    const float bnv = ballvx * normal.x + ballvy * normal.y;		// ball velocity normal to segment, positive if receding, zero=parallel
    bool bUnHit = (bnv > C_LOWNORMVEL);
 
-   if (direction && (bnv > C_LOWNORMVEL))					// direction true and clearly receding from normal face
+   if (direction && bUnHit)					// direction true and clearly receding from normal face
       return -1.0f;
 
    const float ballx = ball.m_pos.x;						// ball position
@@ -136,11 +141,9 @@ float LineSeg::HitTestBasic(const BallS& ball, const float dtime, CollisionEvent
                                   //coll.m_hitRigid = rigid;     // collision type
 
                                   // check for contact
-   if (fabsf(bnv) <= C_CONTACTVEL && fabsf(bnd) <= (float)PHYS_TOUCH)
-   {
-      coll.m_isContact = true;
+   coll.m_isContact = (fabsf(bnv) <= C_CONTACTVEL && fabsf(bnd) <= (float)PHYS_TOUCH);
+   if (coll.m_isContact)
       coll.m_hit_org_normalvelocity = bnv;
-   }
 
    return hittime;
 }
@@ -256,8 +259,8 @@ float HitCircle::HitTestBasicRadius(const BallS& ball, const float dtime, Collis
    }
    else
    {
-      if ((!rigid && bnd * bnv > 0.f) ||	// (outside and receding) or (inside and approaching)
-         (a < 1.0e-8f)) return -1.0f;	    // no hit ... ball not moving relative to object
+      if ((!rigid && bnd * bnv > 0.f) || // (outside and receding) or (inside and approaching)
+         (a < 1.0e-8f)) return -1.0f; // no hit ... ball not moving relative to object
 
       float time1, time2;
       if (!SolveQuadraticEq(a, 2.0f*b, bcddsq - targetRadius * targetRadius, time1, time2))
@@ -358,7 +361,7 @@ float HitLineZ::HitTest(const BallS &ball, const float dtime, CollisionEvent& co
 
    const float a = dv.LengthSquared();
 
-   float hittime = 0;
+   float hittime = 0.f;
    bool isContact = false;
 
    if (bnd < (float)PHYS_TOUCH)       // already in collision distance?
@@ -366,7 +369,7 @@ float HitLineZ::HitTest(const BallS &ball, const float dtime, CollisionEvent& co
       if (fabsf(bnv) <= C_CONTACTVEL)
       {
          isContact = true;
-         hittime = 0;
+         hittime = 0.f;
       }
       else
          hittime = /*std::max(0.0f,*/ -bnd / bnv /*)*/;   // estimate based on distance and speed along distance
@@ -513,16 +516,15 @@ void HitPoint::Collide(const CollisionEvent& coll)
       FireHitEvent(coll.m_ball);
 }
 
-void DoHitTest(const Ball *const pball, HitObject *const pho, CollisionEvent& coll)
+void DoHitTest(const Ball *const pball, const HitObject *const pho, CollisionEvent& coll)
 {
-#ifdef DEBUGPHYSICS
-   g_pplayer->c_deepTested++;
-#endif
-   if (pho == NULL || pball == NULL)
+   if (pho == nullptr || pball == nullptr
+      || (pho->m_ObjType == eHitTarget && ((HitTarget*)pho->m_obj)->m_d.m_isDropped))
       return;
 
-   if (pho->m_ObjType == eHitTarget && (((HitTarget*)pho->m_obj)->m_d.m_isDropped == true))
-      return;
+#ifdef DEBUGPHYSICS
+   g_pplayer->c_deepTested++; //!! atomic needed if USE_EMBREE
+#endif
 
    CollisionEvent newColl;
    const float newtime = pho->HitTest(pball->m_d, coll.m_hittime, !g_pplayer->m_recordContacts ? coll : newColl);
@@ -533,7 +535,7 @@ void DoHitTest(const Ball *const pball, HitObject *const pho, CollisionEvent& co
       if (validhit)
       {
          coll.m_ball = const_cast<Ball*>(pball); //!! meh, but will not be changed in here
-         coll.m_obj = pho;
+         coll.m_obj = const_cast<HitObject*>(pho); //!! meh, but will not be changed in here
          coll.m_hittime = newtime;
       }
    }
@@ -542,15 +544,18 @@ void DoHitTest(const Ball *const pball, HitObject *const pho, CollisionEvent& co
       if (newColl.m_isContact || validhit)
       {
          newColl.m_ball = const_cast<Ball*>(pball); //!! meh, but will not be changed in here
-         newColl.m_obj = pho;
+         newColl.m_obj = const_cast<HitObject*>(pho); //!! meh, but will not be changed in here
+         newColl.m_hittime = newtime;
 
          if (newColl.m_isContact)
-            g_pplayer->m_contacts.push_back(newColl);
-         else //if (validhit)
          {
-            coll = newColl;
-            coll.m_hittime = newtime;
+#ifdef USE_EMBREE
+            const std::lock_guard<std::mutex> lg(mtx); // multiple threads may end up here and call push_back
+#endif
+            g_pplayer->m_contacts.push_back(newColl);
          }
+         else //if (validhit)
+            coll = newColl;
       }
    }
 }

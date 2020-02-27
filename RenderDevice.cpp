@@ -2551,7 +2551,7 @@ void* RenderDevice::AttachZBufferTo(RenderTarget* surf)
 }
 
 //Only used for DX9
-void RenderDevice::DrawPrimitive(const PrimitveTypes type, const DWORD fvf, const void* vertices, const DWORD vertexCount)
+void RenderDevice::DrawPrimitive(const PrimitiveTypes type, const DWORD fvf, const void* vertices, const DWORD vertexCount)
 {
 #ifndef ENABLE_SDL
    const unsigned int np = ComputePrimitiveCount(type, vertexCount);
@@ -2582,7 +2582,7 @@ void RenderDevice::DrawTexturedQuadPostProcess()
    DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_TEX, m_quadVertexBuffer, 0, 4, false);
 }
 
-void RenderDevice::DrawPrimitiveVB(const PrimitveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, bool stereo)
+void RenderDevice::DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, bool stereo)
 {
    const unsigned int np = ComputePrimitiveCount(type, vertexCount);
    m_stats_drawn_triangles += np;
@@ -2603,7 +2603,7 @@ void RenderDevice::DrawPrimitiveVB(const PrimitveTypes type, const DWORD fvf, Ve
    m_curDrawCalls++;
 }
 
-void RenderDevice::DrawIndexedPrimitiveVB(const PrimitveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, IndexBuffer* ib, const DWORD startIndex, const DWORD indexCount)
+void RenderDevice::DrawIndexedPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, IndexBuffer* ib, const DWORD startIndex, const DWORD indexCount)
 {
    const unsigned int np = ComputePrimitiveCount(type, indexCount);
    m_stats_drawn_triangles += np;

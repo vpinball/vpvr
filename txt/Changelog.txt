@@ -1,7 +1,7 @@
 SDL2 / VR Changelog
 ------------------------
 
-- Updated to VPX 10.7 commit R3986
+- Updated to VPX 10.7 commit R3991
 
 - Updated OpenVR to SDK 1.9.16
 
@@ -138,7 +138,7 @@ Next steps:
 	5. Go back to step 1 because of step 2,3 and 4
 		
   
-VP 10.7.0 Changelog (TRUNK R3986)
+VP 10.7.0 Changelog (TRUNK R3991)
 ------------------------
 
 FEATURES:
