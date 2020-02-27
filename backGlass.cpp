@@ -1,8 +1,8 @@
 #include "stdafx.h"
 
-#include "rapidxml/rapidxml_utils.hpp"
 #include <iostream>
 #include <fstream>
+#include <rapidxml_utils.hpp>
 
 #include "backGlass.h"
 #include "RenderDevice.h"
