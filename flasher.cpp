@@ -1041,9 +1041,8 @@ void Flasher::RenderDynamic()
    TRACE_FUNCTION();
 
    // Don't render if invisible (or DMD connection not set)
-   if (!m_d.m_isVisible || m_dynamicVertexBuffer == NULL || m_ptable->m_reflectionEnabled || (m_d.m_isDMD && !g_pplayer->m_texdmd))
-      if (!m_d.m_isVisible || (!g_pplayer->m_capExtDMD || (FindWindowA(NULL, "Virtual DMD") == NULL && FindWindowA("pygame", NULL) == NULL))) // If DMD capture is enabled check if external DMD exists (for capturing UltraDMD+P-ROC DMD)
-         return;
+   if (!m_d.m_isVisible || m_dynamicVertexBuffer == NULL || m_ptable->m_reflectionEnabled || (m_d.m_isDMD && !g_pplayer->m_texdmd && !captureExternalDMD()))
+      return;
 
    const vec4 color = convertColor(m_d.m_color, (float)m_d.m_alpha*m_d.m_intensity_scale / 100.0f);
    if (color.w == 0.f)

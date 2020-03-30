@@ -1,104 +1,56 @@
 #pragma once
 #include "typeDefs3D.h"
 
+#include <sal.h>
+#include <new>
+#include <warning.h>
+#include <DirectXMath.h>
+
 bool captureExternalDMD();
-void captureDMDWindow(int w, int h, int offsetLeft, int offsetTop);
-void processdmdBitMap(int w, int h);
+void captureFindPUP();
 bool capturePUP();
-void capturePUPWindow(int w, int h, int offsetLeft, int offsetTop);
-void processPUPBitMap(int w, int h);
+void captureStartup();
+void captureStop();
 
-// ThreadPool implementation from progschj https://github.com/progschj/ThreadPool
-#include <vector>
-#include <queue>
-#include <memory>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <future>
-#include <functional>
-#include <stdexcept>
-
-class ThreadPool {
+class ExtCaptureOutput
+{
 public:
-   ThreadPool(size_t);
-   template<class F, class... Args>
-   auto enqueue(F&& f, Args&&... args)
-      ->std::future<typename std::result_of<F(Args...)>::type>;
-   ~ThreadPool();
-private:
-   // need to keep track of threads so we can join them
-   std::vector< std::thread > workers;
-   // the task queue
-   std::queue< std::function<void()> > tasks;
-
-   // synchronization
-   std::mutex queue_mutex;
-   std::condition_variable condition;
-   bool stop;
+   IDXGIOutputDuplication* m_duplication = NULL;
+   ID3D11Device* d3d_device = NULL;
+   ID3D11DeviceContext* d3d_context = NULL;
 };
 
-// the constructor just launches some amount of workers
-inline ThreadPool::ThreadPool(size_t threads)
-   : stop(false)
+typedef std::map<std::tuple<int, int>, ExtCaptureOutput> outputmaptype;
+
+class ExtCapture
 {
-   for (size_t i = 0; i < threads; ++i)
-      workers.emplace_back(
-         [this]
-         {
-            for (;;)
-            {
-               std::function<void()> task;
+   static outputmaptype m_duplicatormap;
 
-               {
-                  std::unique_lock<std::mutex> lock(this->queue_mutex);
-                  this->condition.wait(lock,
-                     [this] { return this->stop || !this->tasks.empty(); });
-                  if (this->stop && this->tasks.empty())
-                     return;
-                  task = std::move(this->tasks.front());
-                  this->tasks.pop();
-               }
+   IDXGIAdapter1* m_Adapter = NULL;
+   IDXGIOutput1* m_Output1 = NULL;
+   IDXGIOutput* m_Output = NULL;
+   RECT m_Rect;
+   int m_DispTop, m_DispLeft = 0;
+   DXGI_OUTPUT_DESC m_outputdesc;
 
-               task();
-            }
-         }
-         );
-}
+   D3D_FEATURE_LEVEL d3d_feature_level; /* The selected feature level (D3D version), selected from the Feature Levels array, which is NULL here; when it's NULL the default list is used see:  https://msdn.microsoft.com/en-us/library/windows/desktop/ff476082%28v=vs.85%29.aspx ) */
+   ExtCaptureOutput m_CapOut;
+   ID3D11Texture2D* staging_tex = NULL;
+   ID3D11Texture2D* gdi_tex = NULL;
 
-// add new work item to the pool
-template<class F, class... Args>
-auto ThreadPool::enqueue(F&& f, Args&&... args)
--> std::future<typename std::result_of<F(Args...)>::type>
-{
-   using return_type = typename std::result_of<F(Args...)>::type;
+   bool m_FoundRect = false;
+   bool m_CaptureRunning = false;
+   bool m_BitMapProcessing = false;
+   bool m_Success = false;
 
-   auto task = std::make_shared< std::packaged_task<return_type()> >(
-      std::bind(std::forward<F>(f), std::forward<Args>(args)...)
-      );
+public:
 
-   std::future<return_type> res = task->get_future();
-   {
-      std::unique_lock<std::mutex> lock(queue_mutex);
+   bool SetupCapture(RECT inputRect);
+   void GetFrame();
+   HBITMAP m_HBitmap;
+   void *m_pData;
+   int m_Width, m_Height = 0;
 
-      // don't allow enqueueing after stopping the pool
-      if (stop)
-         throw std::runtime_error("enqueue on stopped ThreadPool");
+   static void Dispose(); // Call when you have deleted all instances.
 
-      tasks.emplace([task]() { (*task)(); });
-   }
-   condition.notify_one();
-   return res;
-}
-
-// the destructor joins all threads
-inline ThreadPool::~ThreadPool()
-{
-   {
-      std::unique_lock<std::mutex> lock(queue_mutex);
-      stop = true;
-   }
-   condition.notify_all();
-   for (std::thread &worker : workers)
-      worker.join();
-}
+};

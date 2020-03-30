@@ -10,6 +10,7 @@
 #include <fstream>
 #include <sstream>
 #include "Shader.h"
+#include "captureExt.h"
 #include "freeimage.h"
 #include "inc\ThreadPool.h"
 
@@ -1165,7 +1166,7 @@ void upscale(DWORD * const data, const unsigned int xres, const unsigned int yre
 
 STDMETHODIMP ScriptGlobalTable::put_DMDPixels(VARIANT pVal) //!! use 64bit instead of 8bit to reduce overhead??
 {
-   if (g_pplayer->m_capExtDMD && (FindWindowA(NULL, "Virtual DMD") != NULL || FindWindowA("pygame", NULL) != NULL)) // If DMD capture is enabled check if external DMD exists
+   if (captureExternalDMD()) // If DMD capture is enabled check if external DMD exists
       return S_OK;
 
    SAFEARRAY *psa = pVal.parray;
@@ -1215,7 +1216,7 @@ STDMETHODIMP ScriptGlobalTable::put_DMDPixels(VARIANT pVal) //!! use 64bit inste
 
 STDMETHODIMP ScriptGlobalTable::put_DMDColoredPixels(VARIANT pVal) //!! use 64bit instead of 32bit to reduce overhead??
 {
-   if (g_pplayer->m_capExtDMD && (FindWindowA(NULL, "Virtual DMD") != NULL || FindWindowA("pygame", NULL) != NULL)) // If DMD capture is enabled check if external DMD exists
+   if (captureExternalDMD()) // If DMD capture is enabled check if external DMD exists
       return S_OK;
 
    SAFEARRAY *psa = pVal.parray;

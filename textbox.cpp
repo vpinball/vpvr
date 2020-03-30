@@ -1,4 +1,5 @@
 #include "StdAfx.h"
+#include "captureExt.h"
 
 Textbox::Textbox()
 {
@@ -257,9 +258,8 @@ void Textbox::RenderDynamic()
 
    const bool dmd = (m_d.m_isDMD || strstr(m_d.sztext, "DMD") != NULL); //!! second part is VP10.0 legacy
 
-   if (!m_d.m_visible || (dmd && !g_pplayer->m_texdmd))
-      if (!g_pplayer->m_capExtDMD || (FindWindowA(NULL, "Virtual DMD") == NULL && FindWindowA("pygame", NULL) == NULL)) // If DMD capture is enabled check for external DMD window
-         return;
+   if (!m_d.m_visible || (dmd && !(g_pplayer->m_texdmd || captureExternalDMD())))
+      return;
 
    RenderDevice * const pd3dDevice = m_backglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
