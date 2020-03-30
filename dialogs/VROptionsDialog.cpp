@@ -295,14 +295,14 @@ BOOL VROptionsDialog::OnInitDialog()
    SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"internal text/flasher (via vbscript)");
    SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Screenreader");
    SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"SharedMemory API");
-   SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_SETCURSEL, askToTurnOn, 0);
+   SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_SETCURSEL, DMDsource, 0);
 
    const int BGsource = LoadValueIntWithDefault("PlayerVR", "BGsource", 1);
    SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"default table background");
    SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"directb2s File (auto only)");
    SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"directb2s File");
    SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"SharedMemory API");
-   SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_SETCURSEL, askToTurnOn, 0);
+   SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_SETCURSEL, BGsource, 0);
 
    int display;
    HRESULT hr = LoadValueInt("PlayerVR", "Display", &display);
@@ -641,10 +641,10 @@ void VROptionsDialog::OnOK()
    SaveValueInt("PlayerVR", "AskToTurnOn", askToTurnOn);
 
    const size_t dmdSource = SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_GETCURSEL, 0, 0);
-   SaveValueInt("PlayerVR", "AskToTurnOn", dmdSource);
+   SaveValueInt("PlayerVR", "DMDsource", dmdSource);
 
    const size_t bgSource = SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_GETCURSEL, 0, 0);
-   SaveValueInt("PlayerVR", "AskToTurnOn", bgSource);
+   SaveValueInt("PlayerVR", "BGsource", bgSource);
 
    CDialog::OnOK();
 
