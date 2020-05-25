@@ -903,8 +903,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    m_curParameterChanges = m_frameParameterChanges = 0;
    m_curTextureUpdates = m_frameTextureUpdates = 0;
 
-//   CHECKD3D(glGetIntegeri_v(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, 0, (GLint*)&m_maxaniso));
    m_maxaniso = 0;
+   CHECKD3D(glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_maxaniso));
 
    if (m_quadVertexBuffer == NULL) {
       VertexBuffer::CreateVertexBuffer(4, USAGE_STATIC, MY_D3DFVF_TEX, &m_quadVertexBuffer);
@@ -2243,7 +2243,7 @@ void RenderDevice::SetTextureFilter(const DWORD texUnit, DWORD mode)
       // Full HQ anisotropic Filter. Should lead to driver doing whatever it thinks is best.
       SetSamplerState(texUnit, LINEAR, LINEAR, LINEAR);
       if (m_maxaniso>0)
-         SetSamplerAnisotropy(texUnit, min(m_maxaniso, (DWORD)16));
+         //SetSamplerAnisotropy(texUnit, min(m_maxaniso, (DWORD)16));
       break;
    }
 }
@@ -2856,7 +2856,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
    if (m_maxaniso > 0)
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_maxaniso));
+      CHECKD3D(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_maxaniso));
    if (tex->usage == AUTOMIPMAP) {
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)); // Use mipmap filtering GL_LINEAR_MIPMAP_LINEAR
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)); // MAG Filter does not support mipmaps

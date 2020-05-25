@@ -448,7 +448,7 @@ private:
 
    static VertexBuffer *m_quadVertexBuffer;      // internal vb for rendering quads
 
-   DWORD m_maxaniso;
+   GLfloat m_maxaniso;
    bool m_mag_aniso;
 
    bool m_autogen_mipmap;
