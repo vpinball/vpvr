@@ -254,13 +254,10 @@ void main()
 	float2 u = tex0 + w_h_height.xy*0.5;
 
 	float3 Scene0 = tex2Dlod(Texture0, float4(u, 0.,0.)).rgb;
-	if(w_h_height.w == 1.0) // depth buffer available?
-	{
-		float depth0 = tex2Dlod(Texture3, float4(u, 0.,0.)).x;
-		if((depth0 == 1.0) || (depth0 == 0.0)) // early out if depth too large (=BG) or too small (=DMD,etc)
+	float depth0 = tex2Dlod(Texture3, float4(u, 0.,0.)).x;
+	if ((w_h_height.w == 1.0) && ((depth0 == 1.0) || (depth0 == 0.0))) // early out if depth too large (=BG) or too small (=DMD,etc)
 			color = float4(Scene0, 1.0);
-	} else {
-
+	else {
 #ifdef NFAA_USE_COLOR // edges from color
 		float2 Vectors = findContrastByColor(u, filterSpread);
 #else
@@ -348,13 +345,11 @@ void main()
    float2 u = tex0 + w_h_height.xy*0.5;
 
    float4 sampleCenter = sampleOffseta(u, float2( 0.0,  0.0) );
-   if(w_h_height.w == 1.0 /*&& sampleCenter.a == 0.0*/) // depth buffer available? /*AND no edge here? -> ignored because of performance*/
-   {
-      float depth0 = tex2Dlod(Texture3, float4(u, 0.,0.)).x;
-      if((depth0 == 1.0) || (depth0 == 0.0)) // early out if depth too large (=BG) or too small (=DMD,etc)
-         color = float4(sampleCenter.xyz, 1.0);
-   } else {
-
+   
+	float depth0 = tex2Dlod(Texture3, float4(u, 0.,0.)).x;
+	if ((w_h_height.w == 1.0) && ((depth0 == 1.0) || (depth0 == 0.0))) // early out if depth too large (=BG) or too small (=DMD,etc)
+			color = float4(sampleCenter.xyz, 1.0);
+	else {
 	   // short edges
 	   float4 sampleHorizNeg0  = sampleOffseta(u, float2(-1.5,  0.0) );
 	   float4 sampleHorizPos0  = sampleOffseta(u, float2( 1.5,  0.0) ); 
@@ -466,13 +461,10 @@ void main()
 	float2 u = tex0 + w_h_height.xy*0.5;
 
 	float3 rMc = tex2Dlod(Texture0, float4(u, 0.,0.)).xyz;
-	if(w_h_height.w == 1.0) // depth buffer available?
-	{
-		float depth0 = tex2Dlod(Texture3, float4(u, 0.,0.)).x;
-		if((depth0 == 1.0) || (depth0 == 0.0)) // early out if depth too large (=BG) or too small (=DMD,etc)
+	float depth0 = tex2Dlod(Texture3, float4(u, 0.,0.)).x;
+	if ((w_h_height.w == 1.0) && ((depth0 == 1.0) || (depth0 == 0.0))) // early out if depth too large (=BG) or too small (=DMD,etc)
 			color = float4(rMc, 1.0);
-	} else {
-
+	else {
 		float2 offs = w_h_height.xy;
 		float rNW = luma(tex2Dlod(Texture0, float4(u - offs, 0.,0.)).xyz);
 		float rN = luma(tex2Dlod(Texture0, float4(u - float2(0.0,offs.y), 0.,0.)).xyz);
