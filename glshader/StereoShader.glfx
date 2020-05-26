@@ -1,5 +1,5 @@
 ////GLOBAL
-#version 330
+#version 400
 
 #include "hlsl_glsl.fxh"
 
@@ -15,13 +15,30 @@ out vec2 tex1;
 
 ////FRAGMENT
 
-uniform sampler2D  Texture0; // Left Eye
-uniform sampler2D  Texture1; // Right Eye
+uniform sampler2DMS Texture0; // Left Eye
+uniform sampler2DMS Texture1; // Right Eye
 
 in vec2 tex0;
 in vec2 tex1;
 
 out vec4 color;
+
+vec4 texMSFragCoord(sampler2DMS sampler, vec2 tc)
+{
+    int texSamples = 4;
+    
+    ivec2 texSize = textureSize(sampler);
+    ivec2 texCoord = ivec2(tc * texSize);
+    
+    vec4 color = vec4(0.0);
+
+    for (int i = 0; i < texSamples; i++)
+        color += texelFetch(sampler, texCoord, i);
+
+    color /= float(texSamples);
+
+    return color;
+}
 
 ////vs_main_tb
 
@@ -37,9 +54,9 @@ void main()
 void main()
 {
    if (tex0.y<1.0)
-      color = tex2D(Texture0, tex0);
+      color = texMSFragCoord(Texture0, tex0);
    else 
-      color = tex2D(Texture1, tex1);
+      color = texMSFragCoord(Texture1, tex1);
 }
 
 ////vs_main_sbs
@@ -55,10 +72,13 @@ void main()
 
 void main()
 {
-   if (tex0.x < 1.0) {
-      color = tex2D(Texture0, tex0);
-   } else {
-      color = tex2D(Texture1, tex1);
+   if (tex0.x < 1.0)
+   {
+      color = texMSFragCoord(Texture0, tex0);
+   }
+   else
+   {
+      color = texMSFragCoord(Texture1, tex1);
    }
 }
 
@@ -78,11 +98,13 @@ void main()
 void main()
 {
    float height = width_height_rotated_flipLR.y;
-   if (frac(gl_FragCoord.y*0.5) < 0.5) {
-      color = tex2D(Texture0, vec2(tex0.x,0.5*tex0.y));
+   if (frac(gl_FragCoord.y*0.5) < 0.5)
+   {
+      color = texMSFragCoord(Texture0, vec2(tex0.x,0.5*tex0.y));
    }
-   else {
-      color = tex2D(Texture0, vec2(tex0.x,0.5*tex0.y + 0.5));
+   else
+   {
+      color = texMSFragCoord(Texture0, vec2(tex0.x,0.5*tex0.y + 0.5));
    }
 }
 
@@ -101,12 +123,17 @@ uniform float eye;
 
 void main()
 {
-   if (eye>1.5) {
-      color = tex2D(Texture0, vec2(tex0.x,tex0.y));
-   } else if (eye<0.5) {
-      color = tex2D(Texture0, vec2(0.5*tex0.x,tex0.y));
-   } else {
-      color = tex2D(Texture0, vec2(0.5+0.5*tex0.x,tex0.y));
+   if (eye>1.5)
+   {
+      color = texMSFragCoord(Texture0, vec2(tex0.x,tex0.y));
+   }
+   else if (eye<0.5)
+   {
+      color = texMSFragCoord(Texture0, vec2(0.5*tex0.x,tex0.y));
+   }
+   else
+   {
+      color = texMSFragCoord(Texture0, vec2(0.5+0.5*tex0.x,tex0.y));
    }
 }
 

@@ -43,9 +43,10 @@ enum colorFormat {
 };
 
 enum textureUsage {
-   RENDERTARGET_VR = 16,
    RENDERTARGET = 8,
    RENDERTARGET_DEPTH = 12,
+   RENDERTARGET_MSAA = 14,
+   RENDERTARGET_MSAA_DEPTH = 16,
    DEPTH = 4,
    AUTOMIPMAP = 2,
    STATIC = 0,

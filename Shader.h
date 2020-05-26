@@ -113,6 +113,7 @@ private:
    static Matrix3D mWorld, mView, mProj[2];
    static int lastShaderProgram;
    static D3DTexture* noTexture;
+   static D3DTexture* noTextureMSAA;
    static float* zeroData;
    glShader* m_currentTechnique;
    static int nextTextureSlot;

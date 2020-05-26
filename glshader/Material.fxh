@@ -109,9 +109,9 @@ vec3 DoEnvmapDiffuse(vec3 N, vec3 diffuse)
 
    vec3 env;
    if (!hdrEnvTextures)
-        env = InvGamma(textureLod(Texture2, uv,0.).rgb);
+        env = InvGamma(texture(Texture2, uv).rgb);
    else
-        env = textureLod(Texture2, uv,0.).bgr;
+        env = texture(Texture2, uv).bgr;
         
    return diffuse * env*fenvEmissionScale_TexWidth.x;
 }
@@ -136,9 +136,9 @@ vec3 DoEnvmap2ndLayer(vec3 color1stLayer, vec3 pos, vec3 N, vec3 V, float NdotV,
    vec3 w = FresnelSchlick(specular, NdotV, Roughness_WrapL_Edge_Thickness.z); //!! ?
    vec3 env;
    if (!hdrEnvTextures)
-        env = InvGamma(textureLod(Texture1, Ruv, 0.).rgb);
+        env = InvGamma(texture(Texture1, Ruv).rgb);
    else
-        env = textureLod(Texture1, Ruv, 0.).bgr;
+        env = texture(Texture1, Ruv).bgr;
 
    return mix(color1stLayer, env*fenvEmissionScale_TexWidth.x, w); // weight (optional) lower diffuse/glossy layer with clearcoat/specular
 }

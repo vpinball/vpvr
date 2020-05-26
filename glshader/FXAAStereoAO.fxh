@@ -22,8 +22,8 @@ float2 hash(float2 gridcell)
 
 float3 get_nonunit_normal(float depth0, float2 u) // use neighboring pixels // quite some tex access by this
 {
-	float depth1 = tex2Dlod(Texture3, float4(u.x, u.y+w_h_height.y, 0.,0.)).x;
-	float depth2 = tex2Dlod(Texture3, float4(u.x+w_h_height.x, u.y, 0.,0.)).x;
+	float depth1 = texMSFragCoord(Texture3, vec2(u.x, u.y+w_h_height.y)).x;
+	float depth2 = texMSFragCoord(Texture3, vec2(u.x+w_h_height.x, u.y)).x;
 	return float3(w_h_height.y * (depth2 - depth0), (depth1 - depth0) * w_h_height.x, w_h_height.y * w_h_height.x); //!!
 }
 
@@ -69,49 +69,50 @@ in float2 tex0;
 void main()
 {
 	float2 u = tex0 + w_h_height.xy*0.5;
+   
+   float2 uv0 = tex0 + w_h_height.xy; // half pixel shift in x & y for filter
+	float2 uv1 = tex0;                 // dto.
 
-	float depth0 = tex2Dlod(Texture3, float4(u, 0.,0.)).x;
+	float depth0 = texMSFragCoord(Texture3, vec2(u)).x;
 	if((depth0 == 1.0) || (depth0 == 0.0)) //!! early out if depth too large (=BG) or too small (=DMD,etc -> retweak render options (depth write on), otherwise also screwup with stereo)
-		color = float4(1.0, 0.,0.,0.);
-	else {
+		color= float4(1.0, 0.,0.,0.);
+   else {
+      const float3 ushift = /*hash(IN.tex0) + w_h_height.zw*/ // jitter samples via hash of position on screen and then jitter samples by time //!! see below for non-shifted variant
+                            tex2Dlod(Texture4, float4(tex0/(64.0*w_h_height.xy) + w_h_height.zw, 0.0, 0.0)).xyz; // use dither texture instead nowadays // 64 is the hardcoded dither texture size for AOdither.bmp
+      //float base = 0.0;
+      float area = 0.06; //!!
+      float falloff = 0.0002; //!!
+      int samples = 8/*9*/; //4,8,9,13,21,25,32 korobov,fibonacci
+      float radius = 0.001+/*frac*/(ushift.z)*0.009; // sample radius
+      float depth_threshold_normal = 0.005;
+      float total_strength = AO_scale_timeblur.x * (/*1.0 for uniform*/0.5 / samples);
+      float3 normal = normalize(get_nonunit_normal(depth0, u));
+      //float3 normal = tex2Dlod(texSamplerNormals, float4(u, 0.,0.)).xyz *2.0-1.0; // use 8bitRGB pregenerated normals
+      float radius_depth = radius/depth0;
 
-		float3 ushift = /*hash(tex0) + w_h_height.zw*/ // jitter samples via hash of position on screen and then jitter samples by time //!! see below for non-shifted variant
-							  tex2Dlod(Texture4, float4(tex0/(64.0*w_h_height.xy) + w_h_height.zw, 0.,0.)).xyz; // use dither texture instead nowadays // 64 is the hardcoded dither texture size for AOdither.bmp
-		//float base = 0.0;
-		float area = 0.06; //!!
-		float falloff = 0.0002; //!!
-		#define samples 8
-		/*9*/; //4,8,9,13,21,25,32 korobov,fibonacci
-		float radius = 0.001+frac(ushift.z+w_h_height.z*(samples-1.0))*0.009; // sample radius //!! w_h_height.z reused, but should not be that bad
-		float depth_threshold_normal = 0.005;
-		float total_strength = AO_scale_timeblur.x * (/*1.0 for uniform*/0.5 / samples);
-		float3 normal = normalize(get_nonunit_normal(depth0, u));
-		//float3 normal = tex2Dlod(Texture1, float4(u, 0.,0.)).xyz *2.0-1.0; // use 8bitRGB pregenerated normals
-		float radius_depth = radius/depth0;
-
-		float occlusion = 0.0;
-		for(int i=0; i < samples; ++i) {
-			float2 r = float2(i*(1.0 / samples), i*(5.0/*2.0*/ / samples)); //1,5,2,8,13,7,7 korobov,fibonacci //!! could also use progressive/extensible lattice via rad_inv(i)*(1501825329, 359975893) (check precision though as this should be done in double or uint64)
-			//float3 ray = sphere_sample(frac(r+ushift.xy)); // shift lattice // uniform variant
-			float2 ray = rotate_to_vector_upper(cos_hemisphere_sample(frac(r+ushift.xy)), normal).xy; // shift lattice
-			//!! maybe a bit worse distribution: float2 ray = cos_hemisphere_sample(normal,frac(r+ushift.xy)).xy; // shift lattice
-			//float rdotn = dot(ray,normal);
-			float2 hemi_ray = u + (radius_depth /** sign(rdotn) for uniform*/) * ray.xy;
-			float occ_depth = tex2Dlod(Texture3, float4(hemi_ray, 0.,0.)).x;
-			float3 occ_normal = get_nonunit_normal(occ_depth, hemi_ray);
-			//float3 occ_normal = tex2Dlod(Texture1, float4(hemi_ray, 0.,0.)).xyz *2.0-1.0;  // use 8bitRGB pregenerated normals, can also omit normalization below then
-			float diff_depth = depth0 - occ_depth;
-			float diff_norm = dot(occ_normal,normal);
-			occlusion += step(falloff, diff_depth) * /*abs(rdotn)* for uniform*/ (diff_depth < depth_threshold_normal ? (1.0-diff_norm*diff_norm/dot(occ_normal,occ_normal)) : 1.0) * (1.0-smoothstep(falloff, area, diff_depth));
-		}
-		// weight with result(s) from previous frames
-		float ao = 1.0 - total_strength * occlusion;
-		color = float4( (tex2Dlod(Texture0, float4(u+w_h_height.xy*0.5, 0.,0.)).x //abuse bilerp for filtering (by using half texel/pixel shift)
-					   +tex2Dlod(Texture0, float4(u-w_h_height.xy*0.5, 0.,0.)).x
-					   +tex2Dlod(Texture0, float4(u+float2(w_h_height.x,-w_h_height.y)*0.5, 0.,0.)).x
-					   +tex2Dlod(Texture0, float4(u-float2(w_h_height.x,-w_h_height.y)*0.5, 0.,0.)).x)
-			*(0.25*(1.0-AO_scale_timeblur.y))+saturate(ao /*+base*/)*AO_scale_timeblur.y, 0.,0.,0.);
-	}
+      float occlusion = 0.0;
+      for(int i=0; i < samples; ++i) {
+         float2 r = float2(i*(1.0 / samples), i*(5.0/*2.0*/ / samples)); //1,5,2,8,13,7,7 korobov,fibonacci //!! could also use progressive/extensible lattice via rad_inv(i)*(1501825329, 359975893) (check precision though as this should be done in double or uint64)
+         //float3 ray = sphere_sample(frac(r+ushift.xy)); // shift lattice // uniform variant
+         float2 ray = rotate_to_vector_upper(cos_hemisphere_sample(frac(r+ushift.xy)), normal).xy; // shift lattice
+         //!! maybe a bit worse distribution: float2 ray = cos_hemisphere_sample(normal,frac(r+ushift.xy)).xy; // shift lattice
+         //float rdotn = dot(ray,normal);
+         float2 hemi_ray = u + (radius_depth /** sign(rdotn) for uniform*/) * ray.xy;
+         float occ_depth = texMSFragCoord(Texture3, vec2(hemi_ray)).x;
+         float3 occ_normal = get_nonunit_normal(occ_depth, hemi_ray);
+         //float3 occ_normal = tex2Dlod(texSamplerNormals, float4(hemi_ray, 0.,0.)).xyz *2.0-1.0;  // use 8bitRGB pregenerated normals, can also omit normalization below then
+         float diff_depth = depth0 - occ_depth;
+         float diff_norm = dot(occ_normal,normal);
+         occlusion += step(falloff, diff_depth) * /*abs(rdotn)* for uniform*/ (diff_depth < depth_threshold_normal ? (1.0-diff_norm*diff_norm/dot(occ_normal,occ_normal)) : 1.0) * (1.0-smoothstep(falloff, area, diff_depth));
+      }
+      // weight with result(s) from previous frames
+      float ao = 1.0 - total_strength * occlusion;
+      color = float4( (texMSNormals(Texture0,vec2(uv0)).x //abuse bilerp for filtering (by using half texel/pixel shift)
+                  +texMSNormals(Texture0, vec2(uv1)).x
+                  +texMSNormals(Texture0, vec2(uv0.x,uv1.y)).x
+                  +texMSNormals(Texture0, vec2(uv1.x,uv0.y)).x)
+         *(0.25*(1.0-AO_scale_timeblur.y))+saturate(ao /*+base*/)*AO_scale_timeblur.y, 0.,0.,0.);
+   }
 }
 
 // stereo
@@ -134,23 +135,23 @@ void main()
 	if(topdown) { u.y *= 2.0; if(!l) u.y -= 1.0; }  //!! !topdown: (u.y+w_h_height.y) ?
 	else if(sidebyside) { u.x *= 2.0; if(!l) u.x -= 1.0; }
 	float su = l ? MaxSeparation : -MaxSeparation;
-	float minDepth = min(min(tex2Dlod(Texture3, float4(u + (yaxis ? float2(0.0,0.5*su) : float2(0.5*su,0.0)), 0.,0.)).x, tex2Dlod(Texture3, float4(u + (yaxis ? float2(0.0,0.666*su) : float2(0.666*su,0.0)), 0.,0.)).x), tex2Dlod(Texture3, float4(u + (yaxis ? float2(0.0,su) : float2(su,0.0)), 0.,0.)).x);
+	float minDepth = min(min(texMSFragCoord(Texture3, vec2(u + (yaxis ? float2(0.0,0.5*su) : float2(0.5*su,0.0)))).x, texMSFragCoord(Texture3, vec2(u + (yaxis ? float2(0.0,0.666*su) : float2(0.666*su,0.0)))).x), texMSFragCoord(Texture3, vec2(u + (yaxis ? float2(0.0,su) : float2(su,0.0)))).x);
 	float parallax = (w_h_height.w+MaxSeparation) - min(MaxSeparation/(0.5+minDepth*(1.0/ZPD-0.5)), (w_h_height.w+MaxSeparation));
 	if(!l)
 		parallax = -parallax;
 	if(yaxis)
 		parallax = -parallax;
-	float3 col = tex2Dlod(Texture0, float4(u + (yaxis ? float2(0.0,parallax) : float2(parallax,0.0)), 0.,0.)).xyz;
+	float3 col = texMSFragCoord(Texture0, vec2(u + (yaxis ? float2(0.0,parallax) : float2(parallax,0.0)))).xyz;
 	//if(!aa)
 	//	return float4(col, 1.0); // otherwise blend with 'missing' scanline
 	float2 aaoffs = sidebyside ? float2(w_h_height.x,0.0) : float2(0.0,w_h_height.y);
-	minDepth = min(min(tex2Dlod(Texture3, float4(u + (yaxis ? float2(0.0,0.5*su) : float2(0.5*su,0.0)) + aaoffs, 0.,0.)).x, tex2Dlod(Texture3, float4(u + (yaxis ? float2(0.0,0.666*su) : float2(0.666*su,0.0)) + aaoffs, 0.,0.)).x), tex2Dlod(Texture3, float4(u + (yaxis ? float2(0.0,su) : float2(su,0.0)) + aaoffs, 0.,0.)).x);
+	minDepth = min(min(texMSFragCoord(Texture3, vec2(u + (yaxis ? float2(0.0,0.5*su) : float2(0.5*su,0.0)) + aaoffs)).x, texMSFragCoord(Texture3, vec2(u + (yaxis ? float2(0.0,0.666*su) : float2(0.666*su,0.0)) + aaoffs)).x), texMSFragCoord(Texture3, vec2(u + (yaxis ? float2(0.0,su) : float2(su,0.0)) + aaoffs)).x);
 	parallax = (w_h_height.w+MaxSeparation) - min(MaxSeparation/(0.5+minDepth*(1.0/ZPD-0.5)), (w_h_height.w+MaxSeparation));
 	if(!l)
 		parallax = -parallax;
 	if(yaxis)
 		parallax = -parallax;
-	color = float4((col + tex2Dlod(Texture0, float4(u + (yaxis ? float2(0.0,parallax) : float2(parallax,0.0)) + aaoffs, 0.,0.)).xyz)*0.5, 1.0);
+	color = float4((col + texMSFragCoord(Texture0, vec2(u + (yaxis ? float2(0.0,parallax) : float2(parallax,0.0)) + aaoffs)).xyz)*0.5, 1.0);
 }
 
 ////ps_main_nfaa
@@ -178,14 +179,14 @@ float2 findContrastByLuminance(float2 XYCoord, float filterSpread)
 	float2 upOffset    = float2(0.0, w_h_height.y * filterSpread);
 	float2 rightOffset = float2(w_h_height.x * filterSpread, 0.0);
 
-	float topHeight         = GetLuminance(tex2Dlod(Texture0, float4(XYCoord +               upOffset, 0.,0.)).rgb);
-	float bottomHeight      = GetLuminance(tex2Dlod(Texture0, float4(XYCoord -               upOffset, 0.,0.)).rgb);
-	float rightHeight       = GetLuminance(tex2Dlod(Texture0, float4(XYCoord + rightOffset           , 0.,0.)).rgb);
-	float leftHeight        = GetLuminance(tex2Dlod(Texture0, float4(XYCoord - rightOffset           , 0.,0.)).rgb);
-	float leftTopHeight     = GetLuminance(tex2Dlod(Texture0, float4(XYCoord - rightOffset + upOffset, 0.,0.)).rgb);
-	float leftBottomHeight  = GetLuminance(tex2Dlod(Texture0, float4(XYCoord - rightOffset - upOffset, 0.,0.)).rgb);
-	float rightBottomHeight = GetLuminance(tex2Dlod(Texture0, float4(XYCoord + rightOffset + upOffset, 0.,0.)).rgb);
-	float rightTopHeight    = GetLuminance(tex2Dlod(Texture0, float4(XYCoord + rightOffset - upOffset, 0.,0.)).rgb);
+	float topHeight         = GetLuminance(texMSFragCoord(Texture0, vec2(XYCoord +               upOffset)).rgb);
+	float bottomHeight      = GetLuminance(texMSFragCoord(Texture0, vec2(XYCoord -               upOffset)).rgb);
+	float rightHeight       = GetLuminance(texMSFragCoord(Texture0, vec2(XYCoord + rightOffset           )).rgb);
+	float leftHeight        = GetLuminance(texMSFragCoord(Texture0, vec2(XYCoord - rightOffset           )).rgb);
+	float leftTopHeight     = GetLuminance(texMSFragCoord(Texture0, vec2(XYCoord - rightOffset + upOffset)).rgb);
+	float leftBottomHeight  = GetLuminance(texMSFragCoord(Texture0, vec2(XYCoord - rightOffset - upOffset)).rgb);
+	float rightBottomHeight = GetLuminance(texMSFragCoord(Texture0, vec2(XYCoord + rightOffset + upOffset)).rgb);
+	float rightTopHeight    = GetLuminance(texMSFragCoord(Texture0, vec2(XYCoord + rightOffset - upOffset)).rgb);
 
 #ifdef NFAA_EDGE_DETECTION_VARIANT
 	float sum0 = rightTopHeight    + bottomHeight + leftTopHeight;
@@ -210,14 +211,14 @@ float2 findContrastByColor(float2 XYCoord, float filterSpread)
 	float2 upOffset    = float2(0.0, w_h_height.y * filterSpread);
 	float2 rightOffset = float2(w_h_height.x * filterSpread, 0.0);
 
-	float3 topHeight         = tex2Dlod(Texture0, float4(XYCoord +               upOffset, 0.,0.)).rgb;
-	float3 bottomHeight      = tex2Dlod(Texture0, float4(XYCoord -               upOffset, 0.,0.)).rgb;
-	float3 rightHeight       = tex2Dlod(Texture0, float4(XYCoord + rightOffset           , 0.,0.)).rgb;
-	float3 leftHeight        = tex2Dlod(Texture0, float4(XYCoord - rightOffset           , 0.,0.)).rgb;
-	float3 leftTopHeight     = tex2Dlod(Texture0, float4(XYCoord - rightOffset + upOffset, 0.,0.)).rgb;
-	float3 leftBottomHeight  = tex2Dlod(Texture0, float4(XYCoord - rightOffset - upOffset, 0.,0.)).rgb;
-	float3 rightBottomHeight = tex2Dlod(Texture0, float4(XYCoord + rightOffset + upOffset, 0.,0.)).rgb;
-	float3 rightTopHeight    = tex2Dlod(Texture0, float4(XYCoord + rightOffset - upOffset, 0.,0.)).rgb;
+	float3 topHeight         = texMSFragCoord(Texture0, vec2(XYCoord +               upOffset)).rgb;
+	float3 bottomHeight      = texMSFragCoord(Texture0, vec2(XYCoord -               upOffset)).rgb;
+	float3 rightHeight       = texMSFragCoord(Texture0, vec2(XYCoord + rightOffset           )).rgb;
+	float3 leftHeight        = texMSFragCoord(Texture0, vec2(XYCoord - rightOffset           )).rgb;
+	float3 leftTopHeight     = texMSFragCoord(Texture0, vec2(XYCoord - rightOffset + upOffset)).rgb;
+	float3 leftBottomHeight  = texMSFragCoord(Texture0, vec2(XYCoord - rightOffset - upOffset)).rgb;
+	float3 rightBottomHeight = texMSFragCoord(Texture0, vec2(XYCoord + rightOffset + upOffset)).rgb;
+	float3 rightTopHeight    = texMSFragCoord(Texture0, vec2(XYCoord + rightOffset - upOffset)).rgb;
 
 #ifdef NFAA_EDGE_DETECTION_VARIANT
 	float sum0 = rightTopHeight    + bottomHeight + leftTopHeight;
@@ -253,11 +254,12 @@ void main()
 
 	float2 u = tex0 + w_h_height.xy*0.5;
 
-	float3 Scene0 = tex2Dlod(Texture0, float4(u, 0.,0.)).rgb;
-	float depth0 = tex2Dlod(Texture3, float4(u, 0.,0.)).x;
+   float3 Scene0 = texMSFragCoord(Texture0, vec2(u)).rgb;
+	float depth0 = texMSFragCoord(Texture3, vec2(u)).x;
 	if ((w_h_height.w == 1.0) && ((depth0 == 1.0) || (depth0 == 0.0))) // early out if depth too large (=BG) or too small (=DMD,etc)
 			color = float4(Scene0, 1.0);
 	else {
+
 #ifdef NFAA_USE_COLOR // edges from color
 		float2 Vectors = findContrastByColor(u, filterSpread);
 #else
@@ -275,14 +277,14 @@ void main()
 
 		float2 Normal = Vectors * (w_h_height.xy /* * 2.0*/);
 
-		float3 Scene1 = tex2Dlod(Texture0, float4(u + Normal, 0.,0.)).rgb;
-		float3 Scene2 = tex2Dlod(Texture0, float4(u - Normal, 0.,0.)).rgb;
+		float3 Scene1 = texMSFragCoord(Texture0, vec2(u + Normal)).rgb;
+		float3 Scene2 = texMSFragCoord(Texture0, vec2(u - Normal)).rgb;
 #if defined(NFAA_VARIANT) || defined(NFAA_VARIANT2)
-		float3 Scene3 = tex2Dlod(Texture0, float4(u + float2(Normal.x, -Normal.y)*0.5, 0.,0.)).rgb;
-		float3 Scene4 = tex2Dlod(Texture0, float4(u - float2(Normal.x, -Normal.y)*0.5, 0.,0.)).rgb;
+		float3 Scene3 = texMSFragCoord(Texture0, vec2(u + float2(Normal.x, -Normal.y)*0.5)).rgb;
+		float3 Scene4 = texMSFragCoord(Texture0, vec2(u - float2(Normal.x, -Normal.y)*0.5)).rgb;
 #else
-		float3 Scene3 = tex2Dlod(Texture0, float4(u + float2(Normal.x, -Normal.y), 0.,0.)).rgb;
-		float3 Scene4 = tex2Dlod(Texture0, float4(u - float2(Normal.x, -Normal.y), 0.,0.)).rgb;
+		float3 Scene3 = texMSFragCoord(Texture0, vec2(u + float2(Normal.x, -Normal.y))).rgb;
+		float3 Scene4 = texMSFragCoord(Texture0, vec2(u - float2(Normal.x, -Normal.y))).rgb;
 #endif
 
 #ifdef NFAA_TEST_MODE // debug
@@ -299,12 +301,12 @@ void main()
 
 float3 sampleOffset(float2 u, float2 pixelOffset )
 {
-   return tex2Dlod(Texture0, float4(u + pixelOffset * w_h_height.xy, 0.,0.)).xyz;
+   return texMSFragCoord(Texture0, vec2(u + pixelOffset * w_h_height.xy)).xyz;
 }
 
 float4 sampleOffseta(float2 u, float2 pixelOffset )
 {
-   return tex2Dlod(Texture0, float4(u + pixelOffset * w_h_height.xy, 0.,0.));
+   return texMSFragCoord(Texture0, vec2(u + pixelOffset * w_h_height.xy));
 }
 
 float avg(float3 l)
@@ -343,13 +345,14 @@ in float2 tex0;
 void main()
 {
    float2 u = tex0 + w_h_height.xy*0.5;
-
+  
    float4 sampleCenter = sampleOffseta(u, float2( 0.0,  0.0) );
    
-	float depth0 = tex2Dlod(Texture3, float4(u, 0.,0.)).x;
+	float depth0 = texMSFragCoord(Texture3, vec2(u)).x;
 	if ((w_h_height.w == 1.0) && ((depth0 == 1.0) || (depth0 == 0.0))) // early out if depth too large (=BG) or too small (=DMD,etc)
 			color = float4(sampleCenter.xyz, 1.0);
 	else {
+
 	   // short edges
 	   float4 sampleHorizNeg0  = sampleOffseta(u, float2(-1.5,  0.0) );
 	   float4 sampleHorizPos0  = sampleOffseta(u, float2( 1.5,  0.0) ); 
@@ -459,22 +462,23 @@ in float2 tex0;
 void main()
 {
 	float2 u = tex0 + w_h_height.xy*0.5;
-
-	float3 rMc = tex2Dlod(Texture0, float4(u, 0.,0.)).xyz;
-	float depth0 = tex2Dlod(Texture3, float4(u, 0.,0.)).x;
+  
+	float3 rMc = texMSFragCoord(Texture0, vec2(u)).xyz;
+	float depth0 = texMSFragCoord(Texture3, vec2(u)).x;
 	if ((w_h_height.w == 1.0) && ((depth0 == 1.0) || (depth0 == 0.0))) // early out if depth too large (=BG) or too small (=DMD,etc)
 			color = float4(rMc, 1.0);
 	else {
+
 		float2 offs = w_h_height.xy;
-		float rNW = luma(tex2Dlod(Texture0, float4(u - offs, 0.,0.)).xyz);
-		float rN = luma(tex2Dlod(Texture0, float4(u - float2(0.0,offs.y), 0.,0.)).xyz);
-		float rNE = luma(tex2Dlod(Texture0, float4(u - float2(-offs.x,offs.y), 0.,0.)).xyz);
-		float rW = luma(tex2Dlod(Texture0, float4(u - float2(offs.x,0.0), 0.,0.)).xyz);
+		float rNW = luma(texMSFragCoord(Texture0, vec2(u - offs)).xyz);
+		float rN = luma(texMSFragCoord(Texture0, vec2(u - float2(0.0,offs.y))).xyz);
+		float rNE = luma(texMSFragCoord(Texture0, vec2(u - float2(-offs.x,offs.y))).xyz);
+		float rW = luma(texMSFragCoord(Texture0, vec2(u - float2(offs.x,0.0))).xyz);
 		float rM = luma(rMc);
-		float rE = luma(tex2Dlod(Texture0, float4(u + float2(offs.x,0.0), 0.,0.)).xyz);
-		float rSW = luma(tex2Dlod(Texture0, float4(u + float2(-offs.x,offs.y), 0.,0.)).xyz);
-		float rS = luma(tex2Dlod(Texture0, float4(u + float2(0.0,offs.y), 0.,0.)).xyz);
-		float rSE = luma(tex2Dlod(Texture0, float4(u + offs, 0.,0.)).xyz);
+		float rE = luma(texMSFragCoord(Texture0, vec2(u + float2(offs.x,0.0))).xyz);
+		float rSW = luma(texMSFragCoord(Texture0, vec2(u + float2(-offs.x,offs.y))).xyz);
+		float rS = luma(texMSFragCoord(Texture0, vec2(u + float2(0.0,offs.y))).xyz);
+		float rSE = luma(texMSFragCoord(Texture0, vec2(u + offs)).xyz);
 		float rMrN = rM+rN;
 		float lumaNW = rMrN+rNW+rW;
 		float lumaNE = rMrN+rNE+rE;
@@ -494,8 +498,8 @@ void main()
 		float2 dir = float2(SWSE - NWNE, (lumaNW + lumaSW) - (lumaNE + lumaSE));
 		float temp = 1.0/(min(abs(dir.x), abs(dir.y)) + max((NWNE + SWSE)*0.03125, 0.0078125)); //!! tweak?
 		dir = clamp(dir*temp, float2(-8.0), float2(8.0)) * offs; //!! tweak?
-		float3 rgbA = 0.5 * (tex2Dlod(Texture0, float4(u-dir*(0.5/3.0), 0.,0.)).xyz + tex2Dlod(Texture0, float4(u+dir*(0.5/3.0), 0.,0.)).xyz);
-		float3 rgbB = 0.5 * rgbA + 0.25 * (tex2Dlod(Texture0, float4(u-dir*0.5, 0.,0.)).xyz + tex2Dlod(Texture0, float4(u+dir*0.5, 0.,0.)).xyz);
+		float3 rgbA = 0.5 * (texMSFragCoord(Texture0, vec2(u-dir*(0.5/3.0))).xyz + texMSFragCoord(Texture0, vec2(u+dir*(0.5/3.0))).xyz);
+		float3 rgbB = 0.5 * rgbA + 0.25 * (texMSFragCoord(Texture0, vec2(u-dir*0.5)).xyz + texMSFragCoord(Texture0, vec2(u+dir*0.5)).xyz);
 		float lumaB = luma(rgbB);
 		color = float4(((lumaB < lumaMin) || (lumaB > lumaMax)) ? rgbA : rgbB, 1.0);
 	}
@@ -515,21 +519,21 @@ void main()
 {
 	float2 u = tex0 + w_h_height.xy*0.5;
 
-	float3 rgbyM = tex2Dlod(Texture0, float4(u, 0.,0.)).xyz;
-	float depth0 = tex2Dlod(Texture3, float4(u, 0.,0.)).x;
+	float3 rgbyM = texMSFragCoord(Texture0, vec2(u)).xyz;
+	float depth0 = texMSFragCoord(Texture3, vec2(u)).x;
 	if ((w_h_height.w == 1.0) && ((depth0 == 1.0) || (depth0 == 0.0))) // early out if depth too large (=BG) or too small (=DMD,etc)
 			color = float4(rgbyM, 1.0);
 	else {
 		float2 offs = w_h_height.xy;
-		float lumaNW = luma(tex2Dlod(Texture0, float4(u - offs, 0.f,0.f)).xyz);
-		float lumaN = luma(tex2Dlod(Texture0, float4(u - float2(0.0,offs.y), 0.f,0.f)).xyz);
-		float lumaNE = luma(tex2Dlod(Texture0, float4(u - float2(-offs.x,offs.y), 0.f,0.f)).xyz);
-		float lumaW = luma(tex2Dlod(Texture0, float4(u - float2(offs.x,0.0), 0.f,0.f)).xyz);
+		float lumaNW = luma(texMSFragCoord(Texture0, vec2(u - offs)).xyz);
+		float lumaN = luma(texMSFragCoord(Texture0, vec2(u - float2(0.0,offs.y))).xyz);
+		float lumaNE = luma(texMSFragCoord(Texture0, vec2(u - float2(-offs.x,offs.y))).xyz);
+		float lumaW = luma(texMSFragCoord(Texture0, vec2(u - float2(offs.x,0.0))).xyz);
 		float lumaM = luma(rgbyM);
-		float lumaE = luma(tex2Dlod(Texture0, float4(u + float2(offs.x,0.0), 0.f,0.f)).xyz);
-		float lumaSW = luma(tex2Dlod(Texture0, float4(u + float2(-offs.x,offs.y), 0.f,0.f)).xyz);
-		float lumaS = luma(tex2Dlod(Texture0, float4(u + float2(0.0,offs.y), 0.f,0.f)).xyz);
-		float lumaSE = luma(tex2Dlod(Texture0, float4(u + offs, 0.f,0.f)).xyz);
+		float lumaE = luma(texMSFragCoord(Texture0, vec2(u + float2(offs.x,0.0))).xyz);
+		float lumaSW = luma(texMSFragCoord(Texture0, vec2(u + float2(-offs.x,offs.y))).xyz);
+		float lumaS = luma(texMSFragCoord(Texture0, vec2(u + float2(0.0,offs.y))).xyz);
+		float lumaSE = luma(texMSFragCoord(Texture0, vec2(u + offs)).xyz);
 		float maxSM = max(lumaS, lumaM);
 		float minSM = min(lumaS, lumaM);
 		float maxESM = max(lumaE, maxSM);
@@ -587,9 +591,9 @@ void main()
 			float2 posN = float2(posB.x - offNP.x * FXAA_QUALITY__P0, posB.y - offNP.y * FXAA_QUALITY__P0);
 			float2 posP = float2(posB.x + offNP.x * FXAA_QUALITY__P0, posB.y + offNP.y * FXAA_QUALITY__P0);
 			float subpixD = -2.0 * subpixC + 3.0;
-			float lumaEndN = luma(tex2Dlod(Texture0, float4(posN, 0.f,0.f)).xyz);
+			float lumaEndN = luma(texMSFragCoord(Texture0, vec2(posN)).xyz);
 			float subpixE = subpixC * subpixC;
-			float lumaEndP = luma(tex2Dlod(Texture0, float4(posP, 0.f,0.f)).xyz);
+			float lumaEndP = luma(texMSFragCoord(Texture0, vec2(posP)).xyz);
 			if(!pairN) lumaNN = lumaSS;
 			float gradientScaled = gradient * (1.0/4.0);
 			float lumaMM = lumaM - lumaNN * 0.5;
@@ -605,8 +609,8 @@ void main()
 			if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P1;
 			if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P1;
 			if(doneNP) {
-				if(!doneN) lumaEndN = luma(tex2Dlod(Texture0, float4(posN.xy, 0.f,0.f)).xyz);
-				if(!doneP) lumaEndP = luma(tex2Dlod(Texture0, float4(posP.xy, 0.f,0.f)).xyz);
+				if(!doneN) lumaEndN = luma(texMSFragCoord(Texture0, vec2(posN.xy)).xyz);
+				if(!doneP) lumaEndP = luma(texMSFragCoord(Texture0, vec2(posP.xy)).xyz);
 				if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 				if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 				doneN = abs(lumaEndN) >= gradientScaled;
@@ -635,7 +639,7 @@ void main()
 			float pl = pixelOffsetSubpix * lengthSign;
 			if(horzSpan) un.y += pl;
 			else un.x += pl;
-			color = float4(tex2Dlod(Texture0, float4(un, 0.f,0.f)).xyz, 1.0f);
+			color = float4(texMSFragCoord(Texture0, vec2(un)).xyz, 1.0f);
 		}
 	}
 }
@@ -667,21 +671,21 @@ void main()
 {
 	float2 u = tex0 + w_h_height.xy*0.5;
 
-	float3 rgbyM = tex2Dlod(Texture0, float4(u, 0.,0.)).xyz;
-	float depth0 = tex2Dlod(Texture3, float4(u, 0.,0.)).x;
+	float3 rgbyM = texMSFragCoord(Texture0, vec2(u)).xyz;
+	float depth0 = texMSFragCoord(Texture3, vec2(u)).x;
 	if ((w_h_height.w == 1.0) && ((depth0 == 1.0) || (depth0 == 0.0))) // early out if depth too large (=BG) or too small (=DMD,etc)
 			color = float4(rgbyM, 1.0);
 	else {
 		float2 offs = w_h_height.xy;
-		float lumaNW = luma(tex2Dlod(Texture0, float4(u - offs, 0.f,0.f)).xyz);
-		float lumaN = luma(tex2Dlod(Texture0, float4(u - float2(0.0,offs.y), 0.f,0.f)).xyz);
-		float lumaNE = luma(tex2Dlod(Texture0, float4(u - float2(-offs.x,offs.y), 0.f,0.f)).xyz);
-		float lumaW = luma(tex2Dlod(Texture0, float4(u - float2(offs.x,0.0), 0.f,0.f)).xyz);
+		float lumaNW = luma(texMSFragCoord(Texture0, vec2(u - offs)).xyz);
+		float lumaN = luma(texMSFragCoord(Texture0, vec2(u - float2(0.0,offs.y))).xyz);
+		float lumaNE = luma(texMSFragCoord(Texture0, vec2(u - float2(-offs.x,offs.y))).xyz);
+		float lumaW = luma(texMSFragCoord(Texture0, vec2(u - float2(offs.x,0.0))).xyz);
 		float lumaM = luma(rgbyM);
-		float lumaE = luma(tex2Dlod(Texture0, float4(u + float2(offs.x,0.0), 0.f,0.f)).xyz);
-		float lumaSW = luma(tex2Dlod(Texture0, float4(u + float2(-offs.x,offs.y), 0.f,0.f)).xyz);
-		float lumaS = luma(tex2Dlod(Texture0, float4(u + float2(0.0,offs.y), 0.f,0.f)).xyz);
-		float lumaSE = luma(tex2Dlod(Texture0, float4(u + offs, 0.f,0.f)).xyz);
+		float lumaE = luma(texMSFragCoord(Texture0, vec2(u + float2(offs.x,0.0))).xyz);
+		float lumaSW = luma(texMSFragCoord(Texture0, vec2(u + float2(-offs.x,offs.y))).xyz);
+		float lumaS = luma(texMSFragCoord(Texture0, vec2(u + float2(0.0,offs.y))).xyz);
+		float lumaSE = luma(texMSFragCoord(Texture0, vec2(u + offs)).xyz);
 		float maxSM = max(lumaS, lumaM);
 		float minSM = min(lumaS, lumaM);
 		float maxESM = max(lumaE, maxSM);
@@ -739,9 +743,9 @@ void main()
 			float2 posN = float2(posB.x - offNP.x * FXAA_QUALITY__P0, posB.y - offNP.y * FXAA_QUALITY__P0);
 			float2 posP = float2(posB.x + offNP.x * FXAA_QUALITY__P0, posB.y + offNP.y * FXAA_QUALITY__P0);
 			float subpixD = -2.0 * subpixC + 3.0;
-			float lumaEndN = luma(tex2Dlod(Texture0, float4(posN, 0.f,0.f)).xyz);
+			float lumaEndN = luma(texMSFragCoord(Texture0, vec2(posN)).xyz);
 			float subpixE = subpixC * subpixC;
-			float lumaEndP = luma(tex2Dlod(Texture0, float4(posP, 0.f,0.f)).xyz);
+			float lumaEndP = luma(texMSFragCoord(Texture0, vec2(posP)).xyz);
 			if(!pairN) lumaNN = lumaSS;
 			float gradientScaled = gradient * (1.0/4.0);
 			float lumaMM = lumaM - lumaNN * 0.5;
@@ -757,8 +761,8 @@ void main()
 			if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P1;
 			if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P1;
 			if(doneNP) {
-				if(!doneN) lumaEndN = luma(tex2Dlod(Texture0, float4(posN.xy, 0.f,0.f)).xyz);
-				if(!doneP) lumaEndP = luma(tex2Dlod(Texture0, float4(posP.xy, 0.f,0.f)).xyz);
+				if(!doneN) lumaEndN = luma(texMSFragCoord(Texture0, vec2(posN.xy)).xyz);
+				if(!doneP) lumaEndP = luma(texMSFragCoord(Texture0, vec2(posP.xy)).xyz);
 				if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 				if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 				doneN = abs(lumaEndN) >= gradientScaled;
@@ -772,8 +776,8 @@ void main()
 				//
 
 				if(doneNP) {
-				if(!doneN) lumaEndN = luma(tex2Dlod(Texture0, float4(posN.xy, 0.f,0.f)).xyz);
-				if(!doneP) lumaEndP = luma(tex2Dlod(Texture0, float4(posP.xy, 0.f,0.f)).xyz);
+				if(!doneN) lumaEndN = luma(texMSFragCoord(Texture0, vec2(posN.xy)).xyz);
+				if(!doneP) lumaEndP = luma(texMSFragCoord(Texture0, vec2(posP.xy)).xyz);
 				if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 				if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 				doneN = abs(lumaEndN) >= gradientScaled;
@@ -785,8 +789,8 @@ void main()
 				if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P3;
 
 				if(doneNP) {
-				if(!doneN) lumaEndN = luma(tex2Dlod(Texture0, float4(posN.xy, 0.f,0.f)).xyz);
-				if(!doneP) lumaEndP = luma(tex2Dlod(Texture0, float4(posP.xy, 0.f,0.f)).xyz);
+				if(!doneN) lumaEndN = luma(texMSFragCoord(Texture0, vec2(posN.xy)).xyz);
+				if(!doneP) lumaEndP = luma(texMSFragCoord(Texture0, vec2(posP.xy)).xyz);
 				if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 				if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 				doneN = abs(lumaEndN) >= gradientScaled;
@@ -798,8 +802,8 @@ void main()
 				if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P4;
 
 				if(doneNP) {
-				if(!doneN) lumaEndN = luma(tex2Dlod(Texture0, float4(posN.xy, 0.f,0.f)).xyz);
-				if(!doneP) lumaEndP = luma(tex2Dlod(Texture0, float4(posP.xy, 0.f,0.f)).xyz);
+				if(!doneN) lumaEndN = luma(texMSFragCoord(Texture0, vec2(posN.xy)).xyz);
+				if(!doneP) lumaEndP = luma(texMSFragCoord(Texture0, vec2(posP.xy)).xyz);
 				if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 				if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 				doneN = abs(lumaEndN) >= gradientScaled;
@@ -811,8 +815,8 @@ void main()
 				if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P5;
 
 				if(doneNP) {
-				if(!doneN) lumaEndN = luma(tex2Dlod(Texture0, float4(posN.xy, 0.f,0.f)).xyz);
-				if(!doneP) lumaEndP = luma(tex2Dlod(Texture0, float4(posP.xy, 0.f,0.f)).xyz);
+				if(!doneN) lumaEndN = luma(texMSFragCoord(Texture0, vec2(posN.xy)).xyz);
+				if(!doneP) lumaEndP = luma(texMSFragCoord(Texture0, vec2(posP.xy)).xyz);
 				if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 				if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 				doneN = abs(lumaEndN) >= gradientScaled;
@@ -824,8 +828,8 @@ void main()
 				if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P6;
 
 				if(doneNP) {
-				if(!doneN) lumaEndN = luma(tex2Dlod(Texture0, float4(posN.xy, 0.f,0.f)).xyz);
-				if(!doneP) lumaEndP = luma(tex2Dlod(Texture0, float4(posP.xy, 0.f,0.f)).xyz);
+				if(!doneN) lumaEndN = luma(texMSFragCoord(Texture0, vec2(posN.xy)).xyz);
+				if(!doneP) lumaEndP = luma(texMSFragCoord(Texture0, vec2(posP.xy)).xyz);
 				if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 				if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 				doneN = abs(lumaEndN) >= gradientScaled;
@@ -837,8 +841,8 @@ void main()
 				if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P7;
 
 				if(doneNP) {
-				if(!doneN) lumaEndN = luma(tex2Dlod(Texture0, float4(posN.xy, 0.f,0.f)).xyz);
-				if(!doneP) lumaEndP = luma(tex2Dlod(Texture0, float4(posP.xy, 0.f,0.f)).xyz);
+				if(!doneN) lumaEndN = luma(texMSFragCoord(Texture0, vec2(posN.xy)).xyz);
+				if(!doneP) lumaEndP = luma(texMSFragCoord(Texture0, vec2(posP.xy)).xyz);
 				if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 				if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 				doneN = abs(lumaEndN) >= gradientScaled;
@@ -850,8 +854,8 @@ void main()
 				if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P8;
 
 				if(doneNP) {
-				if(!doneN) lumaEndN = luma(tex2Dlod(Texture0, float4(posN.xy, 0.f,0.f)).xyz);
-				if(!doneP) lumaEndP = luma(tex2Dlod(Texture0, float4(posP.xy, 0.f,0.f)).xyz);
+				if(!doneN) lumaEndN = luma(texMSFragCoord(Texture0, vec2(posN.xy)).xyz);
+				if(!doneP) lumaEndP = luma(texMSFragCoord(Texture0, vec2(posP.xy)).xyz);
 				if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 				if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 				doneN = abs(lumaEndN) >= gradientScaled;
@@ -863,8 +867,8 @@ void main()
 				if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P9;
 
 				if(doneNP) {
-				if(!doneN) lumaEndN = luma(tex2Dlod(Texture0, float4(posN.xy, 0.f,0.f)).xyz);
-				if(!doneP) lumaEndP = luma(tex2Dlod(Texture0, float4(posP.xy, 0.f,0.f)).xyz);
+				if(!doneN) lumaEndN = luma(texMSFragCoord(Texture0, vec2(posN.xy)).xyz);
+				if(!doneP) lumaEndP = luma(texMSFragCoord(Texture0, vec2(posP.xy)).xyz);
 				if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 				if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 				doneN = abs(lumaEndN) >= gradientScaled;
@@ -876,8 +880,8 @@ void main()
 				if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P10;
 
 				if(doneNP) {
-				if(!doneN) lumaEndN = luma(tex2Dlod(Texture0, float4(posN.xy, 0.f,0.f)).xyz);
-				if(!doneP) lumaEndP = luma(tex2Dlod(Texture0, float4(posP.xy, 0.f,0.f)).xyz);
+				if(!doneN) lumaEndN = luma(texMSFragCoord(Texture0, vec2(posN.xy)).xyz);
+				if(!doneP) lumaEndP = luma(texMSFragCoord(Texture0, vec2(posP.xy)).xyz);
 				if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 				if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 				doneN = abs(lumaEndN) >= gradientScaled;
@@ -915,7 +919,7 @@ void main()
 			float pl = pixelOffsetSubpix * lengthSign;
 			if(horzSpan) un.y += pl;
 			else un.x += pl;
-			color = float4(tex2Dlod(Texture0, float4(un, 0.f,0.f)).xyz, 1.0f);
+			color = float4(texMSFragCoord(Texture0, vec2(un)).xyz, 1.0f);
 		}
 	}
 }

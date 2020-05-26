@@ -241,11 +241,11 @@ void main()
 #endif
     vec3 ballImageColor;
     if (!hdrTexture0)
-        ballImageColor = InvGamma(textureLod(Texture0, uv0, lod).rgb);
+        ballImageColor = InvGamma(texture(Texture0, uv0).rgb);
     else
-        ballImageColor = textureLod(Texture0, uv0, lod).bgr;
+        ballImageColor = texture(Texture0, uv0).bgr;
 
-	vec4 decalColorT = textureLod(Texture3, vec2(normal_t0x.w, worldPos_t0y.w), 0);
+	vec4 decalColorT = texture(Texture3, vec2(normal_t0x.w, worldPos_t0y.w));
 	vec3 decalColor = InvGamma(decalColorT.xyz);
 
 	if ( !%PARAM1% )
@@ -283,7 +283,7 @@ void main()
 
       vec2 uv = (inverse(matWorldView) * vec4(playfield_hit, 1.0)).xy * invTableRes_playfield_height_reflection.xy;
       playfieldColor = (t < 0.) ? vec3(0., 0., 0.) // happens for example when inside kicker
-                              : InvGamma(textureLod(Texture1, uv,  0.).xyz)*invTableRes_playfield_height_reflection.w; //!! rather use screen space sample from previous frame??
+                              : InvGamma(texture(Texture1, uv).xyz)*invTableRes_playfield_height_reflection.w; //!! rather use screen space sample from previous frame??
 
       //!! hack to get some lighting on reflection sample, but only diffuse, the rest is not setup correctly anyhow
       playfieldColor = PFlightLoop(playfield_hit, lightLoop_normal, playfieldColor);
@@ -317,9 +317,9 @@ vec4 psBallReflection( in voutReflection IN ) : COLOR
    
    vec3 ballImageColor;
    if(!hdrTexture0)
-      ballImageColor = InvGamma(textureLod(Texture0, envTex, 0).rgb);
+      ballImageColor = InvGamma(texture(Texture0, envTex).rgb);
    else
-      ballImageColor = textureLod(Texture0, envTex, 0).bgr;
+      ballImageColor = texture(Texture0, envTex).bgr;
       
    ballImageColor = (cBase_Alpha.xyz*(0.075*0.25) + ballImageColor)*fenvEmissionScale_TexWidth.x; //!! just add the ballcolor in, this is a whacky reflection anyhow
    float alpha = clamp((tex0.y - position_radius.y) / position_radius.w, 0.0, 1.0);
@@ -336,9 +336,9 @@ void main()
 {
    vec3 ballImageColor;
    if (!hdrTexture0)
-      ballImageColor = InvGamma(textureLod(Texture0, tex0_alpha.xy, 0).rgb);
+      ballImageColor = InvGamma(texture(Texture0, tex0_alpha.xy).rgb);
    else
-      ballImageColor = textureLod(Texture0, tex0_alpha.xy, 0).bgr;
+      ballImageColor = texture(Texture0, tex0_alpha.xy).bgr;
    color = vec4((cBase_Alpha.xyz*(0.075*0.25) + ballImageColor)*fenvEmissionScale_TexWidth.x, tex0_alpha.z); //!! just add the ballcolor in, this is a whacky trail anyhow
 }
 

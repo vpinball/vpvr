@@ -27,6 +27,7 @@ std::string Shader::Defines = "";
 Matrix3D Shader::mWorld, Shader::mView, Shader::mProj[2];
 int Shader::lastShaderProgram = -1;
 D3DTexture* Shader::noTexture = NULL;
+D3DTexture* Shader::noTextureMSAA = NULL;
 static float zeroValues[16] = { 0.0f,0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 float* Shader::zeroData = zeroValues;
 int Shader::nextTextureSlot = 0;
@@ -658,6 +659,27 @@ void Shader::Begin(const unsigned int pass)
          CHECKD3D(glUniformMatrix2x3fv(currentUniform.location, 1, GL_FALSE, ((valueFP != uniformFloatP.end()) && valueFP->second.data) ? valueFP->second.data : zeroData));
       }
       break;
+      case GL_SAMPLER_2D_MULTISAMPLE:
+      {
+         auto valueT = uniformTex.find(it->first);
+         int TextureID;
+         if (valueT != uniformTex.end()) {
+            TextureID = valueT->second;
+         }
+         else {
+            if (!noTextureMSAA) {
+               unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
+               noTextureMSAA = m_renderDevice->CreateTexture(2, 2, 0, RENDERTARGET_MSAA, RGBA, &data, 0);
+            }
+            TextureID = noTextureMSAA->texture;
+         }
+         CHECKD3D(glActiveTexture(GL_TEXTURE0 + nextTextureSlot));
+         CHECKD3D(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, TextureID));
+         CHECKD3D(glUniform1i(currentUniform.location, nextTextureSlot));
+
+         nextTextureSlot = (++nextTextureSlot) % maxSlots;
+      }
+      break;
       case GL_SAMPLER_2D:
       {
          auto valueT = uniformTex.find(it->first);
@@ -728,7 +750,14 @@ void Shader::SetTextureDepth(const D3DXHANDLE texelName, D3DTexture *texel) {
       auto location = m_currentTechnique->uniformLocation->find(texelName);
       if (location == m_currentTechnique->uniformLocation->end()) return;
       CHECKD3D(glActiveTexture(GL_TEXTURE0 + nextTextureSlot));
-      CHECKD3D(glBindTexture(GL_TEXTURE_2D, texel->zTexture));
+      if (texel->usage == RENDERTARGET_MSAA || texel->usage == RENDERTARGET_MSAA_DEPTH)
+      {
+         CHECKD3D(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texel->zTexture));
+      }
+      else
+      {
+         CHECKD3D(glBindTexture(GL_TEXTURE_2D, texel->zTexture));
+      }
       CHECKD3D(glUniform1i(location->second.location, nextTextureSlot));
       nextTextureSlot = (++nextTextureSlot) % maxSlots;//TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
    }
@@ -756,7 +785,14 @@ void Shader::SetTexture(const D3DXHANDLE texelName, D3DTexture *texel, const boo
       auto location = m_currentTechnique->uniformLocation->find(texelName);
       if (location == m_currentTechnique->uniformLocation->end()) return;
       CHECKD3D(glActiveTexture(GL_TEXTURE0 + nextTextureSlot));
-      CHECKD3D(glBindTexture(GL_TEXTURE_2D, texel->texture));
+      if (texel->usage == RENDERTARGET_MSAA || texel->usage == RENDERTARGET_MSAA_DEPTH)
+      {
+         CHECKD3D(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texel->texture));
+      }
+      else
+      {
+         CHECKD3D(glBindTexture(GL_TEXTURE_2D, texel->texture));
+      }
       CHECKD3D(glUniform1i(location->second.location, nextTextureSlot));
       nextTextureSlot = (++nextTextureSlot) % maxSlots;//TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
    }

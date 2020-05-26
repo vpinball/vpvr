@@ -84,12 +84,12 @@ void main()
 
    if (flasherMode < 2.) // Mode 0 & 1
    {
-      pixel1 = textureLod(Texture0, tex0, 0);
+      pixel1 = texture(Texture0, tex0);
       stop = (pixel1.a <= alphaTestValueAB_filterMode_addBlend.x);
    }
    if (flasherMode == 1.)
    {
-      pixel2 = textureLod(Texture1, tex0, 0);
+      pixel2 = texture(Texture1, tex0);
       stop = (stop || pixel2.a <= alphaTestValueAB_filterMode_addBlend.y);
    }
 

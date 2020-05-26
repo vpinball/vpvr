@@ -1,5 +1,5 @@
 ////GLOBAL
-#version 400
+#version 450 core
 
 #include "Helpers.fxh"
 
@@ -18,9 +18,9 @@ uniform float mirrorFactor;
 uniform bool color_grade;
 uniform bool do_bloom;
 
-uniform sampler2D Texture0; // FB
-uniform sampler2D Texture1; // Bloom
-uniform sampler2D Texture3; // AO Result & DepthBuffer
+uniform sampler2DMS Texture0; // FB
+uniform sampler2DMS Texture1; // Bloom
+uniform sampler2DMS Texture3; // AO Result & DepthBuffer
 uniform sampler2D Texture4; // AO Dither & Color grade
 
 out vec4 color;
@@ -148,6 +148,39 @@ float3 FBColorGrade(float3 color)
    return lerp(lut1,lut2, frac(color.z));
 }
 
+vec4 texMSFragCoord(sampler2DMS sampler, vec2 tc)
+{
+    int texSamples = 4;
+    
+    ivec2 texCoord = ivec2(gl_FragCoord.x, gl_FragCoord.y);
+    
+    vec4 color = vec4(0.0);
+
+    for (int i = 0; i < texSamples; i++)
+        color += texelFetch(sampler, texCoord, i);
+
+    color /= float(texSamples);
+
+    return color;
+}
+
+vec4 texMSNormals(sampler2DMS sampler, vec2 tc)
+{
+    int texSamples = 4;
+    
+    ivec2 texSize = textureSize(sampler);
+    ivec2 texCoord = ivec2(tc * texSize);
+    
+    vec4 color = vec4(0.0);
+
+    for (int i = 0; i < texSamples; i++)
+        color += texelFetch(sampler, texCoord, i);
+
+    color /= float(texSamples);
+
+    return color;
+}
+
 #include "FXAAStereoAO.fxh"
 
 #include "SSR.fxh"
@@ -176,9 +209,9 @@ void main()
     //!! if((depth0 == 1.0) || (depth0 == 0.0)) //!! early out if depth too large (=BG) or too small (=DMD,etc -> retweak render options (depth write on), otherwise also screwup with stereo)
     //!!   return float4(tex2Dlod(Texture0, float4(tex0, 0.,0.)).xyz, 1.0);
 
-    float3 result = FBToneMap(tex2Dlod(Texture0, float4(tex0, 0.,0.)).xyz);
-	if (do_bloom)
-		result += tex2Dlod(Texture1, float4(tex0, 0., 0.)).xyz; //!! offset?
+    float3 result = FBToneMap(texMSFragCoord(Texture0, tex0).xyz);
+	 if (do_bloom)
+      result += texMSFragCoord(Texture1, tex0).xyz; //!! offset?
     color = float4(FBColorGrade(FBGamma(saturate(FBDither(result, tex0)))), 1.0);
 }
 
@@ -189,10 +222,10 @@ in vec2 tex0;
 void main()
 {
     // collect clipped contribution of the 3x3 texels (via box blur (offset: 0.25*pixel=w_h_height.xy*0.5), NOT gaussian, as this is wrong) from original FB
-    float3 result = (tex2Dlod(Texture0, float4(tex0-w_h_height.xy*0.5, 0.,0.)).xyz
-                        +  tex2Dlod(Texture0, float4(tex0+w_h_height.xy*2.5, 0.,0.)).xyz
-                        +  tex2Dlod(Texture0, float4(tex0+float2(w_h_height.x*2.5,-w_h_height.y*0.5), 0.,0.)).xyz
-                        +  tex2Dlod(Texture0, float4(tex0+float2(-w_h_height.x*0.5,w_h_height.y*2.5), 0.,0.)).xyz)*0.25; //!! offset for useAA?
+    float3 result = (texMSFragCoord(Texture0, vec2(tex0-w_h_height.xy*0.5)).xyz
+                        +  texMSFragCoord(Texture0, vec2(tex0+w_h_height.xy*2.5)).xyz
+                        +  texMSFragCoord(Texture0, vec2(tex0+float2(w_h_height.x*2.5,-w_h_height.y*0.5))).xyz
+                        +  texMSFragCoord(Texture0, vec2(tex0+float2(-w_h_height.x*0.5,w_h_height.y*2.5))).xyz)*0.25; //!! offset for useAA?
     color = float4(max(FBToneMap(result) - float3(1., 1., 1.), float3(0., 0., 0.)), 1.0);
 }
 
@@ -202,7 +235,7 @@ in vec2 tex0;
 
 void main()
 {
-	float3 result = float3(tex2Dlod(Texture3, float4(tex0/*-w_h_height.xy*/, 0., 0.)).x); // omitting the shift blurs over 2x2 window
+	float3 result = float3(texMSFragCoord(Texture0, tex0).x); // omitting the shift blurs over 2x2 window
 	color = float4(FBGamma(saturate(result)), 1.0);
 }
 
@@ -212,10 +245,10 @@ in vec2 tex0;
 
 void main()
 {
-    float3 result = FBToneMap(tex2Dlod(Texture0, float4(tex0, 0.,0.)).xyz) // moving AO before tonemap does not really change the look
-           * tex2Dlod(Texture3, float4(tex0/*-w_h_height.xy*/, 0.,0.)).x; // omitting the shift blurs over 2x2 window
+    float3 result = FBToneMap(texMSFragCoord(Texture0, tex0).xyz) // moving AO before tonemap does not really change the look
+           * texMSFragCoord(Texture3, vec2(tex0/*-w_h_height.xy*/)).x; // omitting the shift blurs over 2x2 window
     if (do_bloom)
-        result += tex2Dlod(Texture1, float4(tex0, 0., 0.)).xyz; //!! offset?
+        result += texMSFragCoord(Texture1, tex0).xyz; //!! offset?
     color = float4(FBColorGrade(FBGamma(saturate(FBDither(result, tex0)))), 1.0);
 }
 
@@ -225,8 +258,8 @@ in vec2 tex0;
 
 void main()
 {
-	float3 result = tex2Dlod(Texture0, float4(tex0, 0., 0.)).xyz
-	* tex2Dlod(Texture3, float4(tex0/*-w_h_height.xy*/, 0., 0.)).x; // omitting the shift blurs over 2x2 window
+	float3 result = texMSFragCoord(Texture0, tex0).xyz
+	* texMSFragCoord(Texture3, vec2(tex0/*-w_h_height.xy*/)).x; // omitting the shift blurs over 2x2 window
 	color = float4(result, 1.0);
 }
 
@@ -236,9 +269,9 @@ in vec2 tex0;
 
 void main()
 {
-    float3 result = FBToneMap(tex2Dlod(Texture0, float4(tex0+w_h_height.xy, 0.,0.)).xyz);
+    float3 result = FBToneMap(texMSFragCoord(Texture0, tex0+w_h_height.xy).xyz);
 	if (do_bloom)
-		result += tex2Dlod(Texture1, float4(tex0, 0., 0.)).xyz; //!! offset?
+		result += texMSFragCoord(Texture1, tex0).xyz; //!! offset?
     color = float4(/*FBDither(*/FBColorGrade(FBGamma(saturate(result))),/*tex0*w_h_height.zw),*/ 1.0);
 }
 
@@ -248,9 +281,9 @@ in vec2 tex0;
 
 void main()
 {
-    float3 result = FBToneMap(tex2Dlod(Texture0, float4(tex0+w_h_height.xy, 0.,0.)).xyz);
+    float3 result = FBToneMap(texMSFragCoord(Texture0, tex0+w_h_height.xy).xyz);
     if (do_bloom)
-        result += tex2Dlod(Texture1, float4(tex0, 0., 0.)).xyz; //!! offset?
+        result +=  texMSFragCoord(Texture1, tex0).xyz; //!! offset?
     color = float4(/*FBDither(*/FBColorGrade(FBGamma(saturate(result))),/*tex0*w_h_height.zw),*/ 1.0);
 }
 
@@ -260,9 +293,9 @@ in vec2 tex0;
 
 void main()
 {
-    float2 result = FBToneMap(tex2Dlod(Texture0, float4(tex0+w_h_height.xy, 0.,0.)).xyz).xy;
+    float2 result = FBToneMap(texMSFragCoord(Texture0, tex0+w_h_height.xy).xyz).xy;
     if (do_bloom)
-        result += tex2Dlod(Texture1, float4(tex0, 0., 0.)).xy; //!! offset?
+        result += texMSFragCoord(Texture1, tex0).xy; //!! offset?
     float rg = /*FBColorGrade*/(FBGamma(saturate(dot(FBDither(result, tex0), float2(0.176204+0.0108109*0.5,0.812985+0.0108109*0.5)))));
     color = float4(rg,rg,rg,1.0);
 }
@@ -273,9 +306,9 @@ in vec2 tex0;
 
 void main()
 {
-    float result = FBToneMap(tex2Dlod(Texture0, float4(tex0+w_h_height.xy, 0.,0.)).xyz).x;
+    float result = FBToneMap(texMSFragCoord(Texture0, tex0+w_h_height.xy).xyz).x;
     if (do_bloom)
-        result += tex2Dlod(Texture1, float4(tex0, 0., 0.)).x; //!! offset?
+        result += texMSFragCoord(Texture1, tex0).x; //!! offset?
     float gray = /*FBColorGrade*/(FBGamma(saturate(FBDither(result, tex0))));
     color = float4(gray,gray,gray,1.0);
 }
@@ -286,10 +319,10 @@ in vec2 tex0;
 
 void main()
 {
-    float3 result = FBToneMap(tex2Dlod(Texture0, float4(tex0+w_h_height.xy, 0.,0.)).xyz) // moving AO before tonemap does not really change the look
-                  * tex2Dlod(Texture3, float4(tex0/*-w_h_height.xy*/, 0.,0.)).x; // omitting the shift blurs over 2x2 window
+    float3 result = FBToneMap(texMSNormals(Texture0, tex0+w_h_height.xy).xyz) // moving AO before tonemap does not really change the look
+                  * texMSNormals(Texture3, vec2(tex0/*-w_h_height.xy*/)).x; // omitting the shift blurs over 2x2 window
     if (do_bloom)
-        result += tex2Dlod(Texture1, float4(tex0, 0., 0.)).xyz;  //!! offset?
+        result += texMSNormals(Texture1, tex0).xyz;  //!! offset?
     color = float4(FBColorGrade(FBGamma(saturate(FBDither(result, tex0)))), 1.0);
 }
 
@@ -299,8 +332,8 @@ in vec2 tex0;
 
 void main()
 {
-	float3 result = tex2Dlod(Texture0, float4(tex0 + w_h_height.xy, 0., 0.)).xyz
-	* tex2Dlod(Texture3, float4(tex0/*-w_h_height.xy*/, 0., 0.)).x; // omitting the shift blurs over 2x2 window
+	float3 result = texMSNormals(Texture0, tex0+w_h_height.xy).xyz
+	* texMSNormals(Texture3, vec2(tex0/*-w_h_height.xy*/)).x; // omitting the shift blurs over 2x2 window
 	color = float4(result, 1.0);
 }
 
@@ -315,10 +348,10 @@ void main()
 {
     float offset9x9[3] = float[]( 0.0, 1.3846153846, 3.2307692308 );
     float weight9x9[3] = float[]( 0.2270270270, 0.3162162162, 0.0702702703 );
-    float3 result = tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5, 0.,0.)).xyz*weight9x9[0];
+    float3 result = texMSNormals(Texture0, tex0+w_h_height.xy*0.5).xyz*weight9x9[0];
     for (int i = 1; i < 3; ++i)
-        result += (tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5+float2(w_h_height.x*offset9x9[i],0.0), 0.,0.)).xyz
-                  +tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5-float2(w_h_height.x*offset9x9[i],0.0), 0.,0.)).xyz)*weight9x9[i];
+        result += (texMSNormals(Texture0, vec2(tex0+w_h_height.xy*0.5+float2(w_h_height.x*offset9x9[i],0.0))).xyz
+                  +texMSNormals(Texture0, vec2(tex0+w_h_height.xy*0.5-float2(w_h_height.x*offset9x9[i],0.0))).xyz)*weight9x9[i];
 
     color = float4(result, 1.0);
 }
@@ -330,10 +363,10 @@ void main()
 {
     float offset9x9[3] = float[]( 0.0, 1.3846153846, 3.2307692308 );
     float weight9x9[3] = float[]( 0.2270270270, 0.3162162162, 0.0702702703 );
-    float3 result = tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5, 0.,0.)).xyz*weight9x9[0];
+    float3 result = texMSNormals(Texture0, vec2(tex0+w_h_height.xy*0.5)).xyz*weight9x9[0];
     for (int i = 1; i < 3; ++i)
-        result += (tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5+float2(0.0,w_h_height.y*offset9x9[i]), 0.,0.)).xyz
-                  +tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5-float2(0.0,w_h_height.y*offset9x9[i]), 0.,0.)).xyz)*weight9x9[i];
+        result += (texMSNormals(Texture0, vec2(tex0+w_h_height.xy*0.5+float2(0.0,w_h_height.y*offset9x9[i]))).xyz
+                  +texMSNormals(Texture0, vec2(tex0+w_h_height.xy*0.5-float2(0.0,w_h_height.y*offset9x9[i]))).xyz)*weight9x9[i];
 
     color = float4(result*w_h_height.z, 1.0);
 }
@@ -347,8 +380,8 @@ void main()
     float weight19x19[5] = float[]( 0.19923, 0.18937, 0.08396, 0.02337, 0.00408 ); //no center!
     float3 result = float3(0.0, 0.0, 0.0);
     for(int i = 0; i < 5; ++i)
-        result += (tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5+float2(w_h_height.x*offset19x19[i],0.0), 0.,0.)).xyz
-                  +tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5-float2(w_h_height.x*offset19x19[i],0.0), 0.,0.)).xyz)*weight19x19[i];
+        result += (texMSNormals(Texture0, vec2(tex0+w_h_height.xy*0.5+float2(w_h_height.x*offset19x19[i],0.0))).xyz
+                  +texMSNormals(Texture0, vec2(tex0+w_h_height.xy*0.5-float2(w_h_height.x*offset19x19[i],0.0))).xyz)*weight19x19[i];
 
     color = float4(result, 1.0);
 }
@@ -363,8 +396,8 @@ void main()
     float weight19x19[5] = float[]( 0.19923, 0.18937, 0.08396, 0.02337, 0.00408 ); //no center!
     float3 result = float3(0.0, 0.0, 0.0);
     for(int i = 0; i < 5; ++i)
-        result += (tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5+float2(0.0,w_h_height.y*offset19x19[i]), 0.,0.)).xyz
-                  +tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5-float2(0.0,w_h_height.y*offset19x19[i]), 0.,0.)).xyz)*weight19x19[i];
+        result += (texMSNormals(Texture0, vec2(tex0+w_h_height.xy*0.5+float2(0.0,w_h_height.y*offset19x19[i]))).xyz
+                  +texMSNormals(Texture0, vec2(tex0+w_h_height.xy*0.5-float2(0.0,w_h_height.y*offset19x19[i]))).xyz)*weight19x19[i];
 
     color = float4(result*w_h_height.z, 1.0);
 }
@@ -384,8 +417,8 @@ void main()
     float weight19x19h[5] = float[]( 0.27233, 0.18690, 0.03767, 0.00301, 0.00009 ); //no center!
     float3 result = float3(0.0, 0.0, 0.0);
     for(int i = 0; i < 5; ++i)
-        result += (tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5+float2(w_h_height.x*offset19x19h[i],0.0), 0.,0.)).xyz
-                  +tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5-float2(w_h_height.x*offset19x19h[i],0.0), 0.,0.)).xyz)*weight19x19h[i];
+        result += (texMSNormals(Texture0, vec2(tex0+w_h_height.xy*0.5+float2(w_h_height.x*offset19x19h[i],0.0))).xyz
+                  +texMSNormals(Texture0, vec2(tex0+w_h_height.xy*0.5-float2(w_h_height.x*offset19x19h[i],0.0))).xyz)*weight19x19h[i];
 
     color = float4(result, 1.0);
 }
@@ -400,8 +433,8 @@ void main()
     float weight19x19h[5] = float[]( 0.27233, 0.18690, 0.03767, 0.00301, 0.00009 ); //no center!
     float3 result = float3(0.0, 0.0, 0.0);
     for(int i = 0; i < 5; ++i)
-        result += (tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5+float2(0.0,w_h_height.y*offset19x19h[i]), 0.,0.)).xyz
-                  +tex2Dlod(Texture0, float4(tex0+w_h_height.xy*0.5-float2(0.0,w_h_height.y*offset19x19h[i]), 0.,0.)).xyz)*weight19x19h[i];
+        result += (texMSNormals(Texture0, vec2(tex0+w_h_height.xy*0.5+float2(0.0,w_h_height.y*offset19x19h[i]))).xyz
+                  +texMSNormals(Texture0, vec2(tex0+w_h_height.xy*0.5-float2(0.0,w_h_height.y*offset19x19h[i]))).xyz)*weight19x19h[i];
 
     color = float4(result*w_h_height.z, 1.0);
 }
@@ -412,7 +445,7 @@ in vec2 tex0;
 
 void main()
 {
-   color = tex2D(Texture0, tex0) * mirrorFactor;
+   color = texMSFragCoord(Texture0, tex0) * mirrorFactor;
 }
 
 
