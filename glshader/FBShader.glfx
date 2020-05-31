@@ -219,18 +219,10 @@ in vec2 tex0;
 
 void main()
 {
-    // collect clipped contribution of the 3x3 texels (via box blur (offset: 0.25*pixel=w_h_height.xy*0.5), NOT gaussian, as this is wrong) from original FB
-#if (eyes == 1)
     float3 result = (texture(Texture1, vec2(tex0-w_h_height.xy*0.5)).xyz
                         +  texture(Texture1, vec2(tex0+w_h_height.xy*2.5)).xyz
                         +  texture(Texture1, vec2(tex0+float2(w_h_height.x*2.5,-w_h_height.y*0.5))).xyz
                         +  texture(Texture1, vec2(tex0+float2(-w_h_height.x*0.5,w_h_height.y*2.5))).xyz)*0.25; //!! offset for useAA?
-#else
-    float3 result = (texture(Texture1, vec2(tex0-w_h_height.xy*0.5)).xyz/2
-                        +  texture(Texture1, vec2(tex0+w_h_height.xy*2.5)).xyz/2
-                        +  texture(Texture1, vec2(tex0+float2(w_h_height.x*2.5,-w_h_height.y*0.5))).xyz/2
-                        +  texture(Texture1, vec2(tex0+float2(-w_h_height.x*0.5,w_h_height.y*2.5))).xyz)*0.25/2; //!! offset for useAA?
-#endif
     color = float4(max(FBToneMap(result) - float3(1., 1., 1.), float3(0., 0., 0.)), 1.0);
 }
 

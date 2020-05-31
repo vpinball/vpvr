@@ -175,7 +175,7 @@ vec3 lightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 specula
     }
 
    if(!is_metal && (diffuseMax > 0.0))
-      color += DoEnvmapDiffuse(normalize((matView*vec4(N,0.0)).xyz), diffuse); // trafo back to world for lookup into world space envmap // actually: mul(vec4(N,0.0), matViewInverseInverseTranspose), but optimized to save one matrix
+      color += DoEnvmapDiffuse(normalize((inverse(matView)*vec4(N,0.0)).xyz), diffuse); // trafo back to world for lookup into world space envmap // actually: mul(vec4(N,0.0), matViewInverseInverseTranspose), but optimized to save one matrix
 
    if((glossyMax > 0.0) || (specularMax > 0.0))
    {
