@@ -65,8 +65,8 @@ vec3 InvGamma( vec3 color) //!! use hardware support? D3DSAMP_SRGBTEXTURE
 
 vec3 InvToneMap( vec3 color)
 {
-     float inv_2bh = 0.5/BURN_HIGHLIGHTS;
-     float bh = 4.0*BURN_HIGHLIGHTS - 2.0;
+   float inv_2bh = 0.5/BURN_HIGHLIGHTS;
+   float bh = 4.0*BURN_HIGHLIGHTS - 2.0;
 	return (color - 1.0 + sqrt(color*(color + bh) + 1.0))*inv_2bh;
 }
 
@@ -91,9 +91,9 @@ vec3 FBGamma( vec3 color) //!! use hardware support? D3DRS_SRGBWRITEENABLE
 }
 
 vec3 FBToneMap( vec3 color)
-{
-     float l = color.x*0.176204 + color.y*0.812985 + color.z*0.0108109;
-    return color * ((l*BURN_HIGHLIGHTS + 1.0) / (l + 1.0)); // overflow is handled by bloom
+{   
+    float l = dot(color,vec3(0.176204,0.812985,0.0108109));
+    return color * ((l*BURN_HIGHLIGHTS + 1.0) / (l + 1.0)); // overflow is handled by bloom   
 }
 
 #if 0

@@ -405,12 +405,13 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    int          m_BWrendering;
    UINT         m_adapter;
 
+   D3DTexture* m_SMAAsearchTexture;
+   D3DTexture* m_SMAAareaTexture;
+
 private:
    void DrawPrimitive(const PrimitiveTypes type, const DWORD fvf, const void* vertices, const DWORD vertexCount);
 
    void UploadAndSetSMAATextures();
-   D3DTexture* m_SMAAsearchTexture;
-   D3DTexture* m_SMAAareaTexture;
 
 #ifdef ENABLE_SDL
 #else

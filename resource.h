@@ -626,6 +626,7 @@
 #define IDC_SSSLIDER                    389
 #define IDI_PLAY2                       389
 #define IDI_TRIGGER                     389
+#define IDC_MSAASLIDER                  390
 #define IDD_PROPTABLE_LIGHTSOURCES      390
 #define IDI_DECAL                       390
 #define IDC_PLUNGER_TYPE_COMBO          390
@@ -1157,9 +1158,12 @@
 #define IDC_LAYER_FILTER_STATIC         838
 #define IDC_FAR_LABEL                   838
 #define IDC_CAP_PUP                     839
+#define IDC_SSSLIDER_LABEL2             839
+#define IDC_PostProcessAA_Label         839
 #define IDC_VR_MODE                     840
 #define IDC_DMD_MODE                    841
 #define IDC_BG_MODE                     842
+#define IDC_MSAASLIDER_LABEL            843
 #define IDC_LAYBACK_EDIT                1040
 #define IDC_3D_STEREO_SEPARATION_EDIT   1041
 #define IDC_3D_STEREO_ZPD_EDIT          1042

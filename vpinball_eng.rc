@@ -14,7 +14,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Englisch (USA) resources
+// English (United States) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
@@ -314,7 +314,7 @@ BEGIN
     LTEXT           "Translator's web site address",IDC_TRANSWEBSITE,50,299,32,8,NOT WS_VISIBLE | WS_DISABLED
 END
 
-IDD_VIDEO_OPTIONS DIALOGEX 0, 0, 353, 424
+IDD_VIDEO_OPTIONS DIALOGEX 0, 0, 353, 390
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Video/Graphics Options"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
@@ -325,24 +325,24 @@ BEGIN
     LTEXT           "Post-processed Anti-Aliasing",IDC_STATIC,19,159,93,9
     COMBOBOX        IDC_FXAACB,19,169,111,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     CONTROL         "Enable ScaleFX for internal DMD",IDC_SCALE_FX_DMD,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,223,121,10
-    CONTROL         "Stretch Ball with Table",IDC_StretchNo,"Button",BS_AUTORADIOBUTTON | WS_GROUP,16,258,83,10
-    CONTROL         "Don't stretch the Ball",IDC_StretchYes,"Button",BS_AUTORADIOBUTTON,16,269,81,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,185,121,10
+    CONTROL         "Stretch Ball with Table",IDC_StretchNo,"Button",BS_AUTORADIOBUTTON | WS_GROUP,16,223,83,10
+    CONTROL         "Don't stretch the Ball",IDC_StretchYes,"Button",BS_AUTORADIOBUTTON,16,234,81,10
     CONTROL         "Cabinet anti-stretch the ball",IDC_StretchMonitor,
-                    "Button",BS_AUTORADIOBUTTON,16,280,111,10
-    GROUPBOX        "Aspect Ratio Offset",IDC_STATIC,16,293,123,25
-    LTEXT           "X",IDC_STATIC,21,304,8,8
-    EDITTEXT        IDC_CORRECTION_X,31,302,40,12,ES_AUTOHSCROLL
-    LTEXT           "Y",IDC_STATIC,84,304,8,8
-    EDITTEXT        IDC_CORRECTION_Y,93,302,40,12,ES_AUTOHSCROLL
-    COMBOBOX        IDC_3D_STEREO,15,332,118,60,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+                    "Button",BS_AUTORADIOBUTTON,16,245,111,10
+    GROUPBOX        "Aspect Ratio Offset",IDC_STATIC,16,258,123,25
+    LTEXT           "X",IDC_STATIC,21,269,8,8
+    EDITTEXT        IDC_CORRECTION_X,31,267,40,12,ES_AUTOHSCROLL
+    LTEXT           "Y",IDC_STATIC,84,269,8,8
+    EDITTEXT        IDC_CORRECTION_Y,93,267,40,12,ES_AUTOHSCROLL
+    COMBOBOX        IDC_3D_STEREO,16,297,118,60,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     CONTROL         "Use Y-Axis (Cabinet/Rotated Screen)",IDC_3D_STEREO_Y,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,347,117,10
-    EDITTEXT        IDC_3D_STEREO_OFS,93,360,40,12,ES_RIGHT | ES_AUTOHSCROLL
-    LTEXT           "Separation",IDC_3D_STEREO_MS_LABEL,16,374,50,10
-    EDITTEXT        IDC_3D_STEREO_MS,93,373,39,12,ES_RIGHT | ES_AUTOHSCROLL
-    LTEXT           "ZPD",IDC_3D_STEREO_ZPD_LABEL,16,387,43,10
-    EDITTEXT        IDC_3D_STEREO_ZPD,93,386,40,12,ES_RIGHT | ES_AUTOHSCROLL
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,312,117,10
+    EDITTEXT        IDC_3D_STEREO_OFS,94,325,40,12,ES_RIGHT | ES_AUTOHSCROLL
+    LTEXT           "Separation",IDC_3D_STEREO_MS_LABEL,17,339,50,10
+    EDITTEXT        IDC_3D_STEREO_MS,94,338,39,12,ES_RIGHT | ES_AUTOHSCROLL
+    LTEXT           "ZPD",IDC_3D_STEREO_ZPD_LABEL,17,352,43,10
+    EDITTEXT        IDC_3D_STEREO_ZPD,94,351,40,12,ES_RIGHT | ES_AUTOHSCROLL
     CONTROL         "Reflect Ball on Playfield",IDC_GLOBAL_REFLECTION_CHECK,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,159,18,91,10
     CONTROL         "Ball Trails/Motion Blur",IDC_GLOBAL_TRAIL_CHECK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,159,29,91,10
@@ -391,27 +391,25 @@ BEGIN
     CONTROL         "2048",IDC_Tex2048,"Button",BS_AUTORADIOBUTTON,255,290,32,10
     CONTROL         "1024",IDC_Tex1024,"Button",BS_AUTORADIOBUTTON,294,290,32,10
     CONTROL         "",IDC_ARASlider,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,155,323,191,20
-    PUSHBUTTON      "Reset to Defaults",IDC_DEFAULTS,154,401,63,14
+    PUSHBUTTON      "Reset to Defaults",IDC_DEFAULTS,154,367,63,14
     PUSHBUTTON      "Set for LowEnd PC",IDC_DEFAULTS_LOW,154,345,63,14
     PUSHBUTTON      "Set for HighEnd PC",IDC_DEFAULTS_HIGH,225,345,65,14
-    DEFPUSHBUTTON   "OK",IDOK,240,401,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,297,401,50,14
-    GROUPBOX        "Display",IDC_STATIC,7,7,141,408
+    DEFPUSHBUTTON   "OK",IDOK,240,367,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,297,367,50,14
+    GROUPBOX        "Display",IDC_STATIC,7,21,141,360
     GROUPBOX        "Ball Rendering",IDC_STATIC,154,7,94,92
-    GROUPBOX        "3D Stereo Output",IDC_STATIC,10,322,134,89
+    GROUPBOX        "3D Stereo Output",IDC_STATIC,11,287,134,89
     GROUPBOX        "Performance and Troubleshooting",IDC_STATIC,154,148,193,196
     GROUPBOX        "Max Texture Dimension (for low-end gfx boards)",IDC_STATIC,159,280,183,25
     LTEXT           "Elements Detail Level (decrease = performance)",IDC_STATIC,163,311,156,8
-    GROUPBOX        "Ball aspect ratio for stretched Tables",IDC_STATIC,12,247,132,75
+    GROUPBOX        "Ball aspect ratio for stretched Tables",IDC_STATIC,12,212,132,75
     GROUPBOX        "Automatic Night->Day cycle",IDC_STATIC,154,104,193,39
     LTEXT           "(Cabinet/Rotated Screen usage)",IDC_STATIC,24,135,121,8
     GROUPBOX        "Fullscreen",IDC_STATIC,159,232,183,43
-    LTEXT           "(post-processed Anti-Aliasing)",IDC_STATIC,29,233,101,8
-    GROUPBOX        "Anti-Aliasing",IDC_STATIC,12,147,132,98
-    CONTROL         "BAM Headtracking",IDC_HEADTRACKING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,399,77,10
-    LTEXT           "Offset",IDC_3D_STEREO_OFS_LABEL,16,361,50,10
-    CONTROL         "",IDC_SSSLIDER,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,17,198,122,20
-    LTEXT           "Supersampling Factor:",IDC_SSSLIDER_LABEL,19,185,117,8
+    LTEXT           "(post-processed Anti-Aliasing)",IDC_STATIC,29,195,101,8
+    GROUPBOX        "Anti-Aliasing",IDC_STATIC,12,147,132,64
+    CONTROL         "BAM Headtracking",IDC_HEADTRACKING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,364,77,10
+    LTEXT           "Offset",IDC_3D_STEREO_OFS_LABEL,17,326,50,10
 END
 
 IDD_FONTDIALOG DIALOG 0, 0, 316, 167
@@ -616,7 +614,7 @@ BEGIN
     LTEXT           "* This will only apply to tables that are using the Controller.vbs in their script code",IDC_STATIC,563,156,55,40
     CONTROL         "Disable B2S",IDC_DOF_FORCEDISABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,505,203,86,10
     CONTROL         "Capture External DMD",IDC_CAP_EXTDMD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,505,213,86,10
-    CONTROL         "Capture PUP Player", IDC_CAP_PUP, "Button", BS_AUTOCHECKBOX | WS_TABSTOP, 505,223, 86, 10
+    CONTROL         "Capture PUP Player",IDC_CAP_PUP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,505,223,86,10
     PUSHBUTTON      "OK",IDOK,536,308,40,14
     PUSHBUTTON      "Cancel",IDCANCEL,579,308,40,14
     GROUPBOX        "",IDC_STATIC,11,253,54,39
@@ -2168,17 +2166,13 @@ BEGIN
     PUSHBUTTON      "&Close",IDCANCEL,81,182,50,14
 END
 
-IDD_VR_OPTIONS DIALOGEX 0, 0, 353, 354
+IDD_VR_OPTIONS DIALOGEX 0, 0, 353, 402
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "VR Options"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     COMBOBOX        IDC_DISPLAY_ID,14,16,129,60,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LISTBOX         IDC_SIZELIST,13,32,129,92,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Post-processed Anti-Aliasing",-1,19,147,93,9
-    COMBOBOX        IDC_FXAACB,19,157,111,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Enable ScaleFX for internal DMD",IDC_SCALE_FX_DMD,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,208,121,10
     GROUPBOX        "Ambient Occlusion",-1,253,7,94,38
     CONTROL         "Enable",IDC_ENABLE_AO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,258,18,72,10
     CONTROL         "Update in-game (quality)",IDC_DYNAMIC_AO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,258,29,87,10
@@ -2191,42 +2185,48 @@ BEGIN
     EDITTEXT        IDC_NUDGE_STRENGTH,253,49,36,12,ES_RIGHT | ES_AUTOHSCROLL
     CONTROL         "Force Bloom Filter off (performance)",IDC_BLOOM_OFF,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,162,190,127,10
-    PUSHBUTTON      "Reset to Defaults",IDC_DEFAULTS,154,318,63,14
-    DEFPUSHBUTTON   "OK",IDOK,240,318,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,297,318,50,14
-    GROUPBOX        "Display",-1,7,7,141,340
-    GROUPBOX        "Table Setup",-1,10,236,134,108
+    PUSHBUTTON      "Reset to Defaults",IDC_DEFAULTS,154,381,63,14
+    DEFPUSHBUTTON   "OK",IDOK,240,381,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,297,381,50,14
+    GROUPBOX        "Display",-1,7,7,141,388
+    GROUPBOX        "Table Setup",-1,10,281,134,108
     GROUPBOX        "Performance and Troubleshooting",-1,154,148,193,70
-    LTEXT           "(post-processed Anti-Aliasing)",-1,29,218,101,8
-    GROUPBOX        "Anti-Aliasing",-1,12,138,132,94
-    LTEXT           "VR Table Orientation",IDC_3D_VR_ORIENTATION_LABEL,16,289,73,10
-    EDITTEXT        IDC_3D_VR_ORIENTATION,93,289,40,12,ES_RIGHT | ES_AUTOHSCROLL
-    LTEXT           "VR Table X",IDC_VR_OFFSET_X_LABEL,16,302,50,10
-    EDITTEXT        IDC_VR_OFFSET_X,93,302,40,12,ES_RIGHT | ES_AUTOHSCROLL
-    LTEXT           "VR Table Y",IDC_VR_OFFSET_Y_LABEL,16,315,50,10
-    EDITTEXT        IDC_VR_OFFSET_Y,93,315,40,12,ES_RIGHT | ES_AUTOHSCROLL
-    LTEXT           "VR Slope",IDC_VR_SLOPE_LABEL,16,276,50,10
-    EDITTEXT        IDC_VR_SLOPE,93,276,40,12,ES_RIGHT | ES_AUTOHSCROLL
-    LTEXT           "VR Table Height",IDC_VR_OFFSET_Z_LABEL,16,328,75,10
-    EDITTEXT        IDC_VR_OFFSET_Z,93,328,40,12,ES_RIGHT | ES_AUTOHSCROLL
+    LTEXT           "VR Table Orientation",IDC_3D_VR_ORIENTATION_LABEL,16,334,73,10
+    EDITTEXT        IDC_3D_VR_ORIENTATION,93,334,40,12,ES_RIGHT | ES_AUTOHSCROLL
+    LTEXT           "VR Table X",IDC_VR_OFFSET_X_LABEL,16,347,50,10
+    EDITTEXT        IDC_VR_OFFSET_X,93,347,40,12,ES_RIGHT | ES_AUTOHSCROLL
+    LTEXT           "VR Table Y",IDC_VR_OFFSET_Y_LABEL,16,360,50,10
+    EDITTEXT        IDC_VR_OFFSET_Y,93,360,40,12,ES_RIGHT | ES_AUTOHSCROLL
+    LTEXT           "VR Slope",IDC_VR_SLOPE_LABEL,16,321,50,10
+    EDITTEXT        IDC_VR_SLOPE,93,321,40,12,ES_RIGHT | ES_AUTOHSCROLL
+    LTEXT           "VR Table Height",IDC_VR_OFFSET_Z_LABEL,16,373,75,10
+    EDITTEXT        IDC_VR_OFFSET_Z,93,373,40,12,ES_RIGHT | ES_AUTOHSCROLL
     COMBOBOX        IDC_COMBO_TEXTURE,157,158,188,60,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_COMBO_BLIT,157,174,188,60,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     CONTROL         "Disable VR Preview",IDC_VR_DISABLE_PREVIEW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,127,91,10
-    CONTROL         "",IDC_SSSLIDER,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,17,186,122,20
-    LTEXT           "Supersampling Factor:",IDC_SSSLIDER_LABEL,19,173,117,8
-    LTEXT           "Scaling",IDC_VR_SCALE_LABEL,17,264,50,10
-    EDITTEXT        IDC_VR_SCALE,93,262,40,12,ES_RIGHT | ES_AUTOHSCROLL
-    CONTROL         "Scale table to width (in cm)",IDC_SCALE_TO_CM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,250,119,10
+    LTEXT           "Scaling",IDC_VR_SCALE_LABEL,17,309,50,10
+    EDITTEXT        IDC_VR_SCALE,93,307,40,12,ES_RIGHT | ES_AUTOHSCROLL
+    CONTROL         "Scale table to width (in cm)",IDC_SCALE_TO_CM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,295,119,10
     LTEXT           "VR near plane",IDC_NEAR_LABEL,157,203,48,10
     EDITTEXT        IDC_NEAR_PLANE,206,201,40,12,ES_RIGHT | ES_AUTOHSCROLL
     LTEXT           "VR far plane",IDC_FAR_LABEL,255,203,40,10
     EDITTEXT        IDC_FAR_PLANE,300,201,40,12,ES_RIGHT | ES_AUTOHSCROLL
-    COMBOBOX        IDC_TURN_VR_ON,235,302,111,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    RTEXT           "VR Mode",IDC_VR_MODE,165,305,67,10
-    COMBOBOX        IDC_DMD_SOURCE,235,287,111,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    RTEXT           "DMD source",IDC_DMD_MODE,165,290,67,10
-    COMBOBOX        IDC_BG_SOURCE,235,271,111,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    RTEXT           "Backglass source",IDC_BG_MODE,165,274,67,10
+    COMBOBOX        IDC_TURN_VR_ON,235,365,111,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    RTEXT           "VR Mode",IDC_VR_MODE,165,368,67,10
+    COMBOBOX        IDC_DMD_SOURCE,235,350,111,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    RTEXT           "DMD source",IDC_DMD_MODE,165,353,67,10
+    COMBOBOX        IDC_BG_SOURCE,235,334,111,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    RTEXT           "Backglass source",IDC_BG_MODE,165,337,67,10
+    LTEXT           "(post-processed Anti-Aliasing)",-1,29,261,101,8
+    CONTROL         "Enable ScaleFX for internal DMD",IDC_SCALE_FX_DMD,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,251,121,10
+    CONTROL         "",IDC_SSSLIDER,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,16,195,122,20
+    LTEXT           "Supersampling Factor:",IDC_SSSLIDER_LABEL,18,182,117,8
+    GROUPBOX        "Anti-Aliasing",-1,12,138,132,139
+    CONTROL         "",IDC_MSAASLIDER,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,16,162,122,20
+    LTEXT           "MSAA Samples (4x Rec.):",IDC_MSAASLIDER_LABEL,18,149,117,8
+    COMBOBOX        IDC_FXAACB,19,234,111,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Post-processed Anti-Aliasing",IDC_PostProcessAA_Label,19,221,117,8
 END
 
 IDD_SOUND_POSITION_DIALOG DIALOGEX 0, 0, 298, 183
@@ -2436,7 +2436,7 @@ BEGIN
     IDD_VIDEO_OPTIONS, DIALOG
     BEGIN
         RIGHTMARGIN, 351
-        BOTTOMMARGIN, 419
+        BOTTOMMARGIN, 381
     END
 
     IDD_FONTDIALOG, DIALOG
@@ -2701,18 +2701,18 @@ BEGIN
         BOTTOMMARGIN, 196
     END
 
+    IDD_VR_OPTIONS, DIALOG
+    BEGIN
+        RIGHTMARGIN, 351
+        BOTTOMMARGIN, 397
+    END
+
     IDD_SOUND_POSITION_DIALOG, DIALOG
     BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 291
         TOPMARGIN, 7
         BOTTOMMARGIN, 176
-    END
-	
-    IDD_VR_OPTIONS, DIALOG
-    BEGIN
-        RIGHTMARGIN, 351
-        BOTTOMMARGIN, 349
     END
 
     IDD_TOOLBAR, DIALOG
@@ -3621,7 +3621,6 @@ BEGIN
 END
 
 
-
 /////////////////////////////////////////////////////////////////////////////
 //
 // String Table
@@ -3780,7 +3779,7 @@ BEGIN
     IDS_STEP                "Step"
 END
 
-#endif    // Englisch (USA) resources
+#endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

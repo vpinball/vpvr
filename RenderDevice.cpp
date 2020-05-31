@@ -838,19 +838,16 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    m_pOffscreenBackBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, m_stereo3D);
 
    // Since we are doing MSAA we need a texture with the same dimensions as the Back Buffer to resolve the end result to
-   if (m_stereo3D == STEREO_VR)
-      m_pOffscreenNonMSAABlitTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
-   else
-      m_pOffscreenNonMSAABlitTexture = NULL;
+   m_pOffscreenNonMSAABlitTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
 
    if ((g_pplayer != NULL) && (g_pplayer->m_ptable->m_reflectElementsOnPlayfield || (g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1)))
       m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, m_stereo3D);
 
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
-   m_pBloomBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET_MSAA, renderBufferFormat, NULL, m_stereo3D);
+   m_pBloomBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, NULL, m_stereo3D);
 
    // temporary buffer for gaussian blur
-   m_pBloomTmpBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET_MSAA, renderBufferFormat, NULL, m_stereo3D);
+   m_pBloomTmpBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, NULL, m_stereo3D);
 
    // alloc temporary buffer for postprocessing
    if ((m_FXAA > 0) || (m_stereo3D > 0))
@@ -882,10 +879,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    }
 
    // alloc one more temporary buffer for AA
-   if (m_FXAA > 0)
-      m_pOffscreenBackBufferSMAATexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, 0);
-   else
-      m_pOffscreenBackBufferSMAATexture = NULL;
+   m_pOffscreenBackBufferSMAATexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, 0);
 
    if (m_ssRefl)
       m_pReflectionBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, 0);
@@ -967,10 +961,10 @@ bool RenderDevice::LoadShaders()
 
    FBShader = new Shader(this);
    shaderCompilationOkay = FBShader->Load("FBShader.glfx", 0) && shaderCompilationOkay;
-   // SMAA don't play with 4xMSAA and would be overkill anyway
-   //shaderCompilationOkay = FBShader->Load("SMAA.glfx", 0) && shaderCompilationOkay;
+   shaderCompilationOkay = FBShader->Load("SMAA.glfx", 0) && shaderCompilationOkay;
    FBShader->SetVector("quadOffsetScale", 0.0f, 0.0f, 1.0f, 1.0f);
    FBShader->SetVector("quadOffsetScaleTex", 0.0f, 0.0f, 1.0f, 1.0f);
+   FBShader->SetInt("samples", g_pplayer->m_MSAASamples);
 
    if (m_stereo3D) {
       StereoShader = new Shader(this);
@@ -2785,23 +2779,23 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
          CHECKD3D(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex->texture));
          if (Format == RGBA16F || Format == RGBA32F)
          {
-            CHECKD3D(glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, Format, Width, Height, GL_TRUE));
+            CHECKD3D(glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, g_pplayer->m_MSAASamples, Format, Width, Height, GL_TRUE));
          }
          else
          {
-            CHECKD3D(glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGB, Width, Height, GL_TRUE));
+            CHECKD3D(glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, g_pplayer->m_MSAASamples, GL_RGB, Width, Height, GL_TRUE));
          }
 
-         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+         CHECKD3D(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0));
          CHECKD3D(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, tex->texture, 0));
 
          if (tex->usage == RENDERTARGET_MSAA_DEPTH)
          {
-            glGenRenderbuffers(1, &tex->zBuffer);
-            glBindRenderbuffer(GL_RENDERBUFFER, tex->zBuffer);
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH24_STENCIL8, Width, Height);
-            glBindRenderbuffer(GL_RENDERBUFFER, 0); //unbind the render buffer
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, tex->zBuffer);
+            CHECKD3D(glGenRenderbuffers(1, &tex->zBuffer));
+            CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, tex->zBuffer));
+            CHECKD3D(glRenderbufferStorageMultisample(GL_RENDERBUFFER, g_pplayer->m_MSAASamples, GL_DEPTH24_STENCIL8, Width, Height));
+            CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, 0)); //unbind the render buffer
+            CHECKD3D(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, tex->zBuffer));
          }
          else
          {
@@ -2827,13 +2821,9 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
          if (tex->usage == RENDERTARGET_DEPTH) {
             CHECKD3D(glGenRenderbuffers(1, &tex->zBuffer));
             CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, tex->zBuffer));
-            CHECKD3D(glGenTextures(1, &tex->zTexture));
-            CHECKD3D(glBindTexture(GL_TEXTURE_2D, tex->zTexture));
-            CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-            CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-            CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL));
-            CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, Width, Height, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, NULL));
-            CHECKD3D(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, tex->zTexture, 0));
+            CHECKD3D(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, Width, Height));
+            CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, 0)); //unbind the render buffer
+            CHECKD3D(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, tex->zBuffer));
          }
          else
          {
@@ -2930,7 +2920,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
          CHECKD3D(glTexStorage2D(GL_TEXTURE_2D, num_mips, Format, Width, Height));
          CHECKD3D(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Width, Height, col_format, col_type, data));
          CHECKD3D(glGenerateMipmap(GL_TEXTURE_2D)); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwhise good idea to limit by GL_TEXTURE_MAX_LEVEL
-}
+      }
    }
 
    return tex;

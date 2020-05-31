@@ -11,6 +11,9 @@ const int rgwindowsize[] = { 640, 720, 800, 912, 1024, 1152, 1280, 1600 };  // w
 const float AAfactors[] = { 0.5f, 0.75f, 1.0f, 1.25f, 4.0f/3.0f, 1.5f, 1.75f, 2.0f }; // factor is applied to width and to height, so 2.0f increases pixel count by 4. Additional values can be added.
 const int AAfactorCount = 8;
 
+const int MSAASamplesOpts[] = { 1, 2, 3, 4 };
+const int MSAASampleCount = 4;
+
 size_t VideoOptionsDialog::getBestMatchingAAfactorIndex(float f)
 {
    float delta = fabs(f - AAfactors[0]);
@@ -80,6 +83,8 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
 
    SendMessage(GetDlgItem(IDC_SSSLIDER).GetHwnd(), TBM_SETPOS, TRUE, getBestMatchingAAfactorIndex(1.0f));
    SetDlgItemText(IDC_SSSLIDER_LABEL, "Supersampling Factor: 1.0");
+   SendMessage(GetDlgItem(IDC_MSAASLIDER).GetHwnd(), TBM_SETPOS, TRUE, 4);
+   SetDlgItemText(IDC_MSAASLIDER_LABEL, "MSAA Samples (4x Rec.): 4");
 
    SendMessage(GetDlgItem(IDC_DYNAMIC_DN).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_DYNAMIC_AO).GetHwnd(), BM_SETCHECK, profile == 2 ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -199,11 +204,11 @@ BOOL VideoOptionsDialog::OnInitDialog()
       controlHwnd = GetDlgItem(IDC_DN_LONGITUDE).GetHwnd();
       AddToolTip("In decimal degrees (-180..180, East positive)", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_DYNAMIC_AO).GetHwnd();
-      AddToolTip("Activate this to enable dynamic Ambient Occlusion.\r\nThis slows down performance, but enables contact shadows for dynamic objects.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip("(Currently broken and disabled in VPVR)\r\n\r\nActivate this to enable dynamic Ambient Occlusion.\r\n\r\nThis slows down performance, but enables contact shadows for dynamic objects.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_FORCE_ANISO).GetHwnd();
       AddToolTip("Activate this to enhance the texture filtering.\r\nThis slows down performance only a bit (on most systems), but increases quality tremendously.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_ENABLE_AO).GetHwnd();
-      AddToolTip("Activate this to enable Ambient Occlusion.\r\nThis enables contact shadows between objects.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip("(Currently broken and disabled in VPVR)\r\n\r\nActivate this to enable Ambient Occlusion.\r\nThis enables contact shadows between objects.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_3D_STEREO).GetHwnd();
       AddToolTip("Activate this to enable 3D Stereo output using the requested format.\r\nSwitch on/off during play with the F10 key.\r\nThis requires that your TV can display 3D Stereo, and respective 3D glasses.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_3D_STEREO_Y).GetHwnd();
@@ -221,9 +226,11 @@ BOOL VideoOptionsDialog::OnInitDialog()
       controlHwnd = GetDlgItem(IDC_BG_SET).GetHwnd();
       AddToolTip("Switches all tables to use the respective Cabinet display setup.\r\nAlso useful if a 270 degree rotated Desktop monitor is used.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_FXAACB).GetHwnd();
-      AddToolTip("Enables post-processed Anti-Aliasing.\r\n\r\nVPVR already has native 4xMSAA and these settings can make the image quality a bit smoother at cost of performance and a slight blurring.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip("Enables post-processed Anti-Aliasing.\r\n\r\nVPVR already has native MSAA and these settings can make the image quality a bit smoother at cost of performance and a slight blurring.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_SSSLIDER).GetHwnd();
-      AddToolTip("Enables brute-force Up/Downsampling.\r\nThis delivers very good quality, but slows down performance significantly.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip("Enables brute-force Up/Downsampling.\r\n\r\nThis delivers very good quality but slows down performance significantly.\r\n\r\n2.0 means twice the resolution to be handled while rendering.", hwndDlg, toolTipHwnd, controlHwnd);
+      controlHwnd = GetDlgItem(IDC_MSAASLIDER).GetHwnd();
+      AddToolTip("Set the amount of MSAA samples.\r\n\r\nMSAA is essential for good image quality in VR.\r\n\r\nIt's recommended to leave this at 4, lower this only if you have performance issues.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_OVERWRITE_BALL_IMAGE_CHECK).GetHwnd();
       AddToolTip("When checked it overwrites the ball image/decal image(s) for every table.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
@@ -278,7 +285,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
 
    const float AAfactor = LoadValueFloatWithDefault("Player", "AAFactor", LoadValueBoolWithDefault("Player", "USEAA", false) ? 1.5f : 1.0f);
    const HWND hwndSSSlider = GetDlgItem(IDC_SSSLIDER).GetHwnd();
-   SendMessage(hwndSSSlider, TBM_SETRANGE, fTrue, MAKELONG(0, AAfactorCount-1));
+   SendMessage(hwndSSSlider, TBM_SETRANGE, fTrue, MAKELONG(0, AAfactorCount - 1));
    SendMessage(hwndSSSlider, TBM_SETTICFREQ, 1, 0);
    SendMessage(hwndSSSlider, TBM_SETLINESIZE, 0, 1);
    SendMessage(hwndSSSlider, TBM_SETPAGESIZE, 0, 1);
@@ -287,6 +294,19 @@ BOOL VideoOptionsDialog::OnInitDialog()
    char newText[32];
    sprintf_s(newText, "Supersampling Factor: %.2f", AAfactor);
    SetDlgItemText(IDC_SSSLIDER_LABEL, newText);
+
+   const int MSAASamples = LoadValueIntWithDefault("Player", "MSAASamples", 4);
+   auto CurrMSAAPos = std::find(MSAASamplesOpts, MSAASamplesOpts + (sizeof(MSAASamplesOpts) / sizeof(MSAASamplesOpts[0])), MSAASamples);
+   const HWND hwndMSAASlider = GetDlgItem(IDC_MSAASLIDER).GetHwnd();
+   SendMessage(hwndMSAASlider, TBM_SETRANGE, fTrue, MAKELONG(0, MSAASampleCount - 1));
+   SendMessage(hwndMSAASlider, TBM_SETTICFREQ, 1, 0);
+   SendMessage(hwndMSAASlider, TBM_SETLINESIZE, 0, 1);
+   SendMessage(hwndMSAASlider, TBM_SETPAGESIZE, 0, 1);
+   SendMessage(hwndMSAASlider, TBM_SETTHUMBLENGTH, 5, 0);
+   SendMessage(hwndMSAASlider, TBM_SETPOS, TRUE, (LPARAM)*CurrMSAAPos - 1);
+   char MSAAText[42];
+   sprintf_s(MSAAText, "MSAA Samples (4x Rec.): %d", MSAASamples);
+   SetDlgItemText(IDC_MSAASLIDER_LABEL, MSAAText);
 
    const int useDN = LoadValueIntWithDefault("Player", "DynamicDayNight", 0);
    SendMessage(GetDlgItem(IDC_DYNAMIC_DN).GetHwnd(), BM_SETCHECK, (useDN != 0) ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -331,7 +351,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
    SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Quality FXAA");
    SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Fast NFAA");
    SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Standard DLAA");
-   //SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Quality SMAA"); /* SMAA Doesn't work together with MSAA */
+   //SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Quality SMAA"); /* SMAA currently bugged */
    SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_SETCURSEL, fxaa, 0);
 
    const bool scaleFX_DMD = LoadValueBoolWithDefault("Player", "ScaleFXDMD", false);
@@ -621,11 +641,20 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
    }
    case WM_HSCROLL:
    {
-      int pos = wParam >> 16;
-      const float AAfactor = ((pos) < AAfactorCount) ? AAfactors[pos] : 1.0f;
-      char newText[32];
-      sprintf_s(newText, "Supersampling Factor: %.2f", AAfactor);
-      SetDlgItemText(IDC_SSSLIDER_LABEL, newText);
+      if ((HWND)lParam == GetDlgItem(IDC_SSSLIDER).GetHwnd()) {
+         const size_t posAAfactor = SendMessage(GetDlgItem(IDC_SSSLIDER).GetHwnd(), TBM_GETPOS, 0, 0);//Reading the value from wParam does not work reliable
+         const float AAfactor = ((posAAfactor) < AAfactorCount) ? AAfactors[posAAfactor] : 1.0f;
+         char newText[32];
+         sprintf_s(newText, "Supersampling Factor: %.2f", AAfactor);
+         SetDlgItemText(IDC_SSSLIDER_LABEL, newText);
+      }
+      else if ((HWND)lParam == GetDlgItem(IDC_MSAASLIDER).GetHwnd()) {
+         const size_t posMSAA = SendMessage(GetDlgItem(IDC_MSAASLIDER).GetHwnd(), TBM_GETPOS, 0, 0);//Reading the value from wParam does not work reliable
+         const int MSAASampleAmount = ((posMSAA) < MSAASampleCount) ? MSAASamplesOpts[posMSAA] : 4;
+         char newText[42];
+         sprintf_s(newText, "MSAA Samples (4x Rec): %d", MSAASampleAmount);
+         SetDlgItemText(IDC_MSAASLIDER_LABEL, newText);
+      }
       break;
    }
    }
@@ -817,6 +846,10 @@ void VideoOptionsDialog::OnOK()
    const float AAfactor = (AAfactorIndex < AAfactorCount) ? AAfactors[AAfactorIndex] : 1.0f;
    SaveValueBool("Player", "USEAA", AAfactor > 1.0f);
    SaveValueFloat("Player", "AAFactor", AAfactor);
+
+   const size_t MSAASamplesIndex = SendMessage(GetDlgItem(IDC_MSAASLIDER).GetHwnd(), TBM_GETPOS, 0, 0);
+   const float MSAASamples = (MSAASamplesIndex < MSAASampleCount) ? MSAASamplesOpts[MSAASamplesIndex] : 4;
+   SaveValueInt("Player", "MSAASamples", MSAASamples);
 
    const bool useDN = (SendMessage(GetDlgItem(IDC_DYNAMIC_DN).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
    SaveValueBool("Player", "DynamicDayNight", useDN);

@@ -47,7 +47,7 @@ layout(depth_unchanged) out float gl_FragDepth;
 uniform sampler2D Texture0; // base texture
 uniform sampler2D Texture1; // envmap
 uniform sampler2D Texture2; // envmap radiance
-uniform sampler2DMS Texture3; // bulb light buffer
+uniform sampler2D Texture3; // bulb light buffer
 uniform sampler2D Texture4; // normal map
 
 uniform bool hdrEnvTextures;
@@ -97,26 +97,7 @@ vec3 normal_map(vec3 N, vec3 V, vec2 uv)
    } else // tangent space
       return normalize( mul(TBN_trafo(N, V, uv),
                             tn) );
-}
-
-vec4 texMSFragCoord(sampler2DMS sampler, vec2 tc)
-{
-    int texSamples = 4;
-    
-    /*ivec2 texSize = textureSize(sampler);
-    ivec2 texCoord = ivec2(tc * texSize);*/
-    
-    ivec2 texCoord = ivec2(gl_FragCoord.x, gl_FragCoord.y);
-    
-    vec4 color = vec4(0.0);
-
-    for (int i = 0; i < texSamples; i++)
-        color += texelFetch(sampler, texCoord, i);
-
-    color /= float(texSamples);
-
-    return color;
-}
+}  
 
 //------------------------------------
 //
@@ -334,7 +315,7 @@ void main() {
 
       if (fDisableLighting_top_below.y < 1.0)
           // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-          color.xyz += clamp(mix(sqrt(diffuse)*texMSFragCoord(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
+          color.xyz += clamp(mix(sqrt(diffuse)*texture(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
    }
 }
 
@@ -376,7 +357,7 @@ void main() {
 	 if (fDisableLighting_top_below.y < 1.0)
     {
 		  // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-		  color.xyz += clamp(mix(sqrt(diffuse)*texMSFragCoord(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
+		  color.xyz += clamp(mix(sqrt(diffuse)*texture(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
     }
    }
 }
