@@ -840,8 +840,9 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    // Since we are doing MSAA we need a texture with the same dimensions as the Back Buffer to resolve the end result to
    m_pOffscreenNonMSAABlitTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
 
-   if ((g_pplayer != NULL) && (g_pplayer->m_ptable->m_reflectElementsOnPlayfield || (g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1)))
-      m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, m_stereo3D);
+   // Dynamic mirrors are broken and disabled for now so no need for this buffer, maybe can use one of the others anyway?
+      //if ((g_pplayer != NULL) && (g_pplayer->m_ptable->m_fReflectElementsOnPlayfield || (g_pplayer->m_fReflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1)))
+         //m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, m_stereo3D);
 
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
    m_pBloomBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, NULL, m_stereo3D);
@@ -851,7 +852,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 
    // alloc temporary buffer for postprocessing
    if ((m_FXAA > 0) || (m_stereo3D > 0))
-      m_pOffscreenBackBufferStereoTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA, renderBufferFormat, NULL, 0);
+      m_pOffscreenBackBufferStereoTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, 0);
    else
       m_pOffscreenBackBufferStereoTexture = NULL;
 
@@ -884,9 +885,10 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    else
       m_pOffscreenBackBufferSMAATexture = NULL;
 
-   if (m_ssRefl)
+   // Use postprocessing buffer instead of separate reflectionbuffer
+   /*if (m_ssRefl)
       m_pReflectionBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, 0);
-   else
+   else*/
       m_pReflectionBufferTexture = NULL;
 
    if (video10bit && (m_FXAA == Quality_SMAA || m_FXAA == Standard_DLAA))
