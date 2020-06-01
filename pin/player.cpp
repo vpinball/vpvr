@@ -3621,20 +3621,19 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
    if (DLAA)
       m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture(), true);
    else if (SMAA || stereo == STEREO_INT || stereo == STEREO_VR)
-      m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture(), true);
+      m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true);
    else
       m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer(), true);
 
-   // First we need to blit from the MSAA FBO to a non-MSAA buffer of same Width and Height in order to resolve it// 
-   CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->framebuffer, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->framebuffer,
-      0, 0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+   CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->framebuffer, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture()->framebuffer,
+      0, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture()->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture()->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
 
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture1", m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true);
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture1", m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture(), true);
 
    if (ambientOcclusion)
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureDepth("Texture4", m_pin3d.m_pdds3DZBuffer);
    else
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureDepth("Texture4", m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture());
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureDepth("Texture4", m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture());
 
    const vec4 w_h_height((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheight()), (float)m_pin3d.m_pd3dPrimaryDevice->getBufwidth(), ambientOcclusion ? 1.f : 0.f);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector("w_h_height", &w_h_height);
@@ -3649,17 +3648,17 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
    {
       if (SMAA)
       {
-         m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true);
-         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("edgesTex2D", m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture(), true); //!! opt.?
+         m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture(), true);
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("edgesTex2D", m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true); //!! opt.?
       }
       else
       {
          if (stereo == STEREO_INT || stereo == STEREO_VR)
-            m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture(), true);
+            m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true);
          else
             m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer(), true);
 
-         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture1", m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true);
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture1", m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture(), true);
       }
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SMAA ? "SMAA_BlendWeightCalculation" : "DLAA");
@@ -3671,13 +3670,13 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
       if (SMAA)
       {
          if (stereo == STEREO_INT || stereo == STEREO_VR)
-            m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture(), true);
+            m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true);
          else
             m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer(), true);
 
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull("edgesTex2D"); //!! opt.??
 
-         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("blendTex2D", m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true); //!! opt.?
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("blendTex2D", m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture(), true); //!! opt.?
 
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique("SMAA_NeighborhoodBlending");
 
@@ -3712,10 +3711,9 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
          // First we need to blit from the MSAA FBO to a non-MSAA buffer of same Width and Height in order to resolve it
          CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->framebuffer, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->framebuffer,
             0, 0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
-         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true);
       }
-      else
-         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture(), true);
+
+      m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true);
 
       m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
 
@@ -3738,11 +3736,12 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
          {
             // First we need to blit from the MSAA FBO to a non-MSAA buffer of same Width and Height in order to resolve it
             CHECKD3D(glBindFramebuffer(GL_READ_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->framebuffer));
-            CHECKD3D(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture()->framebuffer));
+            CHECKD3D(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->framebuffer));
             CHECKD3D(glBlitFramebuffer(0, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth(), m_pin3d.m_pd3dPrimaryDevice->getBufheight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth(), m_pin3d.m_pd3dPrimaryDevice->getBufheight(), GL_COLOR_BUFFER_BIT, GL_NEAREST));
          }
 
-         CHECKD3D(glBindFramebuffer(GL_READ_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture()->framebuffer));
+         //CHECKD3D(glBindFramebuffer(GL_READ_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture()->framebuffer));
+         CHECKD3D(glBindFramebuffer(GL_READ_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->framebuffer));
 
          // srcx0, srcy0, srcx1, srcy1, dstx0, dsty0, dstx1, dstyx1
          CHECKD3D(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, leftTexture->framebuffer));
@@ -3758,30 +3757,28 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
       case 1:
          if (!shaderAA)
          {
-            // First we need to blit from the MSAA FBO to a non-MSAA buffer of same Width and Height in order to resolve it
-            CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->framebuffer, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture()->framebuffer,
+            CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->framebuffer, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->framebuffer,
                0, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth(), m_pin3d.m_pd3dPrimaryDevice->getBufheight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth(), m_pin3d.m_pd3dPrimaryDevice->getBufheight(), GL_COLOR_BUFFER_BIT, GL_NEAREST));
          }
 
-         CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture()->framebuffer, leftTexture->framebuffer,
+         CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->framebuffer, leftTexture->framebuffer,
             0, 0, leftTexture->width - 1, leftTexture->height - 1, 0, 0, leftTexture->width - 1, leftTexture->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
-         CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture()->framebuffer, rightTexture->framebuffer,
+         CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->framebuffer, rightTexture->framebuffer,
             m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->width - rightTexture->width, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->width - 1, rightTexture->height - 1, 0, 0, rightTexture->width - 1, rightTexture->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
          if (disableVRPreview == 0) {
-            CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture()->framebuffer, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->framebuffer,
-               0, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture()->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+            CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->framebuffer, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->framebuffer,
+               0, 0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
          }
          break;
       default:
          if (!shaderAA)
          {
-            // First we need to blit from the MSAA FBO to a non-MSAA buffer of same Width and Height in order to resolve it
-            CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->framebuffer, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture()->framebuffer,
+            CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->framebuffer, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture()->framebuffer,
                0, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth(), m_pin3d.m_pd3dPrimaryDevice->getBufheight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth(), m_pin3d.m_pd3dPrimaryDevice->getBufheight(), GL_COLOR_BUFFER_BIT, GL_NEAREST));
          }
 
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTechnique("stereo_AMD_DEBUG");
-         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture("Texture1", m_pin3d.m_pd3dPrimaryDevice->GetBackBufferSMAATexture(), true);
+         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true);
 
          m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(leftTexture);
 

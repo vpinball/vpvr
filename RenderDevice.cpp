@@ -879,7 +879,10 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    }
 
    // alloc one more temporary buffer for AA
-   m_pOffscreenBackBufferSMAATexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, 0);
+   if (m_FXAA > 0)
+      m_pOffscreenBackBufferSMAATexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, 0);
+   else
+      m_pOffscreenBackBufferSMAATexture = NULL;
 
    if (m_ssRefl)
       m_pReflectionBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, 0);
