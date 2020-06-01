@@ -95,8 +95,7 @@ vec3 normal_map(vec3 N, vec3 V, vec2 uv)
       tn.z = -tn.z; // this matches the object space, +X +Y +Z, export/baking in Blender with our trafo setup
       return normalize( mul(tn, matWorldViewInverseTranspose).xyz );
    } else // tangent space
-      return normalize( mul(TBN_trafo(N, V, uv),
-                            tn) );
+      return normalize( mul(tn, TBN_trafo(N, V, uv)));  // !! The order of tn, and TBN_trainfo matters here?  Ship on FishTales gets blown out if you reverse them 
 }  
 
 //------------------------------------
@@ -315,7 +314,7 @@ void main() {
 
       if (fDisableLighting_top_below.y < 1.0)
           // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-          color.xyz += clamp(mix(sqrt(diffuse)*texture(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
+          color.xyz += clamp(mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5, 0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
    }
 }
 

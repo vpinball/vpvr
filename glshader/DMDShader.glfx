@@ -162,7 +162,7 @@ void main()
 {
    vec4 rgba = texture(Texture0, tex0); //!! lots of tex access by doing this all the time, but (tex) cache should be able to catch all of it
    color.rgb = rgba.rgb;
-   color.a = 1.0;
+   color.a = vRes_Alpha.z;
 }
 
 ////ps_main_noDMD
