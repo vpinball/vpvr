@@ -259,8 +259,8 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    D3DTexture* GetBackBufferTmpTexture() const { return m_pOffscreenBackBufferStereoTexture; }
    D3DTexture* GetNonMSAABlitTexture() const { return m_pOffscreenNonMSAABlitTexture; }
    D3DTexture* GetOffscreenVR(int eye) const { return eye == 0 ? m_pOffscreenVRLeft : m_pOffscreenVRRight;}
-   D3DTexture* GetBackBufferAATexture() const { return m_pOffscreenBackBufferAATexture; }
-   D3DTexture* GetBackBufferSMAATexture() const { return m_pOffscreenBackBufferSMAATexture; }
+   D3DTexture* GetBackBufferPPTexture1() const { return m_pOffscreenBackBufferPPTexture1; }
+   D3DTexture* GetBackBufferPPTexture2() const { return m_pOffscreenBackBufferPPTexture2; }
    D3DTexture* GetMirrorTmpBufferTexture() const { return m_pMirrorTmpBufferTexture; }
    D3DTexture* GetReflectionBufferTexture() const { return m_pReflectionBufferTexture; }
    RenderTarget* GetOutputBackBuffer() const { return m_pBackBuffer; }
@@ -430,8 +430,8 @@ private:
    //If stereo is enabled the right eye is the right/bottom part with 4px in between
    D3DTexture* m_pOffscreenBackBufferTexture;
    D3DTexture* m_pOffscreenBackBufferStereoTexture; // stereo/FXAA only
-   D3DTexture* m_pOffscreenBackBufferAATexture; // AA
-   D3DTexture* m_pOffscreenBackBufferSMAATexture; // SMAA only
+   D3DTexture* m_pOffscreenBackBufferPPTexture1; // AA
+   D3DTexture* m_pOffscreenBackBufferPPTexture2; // SMAA only
    D3DTexture* m_pOffscreenNonMSAABlitTexture;
    D3DTexture* m_pOffscreenVRLeft;
    D3DTexture* m_pOffscreenVRRight;

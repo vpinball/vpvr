@@ -879,20 +879,9 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_pOffscreenVRRight = CreateTexture(m_Buf_width / 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, NULL, 0);
    }
 
-   // alloc one more temporary buffer for AA
-   if (m_FXAA > 0)
-   {
-      m_pOffscreenBackBufferAATexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, 0);
-      if (m_FXAA == Quality_SMAA)
-         m_pOffscreenBackBufferSMAATexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, 0);
-      else
-         m_pOffscreenBackBufferSMAATexture = NULL;
-   }
-   else
-   {
-      m_pOffscreenBackBufferAATexture = NULL;
-      m_pOffscreenBackBufferSMAATexture = NULL;
-   }
+   // Non-MSAA Buffers for post-processing
+   m_pOffscreenBackBufferPPTexture1 = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, 0);
+   m_pOffscreenBackBufferPPTexture2 = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, 0);
 
    // Use postprocessing buffer instead of separate reflectionbuffer
    /*if (m_ssRefl)
@@ -1390,7 +1379,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
          ReportError("Fatal Error: unable to create SMAA buffer!", hr, __FILE__, __LINE__);
    }
    else {
-      m_pOffscreenBackBufferAATexture = NULL;
+      m_pOffscreenBackBufferPPTexture1 = NULL;
    }
 
    if (video10bit && (m_FXAA == Quality_SMAA || m_FXAA == Standard_DLAA))
@@ -1509,7 +1498,7 @@ RenderDevice::~RenderDevice()
    m_texMan.UnloadAll();
    SAFE_RELEASE(m_pOffscreenBackBufferTexture);
    SAFE_RELEASE(m_pOffscreenBackBufferStereoTexture);
-   SAFE_RELEASE(m_pOffscreenBackBufferAATexture);
+   SAFE_RELEASE(m_pOffscreenBackBufferPPTexture1);
    SAFE_RELEASE(m_pReflectionBufferTexture);
 
    if (g_pplayer)
