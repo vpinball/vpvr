@@ -881,9 +881,18 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 
    // alloc one more temporary buffer for AA
    if (m_FXAA > 0)
-      m_pOffscreenBackBufferSMAATexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, 0);
+   {
+      m_pOffscreenBackBufferAATexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, 0);
+      if (m_FXAA == Quality_SMAA)
+         m_pOffscreenBackBufferSMAATexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, 0);
+      else
+         m_pOffscreenBackBufferSMAATexture = NULL;
+   }
    else
+   {
+      m_pOffscreenBackBufferAATexture = NULL;
       m_pOffscreenBackBufferSMAATexture = NULL;
+   }
 
    // Use postprocessing buffer instead of separate reflectionbuffer
    /*if (m_ssRefl)
@@ -1381,7 +1390,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
          ReportError("Fatal Error: unable to create SMAA buffer!", hr, __FILE__, __LINE__);
    }
    else {
-      m_pOffscreenBackBufferSMAATexture = NULL;
+      m_pOffscreenBackBufferAATexture = NULL;
    }
 
    if (video10bit && (m_FXAA == Quality_SMAA || m_FXAA == Standard_DLAA))
@@ -1500,7 +1509,7 @@ RenderDevice::~RenderDevice()
    m_texMan.UnloadAll();
    SAFE_RELEASE(m_pOffscreenBackBufferTexture);
    SAFE_RELEASE(m_pOffscreenBackBufferStereoTexture);
-   SAFE_RELEASE(m_pOffscreenBackBufferSMAATexture);
+   SAFE_RELEASE(m_pOffscreenBackBufferAATexture);
    SAFE_RELEASE(m_pReflectionBufferTexture);
 
    if (g_pplayer)
@@ -2890,42 +2899,43 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
 
    GLuint col_type = ((Format == RGBA32F) || (Format == RGBA16F) || (Format == RGB32F) || (Format == RGB16F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
    GLuint col_format = (Format == GREY) ? GL_RED : (Format == GREY_ALPHA) ? GL_RG : ((Format == RGB) || (Format == RGB5) || (Format == RGB10) || (Format == RGB16F) || (Format == RGB32F)) ? GL_BGR : GL_BGRA;
+
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
 
    if (m_maxaniso > 0)
       CHECKD3D(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_maxaniso));
 
+   CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)); // Use mipmap filtering GL_LINEAR_MIPMAP_LINEAR
+   CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));; // MAG Filter does not support mipmaps
+
    if (Format == GREY) {//Hack so that GL_RED behaves as GL_GREY
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED));
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED));
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED));
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+      Format = RGB8;
    }
    else if (Format == GREY_ALPHA) {//Hack so that GL_RG behaves as GL_GREY_ALPHA
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED));
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED));
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED));
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_GREEN));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+      Format = RGB8;
    }
    else {//Default
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED));
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_GREEN));
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_BLUE));
       CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)); // Use mipmap filtering GL_LINEAR_MIPMAP_LINEAR
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));; // MAG Filter does not support mipmaps
-      if (data)
-      {
-         int num_mips = (int)std::log2(float(std::max(Width, Height))) + 1;
-         CHECKD3D(glTexStorage2D(GL_TEXTURE_2D, num_mips, Format, Width, Height));
-         CHECKD3D(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Width, Height, col_format, col_type, data));
-         CHECKD3D(glGenerateMipmap(GL_TEXTURE_2D)); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwhise good idea to limit by GL_TEXTURE_MAX_LEVEL
-      }
+   }
+
+   if (data)
+   {
+      int num_mips = (int)std::log2(float(std::max(Width, Height))) + 1;
+      CHECKD3D(glTexStorage2D(GL_TEXTURE_2D, num_mips, Format, Width, Height));
+      CHECKD3D(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Width, Height, col_format, col_type, data));
+      CHECKD3D(glGenerateMipmap(GL_TEXTURE_2D)); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwhise good idea to limit by GL_TEXTURE_MAX_LEVEL
    }
 
    return tex;
@@ -2959,7 +2969,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
       m_curTextureUpdates++;
       CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, tex));
       SAFE_RELEASE(sysTex);
-   }
+}
 #endif
    return tex;
 }
