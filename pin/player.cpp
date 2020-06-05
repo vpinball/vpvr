@@ -1869,7 +1869,7 @@ void Player::RenderDynamicMirror(const bool onlyBalls)
 void Player::RenderMirrorOverlay()
 {
    // render the mirrored texture over the playfield
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetMirrorTmpBufferTexture(), false);
+   //m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetMirrorTmpBufferTexture(), false); // When fixing mirroring make sure texture0 is not msaa
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetFloat("mirrorFactor", m_ptable->m_playfieldReflectionStrength);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique("fb_mirror");
 
@@ -3537,8 +3537,7 @@ void Player::SSRefl()
 {
    m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture2());
 
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture5", m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true);
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureDepth("Texture6", m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture());
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture4", &m_pin3d.m_aoDitherTexture, true); //!!!
 
    const vec4 w_h_height((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheight()), 1.0f, 1.0f);
@@ -4073,17 +4072,18 @@ void Player::PostProcess(const bool ambientOcclusion)
    if (ambientOcclusion) {
       m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pddsAOBackTmpBuffer, true);
 
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture(), true);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true);
+
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture4", &m_pin3d.m_aoDitherTexture, true);
 #ifdef ENABLE_SDL
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureDepth("Texture3", m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture());
 #else
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture3", m_pin3d.m_pdds3DZBuffer, true);
 #endif
 
-      const vec4 w_h_height((float)inv_width, (float)inv_height,
-         radical_inverse(m_overall_frames)*(float)(1. / 9.0),
-         sobol(m_overall_frames)*(float)(2. / 9.0)); // jitter within lattice cell
+      const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height),
+         radical_inverse(m_overall_frames)*(float)(1. / 8.0),
+         /*sobol*/radical_inverse<3>(m_overall_frames)*(float)(1. / 8.0)); // jitter within (64/8)x(64/8) neighborhood of 64x64 tex, good compromise between blotches and noise
+
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector("w_h_height", &w_h_height);
       const vec4 ao_s_tb(m_ptable->m_AOScale, 0.4f, 0.f, 0.f); //!! 0.4f: fake global option in video pref? or time dependent?
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector("AO_scale_timeblur", &ao_s_tb);
@@ -4109,9 +4109,9 @@ void Player::PostProcess(const bool ambientOcclusion)
       m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1(), true);
 
    if (ss_refl)
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture5", m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture2(), true);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture2(), true);
    else
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture5", m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true);
 
    if (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff)
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture1", m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture(), true);
@@ -4125,10 +4125,11 @@ void Player::PostProcess(const bool ambientOcclusion)
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool("color_grade", pin != NULL);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool("do_bloom", (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff));
 
-   const vec4 fb_inv_resolution_05((float)(0.5 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidth()), (float)(0.5 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheight()),
+   const float jitter = (float)((msec() & 2047) / 1000.0);
+   const vec4 fb_inv_resolution_05((float)(0.5 / (double)m_width), (float)(0.5 / (double)m_height),
       //1.0f, 1.0f);
-      radical_inverse(m_overall_frames)*(float)(1. / 8.0),
-      sobol(m_overall_frames)*(float)(5. / 8.0)); // jitter for dither pattern
+      jitter, //radical_inverse(jittertime)*11.0f,
+      jitter);//sobol(jittertime)*13.0f); // jitter for dither pattern
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector("w_h_height", &fb_inv_resolution_05);
    if (ambientOcclusion)
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(RenderAOOnly() ? "fb_AO" : (useAA ? "fb_tonemap_AO" : "fb_tonemap_AO_no_filter"));
@@ -4480,9 +4481,7 @@ void Player::Render()
    if (m_cameraMode)
       UpdateCameraModeDisplay();
 
-   /* Force AO off for now since it's bugged and messes with MSAA */
-   const bool useAO = false;
-   //const bool useAO = ((m_dynamicAO && (m_ptable->m_useAO == -1)) || (m_ptable->m_useAO == 1)) && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && (m_ptable->m_AOScale > 0.f);
+   const bool useAO = ((m_dynamicAO && (m_ptable->m_useAO == -1)) || (m_ptable->m_useAO == 1)) && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && (m_ptable->m_AOScale > 0.f);
 
    PostProcess(useAO && !m_disableAO);
 
