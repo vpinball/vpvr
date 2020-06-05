@@ -3692,9 +3692,13 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
 #endif
    switch (stereo3D) {
    case STEREO_OFF: //Should not happen
+      return;
    case STEREO_TB: //top bottom, not handled here
+      return;
    case STEREO_SBS: //side by side, not handled here
+      return;
    case STEREO_INT: //interlaced, handled in shader
+      m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTechnique("stereo_Int");
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(), true);
 
       m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
