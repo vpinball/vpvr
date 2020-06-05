@@ -50,13 +50,18 @@ vec3 FresnelSchlick(vec3 spec, float LdotH, float edge)
     return spec + (vec3(edge,edge,edge) - spec) * pow(1.0 - LdotH, 5); // UE4: vec3(edge,edge,edge) = clamp(50.0*spec.g,0.0, 1.0)
 }
 
+float3 mul_w1(float3 v, float4x4 m)
+{
+    return v.x*m[0].xyz + (v.y*m[1].xyz + (v.z*m[2].xyz + m[3].xyz));
+}
+
 vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edge, float glossyPower, int i, bool is_metal) 
 { 
    // early out here or maybe we can add more material elements without lighting later?
    if(fDisableLighting_top_below.x == 1.0)
       return diffuse;
 
-   vec3 lightDir = (matView * vec4(lightPos[i].xyz, 1.0)).xyz - pos; //!! do in vertex shader?! or completely before?!
+   vec3 lightDir = mul_w1(lightPos[i].xyz, inverse(matView)) - pos; //!! do in vertex shader?! or completely before?!
    vec3 L = normalize(lightDir);
    float NdotL = dot(N, L);
    vec3 Out = vec3(0.0,0.0,0.0);
@@ -88,11 +93,7 @@ vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edg
        ambient += diffuse;
 
    vec3 result;
-#if !enable_VR
-      result = Out * lightEmission[i].xyz * fAtten + ambient * cAmbient_LightRange.xyz;
-#else
-      result = Out * lightEmission[i].xyz * (fAtten*0.00001) + ambient * cAmbient_LightRange.xyz;
-#endif
+   result = Out * lightEmission[i].xyz * fAtten + ambient * cAmbient_LightRange.xyz;
 
    if(fDisableLighting_top_below.x != 0.0)
        return mix(result,diffuse,fDisableLighting_top_below.x);
@@ -136,9 +137,9 @@ vec3 DoEnvmap2ndLayer(vec3 color1stLayer, vec3 pos, vec3 N, vec3 V, float NdotV,
    vec3 w = FresnelSchlick(specular, NdotV, Roughness_WrapL_Edge_Thickness.z); //!! ?
    vec3 env;
    if (!hdrEnvTextures)
-        env = InvGamma(texture(Texture1, Ruv).rgb);
+        env = InvGamma(tex2Dlod(Texture1, float4(Ruv, 0., 0.)).rgb);
    else
-        env = texture(Texture1, Ruv).bgr;
+        env = tex2Dlod(Texture1, float4(Ruv, 0., 0.)).bgr;
 
    return mix(color1stLayer, env*fenvEmissionScale_TexWidth.x, w); // weight (optional) lower diffuse/glossy layer with clearcoat/specular
 }
@@ -171,16 +172,15 @@ vec3 lightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 specula
     {
         for(int i = 0; i < lightSources; i++)//Rendering issues when doing this in an loop. Weird.
             color += DoPointLight(pos, N, V, diffuse, glossy, edge, Roughness_WrapL_Edge_Thickness.x, i, is_metal); // no clearcoat needed as only pointlights so far
-        //color = clamp(color,0.0,1.0);
     }
 
    if(!is_metal && (diffuseMax > 0.0))
-      color += DoEnvmapDiffuse(normalize((inverse(matView)*vec4(N,0.0)).xyz), diffuse); // trafo back to world for lookup into world space envmap // actually: mul(vec4(N,0.0), matViewInverseInverseTranspose), but optimized to save one matrix
+      color += DoEnvmapDiffuse(normalize((inverse(matView) * vec4(N,0.0)).xyz), diffuse); // trafo back to world for lookup into world space envmap // actually: mul(vec4(N,0.0), matViewInverseInverseTranspose), but optimized to save one matrix
 
    if((glossyMax > 0.0) || (specularMax > 0.0))
    {
 	   vec3 R = (2.0*NdotV)*N - V; // reflect(-V,n);
-	   R = normalize(inverse(matView)*vec4(R,0.0)).xyz; // trafo back to world for lookup into world space envmap // actually: mul(vec4(R,0.0), matViewInverseInverseTranspose), but optimized to save one matrix
+	   R = normalize((inverse(matView) * vec4(R,0.0)).xyz); // trafo back to world for lookup into world space envmap // actually: mul(vec4(R,0.0), matViewInverseInverseTranspose), but optimized to save one matrix
 
 	   vec2 Ruv = vec2( // remap to 2D envmap coords
 			0.5 + atan2_approx_div2PI(R.y, R.x),
