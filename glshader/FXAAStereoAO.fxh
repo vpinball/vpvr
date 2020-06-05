@@ -70,7 +70,7 @@ void main()
 {
 	float2 u = tex0 + w_h_height.xy*0.5;
 
-	float depth0 = tex2Dlod(Texture4, float4(u, 0.,0.)).x;
+	float depth0 = tex2Dlod(Texture6, float4(u, 0.,0.)).x;
 	if((depth0 == 1.0) || (depth0 == 0.0)) //!! early out if depth too large (=BG) or too small (=DMD,etc -> retweak render options (depth write on), otherwise also screwup with stereo)
 		color = float4(1.0, 0.,0.,0.);
 	else {
@@ -97,7 +97,7 @@ void main()
 			//!! maybe a bit worse distribution: float2 ray = cos_hemisphere_sample(normal,frac(r+ushift.xy)).xy; // shift lattice
 			//float rdotn = dot(ray,normal);
 			float2 hemi_ray = u + (radius_depth /** sign(rdotn) for uniform*/) * ray.xy;
-			float occ_depth = tex2Dlod(Texture4, float4(hemi_ray, 0.,0.)).x;
+			float occ_depth = tex2Dlod(Texture6, float4(hemi_ray, 0.,0.)).x;
 			float3 occ_normal = get_nonunit_normal(occ_depth, hemi_ray);
 			//float3 occ_normal = tex2Dlod(Texture1, float4(hemi_ray, 0.,0.)).xyz *2.0-1.0;  // use 8bitRGB pregenerated normals, can also omit normalization below then
 			float diff_depth = depth0 - occ_depth;
@@ -106,13 +106,14 @@ void main()
 		}
 		// weight with result(s) from previous frames
 		float ao = 1.0 - total_strength * occlusion;
-		color = float4( (tex2Dlod(Texture1, float4(u+w_h_height.xy*0.5, 0.,0.)).x //abuse bilerp for filtering (by using half texel/pixel shift)
-					   +tex2Dlod(Texture1, float4(u-w_h_height.xy*0.5, 0.,0.)).x
-					   +tex2Dlod(Texture1, float4(u+float2(w_h_height.x,-w_h_height.y)*0.5, 0.,0.)).x
-					   +tex2Dlod(Texture1, float4(u-float2(w_h_height.x,-w_h_height.y)*0.5, 0.,0.)).x)
+		color = float4( (tex2Dlod(Texture5, float4(u+w_h_height.xy*0.5, 0.,0.)).x //abuse bilerp for filtering (by using half texel/pixel shift)
+					   +tex2Dlod(Texture5, float4(u-w_h_height.xy*0.5, 0.,0.)).x
+					   +tex2Dlod(Texture5, float4(u+float2(w_h_height.x,-w_h_height.y)*0.5, 0.,0.)).x
+					   +tex2Dlod(Texture5, float4(u-float2(w_h_height.x,-w_h_height.y)*0.5, 0.,0.)).x)
 			*(0.25*(1.0-AO_scale_timeblur.y))+saturate(ao /*+base*/)*AO_scale_timeblur.y, 0.,0.,0.);
 	}
 }
+
 
 // stereo
 
