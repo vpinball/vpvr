@@ -1105,7 +1105,7 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
        m_pd3dPrimaryDevice->basicShader->SetMaterial(mat);
 
        const vec4 tmp(0.f, 1.f, 0.f, 0.f);
-       m_pd3dPrimaryDevice->basicShader->SetDisableLighting(tmp);
+       m_pd3dPrimaryDevice->basicShader->SetVector("fDisableLighting_top_below", &tmp);
 
        if (pin)
        {
