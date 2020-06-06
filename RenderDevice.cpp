@@ -2892,8 +2892,9 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
 
-   if (m_maxaniso > 0)
-      CHECKD3D(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_maxaniso));
+   // For some reason Anisotropic Filtering causes black pixels on alpha discard
+   //if (m_maxaniso > 0)
+      //CHECKD3D(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_maxaniso));
 
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)); // Use mipmap filtering GL_LINEAR_MIPMAP_LINEAR
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));; // MAG Filter does not support mipmaps

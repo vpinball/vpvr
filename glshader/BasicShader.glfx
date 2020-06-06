@@ -88,14 +88,14 @@ mat3 TBN_trafo(vec3 N, vec3 V, vec2 uv)
 
 vec3 normal_map(vec3 N, vec3 V, vec2 uv)
 {
-   vec3 tn = tex2D(Texture4, uv).xyz * (255./127.) - (128./127.); // Note that Blender apparently does export tangent space normalmaps for Z (Blue) at full range, so 0..255 -> 0..1, which misses an option for here!
+   vec3 tn = texture(Texture4, uv).xyz * (255./127.) - (128./127.); // Note that Blender apparently does export tangent space normalmaps for Z (Blue) at full range, so 0..255 -> 0..1, which misses an option for here!
 
    if (objectSpaceNormalMap)
    {
       tn.z = -tn.z; // this matches the object space, +X +Y +Z, export/baking in Blender with our trafo setup
       return normalize((inverse(matView) * vec4(tn,0.0)).xyz);
    } else // tangent space
-      return normalize((TBN_trafo(N, V, uv) * tn).xyz);  // !! The order of tn, and TBN_trainfo matters here?  Ship on FishTales gets blown out if you reverse them 
+      return normalize((tn * TBN_trafo(N, V, uv)).xyz);  // !! The order of tn, and TBN_trainfo matters here?  Ship on FishTales gets blown out if you reverse them 
 }  
 
 //------------------------------------
@@ -343,7 +343,7 @@ void main() {
    vec3 N = normalize(normal);
 
    if (doNormalMapping)
-	  N = normal_map(N, V, tex01);
+	  N = normal_map(N, normalize(worldPos), tex01);
    
    //color = vec4((N+1.0)*0.5,1.0); return; // visualize normals
 
