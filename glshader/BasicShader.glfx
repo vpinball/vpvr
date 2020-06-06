@@ -328,8 +328,8 @@ in vec3 normal;
 void main() {
    vec4 pixel = texture(Texture0, tex01);
 
-      //if (pixel.a <= fAlphaTestValue)
-         //discard;           //stop the pixel shader if alpha test should reject pixel
+   if (pixel.a <= fAlphaTestValue)
+      discard;           //stop the pixel shader if alpha test should reject pixel
 
    pixel.a = clamp(pixel.a * cBase_Alpha.a, 0.0, 1.0);
    vec3 t = InvGamma(pixel.xyz);

@@ -274,7 +274,8 @@ in vec2 tex0;
 
 void main()
 {
-    float3 result = FBToneMap(tex2Dlod(Texture0, float4(tex0+w_h_height.xy, 0.,0.)).xyz);
+
+    float3 result = FBToneMap(tex2Dlod(Texture0, float4(tex0, 0.,0.)).xyz);
     if (do_bloom)
         result += tex2Dlod(Texture1, float4(tex0, 0., 0.)).xyz; //!! offset?
     color = float4(/*FBDither(*/FBColorGrade(FBGamma(saturate(result))),/*tex0*w_h_height.zw),*/ 1.0);
