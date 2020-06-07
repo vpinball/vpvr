@@ -85,7 +85,7 @@ vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edg
    //float fAtten = 1.0/dot(lightDir,lightDir); // original/correct falloff
    
    float sqrl_lightDir = dot(lightDir,lightDir); // tweaked falloff to have ranged lightsources
-   float fAtten = clamp(1.0 - sqrl_lightDir*sqrl_lightDir/(cAmbient_LightRange.w*cAmbient_LightRange.w*cAmbient_LightRange.w*cAmbient_LightRange.w),0.0, 1.0); //!! pre-mult/invert cAmbient_LightRange.w?
+   float fAtten = 1.0 - sqrl_lightDir*sqrl_lightDir/(cAmbient_LightRange.w*cAmbient_LightRange.w*cAmbient_LightRange.w*cAmbient_LightRange.w); //!! pre-mult/invert cAmbient_LightRange.w?
    fAtten = fAtten*fAtten/(sqrl_lightDir + 1.0);
 
    vec3 ambient = glossy;
@@ -119,7 +119,7 @@ vec3 DoEnvmapDiffuse(vec3 N, vec3 diffuse)
 
 //!! PI?
 // very very crude approximation by abusing miplevels
-vec3 DoEnvmapGlossy(vec3 N, vec3 V, vec2 Ruv, vec3 glossy, float glossyPower)
+vec3 DoEnvmapGlossy(vec2 Ruv, vec3 glossy, float glossyPower)
 {
    float mip = min(log2(fenvEmissionScale_TexWidth.y * sqrt(3.0)) - 0.5*log2(glossyPower + 1.0), log2(fenvEmissionScale_TexWidth.y)-1.); //!! do diffuse lookup instead of this limit/min, if too low?? and blend?
    vec3 env;
@@ -132,7 +132,7 @@ vec3 DoEnvmapGlossy(vec3 N, vec3 V, vec2 Ruv, vec3 glossy, float glossyPower)
 }
 
 //!! PI?
-vec3 DoEnvmap2ndLayer(vec3 color1stLayer, vec3 pos, vec3 N, vec3 V, float NdotV, vec2 Ruv, vec3 specular)
+vec3 DoEnvmap2ndLayer(vec3 color1stLayer, float NdotV, vec2 Ruv, vec3 specular)
 {
    vec3 w = FresnelSchlick(specular, NdotV, Roughness_WrapL_Edge_Thickness.z); //!! ?
    vec3 env;
@@ -187,11 +187,11 @@ vec3 lightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 specula
 			acos_approx_divPI(R.z));
 
 	   if(glossyMax > 0.0)
-		  color += DoEnvmapGlossy(N, V, Ruv, glossy, Roughness_WrapL_Edge_Thickness.x);
+		  color += DoEnvmapGlossy(Ruv, glossy, Roughness_WrapL_Edge_Thickness.x);
 
 	   // 2nd Layer
-	   if(specularMax > 0.0)
-		  color = DoEnvmap2ndLayer(color, pos, N, V, NdotV, Ruv, specular);
+	   if(fix_normal_orientation && specularMax > 0.0)
+		  color = DoEnvmap2ndLayer(color, NdotV, Ruv, specular);
    }
 
    return /*Gamma(ToneMap(*/color/*))*/;

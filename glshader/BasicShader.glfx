@@ -95,7 +95,7 @@ vec3 normal_map(vec3 N, vec3 V, vec2 uv)
       tn.z = -tn.z; // this matches the object space, +X +Y +Z, export/baking in Blender with our trafo setup
       return normalize((inverse(matView) * vec4(tn,0.0)).xyz);
    } else // tangent space
-      return normalize((TBN_trafo(N, V, uv) * tn).xyz);  // !! The order of tn, and TBN_trainfo matters here?  Ship on FishTales gets blown out if you reverse them 
+      return normalize((tn * TBN_trafo(N, V, uv)).xyz);  // !! The order of tn, and TBN_trainfo matters here?  Ship on FishTales gets blown out if you reverse them 
 }  
 
 //------------------------------------
@@ -307,14 +307,14 @@ void main() {
    //color = vec4((N+1.0)*0.5,1.0); return; // visualize normals
 
    color.xyz = lightLoop(worldPos, N, V, diffuse, glossy, specular, edge, true, is_metal); //!! have a "real" view vector instead that mustn't assume that viewer is directly in front of monitor? (e.g. cab setup) -> viewer is always relative to playfield and/or user definable
-   color.a = clamp(cBase_Alpha.a, 0.0, 1.0);
+   color.a = cBase_Alpha.a;
 
    if(cBase_Alpha.a < 1.0) {
       color.a = GeometricOpacity(dot(N,V),color.a,cClearcoat_EdgeAlpha.w,Roughness_WrapL_Edge_Thickness.w);
 
       if (fDisableLighting_top_below.y < 1.0)
           // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-          color.xyz += clamp(mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5, 0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
+          color.xyz += mix(sqrt(diffuse)*textureLod(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5, 0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
    }
 }
 
@@ -331,7 +331,7 @@ void main() {
    if (pixel.a <= fAlphaTestValue)
       discard;           //stop the pixel shader if alpha test should reject pixel
 
-   pixel.a = clamp(pixel.a * cBase_Alpha.a, 0.0, 1.0);
+   pixel.a *= cBase_Alpha.a;
    vec3 t = InvGamma(pixel.xyz);
 
    vec3 diffuse  = t*cBase_Alpha.xyz;
@@ -356,7 +356,7 @@ void main() {
 	 if (fDisableLighting_top_below.y < 1.0)
     {
 		  // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-		  color.xyz += clamp(mix(sqrt(diffuse)*texture(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5).xyz*color.a, vec3(0.), fDisableLighting_top_below.y),0.0,1.0); //!! depend on normal of light (unknown though) vs geom normal, too?
+		  color.xyz += mix(sqrt(diffuse)*texture(Texture3, vec2(0.5*tex03.x,0.5*tex03.y)+0.5).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
     }
    }
 }
@@ -383,7 +383,7 @@ void main() {
 // BG-Decal
 
 void main() {
-   color = vec4(InvToneMap(cBase_Alpha.xyz), clamp(cBase_Alpha.a, 0.0, 1.0));
+   color = vec4(InvToneMap(cBase_Alpha.xyz), cBase_Alpha.a);
 }
 
 ////ps_main_bg_decal_texture
@@ -395,7 +395,7 @@ void main() {
 
    //if (pixel.a <= fAlphaTestValue) discard;
 
-   pixel.a = clamp(pixel.a * cBase_Alpha.a, 0.0, 1.0);
+   pixel.a *= cBase_Alpha.a;
    float3 t = InvGamma(pixel.xyz); // DX9: uses automatic sRGB trafo instead in sampler! - still missing in OpenGL so we still need InvGamma
 
    color = vec4(InvToneMap(t*cBase_Alpha.xyz), pixel.a);

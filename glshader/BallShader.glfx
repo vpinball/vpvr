@@ -307,7 +307,7 @@ void main()
 	   specular *= vec3(1.,1.,1.)-decalColor; // see above
         
    color.xyz = ballLightLoop(worldPos_t0y.xyz, normal_t0x.xyz, -worldPos_t0y.xyz, diffuse, glossy, specular, 1.0, false);
-	color.a = clamp(cBase_Alpha.a, 0.0, 1.0);
+	color.a = cBase_Alpha.a;
 }
 
 #if 0
@@ -322,7 +322,7 @@ vec4 psBallReflection( in voutReflection IN ) : COLOR
       ballImageColor = texture(Texture0, envTex).bgr;
       
    ballImageColor = (cBase_Alpha.xyz*(0.075*0.25) + ballImageColor)*fenvEmissionScale_TexWidth.x; //!! just add the ballcolor in, this is a whacky reflection anyhow
-   float alpha = clamp((tex0.y - position_radius.y) / position_radius.w, 0.0, 1.0);
+   float alpha = (tex0.y - position_radius.y) / position_radius.w;
    alpha = (alpha*alpha)*(alpha*alpha)*reflection_ball_playfield;
    color = vec4(ballImageColor,alpha);
 }
