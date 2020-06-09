@@ -85,7 +85,7 @@ vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edg
    //float fAtten = 1.0/dot(lightDir,lightDir); // original/correct falloff
    
    float sqrl_lightDir = dot(lightDir,lightDir); // tweaked falloff to have ranged lightsources
-   float fAtten = 1.0 - sqrl_lightDir*sqrl_lightDir/(cAmbient_LightRange.w*cAmbient_LightRange.w*cAmbient_LightRange.w*cAmbient_LightRange.w); //!! pre-mult/invert cAmbient_LightRange.w?
+   float fAtten = clamp(1.0 - sqrl_lightDir*sqrl_lightDir/(cAmbient_LightRange.w*cAmbient_LightRange.w*cAmbient_LightRange.w*cAmbient_LightRange.w),0.0, 1.0); //!! pre-mult/invert cAmbient_LightRange.w?
    fAtten = fAtten*fAtten/(sqrl_lightDir + 1.0);
 
    vec3 ambient = glossy;
