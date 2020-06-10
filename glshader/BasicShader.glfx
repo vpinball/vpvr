@@ -113,10 +113,12 @@ out vec2 tex01_gs;
 out vec2 tex03_gs;
 out vec3 worldPos_gs;
 out vec3 normal_gs;
+out float gl_ClipDistance[1];
 
 void main()
 { 
    gl_Position = vec4(vPosition, 1.0);
+   gl_ClipDistance[0] = dot(vPosition, vec3(0, 1, 0));
    tex01_gs = tc;
    vec4 bulbPos = (matWorldViewProj[0]*vec4(vPosition, 1.0));
    tex03_gs = vec2(bulbPos.xy/bulbPos.w);
@@ -133,10 +135,12 @@ in vec2 tc;
 out vec2 tex03_gs;
 out vec3 worldPos_gs;
 out vec3 normal_gs;
+out float gl_ClipDistance[1];
 
 void main()
 {
    gl_Position = vec4(vPosition, 1.0);
+   gl_ClipDistance[0] = dot(vPosition, vec3(0, 1, 0));
    vec4 bulbPos = (matWorldViewProj[0]*vec4(vPosition, 1.0));
    tex03_gs = vec2(bulbPos.xy/bulbPos.w);
    worldPos_gs = (matWorldView*vec4(vPosition, 1.0)).xyz;
@@ -184,18 +188,19 @@ out int gl_ViewportIndex;
 void main()
 {
    gl_ViewportIndex = gl_InvocationID;
-	for (int i=0;i<gl_in.length();i++) {
-		//Default
+   for (int i=0;i<gl_in.length();i++) {
+      //Default
       gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
-		//Custom
-		tex01 = tex01_gs[i];
+      gl_ClipDistance[0] = gl_in[i].gl_ClipDistance[0];
+      //Custom
+      tex01 = tex01_gs[i];
       tex03 = tex03_gs[i];
-		worldPos = worldPos_gs[i];
-		normal = normal_gs[i];
-		//Default
-		EmitVertex();
-	}
-    EndPrimitive();
+      worldPos = worldPos_gs[i];
+      normal = normal_gs[i];
+      //Default
+      EmitVertex();
+   }
+   EndPrimitive();
 }
 
 ////gs_notex_main
@@ -212,17 +217,18 @@ out vec3 normal;
 void main()
 {
    gl_ViewportIndex = gl_InvocationID;
-	for (int i=0;i<gl_in.length();i++) {
-		//Default
+   for (int i=0;i<gl_in.length();i++) {
+      //Default
       gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
-		//Custom
+      gl_ClipDistance[0] = gl_in[i].gl_ClipDistance[0];
+      //Custom
       tex03 = tex03_gs[i];
-		worldPos = worldPos_gs[i];
-		normal = normal_gs[i];
-		//Default
-		EmitVertex();
-	}
-    EndPrimitive();
+      worldPos = worldPos_gs[i];
+      normal = normal_gs[i];
+      //Default
+      EmitVertex();
+   }
+   EndPrimitive();
 }
 
 ////gs_kicker_main
@@ -252,7 +258,7 @@ void main()
 		//Default
 		EmitVertex();
 	}
-    EndPrimitive();
+   EndPrimitive();
 }
 
 ////gs_depth_only_main_without_texture

@@ -439,8 +439,7 @@ in vec2 tex0;
 
 void main()
 {
-// Mirror is broken and disabled for now
-      //color = tex2D(Texture0, tex0) * mirrorFactor;
+   color = texture(Texture0, tex0) * mirrorFactor;
 }
 
 

@@ -840,9 +840,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    // Since we are doing MSAA we need a texture with the same dimensions as the Back Buffer to resolve the end result to
    m_pOffscreenNonMSAABlitTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
 
-   // Dynamic mirrors are broken and disabled for now so no need for this buffer, maybe can use one of the others anyway?
-      //if ((g_pplayer != NULL) && (g_pplayer->m_ptable->m_fReflectElementsOnPlayfield || (g_pplayer->m_fReflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1)))
-         //m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, m_stereo3D);
+   if ((g_pplayer != NULL) && (g_pplayer->m_ptable->m_reflectElementsOnPlayfield || (g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1)))
+      m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
 
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
    m_pBloomBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, NULL, m_stereo3D);
@@ -2296,7 +2295,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
       currentStereoMode = -1;
    }
    if (texture && (texture->texture) > 0) Shader::setTextureDirty(texture->texture);
-   if (((ignoreStereo && currentStereoMode == 0) || currentStereoMode == texture->stereo)) return;
+   //if (((ignoreStereo && currentStereoMode == 0) || currentStereoMode == texture->stereo)) return; // This interfers with playfield mirror, what is the point of this ?
    currentStereoMode = ignoreStereo ? 0 : texture->stereo;
    if (texture) {
       if (ignoreStereo)
@@ -2475,7 +2474,15 @@ void RenderDevice::SetRenderStateClipPlane0(bool enabled) {
    if (SetRenderStateCache(CLIPPLANEENABLE, enabled ? 1 : 0)) return;
 
 #ifdef ENABLE_SDL
-   //TODO Needs to be done in shader
+   // Basicshader already prepared with proper clipplane so just need to enable/disable it
+   if (enabled)
+   {
+      CHECKD3D(glEnable(GL_CLIP_DISTANCE0));
+}
+   else
+   {
+      CHECKD3D(glDisable(GL_CLIP_DISTANCE0));
+   }
 #else
    CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)RenderStates::CLIPPLANEENABLE, enabled ? PLANE0 : 0));
 #endif 

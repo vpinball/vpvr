@@ -505,7 +505,6 @@ Player::Player(const bool cameraMode, PinTable * const ptable, const HWND hwndPr
       useVR = MessageBox(nullptr, "VR headset detected but SteamVR is not running.\n\nTurn VR on?", "VR Headset Detected", MB_YESNO) == IDYES;
 
    m_trailForBalls = LoadValueBoolWithDefault("Player", "BallTrail", true);
-   m_reflectionForBalls = LoadValueBoolWithDefault("Player", "BallReflection", true);
    m_capExtDMD = LoadValueBoolWithDefault("Player", "CaptureExternalDMD", false);
    m_capPUP = LoadValueBoolWithDefault("Player", "CapturePUP", false);
    m_BWrendering = LoadValueIntWithDefault("Player", "BWRendering", 0);
@@ -522,11 +521,14 @@ Player::Player(const bool cameraMode, PinTable * const ptable, const HWND hwndPr
       m_disableAO = LoadValueBoolWithDefault("PlayerVR", "DisableAO", false);
       m_ss_refl = LoadValueBoolWithDefault("PlayerVR", "SSRefl", false);
       m_pf_refl = LoadValueBoolWithDefault("PlayerVR", "PFRefl", true);
+      m_pf_refl = false; // Force disable for now, reflections kind of works but the camera is scewed in VR.
       m_scaleFX_DMD = LoadValueBoolWithDefault("PlayerVR", "ScaleFXDMD", false);
       m_disableDWM = false;
       m_useNvidiaApi = false;
       m_bloomOff = LoadValueBoolWithDefault("PlayerVR", "ForceBloomOff", false);
       m_VSync = 0; //Disable VSync for VR
+      m_reflectionForBalls = LoadValueBoolWithDefault("PlayerVR", "BallReflection", true);
+      m_reflectionForBalls = false; // Ball reflections work fine but is a performance hog in it's current implementation so force disable for now.
    }
    else {
       m_stereo3D = LoadValueIntWithDefault("Player", "Stereo3D", STEREO_OFF);
@@ -548,6 +550,7 @@ Player::Player(const bool cameraMode, PinTable * const ptable, const HWND hwndPr
       m_useNvidiaApi = LoadValueBoolWithDefault("Player", "UseNVidiaAPI", false);
       m_bloomOff = LoadValueBoolWithDefault("Player", "ForceBloomOff", false);
       m_VSync = LoadValueIntWithDefault("Player", "AdaptiveVSync", 0);
+      m_reflectionForBalls = LoadValueBoolWithDefault("Player", "BallReflection", true);
    }
 
 #ifdef ENABLE_BAM
@@ -1781,7 +1784,6 @@ HRESULT Player::Init(PinTable * const ptable, const HWND hwndProgress, const HWN
 
 void Player::RenderDynamicMirror(const bool onlyBalls)
 {
-   // render into temp back buffer 
    m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetMirrorTmpBufferTexture());
 
    m_pin3d.m_pd3dPrimaryDevice->Clear(TARGET | ZBUFFER, 0, 1.0f, 0L);
@@ -1802,26 +1804,25 @@ void Player::RenderDynamicMirror(const bool onlyBalls)
    m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 
    if (!onlyBalls)
-      UpdateBasicShaderMatrix();
+      UpdateBasicShaderMatrix(); // Camera seems skewed when rendering the flipped elements in VR, something with the matrix? Looks fine in 2D.
 
    UpdateBallShaderMatrix();
 
-   // render mirrored static elements - remove if it makes problems
-   for (size_t i = 0; i < m_ptable->m_vedit.size(); i++)
-   {
-      if (m_ptable->m_vedit[i]->GetItemType() != eItemDecal)
-      {
-         Hitable * const ph = m_ptable->m_vedit[i]->GetIHitable();
-         if (ph)
-         {
-            ph->RenderStatic();
-         }
-      }
-   }
-
-
    if (!onlyBalls)
    {
+      // render mirrored static elements - remove if it makes problems
+      for (size_t i = 0; i < m_ptable->m_vedit.size(); i++)
+      {
+         if (m_ptable->m_vedit[i]->GetItemType() != eItemDecal)
+         {
+            Hitable * const ph = m_ptable->m_vedit[i]->GetIHitable();
+            if (ph)
+            {
+               ph->RenderStatic();
+            }
+         }
+      }
+
       std::stable_sort(m_vHitTrans.begin(), m_vHitTrans.end(), CompareHitableDepthInverse);
 
       // Draw transparent objects.
@@ -1844,7 +1845,6 @@ void Player::RenderDynamicMirror(const bool onlyBalls)
    m_pin3d.m_pd3dPrimaryDevice->SetRenderStateDepthBias(0.0f); //!! paranoia set of old state, remove as soon as sure that no other code still relies on that legacy set
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::BLENDOP, RenderDevice::BLENDOP_ADD);
-   //m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 
    m_ptable->m_reflectionEnabled = false;
    m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_NONE); // re-init/thrash cache entry due to the hacky nature of the table mirroring
@@ -1863,13 +1863,15 @@ void Player::RenderDynamicMirror(const bool onlyBalls)
 
    UpdateBallShaderMatrix();
 
-   m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pddsBackBuffer);
+   m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture());
 }
 
 void Player::RenderMirrorOverlay()
 {
+   m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture(), true);
+
    // render the mirrored texture over the playfield
-   //m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetMirrorTmpBufferTexture(), false); // When fixing mirroring make sure texture0 is not msaa
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture("Texture0", m_pin3d.m_pd3dPrimaryDevice->GetMirrorTmpBufferTexture(), false); // When fixing mirroring make sure texture0 is not msaa
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetFloat("mirrorFactor", m_ptable->m_playfieldReflectionStrength);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique("fb_mirror");
 
@@ -1886,6 +1888,8 @@ void Player::RenderMirrorOverlay()
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
    m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
+
+   m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture());
 }
 
 void Player::InitStatic(HWND hwndProgress)
@@ -3223,10 +3227,6 @@ void Player::Spritedraw(const float posx, const float posy, const float width, c
 
 void Player::DrawBulbLightBuffer()
 {
-   // Temporarly disable stereo rendering for the bulb light rendering or we get overlapping lights
-   int orig_m_stereo3D = m_pin3d.m_pd3dPrimaryDevice->m_stereo3D;
-   m_pin3d.m_pd3dPrimaryDevice->m_stereo3D = 0;
-
    // switch to 'bloom' output buffer to collect all bulb lights
    m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture(), true);
 
@@ -3301,8 +3301,6 @@ void Player::DrawBulbLightBuffer()
 
       m_current_renderstage = 0;
    }
-   // Re-set the original stereo value
-   m_pin3d.m_pd3dPrimaryDevice->m_stereo3D = orig_m_stereo3D;
 
    // switch back to render buffer
    m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture(), false);
@@ -3314,7 +3312,16 @@ void Player::RenderDynamics()
 {
    TRACE_FUNCTION();
 
-   unsigned int reflection_path = 2;
+   unsigned int reflection_path = 0;
+   if (!m_cameraMode)
+   {
+      const bool drawBallReflection = ((m_reflectionForBalls && (m_ptable->m_useReflectionForBalls == -1)) || (m_ptable->m_useReflectionForBalls == 1));
+
+      if (!(m_ptable->m_reflectElementsOnPlayfield && g_pplayer->m_pf_refl) && drawBallReflection)
+         reflection_path = 1;
+      else if (m_ptable->m_reflectElementsOnPlayfield && g_pplayer->m_pf_refl)
+         reflection_path = 2;
+   }
 
    m_pin3d.SetPrimaryRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture(), m_pin3d.m_pddsZBuffer);
    //   m_pin3d.m_pd3dPrimaryDevice->Clear(0, NULL, D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0L);
@@ -3327,18 +3334,19 @@ void Player::RenderDynamics()
    }
    else*/
    m_pin3d.m_pd3dPrimaryDevice->Clear(ZBUFFER | TARGET, 0, 1.0f, 0L);//Render Room later ?
+
+   if (reflection_path != 0)
+   {
+      // Create the playfield reflection
+      m_pin3d.m_pd3dPrimaryDevice->SetRenderStateClipPlane0(true);
+      RenderDynamicMirror(reflection_path == 1);
+      m_pin3d.m_pd3dPrimaryDevice->SetRenderStateClipPlane0(false);
+   }
+
+   // Render the backglass
    m_pin3d.m_backGlass->Render();
 
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, TRUE);
-
-
-   /* TODO Broke it for DX9, and OpenGL has no support for Clipplanes when shaders are enabled
-   m_pin3d.m_pd3dPrimaryDevice->SetRenderStateClipPlane0(true);
-   RenderDynamicMirror(false, eye);
-   m_pin3d.m_pd3dPrimaryDevice->SetRenderStateClipPlane0(false); // disable playfield clipplane again
-
-   RenderMirrorOverlay(eye);
-   */
 
    m_pin3d.RenderPlayfieldGraphics(true); // static depth buffer only contained static (&mirror) objects, but no playfield yet -> so render depth only to add this
 
@@ -3354,7 +3362,13 @@ void Player::RenderDynamics()
 
    DrawBulbLightBuffer(); // Move Bulb Light Drawing first so that all objects get the correct bulb texture.
 
-   m_pin3d.RenderPlayfieldGraphics(false);
+   m_pin3d.RenderPlayfieldGraphics(false); // Render the playfield mesh/texture
+
+   if (reflection_path != 0)
+   {
+      // Apply the playfield reflection
+      RenderMirrorOverlay();
+   }
 
    for (size_t i = 0; i < m_ptable->m_vedit.size(); i++)
    {

@@ -1127,6 +1127,7 @@
 #define IDC_GLOBAL_SSREFLECTION_CHECK   820
 #define IDC_GLOBAL_PFREFLECTION_CHECK   821
 #define IDC_BUMPER_SKIRT_ANIM           822
+#define IDC_GLOBAL_SSREFLECTION_CHECK2  822
 #define IDC_CUSTOM_PARAMS               823
 #define IDW_SPLITH                      823
 #define IDC_OBJECT_SPACE_NORMALMAP      824
@@ -1158,7 +1159,6 @@
 #define IDC_LAYER_FILTER_STATIC         838
 #define IDC_FAR_LABEL                   838
 #define IDC_CAP_PUP                     839
-#define IDC_SSSLIDER_LABEL2             839
 #define IDC_PostProcessAA_Label         839
 #define IDC_VR_MODE                     840
 #define IDC_DMD_MODE                    841

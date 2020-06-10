@@ -2177,12 +2177,12 @@ BEGIN
     CONTROL         "Enable",IDC_ENABLE_AO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,258,18,72,10
     CONTROL         "Update in-game (quality)",IDC_DYNAMIC_AO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,258,29,87,10
     CONTROL         "ScreenSpace Reflections",IDC_GLOBAL_SSREFLECTION_CHECK,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,154,9,97,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,154,23,97,10
     CONTROL         "Reflect Dynamic Elements",IDC_GLOBAL_PFREFLECTION_CHECK,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,154,19,97,10
-    LTEXT           "on Playfield (quality)",-1,164,29,80,10
-    LTEXT           "Visual Nudge Strength",-1,156,52,89,8
-    EDITTEXT        IDC_NUDGE_STRENGTH,253,49,36,12,ES_RIGHT | ES_AUTOHSCROLL
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,154,33,97,10
+    LTEXT           "on Playfield (quality)",-1,164,43,80,10
+    LTEXT           "Visual Nudge Strength",-1,156,60,89,8
+    EDITTEXT        IDC_NUDGE_STRENGTH,253,59,36,12,ES_RIGHT | ES_AUTOHSCROLL
     CONTROL         "Force Bloom Filter off (performance)",IDC_BLOOM_OFF,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,162,190,127,10
     PUSHBUTTON      "Reset to Defaults",IDC_DEFAULTS,154,381,63,14
@@ -2227,6 +2227,8 @@ BEGIN
     LTEXT           "MSAA Samples (4x Rec.):",IDC_MSAASLIDER_LABEL,18,149,117,8
     COMBOBOX        IDC_FXAACB,19,234,111,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Post-processed Anti-Aliasing",IDC_PostProcessAA_Label,19,221,117,8
+    CONTROL         "Ball Reflection on Playfield",IDC_GLOBAL_REFLECTION_CHECK,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,154,13,97,10
 END
 
 IDD_SOUND_POSITION_DIALOG DIALOGEX 0, 0, 298, 183
