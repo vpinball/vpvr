@@ -137,9 +137,9 @@ vec3 DoEnvmap2ndLayer(vec3 color1stLayer, float NdotV, vec2 Ruv, vec3 specular)
    vec3 w = FresnelSchlick(specular, NdotV, Roughness_WrapL_Edge_Thickness.z); //!! ?
    vec3 env;
    if (!hdrEnvTextures)
-        env = InvGamma(tex2Dlod(Texture1, float4(Ruv, 0., 0.)).rgb);
+        env = InvGamma(textureLod(Texture1, Ruv, 0).rgb);
    else
-        env = tex2Dlod(Texture1, float4(Ruv, 0., 0.)).bgr;
+        env = textureLod(Texture1, Ruv, 0).bgr;
 
    return mix(color1stLayer, env*fenvEmissionScale_TexWidth.x, w); // weight (optional) lower diffuse/glossy layer with clearcoat/specular
 }

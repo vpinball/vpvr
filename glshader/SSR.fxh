@@ -10,15 +10,15 @@ float3 approx_bump_normal(float2 coords, float2 offs, float scale, float sharpne
 {
     float3 lumw = float3(0.212655,0.715158,0.072187);
 
-    float lpx = dot(tex2Dlod(Texture0, float4(coords.x+offs.x,coords.y, 0.,0.)).xyz, lumw);
-    float lmx = dot(tex2Dlod(Texture0, float4(coords.x-offs.x,coords.y, 0.,0.)).xyz, lumw);
-    float lpy = dot(tex2Dlod(Texture0, float4(coords.x,coords.y+offs.y, 0.,0.)).xyz, lumw);
-    float lmy = dot(tex2Dlod(Texture0, float4(coords.x,coords.y-offs.y, 0.,0.)).xyz, lumw);
+    float lpx = dot(textureLod(Texture0, float2(coords.x+offs.x,coords.y), 0).xyz, lumw);
+    float lmx = dot(textureLod(Texture0, float2(coords.x-offs.x,coords.y), 0).xyz, lumw);
+    float lpy = dot(textureLod(Texture0, float2(coords.x,coords.y+offs.y), 0).xyz, lumw);
+    float lmy = dot(textureLod(Texture0, float2(coords.x,coords.y-offs.y), 0).xyz, lumw);
 
-    float dpx = tex2Dlod(Texture0, float4(coords.x+offs.x,coords.y, 0.,0.)).x;
-    float dmx = tex2Dlod(Texture0, float4(coords.x-offs.x,coords.y, 0.,0.)).x;
-    float dpy = tex2Dlod(Texture0, float4(coords.x,coords.y+offs.y, 0.,0.)).x;
-    float dmy = tex2Dlod(Texture0, float4(coords.x,coords.y-offs.y, 0.,0.)).x;
+    float dpx = textureLod(Texture0, float2(coords.x+offs.x,coords.y), 0).x;
+    float dmx = textureLod(Texture0, float2(coords.x-offs.x,coords.y), 0).x;
+    float dpy = textureLod(Texture0, float2(coords.x,coords.y+offs.y), 0).x;
+    float dmy = textureLod(Texture0, float2(coords.x,coords.y-offs.y), 0).x;
 
     float2 xymult = max(1.0 - float2(abs(dmx - dpx), abs(dmy - dpy)) * sharpness, 0.0);
 
@@ -34,9 +34,9 @@ void main()
 {
 	float2 u = tex0 + w_h_height.xy*0.5;
 
-	float3 color0 = tex2Dlod(Texture0, float4(u, 0.,0.)).xyz; // original pixel
+	float3 color0 = textureLod(Texture0, u, 0).xyz; // original pixel
 
-	float depth0 = tex2Dlod(Texture0, float4(u, 0.,0.)).x;
+	float depth0 = textureLod(Texture0, u, 0).x;
 	if((depth0 == 1.0) || (depth0 == 0.0)) {//!!! early out if depth too large (=BG) or too small (=DMD,etc -> retweak render options (depth write on), otherwise also screwup with stereo)
 		color = float4(color0, 1.0);
 	    return;
@@ -67,7 +67,7 @@ void main()
 	float ReflBlurWidth = 2.2; //!! magic, small enough to not collect too much, and large enough to have cool reflection effects
                       
    float ushift = /*hash(IN.tex0) + w_h_height.zw*/ // jitter samples via hash of position on screen and then jitter samples by time //!! see below for non-shifted variant
-	                     /*frac(*/tex2Dlod(Texture4, float4(tex0/(64.0*w_h_height.xy), 0.,0.)).x /*+ w_h_height.z)*/; // use dither texture instead nowadays // 64 is the hardcoded dither texture size for AOdither.bmp
+	                     /*frac(*/textureLod(Texture4, tex0/(64.0*w_h_height.xy), 0).x /*+ w_h_height.z)*/; // use dither texture instead nowadays // 64 is the hardcoded dither texture size for AOdither.bmp
                         
 	float2 offsMul = normal_b.xy * (/*w_h_height.xy*/ float2(1.0/1920.0,1.0/1080.0) * ReflBlurWidth * (32./float(samples))); //!! makes it more resolution independent?? test with 4xSSAA
 
@@ -77,7 +77,7 @@ void main()
 	for(int i=1; i</*=*/samples; i++) //!! due to jitter
 	{
 		float2 offs = u + (float(i)+ushift)*offsMul; //!! jitter per pixel (uses blue noise tex)
-		float3 color = tex2Dlod(Texture0, float4(offs, 0.,0.)).xyz;
+		float3 color = textureLod(Texture0, offs, 0).xyz;
 		
 		if(i==1) // necessary special case as compiler warns/'optimizes' sqrt below into rqsrt?!
 		{
