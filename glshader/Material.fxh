@@ -50,18 +50,13 @@ vec3 FresnelSchlick(vec3 spec, float LdotH, float edge)
     return spec + (vec3(edge,edge,edge) - spec) * pow(1.0 - LdotH, 5); // UE4: vec3(edge,edge,edge) = clamp(50.0*spec.g,0.0, 1.0)
 }
 
-float3 mul_w1(float3 v, float4x4 m)
-{
-    return v.x*m[0].xyz + (v.y*m[1].xyz + (v.z*m[2].xyz + m[3].xyz));
-}
-
 vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edge, float glossyPower, int i, bool is_metal) 
 { 
    // early out here or maybe we can add more material elements without lighting later?
    if(fDisableLighting_top_below.x == 1.0)
       return diffuse;
 
-   vec3 lightDir = mul_w1(lightPos[i].xyz, inverse(matView)) - pos; //!! do in vertex shader?! or completely before?!
+   vec3 lightDir = (matView * vec4(lightPos[i].xyz, 1.0)).xyz - pos; //!! do in vertex shader?! or completely before?!
    vec3 L = normalize(lightDir);
    float NdotL = dot(N, L);
    vec3 Out = vec3(0.0,0.0,0.0);
@@ -93,7 +88,11 @@ vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edg
        ambient += diffuse;
 
    vec3 result;
-   result = Out * lightEmission[i].xyz * fAtten + ambient * cAmbient_LightRange.xyz;
+#if !enable_VR
+      result = Out * lightEmission[i].xyz * fAtten + ambient * cAmbient_LightRange.xyz;
+#else
+      result = Out * lightEmission[i].xyz * (fAtten*0.00001) + ambient * cAmbient_LightRange.xyz;
+#endif
 
    if(fDisableLighting_top_below.x != 0.0)
        return mix(result,diffuse,fDisableLighting_top_below.x);
