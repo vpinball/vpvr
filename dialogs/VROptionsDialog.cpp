@@ -234,8 +234,15 @@ BOOL VROptionsDialog::OnInitDialog()
    SendMessage(hwndMSAASlider, TBM_SETPAGESIZE, 0, 1);
    SendMessage(hwndMSAASlider, TBM_SETTHUMBLENGTH, 5, 0);
    SendMessage(hwndMSAASlider, TBM_SETPOS, TRUE, (LPARAM)*CurrMSAAPos - 1);
-   char MSAAText[42];
-   sprintf_s(MSAAText, "MSAA Samples (4x Rec.): %d", MSAASamples);
+   char MSAAText[52];
+   if (MSAASamples == 1)
+   {
+      sprintf_s(MSAAText, "MSAA Samples (4x Rec.): Disabled");
+   }
+   else
+   {
+      sprintf_s(MSAAText, "MSAA Samples (4x Rec.): %d", MSAASamples);
+   }
    SetDlgItemText(IDC_MSAASLIDER_LABEL, MSAAText);
 
    int useAO = LoadValueIntWithDefault("PlayerVR", "DynamicAO", LoadValueIntWithDefault("Player", "DynamicAO", 0));
@@ -521,8 +528,15 @@ INT_PTR VROptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
       else if ((HWND)lParam == GetDlgItem(IDC_MSAASLIDER).GetHwnd()) {
          const size_t posMSAA = SendMessage(GetDlgItem(IDC_MSAASLIDER).GetHwnd(), TBM_GETPOS, 0, 0);//Reading the value from wParam does not work reliable
          const int MSAASampleAmount = ((posMSAA) < MSAASampleCount) ? MSAASamplesOpts[posMSAA] : 4;
-         char newText[42];
-         sprintf_s(newText, "MSAA Samples (4x Rec): %d", MSAASampleAmount);
+         char newText[52];
+         if (MSAASampleAmount == 1)
+         {
+            sprintf_s(newText, "MSAA Samples (4x Rec.): Disabled");
+         }
+         else
+         {
+            sprintf_s(newText, "MSAA Samples (4x Rec.): %d", MSAASampleAmount);
+         }
          SetDlgItemText(IDC_MSAASLIDER_LABEL, newText);
       }
       break;

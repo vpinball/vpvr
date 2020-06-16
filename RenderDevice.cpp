@@ -2784,6 +2784,18 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
       CHECKD3D(glBindFramebuffer(GL_FRAMEBUFFER, tex->framebuffer));
       CHECKD3D(glGenTextures(1, &tex->texture));
 
+      if (g_pplayer->m_MSAASamples == 1 && (tex->usage == RENDERTARGET_MSAA || tex->usage == RENDERTARGET_MSAA_DEPTH))
+      {
+         if (tex->usage == RENDERTARGET_MSAA)
+         {
+            tex->usage = RENDERTARGET;
+         }
+         else
+         {
+            tex->usage = RENDERTARGET_DEPTH;
+         }
+      }
+
       if (tex->usage == RENDERTARGET_MSAA || tex->usage == RENDERTARGET_MSAA_DEPTH)
       {
          CHECKD3D(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex->texture));
