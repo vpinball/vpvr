@@ -259,6 +259,8 @@ void main()
 	   ballImageColor = ScreenHDR( ballImageColor, decalColor ) * (0.5*fenvEmissionScale_TexWidth.x); //!! 0.5=magic
     
    vec3 playfield_normal = normalize((matWorldViewInverseTranspose * vec4(0.,0.,1.,0.)).xyz); //!! normalize necessary?
+  
+   vec3 lightLoop_normal = (matWorldView * vec4(0.,0.,1.,0.)).xyz;
     
    float NdotR;
 #if !enable_VR
@@ -284,7 +286,7 @@ void main()
                               : InvGamma(texture(Texture1, uv).xyz)*invTableRes_playfield_height_reflection.w; //!! rather use screen space sample from previous frame??
 
       //!! hack to get some lighting on reflection sample, but only diffuse, the rest is not setup correctly anyhow
-      playfieldColor = PFlightLoop(playfield_hit, playfield_normal, playfieldColor);
+      playfieldColor = PFlightLoop(playfield_hit, lightLoop_normal, playfieldColor);
 
       //!! magic falloff & weight the rest in from the ballImage
       float weight = NdotR*NdotR;
