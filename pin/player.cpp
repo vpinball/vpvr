@@ -3748,7 +3748,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
          CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->framebuffer, leftTexture->framebuffer,
             0, 0, leftTexture->width - 1, leftTexture->height - 1, 0, 0, leftTexture->width - 1, leftTexture->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
          CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->framebuffer, rightTexture->framebuffer,
-            m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->width - rightTexture->width, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->width - 1, rightTexture->height - 1, 0, 0, rightTexture->width - 1, rightTexture->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+            m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->width - rightTexture->width, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->width - 1, rightTexture->height - 1, 0, 0, rightTexture->width - 1, rightTexture->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
          if (disableVRPreview == 0) {
             CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->framebuffer, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->framebuffer,
                0, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));

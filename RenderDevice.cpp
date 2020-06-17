@@ -849,10 +849,10 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    // temporary buffer for gaussian blur
    m_pBloomTmpBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, NULL, m_stereo3D);
 
-   // alloc temporary buffer for postprocessing
-   if ((m_FXAA > 0) || (m_stereo3D > 0))
-      m_pOffscreenBackBufferStereoTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, 0);
-   else
+   // alloc temporary buffer for postprocessing, we don't use this anymore
+   //if ((m_FXAA > 0) || (m_stereo3D > 0))
+     // m_pOffscreenBackBufferStereoTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, 0);
+   //else
       m_pOffscreenBackBufferStereoTexture = NULL;
 
    if (m_stereo3D == STEREO_VR) {
