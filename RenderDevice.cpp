@@ -2295,13 +2295,11 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
       currentStereoMode = -1;
    }
    if (texture && (texture->texture) > 0) Shader::setTextureDirty(texture->texture);
-   //if (((ignoreStereo && currentStereoMode == 0) || currentStereoMode == texture->stereo)) return; // This interfers with playfield mirror, what is the point of this ?
    currentStereoMode = ignoreStereo ? 0 : texture->stereo;
    if (texture) {
       if (ignoreStereo)
       {
          CHECKD3D(glViewport(0, 0, texture->width, texture->height));
-         lightShader->SetBool("ignoreStereo", true); // For non-stereo lightbulb texture, can't use pre-processor for this
       }
       else
          switch (texture->stereo) {
@@ -2316,7 +2314,6 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
             viewPorts[4] = 0.0f;
             viewPorts[5] = (float)texture->height / 2.0f;
             CHECKD3D(glViewportArrayv(0, 2, viewPorts));
-            lightShader->SetBool("ignoreStereo", false);
             break;
          case STEREO_SBS:
          case STEREO_VR:
@@ -2326,7 +2323,6 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
             viewPorts[4] = (float)texture->width / 2.0f;
             viewPorts[5] = 0.0f;
             CHECKD3D(glViewportArrayv(0, 2, viewPorts));
-            lightShader->SetBool("ignoreStereo", false);
             break;
          }
    }
