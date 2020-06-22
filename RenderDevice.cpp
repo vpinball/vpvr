@@ -2305,6 +2305,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
          switch (texture->stereo) {
          case STEREO_OFF:
             CHECKD3D(glViewport(0, 0, texture->width, texture->height));
+            lightShader->SetBool("ignoreStereo", true); // For non-stereo lightbulb texture, can't use pre-processor for this
             break;
          case STEREO_TB:
          case STEREO_INT:
@@ -2314,6 +2315,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
             viewPorts[4] = 0.0f;
             viewPorts[5] = (float)texture->height / 2.0f;
             CHECKD3D(glViewportArrayv(0, 2, viewPorts));
+            lightShader->SetBool("ignoreStereo", false);
             break;
          case STEREO_SBS:
          case STEREO_VR:
@@ -2323,6 +2325,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
             viewPorts[4] = (float)texture->width / 2.0f;
             viewPorts[5] = 0.0f;
             CHECKD3D(glViewportArrayv(0, 2, viewPorts));
+            lightShader->SetBool("ignoreStereo", false);
             break;
          }
    }

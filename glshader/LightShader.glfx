@@ -12,6 +12,8 @@ layout(std140) uniform matrixBlock { mat4 matWorldViewProj[eyes];};
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
 
+uniform bool ignoreStereo = false; // Must be able to force only one invocation for drawing bulb light texture
+
 // Use geometry invocations for stereo rendering
 #if (eyes == 1)
    layout(invocations = 1) in;
@@ -41,23 +43,26 @@ void main()
 }
 
 ////gs_lightbulb_main
-
+ 
 in vec3 tablePos_gs[];
 out vec3 tablePos;
 
 void main()
 {
    gl_ViewportIndex = gl_InvocationID;
-   for (int i=0;i<gl_in.length();i++) {
-      //Default
-      gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
-      gl_Position.z = max(gl_Position.z, 0.00001); // clamp lights to near clip plane to avoid them being partially clipped
-      //Custom
-      tablePos = tablePos_gs[i];
-      //Default
-      EmitVertex();
+   if (gl_ViewportIndex == 0 || !ignoreStereo)
+   {
+      for (int i=0;i<gl_in.length();i++) {
+         //Default
+         gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
+         gl_Position.z = max(gl_Position.z, 0.00001); // clamp lights to near clip plane to avoid them being partially clipped
+         //Custom
+         tablePos = tablePos_gs[i];
+         //Default
+         EmitVertex();
+      }
+      EndPrimitive();
    }
-   EndPrimitive();
 }
 
 ////PS_BulbLight
