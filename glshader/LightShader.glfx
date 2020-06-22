@@ -3,8 +3,6 @@
 
 ////DEFINES
 
-#include "Helpers.fxh"
-
 layout(std140) uniform matrixBlock { mat4 matWorldViewProj[eyes];};
 
 uniform bool ignoreStereo = false; // Must be able to force only one invocation for drawing bulb light texture
@@ -24,6 +22,8 @@ layout(triangle_strip, max_vertices = 3) out;
 #endif
 
 ////FRAGMENT
+#include "Helpers.fxh"
+
 // Early-Z-test implementation:
 #extension GL_ARB_shader_image_load_store : enable
 #extension GL_ARB_conservative_depth : enable

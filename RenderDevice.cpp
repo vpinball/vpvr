@@ -775,18 +775,18 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       break;
    case STEREO_TB:
    case STEREO_INT:
-      m_Buf_width = fbWidth;
-      m_Buf_height = fbHeight * 2;
       m_Buf_widthBlur = m_Buf_width / 3;
       m_Buf_heightBlur = m_Buf_height / 3;
+      m_Buf_width = fbWidth;
+      m_Buf_height = fbHeight * 2;
       m_Buf_width = (int)(m_Buf_width * m_AAfactor);
       m_Buf_height = (int)(m_Buf_height * m_AAfactor);
       break;
    case STEREO_SBS:
-      m_Buf_width = fbWidth * 2;
-      m_Buf_height = fbHeight;
       m_Buf_widthBlur = m_Buf_width / 3;
       m_Buf_heightBlur = m_Buf_height / 3;
+      m_Buf_width = fbWidth * 2;
+      m_Buf_height = fbHeight;
       m_Buf_width = (int)(m_Buf_width * m_AAfactor);
       m_Buf_height = (int)(m_Buf_height * m_AAfactor);
       break;
@@ -803,9 +803,9 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       if (m_scale <= 0)
          m_scale = 0.000540425f;// Scale factor for VPUnits to Meters
       InitVR();
-      m_Buf_width = m_Buf_width * 2;
       m_Buf_widthBlur = m_Buf_width / 3;
       m_Buf_heightBlur = m_Buf_height / 3;
+      m_Buf_width = m_Buf_width * 2;
       m_Buf_width = (int)(m_Buf_width * m_AAfactor);
       m_Buf_height = (int)(m_Buf_height * m_AAfactor);
       break;
