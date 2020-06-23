@@ -2,9 +2,6 @@
 #version 400
 
 ////DEFINES
-
-#include "Helpers.fxh"
-
 #define Filter_None	    0.
 #define Filter_Additive	1.
 #define Filter_Overlay	2.
@@ -31,6 +28,8 @@ layout(triangle_strip, max_vertices = 3) out;
 #endif
 
 ////FRAGMENT
+#include "Helpers.fxh"
+
 // Early-Z-test implementation:
 #extension GL_ARB_shader_image_load_store : enable
 #extension GL_ARB_conservative_depth : enable

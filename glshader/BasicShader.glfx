@@ -7,8 +7,6 @@
 
 #define NUM_BALL_LIGHTS 0 // just to avoid having too much constant mem allocated
 
-#include "Helpers.fxh"
-
 layout(std140) uniform matrixBlock { 
 	mat4 matView;
 	mat4 matWorldView;
@@ -35,6 +33,8 @@ layout(triangle_strip, max_vertices = 3) out;
 #endif
 
 ////FRAGMENT
+#include "Helpers.fxh"
+
 // Early-Z-test implementation:
 // Don't enable early_fragment_tests in basicshader, only enable conservative_depth
 // Otherwise shader will cull unintended things like mini-playfield under regular playfield

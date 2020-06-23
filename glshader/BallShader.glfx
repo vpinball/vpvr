@@ -4,9 +4,6 @@
 #define NUM_BALL_LIGHTS 8
 
 ////DEFINES
-
-#include "Helpers.fxh"
-
 uniform mat4 orientation;
 
 layout(std140) uniform matrixBlock { 
@@ -29,6 +26,8 @@ layout(triangle_strip, max_vertices = 3) out;
 #endif
 
 ////FRAGMENT
+#include "Helpers.fxh"
+
 // Early-Z-test implementation:
 #extension GL_ARB_shader_image_load_store : enable
 #extension GL_ARB_conservative_depth : enable

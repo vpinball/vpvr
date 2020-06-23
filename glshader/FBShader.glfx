@@ -1,15 +1,14 @@
 ////GLOBAL
 #version 450 core
 
-#include "Helpers.fxh"
-
 ////VERTEX
 
 uniform vec4 quadOffsetScale;//.xy =>Offset from center .wz =>Scale (1.0 is fullscreen)
 
 ////FRAGMENT
+#include "Helpers.fxh"
 
-uniform float4 ms_zpd_ya_td;
+uniform float4 ms_zpd_ya_td; // Not currently used in VPVR only in VPX
 uniform float4 w_h_height; // in bloom w_h_height.z keeps strength
 
 uniform float2 AO_scale_timeblur;
@@ -22,8 +21,6 @@ uniform sampler2D Texture0; // FB
 uniform sampler2D Texture1; // Bloom
 uniform sampler2D Texture3; // AO Result & DepthBuffer
 uniform sampler2D Texture4; // AO Dither, Color grade and Post Processing
-
-uniform int samples = 4; // MSAA Samples, 4 default
 
 out vec4 color;
 
