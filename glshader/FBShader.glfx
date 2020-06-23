@@ -200,10 +200,10 @@ void main()
     //!! if((depth0 == 1.0) || (depth0 == 0.0)) //!! early out if depth too large (=BG) or too small (=DMD,etc -> retweak render options (depth write on), otherwise also screwup with stereo)
     //!!   return float4(tex2Dlod(Texture0, float4(tex0, 0.,0.)).xyz, 1.0);
 
-    float3 result = FBToneMap(textureLod(Texture0, tex0, 0).xyz);
+    vec3 result = FBToneMap(textureLod(Texture0, tex0, 0).xyz);
 	if (do_bloom)
 		result += textureLod(Texture1, tex0, 0.).xyz; //!! offset?
-    color = float4(FBColorGrade(FBGamma(saturate(result))), 1.0);
+    color = vec4(FBColorGrade(FBGamma(clamp(result, 0.0, 0.99))), 1.0);
 }
 
 ////ps_main_fb_bloom
@@ -235,11 +235,11 @@ in vec2 tex0;
 
 void main()
 {
-    float3 result = FBToneMap(textureLod(Texture0, tex0, 0).xyz) // moving AO before tonemap does not really change the look
+    vec3 result = FBToneMap(textureLod(Texture0, tex0, 0).xyz) // moving AO before tonemap does not really change the look
            * textureLod(Texture3, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
     if (do_bloom)
         result += textureLod(Texture1, tex0, 0).xyz; //!! offset?
-    color = float4(FBColorGrade(FBGamma(saturate(result))), 1.0);
+    color = vec4(FBColorGrade(FBGamma(clamp(result, 0.0, 0.99))), 1.0);
 }
 
 ////ps_main_fb_tonemap_AO_static
@@ -248,9 +248,9 @@ in vec2 tex0;
 
 void main()
 {
-	float3 result = textureLod(Texture0, tex0, 0).xyz
+	vec3 result = textureLod(Texture0, tex0, 0).xyz
 	* textureLod(Texture3, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
-	color = float4(result, 1.0);
+	color = vec4(result, 1.0);
 }
 
 ////ps_main_fb_tonemap_no_filter
@@ -259,10 +259,10 @@ in vec2 tex0;
 
 void main()
 {
-    float3 result = FBToneMap(textureLod(Texture0, tex0+w_h_height.xy, 0).xyz);
+    vec3 result = FBToneMap(textureLod(Texture0, tex0+w_h_height.xy, 0).xyz);
 	if (do_bloom)
 		result += textureLod(Texture1, tex0, 0).xyz; //!! offset?
-    color = float4(/*FBDither(*/FBColorGrade(FBGamma(saturate(result))),/*tex0*w_h_height.zw),*/ 1.0);
+    color = vec4(/*FBDither(*/FBColorGrade(FBGamma(clamp(result, 0.0, 0.99))),/*tex0*w_h_height.zw),*/ 1.0);
 }
 
 ////ps_main_fb_tonemap_no_filterRGB
@@ -272,10 +272,10 @@ in vec2 tex0;
 void main()
 {
 
-    float3 result = FBToneMap(textureLod(Texture0, tex0, 0).xyz);
+    vec3 result = FBToneMap(textureLod(Texture0, tex0, 0).xyz);
     if (do_bloom)
         result += textureLod(Texture1, tex0, 0).xyz; //!! offset?
-    color = float4(/*FBDither(*/FBColorGrade(FBGamma(saturate(result))),/*tex0*w_h_height.zw),*/ 1.0);
+    color = vec4(/*FBDither(*/FBColorGrade(FBGamma(clamp(result, 0.0, 0.99))),/*tex0*w_h_height.zw),*/ 1.0);
 }
 
 ////ps_main_fb_tonemap_no_filterRG
@@ -287,7 +287,7 @@ void main()
     float result = FBToneMap(textureLod(Texture0,tex0+w_h_height.xy, 0).xyz).x;
     if (do_bloom)
         result += textureLod(Texture1, tex0, 0).x; //!! offset?
-    float gray = /*FBDither(*//*FBColorGrade*/(FBGamma(vec3(saturate(result)))).x/*,tex0*w_h_height.zw)*/;
+    float gray = /*FBDither(*//*FBColorGrade*/(FBGamma(vec3(clamp(result, 0.0, 0.99)))).x/*,tex0*w_h_height.zw)*/;
     color = float4(gray,gray,gray,1.0);
 }
 
@@ -297,11 +297,11 @@ in vec2 tex0;
 
 void main()
 {
-    float3 result = FBToneMap(textureLod(Texture0, tex0+w_h_height.xy, 0).xyz) // moving AO before tonemap does not really change the look
+    vec3 result = FBToneMap(textureLod(Texture0, tex0+w_h_height.xy, 0).xyz) // moving AO before tonemap does not really change the look
                   * textureLod(Texture3, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
     if (do_bloom)
         result += textureLod(Texture1, tex0, 0).xyz;  //!! offset?
-    color = float4(FBColorGrade(FBGamma(saturate(result))), 1.0);
+    color = vec4(FBColorGrade(FBGamma(clamp(result, 0.0, 0.99))), 1.0);
 }
 
 ////ps_main_fb_tonemap_AO_no_filter
@@ -310,11 +310,11 @@ in vec2 tex0;
 
 void main()
 {
-    float3 result = FBToneMap(textureLod(Texture0, tex0+w_h_height.xy, 0).xyz) // moving AO before tonemap does not really change the look
+    vec3 result = FBToneMap(textureLod(Texture0, tex0+w_h_height.xy, 0).xyz) // moving AO before tonemap does not really change the look
                   * textureLod(Texture0, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
     if (do_bloom)
         result += textureLod(Texture1, tex0, 0).xyz;  //!! offset?
-    color = float4(FBColorGrade(FBGamma(saturate(FBDither(result, tex0)))), 1.0);
+    color = vec4(FBColorGrade(FBGamma(saturate(FBDither(result, tex0)))), 1.0);
 }
 
 ////ps_main_fb_tonemap_AO_no_filter_static
@@ -323,9 +323,9 @@ in vec2 tex0;
 
 void main()
 {
-	float3 result = textureLod(Texture0, tex0 + w_h_height.xy, 0).xyz
+	vec3 result = textureLod(Texture0, tex0 + w_h_height.xy, 0).xyz
 	* textureLod(Texture3, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
-	color = float4(result, 1.0);
+	color = vec4(result, 1.0);
 }
 
 //
