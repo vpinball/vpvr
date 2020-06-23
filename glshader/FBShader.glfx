@@ -203,7 +203,7 @@ void main()
     vec3 result = FBToneMap(textureLod(Texture0, tex0, 0).xyz);
 	if (do_bloom)
 		result += textureLod(Texture1, tex0, 0.).xyz; //!! offset?
-    color = vec4(FBColorGrade(FBGamma(clamp(result, 0.0, 0.99))), 1.0);
+    color = vec4(FBColorGrade(FBGamma(clamp(result, 0.0, 1.0))), 1.0);
 }
 
 ////ps_main_fb_bloom
@@ -239,7 +239,7 @@ void main()
            * textureLod(Texture3, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
     if (do_bloom)
         result += textureLod(Texture1, tex0, 0).xyz; //!! offset?
-    color = vec4(FBColorGrade(FBGamma(clamp(result, 0.0, 0.99))), 1.0);
+    color = vec4(FBColorGrade(FBGamma(clamp(result, 0.0, 1.0))), 1.0);
 }
 
 ////ps_main_fb_tonemap_AO_static
@@ -262,7 +262,7 @@ void main()
     vec3 result = FBToneMap(textureLod(Texture0, tex0+w_h_height.xy, 0).xyz);
 	if (do_bloom)
 		result += textureLod(Texture1, tex0, 0).xyz; //!! offset?
-    color = vec4(/*FBDither(*/FBColorGrade(FBGamma(clamp(result, 0.0, 0.99))),/*tex0*w_h_height.zw),*/ 1.0);
+    color = vec4(/*FBDither(*/FBColorGrade(FBGamma(clamp(result, 0.0, 1.0))),/*tex0*w_h_height.zw),*/ 1.0);
 }
 
 ////ps_main_fb_tonemap_no_filterRGB
@@ -275,7 +275,7 @@ void main()
     vec3 result = FBToneMap(textureLod(Texture0, tex0, 0).xyz);
     if (do_bloom)
         result += textureLod(Texture1, tex0, 0).xyz; //!! offset?
-    color = vec4(/*FBDither(*/FBColorGrade(FBGamma(clamp(result, 0.0, 0.99))),/*tex0*w_h_height.zw),*/ 1.0);
+    color = vec4(/*FBDither(*/FBColorGrade(FBGamma(clamp(result, 0.0, 1.0))),/*tex0*w_h_height.zw),*/ 1.0);
 }
 
 ////ps_main_fb_tonemap_no_filterRG
@@ -287,7 +287,7 @@ void main()
     float result = FBToneMap(textureLod(Texture0,tex0+w_h_height.xy, 0).xyz).x;
     if (do_bloom)
         result += textureLod(Texture1, tex0, 0).x; //!! offset?
-    float gray = /*FBDither(*//*FBColorGrade*/(FBGamma(vec3(clamp(result, 0.0, 0.99)))).x/*,tex0*w_h_height.zw)*/;
+    float gray = /*FBDither(*//*FBColorGrade*/(FBGamma(vec3(clamp(result, 0.0, 1.0)))).x/*,tex0*w_h_height.zw)*/;
     color = float4(gray,gray,gray,1.0);
 }
 
@@ -301,7 +301,7 @@ void main()
                   * textureLod(Texture3, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
     if (do_bloom)
         result += textureLod(Texture1, tex0, 0).xyz;  //!! offset?
-    color = vec4(FBColorGrade(FBGamma(clamp(result, 0.0, 0.99))), 1.0);
+    color = vec4(FBColorGrade(FBGamma(clamp(result, 0.0, 1.0))), 1.0);
 }
 
 ////ps_main_fb_tonemap_AO_no_filter

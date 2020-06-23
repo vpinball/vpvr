@@ -100,7 +100,10 @@ void main()
    float4 result = staticColor_Alpha; // Mode 2 wires this through
 
    if (flasherMode == 0.) // Mode 0 mods it by Texture
+   {
       result *= pixel1;
+      result.a = clamp(result.a, 0.0, 200.0); // Need to clamp here or we get some saturation artifacts on some tables
+   }
 
    if (flasherMode == 1.) // Mode 1 allows blends between Tex 1 & 2, and then mods the staticColor with it
    {
