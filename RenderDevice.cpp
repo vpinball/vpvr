@@ -837,8 +837,11 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
    m_pOffscreenBackBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, m_stereo3D);
 
-   // Since we are doing MSAA we need a texture with the same dimensions as the Back Buffer to resolve the end result to
-   m_pOffscreenNonMSAABlitTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
+   // If we are doing MSAA we need a texture with the same dimensions as the Back Buffer to resolve the end result to
+   if (g_pplayer->m_MSAASamples > 1)
+      m_pOffscreenNonMSAABlitTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
+   else
+      m_pOffscreenNonMSAABlitTexture = NULL;
 
    if ((g_pplayer != NULL) && (g_pplayer->m_ptable->m_reflectElementsOnPlayfield || (g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1)))
       m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
@@ -966,7 +969,6 @@ bool RenderDevice::LoadShaders()
    shaderCompilationOkay = FBShader->Load("SMAA.glfx", 0) && shaderCompilationOkay;
    FBShader->SetVector("quadOffsetScale", 0.0f, 0.0f, 1.0f, 1.0f);
    FBShader->SetVector("quadOffsetScaleTex", 0.0f, 0.0f, 1.0f, 1.0f);
-   FBShader->SetInt("samples", g_pplayer->m_MSAASamples);
 
    if (m_stereo3D) {
       StereoShader = new Shader(this);
@@ -2910,7 +2912,6 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
 
-   // For some reason Anisotropic Filtering causes black pixels on alpha discard
    if (m_maxaniso > 0)
       CHECKD3D(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_maxaniso));
 

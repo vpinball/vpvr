@@ -62,8 +62,8 @@ void VROptionsDialog::ResetVideoPreferences() // 0 = default, 1 = lowend PC, 2 =
 
    SendMessage(GetDlgItem(IDC_SSSLIDER).GetHwnd(), TBM_SETPOS, TRUE, getBestMatchingAAfactorIndex(1.0f));
    SetDlgItemText(IDC_SSSLIDER_LABEL, "Supersampling Factor: 1.0");
-   SendMessage(GetDlgItem(IDC_MSAASLIDER).GetHwnd(), TBM_SETPOS, TRUE, 4);
-   SetDlgItemText(IDC_MSAASLIDER_LABEL, "MSAA Samples (4x Rec.): 4");
+   SendMessage(GetDlgItem(IDC_MSAASLIDER).GetHwnd(), TBM_SETPOS, TRUE, 1);
+   SetDlgItemText(IDC_MSAASLIDER_LABEL, "MSAA Samples: Disabled");
 
    SendMessage(GetDlgItem(IDC_DYNAMIC_AO).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_ENABLE_AO).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
@@ -193,11 +193,11 @@ BOOL VROptionsDialog::OnInitDialog()
       controlHwnd = GetDlgItem(IDC_ENABLE_AO).GetHwnd();
       AddToolTip("(Currently broken and disabled in VPVR)\r\n\r\nActivate this to enable Ambient Occlusion.\r\nThis enables contact shadows between objects.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_FXAACB).GetHwnd();
-      AddToolTip("Enables post-processed Anti-Aliasing.\r\n\r\nVPVR already has native MSAA and these settings can make the image quality a bit smoother at cost of performance and a slight blurring.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip("Enables post-processed Anti-Aliasing.\r\n\r\nThese settings can make the image quality a bit smoother at cost of performance and a slight blurring.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_SSSLIDER).GetHwnd();
-      AddToolTip("Enables brute-force Up/Downsampling.\r\n\r\nThis delivers very good quality but slows down performance significantly.\r\n\r\n2.0 means twice the resolution to be handled while rendering.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip("Enables brute-force Up/Downsampling.\r\n\r\nThis delivers very good quality but has a significant impact on performance.\r\n\r\n2.0 means twice the resolution to be handled while rendering.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_MSAASLIDER).GetHwnd();
-      AddToolTip("Set the amount of MSAA samples.\r\n\r\nMSAA is essential for good image quality in VR.\r\n\r\nIt's recommended to leave this at 4, lower this only if you have performance issues.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip("Set the amount of MSAA samples.\r\n\r\nMSAA can help reduce geometry aliasing in VR at the cost of performance and GPU memory.\r\n\r\nThis can really help improve image quality when not using supersampling.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
       AddToolTip("Select Display for Video output.", hwndDlg, toolTipHwnd, controlHwnd);
       //AMD Debug
@@ -225,7 +225,7 @@ BOOL VROptionsDialog::OnInitDialog()
    sprintf_s(SSText, "Supersampling Factor: %.2f", AAfactor);
    SetDlgItemText(IDC_SSSLIDER_LABEL, SSText);
 
-   const int MSAASamples = LoadValueIntWithDefault("PlayerVR", "MSAASamples", 4);
+   const int MSAASamples = LoadValueIntWithDefault("PlayerVR", "MSAASamples", 1);
    auto CurrMSAAPos = std::find(MSAASamplesOpts, MSAASamplesOpts + (sizeof(MSAASamplesOpts) / sizeof(MSAASamplesOpts[0])), MSAASamples);
    const HWND hwndMSAASlider = GetDlgItem(IDC_MSAASLIDER).GetHwnd();
    SendMessage(hwndMSAASlider, TBM_SETRANGE, fTrue, MAKELONG(0, MSAASampleCount - 1));
@@ -237,11 +237,11 @@ BOOL VROptionsDialog::OnInitDialog()
    char MSAAText[52];
    if (MSAASamples == 1)
    {
-      sprintf_s(MSAAText, "MSAA Samples (4x Rec.): Disabled");
+      sprintf_s(MSAAText, "MSAA Samples: Disabled");
    }
    else
    {
-      sprintf_s(MSAAText, "MSAA Samples (4x Rec.): %d", MSAASamples);
+      sprintf_s(MSAAText, "MSAA Samples: %d", MSAASamples);
    }
    SetDlgItemText(IDC_MSAASLIDER_LABEL, MSAAText);
 
@@ -381,166 +381,166 @@ INT_PTR VROptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
    switch (uMsg)
    {
-   case GET_WINDOW_MODES:
-   {
-      size_t indexcur = -1;
-      size_t indx = -1;
-      int widthcur = (int)wParam, heightcur = (int)lParam;
-
-      SendMessage(GetHwnd(), RESET_SIZELIST_CONTENT, 0, 0);
-      HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
-      //indx = SendMessage(hwndList, LB_GETCURSEL, 0L, 0L);
-      //if (indx == LB_ERR)
-      //  indx = 0;
-
-      const size_t csize = sizeof(rgwindowsize) / sizeof(int);
-      int screenwidth;
-      int screenheight;
-      int x, y;
-      const int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
-      getDisplaySetupByID(display, x, y, screenwidth, screenheight);
-
-      //if (indx != -1)
-      //  indexcur = indx;
-
-      allVideoModes.clear();
-      size_t cnt = 0;
-
-      // test video modes first on list
-
-      // add some (windowed) portrait play modes
-
-      // 16:10 aspect ratio resolutions: 1280*800, 1440*900, 1680*1050, 1920*1200 and 2560*1600
-      // 16:9 aspect ratio resolutions:  1280*720, 1366*768, 1600*900, 1920*1080, 2560*1440 and 3840*2160
-      // 21:9 aspect ratio resolution:   3440*1440
-      // 4:3  aspect ratio resolutions:  1280*1024
-      const unsigned int num_portrait_modes = 15;
-      const int portrait_modes_width[num_portrait_modes] = { 720, 720, 1024, 768, 800, 900, 900,1050,1050,1080,1200,1440,1440,1600,2160 };
-      const int portrait_modes_height[num_portrait_modes] = { 1024,1280, 1280,1366,1280,1440,1600,1600,1680,1920,1920,2560,3440,2560,3840 };
-
-      for (unsigned int i = 0; i < num_portrait_modes; ++i)
-         if ((portrait_modes_width[i] <= screenwidth) && (portrait_modes_height[i] <= screenheight))
-         {
-            VideoMode mode;
-            mode.width = portrait_modes_width[i];
-            mode.height = portrait_modes_height[i];
-            mode.depth = 0;
-            mode.refreshrate = 0;
-
-            allVideoModes.push_back(mode);
-            if (heightcur > widthcur)
-               if ((portrait_modes_width[i] == widthcur) && (portrait_modes_height[i] == heightcur))
-                  indx = i;
-            cnt++;
-         }
-
-      // add landscape play modes
-
-      for (size_t i = 0; i < csize; ++i)
+      case GET_WINDOW_MODES:
       {
-         const int xsize = rgwindowsize[i];
-         if ((xsize <= screenwidth) && ((xsize * 3 / 4) <= screenheight))
-         {
-            if ((xsize == widthcur) && ((xsize * 3 / 4) == heightcur))
-               indx = i + cnt;
+         size_t indexcur = -1;
+         size_t indx = -1;
+         int widthcur = (int)wParam, heightcur = (int)lParam;
 
-            VideoMode mode;
-            mode.width = xsize;
-            mode.height = xsize * 3 / 4;
-            mode.depth = 0;
-            mode.refreshrate = 0;
+         SendMessage(GetHwnd(), RESET_SIZELIST_CONTENT, 0, 0);
+         HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
+         //indx = SendMessage(hwndList, LB_GETCURSEL, 0L, 0L);
+         //if (indx == LB_ERR)
+         //  indx = 0;
 
-            allVideoModes.push_back(mode);
-         }
-      }
+         const size_t csize = sizeof(rgwindowsize) / sizeof(int);
+         int screenwidth;
+         int screenheight;
+         int x, y;
+         const int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
+         getDisplaySetupByID(display, x, y, screenwidth, screenheight);
 
-      FillVideoModesList(allVideoModes);
+         //if (indx != -1)
+         //  indexcur = indx;
 
-      // set up windowed fullscreen mode
-      VideoMode mode;
-      mode.width = screenwidth;
-      mode.height = screenheight;
-      mode.depth = 0;
-      mode.refreshrate = 0;
-      allVideoModes.push_back(mode);
+         allVideoModes.clear();
+         size_t cnt = 0;
 
-      char szT[128];
-      //if (indexcur == -1)
-      //  indexcur = indx;
+         // test video modes first on list
 
-      if (mode.height < mode.width) // landscape
-      {
-         sprintf_s(szT, "%d x %d (Windowed Fullscreen)", mode.width, mode.height);
-         SendMessage(hwndList, LB_ADDSTRING, 0, (LPARAM)szT);
-         if (indx == -1)
-            indexcur = SendMessage(hwndList, LB_GETCOUNT, 0, 0) - 1;
-         else
-            indexcur = indx;
-      }
-      else { // portrait
-         if ((indx == -1) || (indx < num_portrait_modes))
-         {
-            indexcur = indx;
-            if (cnt > 0)
+         // add some (windowed) portrait play modes
+
+         // 16:10 aspect ratio resolutions: 1280*800, 1440*900, 1680*1050, 1920*1200 and 2560*1600
+         // 16:9 aspect ratio resolutions:  1280*720, 1366*768, 1600*900, 1920*1080, 2560*1440 and 3840*2160
+         // 21:9 aspect ratio resolution:   3440*1440
+         // 4:3  aspect ratio resolutions:  1280*1024
+         const unsigned int num_portrait_modes = 15;
+         const int portrait_modes_width[num_portrait_modes] = { 720, 720, 1024, 768, 800, 900, 900,1050,1050,1080,1200,1440,1440,1600,2160 };
+         const int portrait_modes_height[num_portrait_modes] = { 1024,1280, 1280,1366,1280,1440,1600,1600,1680,1920,1920,2560,3440,2560,3840 };
+
+         for (unsigned int i = 0; i < num_portrait_modes; ++i)
+            if ((portrait_modes_width[i] <= screenwidth) && (portrait_modes_height[i] <= screenheight))
             {
-               char szTx[128];
-               SendMessage(hwndList, LB_GETTEXT, cnt - 1, (LPARAM)szTx);
-               SendMessage(hwndList, LB_DELETESTRING, cnt - 1, 0L);
+               VideoMode mode;
+               mode.width = portrait_modes_width[i];
+               mode.height = portrait_modes_height[i];
+               mode.depth = 0;
+               mode.refreshrate = 0;
 
-               if (cnt - 1 < num_portrait_modes)
+               allVideoModes.push_back(mode);
+               if (heightcur > widthcur)
+                  if ((portrait_modes_width[i] == widthcur) && (portrait_modes_height[i] == heightcur))
+                     indx = i;
+               cnt++;
+            }
+
+         // add landscape play modes
+
+         for (size_t i = 0; i < csize; ++i)
+         {
+            const int xsize = rgwindowsize[i];
+            if ((xsize <= screenwidth) && ((xsize * 3 / 4) <= screenheight))
+            {
+               if ((xsize == widthcur) && ((xsize * 3 / 4) == heightcur))
+                  indx = i + cnt;
+
+               VideoMode mode;
+               mode.width = xsize;
+               mode.height = xsize * 3 / 4;
+               mode.depth = 0;
+               mode.refreshrate = 0;
+
+               allVideoModes.push_back(mode);
+            }
+         }
+
+         FillVideoModesList(allVideoModes);
+
+         // set up windowed fullscreen mode
+         VideoMode mode;
+         mode.width = screenwidth;
+         mode.height = screenheight;
+         mode.depth = 0;
+         mode.refreshrate = 0;
+         allVideoModes.push_back(mode);
+
+         char szT[128];
+         //if (indexcur == -1)
+         //  indexcur = indx;
+
+         if (mode.height < mode.width) // landscape
+         {
+            sprintf_s(szT, "%d x %d (Windowed Fullscreen)", mode.width, mode.height);
+            SendMessage(hwndList, LB_ADDSTRING, 0, (LPARAM)szT);
+            if (indx == -1)
+               indexcur = SendMessage(hwndList, LB_GETCOUNT, 0, 0) - 1;
+            else
+               indexcur = indx;
+         }
+         else { // portrait
+            if ((indx == -1) || (indx < num_portrait_modes))
+            {
+               indexcur = indx;
+               if (cnt > 0)
                {
-                  mode.width = portrait_modes_width[cnt - 1];
-                  mode.height = portrait_modes_height[cnt - 1];
+                  char szTx[128];
+                  SendMessage(hwndList, LB_GETTEXT, cnt - 1, (LPARAM)szTx);
+                  SendMessage(hwndList, LB_DELETESTRING, cnt - 1, 0L);
 
-                  if ((mode.height == screenheight) && (mode.width == screenwidth))
-                     sprintf_s(szT, "%d x %d (Windowed Fullscreen)", mode.width, mode.height);
-                  else
-                     sprintf_s(szT, "%d x %d", mode.width, mode.height);
-               }
-               else {
-                  memset(&szTx, '\x0', sizeof(szTx));
-                  strcpy_s(szT, szTx);
-               }
+                  if (cnt - 1 < num_portrait_modes)
+                  {
+                     mode.width = portrait_modes_width[cnt - 1];
+                     mode.height = portrait_modes_height[cnt - 1];
 
-               SendMessage(hwndList, LB_INSERTSTRING, cnt - 1, (LPARAM)szT);
-            } // end if cnt > 0
-         } // end if indx
-      } // end if else mode height < width
+                     if ((mode.height == screenheight) && (mode.width == screenwidth))
+                        sprintf_s(szT, "%d x %d (Windowed Fullscreen)", mode.width, mode.height);
+                     else
+                        sprintf_s(szT, "%d x %d", mode.width, mode.height);
+                  }
+                  else {
+                     memset(&szTx, '\x0', sizeof(szTx));
+                     strcpy_s(szT, szTx);
+                  }
 
-      SendMessage(hwndList, LB_SETCURSEL, (indexcur != -1) ? indexcur : 0, 0);
-      break;
-   } // end case GET_WINDOW_MODES
-   case RESET_SIZELIST_CONTENT:
-   {
-      HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
-      SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
-      break;
-   }
-   case WM_HSCROLL:
-   {
-      if ((HWND)lParam == GetDlgItem(IDC_SSSLIDER).GetHwnd()) {
-         const size_t posAAfactor = SendMessage(GetDlgItem(IDC_SSSLIDER).GetHwnd(), TBM_GETPOS, 0, 0);//Reading the value from wParam does not work reliable
-         const float AAfactor = ((posAAfactor) < AAfactorCount) ? AAfactors[posAAfactor] : 1.0f;
-         char newText[32];
-         sprintf_s(newText, "Supersampling Factor: %.2f", AAfactor);
-         SetDlgItemText(IDC_SSSLIDER_LABEL, newText);
+                  SendMessage(hwndList, LB_INSERTSTRING, cnt - 1, (LPARAM)szT);
+               } // end if cnt > 0
+            } // end if indx
+         } // end if else mode height < width
+
+         SendMessage(hwndList, LB_SETCURSEL, (indexcur != -1) ? indexcur : 0, 0);
+         break;
+      } // end case GET_WINDOW_MODES
+      case RESET_SIZELIST_CONTENT:
+      {
+         HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
+         SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
+         break;
       }
-      else if ((HWND)lParam == GetDlgItem(IDC_MSAASLIDER).GetHwnd()) {
-         const size_t posMSAA = SendMessage(GetDlgItem(IDC_MSAASLIDER).GetHwnd(), TBM_GETPOS, 0, 0);//Reading the value from wParam does not work reliable
-         const int MSAASampleAmount = MSAASamplesOpts[posMSAA];
-         char newText[52];
-         if (MSAASampleAmount == 1)
-         {
-            sprintf_s(newText, "MSAA Samples (4x Rec.): Disabled");
+      case WM_HSCROLL:
+      {
+         if ((HWND)lParam == GetDlgItem(IDC_SSSLIDER).GetHwnd()) {
+            const size_t posAAfactor = SendMessage(GetDlgItem(IDC_SSSLIDER).GetHwnd(), TBM_GETPOS, 0, 0);//Reading the value from wParam does not work reliable
+            const float AAfactor = ((posAAfactor) < AAfactorCount) ? AAfactors[posAAfactor] : 1.0f;
+            char newText[32];
+            sprintf_s(newText, "Supersampling Factor: %.2f", AAfactor);
+            SetDlgItemText(IDC_SSSLIDER_LABEL, newText);
          }
-         else
-         {
-            sprintf_s(newText, "MSAA Samples (4x Rec.): %d", MSAASampleAmount);
+         else if ((HWND)lParam == GetDlgItem(IDC_MSAASLIDER).GetHwnd()) {
+            const size_t posMSAA = SendMessage(GetDlgItem(IDC_MSAASLIDER).GetHwnd(), TBM_GETPOS, 0, 0);//Reading the value from wParam does not work reliable
+            const int MSAASampleAmount = MSAASamplesOpts[posMSAA];
+            char newText[52];
+            if (MSAASampleAmount == 1)
+            {
+               sprintf_s(newText, "MSAA Samples: Disabled");
+            }
+            else
+            {
+               sprintf_s(newText, "MSAA Samples: %d", MSAASampleAmount);
+            }
+            SetDlgItemText(IDC_MSAASLIDER_LABEL, newText);
          }
-         SetDlgItemText(IDC_MSAASLIDER_LABEL, newText);
+         break;
       }
-      break;
-   }
    }
 
    return DialogProcDefault(uMsg, wParam, lParam);
@@ -631,7 +631,7 @@ void VROptionsDialog::OnOK()
    SaveValueFloat("PlayerVR", "AAFactor", AAfactor);
 
    const size_t MSAASamplesIndex = SendMessage(GetDlgItem(IDC_MSAASLIDER).GetHwnd(), TBM_GETPOS, 0, 0);
-   const float MSAASamples = (MSAASamplesIndex < MSAASampleCount) ? MSAASamplesOpts[MSAASamplesIndex] : 4;
+   const float MSAASamples = (MSAASamplesIndex < MSAASampleCount) ? MSAASamplesOpts[MSAASamplesIndex] : 1;
    SaveValueInt("PlayerVR", "MSAASamples", MSAASamples);
 
    size_t useAO = SendMessage(GetDlgItem(IDC_DYNAMIC_AO).GetHwnd(), BM_GETCHECK, 0, 0);

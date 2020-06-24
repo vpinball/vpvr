@@ -257,7 +257,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    
    D3DTexture* GetBackBufferTexture() const { return m_pOffscreenBackBufferTexture; }
    D3DTexture* GetBackBufferTmpTexture() const { return m_pOffscreenBackBufferStereoTexture; }
-   D3DTexture* GetNonMSAABlitTexture() const { return m_pOffscreenNonMSAABlitTexture; }
+   D3DTexture* GetNonMSAABlitTexture(int m_MSAASamples) const { return m_MSAASamples == 1 ? m_pOffscreenBackBufferTexture : m_pOffscreenNonMSAABlitTexture; }
    D3DTexture* GetOffscreenVR(int eye) const { return eye == 0 ? m_pOffscreenVRLeft : m_pOffscreenVRRight;}
    D3DTexture* GetBackBufferPPTexture1() const { return m_pOffscreenBackBufferPPTexture1; }
    D3DTexture* GetBackBufferPPTexture2() const { return m_pOffscreenBackBufferPPTexture2; }
