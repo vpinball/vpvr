@@ -3787,7 +3787,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
       CHECKD3D(error = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture));
       vr::Texture_t rightEyeTexture = { (void *)rightTexture->texture, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
       CHECKD3D(error = vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture));
-      CHECKD3D(vr::VRCompositor()->PostPresentHandoff());
+      //CHECKD3D(vr::VRCompositor()->PostPresentHandoff()); // PostPresentHandoff gives mixed results, improved GPU frametime for some, worse CPU frametime for others
    }
 #endif
    return;
