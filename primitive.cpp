@@ -1205,8 +1205,7 @@ void Primitive::RenderObject()
       pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
       pd3dDevice->SetRenderStateCulling(m_d.m_backfacesEnabled && mat->m_bOpacityActive ? RenderDevice::CULL_CW : RenderDevice::CULL_CCW);
 
-      const vec4 tmp(m_d.m_disableLightingTop, m_d.m_disableLightingBelow, 0.f, 0.f);
-      pd3dDevice->basicShader->SetDisableLighting(tmp);
+      pd3dDevice->basicShader->SetDisableLighting(vec4(m_d.m_disableLightingTop, m_d.m_disableLightingBelow, 0.f, 0.f));
 
       Texture * const pin = m_ptable->GetImage(m_d.m_szImage);
       Texture * const nMap = m_ptable->GetImage(m_d.m_szNormalMap);
@@ -1267,17 +1266,13 @@ void Primitive::RenderObject()
       //g_pplayer->m_pin3d.DisableAlphaBlend(); //!! not necessary anymore
 
       if (m_d.m_disableLightingTop != 0.f || m_d.m_disableLightingBelow != 0.f)
-      {
-         const vec4 tmp(0.f, 0.f, 0.f, 0.f);
-         pd3dDevice->basicShader->SetDisableLighting(tmp);
-      }
+         pd3dDevice->basicShader->SetDisableLighting(vec4(0.f, 0.f, 0.f, 0.f));
    }
    else // m_d.m_useAsPlayfield == true:
    {
       // shader is already fully configured in the playfield rendering case when we arrive here, so we only setup some special primitive params
 
-      const vec4 tmp(m_d.m_disableLightingTop, m_d.m_disableLightingBelow, 0.f, 0.f);
-      pd3dDevice->basicShader->SetDisableLighting(tmp);
+      pd3dDevice->basicShader->SetDisableLighting(vec4(0.f, 1.f, 0.f, 0.f));;
 
       //pd3dDevice->SetRenderState(RenderDevice::CULLMODE, D3DCULL_CCW); // don't mess with the render states when doing playfield rendering
       // set transform
