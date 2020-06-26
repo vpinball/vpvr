@@ -162,7 +162,7 @@ vec3 ballLightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 spe
    if((!is_metal && (diffuseMax > 0.0)) || (glossyMax > 0.0))
    {
       for(int i = 0; i < lightSources; i++)  
-         color += DoPointLight(pos, N, V, diffuse, glossy, edge, Roughness_WrapL_Edge_Thickness.x, i, is_metal); // no clearcoat needed as only pointlights so far
+         color += DoPointLight(pos, N, V, diffuse, glossy, edge, i, is_metal); // no clearcoat needed as only pointlights so far
    }
 
    if(!is_metal && (diffuseMax > 0.0))

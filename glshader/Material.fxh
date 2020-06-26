@@ -50,7 +50,7 @@ vec3 FresnelSchlick(vec3 spec, float LdotH, float edge)
     return spec + (vec3(edge,edge,edge) - spec) * pow(1.0 - LdotH, 5); // UE4: vec3(edge,edge,edge) = clamp(50.0*spec.g,0.0, 1.0)
 }
 
-vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edge, float glossyPower, int i, bool is_metal) 
+vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edge, int i, bool is_metal) 
 { 
    // early out here or maybe we can add more material elements without lighting later?
    if(fDisableLighting_top_below.x == 1.0)
@@ -68,6 +68,7 @@ vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edg
    // add glossy component (modified ashikhmin/blinn bastard), not fully energy conserving, but good enough
    if(NdotL > 0.0)
    {
+      float glossyPower = clamp(Roughness_WrapL_Edge_Thickness.x, 0.0, 1.0);
       vec3 H = normalize(L + V); // half vector
       float NdotH = dot(N, H);
       float LdotH = dot(L, H);
@@ -170,7 +171,7 @@ vec3 lightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 specula
     if((!is_metal && (diffuseMax > 0.0)) || (glossyMax > 0.0))
     {
         for(int i = 0; i < lightSources; i++)//Rendering issues when doing this in an loop. Weird.
-            color += DoPointLight(pos, N, V, diffuse, glossy, edge, Roughness_WrapL_Edge_Thickness.x, i, is_metal); // no clearcoat needed as only pointlights so far
+            color += DoPointLight(pos, N, V, diffuse, glossy, edge, i, is_metal); // no clearcoat needed as only pointlights so far
     }
 
    if(!is_metal && (diffuseMax > 0.0))
