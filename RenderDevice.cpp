@@ -837,8 +837,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
    m_pOffscreenBackBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, m_stereo3D);
 
-   // If we are doing MSAA we need a texture with the same dimensions as the Back Buffer to resolve the end result to
-   if (g_pplayer->m_MSAASamples > 1)
+   // If we are doing MSAA we need a texture with the same dimensions as the Back Buffer to resolve the end result to, can also use it for Post-AA
+   if (g_pplayer->m_MSAASamples > 1 || m_FXAA > 0)
       m_pOffscreenNonMSAABlitTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
    else
       m_pOffscreenNonMSAABlitTexture = NULL;
