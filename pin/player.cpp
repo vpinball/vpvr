@@ -3740,18 +3740,19 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
          CHECKD3D(glBlitFramebuffer(m_pin3d.m_pd3dPrimaryDevice->getBufwidth() / 2, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth(), m_pin3d.m_pd3dPrimaryDevice->getBufheight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth() / 2, m_pin3d.m_pd3dPrimaryDevice->getBufheight(), GL_COLOR_BUFFER_BIT, GL_NEAREST));
 
          if (disableVRPreview == 0) {
+            CHECKD3D(glBindFramebuffer(GL_READ_FRAMEBUFFER, rightTexture->framebuffer));
             CHECKD3D(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->framebuffer));
-            CHECKD3D(glBlitFramebuffer(0, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->width, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->height, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+            CHECKD3D(glBlitFramebuffer(0, 0, rightTexture->width, rightTexture->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
          }
          break;
       case 1:
          CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->framebuffer, leftTexture->framebuffer,
-            0, 0, leftTexture->width - 1, leftTexture->height - 1, 0, 0, leftTexture->width - 1, leftTexture->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+            0, 0, leftTexture->width, leftTexture->height, 0, 0, leftTexture->width, leftTexture->height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
          CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->framebuffer, rightTexture->framebuffer,
-            m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->width - rightTexture->width, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->width - 1, rightTexture->height - 1, 0, 0, rightTexture->width - 1, rightTexture->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+            m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->width - rightTexture->width, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->width, rightTexture->height, 0, 0, rightTexture->width, rightTexture->height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
          if (disableVRPreview == 0) {
-            CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->framebuffer, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->framebuffer,
-               0, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
+            CHECKD3D(glBlitNamedFramebuffer(rightTexture->framebuffer, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->framebuffer,
+               0, 0, rightTexture->width, rightTexture->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height, GL_COLOR_BUFFER_BIT, GL_NEAREST));
          }
          break;
       default:
@@ -3774,7 +3775,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
 
          if (disableVRPreview == 0) {
             m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
-            m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat("eye", 2.0f);
+            m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat("eye", 1.0f);
             m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin(0);
             m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
             m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
