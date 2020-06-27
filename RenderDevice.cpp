@@ -2779,36 +2779,20 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    tex->format = Format;
    tex->slot = -1;
 
-   if ((tex->usage == RENDERTARGET) || (tex->usage == RENDERTARGET_DEPTH) || (tex->usage == RENDERTARGET_MSAA) || (tex->usage == RENDERTARGET_MSAA_DEPTH)) {//Create Renderbuffer
+   GLuint col_type = ((Format == RGBA32F) || (Format == RGBA16F) || (Format == RGB32F) || (Format == RGB16F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
+   GLuint col_format = (Format == GREY) ? GL_RED : (Format == GREY_ALPHA) ? GL_RG : ((Format == RGB) || (Format == RGB5) || (Format == RGB10) || (Format == RGB16F) || (Format == RGB32F)) ? GL_BGR : GL_BGRA;
+
+   // Create MSAA/Non-MSAA Renderbuffers
+   if ((tex->usage == RENDERTARGET) || (tex->usage == RENDERTARGET_DEPTH) || (tex->usage == RENDERTARGET_MSAA) || (tex->usage == RENDERTARGET_MSAA_DEPTH)) {
       tex->stereo = stereo;
       CHECKD3D(glGenFramebuffers(1, &tex->framebuffer));
       CHECKD3D(glBindFramebuffer(GL_FRAMEBUFFER, tex->framebuffer));
       CHECKD3D(glGenTextures(1, &tex->texture));
 
-      if (g_pplayer->m_MSAASamples == 1 && (tex->usage == RENDERTARGET_MSAA || tex->usage == RENDERTARGET_MSAA_DEPTH))
-      {
-         if (tex->usage == RENDERTARGET_MSAA)
-         {
-            tex->usage = RENDERTARGET;
-         }
-         else
-         {
-            tex->usage = RENDERTARGET_DEPTH;
-         }
-      }
-
-      if (tex->usage == RENDERTARGET_MSAA || tex->usage == RENDERTARGET_MSAA_DEPTH)
+      if (g_pplayer->m_MSAASamples > 1 && (tex->usage == RENDERTARGET_MSAA || tex->usage == RENDERTARGET_MSAA_DEPTH))
       {
          CHECKD3D(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex->texture));
-         if (Format == RGBA16F || Format == RGBA32F)
-         {
-            CHECKD3D(glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, g_pplayer->m_MSAASamples, Format, Width, Height, GL_TRUE));
-         }
-         else
-         {
-            CHECKD3D(glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, g_pplayer->m_MSAASamples, GL_RGB, Width, Height, GL_TRUE));
-         }
-
+         CHECKD3D(glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, g_pplayer->m_MSAASamples, Format, Width, Height, GL_TRUE));
          CHECKD3D(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0));
          CHECKD3D(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, tex->texture, 0));
 
@@ -2817,7 +2801,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
             CHECKD3D(glGenRenderbuffers(1, &tex->zBuffer));
             CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, tex->zBuffer));
             CHECKD3D(glRenderbufferStorageMultisample(GL_RENDERBUFFER, g_pplayer->m_MSAASamples, GL_DEPTH24_STENCIL8, Width, Height));
-            CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, 0)); //unbind the render buffer
+            CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, 0));
             CHECKD3D(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, tex->zBuffer));
          }
          else
@@ -2826,26 +2810,20 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
             tex->zBuffer = 0;
          }
       }
-      else
+      else // RENDERTARGET & RRENDERTARGET_DEPTH
       {
          CHECKD3D(glBindTexture(GL_TEXTURE_2D, tex->texture));
-         if (Format == RGBA16F || Format == RGBA32F)
-         {
-            CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, Format, Width, Height, 0, GL_RGBA, GL_FLOAT, NULL));
-         }
-         else {
-            CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL));
-         }
+         CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, Format, Width, Height, 0, GL_RGBA, col_type, NULL));
          CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
          CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
          CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0));
          CHECKD3D(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->texture, 0));
 
-         if (tex->usage == RENDERTARGET_DEPTH) {
+         if (tex->usage == RENDERTARGET_DEPTH || tex->usage == RENDERTARGET_MSAA_DEPTH) {
             CHECKD3D(glGenRenderbuffers(1, &tex->zBuffer));
             CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, tex->zBuffer));
             CHECKD3D(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, Width, Height));
-            CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, 0)); //unbind the render buffer
+            CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, 0));
             CHECKD3D(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, tex->zBuffer));
          }
          else
@@ -2906,14 +2884,11 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    CHECKD3D(glGenTextures(1, &tex->texture));
    CHECKD3D(glBindTexture(GL_TEXTURE_2D, tex->texture));
 
-   GLuint col_type = ((Format == RGBA32F) || (Format == RGBA16F) || (Format == RGB32F) || (Format == RGB16F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
-   GLuint col_format = (Format == GREY) ? GL_RED : (Format == GREY_ALPHA) ? GL_RG : ((Format == RGB) || (Format == RGB5) || (Format == RGB10) || (Format == RGB16F) || (Format == RGB32F)) ? GL_BGR : GL_BGRA;
-
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
 
-   if (m_maxaniso > 0)
-      CHECKD3D(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_maxaniso));
+   //if (m_maxaniso > 0)
+      //CHECKD3D(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, m_maxaniso)); // OK need to leave this off for now, creates black artifacts sometimes, example table: Guns N Roses 4K Mod, see the plastic ramps and the bumpers.
 
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)); // Use mipmap filtering GL_LINEAR_MIPMAP_LINEAR
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));; // MAG Filter does not support mipmaps
@@ -2978,7 +2953,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
       m_curTextureUpdates++;
       CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, tex));
       SAFE_RELEASE(sysTex);
-}
+   }
 #endif
    return tex;
 }
