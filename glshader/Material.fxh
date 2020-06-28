@@ -68,7 +68,7 @@ vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edg
    // add glossy component (modified ashikhmin/blinn bastard), not fully energy conserving, but good enough
    if(NdotL > 0.0)
    {
-      float glossyPower = clamp(Roughness_WrapL_Edge_Thickness.x, 0.0, 1.0);
+      float glossyPower = clamp(Roughness_WrapL_Edge_Thickness.x, 0.0, 1000000000000000.0);
       vec3 H = normalize(L + V); // half vector
       float NdotH = dot(N, H);
       float LdotH = dot(L, H);
