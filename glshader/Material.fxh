@@ -68,13 +68,12 @@ vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edg
    // add glossy component (modified ashikhmin/blinn bastard), not fully energy conserving, but good enough
    if(NdotL > 0.0)
    {
-      float glossyPower = clamp(Roughness_WrapL_Edge_Thickness.x, 0.0, 1000000000000000.0);
       vec3 H = normalize(L + V); // half vector
       float NdotH = dot(N, H);
       float LdotH = dot(L, H);
       float VdotH = dot(V, H);
       if((NdotH > 0.0) && (LdotH > 0.0) && (VdotH > 0.0))
-         Out += FresnelSchlick(glossy, LdotH, edge) * (((glossyPower + 1.0) / (8.0*VdotH)) * pow(NdotH, glossyPower));
+         Out += FresnelSchlick(glossy, LdotH, edge) * clamp((( Roughness_WrapL_Edge_Thickness.x + 1.0) / (8.0*VdotH)) * pow(NdotH,  Roughness_WrapL_Edge_Thickness.x), 0.0, 1.0);
    }
  
    //float fAtten = clamp( 1.0 - dot(lightDir/cAmbient_LightRange.w, lightDir/cAmbient_LightRange.w) ,0.0, 1.0);
