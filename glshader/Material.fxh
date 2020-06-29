@@ -34,17 +34,6 @@ uniform vec4 Roughness_WrapL_Edge_Thickness;// = vec4(4.0, 0.5, 1.0, 0.05); // w
 // Material Helper Functions
 //
 
-float GeometricOpacity(float NdotV, float alpha, float blending, float t)
-{
-    //old version without thickness
-    //return mix(alpha, 1.0, blending*pow(1.0-abs(NdotV),5)); // fresnel for falloff towards silhouette
-
-    //new version (COD/IW, t = thickness), t = 0.05 roughly corresponds to above version
-    float x = abs(NdotV); // flip normal in case of wrong orientation (backside lighting)
-    float g = blending - blending * ( x / (x * (1.0 - t) + t) ); // Smith-Schlick G
-    return mix(alpha, 1.0, g); // fake opacity lerp to ‘shadowed’
-}
-
 vec3 FresnelSchlick(vec3 spec, float LdotH, float edge)
 {
     return spec + (vec3(edge,edge,edge) - spec) * pow(1.0 - LdotH, 5); // UE4: vec3(edge,edge,edge) = clamp(50.0*spec.g,0.0, 1.0)
@@ -141,57 +130,4 @@ vec3 DoEnvmap2ndLayer(vec3 color1stLayer, float NdotV, vec2 Ruv, vec3 specular)
         env = textureLod(Texture1, Ruv, 0).bgr;
 
    return mix(color1stLayer, env*fenvEmissionScale_TexWidth.x, w); // weight (optional) lower diffuse/glossy layer with clearcoat/specular
-}
-vec3 lightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 specular, float edge, bool fix_normal_orientation, bool is_metal) // input vectors (N,V) are normalized for BRDF evals
-{
-   // normalize BRDF layer inputs //!! use diffuse = (1-glossy)*diffuse instead?
-   float diffuseMax = max(diffuse.x,max(diffuse.y,diffuse.z));
-   float glossyMax = max(glossy.x,max(glossy.y,glossy.z));
-   float specularMax = max(specular.x,max(specular.y,specular.z)); //!! not needed as 2nd layer only so far
-   float sum = diffuseMax + glossyMax /*+ specularMax*/;
-   if(sum > 1.0)
-   {
-      float invsum = 1.0/sum;
-      diffuse  *= invsum;
-      glossy   *= invsum;
-      //specular *= invsum;
-   }
-
-   float NdotV = dot(N,V);
-   if(fix_normal_orientation && (NdotV < 0.0)) // flip normal in case of wrong orientation? (backside lighting), currently disabled if normal mapping active, for that case we should actually clamp the normal with respect to V instead (see f.e. 'view-dependant shading normal adaptation')
-   {
-      N = -N;
-	  NdotV = -NdotV;
-   }
-
-   vec3 color = vec3(0.0, 0.0, 0.0);
-
-   // 1st Layer
-    if((!is_metal && (diffuseMax > 0.0)) || (glossyMax > 0.0))
-    {
-        for(int i = 0; i < lightSources; i++)//Rendering issues when doing this in an loop. Weird.
-            color += DoPointLight(pos, N, V, diffuse, glossy, edge, i, is_metal); // no clearcoat needed as only pointlights so far
-    }
-
-   if(!is_metal && (diffuseMax > 0.0))
-      color += DoEnvmapDiffuse(normalize((vec4(N,0.0) * matView).xyz), diffuse); // trafo back to world for lookup into world space envmap // actually: mul(vec4(N,0.0), matViewInverseInverseTranspose), but optimized to save one matrix
-
-   if((glossyMax > 0.0) || (specularMax > 0.0))
-   {  
-	   vec3 R = (2.0*NdotV)*N - V; // reflect(-V,n);
-	   R = normalize((vec4(R,0.0) * matView).xyz); // trafo back to world for lookup into world space envmap // actually: mul(vec4(R,0.0), matViewInverseInverseTranspose), but optimized to save one matrix
-
-	   vec2 Ruv = vec2( // remap to 2D envmap coords
-			0.5 + atan2_approx_div2PI(R.y, R.x),
-			acos_approx_divPI(R.z));
-
-	   if(glossyMax > 0.0)
-		  color += DoEnvmapGlossy(Ruv, glossy, Roughness_WrapL_Edge_Thickness.x);
-
-	   // 2nd Layer
-	   if(fix_normal_orientation && specularMax > 0.0)
-		  color = DoEnvmap2ndLayer(color, NdotV, Ruv, specular);
-   }
-
-   return /*Gamma(ToneMap(*/color/*))*/;
 }
