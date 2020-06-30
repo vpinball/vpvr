@@ -2387,7 +2387,8 @@ void RenderDevice::SetRenderState(const RenderStates p1, DWORD p2)
    switch (p1) {
       //glEnable and glDisable functions
    case ALPHABLENDENABLE:
-      CHECKD3D(glEnable(GL_BLEND));
+      if (p2 != RS_FALSE)
+         CHECKD3D(glEnable(GL_BLEND));
    case ZENABLE:
       CHECKD3D({ if (p2) glEnable(p1); else glDisable(p1); });
       break;
