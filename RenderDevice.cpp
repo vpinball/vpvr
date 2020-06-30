@@ -2801,9 +2801,9 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
          {
             CHECKD3D(glGenRenderbuffers(1, &tex->zBuffer));
             CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, tex->zBuffer));
-            CHECKD3D(glRenderbufferStorageMultisample(GL_RENDERBUFFER, g_pplayer->m_MSAASamples, GL_DEPTH24_STENCIL8, Width, Height));
+            CHECKD3D(glRenderbufferStorageMultisample(GL_RENDERBUFFER, g_pplayer->m_MSAASamples, GL_DEPTH_COMPONENT, Width, Height));
             CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, 0));
-            CHECKD3D(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, tex->zBuffer));
+            CHECKD3D(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, tex->zBuffer));
          }
          else
          {
@@ -2823,9 +2823,9 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
          if (tex->usage == RENDERTARGET_DEPTH || tex->usage == RENDERTARGET_MSAA_DEPTH) {
             CHECKD3D(glGenRenderbuffers(1, &tex->zBuffer));
             CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, tex->zBuffer));
-            CHECKD3D(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, Width, Height));
+            CHECKD3D(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, Width, Height));
             CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, 0));
-            CHECKD3D(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, tex->zBuffer));
+            CHECKD3D(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, tex->zBuffer));
          }
          else
          {
