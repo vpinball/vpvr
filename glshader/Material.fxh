@@ -107,9 +107,9 @@ vec3 DoEnvmapDiffuse(vec3 N, vec3 diffuse)
 
 //!! PI?
 // very very crude approximation by abusing miplevels
-vec3 DoEnvmapGlossy(vec2 Ruv, vec3 glossy, float glossyPower)
+vec3 DoEnvmapGlossy(vec2 Ruv, vec3 glossy)
 {
-   float mip = min(log2(fenvEmissionScale_TexWidth.y * sqrt(3.0)) - 0.5*log2(glossyPower + 1.0), log2(fenvEmissionScale_TexWidth.y)-1.); //!! do diffuse lookup instead of this limit/min, if too low?? and blend?
+   float mip = min(log2(fenvEmissionScale_TexWidth.y * sqrt(3.0)) - 0.5*log2(Roughness_WrapL_Edge_Thickness.x + 1.0), log2(fenvEmissionScale_TexWidth.y)-1.); //!! do diffuse lookup instead of this limit/min, if too low?? and blend?
    vec3 env;
    if (!hdrEnvTextures)
         env = InvGamma(textureLod(Texture1, Ruv, mip).rgb);
