@@ -1,5 +1,5 @@
 ////GLOBAL
-#version 400
+#version 430
 
 #define NUM_BALL_LIGHTS 8
 
@@ -40,6 +40,7 @@ uniform sampler2D Texture2; // envmap radiance
 uniform sampler2D Texture3; // ball decal
 
 uniform bool hdrEnvTextures;// = false;
+uniform bool is_metal = false;
 
 #include "Material.fxh"
 

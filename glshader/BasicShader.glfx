@@ -1,5 +1,5 @@
 ////GLOBAL
-#version 400
+#version 430
 
 ////DEFINES
 
@@ -152,13 +152,35 @@ vec3 lightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 specula
 	   vec2 Ruv = vec2( // remap to 2D envmap coords
 			0.5 + atan2_approx_div2PI(R.y, R.x),
 			acos_approx_divPI(R.z));
+          
+      // Abuse mipmaps to reduce shimmering in VR
+      vec4 colorMip;
+      if (is_metal)
+      {
+         float mipLevel = textureQueryLevels(Texture1)/1.6; // Use low-res mipmap for metallic objects to reduce shimmering in VR, /1.6 is a good tradeoff between metallic enough and low shimmer
+         colorMip = textureLod(Texture1, Ruv, mipLevel);
+      }
+      else
+         colorMip = texture(Texture1, Ruv);
+         
 
+      vec3 envTex;
+      
+      if (!hdrEnvTextures)
+           envTex = InvGamma(colorMip.rgb);
+      else
+           envTex = colorMip.bgr;
+
+      // EnvmapGlossy
 	   if(glossyMax > 0.0)
-		  color += DoEnvmapGlossy(Ruv, glossy);
+        color += glossy * envTex * fenvEmissionScale_TexWidth.x;
 
-	   // 2nd Layer
+      // Envmap2ndLayer
 	   if(fix_normal_orientation && specularMax > 0.0)
-		  color = DoEnvmap2ndLayer(color, NdotV, Ruv, specular);
+      {
+        vec3 w = FresnelSchlick(specular, NdotV, Roughness_WrapL_Edge_Thickness.z);
+        color = mix(color, envTex * fenvEmissionScale_TexWidth.x, w);
+      }
    }
 
    return /*Gamma(ToneMap(*/color/*))*/;

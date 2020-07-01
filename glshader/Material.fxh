@@ -97,37 +97,13 @@ vec3 DoEnvmapDiffuse(vec3 N, vec3 diffuse)
 	    acos_approx_divPI(N.z));
 
    vec3 env;
+   
+   // Abuse mipmaps to reduce shimmering in VR
+   int mipLevels = textureQueryLevels(Texture2);
    if (!hdrEnvTextures)
-        env = InvGamma(textureLod(Texture2, uv, 0).rgb);
+        env = InvGamma(textureLod(Texture2, uv, mipLevels/1.6).rgb);
    else
-        env = textureLod(Texture2, uv, 0).bgr;
+        env = textureLod(Texture2, uv, mipLevels/1.6).bgr;
         
    return diffuse * env*fenvEmissionScale_TexWidth.x;
-}
-
-//!! PI?
-// very very crude approximation by abusing miplevels
-vec3 DoEnvmapGlossy(vec2 Ruv, vec3 glossy)
-{
-   float mip = min(log2(fenvEmissionScale_TexWidth.y * sqrt(3.0)) - 0.5*log2(Roughness_WrapL_Edge_Thickness.x + 1.0), log2(fenvEmissionScale_TexWidth.y)-1.); //!! do diffuse lookup instead of this limit/min, if too low?? and blend?
-   vec3 env;
-   if (!hdrEnvTextures)
-        env = InvGamma(textureLod(Texture1, Ruv, mip).rgb);
-   else
-        env = textureLod(Texture1, Ruv, mip).bgr;
-
-   return glossy * env*fenvEmissionScale_TexWidth.x;
-}
-
-//!! PI?
-vec3 DoEnvmap2ndLayer(vec3 color1stLayer, float NdotV, vec2 Ruv, vec3 specular)
-{
-   vec3 w = FresnelSchlick(specular, NdotV, Roughness_WrapL_Edge_Thickness.z); //!! ?
-   vec3 env;
-   if (!hdrEnvTextures)
-        env = InvGamma(textureLod(Texture1, Ruv, 0).rgb);
-   else
-        env = textureLod(Texture1, Ruv, 0).bgr;
-
-   return mix(color1stLayer, env*fenvEmissionScale_TexWidth.x, w); // weight (optional) lower diffuse/glossy layer with clearcoat/specular
 }
