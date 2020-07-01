@@ -67,7 +67,7 @@ void main()
 	float ReflBlurWidth = 2.2; //!! magic, small enough to not collect too much, and large enough to have cool reflection effects
                       
    float ushift = /*hash(IN.tex0) + w_h_height.zw*/ // jitter samples via hash of position on screen and then jitter samples by time //!! see below for non-shifted variant
-	                     /*frac(*/textureLod(Texture4, tex0/(64.0*w_h_height.xy), 0).x /*+ w_h_height.z)*/; // use dither texture instead nowadays // 64 is the hardcoded dither texture size for AOdither.bmp
+	                     /*frac(*/textureLod(Texture4, tex0/(64.0*w_h_height.xy), 0).z /*+ w_h_height.z)*/; // use dither texture instead nowadays // 64 is the hardcoded dither texture size for AOdither.bmp
                         
 	vec2 offsMul = normal_b.xy * (/*w_h_height.xy*/ vec2(1.0/1920.0,1.0/1080.0) * ReflBlurWidth * (32./float(samples))); //!! makes it more resolution independent?? test with 4xSSAA
 
