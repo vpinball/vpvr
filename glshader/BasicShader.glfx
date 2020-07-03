@@ -414,12 +414,12 @@ void main() {
    color.a = clamp(cBase_Alpha.a, 0.0, 1.0);
 
    if(cBase_Alpha.a < 1.0) {
-      color.a = GeometricOpacity(dot(N,V), color.a);
+      color.a = GeometricOpacity(max(dot(N,V), 0.0), color.a);
 
       if (fDisableLighting_top_below.y < 1.0)
           // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
           color.xyz += mix(sqrt(diffuse)*texture(Texture3, vec2(0.5*tex03.xy)+0.5, 0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
-   }
+      }  
 }
 
 ////ps_main_texture
@@ -435,7 +435,6 @@ void main() {
    if (pixel.a <= fAlphaTestValue)
       discard;           //stop the pixel shader if alpha test should reject pixel
 
-   pixel.a = clamp(pixel.a * cBase_Alpha.a, 0.0, 1.0);
    vec3 t = InvGamma(pixel.xyz);
 
    vec3 diffuse  = t*cBase_Alpha.xyz;
@@ -452,16 +451,16 @@ void main() {
    //color = vec4((N+1.0)*0.5,1.0); return; // visualize normals
 
    color.xyz = lightLoop(worldPos, N, V, diffuse, glossy, specular, edge, !doNormalMapping, is_metal);
-   color.a = pixel.a;
+   color.a = clamp(pixel.a * cBase_Alpha.a, 0.0, 1.0);
 
    if (cBase_Alpha.a < 1.0 && color.a < 1.0) {
-	  color.a = GeometricOpacity(dot(N,V), color.a);
+      color.a = GeometricOpacity(max(dot(N,V), 0.0), color.a);
 
-	 if (fDisableLighting_top_below.y < 1.0)
-    {
-		  // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-        color.xyz += mix(sqrt(diffuse)*texture(Texture3, vec2(0.5*tex03.xy)+0.5).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
-    }
+      if (fDisableLighting_top_below.y < 1.0)
+      {
+         // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
+         color.xyz += mix(sqrt(diffuse)*texture(Texture3, vec2(0.5*tex03.xy)+0.5).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
+      }
    }
 }
 
