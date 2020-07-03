@@ -157,15 +157,25 @@ vec3 lightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 specula
       vec4 colorMip;
       if (is_metal)
       {
-         float mipLevel = textureQueryLevels(Texture1)/1.6; // Use low-res mipmap for metallic objects to reduce shimmering in VR, /1.6 is a good tradeoff between metallic enough and low shimmer
+         // Use low-res mipmap for metallic objects to reduce shimmering in VR
+         // Closer objects we query the lod and add 2 to make it a bit blurrier but always at least 6.0
+         // Far away objects we get smallest lod and divide by 1.6 which is a good trade-off between "metallic enough" and "low shimmer"
+         float mipLevel = min(textureQueryLod(Texture1, Ruv).y+2.0, textureQueryLevels(Texture1)/1.6);
+         if (mipLevel < 6.0)
+            mipLevel = 6.0;
          colorMip = textureLod(Texture1, Ruv, mipLevel);
       }
       else
-         colorMip = texture(Texture1, Ruv);
+      {
+         // For non-metallic objects we use different values
+         //colorMip = texture(Texture1, Ruv);
+         float mipLevel = min(textureQueryLod(Texture1, Ruv).y, textureQueryLevels(Texture1)/2);
+         if (mipLevel < 4.0)
+            mipLevel = 4.0;
+         colorMip = textureLod(Texture1, Ruv, mipLevel);
+      }
          
-
       vec3 envTex;
-      
       if (!hdrEnvTextures)
            envTex = InvGamma(colorMip.rgb);
       else

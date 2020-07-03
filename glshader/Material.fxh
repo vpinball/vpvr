@@ -98,12 +98,10 @@ vec3 DoEnvmapDiffuse(vec3 N, vec3 diffuse)
 
    vec3 env;
    
-   // Abuse mipmaps to reduce shimmering in VR
-   int mipLevels = textureQueryLevels(Texture2);
    if (!hdrEnvTextures)
-        env = InvGamma(textureLod(Texture2, uv, mipLevels/1.6).rgb);
+        env = InvGamma(textureLod(Texture2, uv, 0).rgb);
    else
-        env = textureLod(Texture2, uv, mipLevels/1.6).bgr;
+        env = textureLod(Texture2, uv, 0).bgr;
         
    return diffuse * env*fenvEmissionScale_TexWidth.x;
 }
