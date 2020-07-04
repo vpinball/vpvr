@@ -116,7 +116,7 @@ void VROptionsDialog::ResetVideoPreferences() // 0 = default, 1 = lowend PC, 2 =
    sprintf_s(tmp, 256, "%0.1f", vrNearPlane);
    SetDlgItemTextA(IDC_NEAR_PLANE, tmp);
 
-   const float vrFarPlane = 500.0f;
+   const float vrFarPlane = 20000.0f;
    sprintf_s(tmp, 256, "%0.1f", vrFarPlane);
    SetDlgItemTextA(IDC_FAR_PLANE, tmp);
 
@@ -288,7 +288,7 @@ BOOL VROptionsDialog::OnInitDialog()
    sprintf_s(tmp, 256, "%0.1f", vrNearPlane);
    SetDlgItemTextA(IDC_NEAR_PLANE, tmp);
 
-   const float vrFarPlane = LoadValueFloatWithDefault("PlayerVR", "farPlane", 500.0f);
+   const float vrFarPlane = LoadValueFloatWithDefault("PlayerVR", "farPlane", 20000.0f);
    sprintf_s(tmp, 256, "%0.1f", vrFarPlane);
    SetDlgItemTextA(IDC_FAR_PLANE, tmp);
 
@@ -362,13 +362,13 @@ BOOL VROptionsDialog::OnInitDialog()
 
    //AMD Debugging
    SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"RGB 8");
-   SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"RGBA 8");
+   SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"RGBA 8 (Recommended)");
    SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"RGB 16F");
    SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"RGBA 16F");
-   int textureModeVR = LoadValueIntWithDefault("Player", "textureModeVR", 3);
+   int textureModeVR = LoadValueIntWithDefault("Player", "textureModeVR", 1);
    SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_SETCURSEL, textureModeVR, 0);
 
-   SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Blit");
+   SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Blit (Recommended)");
    SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"BlitNamed");
    SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Shader");
    int blitModeVR = LoadValueIntWithDefault("Player", "blitModeVR", 0);
