@@ -1,6 +1,10 @@
 SDL2 / VR Changelog
 ------------------------
 
+- Updated to VPX 10.7 commit R4367
+
+- Various updates from Rawnei (improving Render Quality)
+
 - Updated to VPX 10.7 commit R3991
 
 - Updated OpenVR to SDK 1.9.16
@@ -138,7 +142,7 @@ Next steps:
 	5. Go back to step 1 because of step 2,3 and 4
 		
   
-VP 10.7.0 Changelog (TRUNK R3991)
+VP 10.7.0 Changelog
 ------------------------
 
 FEATURES:
@@ -150,21 +154,60 @@ FEATURES:
    o fast double-click a layer will select all elements of this layer and double-click one element will select it
    o with a slow double-click on a layer or element let you rename it
    o toolbar, properties and layers are now dockable windows without the need to restart VP
-   o Add context menu item to assign selected elements to the current selected layer.
+   o add context menu item to assign selected elements to the current selected layer.
+
+- when exporting/importing a POV file, the custom user settings per table are now also exported/imported
+- when importing a primitive mesh, there is now a new option that prevents internal reordering/optimization of the data
 
 - add MP3 and OGG support (via the BASS library) to the sound manager and the 'standard' sound commands
   these new file types are now also saved directly into the VPX file, unlike the music commands (which still use the 'music' folder for legacy reasons)
   Going forward, tables should only use the sound commands and not the music commands anymore
 
-- optimize table loading/pre-processing time
+- add WEBP to list of supported image formats
 
-- add table save date and revision to table info and also show in the pause info/menu
+- optimize table loading/pre-processing time
+- optimize loading of JPG images in the table
+- reduce temporary memory needed for images
+
+- add table save date and revision to table info and also show this in the pause info/menu
 
 - add new plunger option: Enable 1s retract
   The plunger will move forth and back between the maximum and minimum position, allowing for a retry, if the desired firing position has been missed.
-  Useful for button/key plunging.
+  Useful for button/key plunging and is now the new default.
+
+- add Inder/Playmatic trigger mesh
+
+- make debug text/FPS output adapt to resolution and rotation
+
+- the script editor now works in UTF-8 mode and also saves it like that (note though that VBS itself may not digest all of UTF-8!)
+
+- improve quality and performance of internal DMD shader (especially visible on FSS tables)
+
+- support to add custom notes to a table. To open a dockable notes dialog use the menu View -> Notes. Any text that was entered there is saved with the current active table.
+
+- add ElasticityFalloff to the wall physics properties
 
 FIXES:
+
+- fix problem with gate animations introduced in 10.1 when the open/close script functions were used before
+
+- fix issue where saving a table can cost up to 4x (8x on 64bit) the temporary memory
+
+- fix issues when fallback search of core.vbs is triggered
+
+- properly save recently opened directory for all kinds of dialogs
+
+- fix crashes and not being able to select files with very long file names (e.g. images)
+
+- fix hang on player exit on some setups
+
+- do not mark table as dirty if just starting to play it (i.e. due to backup phase)
+
+- replace dithering code with blue noise, fixes flickering patterns (especially in darker table areas)
+- tweak AO (Ambient Occlusion) and SSR (Screen Space Reflections) to be a bit less noisy
+
+- tweak minimum physics cycle time, which mainly influences kickers
+  also update default kicker physics (Hit height 0.35 and Hit accuracy 0.5)
 
 - fix slightly wrong flipper mesh (visible for very short flippers)
 
@@ -173,14 +216,29 @@ FIXES:
 - fix OBJ-exported names for all ramp types
 - fix missing wire thickness for triggers on OBJ export
 
-- update BASS library to 2.4.15
+- fix crash on (at least) one pre-forsyth-mesh-reorder table
 
-- see core scripts (header of core.vbs) for the respective changelog (version 3.58)
+- fix crash on loading older tables with too long collection names
+
+- fix hangs on loading/playing older tables due to invalid shapes
+
+- add many more different windowed mode resolutions
+
+- also search for table-script replacements (i.e. external .vbs with the same/table name) in the "Scripts" folder to match the core script behavior
+- when modifying the table-script, check if it was loaded from an external .vbs, and if yes, then save the modifications to that file (and only optionally to the .vpx table itself)
+
+- tweak flipper shadows (via script) implementation in the example/blank table
+
+- update BASS library to latest 2.4.15
+- script editor updated to use latest scintilla library 4.4.4 (custom build)
+
+- see Changelog_Scripts.txt for the respective core script changes (version 3.58)
 - see CommandReference.txt for the changelog of all the scripting properties/interface changes
+- see Scripts.txt for the actual usage and "documentation" of the scripts that come with VPX
 
 - add Clang (via Visual Studio 2019) support, still has a linking prob with 32bit though
 
-- updated to latest FreeImage.dll (3.18.0) (currently disabled)
+- update FreeImage library to latest 3.18.0 (custom build) (currently disabled)
 - DirectX 8 port for input handling (currently disabled)
 
 VP 10.6.0 Changelog
