@@ -19,8 +19,7 @@ Kicker::Kicker()
    m_indexBuffer = NULL;
    m_plateVertexBuffer = NULL;
    m_plateIndexBuffer = NULL;
-   memset(m_d.m_szMaterial, 0, MAXNAMEBUFFER);
-   memset(m_d.m_szSurface, 0, MAXTOKEN);
+   memset(m_d.m_szSurface, 0, sizeof(m_d.m_szSurface));
    m_ptable = NULL;
    m_numVertices = 0;
    m_numIndices = 0;
@@ -52,14 +51,11 @@ Kicker::~Kicker()
    }
 }
 
-void Kicker::UpdateUnitsInfo()
+void Kicker::UpdateStatusBarInfo()
 {
-   if (g_pplayer)
-      return;
-
    char tbuf[128];
-   sprintf_s(tbuf, "Radius: %.3f", g_pvp->ConvertToUnit(m_d.m_radius));
-   g_pvp->SetStatusBarUnitInfo(tbuf, true);
+   sprintf_s(tbuf, "Radius: %.3f", m_vpinball->ConvertToUnit(m_d.m_radius));
+   m_vpinball->SetStatusBarUnitInfo(tbuf, true);
 }
 
 HRESULT Kicker::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
@@ -86,7 +82,7 @@ void Kicker::SetDefaults(bool fromMouseClick)
 
    SetDefaultPhysics(fromMouseClick);
 
-   const HRESULT hr = LoadValueString("DefaultProps\\Kicker", "Surface", &m_d.m_szSurface, MAXTOKEN);
+   const HRESULT hr = LoadValueString("DefaultProps\\Kicker", "Surface", m_d.m_szSurface, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
       m_d.m_szSurface[0] = 0;
 
@@ -261,8 +257,8 @@ void Kicker::ExportMesh(FILE *f)
    if (m_d.m_kickertype == KickerInvisible)
       return;
 
-   char name[MAX_PATH];
-   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, MAX_PATH, NULL, NULL);
+   char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
+   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
    m_baseHeight = m_ptable->GetSurfaceHeight(m_d.m_szSurface, m_d.m_vCenter.x, m_d.m_vCenter.y) * m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
 
    int num_vertices;
@@ -322,7 +318,7 @@ void Kicker::ExportMesh(FILE *f)
    WaveFrontObj_WriteObjectName(f, name);
    WaveFrontObj_WriteVertexInfo(f, vertices, num_vertices);
    const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
-   WaveFrontObj_WriteMaterial(m_d.m_szMaterial, NULL, mat);
+   WaveFrontObj_WriteMaterial(m_d.m_szMaterial, string(), mat);
    WaveFrontObj_UseTexture(f, m_d.m_szMaterial);
    WaveFrontObj_WriteFaceInfoList(f, indices, num_indices);
    WaveFrontObj_UpdateFaceOffset(num_vertices);
@@ -601,7 +597,7 @@ void Kicker::RenderDynamic()
 
 void Kicker::SetObjectPos()
 {
-   g_pvp->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
+   m_vpinball->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
 }
 
 void Kicker::MoveOffset(const float dx, const float dy)
@@ -632,7 +628,7 @@ HRESULT Kicker::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backup
    bw.WriteString(FID(MATR), m_d.m_szMaterial);
    bw.WriteString(FID(SURF), m_d.m_szSurface);
    bw.WriteBool(FID(EBLD), m_d.m_enabled);
-   bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
+   bw.WriteWideString(FID(NAME), m_wzName);
    bw.WriteInt(FID(TYPE), m_d.m_kickertype);
    bw.WriteFloat(FID(KSCT), m_d.m_scatter);
    bw.WriteFloat(FID(KHAC), m_d.m_hitAccuracy);
@@ -684,7 +680,7 @@ bool Kicker::LoadToken(const int id, BiffReader * const pbr)
       break;
    }
    case FID(SURF): pbr->GetString(m_d.m_szSurface); break;
-   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(NAME): pbr->GetWideString(m_wzName); break;
    case FID(FATH): pbr->GetBool(&m_d.m_fallThrough); break;
    case FID(LEMO): pbr->GetBool(&m_d.m_legacyMode); break;
    default: ISelect::LoadToken(id, pbr); break;
@@ -899,9 +895,8 @@ STDMETHODIMP Kicker::put_Y(float newVal)
 
 STDMETHODIMP Kicker::get_Surface(BSTR *pVal)
 {
-   WCHAR wz[512];
-
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -910,7 +905,7 @@ STDMETHODIMP Kicker::get_Surface(BSTR *pVal)
 STDMETHODIMP Kicker::put_Surface(BSTR newVal)
 {
    STARTUNDO
-      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXTOKEN, NULL, NULL);
    STOPUNDO
 
       return S_OK;
@@ -1008,19 +1003,14 @@ STDMETHODIMP Kicker::put_Orientation(float newVal)
 STDMETHODIMP Kicker::get_Radius(float *pVal)
 {
    *pVal = m_d.m_radius;
-   UpdateUnitsInfo();
    return S_OK;
 }
 
 STDMETHODIMP Kicker::put_Radius(float newVal)
 {
    STARTUNDO
-
-      m_d.m_radius = newVal;
-
+   m_d.m_radius = newVal;
    STOPUNDO
-      UpdateUnitsInfo();
-
    return S_OK;
 }
 
@@ -1080,9 +1070,8 @@ STDMETHODIMP Kicker::put_DrawStyle(KickerType newVal)
 
 STDMETHODIMP Kicker::get_Material(BSTR *pVal)
 {
-   WCHAR wz[512];
-
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1090,10 +1079,11 @@ STDMETHODIMP Kicker::get_Material(BSTR *pVal)
 
 STDMETHODIMP Kicker::put_Material(BSTR newVal)
 {
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+
    STARTUNDO
-
-      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szMaterial, MAXNAMEBUFFER, NULL, NULL);
-
+      m_d.m_szMaterial = buf;
    STOPUNDO
 
       return S_OK;

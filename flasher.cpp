@@ -14,8 +14,8 @@ Flasher::Flasher()
    m_dynamicVertexBufferRegenerate = true;
    m_vertices = 0;
    m_propVisual = NULL;
-   memset(m_d.m_szImageA, 0, MAXTOKEN);
-   memset(m_d.m_szImageB, 0, MAXTOKEN);
+   memset(m_d.m_szImageA, 0, sizeof(m_d.m_szImageA));
+   memset(m_d.m_szImageB, 0, sizeof(m_d.m_szImageB));
    m_ptable = NULL;
    m_numVertices = 0;
    m_numPolys = 0;
@@ -162,17 +162,17 @@ void Flasher::UIRenderPass1(Sur * const psur)
    if (m_vdpoint.empty())
       InitShape();
 
-   psur->SetFillColor(m_ptable->RenderSolid() ? g_pvp->m_fillColor: -1);
+   psur->SetFillColor(m_ptable->RenderSolid() ? m_vpinball->m_fillColor : -1);
    psur->SetObject(this);
    // Don't want border color to be over-ridden when selected - that will be drawn later
    psur->SetBorderColor(-1, false, 0);
 
    std::vector<RenderVertex> vvertex;
    GetRgVertex(vvertex);
-   Texture *ppi;
+   Texture *ppi = nullptr;
    if (m_ptable->RenderSolid() && m_d.m_displayTexture && (ppi = m_ptable->GetImage(m_d.m_szImageA)))
    {
-      ppi->EnsureHBitmap();
+      ppi->CreateGDIVersion();
       if (m_d.m_imagealignment == ImageModeWrap)
       {
          float _minx = FLT_MAX;
@@ -218,7 +218,7 @@ void Flasher::UIRenderPass2(Sur * const psur)
    }
 
    // if the item is selected then draw the dragpoints (or if we are always to draw dragpoints)
-   bool drawDragpoints = ((m_selectstate != eNotSelected) || g_pvp->m_alwaysDrawDragPoints);
+   bool drawDragpoints = ((m_selectstate != eNotSelected) || m_vpinball->m_alwaysDrawDragPoints);
 
    if (!drawDragpoints)
    {
@@ -335,12 +335,16 @@ void Flasher::UpdateMesh()
 
 void Flasher::RenderSetup()
 {
-   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
-
    std::vector<RenderVertex> vvertex;
    GetRgVertex(vvertex);
 
    m_numVertices = (unsigned int)vvertex.size();
+   if (m_numVertices == 0)
+   {
+      // no polys to render leave vertex buffer undefined
+      m_numPolys = 0;
+      return;
+   }
 
    std::vector<WORD> vtri;
    
@@ -424,7 +428,7 @@ void Flasher::RenderStatic()
 
 void Flasher::SetObjectPos()
 {
-   g_pvp->SetObjectPosCur(0, 0);
+   m_vpinball->SetObjectPosCur(0, 0);
 }
 
 void Flasher::FlipY(const Vertex2D& pvCenter)
@@ -541,7 +545,7 @@ HRESULT Flasher::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backu
    bw.WriteInt(FID(COLR), m_d.m_color);
    bw.WriteBool(FID(TMON), m_d.m_tdr.m_TimerEnabled);
    bw.WriteInt(FID(TMIN), m_d.m_tdr.m_TimerInterval);
-   bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
+   bw.WriteWideString(FID(NAME), m_wzName);
    bw.WriteString(FID(IMAG), m_d.m_szImageA);
    bw.WriteString(FID(IMAB), m_d.m_szImageB);
    bw.WriteInt(FID(FALP), m_d.m_alpha);
@@ -609,7 +613,7 @@ bool Flasher::LoadToken(const int id, BiffReader * const pbr)
       break;
    }
    case FID(MOVA): pbr->GetFloat(&m_d.m_modulate_vs_add); break;
-   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(NAME): pbr->GetWideString(m_wzName); break;
    case FID(FVIS): pbr->GetBool(&m_d.m_isVisible); break;
    case FID(ADDB): pbr->GetBool(&m_d.m_addBlend); break;
    case FID(IDMD): pbr->GetBool(&m_d.m_isDMD); break;
@@ -633,16 +637,6 @@ HRESULT Flasher::InitPostLoad()
    return S_OK;
 }
 
-void Flasher::SetAlpha(const long value)
-{
-   m_d.m_alpha = max(value, (long)0);
-}
-
-void Flasher::SetFilterAmount(const long value)
-{
-   m_d.m_filterAmount = max(value, (long)0);
-}
-
 STDMETHODIMP Flasher::InterfaceSupportsErrorInfo(REFIID riid)
 {
    static const IID* arr[] =
@@ -660,7 +654,7 @@ STDMETHODIMP Flasher::InterfaceSupportsErrorInfo(REFIID riid)
 STDMETHODIMP Flasher::get_X(float *pVal)
 {
    *pVal = m_d.m_vCenter.x;
-   g_pvp->SetStatusBarUnitInfo("", true);
+   m_vpinball->SetStatusBarUnitInfo("", true);
 
    return S_OK;
 }
@@ -786,9 +780,8 @@ STDMETHODIMP Flasher::put_Color(OLE_COLOR newVal)
 
 STDMETHODIMP Flasher::get_ImageA(BSTR *pVal)
 {
-   WCHAR wz[512];
-
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImageA, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImageA, -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -796,20 +789,19 @@ STDMETHODIMP Flasher::get_ImageA(BSTR *pVal)
 
 STDMETHODIMP Flasher::put_ImageA(BSTR newVal)
 {
-   char m_szImage[MAXTOKEN];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_szImage, MAXNAMEBUFFER, NULL, NULL);
+   char szImage[sizeof(m_d.m_szImageA)];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, sizeof(m_d.m_szImageA), NULL, NULL);
 
-   if (strcmp(m_szImage, m_d.m_szImageA) != 0)
-      strcpy_s(m_d.m_szImageA, MAXTOKEN, m_szImage);
+   if (strcmp(szImage, m_d.m_szImageA) != 0)
+      strncpy_s(m_d.m_szImageA, szImage, sizeof(m_d.m_szImageA) - 1);
 
    return S_OK;
 }
 
 STDMETHODIMP Flasher::get_ImageB(BSTR *pVal)
 {
-   WCHAR wz[512];
-
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImageB, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImageB, -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -817,18 +809,18 @@ STDMETHODIMP Flasher::get_ImageB(BSTR *pVal)
 
 STDMETHODIMP Flasher::put_ImageB(BSTR newVal)
 {
-   char m_szImage[MAXTOKEN];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_szImage, MAXNAMEBUFFER, NULL, NULL);
+   char szImage[sizeof(m_d.m_szImageB)];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, sizeof(m_d.m_szImageB), NULL, NULL);
 
-   if (strcmp(m_szImage, m_d.m_szImageB) != 0)
-      strcpy_s(m_d.m_szImageB, MAXTOKEN, m_szImage);
+   if (strcmp(szImage, m_d.m_szImageB) != 0)
+      strncpy_s(m_d.m_szImageB, szImage, sizeof(m_d.m_szImageB) - 1);
 
    return S_OK;
 }
 
 STDMETHODIMP Flasher::get_Filter(BSTR *pVal)
 {
-   WCHAR wz[512];
+   WCHAR wz[MAXNAMEBUFFER];
 
    switch (m_d.m_filter)
    {
@@ -853,6 +845,7 @@ STDMETHODIMP Flasher::get_Filter(BSTR *pVal)
       break;
    }
    default:
+      assert(!"Invalid Flasher Filter");
    case Filter_None:
    {
       MultiByteToWideChar(CP_ACP, 0, "None", -1, wz, MAXNAMEBUFFER);
@@ -1109,11 +1102,11 @@ void Flasher::RenderDynamic()
        pd3dDevice->DMDShader->SetVector("vColor_Intensity", &color);
 
 #ifdef DMD_UPSCALE
-       const vec4 r((float)(g_pplayer->m_dmdx*3), (float)(g_pplayer->m_dmdy*3), m_d.m_modulate_vs_add, 0.f); //(float)(0.5 / m_width), (float)(0.5 / m_height));
+       const vec4 r((float)(g_pplayer->m_dmdx*3), (float)(g_pplayer->m_dmdy*3), m_d.m_modulate_vs_add, (float)(g_pplayer->m_overall_frames % 2048)); //(float)(0.5 / m_width), (float)(0.5 / m_height));
 #else
-       const vec4 r((float)g_pplayer->m_dmdx, (float)g_pplayer->m_dmdy, m_d.m_modulate_vs_add, 0.f); //(float)(0.5 / m_width), (float)(0.5 / m_height));
+       const vec4 r((float)g_pplayer->m_dmdx, (float)g_pplayer->m_dmdy, m_d.m_modulate_vs_add, (float)(g_pplayer->m_overall_frames % 2048)); //(float)(0.5 / m_width), (float)(0.5 / m_height));
 #endif
-       pd3dDevice->DMDShader->SetVector("vRes_Alpha", &r);
+       pd3dDevice->DMDShader->SetVector("vRes_Alpha_time", &r);
 
        // If we're capturing Freezy DMD switch to ext technique to avoid incorrect colorization
        if (captureExternalDMD())

@@ -87,8 +87,14 @@ public:
 
    virtual unsigned long long GetMaterialID() const { return m_ptable->GetMaterial(m_d.m_szMaterial)->hash(); }
    virtual ItemTypeEnum HitableGetItemType() const { return eItemGate; }
+   virtual void UpdateStatusBarInfo();
 
    virtual void WriteRegDefaults();
+
+   float GetOpenAngle() const;
+   void SetOpenAngle(const float angle);
+   float GetCloseAngle() const;
+   void SetCloseAngle(const float angle);
 
    GateData m_d;
 
@@ -97,7 +103,6 @@ private:
    void RenderObject();
    void GenerateBracketMesh(Vertex3D_NoTex2 *buf);
    void GenerateWireMesh(Vertex3D_NoTex2 *buf);
-   void UpdateUnitsInfo();
 
    PinTable * m_ptable;
 

@@ -4,26 +4,26 @@
 class RubberVisualsProperty: public BasePropertyDialog
 {
 public:
-    RubberVisualsProperty(VectorProtected<ISelect> *pvsel);
+    RubberVisualsProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~RubberVisualsProperty()
     {
     }
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
     virtual BOOL OnInitDialog();
 
 private:
-    CComboBox   m_imageCombo;
-    CComboBox   m_materialCombo;
+    ComboBox    m_imageCombo;
+    ComboBox    m_materialCombo;
     HWND        m_hStaticRenderingCheck;
-    CEdit       m_heightEdit;
-    CEdit       m_thicknessEdit;
-    CEdit       m_rotXEdit;
-    CEdit       m_rotYEdit;
-    CEdit       m_rotZEdit;
+    EditBox     m_heightEdit;
+    EditBox     m_thicknessEdit;
+    EditBox     m_rotXEdit;
+    EditBox     m_rotYEdit;
+    EditBox     m_rotZEdit;
     HWND        m_hShowInEditorCheck;
 };
 

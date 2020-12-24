@@ -4,19 +4,19 @@
 class SpinnerPhysicsProperty: public BasePropertyDialog
 {
 public:
-    SpinnerPhysicsProperty(VectorProtected<ISelect> *pvsel);
+    SpinnerPhysicsProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~SpinnerPhysicsProperty()
     {
     }
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
     virtual BOOL OnInitDialog();
 
 private:
-    CEdit   m_dampingEdit;
-    CEdit   m_elasticityEdit;
+    EditBox m_dampingEdit;
+    EditBox m_elasticityEdit;
 };
 #endif

@@ -27,7 +27,9 @@ public:
 
    STDMETHOD(get_Name)(BSTR *pVal) = 0;
    virtual IDispatch *GetDispatch() = 0;
+   virtual const IDispatch *GetDispatch() const = 0;
    virtual ISelect *GetISelect() = 0;
+   virtual const ISelect *GetISelect() const = 0;
 
    WCHAR m_wzName[MAXNAMEBUFFER];
 };
@@ -48,9 +50,11 @@ class DebuggerModule :
 
    void Init(CodeViewer * const pcv);
 
-   virtual IDispatch *GetDispatch();
+   virtual IDispatch *GetDispatch() { return (IDispatch *)this; }
+   virtual const IDispatch *GetDispatch() const { return (const IDispatch *)this; }
 
    virtual ISelect *GetISelect() { return NULL; }
+   virtual const ISelect *GetISelect() const { return NULL; }
 
    STDMETHOD(get_Name)(BSTR *pVal);
 
@@ -79,12 +83,13 @@ public:
 
    // for VectorSortString
    int SortAgainst(const CodeViewDispatch * const pcvd/*void *pvoid*/) const;
-   int SortAgainstValue(const void * const pv) const;
+   int SortAgainstValue(const WCHAR* const pv) const;
 };
 
 
 
 class CodeViewer :
+   public CWnd,
    public CComObjectRoot,
    //public IDispatchImpl<IDragPoint, &IID_IDragPoint, &LIBID_VPinballLib>,
    //public CComCoClass<CodeViewer,&CLSID_DragPoint>,
@@ -95,16 +100,12 @@ class CodeViewer :
    public IServiceProvider,
    public UserData,
    public CVPrefrence
-
 {
 public:
    CodeViewer();
    virtual ~CodeViewer();
 
    void Init(IScriptableHost *psh);
-
-   void Create();
-   void Destroy();
    void SetVisible(const bool visible);
 
    void SetEnabled(const bool enabled);
@@ -158,7 +159,7 @@ public:
 
    STDMETHODIMP GetWindow(HWND *phwnd)
    {
-      *phwnd = GetDesktopWindow(); return S_OK;
+      *phwnd = GetDesktopWindow(); return S_OK; //!! ?
    }
 
    STDMETHODIMP EnableModeless(BOOL)
@@ -217,10 +218,10 @@ public:
    void Find(const FINDREPLACE * const pfr);
    void Replace(const FINDREPLACE * const pfr);
    void SaveToStream(IStream *pistream, HCRYPTHASH const hcrypthash);
-   void SaveToFile(const char *filename);
+   void SaveToFile(const string& filename);
    void LoadFromStream(IStream *pistream, HCRYPTHASH const hcrypthash, const HCRYPTKEY hcryptkey); // incl. table protection
-   void LoadFromFile(const char *filename);
-   void SetCaption(const char * const szCaption);
+   void LoadFromFile(const string& filename);
+   void SetCaption(const string& szCaption);
 
    bool ShowTooltip(SCNotification *Scn);
    void ShowAutoComplete(SCNotification *pSCN);
@@ -236,10 +237,12 @@ public:
 
    void UpdateScinFromPrefs();
 
-   void MarginClick(const int position, const int modifiers);
+   void MarginClick(const Sci_Position position, const int modifiers);
 
    void EvaluateScriptStatement(const char * const szScript);
    void AddToDebugOutput(const char * const szText);
+
+   bool PreTranslateMessage(MSG* msg);
 
    IScriptableHost *m_psh;
 
@@ -253,6 +256,10 @@ public:
    vector<CVPrefrence*> *m_lPrefsList;
 
    int m_displayAutoCompleteLength;
+
+   SaveDirtyState m_sdsDirty;
+   bool m_ignoreDirty;
+
    bool m_scriptError; // Whether a script error has occured - used for polling from the game
 
    bool m_visible;
@@ -261,6 +268,7 @@ public:
    bool m_displayAutoComplete;
    bool m_toolTipActive;
    bool m_stopErrorDisplay;
+
    bool m_dwellHelp;
    bool m_dwellDisplay;
    int m_dwellDisplayTime;
@@ -269,7 +277,7 @@ public:
    Sci_TextRange m_wordUnderCaret;
 
    CComObject<DebuggerModule> *m_pdm; // Object to expose to script for global functions
-                                      //ULONG m_cref;
+   //ULONG m_cref;
 
    HWND m_hwndMain;
    HWND m_hwndScintilla;
@@ -283,10 +291,23 @@ public:
 
    FINDREPLACE m_findreplaceold; // the last thing found/replaced
 
-   SaveDirtyState m_sdsDirty;
-   bool m_ignoreDirty;
+   string external_script_name;  // loaded from external .vbs?
+   vector<char> original_table_script; // if yes, then this one stores the original table script
+
+protected:
+   virtual void PreCreate(CREATESTRUCT& cs);
+   virtual void PreRegisterClass(WNDCLASS& wc);
+   virtual int  OnCreate(CREATESTRUCT& cs);
+   virtual LRESULT WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam);
+   virtual BOOL OnCommand(WPARAM wparam, LPARAM lparam);
+   virtual LRESULT OnNotify(WPARAM wparam, LPARAM lparam);
+   virtual void Destroy();
 
 private:
+   CodeViewer* GetCodeViewerPtr();
+   BOOL ParseClickEvents(const int id);
+   BOOL ParseSelChangeEvent(const int id, SCNotification *pscn);
+
    bool ParseOKLineLength(const size_t LineLen);
    void ParseDelimtByColon(string &result, string &wholeline);
    void ParseFindConstruct(size_t &Pos, const string &UCLine, WordType &Type, int &ConstructSize);
@@ -366,8 +387,10 @@ public:
 
    // IScriptable
    STDMETHOD(get_Name)(BSTR *pVal);
-   virtual IDispatch *GetDispatch();
-   virtual ISelect *GetISelect();
+   virtual IDispatch *GetDispatch() { return (IDispatch *)this; }
+   virtual const IDispatch *GetDispatch() const { return (const IDispatch *)this; }
+   virtual ISelect *GetISelect() { return NULL; }
+   virtual const ISelect *GetISelect() const { return NULL; }
 
    //ILoadable
    virtual HRESULT SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupForPlay);
@@ -417,7 +440,7 @@ public:
    STDMETHOD(Clone)(IEnumVARIANT __RPC_FAR *__RPC_FAR *ppEnum);
 
 private:
-   Collection * m_pcol;
+   Collection *m_pcol;
    int m_index;
 };
 

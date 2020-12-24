@@ -15,10 +15,10 @@ public:
    };
 
    BaseTexture()
-      : m_width(0), m_height(0), m_realWidth(0), m_realHeight(0), m_format(RGBA)
+      : m_width(0), m_height(0), m_realWidth(0), m_realHeight(0), m_format(RGBA), m_has_alpha(false)
    { }
 
-   BaseTexture(const int w, const int h, const Format format = RGBA)
+   BaseTexture(const int w, const int h, const Format format = RGBA, const bool has_alpha = false)
       : m_width(w), m_height(h), m_data((format == RGBA ? 4 : 3 * 4) * (w*h)), m_realWidth(w), m_realHeight(h), m_format(format)
    { }
 
@@ -35,20 +35,16 @@ public:
    std::vector<BYTE> m_data;
    int m_realWidth, m_realHeight;
    Format m_format;
+   bool m_has_alpha;
 
-   void SetOpaque();
+   bool Needs_ConvertAlpha_Tonemap() const { return (m_format == RGB_FP) || ((m_format == RGBA) && m_has_alpha); }
 
-   void CopyFrom_Raw(const void* bits)  // copy bits which are already in the right format
-   {
-      memcpy(data(), bits, m_data.size());
-   }
-
-   void CopyTo_ConvertAlpha(BYTE* const bits); // premultiplies alpha (as Win32 AlphaBlend() wants it like that) OR converts rgb_fp format to 32bits
+   void CopyTo_ConvertAlpha_Tonemap(BYTE* const __restrict bits) const; // premultiplies alpha (as Win32 AlphaBlend() wants it like that) OR converts rgb_fp format to 32bits
 
 
    static BaseTexture *CreateFromHBitmap(const HBITMAP hbm);
-   static BaseTexture *CreateFromFile(const char *filename);
-   static BaseTexture *CreateFromFreeImage(FIBITMAP* dib);
+   static BaseTexture *CreateFromFile(const string& filename);
+   static BaseTexture *CreateFromFreeImage(FIBITMAP* dib); // also free's/delete's the dib inside!
    static BaseTexture *CreateFromData(const void *data, const size_t size);
 };
 
@@ -67,10 +63,8 @@ public:
 
    void FreeStuff();
 
-   void EnsureHBitmap();
    void CreateGDIVersion();
 
-   void CreateTextureOffscreen(const int width, const int height);
    BaseTexture *CreateFromHBitmap(const HBITMAP hbm);
    void CreateFromResource(const int id);
 
@@ -109,9 +103,8 @@ public:
    HBITMAP m_hbmGDIVersion; // HBitmap at screen depth and converted/visualized alpha so GDI draws it fast
    PinBinary *m_ppb;  // if this image should be saved as a binary stream, otherwise just LZW compressed from the live bitmap
 
-   char m_szName[MAXTOKEN];
-   char m_szInternalName[MAXTOKEN];
-   char m_szPath[MAX_PATH];
+   string m_szName;
+   string m_szPath;
 
 private:
    HBITMAP m_oldHBM;        // this is to cache the result of SelectObject()

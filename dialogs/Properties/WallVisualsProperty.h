@@ -4,25 +4,25 @@
 class WallVisualsProperty: public BasePropertyDialog
 {
 public:
-    WallVisualsProperty(VectorProtected<ISelect> *pvsel);
+    WallVisualsProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~WallVisualsProperty() {}
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
     virtual BOOL OnInitDialog();
 
 private:
-    CComboBox m_topImageCombo;
-    CComboBox m_sideImageCombo;
-    CComboBox m_topMaterialCombo;
-    CComboBox m_sideMaterialCombo;
-    CComboBox m_slingshotMaterialCombo;
-    CEdit     m_disableLightingEdit;
-    CEdit     m_disableLightFromBelowEdit;
-    CEdit     m_topHeightEdit;
-    CEdit     m_bottomHeightEdit;
+    ComboBox  m_topImageCombo;
+    ComboBox  m_sideImageCombo;
+    ComboBox  m_topMaterialCombo;
+    ComboBox  m_sideMaterialCombo;
+    ComboBox  m_slingshotMaterialCombo;
+    EditBox   m_disableLightingEdit;
+    EditBox   m_disableLightFromBelowEdit;
+    EditBox   m_topHeightEdit;
+    EditBox   m_bottomHeightEdit;
 };
 
 #endif 

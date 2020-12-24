@@ -14,7 +14,8 @@ Shader* Shader::getCurrentShader() {
 Shader* Shader::m_currentShader = NULL;
 int Shader::shaderCount = 0;
 
-Shader::Shader(RenderDevice *renderDevice)
+Shader::Shader(RenderDevice *renderDevice) : currentMaterial(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX,
+   0xCCCCCCCC, 0xCCCCCCCC, 0xCCCCCCCC, false, false, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX)
 {
    shaderCount++;
    m_renderDevice = renderDevice;
@@ -33,8 +34,6 @@ Shader::Shader(RenderDevice *renderDevice)
    currentLightImageMode = ~0u;
    currentLightBackglassMode = ~0u;
    currentTechnique[0] = 0;
-
-   memset(&currentMaterial, 0xCC, sizeof(Material));
 }
 
 void Shader::SetMaterial(const Material * const mat)

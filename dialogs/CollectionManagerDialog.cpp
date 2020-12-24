@@ -34,15 +34,15 @@ BOOL CollectionManagerDialog::OnInitDialog()
 
     LVCOLUMN lvcol;
     lvcol.mask = LVCF_TEXT | LVCF_WIDTH;
-    LocalString ls(IDS_NAME);
-    lvcol.pszText = ls.m_szbuffer;// = "Name";
+    const LocalString ls(IDS_NAME);
+    lvcol.pszText = (LPSTR)ls.m_szbuffer; // = "Name";
     lvcol.cx = 280;
     ListView_InsertColumn(hListHwnd, 0, &lvcol);
 
     lvcol.mask = LVCF_TEXT | LVCF_WIDTH;
     lvcol.fmt = LVCFMT_CENTER;
-    LocalString ls2(IDS_SIZE);
-    lvcol.pszText = ls2.m_szbuffer;// = "Size";
+    const LocalString ls2(IDS_SIZE);
+    lvcol.pszText = (LPSTR)ls2.m_szbuffer; // = "Size";
     lvcol.cx = 50;
     ListView_InsertColumn(hListHwnd, 1, &lvcol);
 
@@ -74,8 +74,8 @@ void CollectionManagerDialog::EditCollection()
         if (colDlg->DoModal() >= 0)
             pt->SetNonUndoableDirty(eSaveDirty);
 
-        char szT[MAX_PATH];
-        WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
+        char szT[sizeof(pcol->m_wzName)/sizeof(pcol->m_wzName[0])];
+        WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, sizeof(szT), NULL, NULL);
         ListView_SetItemText(hListHwnd, sel, 0, szT);
     }
 }
@@ -190,7 +190,7 @@ BOOL CollectionManagerDialog::OnCommand(WPARAM wParam, LPARAM lParam)
         case IDC_COL_UP_BUTTON:
         {
             const int idx = ListView_GetNextItem(hListHwnd, -1, LVNI_SELECTED);
-            if (idx != -1 && idx > 0)
+            if (idx > 0)
             {
                 ::SetFocus(hListHwnd);
                 LVITEM lvitem1;
@@ -205,8 +205,8 @@ BOOL CollectionManagerDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                 lvitem1.mask = LVIF_PARAM;
                 lvitem1.iItem = idx - 1;
                 ListView_InsertItem(hListHwnd, &lvitem1);
-                char szT[MAX_PATH];
-                WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
+                char szT[sizeof(pcol->m_wzName)/sizeof(pcol->m_wzName[0])];
+                WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, sizeof(szT), NULL, NULL);
                 ListView_SetItemText(hListHwnd, idx - 1, 0, szT);
 
                 char buf[16] = { 0 };
@@ -237,8 +237,8 @@ BOOL CollectionManagerDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                 lvitem1.mask = LVIF_PARAM;
                 lvitem1.iItem = idx + 1;
                 ListView_InsertItem(hListHwnd, &lvitem1);
-                char szT[MAX_PATH];
-                WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
+                char szT[sizeof(pcol->m_wzName)/sizeof(pcol->m_wzName[0])];
+                WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, sizeof(szT), NULL, NULL);
                 ListView_SetItemText(hListHwnd, idx + 1, 0, szT);
 
                 char buf[16] = { 0 };
@@ -324,8 +324,8 @@ BOOL CollectionDialog::OnInitDialog()
 
     const HWND hwndName = GetDlgItem(IDC_NAME).GetHwnd();
 
-    char szT[MAX_PATH];
-    WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
+    char szT[sizeof(pcol->m_wzName)/sizeof(pcol->m_wzName[0])];
+    WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, sizeof(szT), NULL, NULL);
 
     ::SetWindowText(hwndName, szT);
 
@@ -348,7 +348,7 @@ BOOL CollectionDialog::OnInitDialog()
         IScriptable * const piscript = piedit->GetScriptable();
         if (piscript)
         {
-            WideCharToMultiByte(CP_ACP, 0, piscript->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
+            WideCharToMultiByte(CP_ACP, 0, piscript->m_wzName, -1, szT, sizeof(szT), NULL, NULL);
             const size_t index = ::SendMessage(hwndIn, LB_ADDSTRING, 0, (size_t)szT);
             ::SendMessage(hwndIn, LB_SETITEMDATA, index, (size_t)piscript);
         }
@@ -371,7 +371,7 @@ BOOL CollectionDialog::OnInitDialog()
         if ((l == pcol->m_visel.Size()) && piscript)
             //if (!piedit->m_pcollection)
         {
-            WideCharToMultiByte(CP_ACP, 0, piscript->m_wzName, -1, szT, MAX_PATH, NULL, NULL);
+            WideCharToMultiByte(CP_ACP, 0, piscript->m_wzName, -1, szT, sizeof(szT), NULL, NULL);
             const size_t index = ::SendMessage(hwndOut, LB_ADDSTRING, 0, (size_t)szT);
             ::SendMessage(hwndOut, LB_SETITEMDATA, index, (size_t)piscript);
         }
@@ -475,7 +475,7 @@ void CollectionDialog::OnOK()
 
     pcol->m_visel.RemoveAllElements();
 
-    HWND hwndIn = GetDlgItem(IDC_INLIST).GetHwnd();
+    const HWND hwndIn = GetDlgItem(IDC_INLIST).GetHwnd();
 
     const size_t count = ::SendMessage(hwndIn, LB_GETCOUNT, 0, 0);
 
@@ -491,19 +491,16 @@ void CollectionDialog::OnOK()
         }
     }
 
-    const size_t fireEvents = ::SendMessage(GetDlgItem(IDC_FIRE).GetHwnd(), BM_GETCHECK, 0, 0);
+    const size_t fireEvents = GetDlgItem(IDC_FIRE).SendMessage(BM_GETCHECK, 0, 0);
     pcol->m_fireEvents = !!fireEvents;
 
-    const size_t stopSingleEvents = ::SendMessage(GetDlgItem(IDC_SUPPRESS).GetHwnd(), BM_GETCHECK, 0, 0);
+    const size_t stopSingleEvents = GetDlgItem(IDC_SUPPRESS).SendMessage(BM_GETCHECK, 0, 0);
     pcol->m_stopSingleEvents = !!stopSingleEvents;
 
-    const size_t groupElements = ::SendMessage(GetDlgItem(IDC_GROUP_CHECK).GetHwnd(), BM_GETCHECK, 0, 0);
+    const size_t groupElements = GetDlgItem(IDC_GROUP_CHECK).SendMessage(BM_GETCHECK, 0, 0);
     pcol->m_groupElements = !!groupElements;
 
-    char szT[MAXSTRING];
-    ::GetWindowText(GetDlgItem(IDC_NAME).GetHwnd(), szT, MAXSTRING);
-
-    pCurCollection.ppt->SetCollectionName(pcol, szT, NULL, 0);
+    pCurCollection.ppt->SetCollectionName(pcol, GetDlgItem(IDC_NAME).GetWindowText().c_str(), NULL, 0);
 
     CDialog::OnOK();
 }

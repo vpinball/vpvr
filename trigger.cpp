@@ -4,6 +4,7 @@
 #include "meshes/triggerStarMesh.h"
 #include "meshes/triggerButtonMesh.h"
 #include "meshes/triggerWireDMesh.h"
+#include "meshes/triggerInderMesh.h"
 #include "Shader.h"
 
 Trigger::Trigger()
@@ -23,7 +24,6 @@ Trigger::Trigger()
    m_triggerVertices = NULL;
    m_menuid = IDR_SURFACEMENU;
    m_propVisual = NULL;
-   memset(m_d.m_szMaterial, 0, MAXNAMEBUFFER);
 }
 
 Trigger::~Trigger()
@@ -46,45 +46,58 @@ Trigger::~Trigger()
 }
 
 
-void Trigger::UpdateEditorView()
+void Trigger::UpdateStatusBarInfo()
 {
    if (g_pplayer)
       return;
+
    if (m_d.m_shape != TriggerNone)
    {
       const Vertex3D_NoTex2 *meshVertices;
-      if (m_d.m_shape == TriggerWireA || m_d.m_shape == TriggerWireB || m_d.m_shape == TriggerWireC)
+      switch (m_d.m_shape)
+      {
+      case TriggerWireA:
+      case TriggerWireB:
+      case TriggerWireC:
       {
          m_numVertices = triggerSimpleNumVertices;
          m_numIndices = triggerSimpleNumIndices;
          m_faceIndices = triggerSimpleIndices;
          meshVertices = triggerSimple;
+         break;
       }
-      else if (m_d.m_shape == TriggerWireD)
+      case TriggerWireD:
       {
          m_numVertices = triggerDWireNumVertices;
          m_numIndices = triggerDWireNumIndices;
          m_faceIndices = triggerDWireIndices;
          meshVertices = triggerDWireMesh;
+         break;
       }
-      else if (m_d.m_shape == TriggerButton)
+      case TriggerInder:
+      {
+         m_numVertices = triggerInderNumVertices;
+         m_numIndices = triggerInderNumIndices;
+         m_faceIndices = triggerInderIndices;
+         meshVertices = triggerInderMesh;
+         break;
+      }
+      case TriggerButton:
       {
          m_numVertices = triggerButtonNumVertices;
          m_numIndices = triggerButtonNumIndices;
          m_faceIndices = triggerButtonIndices;
          meshVertices = triggerButtonMesh;
+         break;
       }
-      else if (m_d.m_shape == TriggerStar)
+      case TriggerStar:
       {
          m_numVertices = triggerStarNumVertices;
          m_numIndices = triggerStarNumIndices;
          m_faceIndices = triggerStarIndices;
          meshVertices = triggerStar;
+         break;
       }
-      else
-      {
-         ShowError("Unknown Trigger type");
-         return;
       }
 
       m_vertices.resize(m_numVertices);
@@ -114,7 +127,7 @@ void Trigger::InitShape(float x, float y)
 {
    float lengthX = 30.0f;
    float lengthY = 30.0f;
-   UpdateEditorView();
+   UpdateStatusBarInfo();
    for (size_t i = 0; i < m_vdpoint.size(); i++)
       m_vdpoint[i]->Release();
    m_vdpoint.clear();
@@ -178,7 +191,8 @@ void Trigger::SetDefaults(bool fromMouseClick)
    m_d.m_visible = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Trigger", "Visible", true) : true;
    m_d.m_hit_height = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Trigger", "HitHeight", 50.f) : 50.f;
    m_d.m_shape = fromMouseClick ? (TriggerShape)LoadValueIntWithDefault("DefaultProps\\Trigger", "Shape", TriggerWireA) : TriggerWireA;
-   HRESULT hr = LoadValueString("DefaultProps\\Trigger", "Surface", &m_d.m_szSurface, MAXTOKEN);
+
+   HRESULT hr = LoadValueString("DefaultProps\\Trigger", "Surface", m_d.m_szSurface, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
       m_d.m_szSurface[0] = 0;
 
@@ -226,7 +240,7 @@ void Trigger::UIRenderPass2(Sur * const psur)
 
       psur->Polygon(vvertex);
 
-      bool drawDragpoints = (m_selectstate != eNotSelected) || (g_pvp->m_alwaysDrawDragPoints);
+      bool drawDragpoints = (m_selectstate != eNotSelected) || (m_vpinball->m_alwaysDrawDragPoints);
       // if the item is selected then draw the dragpoints (or if we are always to draw dragpoints)
       if (!drawDragpoints)
       {
@@ -269,7 +283,7 @@ void Trigger::UIRenderPass2(Sur * const psur)
       psur->Line(m_d.m_vCenter.x - r2, m_d.m_vCenter.y + r2, m_d.m_vCenter.x + r2, m_d.m_vCenter.y - r2);
    }
 
-   if (m_d.m_shape == TriggerWireA || m_d.m_shape == TriggerWireB || m_d.m_shape == TriggerWireC || m_d.m_shape == TriggerWireD)
+   if (m_d.m_shape == TriggerWireA || m_d.m_shape == TriggerWireB || m_d.m_shape == TriggerWireC || m_d.m_shape == TriggerWireD || m_d.m_shape == TriggerInder)
    {
       if (m_numIndices > 0)
       {
@@ -362,6 +376,7 @@ void Trigger::GetHitShapesDebug(vector<HitObject*> &pvho)
    case TriggerWireB:
    case TriggerWireC:
    case TriggerWireD:
+   case TriggerInder:
    {
       std::vector<RenderVertex> vvertex;
       GetRgVertex(vvertex);
@@ -487,12 +502,18 @@ void Trigger::UpdateAnimation()
    const float diff_time_msec = (float)(g_pplayer->m_time_msec - old_time_msec);
 
    float animLimit = (m_d.m_shape == TriggerStar) ? m_d.m_radius * (float)(1.0 / 5.0) : 32.0f;
-   if (m_d.m_shape == TriggerButton)
+   switch (m_d.m_shape) {
+   case TriggerButton:
       animLimit = m_d.m_radius * (float)(1.0 / 10.0);
-   if (m_d.m_shape == TriggerWireC)
+      break;
+   case TriggerWireC:
       animLimit = 60.0f;
-   if (m_d.m_shape == TriggerWireD)
+      break;
+   case TriggerWireD:
+   case TriggerInder:
       animLimit = 25.0f;
+      break;
+   }
 
    const float limit = animLimit * m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
 
@@ -580,7 +601,7 @@ void Trigger::RenderDynamic()
 
    pd3dDevice->SetRenderStateDepthBias(0.0f);
    pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
-   if (m_d.m_shape == TriggerWireA || m_d.m_shape == TriggerWireB || m_d.m_shape == TriggerWireC || m_d.m_shape == TriggerWireD)
+   if (m_d.m_shape == TriggerWireA || m_d.m_shape == TriggerWireB || m_d.m_shape == TriggerWireC || m_d.m_shape == TriggerWireD || m_d.m_shape == TriggerInder)
       pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
 
    pd3dDevice->basicShader->Begin(0);
@@ -590,26 +611,56 @@ void Trigger::RenderDynamic()
 
 void Trigger::ExportMesh(FILE *f)
 {
-   char name[MAX_PATH];
-
    if (!m_d.m_visible || m_d.m_shape == TriggerNone)
       return;
 
-   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, MAX_PATH, NULL, NULL);
+   char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
+   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
    GenerateMesh();
    WaveFrontObj_WriteObjectName(f, name);
    WaveFrontObj_WriteVertexInfo(f, m_triggerVertices, m_numVertices);
    const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
-   WaveFrontObj_WriteMaterial(m_d.m_szMaterial, NULL, mat);
+   WaveFrontObj_WriteMaterial(m_d.m_szMaterial, string(), mat);
    WaveFrontObj_UseTexture(f, m_d.m_szMaterial);
-   if (m_d.m_shape == TriggerWireA || m_d.m_shape == TriggerWireB || m_d.m_shape == TriggerWireC)
-      WaveFrontObj_WriteFaceInfoList(f, triggerSimpleIndices, m_numIndices);
-   else if (m_d.m_shape == TriggerWireD)
-      WaveFrontObj_WriteFaceInfoList(f, triggerDWireIndices, m_numIndices);
-   else if (m_d.m_shape == TriggerButton)
-      WaveFrontObj_WriteFaceInfoList(f, triggerButtonIndices, m_numIndices);
-   else if (m_d.m_shape == TriggerStar)
-      WaveFrontObj_WriteFaceInfoList(f, triggerStarIndices, m_numIndices);
+
+   const WORD* indices;
+   switch (m_d.m_shape)
+   {
+   case TriggerWireA:
+   case TriggerWireB:
+   case TriggerWireC:
+   {
+      indices = triggerSimpleIndices;
+      break;
+   }
+   case TriggerWireD:
+   {
+      indices = triggerDWireIndices;
+      break;
+   }
+   case TriggerInder:
+   {
+      indices = triggerInderIndices;
+      break;
+   }
+   case TriggerButton:
+   {
+      indices = triggerButtonIndices;
+      break;
+   }
+   case TriggerStar:
+   {
+      indices = triggerStarIndices;
+      break;
+   }
+   default:
+   {
+      assert(false);
+      break;
+   }
+   }
+
+   WaveFrontObj_WriteFaceInfoList(f, indices, m_numIndices);
    WaveFrontObj_UpdateFaceOffset(m_numVertices);
 }
 
@@ -618,36 +669,52 @@ void Trigger::GenerateMesh()
    const float baseHeight = m_ptable->GetSurfaceHeight(m_d.m_szSurface, m_d.m_vCenter.x, m_d.m_vCenter.y)*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
    const Vertex3D_NoTex2 *verts;
    float zoffset = (m_d.m_shape == TriggerButton) ? 5.0f : 0.0f;
-   if (m_d.m_shape == TriggerWireC) zoffset = -19.0f;
 
-   if (m_d.m_shape == TriggerWireA || m_d.m_shape == TriggerWireB || m_d.m_shape == TriggerWireC)
+   switch (m_d.m_shape)
    {
+   case TriggerWireA:
+   case TriggerWireB:
+   case TriggerWireC:
+   {
+      if (m_d.m_shape == TriggerWireC) zoffset = -19.0f;
       m_numVertices = triggerSimpleNumVertices;
       m_numIndices = triggerSimpleNumIndices;
       verts = triggerSimple;
+      break;
    }
-   else if (m_d.m_shape == TriggerWireD)
+   case TriggerWireD:
    {
       m_numVertices = triggerDWireNumVertices;
       m_numIndices = triggerDWireNumIndices;
       verts = triggerDWireMesh;
+      break;
    }
-   else if (m_d.m_shape == TriggerButton)
+   case TriggerInder:
+   {
+      m_numVertices = triggerInderNumVertices;
+      m_numIndices = triggerInderNumIndices;
+      verts = triggerInderMesh;
+      break;
+   }
+   case TriggerButton:
    {
       m_numVertices = triggerButtonNumVertices;
       m_numIndices = triggerButtonNumIndices;
       verts = triggerButtonMesh;
+      break;
    }
-   else if (m_d.m_shape == TriggerStar)
+   case TriggerStar:
    {
       m_numVertices = triggerStarNumVertices;
       m_numIndices = triggerStarNumIndices;
       verts = triggerStar;
+      break;
    }
-   else
+   default:
    {
       ShowError("Unknown Trigger type");
       return;
+   }
    }
 
    if (m_triggerVertices)
@@ -698,7 +765,7 @@ void Trigger::GenerateMesh()
       m_triggerVertices[i].tu = verts[i].tu;
       m_triggerVertices[i].tv = verts[i].tv;
 
-      if (m_d.m_shape == TriggerWireA || m_d.m_shape == TriggerWireB || m_d.m_shape == TriggerWireC || m_d.m_shape == TriggerWireD)
+      if (m_d.m_shape == TriggerWireA || m_d.m_shape == TriggerWireB || m_d.m_shape == TriggerWireC || m_d.m_shape == TriggerWireD || m_d.m_shape == TriggerInder)
       {
          m_triggerVertices[i].x += m_triggerVertices[i].nx*m_d.m_wireThickness;
          m_triggerVertices[i].y += m_triggerVertices[i].ny*m_d.m_wireThickness;
@@ -722,37 +789,51 @@ void Trigger::RenderSetup()
       return;
 
    Pin3D * const ppin3d = &g_pplayer->m_pin3d;
-   if (m_d.m_shape == TriggerWireA || m_d.m_shape == TriggerWireB || m_d.m_shape == TriggerWireC)
+   const WORD* indices;
+   switch (m_d.m_shape)
+   {
+   case TriggerWireA:
+   case TriggerWireB:
+   case TriggerWireC:
    {
       m_numVertices = triggerSimpleNumVertices;
       m_numIndices = triggerSimpleNumIndices;
+      indices = triggerSimpleIndices;
+      break;
    }
-   else if (m_d.m_shape == TriggerWireD)
+   case TriggerWireD:
    {
       m_numVertices = triggerDWireNumVertices;
       m_numIndices = triggerDWireNumIndices;
+      indices = triggerDWireIndices;
+      break;
    }
-   else if (m_d.m_shape == TriggerButton)
+   case TriggerInder:
+   {
+      m_numVertices = triggerInderNumVertices;
+      m_numIndices = triggerInderNumIndices;
+      indices = triggerInderIndices;
+      break;
+   }
+   case TriggerButton:
    {
       m_numVertices = triggerButtonNumVertices;
       m_numIndices = triggerButtonNumIndices;
+      indices = triggerButtonIndices;
+      break;
    }
-   else if (m_d.m_shape == TriggerStar)
+   case TriggerStar:
    {
       m_numVertices = triggerStarNumVertices;
       m_numIndices = triggerStarNumIndices;
+      indices = triggerStarIndices;
+      break;
+   }
    }
 
    if (m_triggerIndexBuffer)
       m_triggerIndexBuffer->release();
-   if (m_d.m_shape == TriggerWireA || m_d.m_shape == TriggerWireB || m_d.m_shape == TriggerWireC)
-      m_triggerIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_numIndices, triggerSimpleIndices);
-   else if (m_d.m_shape == TriggerWireD)
-      m_triggerIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_numIndices, triggerDWireIndices);
-   else if (m_d.m_shape == TriggerStar)
-      m_triggerIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_numIndices, triggerStarIndices);
-   else if (m_d.m_shape == TriggerButton)
-      m_triggerIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_numIndices, triggerButtonIndices);
+   m_triggerIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_numIndices, indices);
    if (m_vertexBuffer)
       m_vertexBuffer->release();
    VertexBuffer::CreateVertexBuffer(m_numVertices, USAGE_DYNAMIC, MY_D3DFVF_NOTEX2_VERTEX, &m_vertexBuffer);
@@ -771,7 +852,7 @@ void Trigger::RenderStatic()
 
 void Trigger::SetObjectPos()
 {
-   g_pvp->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
+   m_vpinball->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
 }
 
 void Trigger::MoveOffset(const float dx, const float dy)
@@ -787,7 +868,7 @@ void Trigger::MoveOffset(const float dx, const float dy)
       pdp->m_v.y += dy;
    }
 
-   UpdateEditorView();
+   UpdateStatusBarInfo();
 }
 
 Vertex2D Trigger::GetPointCenter() const
@@ -893,7 +974,7 @@ void Trigger::Rotate(const float ang, const Vertex2D& pvCenter, const bool useEl
       STARTUNDOSELECT
       m_d.m_rotation = ang;
       STOPUNDOSELECT
-      UpdateEditorView();
+      UpdateStatusBarInfo();
    }
 }
 
@@ -907,7 +988,7 @@ void Trigger::Scale(const float scalex, const float scaley, const Vertex2D& pvCe
       m_d.m_scaleX = scalex;
       m_d.m_scaleY = scaley;
       STOPUNDOSELECT
-      UpdateEditorView();
+      UpdateStatusBarInfo();
    }
 }
 
@@ -940,7 +1021,7 @@ HRESULT Trigger::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backu
    bw.WriteBool(FID(EBLD), m_d.m_enabled);
    bw.WriteBool(FID(VSBL), m_d.m_visible);
    bw.WriteFloat(FID(THOT), m_d.m_hit_height);
-   bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
+   bw.WriteWideString(FID(NAME), m_wzName);
    bw.WriteInt(FID(SHAP), m_d.m_shape);
    bw.WriteFloat(FID(ANSP), m_d.m_animSpeed);
    bw.WriteBool(FID(REEN), m_d.m_reflectionEnabled);
@@ -988,7 +1069,7 @@ HRESULT Trigger::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version
    m_ptable = ptable;
 
    br.Load();
-   UpdateEditorView();
+   UpdateStatusBarInfo();
    return S_OK;
 }
 
@@ -1013,7 +1094,7 @@ bool Trigger::LoadToken(const int id, BiffReader * const pbr)
    case FID(REEN): pbr->GetBool(&m_d.m_reflectionEnabled); break;
    case FID(SHAP): pbr->GetInt(&m_d.m_shape); break;
    case FID(ANSP): pbr->GetFloat(&m_d.m_animSpeed); break;
-   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(NAME): pbr->GetWideString(m_wzName); break;
    default:
    {
       LoadPointToken(id, pbr, pbr->m_version);
@@ -1026,7 +1107,7 @@ bool Trigger::LoadToken(const int id, BiffReader * const pbr)
 
 HRESULT Trigger::InitPostLoad()
 {
-   UpdateEditorView();
+   UpdateStatusBarInfo();
    return S_OK;
 }
 
@@ -1062,7 +1143,7 @@ STDMETHODIMP Trigger::put_Radius(float newVal)
 STDMETHODIMP Trigger::get_X(float *pVal)
 {
    *pVal = m_d.m_vCenter.x;
-   g_pvp->SetStatusBarUnitInfo("", true);
+   m_vpinball->SetStatusBarUnitInfo("", true);
 
    return S_OK;
 }
@@ -1090,8 +1171,8 @@ STDMETHODIMP Trigger::put_Y(float newVal)
 
 STDMETHODIMP Trigger::get_Surface(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1099,7 +1180,7 @@ STDMETHODIMP Trigger::get_Surface(BSTR *pVal)
 
 STDMETHODIMP Trigger::put_Surface(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXTOKEN, NULL, NULL);
 
    return S_OK;
 }
@@ -1214,7 +1295,7 @@ STDMETHODIMP Trigger::get_Rotation(float *pVal)
 STDMETHODIMP Trigger::put_Rotation(float newVal)
 {
    m_d.m_rotation = newVal;
-   UpdateEditorView();
+   UpdateStatusBarInfo();
 
    return S_OK;
 }
@@ -1249,8 +1330,8 @@ STDMETHODIMP Trigger::put_AnimSpeed(float newVal)
 
 STDMETHODIMP Trigger::get_Material(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1258,7 +1339,9 @@ STDMETHODIMP Trigger::get_Material(BSTR *pVal)
 
 STDMETHODIMP Trigger::put_Material(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szMaterial, MAXNAMEBUFFER, NULL, NULL);
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   m_d.m_szMaterial = buf;
 
    return S_OK;
 }
@@ -1273,7 +1356,7 @@ STDMETHODIMP Trigger::get_TriggerShape(TriggerShape *pVal)
 STDMETHODIMP Trigger::put_TriggerShape(TriggerShape newVal)
 {
    m_d.m_shape = newVal;
-   UpdateEditorView();
+   UpdateStatusBarInfo();
 
    return S_OK;
 }

@@ -18,7 +18,6 @@ public:
    float m_damping;
    float m_angleMax;
    float m_angleMin;
-   //float m_friction;
    char m_szSurface[MAXTOKEN];
    bool m_showBracket;
 };
@@ -82,7 +81,12 @@ public:
    virtual void ExportMesh(FILE *f);
 
    virtual void WriteRegDefaults();
-   void UpdateUnitsInfo();
+   virtual void UpdateStatusBarInfo();
+
+   float GetAngleMax() const;
+   void  SetAngleMax(const float angle);
+   float GetAngleMin() const;
+   void  SetAngleMin(const float angle);
 
    SpinnerData m_d;
 

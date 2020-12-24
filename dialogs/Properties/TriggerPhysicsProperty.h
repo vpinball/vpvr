@@ -4,12 +4,12 @@
 class TriggerPhysicsProperty: public BasePropertyDialog
 {
 public:
-    TriggerPhysicsProperty(VectorProtected<ISelect> *pvsel);
+    TriggerPhysicsProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~TriggerPhysicsProperty()
     {
     }
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
@@ -17,7 +17,7 @@ protected:
 
 private:
     HWND    m_hEnableCheck;
-    CEdit   m_hitHeightEdit;
+    EditBox m_hitHeightEdit;
 };
 
 #endif // !H_TRIGGER_PHYSICS_PROPERTY

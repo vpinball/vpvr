@@ -13,7 +13,7 @@
 // Name: ReadMMIO()
 // Desc: Support function for reading from a multimedia I/O stream
 //-----------------------------------------------------------------------------
-HRESULT ReadMMIO(HMMIO hmmioIn, MMCKINFO* pckInRIFF, WAVEFORMATEX** ppwfxInfo)
+static HRESULT ReadMMIO(HMMIO hmmioIn, MMCKINFO* pckInRIFF, WAVEFORMATEX** ppwfxInfo)
 {
    MMCKINFO        ckIn;           // chunk info. for general use.
    PCMWAVEFORMAT   pcmWaveFormat;  // Temp PCM structure to load in.
@@ -46,8 +46,8 @@ HRESULT ReadMMIO(HMMIO hmmioIn, MMCKINFO* pckInRIFF, WAVEFORMATEX** ppwfxInfo)
    // word, and thats how many extra bytes to allocate.
    if (pcmWaveFormat.wf.wFormatTag == WAVE_FORMAT_PCM)
    {
-      if (NULL == (*ppwfxInfo = (WAVEFORMATEX*)new CHAR[sizeof(WAVEFORMATEX)]))
-         return E_FAIL;
+      /*if (NULL == (*/ *ppwfxInfo = (WAVEFORMATEX*)new CHAR[sizeof(WAVEFORMATEX)]; //))
+      //   return E_FAIL;
 
       // Copy the bytes from the pcm structure to the waveformatex structure
       memcpy(*ppwfxInfo, &pcmWaveFormat, sizeof(pcmWaveFormat));
@@ -60,8 +60,8 @@ HRESULT ReadMMIO(HMMIO hmmioIn, MMCKINFO* pckInRIFF, WAVEFORMATEX** ppwfxInfo)
       if (mmioRead(hmmioIn, (CHAR*)&cbExtraBytes, sizeof(WORD)) != sizeof(WORD))
          return E_FAIL;
 
-      if (NULL == (*ppwfxInfo = (WAVEFORMATEX*)new CHAR[sizeof(WAVEFORMATEX) + cbExtraBytes]))
-         return E_FAIL;
+      /*if (NULL == (*/ *ppwfxInfo = (WAVEFORMATEX*)new CHAR[sizeof(WAVEFORMATEX) + cbExtraBytes]; //))
+         //return E_FAIL;
 
       // Copy the bytes from the pcm structure to the waveformatex structure
       memcpy(*ppwfxInfo, &pcmWaveFormat, sizeof(pcmWaveFormat));
@@ -71,7 +71,7 @@ HRESULT ReadMMIO(HMMIO hmmioIn, MMCKINFO* pckInRIFF, WAVEFORMATEX** ppwfxInfo)
       if (mmioRead(hmmioIn, (CHAR*)(((BYTE*)&((*ppwfxInfo)->cbSize)) + sizeof(WORD)),
          cbExtraBytes) != cbExtraBytes)
       {
-         delete[] * ppwfxInfo;
+         delete[] *ppwfxInfo;
          *ppwfxInfo = NULL;
          return E_FAIL;
       }
@@ -80,7 +80,7 @@ HRESULT ReadMMIO(HMMIO hmmioIn, MMCKINFO* pckInRIFF, WAVEFORMATEX** ppwfxInfo)
    // Ascend the input file out of the 'fmt ' chunk.
    if (0 != mmioAscend(hmmioIn, &ckIn, 0))
    {
-      delete[] * ppwfxInfo;
+      delete[] *ppwfxInfo;
       *ppwfxInfo = NULL;
       return E_FAIL;
    }
@@ -94,13 +94,13 @@ HRESULT ReadMMIO(HMMIO hmmioIn, MMCKINFO* pckInRIFF, WAVEFORMATEX** ppwfxInfo)
 //       so the data can be easily read with WaveReadFile. Returns 0 if
 //       successful, the error code if not.
 //-----------------------------------------------------------------------------
-HRESULT WaveOpenFile(const CHAR* const strFileName, HMMIO* phmmioIn, WAVEFORMATEX** ppwfxInfo,
+static HRESULT WaveOpenFile(const string& strFileName, HMMIO* phmmioIn, WAVEFORMATEX** ppwfxInfo,
    MMCKINFO* pckInRIFF)
 {
    HRESULT hr;
    HMMIO   hmmioIn = NULL;
 
-   if (NULL == (hmmioIn = mmioOpen((LPSTR)strFileName, NULL, MMIO_ALLOCBUF | MMIO_READ)))
+   if (NULL == (hmmioIn = mmioOpen((LPSTR)strFileName.c_str(), NULL, MMIO_ALLOCBUF | MMIO_READ)))
       return E_FAIL;
 
    if (FAILED(hr = ReadMMIO(hmmioIn, pckInRIFF, ppwfxInfo)))
@@ -122,7 +122,7 @@ HRESULT WaveOpenFile(const CHAR* const strFileName, HMMIO* phmmioIn, WAVEFORMATE
 //       moved to a separate routine so there was more control on the chunks
 //       that are before the data chunk, such as 'fact', etc...
 //-----------------------------------------------------------------------------
-HRESULT WaveStartDataRead(HMMIO* phmmioIn, MMCKINFO* pckIn,
+static HRESULT WaveStartDataRead(HMMIO* phmmioIn, MMCKINFO* pckIn,
    MMCKINFO* pckInRIFF)
 {
    // Seek to the data
@@ -147,7 +147,7 @@ HRESULT WaveStartDataRead(HMMIO* phmmioIn, MMCKINFO* pckIn,
 //          pbDest       - Destination buffer to put bytes.
 //          cbActualRead - # of bytes actually read.
 //-----------------------------------------------------------------------------
-HRESULT WaveReadFile(HMMIO hmmioIn, UINT cbRead, BYTE* pbDest,
+static HRESULT WaveReadFile(HMMIO hmmioIn, UINT cbRead, BYTE* pbDest,
    MMCKINFO* pckIn, UINT* cbActualRead)
 {
    MMIOINFO mmioinfoIn;         // current status of <hmmioIn>
@@ -210,7 +210,7 @@ CWaveSoundRead::~CWaveSoundRead()
 // Name: Open()
 // Desc: Opens a wave file for reading
 //-----------------------------------------------------------------------------
-HRESULT CWaveSoundRead::Open(const CHAR* const strFilename)
+HRESULT CWaveSoundRead::Open(const string& strFilename)
 {
    SAFE_DELETE(m_pwfx);
 

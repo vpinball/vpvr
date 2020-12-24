@@ -79,6 +79,12 @@ __forceinline T saturate(const T x)
 }
 
 template <typename T>
+inline void RemoveFromVector(std::vector<T>& v, const T& val)
+{
+   v.erase(std::remove(v.begin(), v.end(), val), v.end());
+}
+
+template <typename T>
 inline void RemoveFromVectorSingle(std::vector<T>& v, const T& val)
 {
    typename std::vector<T>::const_iterator it = std::find(v.begin(), v.end(), val);
@@ -128,7 +134,7 @@ inline void ref_count_trigger(const ULONG r, const char *file, const int line) /
 #ifdef DEBUG_REFCOUNT_TRIGGER
    char msg[128];
    sprintf_s(msg, 128, "Ref Count: %u at %s:%d", r, file, line);
-   MessageBox(NULL, msg, "Error", MB_OK | MB_ICONEXCLAMATION);
+   /*g_pvp->*/MessageBox(NULL, msg, "Error", MB_OK | MB_ICONEXCLAMATION);
 #endif
 }
 #ifdef ENABLE_SDL
@@ -137,6 +143,7 @@ inline void ref_count_trigger(const ULONG r, const char *file, const int line) /
 #define SAFE_RELEASE_NO_SET(p)	{}
 #define SAFE_RELEASE_NO_CHECK_NO_SET(p)	{}
 #define SAFE_RELEASE_NO_RCC(p)	{}
+#define FORCE_RELEASE(p)		{ if(p) { ULONG rcc = 1; while(rcc!=0) {rcc = (p)->Release();} (p)=NULL; } } // release all references until it is 0
 #else
 #define SAFE_RELEASE(p)			{ if (p) { const ULONG rcc = (p)->Release(); if (rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); (p)=NULL; } }
 #define SAFE_RELEASE_NO_SET(p)	{ if (p) { const ULONG rcc = (p)->Release(); if (rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); } }
@@ -204,7 +211,7 @@ class LocalStringW
 public:
    LocalStringW(const int resid);
 
-   WCHAR str[256];
+   WCHAR m_szbuffer[256];
 };
 
 #define M_PI 3.1415926535897932384626433832795
@@ -398,8 +405,8 @@ __forceinline float millimetersToVPUnits(const float value)
    return value * (float)(1.0 / 0.540425);
 }
 
-float sz2f(const char * const sz);
-void f2sz(const float f, char * const sz);
+float sz2f(const string& sz);
+void f2sz(const float f, string& sz);
 
 void WideStrCopy(const WCHAR *wzin, WCHAR *wzout);
 void WideStrNCopy(const WCHAR *wzin, WCHAR *wzout, const DWORD wzoutMaxLen);
@@ -408,7 +415,9 @@ int WzSzStrCmp(const WCHAR *wz1, const char *sz2);
 void WideStrCat(const WCHAR *wzin, WCHAR *wzout);
 int WzSzStrnCmp(const WCHAR *wz1, const char *sz2, const int count);
 
-HRESULT OpenURL(const char * const szURL);
+HRESULT OpenURL(const string& szURL);
 
-WCHAR *MakeWide(const char * const sz);
+WCHAR *MakeWide(const string& sz);
 char *MakeChar(const WCHAR * const wz);
+
+char* replace(const char* const original, const char* const pattern, const char* const replacement);

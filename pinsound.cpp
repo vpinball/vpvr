@@ -4,64 +4,64 @@ extern bool bass_init;
 extern int bass_BG_idx;
 extern int bass_STD_idx;
 
-void BASS_ErrorMapCode(const int code, char text[MAXSTRING])
+void BASS_ErrorMapCode(const int code, string& text)
 {
    switch (code)
    {
-   case BASS_OK: strcpy_s(text, MAXSTRING, "all is OK"); break;
-   case BASS_ERROR_MEM: strcpy_s(text, MAXSTRING, "memory error"); break;
-   case BASS_ERROR_FILEOPEN: strcpy_s(text, MAXSTRING, "can't open the file"); break;
-   case BASS_ERROR_DRIVER: strcpy_s(text, MAXSTRING, "can't find a free/valid driver"); break;
-   case BASS_ERROR_BUFLOST: strcpy_s(text, MAXSTRING, "the sample buffer was lost"); break;
-   case BASS_ERROR_HANDLE: strcpy_s(text, MAXSTRING, "invalid handle"); break;
-   case BASS_ERROR_FORMAT: strcpy_s(text, MAXSTRING, "unsupported sample format"); break;
-   case BASS_ERROR_POSITION: strcpy_s(text, MAXSTRING, "invalid position"); break;
-   case BASS_ERROR_INIT: strcpy_s(text, MAXSTRING, "BASS_Init has not been successfully called"); break;
-   case BASS_ERROR_START: strcpy_s(text, MAXSTRING, "BASS_Start has not been successfully called"); break;
-   case BASS_ERROR_SSL: strcpy_s(text, MAXSTRING, "SSL/HTTPS support isn't available"); break;
-   case BASS_ERROR_ALREADY: strcpy_s(text, MAXSTRING, "already initialized/paused/whatever"); break;
-   case BASS_ERROR_NOTAUDIO: strcpy_s(text, MAXSTRING, "file does not contain audio"); break;
-   case BASS_ERROR_NOCHAN: strcpy_s(text, MAXSTRING, "can't get a free channel"); break;
-   case BASS_ERROR_ILLTYPE: strcpy_s(text, MAXSTRING, "an illegal type was specified"); break;
-   case BASS_ERROR_ILLPARAM: strcpy_s(text, MAXSTRING, "an illegal parameter was specified"); break;
-   case BASS_ERROR_NO3D: strcpy_s(text, MAXSTRING, "no 3D support"); break;
-   case BASS_ERROR_NOEAX: strcpy_s(text, MAXSTRING, "no EAX support"); break;
-   case BASS_ERROR_DEVICE: strcpy_s(text, MAXSTRING, "illegal device number"); break;
-   case BASS_ERROR_NOPLAY: strcpy_s(text, MAXSTRING, "not playing"); break;
-   case BASS_ERROR_FREQ: strcpy_s(text, MAXSTRING, "illegal sample rate"); break;
-   case BASS_ERROR_NOTFILE: strcpy_s(text, MAXSTRING, "the stream is not a file stream"); break;
-   case BASS_ERROR_NOHW: strcpy_s(text, MAXSTRING, "no hardware voices available"); break;
-   case BASS_ERROR_EMPTY: strcpy_s(text, MAXSTRING, "the MOD music has no sequence data"); break;
-   case BASS_ERROR_NONET: strcpy_s(text, MAXSTRING, "no internet connection could be opened"); break;
-   case BASS_ERROR_CREATE: strcpy_s(text, MAXSTRING, "couldn't create the file"); break;
-   case BASS_ERROR_NOFX: strcpy_s(text, MAXSTRING, "effects are not available"); break;
-   case BASS_ERROR_NOTAVAIL: strcpy_s(text, MAXSTRING, "requested data/action is not available"); break;
-   case BASS_ERROR_DECODE: strcpy_s(text, MAXSTRING, "the channel is/isn't a 'decoding channel'"); break;
-   case BASS_ERROR_DX: strcpy_s(text, MAXSTRING, "a sufficient DirectX version is not installed"); break;
-   case BASS_ERROR_TIMEOUT: strcpy_s(text, MAXSTRING, "connection timedout"); break;
-   case BASS_ERROR_FILEFORM: strcpy_s(text, MAXSTRING, "unsupported file format"); break;
-   case BASS_ERROR_SPEAKER: strcpy_s(text, MAXSTRING, "unavailable speaker"); break;
-   case BASS_ERROR_VERSION: strcpy_s(text, MAXSTRING, "invalid BASS version (used by add-ons)"); break;
-   case BASS_ERROR_CODEC: strcpy_s(text, MAXSTRING, "codec is not available/supported"); break;
-   case BASS_ERROR_ENDED: strcpy_s(text, MAXSTRING, "the channel/file has ended"); break;
-   case BASS_ERROR_BUSY: strcpy_s(text, MAXSTRING, "the device is busy"); break;
-   case BASS_ERROR_UNSTREAMABLE: strcpy_s(text, MAXSTRING, "unstreamable file"); break;
-   case BASS_ERROR_UNKNOWN: strcpy_s(text, MAXSTRING, "unknown error"); break;
-   default: strcpy_s(text, MAXSTRING, "unmapped error"); break;
+   case BASS_OK: text = "all is OK"; break;
+   case BASS_ERROR_MEM: text = "memory error"; break;
+   case BASS_ERROR_FILEOPEN: text = "can't open the file"; break;
+   case BASS_ERROR_DRIVER: text = "can't find a free/valid driver"; break;
+   case BASS_ERROR_BUFLOST: text = "the sample buffer was lost"; break;
+   case BASS_ERROR_HANDLE: text = "invalid handle"; break;
+   case BASS_ERROR_FORMAT: text = "unsupported sample format"; break;
+   case BASS_ERROR_POSITION: text = "invalid position"; break;
+   case BASS_ERROR_INIT: text = "BASS_Init has not been successfully called"; break;
+   case BASS_ERROR_START: text = "BASS_Start has not been successfully called"; break;
+   case BASS_ERROR_SSL: text = "SSL/HTTPS support isn't available"; break;
+   case BASS_ERROR_ALREADY: text = "already initialized/paused/whatever"; break;
+   case BASS_ERROR_NOTAUDIO: text = "file does not contain audio"; break;
+   case BASS_ERROR_NOCHAN: text = "can't get a free channel"; break;
+   case BASS_ERROR_ILLTYPE: text = "an illegal type was specified"; break;
+   case BASS_ERROR_ILLPARAM: text = "an illegal parameter was specified"; break;
+   case BASS_ERROR_NO3D: text = "no 3D support"; break;
+   case BASS_ERROR_NOEAX: text = "no EAX support"; break;
+   case BASS_ERROR_DEVICE: text = "illegal device number"; break;
+   case BASS_ERROR_NOPLAY: text = "not playing"; break;
+   case BASS_ERROR_FREQ: text = "illegal sample rate"; break;
+   case BASS_ERROR_NOTFILE: text = "the stream is not a file stream"; break;
+   case BASS_ERROR_NOHW: text = "no hardware voices available"; break;
+   case BASS_ERROR_EMPTY: text = "the MOD music has no sequence data"; break;
+   case BASS_ERROR_NONET: text = "no internet connection could be opened"; break;
+   case BASS_ERROR_CREATE: text = "couldn't create the file"; break;
+   case BASS_ERROR_NOFX: text = "effects are not available"; break;
+   case BASS_ERROR_NOTAVAIL: text = "requested data/action is not available"; break;
+   case BASS_ERROR_DECODE: text = "the channel is/isn't a 'decoding channel'"; break;
+   case BASS_ERROR_DX: text = "a sufficient DirectX version is not installed"; break;
+   case BASS_ERROR_TIMEOUT: text = "connection timedout"; break;
+   case BASS_ERROR_FILEFORM: text = "unsupported file format"; break;
+   case BASS_ERROR_SPEAKER: text = "unavailable speaker"; break;
+   case BASS_ERROR_VERSION: text = "invalid BASS version (used by add-ons)"; break;
+   case BASS_ERROR_CODEC: text = "codec is not available/supported"; break;
+   case BASS_ERROR_ENDED: text = "the channel/file has ended"; break;
+   case BASS_ERROR_BUSY: text = "the device is busy"; break;
+   case BASS_ERROR_UNSTREAMABLE: text = "unstreamable file"; break;
+   case BASS_ERROR_UNKNOWN: text = "unknown error"; break;
+   default: text = "unmapped error"; break;
    }
 }
 
 /*void CALLBACK PanDSP(HDSP handle, DWORD channel, void *buffer, DWORD length, void *user)
 {
-const float pan = *((float*)user);
-if (pan == 0.f) return; // no processing neeeded for centre panning
-float * __restrict s = (float*)buffer;
-for (DWORD i = 0; i < length/8; ++i) {
-if (pan < 0.f)
-s[i*2+1] *= 1.f + pan; // pan left = reduce right
-else
-s[i*2  ] *= 1.f - pan; // vice versa
-}
+   const float pan = *((float*)user);
+   if (pan == 0.f) return; // no processing neeeded for centre panning
+   float * __restrict s = (float*)buffer;
+   for (DWORD i = 0; i < length/8; ++i) {
+      if (pan < 0.f)
+         s[i*2+1] *= 1.f + pan; // pan left = reduce right
+      else
+         s[i*2  ] *= 1.f - pan; // vice versa
+   }
 }*/
 
 PinSound::PinSound() : PinDirectSoundWavCopy(this)
@@ -134,12 +134,11 @@ HRESULT PinSound::ReInitialize()
 
       if (m_BASSstream == NULL)
       {
-         char bla[MAXSTRING];
-         char bla2[MAXSTRING];
          const int code = BASS_ErrorGetCode();
+         string bla2;
          BASS_ErrorMapCode(code, bla2);
-         sprintf_s(bla, "BASS music/sound library cannot create stream %s (error %d: %s)", m_szPath, code, bla2);
-         g_pvp->MessageBox(bla, "Error", MB_ICONERROR);
+         const string bla = "BASS music/sound library cannot create stream \"" + m_szPath + "\" (error " + std::to_string(code) + ": " + bla2 + ")";
+         g_pvp->MessageBox(bla.c_str(), "Error", MB_ICONERROR);
          return E_FAIL;
       }
 
@@ -408,14 +407,12 @@ void PinDirectSound::InitDirectSound(const HWND hwnd, const bool IsBackglass)
    //return S_OK;
 }
 
-PinSound *AudioMusicPlayer::LoadFile(const TCHAR* const strFileName)
+PinSound *AudioMusicPlayer::LoadFile(const string& strFileName)
 {
    PinSound * const pps = new PinSound();
 
-   strncpy_s(pps->m_szPath, strFileName, MAX_PATH);
+   pps->m_szPath = strFileName;
    TitleFromFilename(strFileName, pps->m_szName);
-   strncpy_s(pps->m_szInternalName, pps->m_szName, MAXTOKEN);
-   CharLowerBuff(pps->m_szInternalName, lstrlen(pps->m_szInternalName));
 
    if (pps->IsWav()) // only use old direct sound code and wav reader if playing wav's
    {
@@ -464,7 +461,7 @@ PinSound *AudioMusicPlayer::LoadFile(const TCHAR* const strFileName)
 
       // Fill the buffer with wav data
 
-      // Allocate that buffer.
+        // Allocate that buffer.
       pps->m_pdata = new char[pps->m_cdata];
 
       UINT cbWavSize; // Size of data
@@ -503,7 +500,11 @@ PinSound *AudioMusicPlayer::LoadFile(const TCHAR* const strFileName)
    else
    {
       FILE *f;
-      fopen_s(&f, strFileName, "rb");
+      if (fopen_s(&f, strFileName.c_str(), "rb") != 0 || !f)
+      {
+         ShowError("Could not open sound file.");
+         return NULL;
+      }
       fseek(f, 0, SEEK_END);
       pps->m_cdata = (int)ftell(f);
       fseek(f, 0, SEEK_SET);
@@ -525,12 +526,12 @@ PinSound *AudioMusicPlayer::LoadFile(const TCHAR* const strFileName)
       if (pps->m_BASSstream == NULL)
       {
          delete pps;
-         char bla[MAXSTRING];
-         char bla2[MAXSTRING];
+
          const int code = BASS_ErrorGetCode();
+         string bla2;
          BASS_ErrorMapCode(code, bla2);
-         sprintf_s(bla, "BASS music/sound library cannot load %s (error %d: %s)", strFileName, code, bla2);
-         g_pvp->MessageBox(bla, "Error", MB_ICONERROR);
+         const string bla = "BASS music/sound library cannot load \"" + strFileName + "\" (error " + std::to_string(code) + ": " + bla2 + ")";
+         g_pvp->MessageBox(bla.c_str(), "Error", MB_ICONERROR);
          return NULL;
       }
    }

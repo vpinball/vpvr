@@ -4,25 +4,25 @@
 class TableVisualsProperty: public BasePropertyDialog
 {
 public:
-    TableVisualsProperty(VectorProtected<ISelect> *pvsel);
+    TableVisualsProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~TableVisualsProperty()
     {
     }
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
     virtual BOOL OnInitDialog();
 
 private:
-    CComboBox   m_imageCombo;
-    CComboBox   m_materialCombo;
-    CEdit       m_reflectionStrengthEdit;
-    CComboBox   m_ballImageCombo;
-    CComboBox   m_ballDecalCombo;
-    CEdit       m_ballReflectPlayfieldEdit;
-    CEdit       m_ballDefaultBulbIntensScaleEdit;
+    ComboBox    m_imageCombo;
+    ComboBox    m_materialCombo;
+    ComboBox    m_ballImageCombo;
+    ComboBox    m_ballDecalCombo;
+    EditBox     m_reflectionStrengthEdit;
+    EditBox     m_ballReflectPlayfieldEdit;
+    EditBox     m_ballDefaultBulbIntensScaleEdit;
     HWND        m_hLogoModeCheck;
     HWND        m_hReflectElementsCheck;
 };

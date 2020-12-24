@@ -46,8 +46,6 @@ BOOL ImageDialog::OnInitDialog()
 
 INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-   CCO(PinTable) * const pt = g_pvp->GetActiveTable();
-
    m_resizer.HandleMessage(uMsg, wParam, lParam);
 
    switch (uMsg)
@@ -76,36 +74,37 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
          ListView_SetExtendedListViewStyle(hListView, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
          lvcol.mask = LVCF_TEXT | LVCF_WIDTH;
-         LocalString ls(IDS_NAME);
-         lvcol.pszText = ls.m_szbuffer;// = "Name";
+         const LocalString ls(IDS_NAME);
+         lvcol.pszText = (LPSTR)ls.m_szbuffer; // = "Name";
          lvcol.cx = 100;
          ListView_InsertColumn(hListView, 0, &lvcol);
 
-         LocalString ls2(IDS_IMPORTPATH);
-         lvcol.pszText = ls2.m_szbuffer; // = "Import Path";
+         const LocalString ls2(IDS_IMPORTPATH);
+         lvcol.pszText = (LPSTR)ls2.m_szbuffer; // = "Import Path";
          lvcol.cx = 200;
          ListView_InsertColumn(hListView, 1, &lvcol);
 
-         LocalString ls3(IDS_IMAGESIZE);
-         lvcol.pszText = ls3.m_szbuffer; // = "Image Size";
+         const LocalString ls3(IDS_IMAGESIZE);
+         lvcol.pszText = (LPSTR)ls3.m_szbuffer; // = "Image Size";
          lvcol.cx = 100;
          ListView_InsertColumn(hListView, 2, &lvcol);
 
-         LocalString ls4( IDS_USED_IN_TABLE );
-         lvcol.pszText = ls4.m_szbuffer; // = "In use";
+         const LocalString ls4(IDS_USED_IN_TABLE);
+         lvcol.pszText = (LPSTR)ls4.m_szbuffer; // = "In use";
          lvcol.cx = 45;
-         ListView_InsertColumn( hListView, 3, &lvcol );
+         ListView_InsertColumn(hListView, 3, &lvcol);
 
-         LocalString ls5(IDS_IMAGE_RAW_SIZE);
-         lvcol.pszText = ls5.m_szbuffer; // = "Raw Size";
+         const LocalString ls5(IDS_IMAGE_RAW_SIZE);
+         lvcol.pszText = (LPSTR)ls5.m_szbuffer; // = "Raw Size";
          lvcol.cx = 60;
          ListView_InsertColumn(hListView, 4, &lvcol);
 
+         CCO(PinTable) * const pt = g_pvp->GetActiveTable();
          if (pt)
             pt->ListImages(hListView);
 
          char textBuf[16];
-         strcpy_s(textBuf, "128");
+         strncpy_s(textBuf, "128", sizeof(textBuf)-1);
          SetDlgItemText(IDC_ALPHA_MASK_EDIT, textBuf);
          ListView_SetItemState(hListView, 0, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
          GotoDlgCtrl(hListView);
@@ -153,9 +152,8 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                Texture * const ppi = (Texture *)lvitem.lParam;
                if (ppi != NULL)
                {
-                  strncpy_s(ppi->m_szName, pinfo->item.pszText, MAXTOKEN-1);
-                  strncpy_s(ppi->m_szInternalName, pinfo->item.pszText, MAXTOKEN-1);
-                  CharLowerBuff(ppi->m_szInternalName, lstrlen(ppi->m_szInternalName));
+                  ppi->m_szName = pinfo->item.pszText;
+                  CCO(PinTable) * const pt = g_pvp->GetActiveTable();
                   if (pt)
                      pt->SetNonUndoableDirty(eSaveDirty);
                }
@@ -205,11 +203,11 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             Texture * const ppi = (Texture *)lvitem.lParam;
             if (ppi != NULL)
             {
-               const CString textStr = GetDlgItemText(IDC_ALPHA_MASK_EDIT);
-               const float v = sz2f(textStr.c_str());
+               const float v = sz2f(GetDlgItemText(IDC_ALPHA_MASK_EDIT).c_str());
                if (ppi->m_alphaTestValue != v)
                {
                   ppi->m_alphaTestValue = v;
+                  CCO(PinTable) * const pt = g_pvp->GetActiveTable();
                   pt->SetNonUndoableDirty(eSaveDirty);
                }
 
@@ -254,12 +252,12 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                if (aspect > controlaspect)
                {
                   width = xsize;
-                  height = (int)(xsize / aspect);
+                  height = (int)(xsize / aspect + 0.5f);
                }
                else
                {
                   height = ysize;
-                  width = (int)(ysize*aspect);
+                  width = (int)(ysize*aspect + 0.5f);
                }
 
                const int x = (xsize - width) / 2;
@@ -286,7 +284,7 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             RECT rcText = rcClient;
 
             //ExtTextOut(pdis->hDC, 0, 20, 0, NULL, "Image\nPreview", 13, NULL);
-            LocalString ls(IDS_IMAGE_PREVIEW);
+            const LocalString ls(IDS_IMAGE_PREVIEW);
             const int len = lstrlen(ls.m_szbuffer);
             DrawText(pdis->hDC, ls.m_szbuffer/*"Image\n\nPreview"*/, len, &rcText, DT_CALCRECT);
 
@@ -311,9 +309,8 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 void ImageDialog::UpdateImages()
 {
     HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-    CCO(PinTable) * const pt = g_pvp->GetActiveTable();
-
     const int count = ListView_GetSelectedCount(hSoundList);
+
     if (count > 0)
     {
         int sel = ListView_GetNextItem(hSoundList, -1, LVNI_SELECTED);
@@ -327,11 +324,11 @@ void ImageDialog::UpdateImages()
             Texture * const ppi = (Texture *)lvitem.lParam;
             if (ppi != NULL)
             {
-                const CString textStr = GetDlgItemText(IDC_ALPHA_MASK_EDIT);
-                const float v = sz2f(textStr.c_str());
+                const float v = sz2f(GetDlgItemText(IDC_ALPHA_MASK_EDIT).c_str());
                 if (ppi->m_alphaTestValue != v)
                 {
                     ppi->m_alphaTestValue = v;
+                    CCO(PinTable) * const pt = g_pvp->GetActiveTable();
                     pt->SetNonUndoableDirty(eSaveDirty);
                 }
 
@@ -346,8 +343,7 @@ void ImageDialog::UpdateImages()
 BOOL ImageDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 {
    UNREFERENCED_PARAMETER(lParam);
-   HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-   CCO(PinTable) * const pt = g_pvp->GetActiveTable();
+   const HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
 
    switch (LOWORD(wParam))
    {
@@ -364,6 +360,7 @@ BOOL ImageDialog::OnCommand(WPARAM wParam, LPARAM lParam)
          {
             ::SetFocus(hSoundList);
             ListView_EditLabel(hSoundList, sel);
+            CCO(PinTable) * const pt = g_pvp->GetActiveTable();
             pt->SetNonUndoableDirty(eSaveDirty);
          }
          break;
@@ -398,43 +395,28 @@ void ImageDialog::OnCancel()
 
 void ImageDialog::Import()
 {
-   const HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-   CCO(PinTable) * const pt = g_pvp->GetActiveTable();
-   char szFileName[MAXSTRING];
+   std::vector<std::string> szFileName;
    char szInitialDir[MAXSTRING];
-   szFileName[0] = '\0';
-   int fileOffset;
 
    HRESULT hr = LoadValueString("RecentDir", "ImageDir", szInitialDir, MAXSTRING);
+   if (hr != S_OK)
+      lstrcpy(szInitialDir, "c:\\Visual Pinball\\Tables\\");
 
-   if (g_pvp->OpenFileDialog(szInitialDir, szFileName, "Bitmap, JPEG, PNG, TGA, EXR, HDR Files (.bmp/.jpg/.png/.tga/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.tga;*.exr;*.hdr\0", "png", OFN_EXPLORER | OFN_ALLOWMULTISELECT, fileOffset))
+   if (g_pvp->OpenFileDialog(szInitialDir, szFileName, "Bitmap, JPEG, PNG, TGA, WEBP, EXR, HDR Files (.bmp/.jpg/.png/.tga/.webp/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.tga;*.webp;*.exr;*.hdr\0", "png", OFN_EXPLORER | OFN_ALLOWMULTISELECT))
    {
-      strcpy_s(szInitialDir, sizeof(szInitialDir), szFileName);
+      CCO(PinTable) * const pt = g_pvp->GetActiveTable();
+      const HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
 
-      int len = lstrlen(szFileName);
-      if (len < fileOffset)
+      for (const std::string &file : szFileName)
+         pt->ImportImage(hSoundList, file);
+
+      const size_t index = szFileName[0].find_last_of('\\');
+      if (index != std::string::npos)
       {
-         // Multi-file select
-         char szT[MAXSTRING];
-         lstrcpy(szT, szFileName);
-         lstrcat(szT, "\\");
-         len++;
-         int filenamestart = fileOffset;
-         int filenamelen = lstrlen(&szFileName[filenamestart]);
-         while (filenamelen > 0)
-         {
-            lstrcpy(&szT[len], &szFileName[filenamestart]);
-            pt->ImportImage(hSoundList, szT);
-            filenamestart += filenamelen + 1;
-            filenamelen = lstrlen(&szFileName[filenamestart]);
-         }
+          const std::string newInitDir(szFileName[0].substr(0, index));
+          hr = SaveValueString("RecentDir", "ImageDir", newInitDir);
       }
-      else
-      {
-         szInitialDir[fileOffset] = 0;
-         pt->ImportImage(hSoundList, szFileName);
-      }
-      hr = SaveValueString("RecentDir", "ImageDir", szInitialDir);
+
       pt->SetNonUndoableDirty(eSaveDirty);
       SetFocus();
    }
@@ -443,13 +425,8 @@ void ImageDialog::Import()
 void ImageDialog::Export()
 {
    const HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-   CCO(PinTable) * const pt = g_pvp->GetActiveTable();
-   char g_filename[MAX_PATH];
-   char g_initDir[MAX_PATH];
    const int selectedItemsCount = ListView_GetSelectedCount(hSoundList);
       
-   const size_t renameOnExport = SendMessage(GetDlgItem(IDC_CHECK_RENAME_ON_EXPORT).GetHwnd(), BM_GETCHECK, 0, 0);
-
    if (selectedItemsCount)	// if some items are selected???
    {
       int sel = ListView_GetNextItem(hSoundList, -1, LVNI_SELECTED);
@@ -466,16 +443,18 @@ void ImageDialog::Export()
             OPENFILENAME ofn;
             ZeroMemory(&ofn, sizeof(OPENFILENAME));
             ofn.lStructSize = sizeof(OPENFILENAME);
-            ofn.hInstance = g_hinst;
+            ofn.hInstance = g_pvp->theInstance;
             ofn.hwndOwner = g_pvp->GetHwnd();
-            int len = lstrlen(ppi->m_szPath);
-            memset(g_filename, 0, MAX_PATH);
-            memset(g_initDir, 0, MAX_PATH);
+            const int len0 = (int)ppi->m_szPath.length();
+            char g_filename[MAXSTRING];
+            g_filename[0] = '\0';
+
+            const size_t renameOnExport = SendMessage(GetDlgItem(IDC_CHECK_RENAME_ON_EXPORT).GetHwnd(), BM_GETCHECK, 0, 0);
 
             if (!renameOnExport)
             {
                int begin; //select only file name from pathfilename
-               for (begin = len; begin >= 0; begin--)
+               for (begin = len0; begin >= 0; begin--)
                {
                   if (ppi->m_szPath[begin] == '\\')
                   {
@@ -485,49 +464,54 @@ void ImageDialog::Export()
                }
                if (begin > 0)
                {
-                  memcpy(g_filename, &ppi->m_szPath[begin], len - begin);
-                  g_filename[len - begin] = 0;
+                  memcpy(g_filename, ppi->m_szPath.c_str()+begin, len0 - begin);
+                  g_filename[len0 - begin] = 0;
                }
             }
             else
             {
-               strcat_s(g_filename, ppi->m_szName);
-               const string ext(ppi->m_szPath);
-               const size_t idx = ext.find_last_of('.');
-               strcat_s(g_filename, ext.c_str() + idx);
+               strncat_s(g_filename, ppi->m_szName.c_str(), sizeof(g_filename)-strnlen_s(g_filename, sizeof(g_filename))-1);
+               const size_t idx = ppi->m_szPath.find_last_of('.');
+               strncat_s(g_filename, ppi->m_szPath.c_str() + idx, sizeof(g_filename)-strnlen_s(g_filename, sizeof(g_filename))-1);
             }
             ofn.lpstrFile = g_filename;
-            ofn.nMaxFile = MAX_PATH;
+            ofn.nMaxFile = sizeof(g_filename);
 
             const string ext2(g_filename);
             const size_t idx2 = ext2.find_last_of('.');
             ofn.lpstrDefExt = ext2.c_str() + idx2 + 1;
             // check which default file extension should be selected
-            ofn.lpstrFilter = "PNG (.png)\0*.png;\0Bitmap (.bmp)\0*.bmp;\0JPEG (.jpg/.jpeg)\0*.jpg;*.jpeg;\0IFF (.iff)\0*.IFF;\0PCX (.pcx)\0*.PCX;\0PICT (.pict)\0*.PICT;\0Photoshop (.psd)\0*.psd;\0TGA (.tga)\0*.tga;\0TIFF (.tiff/.tif)\0*.tiff;*.tif;\0EXR (.exr)\0*.exr;\0HDR (.hdr)\0*.hdr\0";
-            if(!strcmp(ofn.lpstrDefExt,"png"))
+            ofn.lpstrFilter = "PNG (.png)\0*.png;\0Bitmap (.bmp)\0*.bmp;\0JPEG (.jpg/.jpeg)\0*.jpg;*.jpeg;\0IFF (.iff)\0*.IFF;\0PCX (.pcx)\0*.PCX;\0PICT (.pict)\0*.PICT;\0Photoshop (.psd)\0*.psd;\0TGA (.tga)\0*.tga;\0TIFF (.tiff/.tif)\0*.tiff;*.tif;\0WEBP (.webp)\0*.webp;\0EXR (.exr)\0*.exr;\0HDR (.hdr)\0*.hdr\0";
+            if(!_stricmp(ofn.lpstrDefExt,"png"))
                ofn.nFilterIndex = 1;
-            else if (!strcmp(ofn.lpstrDefExt, "bmp"))
+            else if (!_stricmp(ofn.lpstrDefExt, "bmp"))
                ofn.nFilterIndex = 2;
-            else if (!strcmp(ofn.lpstrDefExt, "jpg") || !strcmp(ofn.lpstrDefExt, "jpeg"))
+            else if (!_stricmp(ofn.lpstrDefExt, "jpg") || !_stricmp(ofn.lpstrDefExt, "jpeg"))
                ofn.nFilterIndex = 3;
-            else if (!strcmp(ofn.lpstrDefExt, "iff"))
+            else if (!_stricmp(ofn.lpstrDefExt, "iff"))
                ofn.nFilterIndex = 4;
-            else if (!strcmp(ofn.lpstrDefExt, "pcx"))
+            else if (!_stricmp(ofn.lpstrDefExt, "pcx"))
                ofn.nFilterIndex = 5;
-            else if (!strcmp(ofn.lpstrDefExt, "pict"))
+            else if (!_stricmp(ofn.lpstrDefExt, "pict"))
                ofn.nFilterIndex = 6;
-            else if (!strcmp(ofn.lpstrDefExt, "psd"))
+            else if (!_stricmp(ofn.lpstrDefExt, "psd"))
                ofn.nFilterIndex = 7;
-            else if (!strcmp(ofn.lpstrDefExt, "tga"))
+            else if (!_stricmp(ofn.lpstrDefExt, "tga"))
                ofn.nFilterIndex = 8;
-            else if (!strcmp(ofn.lpstrDefExt, "tif") || !strcmp(ofn.lpstrDefExt, "tiff"))
+            else if (!_stricmp(ofn.lpstrDefExt, "tif") || !_stricmp(ofn.lpstrDefExt, "tiff"))
                ofn.nFilterIndex = 9;
-            else if (!strcmp(ofn.lpstrDefExt, "exr"))
+            else if (!_stricmp(ofn.lpstrDefExt, "webp"))
                ofn.nFilterIndex = 10;
-            else if (!strcmp(ofn.lpstrDefExt, "hdr"))
+            else if (!_stricmp(ofn.lpstrDefExt, "exr"))
                ofn.nFilterIndex = 11;
+            else if (!_stricmp(ofn.lpstrDefExt, "hdr"))
+               ofn.nFilterIndex = 12;
 
-            const HRESULT hr = LoadValueString("RecentDir", "ImageDir", g_initDir, MAX_PATH);
+            char g_initDir[MAXSTRING];
+            memset(g_initDir, 0, sizeof(g_initDir));
+            const HRESULT hr = LoadValueString("RecentDir", "ImageDir", g_initDir, MAXSTRING);
+            if (hr != S_OK)
+               lstrcpy(g_initDir, "c:\\Visual Pinball\\Tables\\");
 
             ofn.lpstrInitialDir = (hr == S_OK) ? g_initDir : NULL;
             //ofn.lpstrTitle = "SAVE AS";
@@ -537,9 +521,9 @@ void ImageDialog::Export()
 
             if (GetSaveFileName(&ofn))	//Get filename from user
             {
-               len = lstrlen(ofn.lpstrFile);
+               const int len1 = lstrlen(ofn.lpstrFile);
                int begin; //select only file name from pathfilename
-               for (begin = len; begin >= 0; begin--)
+               for (begin = len1; begin >= 0; begin--)
                {
                   if (ofn.lpstrFile[begin] == '\\')
                   {
@@ -547,16 +531,19 @@ void ImageDialog::Export()
                      break;
                   }
                }
-               char pathName[MAX_PATH] = { 0 };
+
+               if (begin >= MAXSTRING)
+                   begin = MAXSTRING - 1;
+
+               char pathName[MAXSTRING];
                if (begin > 0)
-               {
                   memcpy(pathName, ofn.lpstrFile, begin);
-                  pathName[begin] = 0;
-               }
+               pathName[begin] = 0;
+
+               const int len2 = (int)ppi->m_szPath.length();
                while (sel != -1 && ppi != NULL)
                {
-                  len = lstrlen(ppi->m_szPath);
-                  for (begin = len; begin >= 0; begin--)
+                  for (begin = len2; begin >= 0; begin--)
                   {
                      if (ppi->m_szPath[begin] == '\\')
                      {
@@ -566,19 +553,18 @@ void ImageDialog::Export()
                   }
                   if (selectedItemsCount>1)
                   {
-                     memset(g_filename, 0, MAX_PATH);
-                     strcpy_s(g_filename, MAX_PATH, pathName);
+                     strncpy_s(g_filename, pathName, sizeof(g_filename)-1);
                      if (!renameOnExport)
-                        strcat_s(g_filename, MAX_PATH, &ppi->m_szPath[begin]);
+                        strncat_s(g_filename, ppi->m_szPath.c_str()+begin, sizeof(g_filename)-strnlen_s(g_filename, sizeof(g_filename))-1);
                      else
                      {
-                        strcat_s(g_filename, ppi->m_szName);
-                        const string ext(ppi->m_szPath);
-                        const size_t idx = ext.find_last_of('.');
-                        strcat_s(g_filename, ext.c_str() + idx);
+                        strncat_s(g_filename, ppi->m_szName.c_str(), sizeof(g_filename)-strnlen_s(g_filename, sizeof(g_filename))-1);
+                        const size_t idx = ppi->m_szPath.find_last_of('.');
+                        strncat_s(g_filename, ppi->m_szPath.c_str() + idx, sizeof(g_filename)-strnlen_s(g_filename, sizeof(g_filename))-1);
                      }
                   }
 
+                  CCO(PinTable) * const pt = g_pvp->GetActiveTable();
                   if (!pt->ExportImage(ppi, g_filename)) //!! this will always export the image in its original format, no matter what was actually selected by the user
                      ShowError("Could not export Image");
                   sel = ListView_GetNextItem(hSoundList, sel, LVNI_SELECTED);
@@ -587,6 +573,7 @@ void ImageDialog::Export()
                   ListView_GetItem(hSoundList, &lvitem);
                   ppi = (Texture*)lvitem.lParam;
                }
+
                SaveValueString("RecentDir", "ImageDir", pathName);
             } // finished all selected items
          }
@@ -599,15 +586,15 @@ void ImageDialog::Export()
 void ImageDialog::DeleteImage()
 {
    const HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-   CCO(PinTable) * const pt = g_pvp->GetActiveTable();
-
    const int count = ListView_GetSelectedCount(hSoundList);
+
    if (count > 0)
    {
-      LocalString ls(IDS_REMOVEIMAGE);
+      const LocalString ls(IDS_REMOVEIMAGE);
       const int ans = MessageBox( ls.m_szbuffer/*"Are you sure you want to remove this image?"*/, "Confirm Deletion", MB_YESNO | MB_DEFBUTTON2);
       if (ans == IDYES)
       {
+         CCO(PinTable) * const pt = g_pvp->GetActiveTable();
          int sel = ListView_GetNextItem(hSoundList, -1, LVNI_SELECTED);
          int lastsel = -1;
          while (sel != -1)
@@ -642,12 +629,11 @@ void ImageDialog::DeleteImage()
 void ImageDialog::Reimport()
 {
    const HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-   CCO(PinTable) * const pt = g_pvp->GetActiveTable();
-
    const int count = ListView_GetSelectedCount(hSoundList);
+
    if (count > 0)
    {
-      LocalString ls(IDS_REPLACEIMAGE);
+      const LocalString ls(IDS_REPLACEIMAGE);
       const int ans = MessageBox(ls.m_szbuffer/*"Are you sure you want to replace this image?"*/, "Confirm Reimport", MB_YESNO | MB_DEFBUTTON2);
       if (ans == IDYES)
       {
@@ -662,17 +648,18 @@ void ImageDialog::Reimport()
             Texture * const ppi = (Texture*)lvitem.lParam;
             if (ppi != NULL)
             {
-               const HANDLE hFile = CreateFile(ppi->m_szPath, GENERIC_READ, FILE_SHARE_READ,
+               const HANDLE hFile = CreateFile(ppi->m_szPath.c_str(), GENERIC_READ, FILE_SHARE_READ,
                                                NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
                if (hFile != INVALID_HANDLE_VALUE)
                {
                   CloseHandle(hFile);
+                  CCO(PinTable) * const pt = g_pvp->GetActiveTable();
                   pt->ReImportImage(ppi, ppi->m_szPath);
                   pt->SetNonUndoableDirty(eSaveDirty);
                }
                else
-                  MessageBox( ppi->m_szPath, "FILE NOT FOUND!", MB_OK);
+                  MessageBox(ppi->m_szPath.c_str(), "FILE NOT FOUND!", MB_OK);
 
                sel = ListView_GetNextItem(hSoundList, sel, LVNI_SELECTED);
             }
@@ -687,8 +674,6 @@ void ImageDialog::Reimport()
 void ImageDialog::UpdateAll()
 {
    const HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-   CCO(PinTable) * const pt = g_pvp->GetActiveTable();
-
    const int count = ListView_GetSelectedCount(hSoundList);
    bool errorOccurred = false;
 
@@ -702,10 +687,11 @@ void ImageDialog::UpdateAll()
       Texture * const ppi = (Texture*)lvitem.lParam;
       if (ppi != NULL)
       {
-         HANDLE hFile = CreateFile(ppi->m_szPath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+         HANDLE hFile = CreateFile(ppi->m_szPath.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
          if (hFile != INVALID_HANDLE_VALUE)
          {
             CloseHandle(hFile);
+            CCO(PinTable) * const pt = g_pvp->GetActiveTable();
             pt->ReImportImage(ppi, ppi->m_szPath);
             pt->SetNonUndoableDirty(eSaveDirty);
          }
@@ -723,23 +709,22 @@ void ImageDialog::UpdateAll()
 void ImageDialog::ReimportFrom()
 {
    const HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-   CCO(PinTable) * const pt = g_pvp->GetActiveTable();
+   const int sel = ListView_GetNextItem(hSoundList, -1, LVNI_SELECTED);
 
-   int sel = ListView_GetNextItem(hSoundList, -1, LVNI_SELECTED);
    if (sel != -1)
    {
-      LocalString ls(IDS_REPLACEIMAGE);
+      const LocalString ls(IDS_REPLACEIMAGE);
       const int ans = MessageBox( ls.m_szbuffer/*"Are you sure you want to replace this image with a new one?"*/, "Confirm Reimport", MB_YESNO | MB_DEFBUTTON2);
       if (ans == IDYES)
       {
-         char szFileName[MAXSTRING];
+         std::vector<std::string> szFileName;
          char szInitialDir[MAXSTRING];
-         szFileName[0] = '\0';
-         int fileOffset;
 
          HRESULT hr = LoadValueString("RecentDir", "ImageDir", szInitialDir, MAXSTRING);
+         if (hr != S_OK)
+            lstrcpy(szInitialDir, "c:\\Visual Pinball\\Tables\\");
 
-         if (g_pvp->OpenFileDialog(szInitialDir, szFileName, "Bitmap, JPEG, PNG, TGA, EXR, HDR Files (.bmp/.jpg/.png/.tga/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.tga;*.exr;*.hdr\0","png",0,fileOffset))
+         if (g_pvp->OpenFileDialog(szInitialDir, szFileName, "Bitmap, JPEG, PNG, TGA, WEBP, EXR, HDR Files (.bmp/.jpg/.png/.tga/.webp/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.tga;*.webp;*.exr;*.hdr\0","png",0))
          {
             LVITEM lvitem;
             lvitem.mask = LVIF_PARAM;
@@ -749,12 +734,16 @@ void ImageDialog::ReimportFrom()
             Texture * const ppi = (Texture*)lvitem.lParam;
             if (ppi != NULL)
             {
-               strcpy_s(szInitialDir, sizeof(szInitialDir), szFileName);
-               szInitialDir[fileOffset] = 0;
-               hr = SaveValueString("RecentDir", "ImageDir", szInitialDir);
+               const size_t index = szFileName[0].find_last_of('\\');
+               if (index != std::string::npos)
+               {
+                  const std::string newInitDir(szFileName[0].substr(0, index));
+                  SaveValueString("RecentDir", "ImageDir", newInitDir);
+               }
 
-               pt->ReImportImage(ppi, szFileName);
-               ListView_SetItemText(hSoundList, sel, 1, ppi->m_szPath);
+               CCO(PinTable) * const pt = g_pvp->GetActiveTable();
+               pt->ReImportImage(ppi, szFileName[0]);
+               ListView_SetItemText(hSoundList, sel, 1, (LPSTR)ppi->m_szPath.c_str());
                pt->SetNonUndoableDirty(eSaveDirty);
 
                // Display new image

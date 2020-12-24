@@ -9,15 +9,16 @@ struct ManufacturerDimensions
    float height;
 };
 
-#define DIM_TABLE_SIZE 37
-ManufacturerDimensions dimTable[DIM_TABLE_SIZE] =
+#define DIM_TABLE_SIZE 40
+static const ManufacturerDimensions dimTable[DIM_TABLE_SIZE] =
 {
    { "Atari (widebody)", 27.0f, 45.0f },
    { "Bally EM (standard)", 20.25f, 41.0f },
    { "Bally (standard)", 20.25f, 42.0f },
    { "Bally (widebody)", 26.75f, 42.0f }, //!! OPA claims 40.5
    { "Capcom", 20.25f, 46.0f },
-   { "Data East/Sega (standard)", 20.25f, 46.0f },
+   { "Data East (up to Hook)", 20.25f, 42.0f }, //!! cyberpez: A KLOV member measured his BTTF for me: "42.5 x 20.25. I expect the extra half inch to be an anomaly on my machine, or I’m measuring at the wrong spot." (speculation: at least Batman, Monday Night Football, King Kong and Phantom of the Opera, are this size too)
+   { "Data East/Sega (standard)", 20.25f, 46.0f }, // verified by Sliderpoint on RaB (speculation: at least TMNT and LW3 are this size, too)
    { "Data East/Sega (widebody)", 23.25f, 46.0f },
    { "Game Plan", 20.25f, 42.0f },
    { "Gottlieb EM (through 76)", 20.25f, 41.0f },
@@ -25,13 +26,13 @@ ManufacturerDimensions dimTable[DIM_TABLE_SIZE] =
    { "Gottlieb System 1 (standard)", 20.25f, 42.0f },
    { "Gottlieb System 1 (widebody)", 26.75f, 47.0f },
    { "Gottlieb System 80 (standard)", 20.25f, 42.0f },
-   { "Gottlieb System 80 (widebody)", 23.875f, 47.875f }, // verified on at least on two actual machines (via BorgDog)
+   { "Gottlieb System 80 (widebody)", 23.875f, 47.875f }, // verified on at least two actual machines (via BorgDog)
    { "Gottlieb System 80 (extrawide)", 26.75f, 46.5f },
    { "Gottlieb System 3", 20.25f, 46.0f },
    { "Stern (widebody)", 23.875f, 45.0f },
    { "Stern (standard)", 20.25f, 42.0f },
    { "Stern Modern (standard)", 20.25f, 45.0f },
-   { "Williams EM (standard)", 20.5f, 42.0f },
+   { "Williams EM (standard)", 20.25f, 42.0f }, // measured by Bord via a Williams 1965 EM
    { "Williams System 1-11 (standard)", 20.25f, 42.0f },
    { "Williams System 1-11 (widebody)", 27.0f, 42.0f },
    { "WMS WPC (standard)", 20.5f, 46.0f },
@@ -45,8 +46,11 @@ ManufacturerDimensions dimTable[DIM_TABLE_SIZE] =
    { "Future Spa (1979)", 26.7717f, 40.55118f },
    { "Guns N' Roses (1994)", 25.0f, 51.75f },
    { "Hercules (1979 Atari)", 36.0f, 72.0f },
-   { "Mystery Castle (Alvin G)", 20.25f, 46.0f },
-   { "Safecracker", 16.5f, 41.5f }, //!! OPA: "propably" 18.35 x 41.5
+   { "Mystery Castle (1993 Alvin G)", 20.25f, 46.0f },
+   // Playboy does not have standard size, so around 20.25f, 42.0f ???
+   { "Safe Cracker (1996)", 16.5f, 41.5f }, //!! OPA: "propably" 18.35 x 41.5
+   { "Secret Service (1988)", 20.275f, 42.126f }, // measured by Baron Shadow
+   { "Star Trek 25th (1991)", 20.25f, 42.625f }, //!! via cyberpez, with an error of +/- 1/4 of an inch (bracket was in the way), so 42.375-42.875
    { "Varkon (1982)", 24.0f, 21.0f },
    { "World Cup Soccer (1994)", 20.25f, 45.75f } //!! OPA: 20.2756 x 45.7874
 };
@@ -81,7 +85,7 @@ BOOL DimensionDialog::OnInitDialog()
    {
       lv.iItem = i;
       lv.iSubItem = 0;
-      lv.pszText = dimTable[i].name;
+      lv.pszText = (LPSTR)dimTable[i].name;
       ListView_InsertItem(listHwnd, &lv);
       sprintf_s(textBuf, "%.03f", dimTable[i].width);
       ListView_SetItemText(listHwnd, i, 1, textBuf);

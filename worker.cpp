@@ -13,8 +13,8 @@ VOID CALLBACK HangSnoopProc(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime
       // Nothing happened since the last time - we are probably hung
       EXCEPINFO eiInterrupt;
       ZeroMemory(&eiInterrupt, sizeof(eiInterrupt));
-      LocalString ls(IDS_HANG);
-      WCHAR *wzError = MakeWide(ls.m_szbuffer);
+      const LocalString ls(IDS_HANG);
+      const WCHAR * const wzError = MakeWide(ls.m_szbuffer);
       eiInterrupt.bstrDescription = SysAllocString(wzError);
       //eiInterrupt.scode = E_NOTIMPL;
       eiInterrupt.wCode = 2345;
@@ -76,23 +76,11 @@ unsigned int WINAPI VPWorkerThreadStart(void *param)
 
 void CompleteAutoSave(HANDLE hEvent, LPARAM lParam)
 {
-   AutoSavePackage *pasp = (AutoSavePackage *)lParam;
+   AutoSavePackage * const pasp = (AutoSavePackage *)lParam;
 
-   FastIStorage *pstgroot = pasp->pstg;
+   FastIStorage * const pstgroot = pasp->pstg;
 
-   IStorage *pstgDisk;
-
-   const WCHAR * const wzSaveName = L"AutoSave";
-   const WCHAR * const wzSaveExtension = L".vpx";
-   WCHAR wzSuffix[32];
-   _itow_s(pasp->tableindex, wzSuffix, sizeof(wzSuffix) / sizeof(WCHAR), 10);
-   const int maxLen = MAX_PATH + 32 + lstrlenW(wzSaveName) + lstrlenW(wzSaveExtension) + 1;
-   WCHAR * const wzT = new WCHAR[maxLen];
-
-   WideStrNCopy(g_pvp->m_wzMyPath, wzT, maxLen);
-   WideStrCat(wzSaveName, wzT);
-   WideStrCat(wzSuffix, wzT);
-   WideStrCat(wzSaveExtension, wzT);
+   const std::wstring wzT = g_pvp->m_wzMyPath + L"AutoSave" + std::to_wstring(pasp->tableindex) + L".vpx";
 
    //MAKE_WIDEPTR_FROMANSI(wszCodeFile, m_szFileName);
 
@@ -101,8 +89,9 @@ void CompleteAutoSave(HANDLE hEvent, LPARAM lParam)
    stg.reserved = 0;
    stg.ulSectorSize = 4096;
 
+   IStorage* pstgDisk;
    HRESULT hr;
-   if (SUCCEEDED(hr = StgCreateStorageEx(wzT, STGM_TRANSACTED | STGM_READWRITE | STGM_SHARE_EXCLUSIVE | STGM_CREATE,
+   if (SUCCEEDED(hr = StgCreateStorageEx(wzT.c_str(), STGM_TRANSACTED | STGM_READWRITE | STGM_SHARE_EXCLUSIVE | STGM_CREATE,
       STGFMT_DOCFILE, 0, &stg, 0, IID_IStorage, (void**)&pstgDisk)))
    {
       pstgroot->CopyTo(0, NULL, NULL, pstgDisk);
@@ -114,8 +103,7 @@ void CompleteAutoSave(HANDLE hEvent, LPARAM lParam)
 
    SetEvent(hEvent);
 
-   PostMessage(pasp->HwndTable, DONE_AUTOSAVE, (WPARAM)hEvent, hr);
+   PostMessage(pasp->hwndtable, DONE_AUTOSAVE, (WPARAM)hEvent, hr);
 
-   delete[] wzT;
    delete pasp;
 }

@@ -25,14 +25,15 @@ void LightSeq::SetDefaults(bool fromMouseClick)
 {
    m_d.m_updateinterval = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\LightSequence", "UpdateInterval", 25) : 25;
 
-   char tmp[MAXNAMEBUFFER];
+   char tmp[MAXSTRING];
    const HRESULT hr = LoadValueString("DefaultProps\\LightSequence", "Collection", tmp, MAXNAMEBUFFER);
    if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_wzCollection[0] = 0x00;
+      m_d.m_wzCollection.clear();
    else
    {
-      UNICODE_FROM_ANSI(m_d.m_wzCollection, tmp, lstrlen(tmp));
-      m_d.m_wzCollection[lstrlen(tmp)] = '\0';
+      WCHAR wtmp[MAXSTRING];
+      MultiByteToWideChar(CP_ACP, 0, tmp, -1, wtmp, MAXSTRING);
+      m_d.m_wzCollection = wtmp;
    }
 
    m_d.m_vCenter.x = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\LightSequence", "CenterX", EDITOR_BG_WIDTH / 2) : (EDITOR_BG_WIDTH / 2);
@@ -43,8 +44,8 @@ void LightSeq::SetDefaults(bool fromMouseClick)
 
 void LightSeq::WriteRegDefaults()
 {
-   MAKE_ANSIPTR_FROMWIDE(strTmp, (WCHAR *)m_d.m_wzCollection);
-   SaveValueInt("DefaultProps\\LightSequence", "UpdateInterval", m_d.m_updateinterval);
+   char strTmp[MAXSTRING];
+   WideCharToMultiByte(CP_ACP, 0, m_d.m_wzCollection.c_str(), -1, strTmp, MAXSTRING, NULL, NULL);
    SaveValueString("DefaultProps\\LightSequence", "Collection", strTmp);
    SaveValueFloat("DefaultProps\\LightSequence", "CenterX", m_d.m_vCenter.x);
    SaveValueFloat("DefaultProps\\LightSequence", "CenterY", m_d.m_vCenter.y);
@@ -54,7 +55,7 @@ void LightSeq::WriteRegDefaults()
 
 void LightSeq::SetObjectPos()
 {
-   g_pvp->SetObjectPosCur(m_d.m_v.x, m_d.m_v.y);
+   m_vpinball->SetObjectPosCur(m_d.m_v.x, m_d.m_v.y);
 }
 
 void LightSeq::MoveOffset(const float dx, const float dy)
@@ -217,7 +218,7 @@ void LightSeq::RenderSetup()
    m_queue.Tail = 0;
 
    // get a BSTR version of the collection we are to use
-   CComBSTR bstrCollection = m_d.m_wzCollection;
+   CComBSTR bstrCollection = m_d.m_wzCollection.c_str();
 
    // get the number of collections available
    int size = m_ptable->m_vcollection.Size();
@@ -254,14 +255,14 @@ void LightSeq::RenderSetup()
 
    // allocate the grid for this sequence
    m_pgridData = new short[m_lightSeqGridHeight*m_lightSeqGridWidth];
-   if (m_pgridData == NULL)
+   /*if (m_pgridData == NULL)
    {
       // make the entire collection (for the sequencer) invalid and bomb out
       m_pcollection = NULL;
       return;
    }
-   else
-      ZeroMemory((void *)m_pgridData, (size_t)((m_lightSeqGridHeight*m_lightSeqGridWidth) * sizeof(short)));
+   else*/
+   ZeroMemory((void *)m_pgridData, (size_t)((m_lightSeqGridHeight*m_lightSeqGridWidth) * sizeof(short)));
 
    // get the number of elements (objects) in the collection (referenced by m_visel)
    size = m_pcollection->m_visel.Size();
@@ -401,16 +402,16 @@ HRESULT LightSeq::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool back
    BiffWriter bw(pstm, hcrypthash);
 
    bw.WriteStruct(FID(VCEN), &m_d.m_v, sizeof(Vertex2D));
-   bw.WriteWideString(FID(COLC), (WCHAR *)m_d.m_wzCollection);
+   bw.WriteWideString(FID(COLC), m_d.m_wzCollection);
    bw.WriteFloat(FID(CTRX), m_d.m_vCenter.x);
    bw.WriteFloat(FID(CTRY), m_d.m_vCenter.y);
    bw.WriteInt(FID(UPTM), m_d.m_updateinterval);
    bw.WriteBool(FID(TMON), m_d.m_tdr.m_TimerEnabled);
    bw.WriteInt(FID(TMIN), m_d.m_tdr.m_TimerInterval);
-
-   bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
-
+   bw.WriteWideString(FID(NAME), m_wzName);
    bw.WriteBool(FID(BGLS), m_backglass);
+
+   ISelect::SaveData(pstm, hcrypthash);
 
    bw.WriteTag(FID(ENDB));
 
@@ -435,14 +436,19 @@ bool LightSeq::LoadToken(const int id, BiffReader * const pbr)
    {
    case FID(PIID): pbr->GetInt((int *)pbr->m_pdata); break;
    case FID(VCEN): pbr->GetStruct(&m_d.m_v, sizeof(Vertex2D)); break;
-   case FID(COLC): pbr->GetWideString((WCHAR *)m_d.m_wzCollection); break;
+   case FID(COLC): pbr->GetWideString(m_d.m_wzCollection); break;
    case FID(CTRX): pbr->GetFloat(&m_d.m_vCenter.x); break;
    case FID(CTRY): pbr->GetFloat(&m_d.m_vCenter.y); break;
    case FID(UPTM): pbr->GetInt(&m_d.m_updateinterval); break;
    case FID(TMON): pbr->GetBool(&m_d.m_tdr.m_TimerEnabled); break;
    case FID(TMIN): pbr->GetInt(&m_d.m_tdr.m_TimerInterval); break;
-   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(NAME): pbr->GetWideString(m_wzName); break;
    case FID(BGLS): pbr->GetBool(&m_backglass); break;
+   default:
+   {
+      ISelect::LoadToken(id, pbr);
+      break;
+   }
    }
    return true;
 }
@@ -454,17 +460,14 @@ HRESULT LightSeq::InitPostLoad()
 
 STDMETHODIMP LightSeq::get_Collection(BSTR *pVal)
 {
-   WCHAR wz[sizeof(m_d.m_wzCollection)];
-
-   memcpy(wz, m_d.m_wzCollection, sizeof(m_d.m_wzCollection));
-   *pVal = SysAllocString(wz);
+   *pVal = SysAllocString(m_d.m_wzCollection.c_str());
 
    return S_OK;
 }
 
 STDMETHODIMP LightSeq::put_Collection(BSTR newVal)
 {
-   memcpy(m_d.m_wzCollection, (void *)newVal, sizeof(m_d.m_wzCollection));
+   m_d.m_wzCollection = newVal;
 
    return S_OK;
 }
@@ -1681,7 +1684,7 @@ LightState LightSeq::GetElementState(const int index) const
    if (type == eItemLight)
    {
       Light * const pLight = (Light *)m_pcollection->m_visel.ElementAt(index);
-      rc = pLight->m_realState;
+      rc = pLight->m_inPlayState;
    }
    return rc;
 }

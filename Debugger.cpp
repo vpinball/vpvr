@@ -1,479 +1,256 @@
 #include "StdAfx.h"
 #include "resource.h"
 #include <windowsx.h>
+#include "Debugger.h"
+#include <string>
 
 #define RECOMPUTEBUTTONCHECK WM_USER+100
 #define RESIZE_FROM_EXPAND WM_USER+101
 
-/*TBBUTTON const g_tbbuttonDebug[] = {
-#ifdef _WIN64
-{ 0, IDC_PLAY, TBSTATE_ENABLED, TBSTYLE_CHECKGROUP, {0, 0, 0, 0, 0, 0}, IDS_PLAY, 0 },
-{ 1, IDC_PAUSE, TBSTATE_ENABLED, TBSTYLE_CHECKGROUP, {0, 0, 0, 0, 0, 0}, IDS_PAUSE, 1 },
-{ 2, IDC_STEP, TBSTATE_ENABLED, TBSTYLE_CHECKGROUP, {0, 0, 0, 0, 0, 0}, IDS_STEP, 2 },
-#else
-{ 0, IDC_PLAY, TBSTATE_ENABLED, TBSTYLE_CHECKGROUP, {0, 0}, IDS_PLAY, 0 },
-{ 1, IDC_PAUSE, TBSTATE_ENABLED, TBSTYLE_CHECKGROUP, {0, 0}, IDS_PAUSE, 1 },
-{ 2, IDC_STEP, TBSTATE_ENABLED, TBSTYLE_CHECKGROUP, {0, 0}, IDS_STEP, 2 },
+DebuggerDialog::DebuggerDialog() : CDialog(IDD_DEBUGGER)
+{
+}
+
+BOOL DebuggerDialog::IsSubDialogMessage(MSG& msg) const
+{
+   if (m_lightDialog.IsWindow())
+   {
+      const BOOL consumed = m_lightDialog.IsDialogMessage(msg);
+      if (consumed)
+         return TRUE;
+   }
+   if (m_materialDialog.IsWindow())
+   {
+      const BOOL consumed = m_materialDialog.IsDialogMessage(msg);
+      if (consumed)
+         return TRUE;
+   }
+   return IsDialogMessage(msg);
+}
+
+BOOL DebuggerDialog::OnInitDialog()
+{
+   AttachItem(IDC_PLAY, m_playButton);
+   AttachItem(IDC_PAUSE, m_pauseButton);
+   AttachItem(IDC_STEP, m_stepButton);
+   AttachItem(IDC_STEPAMOUNT, m_stepAmountEdit);
+   AttachItem(IDC_EXPAND, m_editorExpandButton);
+   AttachItem(IDC_DBGLIGHTSBUTTON, m_dbgLightsButton);
+   AttachItem(IDC_DBG_MATERIALS_BUTTON, m_dbgMaterialsButton);
+   m_hThrowBallsInPlayerCheck = ::GetDlgItem(GetHwnd(), IDC_BALL_THROWING);
+   m_hBallControlCheck = ::GetDlgItem(GetHwnd(), IDC_BALL_CONTROL);
+   AttachItem(IDC_THROW_BALL_SIZE_EDIT2, m_ballSizeEdit);
+   AttachItem(IDC_THROW_BALL_MASS_EDIT2, m_ballMassEdit);
+
+   CRect rcDialog;
+   CRect rcMain;
+   rcMain = GetParent().GetWindowRect();
+   rcDialog = GetWindowRect();
+
+   SetWindowPos(NULL, (rcMain.right + rcMain.left) / 2 - (rcDialog.right - rcDialog.left) / 2,
+      (rcMain.bottom + rcMain.top) / 2 - (rcDialog.bottom - rcDialog.top) / 2,
+      0, 0, SWP_NOOWNERZORDER | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE/* | SWP_NOMOVE*/);
+
+   HANDLE hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PLAY), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
+   m_playButton.SetIcon((HICON)hIcon);
+
+   hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PAUSE), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
+   m_pauseButton.SetIcon((HICON)hIcon);
+   hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_STEP), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
+   m_stepButton.SetIcon((HICON)hIcon);
+
+   SendMessage(RECOMPUTEBUTTONCHECK, 0, 0);
+
+   RECT rcEditSize;
+   HWND hwndEditSize = GetDlgItem(IDC_EDITSIZE);
+
+   ::GetWindowRect(hwndEditSize, &rcEditSize);
+   ::ScreenToClient(GetHwnd(), (POINT*)&rcEditSize);
+   ::ScreenToClient(GetHwnd(), &((POINT*)&rcEditSize)[1]);
+
+   g_pplayer->m_hwndDebugOutput = CreateWindowEx(0, "Scintilla", "",
+      WS_CHILD | ES_NOHIDESEL | WS_VISIBLE | ES_SUNKEN | WS_HSCROLL | WS_VSCROLL | ES_MULTILINE | ES_WANTRETURN | WS_BORDER,
+      rcEditSize.left, rcEditSize.top, rcEditSize.right - rcEditSize.left, rcEditSize.bottom - rcEditSize.top, GetHwnd(), NULL, g_pvp->theInstance, 0);
+
+   SendMessage(g_pplayer->m_hwndDebugOutput, SCI_STYLESETSIZE, 32, 10);
+   SendMessage(g_pplayer->m_hwndDebugOutput, SCI_STYLESETFONT, 32, (LPARAM)"Courier");
+
+   SendMessage(g_pplayer->m_hwndDebugOutput, SCI_SETMARGINWIDTHN, 1, 0);
+
+   SendMessage(g_pplayer->m_hwndDebugOutput, SCI_SETTABWIDTH, 4, 0);
+
+   SendMessage(m_hThrowBallsInPlayerCheck, BM_SETCHECK, g_pplayer->m_throwBalls ? BST_CHECKED : BST_UNCHECKED, 0);
+   SendMessage(m_hBallControlCheck, BM_SETCHECK, g_pplayer->m_ballControl ? BST_CHECKED : BST_UNCHECKED, 0);
+
+   m_ballSizeEdit.SetWindowText(std::to_string(g_pplayer->m_debugBallSize).c_str());
+
+   string textBuf;
+   f2sz(g_pplayer->m_debugBallMass, textBuf);
+   m_ballMassEdit.SetWindowText(textBuf.c_str());
+
+   SendMessage(RESIZE_FROM_EXPAND, 0, 0);
+   return TRUE;
+}
+
+BOOL DebuggerDialog::OnCommand(WPARAM wParam, LPARAM lParam)
+{
+   UNREFERENCED_PARAMETER(lParam);
+
+   switch (LOWORD(wParam))
+   {
+   case IDC_PLAY:
+   {
+#ifdef STEPPING
+      g_pplayer->m_pauseTimeTarget = 0;
 #endif
-};*/
-
-void AssignIconToButton(HWND hwnd, int controlid, int resourceid)
-{
-   HWND hwndButton = GetDlgItem(hwnd, controlid);
-   HICON hicon = (HICON)LoadImage(g_hinst, MAKEINTRESOURCE(resourceid), IMAGE_ICON, 16, 16, 0);
-   SendMessage(hwndButton, BM_SETIMAGE, IMAGE_ICON, (LPARAM)hicon);
-}
-
-Light *GetLight(HWND hCombo)
-{
-   int idx_row;
-   char strText[255] = { 0 };
-   idx_row = ComboBox_GetCurSel(hCombo);
-   ComboBox_GetLBText(hCombo, idx_row, strText);
-   IEditable * const pedit = g_pplayer->m_ptable->GetElementByName(strText);
-   if (pedit != NULL)
-      return (Light*)pedit;
-
-   return NULL;
-}
-
-void SetCheckButtonState(HWND hwndDlg, Light *plight)
-{
-   if (plight->m_d.m_state == LightStateOn)
-   {
-      Button_SetCheck(GetDlgItem(hwndDlg, IDC_DBG_LIGHT_ON_CHECK), BST_CHECKED);
-      Button_SetCheck(GetDlgItem(hwndDlg, IDC_DBG_LIGHT_OFF_CHECK), BST_UNCHECKED);
-      Button_SetCheck(GetDlgItem(hwndDlg, IDC_DBG_LIGHT_BLINKING_CHECK), BST_UNCHECKED);
-   }
-   else if (plight->m_d.m_state == LightStateOff)
-   {
-      Button_SetCheck(GetDlgItem(hwndDlg, IDC_DBG_LIGHT_ON_CHECK), BST_UNCHECKED);
-      Button_SetCheck(GetDlgItem(hwndDlg, IDC_DBG_LIGHT_OFF_CHECK), BST_CHECKED);
-      Button_SetCheck(GetDlgItem(hwndDlg, IDC_DBG_LIGHT_BLINKING_CHECK), BST_UNCHECKED);
-   }
-   else if (plight->m_d.m_state == LightStateBlinking)
-   {
-      Button_SetCheck(GetDlgItem(hwndDlg, IDC_DBG_LIGHT_ON_CHECK), BST_UNCHECKED);
-      Button_SetCheck(GetDlgItem(hwndDlg, IDC_DBG_LIGHT_OFF_CHECK), BST_UNCHECKED);
-      Button_SetCheck(GetDlgItem(hwndDlg, IDC_DBG_LIGHT_BLINKING_CHECK), BST_CHECKED);
-   }
-}
-INT_PTR CALLBACK MaterialDebuggerProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-   PinTable * const ptable = g_pplayer->m_ptable;
-   HWND hCombo = GetDlgItem(hwndDlg, IDC_DBG_MATERIALCOMBO);
-   switch (uMsg)
-   {
-   case WM_INITDIALOG:
-   {
-      vector<string> matNames;
-      SetWindowLongPtr(hwndDlg, GWLP_USERDATA, lParam);
-      for (size_t i = 0; i < ptable->m_materials.size(); i++)
-      {
-         matNames.push_back(ptable->m_materials[i]->m_szName);
-      }
-      std::sort(matNames.begin(), matNames.end());
-      for (size_t i = 0; i < matNames.size(); i++)
-         ComboBox_AddString(hCombo, matNames[i].c_str());
-
-      ShowWindow(g_pplayer->m_hwndDebugger, SW_HIDE);
-      ComboBox_SetCurSel(hCombo, 0);
-      SendMessage(hwndDlg, WM_COMMAND, MAKEWPARAM(IDC_DBG_MATERIALCOMBO, CBN_SELCHANGE), 0);
+      g_pplayer->m_userDebugPaused = false;
+      g_pplayer->RecomputePseudoPauseState();
+      SendMessage(RECOMPUTEBUTTONCHECK, 0, 0);
       return TRUE;
    }
-   case WM_CLOSE:
+   case IDC_PAUSE:
    {
-      ShowWindow(g_pplayer->m_hwndDebugger, SW_SHOW);
-      EndDialog(hwndDlg, FALSE);
-      break;
-   }
-   case WM_ACTIVATE:
-   {
-      g_pplayer->m_debugWindowActive = (wParam != WA_INACTIVE);
-      g_pplayer->RecomputePauseState();
+#ifdef STEPPING
+      g_pplayer->m_pauseTimeTarget = 0;
+#endif
+      g_pplayer->m_userDebugPaused = true;
       g_pplayer->RecomputePseudoPauseState();
-      break;
+      SendMessage(RECOMPUTEBUTTONCHECK, 0, 0);
+      return TRUE;
    }
-   case WM_COMMAND:
+   case IDC_STEP:
    {
-      switch (HIWORD(wParam))
+#ifdef STEPPING
+      const int ms = GetDlgItemInt(IDC_STEPAMOUNT, FALSE);
+      g_pplayer->m_pauseTimeTarget = g_pplayer->m_time_msec + ms;
+#endif
+      g_pplayer->m_userDebugPaused = false;
+      g_pplayer->RecomputePseudoPauseState();
+      SendMessage(RECOMPUTEBUTTONCHECK, 0, 0);
+      return TRUE;
+   }
+   case IDC_EXPAND:
+   {
+      SendMessage(RESIZE_FROM_EXPAND, 0, 0);
+      return TRUE;
+   }
+   case IDC_BALL_THROWING:
+   {
+      size_t checked = SendMessage(m_hThrowBallsInPlayerCheck, BM_GETCHECK, 0, 0);
+      g_pplayer->m_throwBalls = !!checked;
+      return TRUE;
+   }
+   case IDC_BALL_CONTROL:
+   {
+      size_t checked = SendMessage(m_hBallControlCheck, BM_GETCHECK, 0, 0);
+      g_pplayer->m_ballControl = !!checked;
+      return TRUE;
+   }
+   case IDC_DBGLIGHTSBUTTON:
+   {
+      ShowWindow(SW_HIDE);
+      if (!m_lightDialog.IsWindow())
       {
-      case BN_CLICKED:
+         m_lightDialog.Create(GetHwnd());
+         m_lightDialog.ShowWindow();
+      }
+      else
       {
-         switch (LOWORD(wParam))
-         {
-         case IDOK:
-         {
-            int idx_row;
-            char strText[255] = { 0 };
-            idx_row = ComboBox_GetCurSel(hCombo);
-            ComboBox_GetLBText(hCombo, idx_row, strText);
-
-            Material * const pMat = ptable->GetMaterial(strText);
-            if (pMat != &g_pvp->m_dummyMaterial)
-            {
-               char value[256];
-               GetDlgItemText(hwndDlg, IDC_DBG_MATERIAL_BASE_WRAP_EDIT, value, 31);
-               pMat->m_fWrapLighting = saturate(sz2f(value));
-               GetDlgItemText(hwndDlg, IDC_DBG_MATERIAL_SHININESS_EDIT, value, 31);
-               pMat->m_fRoughness = saturate(sz2f(value));
-               GetDlgItemText(hwndDlg, IDC_DBG_MATERIAL_GLOSSY_IMGLERP_EDIT, value, 31);
-               pMat->m_fGlossyImageLerp = saturate(sz2f(value));
-               GetDlgItemText(hwndDlg, IDC_DBG_MATERIAL_THICKNESS_EDIT, value, 31);
-               pMat->m_fThickness = saturate(sz2f(value));
-               GetDlgItemText(hwndDlg, IDC_DBG_MATERIAL_EDGE_EDIT, value, 31);
-               pMat->m_fEdge = saturate(sz2f(value));
-               GetDlgItemText(hwndDlg, IDC_DBG_MATERIAL_OPACITY_AMOUNT_EDIT, value, 31);
-               pMat->m_fOpacity = saturate(sz2f(value));
-               GetDlgItemText(hwndDlg, DBG_MATERIAL_OPACITY_EDGE_EDIT, value, 31);
-               pMat->m_fEdgeAlpha = saturate(sz2f(value));
-               size_t checked = SendDlgItemMessage(hwndDlg, IDC_DBG_METAL_MATERIAL_CHECK, BM_GETCHECK, 0, 0);
-               pMat->m_bIsMetal = (checked == 1);
-               checked = SendDlgItemMessage(hwndDlg, IDC_DBG_MATERIAL_OPACITY_ACTIVE_CHECK, BM_GETCHECK, 0, 0);
-               pMat->m_bOpacityActive = (checked == 1);
-               ptable->AddDbgMaterial(pMat);
-            }
-            break;
-         }
-         case IDCANCEL:
-         {
-
-            ShowWindow(g_pplayer->m_hwndDebugger, SW_SHOW);
-            EndDialog(hwndDlg, FALSE);
-            return TRUE;
-         }
-         }
-         break;
+         m_lightDialog.ShowWindow();
+         m_lightDialog.SetActiveWindow();
       }
-      }
-      switch (LOWORD(wParam))
+      return TRUE;
+   }
+   case IDC_DBG_MATERIALS_BUTTON:
+   {
+      ShowWindow(SW_HIDE);
+      if (!m_materialDialog.IsWindow())
       {
-      case IDC_DBG_MATERIAL_OPACITY_ACTIVE_CHECK:
-      case IDC_DBG_METAL_MATERIAL_CHECK:
+         m_materialDialog.Create(GetHwnd());
+         m_materialDialog.ShowWindow();
+      }
+      else
       {
-         SendMessage(hwndDlg, WM_COMMAND, MAKEWPARAM(IDOK, BN_CLICKED), 0);
-         break;
+         m_materialDialog.ShowWindow();
+         m_materialDialog.SetActiveWindow();
       }
-      case IDC_DBG_MATERIALCOMBO:
-      {
-         switch (HIWORD(wParam))
-         {
-         case CBN_SELCHANGE:
-         {
-            int idx_row;
-            char strText[255] = { 0 };
-            idx_row = ComboBox_GetCurSel(hCombo);
-            ComboBox_GetLBText(hCombo, idx_row, strText);
-
-            Material *const pMat = ptable->GetMaterial(strText);
-            if (pMat != &g_pvp->m_dummyMaterial)
-            {
-               char value[256];
-               f2sz(pMat->m_fWrapLighting, value);
-               SetDlgItemText(hwndDlg, IDC_DBG_MATERIAL_BASE_WRAP_EDIT, value);
-               f2sz(pMat->m_fRoughness, value);
-               SetDlgItemText(hwndDlg, IDC_DBG_MATERIAL_SHININESS_EDIT, value);
-               f2sz(pMat->m_fGlossyImageLerp, value);
-               SetDlgItemText(hwndDlg, IDC_DBG_MATERIAL_GLOSSY_IMGLERP_EDIT, value);
-               f2sz(pMat->m_fThickness, value);
-               SetDlgItemText(hwndDlg, IDC_DBG_MATERIAL_THICKNESS_EDIT, value);
-               f2sz(pMat->m_fEdge, value);
-               SetDlgItemText(hwndDlg, IDC_DBG_MATERIAL_EDGE_EDIT, value);
-               f2sz(pMat->m_fOpacity, value);
-               SetDlgItemText(hwndDlg, IDC_DBG_MATERIAL_OPACITY_AMOUNT_EDIT, value);
-               f2sz(pMat->m_fEdgeAlpha, value);
-               SetDlgItemText(hwndDlg, DBG_MATERIAL_OPACITY_EDGE_EDIT, value);
-               SendMessage(GetDlgItem(hwndDlg, IDC_DBG_METAL_MATERIAL_CHECK), BM_SETCHECK, pMat->m_bIsMetal ? BST_CHECKED : BST_UNCHECKED, 0);
-               SendMessage(GetDlgItem(hwndDlg, IDC_DBG_MATERIAL_OPACITY_ACTIVE_CHECK), BM_SETCHECK, pMat->m_bOpacityActive ? BST_CHECKED : BST_UNCHECKED, 0);
-            }
-            break;
-         }
-         }
-         break;
-      }
-      }
-      break;
+      return TRUE;
    }
    }
    return FALSE;
 }
 
-INT_PTR CALLBACK LightDebuggerProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+void DebuggerDialog::OnClose()
 {
-   PinTable * const ptable = g_pplayer->m_ptable;
-   HWND hCombo = GetDlgItem(hwndDlg, IDC_LIGHTSCOMBO);
+#ifdef STEPPING
+   g_pplayer->m_pauseTimeTarget = 0;
+#endif
+   g_pplayer->m_userDebugPaused = false;
+   g_pplayer->RecomputePseudoPauseState();
+   g_pplayer->m_debugBallSize = GetDlgItemInt(IDC_THROW_BALL_SIZE_EDIT2, FALSE);
 
-   switch (uMsg)
-   {
-   case WM_INITDIALOG:
-   {
-      vector<string> lightNames;
-      SetWindowLongPtr(hwndDlg, GWLP_USERDATA, lParam);
-      for (size_t i = 0; i < ptable->m_vedit.size(); i++)
-      {
-         IEditable * const pedit = ptable->m_vedit[i];
-         if (pedit->GetItemType() == eItemLight)
-         {
-            lightNames.push_back(ptable->GetElementName(pedit));
-         }
-      }
-      std::sort(lightNames.begin(), lightNames.end());
-      for (size_t i = 0; i < lightNames.size();i++)
-         ComboBox_AddString(hCombo, lightNames[i].c_str());
+   const float fv = sz2f(GetDlgItemText(IDC_THROW_BALL_MASS_EDIT2).c_str());
+   g_pplayer->m_debugBallMass = fv;
 
-      ShowWindow(g_pplayer->m_hwndDebugger, SW_HIDE);
-      ComboBox_SetCurSel(hCombo, 0);
-      SendMessage(hwndDlg, WM_COMMAND, MAKEWPARAM(IDC_LIGHTSCOMBO, CBN_SELCHANGE), 0);
-      return TRUE;
-   }
-   case WM_CLOSE:
-   {
-      ShowWindow(g_pplayer->m_hwndDebugger, SW_SHOW);
-      EndDialog(hwndDlg, FALSE);
-      break;
-   }
-   case WM_ACTIVATE:
-   {
-      g_pplayer->m_debugWindowActive = (wParam != WA_INACTIVE);
-      g_pplayer->RecomputePauseState();
-      g_pplayer->RecomputePseudoPauseState();
-      break;
-   }
-   case WM_COMMAND:
-   {
-      switch (HIWORD(wParam))
-      {
-      case BN_CLICKED:
-      {
-         switch (LOWORD(wParam))
-         {
-         case IDOK:
-         {
-            Light *plight = GetLight(hCombo);
-            if (plight != NULL)
-            {
-               char value[256];
-               float fv;
-
-               GetDlgItemText(hwndDlg, IDC_DBG_LIGHT_FALLOFF, value, 31);
-               fv = sz2f(value);
-               plight->put_Falloff(fv);
-               GetDlgItemText(hwndDlg, IDC_DBG_LIGHT_FALLOFF_POWER, value, 31);
-               fv = sz2f(value);
-               plight->put_FalloffPower(fv);
-               GetDlgItemText(hwndDlg, IDC_DBG_LIGHT_INTENSITY, value, 31);
-               fv = sz2f(value);
-               plight->put_Intensity(fv);
-               GetDlgItemText(hwndDlg, IDC_DBG_BULB_MODULATE_VS_ADD, value, 31);
-               fv = sz2f(value);
-               plight->m_d.m_modulate_vs_add = fv;
-               GetDlgItemText(hwndDlg, IDC_DBG_TRANSMISSION_SCALE, value, 31);
-               fv = sz2f(value);
-               plight->m_d.m_transmissionScale = fv;
-               GetDlgItemText(hwndDlg, IDC_DBG_LIGHT_FADE_UP_EDIT, value, 31);
-               fv = sz2f(value);
-               plight->put_FadeSpeedUp(fv);
-               GetDlgItemText(hwndDlg, IDC_DBG_LIGHT_FADE_DOWN_EDIT, value, 31);
-               fv = sz2f(value);
-               plight->put_FadeSpeedDown(fv);
-               ptable->AddDbgLight(plight);
-            };
-            break;
-         }
-         case IDCANCEL:
-         {
-
-            ShowWindow(g_pplayer->m_hwndDebugger, SW_SHOW);
-            EndDialog(hwndDlg, FALSE);
-            return TRUE;
-         }
-         case IDC_DBG_LIGHT_ON_CHECK:
-         {
-            Light *plight = GetLight(hCombo);
-            if (plight != NULL)
-            {
-               plight->put_State(LightStateOn);
-               SetCheckButtonState(hwndDlg, plight);
-               ptable->AddDbgLight(plight);
-            }
-            break;
-         }
-         case IDC_DBG_LIGHT_OFF_CHECK:
-         {
-            Light *plight = GetLight(hCombo);
-            if (plight != NULL)
-            {
-               plight->put_State(LightStateOff);
-               SetCheckButtonState(hwndDlg, plight);
-               ptable->AddDbgLight(plight);
-            }
-            break;
-         }
-         case IDC_DBG_LIGHT_BLINKING_CHECK:
-         {
-            Light *plight = GetLight(hCombo);
-            if (plight != NULL)
-            {
-               plight->put_State(LightStateBlinking);
-               SetCheckButtonState(hwndDlg, plight);
-               ptable->AddDbgLight(plight);
-            }
-            break;
-         }
-         }
-         break;
-      }
-      }
-      switch (LOWORD(wParam))
-      {
-      case IDC_LIGHTSCOMBO:
-      {
-         switch (HIWORD(wParam))
-         {
-         case CBN_SELCHANGE:
-         {
-            Light *plight = GetLight(hCombo);
-            if (plight != NULL)
-            {
-               char value[256];
-               float v;
-               plight->get_Falloff(&v);
-               f2sz(v, value);
-               SetDlgItemText(hwndDlg, IDC_DBG_LIGHT_FALLOFF, value);
-               plight->get_FalloffPower(&v);
-               f2sz(v, value);
-               SetDlgItemText(hwndDlg, IDC_DBG_LIGHT_FALLOFF_POWER, value);
-               plight->get_Intensity(&v);
-               f2sz(v, value);
-               SetDlgItemText(hwndDlg, IDC_DBG_LIGHT_INTENSITY, value);
-               v = plight->m_d.m_modulate_vs_add;
-               f2sz(v, value);
-               SetDlgItemText(hwndDlg, IDC_DBG_BULB_MODULATE_VS_ADD, value);
-               v = plight->m_d.m_transmissionScale;
-               f2sz(v, value);
-               SetDlgItemText(hwndDlg, IDC_DBG_TRANSMISSION_SCALE, value);
-               plight->get_FadeSpeedUp(&v);
-               f2sz(v, value);
-               SetDlgItemText(hwndDlg, IDC_DBG_LIGHT_FADE_UP_EDIT, value);
-               plight->get_FadeSpeedDown(&v);
-               f2sz(v, value);
-               SetDlgItemText(hwndDlg, IDC_DBG_LIGHT_FADE_DOWN_EDIT, value);
-               SetCheckButtonState(hwndDlg, plight);
-            };
-            break;
-         }
-         }
-      }
-      }
-      break;
-   }
-   }
-   return FALSE;
+   g_pplayer->m_debugMode = false;
+   g_pplayer->m_showDebugger = false;
+   ShowWindow(SW_HIDE);
 }
 
-INT_PTR CALLBACK DebuggerProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT DebuggerDialog::OnNotify(WPARAM wparam, LPARAM lparam)
+{
+   const NMHDR* const pnmh = (LPNMHDR)lparam;
+   //HWND hwndRE = pnmh->hwndFrom;
+   const int code = pnmh->code;
+
+   switch (code)
+   {
+   case SCN_CHARADDED:
+   {
+      const SCNotification* const pscnmh = (SCNotification*)lparam;
+      if (pscnmh->ch == '\n')
+      {
+         SendMessage(pnmh->hwndFrom, SCI_DELETEBACK, 0, 0);
+
+         const size_t curpos = SendMessage(pnmh->hwndFrom, SCI_GETCURRENTPOS, 0, 0);
+         const size_t line = SendMessage(pnmh->hwndFrom, SCI_LINEFROMPOSITION, curpos, 0);
+         const size_t lineStart = SendMessage(pnmh->hwndFrom, SCI_POSITIONFROMLINE, line, 0);
+         const size_t lineEnd = SendMessage(pnmh->hwndFrom, SCI_GETLINEENDPOSITION, line, 0);
+
+         char* const szText = new char[lineEnd - lineStart + 1];
+         Sci_TextRange tr;
+         tr.chrg.cpMin = (Sci_PositionCR)lineStart;
+         tr.chrg.cpMax = (Sci_PositionCR)lineEnd;
+         tr.lpstrText = szText;
+         SendMessage(pnmh->hwndFrom, SCI_GETTEXTRANGE, 0, (LPARAM)&tr);
+
+         const size_t maxlines = SendMessage(pnmh->hwndFrom, SCI_GETLINECOUNT, 0, 0);
+
+         if (maxlines == line + 1)
+         {
+            // need to add a new line to the end
+            SendMessage(pnmh->hwndFrom, SCI_DOCUMENTEND, 0, 0);
+            SendMessage(pnmh->hwndFrom, SCI_ADDTEXT, lstrlen("\n"), (LPARAM)"\n");
+         }
+         else
+         {
+            const size_t pos = SendMessage(pnmh->hwndFrom, SCI_POSITIONFROMLINE, line + 1, 0);
+            SendMessage(pnmh->hwndFrom, SCI_SETCURRENTPOS, pos, 0);
+         }
+
+         g_pplayer->m_ptable->m_pcv->EvaluateScriptStatement(szText);
+         delete[] szText;
+      }
+      break;
+   }
+   }
+   return CDialog::OnNotify(wparam, lparam);
+}
+
+INT_PTR DebuggerDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
    switch (uMsg)
    {
-   case WM_INITDIALOG:
-   {
-      RECT rcDialog;
-      RECT rcMain;
-      GetWindowRect(GetParent(hwndDlg), &rcMain);
-      GetWindowRect(hwndDlg, &rcDialog);
-
-      SetWindowPos(hwndDlg, NULL,
-         (rcMain.right + rcMain.left) / 2 - (rcDialog.right - rcDialog.left) / 2,
-         (rcMain.bottom + rcMain.top) / 2 - (rcDialog.bottom - rcDialog.top) / 2,
-         0, 0, SWP_NOOWNERZORDER | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE/* | SWP_NOMOVE*/);
-
-      AssignIconToButton(hwndDlg, IDC_PLAY, IDI_PLAY);
-      AssignIconToButton(hwndDlg, IDC_PAUSE, IDI_PAUSE);
-      AssignIconToButton(hwndDlg, IDC_STEP, IDI_STEP);
-
-      SendMessage(hwndDlg, RECOMPUTEBUTTONCHECK, 0, 0);
-
-      RECT rcEditSize;
-      HWND hwndEditSize = GetDlgItem(hwndDlg, IDC_EDITSIZE);
-      GetWindowRect(hwndEditSize, &rcEditSize);
-
-      ScreenToClient(hwndDlg, (POINT *)&rcEditSize);
-      ScreenToClient(hwndDlg, &((POINT *)&rcEditSize)[1]);
-
-      g_pplayer->m_hwndDebugOutput = CreateWindowEx(0, "Scintilla", "",
-         WS_CHILD | ES_NOHIDESEL | WS_VISIBLE | ES_SUNKEN | WS_HSCROLL | WS_VSCROLL | ES_MULTILINE | ES_WANTRETURN | WS_BORDER,
-         rcEditSize.left, rcEditSize.top, rcEditSize.right - rcEditSize.left, rcEditSize.bottom - rcEditSize.top, hwndDlg, NULL, g_hinst, 0);
-
-      SendMessage(g_pplayer->m_hwndDebugOutput, SCI_STYLESETSIZE, 32, 10);
-      SendMessage(g_pplayer->m_hwndDebugOutput, SCI_STYLESETFONT, 32, (LPARAM)"Courier");
-
-      SendMessage(g_pplayer->m_hwndDebugOutput, SCI_SETMARGINWIDTHN, 1, 0);
-
-      SendMessage(g_pplayer->m_hwndDebugOutput, SCI_SETTABWIDTH, 4, 0);
-
-      SendDlgItemMessage(hwndDlg, IDC_BALL_THROWING, BM_SETCHECK, g_pplayer->m_throwBalls ? BST_CHECKED : BST_UNCHECKED, 0);
-      SendDlgItemMessage(hwndDlg, IDC_BALL_CONTROL, BM_SETCHECK, g_pplayer->m_ballControl ? BST_CHECKED : BST_UNCHECKED, 0);
-
-      SetDlgItemInt(hwndDlg, IDC_THROW_BALL_SIZE_EDIT2, g_pplayer->m_debugBallSize, FALSE);
-      char textBuf[256] = { 0 };
-      f2sz(g_pplayer->m_debugBallMass, textBuf);
-      SetDlgItemText(hwndDlg, IDC_THROW_BALL_MASS_EDIT2, textBuf);
-
-      SendMessage(hwndDlg, RESIZE_FROM_EXPAND, 0, 0);
-
-      return TRUE;
-   }
-
-   case WM_NOTIFY:
-   {
-      //int idCtrl = (int) wParam;
-      const NMHDR *const pnmh = (LPNMHDR)lParam;
-      //HWND hwndRE = pnmh->hwndFrom;
-      const int code = pnmh->code;
-
-      switch (code)
-      {
-      case SCN_CHARADDED:
-      {
-         const SCNotification * const pscnmh = (SCNotification *)lParam;
-         if (pscnmh->ch == '\n')
-         {
-            SendMessage(pnmh->hwndFrom, SCI_DELETEBACK, 0, 0);
-
-            const size_t curpos = SendMessage(pnmh->hwndFrom, SCI_GETCURRENTPOS, 0, 0);
-            const size_t line = SendMessage(pnmh->hwndFrom, SCI_LINEFROMPOSITION, curpos, 0);
-            const size_t lineStart = SendMessage(pnmh->hwndFrom, SCI_POSITIONFROMLINE, line, 0);
-            const size_t lineEnd = SendMessage(pnmh->hwndFrom, SCI_GETLINEENDPOSITION, line, 0);
-
-            char * const szText = new char[lineEnd - lineStart + 1];
-            TextRange tr;
-            tr.chrg.cpMin = (Sci_PositionCR)lineStart;
-            tr.chrg.cpMax = (Sci_PositionCR)lineEnd;
-            tr.lpstrText = szText;
-            SendMessage(pnmh->hwndFrom, SCI_GETTEXTRANGE, 0, (LPARAM)&tr);
-
-            const size_t maxlines = SendMessage(pnmh->hwndFrom, SCI_GETLINECOUNT, 0, 0);
-
-            if (maxlines == line + 1)
-            {
-               // need to add a new line to the end
-               SendMessage(pnmh->hwndFrom, SCI_DOCUMENTEND, 0, 0);
-               SendMessage(pnmh->hwndFrom, SCI_ADDTEXT, lstrlen("\n"), (LPARAM)"\n");
-            }
-            else
-            {
-               const size_t pos = SendMessage(pnmh->hwndFrom, SCI_POSITIONFROMLINE, line + 1, 0);
-               SendMessage(pnmh->hwndFrom, SCI_SETCURRENTPOS, pos, 0);
-            }
-
-            g_pplayer->m_ptable->m_pcv->EvaluateScriptStatement(szText);
-            delete[] szText;
-         }
-         break;
-      }
-      }//switch (code)
-      break;
-   }
    case RECOMPUTEBUTTONCHECK:
    {
       int PlayDown = BST_UNCHECKED;
@@ -495,37 +272,248 @@ INT_PTR CALLBACK DebuggerProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
          PlayDown = BST_CHECKED;
       }
 
-      const HWND hwndTBParent = GetDlgItem(hwndDlg, IDC_TOOLBARSIZE);
-      const HWND hwndToolbar = GetWindow(hwndTBParent, GW_CHILD);
-
-      SendDlgItemMessage(hwndDlg, IDC_PLAY, BM_SETCHECK, PlayDown, 0);
-      SendDlgItemMessage(hwndDlg, IDC_PAUSE, BM_SETCHECK, PauseDown, 0);
-      SendDlgItemMessage(hwndDlg, IDC_STEP, BM_SETCHECK, StepDown, 0);
-      SendMessage(hwndToolbar, TB_CHECKBUTTON, IDC_PLAY, PlayDown);
-      SendMessage(hwndToolbar, TB_CHECKBUTTON, IDC_PAUSE, PauseDown);
-      SendMessage(hwndToolbar, TB_CHECKBUTTON, IDC_STEP, StepDown);
-      break;
+      SendDlgItemMessage(IDC_PLAY, BM_SETCHECK, PlayDown, 0);
+      SendDlgItemMessage(IDC_PAUSE, BM_SETCHECK, PauseDown, 0);
+      SendDlgItemMessage(IDC_STEP, BM_SETCHECK, StepDown, 0);
+      SendMessage(TB_CHECKBUTTON, IDC_PLAY, PlayDown);
+      SendMessage(TB_CHECKBUTTON, IDC_PAUSE, PauseDown);
+      SendMessage(TB_CHECKBUTTON, IDC_STEP, StepDown);
+      return TRUE;
    }
 
-   case WM_CLOSE:
+   case RESIZE_FROM_EXPAND:
    {
-#ifdef STEPPING
-      g_pplayer->m_pauseTimeTarget = 0;
-#endif
-      g_pplayer->m_userDebugPaused = false;
-      g_pplayer->RecomputePseudoPauseState();
-      g_pplayer->m_debugBallSize = GetDlgItemInt(hwndDlg, IDC_THROW_BALL_SIZE_EDIT2, NULL, FALSE);
-      char textBuf[256] = { 0 };
-      float fv;
-      GetDlgItemText(hwndDlg, IDC_THROW_BALL_MASS_EDIT2, textBuf, 255);
-      fv = sz2f(textBuf);
-      g_pplayer->m_debugBallMass = fv;
-      g_pplayer->m_debugMode = false;
-      g_pplayer->m_showDebugger = false;
-      ShowWindow(hwndDlg, SW_HIDE);
+      const size_t state = SendDlgItemMessage(IDC_EXPAND, BM_GETCHECK, 0, 0);
+      int mult;
+      if (state == BST_CHECKED)
+      {
+         mult = 1;
+         m_editorExpandButton.SetWindowText("< Editor");
+      }
+      else
+      {
+         mult = -1;
+         m_editorExpandButton.SetWindowText("> Editor");
+      }
+
+      RECT rcSizer1;
+      RECT rcSizer2;
+      ::GetWindowRect(GetDlgItem(IDC_GUIDE1), &rcSizer1);
+      ::GetWindowRect(GetDlgItem(IDC_GUIDE2), &rcSizer2);
+
+      const int diffx = rcSizer2.right - rcSizer1.right;
+      const int diffy = rcSizer2.bottom - rcSizer1.bottom;
+
+      RECT rcDialog;
+      rcDialog = GetWindowRect();
+
+      SetWindowPos(NULL, rcDialog.left, rcDialog.top, rcDialog.right - rcDialog.left + diffx * mult, rcDialog.bottom - rcDialog.top + diffy * mult, SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+      return TRUE;
+   }
+   }
+   return DialogProcDefault(uMsg, wParam, lParam);
+}
+
+DbgLightDialog::DbgLightDialog() : CDialog(IDD_DBGLIGHTDIALOG)
+{
+}
+
+BOOL DbgLightDialog::OnInitDialog()
+{
+   AttachItem(IDC_LIGHTSCOMBO, m_lightsCombo);
+   m_hLightOnCheck = ::GetDlgItem(GetHwnd(), IDC_DBG_LIGHT_ON_CHECK);
+   m_hLightOffCheck = ::GetDlgItem(GetHwnd(), IDC_DBG_LIGHT_OFF_CHECK);
+   m_hLightBlinkCheck = ::GetDlgItem(GetHwnd(), IDC_DBG_LIGHT_BLINKING_CHECK);
+   AttachItem(IDC_COLOR_BUTTON1, m_colorButton);
+   AttachItem(IDC_COLOR_BUTTON4, m_colorButton2);
+
+   vector<string> lightNames;
+   PinTable* const ptable = g_pplayer->m_ptable;
+
+   for (size_t i = 0; i < ptable->m_vedit.size(); i++)
+   {
+      IEditable* const pedit = ptable->m_vedit[i];
+      if (pedit->GetItemType() == eItemLight)
+      {
+         lightNames.push_back(ptable->GetElementName(pedit));
+      }
+   }
+   std::sort(lightNames.begin(), lightNames.end());
+   for (size_t i = 0; i < lightNames.size(); i++)
+      m_lightsCombo.AddString(lightNames[i].c_str());
+
+   GetParent().ShowWindow(SW_HIDE);
+
+   m_lightsCombo.SetCurSel(0);
+
+   SendMessage(WM_COMMAND, MAKEWPARAM(IDC_LIGHTSCOMBO, CBN_SELCHANGE), 0);
+   return TRUE;
+}
+
+void DbgLightDialog::OnOK()
+{
+   Light* const plight = GetLight();
+   if (plight != nullptr)
+   {
+      float fv = sz2f(GetDlgItemText(IDC_DBG_LIGHT_FALLOFF).c_str());
+      plight->put_Falloff(fv);
+
+      fv = sz2f(GetDlgItemText(IDC_DBG_LIGHT_FALLOFF_POWER).c_str());
+      plight->put_FalloffPower(fv);
+
+      fv = sz2f(GetDlgItemText(IDC_DBG_LIGHT_INTENSITY).c_str());
+      plight->put_Intensity(fv);
+
+      fv = sz2f(GetDlgItemText(IDC_DBG_BULB_MODULATE_VS_ADD).c_str());
+      plight->m_d.m_modulate_vs_add = fv;
+
+      fv = sz2f(GetDlgItemText(IDC_DBG_TRANSMISSION_SCALE).c_str());
+      plight->m_d.m_transmissionScale = fv;
+
+      fv = sz2f(GetDlgItemText(IDC_DBG_LIGHT_FADE_UP_EDIT).c_str());
+      plight->put_FadeSpeedUp(fv);
+
+      fv = sz2f(GetDlgItemText(IDC_DBG_LIGHT_FADE_DOWN_EDIT).c_str());
+      plight->put_FadeSpeedDown(fv);
+
+      g_pplayer->m_ptable->AddDbgLight(plight);
+   }
+}
+
+BOOL DbgLightDialog::OnCommand(WPARAM wParam, LPARAM lParam)
+{
+   UNREFERENCED_PARAMETER(lParam);
+
+   switch (LOWORD(wParam))
+   {
+   case IDC_DBG_LIGHT_ON_CHECK:
+   {
+      Light* const plight = GetLight();
+      if (plight != nullptr)
+      {
+         plight->put_State(LightStateOn);
+         SetCheckButtonState(plight);
+         g_pplayer->m_ptable->AddDbgLight(plight);
+      }
+      return TRUE;
+   }
+   case IDC_DBG_LIGHT_OFF_CHECK:
+   {
+      Light* const plight = GetLight();
+      if (plight != NULL)
+      {
+         plight->put_State(LightStateOff);
+         SetCheckButtonState(plight);
+         g_pplayer->m_ptable->AddDbgLight(plight);
+      }
+      return TRUE;
+   }
+   case IDC_DBG_LIGHT_BLINKING_CHECK:
+   {
+      Light* const plight = GetLight();
+      if (plight != NULL)
+      {
+         plight->put_State(LightStateBlinking);
+         SetCheckButtonState(plight);
+         g_pplayer->m_ptable->AddDbgLight(plight);
+      }
+      return TRUE;
+   }
+   case IDC_COLOR_BUTTON1:
+   {
+      CHOOSECOLOR cc = m_colorDialog.GetParameters();
+      cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+      Light* const plight = GetLight();
+
+      m_colorDialog.SetParameters(cc);
+      m_colorDialog.SetColor(plight->m_d.m_color);
+      m_colorDialog.SetCustomColors(g_pplayer->m_ptable->m_rgcolorcustom);
+      if (m_colorDialog.DoModal(GetHwnd()) == IDOK)
+      {
+         plight->m_d.m_color = m_colorDialog.GetColor();
+         m_colorButton.SetColor(plight->m_d.m_color);
+         memcpy(g_pplayer->m_ptable->m_rgcolorcustom, m_colorDialog.GetCustomColors(), sizeof(g_pplayer->m_ptable->m_rgcolorcustom));
+      }
+      return TRUE;
+   }
+   case IDC_COLOR_BUTTON4:
+   {
+      CHOOSECOLOR cc = m_colorDialog.GetParameters();
+      cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+      Light* plight = GetLight();
+
+      m_colorDialog.SetParameters(cc);
+      m_colorDialog.SetColor(plight->m_d.m_color2);
+      m_colorDialog.SetCustomColors(g_pplayer->m_ptable->m_rgcolorcustom);
+      if (m_colorDialog.DoModal(GetHwnd()) == IDOK)
+      {
+         plight->m_d.m_color2 = m_colorDialog.GetColor();
+         m_colorButton.SetColor(plight->m_d.m_color2);
+         memcpy(g_pplayer->m_ptable->m_rgcolorcustom, m_colorDialog.GetCustomColors(), sizeof(g_pplayer->m_ptable->m_rgcolorcustom));
+      }
+      return TRUE;
+   }
+   case IDC_LIGHTSCOMBO:
+   {
+      switch (HIWORD(wParam))
+      {
+      case CBN_SELCHANGE:
+      {
+         Light* const plight = GetLight();
+         if (plight != NULL)
+         {
+            string value;
+            float v;
+            plight->get_Falloff(&v);
+            f2sz(v, value);
+            SetDlgItemText(IDC_DBG_LIGHT_FALLOFF, value.c_str());
+
+            plight->get_FalloffPower(&v);
+            f2sz(v, value);
+            SetDlgItemText(IDC_DBG_LIGHT_FALLOFF_POWER, value.c_str());
+
+            plight->get_Intensity(&v);
+            f2sz(v, value);
+            SetDlgItemText(IDC_DBG_LIGHT_INTENSITY, value.c_str());
+
+            v = plight->m_d.m_modulate_vs_add;
+            f2sz(v, value);
+            SetDlgItemText(IDC_DBG_BULB_MODULATE_VS_ADD, value.c_str());
+
+            v = plight->m_d.m_transmissionScale;
+            f2sz(v, value);
+            SetDlgItemText(IDC_DBG_TRANSMISSION_SCALE, value.c_str());
+
+            plight->get_FadeSpeedUp(&v);
+            f2sz(v, value);
+            SetDlgItemText(IDC_DBG_LIGHT_FADE_UP_EDIT, value.c_str());
+
+            plight->get_FadeSpeedDown(&v);
+            f2sz(v, value);
+            SetDlgItemText(IDC_DBG_LIGHT_FADE_DOWN_EDIT, value.c_str());
+
+            SetCheckButtonState(plight);
+            m_colorButton.SetColor(plight->m_d.m_color);
+            m_colorButton2.SetColor(plight->m_d.m_color2);
+         }
+         return TRUE;
+      }
+      }
       break;
    }
+   }
+   return FALSE;
+}
 
+void DbgLightDialog::OnClose()
+{
+   GetParent().ShowWindow(SW_SHOW);
+}
+
+INT_PTR DbgLightDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   switch (uMsg)
+   {
    case WM_ACTIVATE:
    {
       g_pplayer->m_debugWindowActive = (wParam != WA_INACTIVE);
@@ -533,128 +521,275 @@ INT_PTR CALLBACK DebuggerProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPa
       g_pplayer->RecomputePseudoPauseState();
       break;
    }
-
-   case RESIZE_FROM_EXPAND:
+   case WM_DRAWITEM:
    {
-      const size_t state = SendDlgItemMessage(hwndDlg, IDC_EXPAND, BM_GETCHECK, 0, 0);
-      int mult;
-      if (state == BST_CHECKED)
+      LPDRAWITEMSTRUCT lpDrawItemStruct = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
+      UINT nID = static_cast<UINT>(wParam);
+      if (nID == IDC_COLOR_BUTTON1)
       {
-         mult = 1;
-         SetWindowText(GetDlgItem(hwndDlg, IDC_EXPAND), "< Editor");
+         m_colorButton.DrawItem(lpDrawItemStruct);
       }
-      else
+      else if (nID == IDC_COLOR_BUTTON4)
       {
-         mult = -1;
-         SetWindowText(GetDlgItem(hwndDlg, IDC_EXPAND), "> Editor");
+         m_colorButton2.DrawItem(lpDrawItemStruct);
       }
-
-      RECT rcSizer1;
-      RECT rcSizer2;
-      GetWindowRect(GetDlgItem(hwndDlg, IDC_GUIDE1), &rcSizer1);
-      GetWindowRect(GetDlgItem(hwndDlg, IDC_GUIDE2), &rcSizer2);
-
-      const int diffx = rcSizer2.right - rcSizer1.right;
-      const int diffy = rcSizer2.bottom - rcSizer1.bottom;
-
-      RECT rcDialog;
-      GetWindowRect(hwndDlg, &rcDialog);
-
-      SetWindowPos(hwndDlg, NULL,
-         rcDialog.left,
-         rcDialog.top,
-         rcDialog.right - rcDialog.left + diffx * mult, rcDialog.bottom - rcDialog.top + diffy * mult, SWP_NOOWNERZORDER | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-      break;
+      return TRUE;
    }
+   }
+   return DialogProcDefault(uMsg, wParam, lParam);
+}
 
-   case WM_COMMAND:
+Light* DbgLightDialog::GetLight()
+{
+   char strText[MAXSTRING] = { 0 };
+   const int idx_row = m_lightsCombo.GetCurSel();
+   m_lightsCombo.GetLBText(idx_row, strText);
+   IEditable* const pedit = g_pplayer->m_ptable->GetElementByName(strText);
+   if (pedit != nullptr)
+      return (Light*)pedit;
+
+   return nullptr;
+}
+
+void DbgLightDialog::SetCheckButtonState(Light *plight)
+{
+   if (plight->m_d.m_state == LightStateOn)
+   {
+      Button_SetCheck(m_hLightOnCheck, BST_CHECKED);
+      Button_SetCheck(m_hLightOffCheck, BST_UNCHECKED);
+      Button_SetCheck(m_hLightBlinkCheck, BST_UNCHECKED);
+   }
+   else if (plight->m_d.m_state == LightStateOff)
+   {
+      Button_SetCheck(m_hLightOnCheck, BST_UNCHECKED);
+      Button_SetCheck(m_hLightOffCheck, BST_CHECKED);
+      Button_SetCheck(m_hLightBlinkCheck, BST_UNCHECKED);
+   }
+   else if (plight->m_d.m_state == LightStateBlinking)
+   {
+      Button_SetCheck(m_hLightOnCheck, BST_UNCHECKED);
+      Button_SetCheck(m_hLightOffCheck, BST_UNCHECKED);
+      Button_SetCheck(m_hLightBlinkCheck, BST_CHECKED);
+   }
+}
+
+DbgMaterialDialog::DbgMaterialDialog() : CDialog(IDD_DBGMATERIALDIALOG)
+{
+}
+
+BOOL DbgMaterialDialog::OnInitDialog()
+{
+   AttachItem(IDC_DBG_MATERIALCOMBO, m_materialsCombo);
+   AttachItem(IDC_COLOR_BUTTON1, m_colorButton1);
+   AttachItem(IDC_COLOR_BUTTON2, m_colorButton2);
+   AttachItem(IDC_COLOR_BUTTON3, m_colorButton3);
+
+   vector<string> matNames;
+   matNames.reserve(g_pplayer->m_ptable->m_materials.size());
+   for (size_t i = 0; i < g_pplayer->m_ptable->m_materials.size(); i++)
+   {
+      matNames.push_back(g_pplayer->m_ptable->m_materials[i]->m_szName);
+   }
+   std::sort(matNames.begin(), matNames.end());
+   for (size_t i = 0; i < matNames.size(); i++)
+      m_materialsCombo.AddString(matNames[i].c_str());
+
+   m_materialsCombo.SetCurSel(0);
+   SendMessage(WM_COMMAND, MAKEWPARAM(IDC_DBG_MATERIALCOMBO, CBN_SELCHANGE), 0);
+   return TRUE;
+}
+
+void DbgMaterialDialog::OnOK()
+{
+   char strText[MAXSTRING] = { 0 };
+   const int idx_row = m_materialsCombo.GetCurSel();
+   m_materialsCombo.GetLBText(idx_row, strText);
+
+   Material* const pMat = g_pplayer->m_ptable->GetMaterial(strText);
+   if (pMat != &g_pvp->m_dummyMaterial)
+   {
+      pMat->m_fWrapLighting = saturate(sz2f(GetDlgItemText(IDC_DBG_MATERIAL_BASE_WRAP_EDIT).c_str()));
+      pMat->m_fRoughness = saturate(sz2f(GetDlgItemText(IDC_DBG_MATERIAL_SHININESS_EDIT).c_str()));
+      pMat->m_fGlossyImageLerp = saturate(sz2f(GetDlgItemText(IDC_DBG_MATERIAL_GLOSSY_IMGLERP_EDIT).c_str()));
+      pMat->m_fThickness = saturate(sz2f(GetDlgItemText(IDC_DBG_MATERIAL_THICKNESS_EDIT).c_str()));
+      pMat->m_fEdge = saturate(sz2f(GetDlgItemText(IDC_DBG_MATERIAL_EDGE_EDIT).c_str()));
+      pMat->m_fOpacity = saturate(sz2f(GetDlgItemText(IDC_DBG_MATERIAL_OPACITY_AMOUNT_EDIT).c_str()));
+      pMat->m_fEdgeAlpha = saturate(sz2f(GetDlgItemText(DBG_MATERIAL_OPACITY_EDGE_EDIT).c_str()));
+
+      size_t checked = SendDlgItemMessage(IDC_DBG_METAL_MATERIAL_CHECK, BM_GETCHECK, 0, 0);
+      pMat->m_bIsMetal = (checked == 1);
+      checked = SendDlgItemMessage(IDC_DBG_MATERIAL_OPACITY_ACTIVE_CHECK, BM_GETCHECK, 0, 0);
+      pMat->m_bOpacityActive = (checked == 1);
+
+      g_pplayer->m_ptable->AddDbgMaterial(pMat);
+   }
+}
+
+BOOL DbgMaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
+{
+   UNREFERENCED_PARAMETER(lParam);
+
+   switch (LOWORD(wParam))
+   {
+   case IDC_DBG_MATERIAL_OPACITY_ACTIVE_CHECK:
+   case IDC_DBG_METAL_MATERIAL_CHECK:
+   {
+      OnOK();
+      return TRUE;
+   }
+   case IDC_DBG_MATERIALCOMBO:
    {
       switch (HIWORD(wParam))
       {
-      case BN_CLICKED:
+      case CBN_SELCHANGE:
       {
-         switch (LOWORD(wParam))
-         {
-         case IDC_PLAY:
-         {
-#ifdef STEPPING
-            g_pplayer->m_pauseTimeTarget = 0;
-#endif
-            g_pplayer->m_userDebugPaused = false;
-            g_pplayer->RecomputePseudoPauseState();
-            SendMessage(hwndDlg, RECOMPUTEBUTTONCHECK, 0, 0);
-            break;
-         }
-         case IDC_PAUSE:
-         {
-#ifdef STEPPING
-            g_pplayer->m_pauseTimeTarget = 0;
-#endif
-            g_pplayer->m_userDebugPaused = true;
-            g_pplayer->RecomputePseudoPauseState();
-            SendMessage(hwndDlg, RECOMPUTEBUTTONCHECK, 0, 0);
-            break;
-         }
-         case IDC_STEP:
-         {
-#ifdef STEPPING
-            const int ms = GetDlgItemInt(hwndDlg, IDC_STEPAMOUNT, NULL, FALSE);
-            g_pplayer->m_pauseTimeTarget = g_pplayer->m_time_msec + ms;
-#endif
-            g_pplayer->m_userDebugPaused = false;
-            g_pplayer->RecomputePseudoPauseState();
-            SendMessage(hwndDlg, RECOMPUTEBUTTONCHECK, 0, 0);
-            break;
-         }
-         case IDC_EXPAND:
-         {
-            SendMessage(hwndDlg, RESIZE_FROM_EXPAND, 0, 0);
-            break;
-         }
-         case IDC_BALL_THROWING:
-         {
-            HWND hwndControl = GetDlgItem(hwndDlg, IDC_BALL_THROWING);
-            size_t checked = SendMessage(hwndControl, BM_GETCHECK, 0, 0);
-            g_pplayer->m_throwBalls = !!checked;
-            break;
-         }
-         case IDC_BALL_CONTROL:
-         {
-            HWND hwndControl = GetDlgItem(hwndDlg, IDC_BALL_CONTROL);
-            size_t checked = SendMessage(hwndControl, BM_GETCHECK, 0, 0);
-            g_pplayer->m_ballControl = !!checked;
-            break;
-         }
+         char strText[MAXSTRING] = { 0 };
+         const int idx_row = m_materialsCombo.GetCurSel();
+         m_materialsCombo.GetLBText(idx_row, strText);
 
-         case IDC_DBGLIGHTSBUTTON:
+         Material* const pMat = g_pplayer->m_ptable->GetMaterial(strText);
+         if (pMat != &g_pvp->m_dummyMaterial)
          {
-            g_pplayer->m_hwndLightDebugger = CreateDialogParam(g_hinst, MAKEINTRESOURCE(IDD_DBGLIGHTDIALOG), hwndDlg, LightDebuggerProc, NULL);
-            break;
+            string value;
+            f2sz(pMat->m_fWrapLighting, value);
+            SetDlgItemText(IDC_DBG_MATERIAL_BASE_WRAP_EDIT, value.c_str());
+            f2sz(pMat->m_fRoughness, value);
+            SetDlgItemText(IDC_DBG_MATERIAL_SHININESS_EDIT, value.c_str());
+            f2sz(pMat->m_fGlossyImageLerp, value);
+            SetDlgItemText(IDC_DBG_MATERIAL_GLOSSY_IMGLERP_EDIT, value.c_str());
+            f2sz(pMat->m_fThickness, value);
+            SetDlgItemText(IDC_DBG_MATERIAL_THICKNESS_EDIT, value.c_str());
+            f2sz(pMat->m_fEdge, value);
+            SetDlgItemText(IDC_DBG_MATERIAL_EDGE_EDIT, value.c_str());
+            f2sz(pMat->m_fOpacity, value);
+            SetDlgItemText(IDC_DBG_MATERIAL_OPACITY_AMOUNT_EDIT, value.c_str());
+            f2sz(pMat->m_fEdgeAlpha, value);
+            SetDlgItemText(DBG_MATERIAL_OPACITY_EDGE_EDIT, value.c_str());
+            SendMessage(GetDlgItem(IDC_DBG_METAL_MATERIAL_CHECK), BM_SETCHECK, pMat->m_bIsMetal ? BST_CHECKED : BST_UNCHECKED, 0);
+            SendMessage(GetDlgItem(IDC_DBG_MATERIAL_OPACITY_ACTIVE_CHECK), BM_SETCHECK, pMat->m_bOpacityActive ? BST_CHECKED : BST_UNCHECKED, 0);
+            m_colorButton1.SetColor(pMat->m_cBase);
+            m_colorButton2.SetColor(pMat->m_cGlossy);
+            m_colorButton3.SetColor(pMat->m_cClearcoat);
          }
-         case IDC_DBG_MATERIALS_BUTTON:
-         {
-            g_pplayer->m_hwndLightDebugger = CreateDialogParam(g_hinst, MAKEINTRESOURCE(IDD_DBGMATERIALDIALOG), hwndDlg, MaterialDebuggerProc, NULL);
-            break;
-         }
-         }
-         break;
-      }//case BN_CLICKED:
-      }//switch (HIWORD(wParam))
+         return TRUE;
+      }
+      }
       break;
-   }//case WM_COMMAND:
-   default:
+   }
+   case IDC_COLOR_BUTTON1:
    {
-      switch (LOWORD(wParam))
+      CHOOSECOLOR cc = m_colorDialog.GetParameters();
+      cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+
+      char strText[MAXSTRING] = { 0 };
+      const int idx_row = m_materialsCombo.GetCurSel();
+      m_materialsCombo.GetLBText(idx_row, strText);
+
+      Material* const pMat = g_pplayer->m_ptable->GetMaterial(strText);
+      if (pMat != &g_pvp->m_dummyMaterial)
       {
-      case IDC_THROW_BALL_SIZE_EDIT2:
-      {
-         g_pplayer->m_debugBallSize = GetDlgItemInt(hwndDlg, IDC_THROW_BALL_SIZE_EDIT2, NULL, FALSE);
-         break;
+         m_colorDialog.SetParameters(cc);
+         m_colorDialog.SetColor(pMat->m_cBase);
+         m_colorDialog.SetCustomColors(g_pplayer->m_ptable->m_rgcolorcustom);
+         if (m_colorDialog.DoModal(GetHwnd()) == IDOK)
+         {
+            pMat->m_cBase = m_colorDialog.GetColor();
+            m_colorButton1.SetColor(pMat->m_cBase);
+            memcpy(g_pplayer->m_ptable->m_rgcolorcustom, m_colorDialog.GetCustomColors(), sizeof(g_pplayer->m_ptable->m_rgcolorcustom));
+            g_pplayer->m_ptable->AddDbgMaterial(pMat);
+         }
       }
-      }
-      break;
+      return TRUE;
    }
+   case IDC_COLOR_BUTTON2:
+   {
+      CHOOSECOLOR cc = m_colorDialog.GetParameters();
+      cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+
+      char strText[MAXSTRING] = { 0 };
+      const int idx_row = m_materialsCombo.GetCurSel();
+      m_materialsCombo.GetLBText(idx_row, strText);
+
+      Material* const pMat = g_pplayer->m_ptable->GetMaterial(strText);
+      if (pMat != &g_pvp->m_dummyMaterial)
+      {
+         m_colorDialog.SetParameters(cc);
+         m_colorDialog.SetColor(pMat->m_cGlossy);
+         m_colorDialog.SetCustomColors(g_pplayer->m_ptable->m_rgcolorcustom);
+         if (m_colorDialog.DoModal(GetHwnd()) == IDOK)
+         {
+            pMat->m_cGlossy = m_colorDialog.GetColor();
+            m_colorButton2.SetColor(pMat->m_cGlossy);
+            memcpy(g_pplayer->m_ptable->m_rgcolorcustom, m_colorDialog.GetCustomColors(), sizeof(g_pplayer->m_ptable->m_rgcolorcustom));
+            g_pplayer->m_ptable->AddDbgMaterial(pMat);
+         }
+      }
+      return TRUE;
+   }
+   case IDC_COLOR_BUTTON3:
+   {
+      CHOOSECOLOR cc = m_colorDialog.GetParameters();
+      cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+
+      char strText[MAXSTRING] = { 0 };
+      const int idx_row = m_materialsCombo.GetCurSel();
+      m_materialsCombo.GetLBText(idx_row, strText);
+
+      Material* const pMat = g_pplayer->m_ptable->GetMaterial(strText);
+      if (pMat != &g_pvp->m_dummyMaterial)
+      {
+         m_colorDialog.SetParameters(cc);
+         m_colorDialog.SetColor(pMat->m_cClearcoat);
+         m_colorDialog.SetCustomColors(g_pplayer->m_ptable->m_rgcolorcustom);
+         if (m_colorDialog.DoModal(GetHwnd()) == IDOK)
+         {
+            pMat->m_cClearcoat = m_colorDialog.GetColor();
+            m_colorButton3.SetColor(pMat->m_cClearcoat);
+            memcpy(g_pplayer->m_ptable->m_rgcolorcustom, m_colorDialog.GetCustomColors(), sizeof(g_pplayer->m_ptable->m_rgcolorcustom));
+            g_pplayer->m_ptable->AddDbgMaterial(pMat);
+         }
+      }
+      return TRUE;
    }
 
+   }
    return FALSE;
+}
+
+void DbgMaterialDialog::OnClose()
+{
+   GetParent().ShowWindow(SW_SHOW);
+}
+
+INT_PTR DbgMaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   switch (uMsg)
+   {
+   case WM_ACTIVATE:
+   {
+      g_pplayer->m_debugWindowActive = (wParam != WA_INACTIVE);
+      g_pplayer->RecomputePauseState();
+      g_pplayer->RecomputePseudoPauseState();
+      break;
+   }
+   case WM_DRAWITEM:
+   {
+      LPDRAWITEMSTRUCT lpDrawItemStruct = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
+      UINT nID = static_cast<UINT>(wParam);
+      if (nID == IDC_COLOR_BUTTON1)
+      {
+         m_colorButton1.DrawItem(lpDrawItemStruct);
+      }
+      else if (nID == IDC_COLOR_BUTTON2)
+      {
+         m_colorButton2.DrawItem(lpDrawItemStruct);
+      }
+      else if (nID == IDC_COLOR_BUTTON3)
+      {
+         m_colorButton3.DrawItem(lpDrawItemStruct);
+      }
+      return TRUE;
+   }
+   }
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

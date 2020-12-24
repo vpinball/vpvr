@@ -453,7 +453,11 @@ private:
 
    static VertexBuffer *m_quadVertexBuffer;      // internal vb for rendering quads
 
+#ifdef ENABLE_SDL
    GLfloat m_maxaniso;
+#else
+   DWORD m_maxaniso;
+#endif
    bool m_mag_aniso;
 
    bool m_autogen_mipmap;

@@ -4,12 +4,12 @@
 class HitTargetVisualsProperty: public BasePropertyDialog
 {
 public:
-    HitTargetVisualsProperty(VectorProtected<ISelect> *pvsel);
+    HitTargetVisualsProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~HitTargetVisualsProperty()
     {
     }
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
@@ -17,21 +17,21 @@ protected:
 
 private:
     vector<string> m_typeList;
-    CComboBox   m_imageCombo;
-    CComboBox   m_materialCombo;
-    CComboBox   m_typeCombo;
-    CEdit       m_dropSpeedEdit;
-    CEdit       m_raiseDelayEdit;
-    CEdit       m_depthBiasEdit;
-    CEdit       m_disableLightingEdit;
-    CEdit       m_disableLightBelowEdit;
-    CEdit       m_posXEdit;
-    CEdit       m_posYEdit;
-    CEdit       m_posZEdit;
-    CEdit       m_scaleXEdit;
-    CEdit       m_scaleYEdit;
-    CEdit       m_scaleZEdit;
-    CEdit       m_orientationEdit;
+    ComboBox    m_imageCombo;
+    ComboBox    m_materialCombo;
+    ComboBox    m_typeCombo;
+    EditBox     m_dropSpeedEdit;
+    EditBox     m_raiseDelayEdit;
+    EditBox     m_depthBiasEdit;
+    EditBox     m_disableLightingEdit;
+    EditBox     m_disableLightBelowEdit;
+    EditBox     m_posXEdit;
+    EditBox     m_posYEdit;
+    EditBox     m_posZEdit;
+    EditBox     m_scaleXEdit;
+    EditBox     m_scaleYEdit;
+    EditBox     m_scaleZEdit;
+    EditBox     m_orientationEdit;
 };
 
 #endif

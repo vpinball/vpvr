@@ -2,7 +2,7 @@
 #include "Properties/KickerVisualsProperty.h"
 #include <WindowsX.h>
 
-KickerVisualsProperty::KickerVisualsProperty(VectorProtected<ISelect> *pvsel) : BasePropertyDialog(IDD_PROPKICKER_VISUALS, pvsel)
+KickerVisualsProperty::KickerVisualsProperty(const VectorProtected<ISelect> *pvsel) : BasePropertyDialog(IDD_PROPKICKER_VISUALS, pvsel)
 {
     m_typeList.push_back("Invisible");
     m_typeList.push_back("Hole");
@@ -11,9 +11,18 @@ KickerVisualsProperty::KickerVisualsProperty(VectorProtected<ISelect> *pvsel) : 
     m_typeList.push_back("Williams");
     m_typeList.push_back("Gottlieb");
     m_typeList.push_back("Cup 2");
+
+    m_radiusEdit.SetDialog(this);
+    m_orientationEdit.SetDialog(this);
+    m_posXEdit.SetDialog(this);
+    m_posYEdit.SetDialog(this);
+
+    m_materialCombo.SetDialog(this);
+    m_displayCombo.SetDialog(this);
+    m_surfaceCombo.SetDialog(this);
 }
 
-void KickerVisualsProperty::UpdateVisuals()
+void KickerVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
     for (int i = 0; i < m_pvsel->Size(); i++)
     {
@@ -21,13 +30,19 @@ void KickerVisualsProperty::UpdateVisuals()
             continue;
         Kicker * const kicker = (Kicker *)m_pvsel->ElementAt(i);
 
-        PropertyDialog::UpdateComboBox(m_typeList, m_displayCombo, m_typeList[kicker->m_d.m_kickertype].c_str());
-        PropertyDialog::SetFloatTextbox(m_radiusEdit, kicker->m_d.m_radius);
-        PropertyDialog::SetFloatTextbox(m_orientationEdit, kicker->m_d.m_orientation);
-        PropertyDialog::SetFloatTextbox(m_posXEdit, kicker->m_d.m_vCenter.x);
-        PropertyDialog::SetFloatTextbox(m_posYEdit, kicker->m_d.m_vCenter.y);
-        PropertyDialog::UpdateSurfaceComboBox(kicker->GetPTable(), m_surfaceCombo, kicker->m_d.m_szSurface);
-        UpdateBaseVisuals(kicker, &kicker->m_d);
+        if (dispid == IDC_KICKER_DISPLAY_COMBO || dispid == -1)
+            PropertyDialog::UpdateComboBox(m_typeList, m_displayCombo, m_typeList[kicker->m_d.m_kickertype]);
+        if (dispid == IDC_KICKER_RADIUS_EDIT || dispid == -1)
+            PropertyDialog::SetFloatTextbox(m_radiusEdit, kicker->m_d.m_radius);
+        if (dispid == IDC_KICKER_ORIENTATION_EDIT || dispid == -1)
+            PropertyDialog::SetFloatTextbox(m_orientationEdit, kicker->m_d.m_orientation);
+        if (dispid == 902 || dispid == -1)
+            PropertyDialog::SetFloatTextbox(m_posXEdit, kicker->m_d.m_vCenter.x);
+        if (dispid == 903 || dispid == -1)
+            PropertyDialog::SetFloatTextbox(m_posYEdit, kicker->m_d.m_vCenter.y);
+        if (dispid == IDC_SURFACE_COMBO || dispid == -1)
+            PropertyDialog::UpdateSurfaceComboBox(kicker->GetPTable(), m_surfaceCombo, kicker->m_d.m_szSurface);
+        UpdateBaseVisuals(kicker, &kicker->m_d, dispid);
         //only show the first element on multi-select
         break;
     }
@@ -46,50 +61,42 @@ void KickerVisualsProperty::UpdateProperties(const int dispid)
                 PropertyDialog::StartUndo(kicker);
                 kicker->m_d.m_kickertype = (KickerType)(PropertyDialog::GetComboBoxIndex(m_displayCombo, m_typeList));
                 PropertyDialog::EndUndo(kicker);
+                CHECK_UPDATE_ITEM(kicker->m_d.m_kickertype, (KickerType)(PropertyDialog::GetComboBoxIndex(m_displayCombo, m_typeList)), kicker);
                 break;
             case IDC_KICKER_RADIUS_EDIT:
-                PropertyDialog::StartUndo(kicker);
-                kicker->m_d.m_radius = PropertyDialog::GetFloatTextbox(m_radiusEdit);
-                PropertyDialog::EndUndo(kicker);
+                CHECK_UPDATE_ITEM(kicker->m_d.m_radius, PropertyDialog::GetFloatTextbox(m_radiusEdit), kicker);
                 break;
             case IDC_KICKER_ORIENTATION_EDIT:
-                PropertyDialog::StartUndo(kicker);
-                kicker->m_d.m_orientation = PropertyDialog::GetFloatTextbox(m_orientationEdit);
-                PropertyDialog::EndUndo(kicker);
+                CHECK_UPDATE_ITEM(kicker->m_d.m_orientation, PropertyDialog::GetFloatTextbox(m_orientationEdit), kicker);
                 break;
             case 902:
-                PropertyDialog::StartUndo(kicker);
-                kicker->m_d.m_vCenter.x = PropertyDialog::GetFloatTextbox(m_posXEdit);
-                PropertyDialog::EndUndo(kicker);
+                CHECK_UPDATE_ITEM(kicker->m_d.m_vCenter.x, PropertyDialog::GetFloatTextbox(m_posXEdit), kicker);
                 break;
             case 903:
-                PropertyDialog::StartUndo(kicker);
-                kicker->m_d.m_vCenter.y = PropertyDialog::GetFloatTextbox(m_posYEdit);
-                PropertyDialog::EndUndo(kicker);
+                CHECK_UPDATE_ITEM(kicker->m_d.m_vCenter.y, PropertyDialog::GetFloatTextbox(m_posYEdit), kicker);
                 break;
             case IDC_SURFACE_COMBO:
-                PropertyDialog::StartUndo(kicker);
-                PropertyDialog::GetComboBoxText(m_surfaceCombo, kicker->m_d.m_szSurface);
-                PropertyDialog::EndUndo(kicker);
+                CHECK_UPDATE_COMBO_TEXT(kicker->m_d.m_szSurface, m_surfaceCombo, kicker);
                 break;
             default:
                 UpdateBaseProperties(kicker, &kicker->m_d, dispid);
                 break;
         }
+        kicker->UpdateStatusBarInfo();
     }
-    UpdateVisuals();
+    UpdateVisuals(dispid);
 }
 
 BOOL KickerVisualsProperty::OnInitDialog()
 {
-    AttachItem(IDC_MATERIAL_COMBO, m_materialCombo);
+    m_materialCombo.AttachItem(IDC_MATERIAL_COMBO);
     m_baseMaterialCombo = &m_materialCombo;
-    AttachItem(IDC_KICKER_DISPLAY_COMBO, m_displayCombo);
-    AttachItem(IDC_KICKER_RADIUS_EDIT, m_radiusEdit);
-    AttachItem(IDC_KICKER_ORIENTATION_EDIT, m_orientationEdit);
-    AttachItem(902, m_posXEdit);
-    AttachItem(903, m_posYEdit);
-    AttachItem(IDC_SURFACE_COMBO, m_surfaceCombo);
+    m_displayCombo.AttachItem(IDC_KICKER_DISPLAY_COMBO);
+    m_radiusEdit.AttachItem(IDC_KICKER_RADIUS_EDIT);
+    m_orientationEdit.AttachItem(IDC_KICKER_ORIENTATION_EDIT);
+    m_posXEdit.AttachItem(902);
+    m_posYEdit.AttachItem(903);
+    m_surfaceCombo.AttachItem(IDC_SURFACE_COMBO);
     UpdateVisuals();
     return TRUE;
 }

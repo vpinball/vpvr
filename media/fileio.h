@@ -1,12 +1,13 @@
 #pragma once
 #define FID(A) (int)((unsigned int)(#A[0])|((unsigned int)(#A[1])<<8)|((unsigned int)(#A[2])<<16)|((unsigned int)(#A[3])<<24))
 
-bool Exists(const char* const filePath);
-void TitleFromFilename(const char * const szfilename, char *sztitle);
-void ExtensionFromFilename(const char * const szfilename, char * const szextension);
+bool Exists(const string& filePath);
+void TitleFromFilename(const string& szfilename, string& sztitle);
+void ExtensionFromFilename(const string& szfilename, string& szextension);
 bool RawReadFromFile(const char * const szfilename, int *psize, char **pszout);
-void PathFromFilename(const char * const szfilename, char *szpath);
+void PathFromFilename(const string& szfilename, string& szpath);
 void TitleAndPathFromFilename(const char * const szfilename, char *szpath);
+bool ReplaceExtensionFromFilename(string& szfilename, const string& newextension);
 
 class BiffReader;
 
@@ -19,20 +20,24 @@ public:
 class BiffWriter
 {
 public:
-   BiffWriter(IStream *pistream, HCRYPTHASH hcrypthash);
-   HRESULT WriteInt(int id, int value);
-   HRESULT WriteString(int id, const char * const szvalue);
-   HRESULT WriteWideString(int id, const WCHAR * const wzvalue);
-   HRESULT WriteBool(int id, BOOL value);
-   HRESULT WriteFloat(int id, float value);
-   HRESULT WriteStruct(int id, void *pvalue, int size);
-   HRESULT WriteVector3(int id, Vertex3Ds* vec);
-   HRESULT WriteVector3Padded(int id, Vertex3Ds* vec);
-   HRESULT WriteTag(int id);
+   BiffWriter(IStream *pistream, const HCRYPTHASH hcrypthash);
 
-   HRESULT WriteBytes(const void *pv, unsigned long count, unsigned long *foo);
+   HRESULT WriteInt(const int id, const int value);
+   HRESULT WriteString(const int id, const char * const szvalue);
+   HRESULT WriteString(const int id, const std::string& szvalue);
 
-   HRESULT WriteRecordSize(int size);
+   HRESULT WriteWideString(const int id, const WCHAR * const wzvalue);
+   HRESULT WriteWideString(const int id, const std::basic_string<WCHAR>& wzvalue);
+   HRESULT WriteBool(const int id, const BOOL value);
+   HRESULT WriteFloat(const int id, const float value);
+   HRESULT WriteStruct(const int id, const void *pvalue, const int size);
+   HRESULT WriteVector3(const int id, const Vertex3Ds* vec);
+   HRESULT WriteVector3Padded(const int id, const Vertex3Ds* vec);
+   HRESULT WriteTag(const int id);
+
+   HRESULT WriteBytes(const void *pv, const unsigned long count, unsigned long *foo);
+
+   HRESULT WriteRecordSize(const int size);
 
    IStream *m_pistream;
    HCRYPTHASH m_hcrypthash;
@@ -41,20 +46,22 @@ public:
 class BiffReader
 {
 public:
-   BiffReader(IStream *pistream, ILoadable *piloadable, void *ppassdata, int version, HCRYPTHASH hcrypthash, HCRYPTKEY hcryptkey);
+   BiffReader(IStream *pistream, ILoadable *piloadable, void *ppassdata, const int version, const HCRYPTHASH hcrypthash, const HCRYPTKEY hcryptkey);
 
    HRESULT GetIntNoHash(void *pvalue);
    HRESULT GetInt(void *pvalue);
    HRESULT GetString(char *szvalue);
-   HRESULT GetWideString(WCHAR *wzvalue);
+   HRESULT GetString(std::string& szvalue);
+   HRESULT GetWideString(WCHAR* wzvalue);
+   HRESULT GetWideString(std::basic_string<WCHAR>& wzvalue);
    HRESULT GetFloat(float *pvalue);
    HRESULT GetBool(BOOL *pfvalue);
    HRESULT GetBool(bool *pvalue);
-   HRESULT GetStruct(void *pvalue, int size);
+   HRESULT GetStruct(void *pvalue, const int size);
    HRESULT GetVector3(Vertex3Ds* vec);
    HRESULT GetVector3Padded(Vertex3Ds* vec);
 
-   HRESULT ReadBytes(void *pv, unsigned long count, unsigned long *foo);
+   HRESULT ReadBytes(void *pv, const unsigned long count, unsigned long *foo);
 
    HRESULT Load();
 
@@ -66,7 +73,7 @@ public:
    HCRYPTKEY m_hcryptkey;
 
 private:
-   ILoadable * m_piloadable;
+   ILoadable *m_piloadable;
    int m_bytesinrecordremaining;
 };
 
@@ -100,6 +107,7 @@ public:
 
 private:
    int m_cref;
+
    vector<FastIStorage*> m_vstg;
    vector<FastIStream*> m_vstm;
 
@@ -128,13 +136,13 @@ public:
    long __stdcall Stat(struct tagSTATSTG *, unsigned long);
    long __stdcall Clone(struct IStream **);
 
-   void SetSize(unsigned int i);
-
    char  *m_rg;          // Data buffer
    WCHAR *m_wzName;
    unsigned int m_cSize; // Size of stream
 
 private:
+   void SetSize(const unsigned int i);
+
    int m_cref;
 
    unsigned int m_cMax;  // Number of elements allocated

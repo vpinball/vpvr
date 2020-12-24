@@ -6,6 +6,9 @@
 #include "BAM\BAM_ViewPortSetup.h"
 #include "BAM\BAM_Tracker.h"
 #endif
+
+extern int logicalNumberOfProcessors;
+
 int NumVideoBytes = 0;
 
 Pin3D::Pin3D()
@@ -199,7 +202,7 @@ void EnvmapPrecalc(const void* /*const*/ __restrict envmap, const DWORD env_xres
    //!! (note though that even 4096 samples can be too low if very bright spots (i.e. sun) in the image! see Delta_2k.hdr -> thus pre-filter enabled above!)
    // but with this implementation one can also have custom maps/LUTs for glossy, etc. later-on
    {
-      ThreadPool pool(8);
+      ThreadPool pool(logicalNumberOfProcessors);
 
       for (unsigned int y = 0; y < rad_env_yres; ++y) {
          pool.enqueue([y, rad_env_xres, rad_env_yres, isHDR, envmap, env_xres, env_yres, rad_envmap] {
@@ -396,7 +399,7 @@ void EnvmapPrecalc(const void* /*const*/ __restrict envmap, const DWORD env_xres
    sum[2] = gammaApprox(sum[2]);
    if (
    ((DWORD*)rad_envmap)[y*rad_env_xres + x] != ((int)(sum[0] * 255.0f)) | (((int)(sum[1] * 255.0f)) << 8) | (((int)(sum[2] * 255.0f)) << 16))
-   ::MessageBox(NULL, "Not OK", "Not OK", MB_OK);
+   g_pvp->MessageBox("Not OK", "Not OK", MB_OK);
    }
    }
 
@@ -426,10 +429,6 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
 
    if (!m_pd3dPrimaryDevice->LoadShaders())
       return E_FAIL;
-
-#ifdef ENABLE_SDL
-   g_pplayer->m_playfieldHwnd = m_pd3dPrimaryDevice->getHwnd();
-#endif
 
    const bool forceAniso = (stereo3D == STEREO_VR) ? true : LoadValueBoolWithDefault("Player", "ForceAnisotropicFiltering", true);
    m_pd3dPrimaryDevice->ForceAnisotropicFiltering(forceAniso);
@@ -517,7 +516,7 @@ HRESULT Pin3D::InitPin3D(const bool fullScreen, const int width, const int heigh
    const unsigned int envTexHeight = min(envTex->m_pdsBuffer->height(), 256) / 8;
    const unsigned int envTexWidth = envTexHeight * 2;
 
-   m_envRadianceTexture = new BaseTexture(envTexWidth, envTexHeight, envTex->m_pdsBuffer->m_format);
+   m_envRadianceTexture = new BaseTexture(envTexWidth, envTexHeight, envTex->m_pdsBuffer->m_format, false);
 
    EnvmapPrecalc(envTex->m_pdsBuffer->data(), envTex->m_pdsBuffer->width(), envTex->m_pdsBuffer->height(),
       m_envRadianceTexture->data(), envTexWidth, envTexHeight, envTex->IsHDR());
@@ -1084,7 +1083,7 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
    TRACE_FUNCTION();
 
    const Material * const mat = g_pplayer->m_ptable->GetMaterial(g_pplayer->m_ptable->m_szPlayfieldMaterial);
-   Texture * const pin = (depth_only && !mat->m_bOpacityActive) ? NULL : g_pplayer->m_ptable->GetImage((char *)g_pplayer->m_ptable->m_szImage);
+   Texture * const pin = (depth_only && !mat->m_bOpacityActive) ? NULL : g_pplayer->m_ptable->GetImage(g_pplayer->m_ptable->m_szImage);
 
    if (depth_only)
    {

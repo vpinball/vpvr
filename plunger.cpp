@@ -6,9 +6,7 @@ Plunger::Plunger()
    m_phitplunger = NULL;
    m_vertexBuffer = NULL;
    m_indexBuffer = NULL;
-   memset(m_d.m_szImage, 0, MAXTOKEN);
-   memset(m_d.m_szMaterial, 0, MAXNAMEBUFFER);
-   memset(m_d.m_szSurface, 0, MAXTOKEN);
+   memset(m_d.m_szSurface, 0, sizeof(m_d.m_szSurface));
 }
 
 Plunger::~Plunger()
@@ -48,15 +46,18 @@ void Plunger::SetDefaults(bool fromMouseClick)
    m_d.m_type = fromMouseClick ? (PlungerType)LoadValueIntWithDefault("DefaultProps\\Plunger", "PlungerType", PlungerTypeModern) : PlungerTypeModern;
    m_d.m_color = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Plunger", "Color", RGB(76, 76, 76)) : RGB(76, 76, 76);
 
-   HRESULT hr = LoadValueString("DefaultProps\\Plunger", "Image", m_d.m_szImage, MAXTOKEN);
+   char buf[MAXTOKEN] = { 0 };
+   HRESULT hr = LoadValueString("DefaultProps\\Plunger", "Image", buf, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_szImage[0] = 0;
+      m_d.m_szImage.clear();
+   else
+      m_d.m_szImage = buf;
 
    m_d.m_animFrames = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Plunger", "AnimFrames", 1) : 1;
    m_d.m_tdr.m_TimerEnabled = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Plunger", "TimerEnabled", false) : false;
    m_d.m_tdr.m_TimerInterval = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Plunger", "TimerInterval", 100) : 100;
 
-   hr = LoadValueString("DefaultProps\\Plunger", "Surface", &m_d.m_szSurface, MAXTOKEN);
+   hr = LoadValueString("DefaultProps\\Plunger", "Surface", m_d.m_szSurface, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
       m_d.m_szSurface[0] = 0;
 
@@ -66,8 +67,8 @@ void Plunger::SetDefaults(bool fromMouseClick)
 
    hr = LoadValueString("DefaultProps\\Plunger", "CustomTipShape", m_d.m_szTipShape, MAXTIPSHAPE);
    if ((hr != S_OK) || !fromMouseClick)
-      strcpy_s(m_d.m_szTipShape, MAXTIPSHAPE,
-         "0 .34; 2 .6; 3 .64; 5 .7; 7 .84; 8 .88; 9 .9; 11 .92; 14 .92; 39 .84");
+      strncpy_s(m_d.m_szTipShape,
+         "0 .34; 2 .6; 3 .64; 5 .7; 7 .84; 8 .88; 9 .9; 11 .92; 14 .92; 39 .84", sizeof(m_d.m_szTipShape) - 1);
 
    m_d.m_rodDiam = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Plunger", "CustomRodDiam", 0.60f) : 0.60f;
    m_d.m_ringGap = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Plunger", "CustomRingGap", 2.0f) : 2.0f;
@@ -189,7 +190,7 @@ void Plunger::EndPlay()
 
 void Plunger::SetObjectPos()
 {
-   g_pvp->SetObjectPosCur(m_d.m_v.x, m_d.m_v.y);
+   m_vpinball->SetObjectPosCur(m_d.m_v.x, m_d.m_v.y);
 }
 
 void Plunger::MoveOffset(const float dx, const float dy)
@@ -219,8 +220,6 @@ void Plunger::SetDefaultPhysics(bool fromMouseClick)
 
 void Plunger::RenderDynamic()
 {
-   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
-
    TRACE_FUNCTION();
 
    // TODO: get rid of frame stuff
@@ -237,13 +236,16 @@ void Plunger::RenderDynamic()
    const int frame = (frame0 < 0 ? 0 : frame0 >= m_cframes ? m_cframes - 1 : frame0);
 
    const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
+
+   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    pd3dDevice->basicShader->SetMaterial(mat);
 
    pd3dDevice->SetRenderStateDepthBias(0.0f);
    pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
    pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 
-   Texture *pin = m_ptable->GetImage(m_d.m_szImage);
+   Texture * const pin = m_ptable->GetImage(m_d.m_szImage);
    if (pin)
    {
       pd3dDevice->basicShader->SetTechnique("basic_with_texture");
@@ -477,8 +479,8 @@ void Plunger::RenderSetup()
    const int lathePoints = desc->n;
 
    // calculate the frame rendering details
-   int latheVts = 0, springVts = 0;
-   int latheIndices = 0, springIndices = 0;
+   int latheVts = 0;
+   int springIndices = 0;
    if (m_d.m_type == PlungerTypeFlat)
    {
       // For the flat plunger, we render every frame as a simple
@@ -495,7 +497,7 @@ void Plunger::RenderSetup()
       // spirals, where each sprial has 'springLoops' loops
       // times 'circlePoints' vertices.
       latheVts = lathePoints * circlePoints;
-      springVts = int((springLoops + springEndLoops) * (float)circlePoints) * 3;
+      const int springVts = int((springLoops + springEndLoops) * (float)circlePoints) * 3;
       m_vtsPerFrame = latheVts + springVts;
 
       // For the lathed section, we need two triangles == 6
@@ -503,7 +505,7 @@ void Plunger::RenderSetup()
       // the first.  (We connect pairs of lathe circles, so
       // the first one doesn't count: two circles -> one set
       // of triangles, three circles -> two sets, etc).
-      latheIndices = 6 * circlePoints * (lathePoints - 1);
+      const int latheIndices = 6 * circlePoints * (lathePoints - 1);
 
       // For the spring, we need 4 triangles == 12 indices
       // for every matching set of three vertices on the
@@ -896,7 +898,7 @@ HRESULT Plunger::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backu
    bw.WriteBool(FID(VSBL), m_d.m_visible);
    bw.WriteBool(FID(REEN), m_d.m_reflectionEnabled);
    bw.WriteString(FID(SURF), m_d.m_szSurface);
-   bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
+   bw.WriteWideString(FID(NAME), m_wzName);
 
    bw.WriteString(FID(TIPS), m_d.m_szTipShape);
    bw.WriteFloat(FID(RODD), m_d.m_rodDiam);
@@ -948,7 +950,7 @@ bool Plunger::LoadToken(const int id, BiffReader * const pbr)
    case FID(MECH): pbr->GetBool(&m_d.m_mechPlunger); break;
    case FID(APLG): pbr->GetBool(&m_d.m_autoPlunger); break;
    case FID(TMIN): pbr->GetInt(&m_d.m_tdr.m_TimerInterval); break;
-   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(NAME): pbr->GetWideString(m_wzName); break;
    case FID(TYPE): pbr->GetInt(&m_d.m_type); break;
    case FID(ANFR): pbr->GetInt(&m_d.m_animFrames); break;
    case FID(MATR): pbr->GetString(m_d.m_szMaterial); break;
@@ -1143,8 +1145,8 @@ STDMETHODIMP Plunger::put_Type(PlungerType newVal)
 
 STDMETHODIMP Plunger::get_Material(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1152,15 +1154,17 @@ STDMETHODIMP Plunger::get_Material(BSTR *pVal)
 
 STDMETHODIMP Plunger::put_Material(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szMaterial, MAXNAMEBUFFER, NULL, NULL);
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   m_d.m_szMaterial = buf;
 
    return S_OK;
 }
 
 STDMETHODIMP Plunger::get_Image(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage, -1, wz, MAXTOKEN);
+   WCHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage.c_str(), -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1169,15 +1173,14 @@ STDMETHODIMP Plunger::get_Image(BSTR *pVal)
 STDMETHODIMP Plunger::put_Image(BSTR newVal)
 {
    char szImage[MAXTOKEN];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, NULL, NULL);
    const Texture * const tex = m_ptable->GetImage(szImage);
    if (tex && tex->IsHDR())
    {
       ShowError("Cannot use a HDR image (.exr/.hdr) here");
       return E_FAIL;
    }
-
-   strcpy_s(m_d.m_szImage, szImage);
+   m_d.m_szImage = szImage;
 
    return S_OK;
 }
@@ -1198,7 +1201,7 @@ STDMETHODIMP Plunger::put_AnimFrames(int newVal)
 
 STDMETHODIMP Plunger::get_TipShape(BSTR *pVal)
 {
-   WCHAR wz[512];
+   WCHAR wz[MAXTIPSHAPE];
    MultiByteToWideChar(CP_ACP, 0, m_d.m_szTipShape, -1, wz, MAXTIPSHAPE);
    *pVal = SysAllocString(wz);
 
@@ -1207,7 +1210,7 @@ STDMETHODIMP Plunger::get_TipShape(BSTR *pVal)
 
 STDMETHODIMP Plunger::put_TipShape(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szTipShape, MAXTOKEN, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szTipShape, MAXTIPSHAPE, NULL, NULL);
 
    return S_OK;
 }
@@ -1345,7 +1348,7 @@ STDMETHODIMP Plunger::CreateBall(IBall **pBallEx)
 STDMETHODIMP Plunger::get_X(float *pVal)
 {
    *pVal = m_d.m_v.x;
-   g_pvp->SetStatusBarUnitInfo("", true);
+   m_vpinball->SetStatusBarUnitInfo("", true);
 
    return S_OK;
 }
@@ -1401,8 +1404,8 @@ STDMETHODIMP Plunger::put_ZAdjust(float newVal)
 
 STDMETHODIMP Plunger::get_Surface(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1410,7 +1413,7 @@ STDMETHODIMP Plunger::get_Surface(BSTR *pVal)
 
 STDMETHODIMP Plunger::put_Surface(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXTOKEN, NULL, NULL);
 
    return S_OK;
 }

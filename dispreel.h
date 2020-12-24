@@ -22,7 +22,7 @@ public:
    int         m_motorsteps;        // steps (or frames) to move each reel each frame
    int         m_digitrange;        // max number of digits per reel (usually 9)
 
-   char        m_szSound[MAXTOKEN]; // sound to play for each turn of a digit
+   string      m_szSound;           // sound to play for each turn of a digit
    int         m_updateinterval;    // time in ms between each animation update
 
    COLORREF    m_backcolor;         // colour of the background
@@ -50,7 +50,7 @@ class DispReel :
 {
 public:
    DispReel();
-   virtual ~DispReel();
+   virtual ~DispReel() {}
    BEGIN_COM_MAP(DispReel)
       COM_INTERFACE_ENTRY(IDispatch)
       COM_INTERFACE_ENTRY(IDispReel)

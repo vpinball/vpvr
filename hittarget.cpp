@@ -31,9 +31,6 @@ HitTarget::HitTarget()
    m_propPhysics = NULL;
    m_propPosition = NULL;
    m_propVisual = NULL;
-   memset(m_d.m_szImage, 0, MAXTOKEN);
-   memset(m_d.m_szMaterial, 0, MAXNAMEBUFFER);
-   memset(m_d.m_szPhysicsMaterial, 0, MAXNAMEBUFFER);
    m_d.m_overwritePhysics = true;
    m_vertices = NULL;
    m_indices = NULL;
@@ -144,7 +141,7 @@ HRESULT HitTarget::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
 
    InitVBA(fTrue, 0, NULL);
 
-   UpdateEditorView();
+   UpdateStatusBarInfo();
 
    return S_OK;
 }
@@ -171,9 +168,12 @@ void HitTarget::SetDefaults(bool fromMouseClick)
    // Rotation and Transposition
    m_d.m_rotZ = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "Orientation", 0.0f) : 0.0f;
 
-   const HRESULT hr = LoadValueString(strKeyName, "Image", m_d.m_szImage, MAXTOKEN);
+   char buf[MAXTOKEN] = { 0 };
+   const HRESULT hr = LoadValueString(strKeyName, "Image", buf, MAXTOKEN);
    if ((hr != S_OK) && fromMouseClick)
-      m_d.m_szImage[0] = 0;
+      m_d.m_szImage.clear();
+   else
+      m_d.m_szImage = buf;
 
    m_d.m_targetType = fromMouseClick ? (TargetType)LoadValueIntWithDefault(strKeyName, "TargetType", DropTargetSimple) : DropTargetSimple;
    m_d.m_threshold = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "HitThreshold", 2.0f) : 2.0f;
@@ -495,22 +495,20 @@ void HitTarget::TransformVertices()
 
 void HitTarget::ExportMesh(FILE *f)
 {
-   char name[MAX_PATH];
-   char subObjName[MAX_PATH];
-   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, MAX_PATH, NULL, NULL);
+   char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
+   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
 
    SetMeshType(m_d.m_targetType);
 
    m_transformedVertices.resize(m_numVertices);
 
-   strcpy_s(subObjName, name);
-   WaveFrontObj_WriteObjectName(f, subObjName);
+   WaveFrontObj_WriteObjectName(f, name);
 
    GenerateMesh(m_transformedVertices);
 
    WaveFrontObj_WriteVertexInfo(f, m_transformedVertices.data(), m_numVertices);
    const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
-   WaveFrontObj_WriteMaterial(m_d.m_szMaterial, NULL, mat);
+   WaveFrontObj_WriteMaterial(m_d.m_szMaterial, string(), mat);
    WaveFrontObj_UseTexture(f, m_d.m_szMaterial);
    WaveFrontObj_WriteFaceInfoList(f, m_indices, m_numIndices);
    WaveFrontObj_UpdateFaceOffset(m_numVertices);
@@ -585,7 +583,7 @@ void HitTarget::UIRenderPass2(Sur * const psur)
    //    psur->Line(m_d.m_vPosition.x, m_d.m_vPosition.y - 10.0f, m_d.m_vPosition.x, m_d.m_vPosition.y + 10.0f);
 }
 
-void HitTarget::UpdateEditorView()
+void HitTarget::UpdateStatusBarInfo()
 {
    TransformVertices();
 }
@@ -841,7 +839,7 @@ void HitTarget::RenderStatic()
 
 void HitTarget::SetObjectPos()
 {
-   g_pvp->SetObjectPosCur(m_d.m_vPosition.x, m_d.m_vPosition.y);
+   m_vpinball->SetObjectPosCur(m_d.m_vPosition.x, m_d.m_vPosition.y);
 }
 
 void HitTarget::MoveOffset(const float dx, const float dy)
@@ -849,7 +847,7 @@ void HitTarget::MoveOffset(const float dx, const float dy)
    m_d.m_vPosition.x += dx;
    m_d.m_vPosition.y += dy;
 
-   UpdateEditorView();
+   UpdateStatusBarInfo();
 }
 
 Vertex2D HitTarget::GetCenter() const
@@ -862,7 +860,7 @@ void HitTarget::PutCenter(const Vertex2D& pv)
    m_d.m_vPosition.x = pv.x;
    m_d.m_vPosition.y = pv.y;
 
-   UpdateEditorView();
+   UpdateStatusBarInfo();
 }
 
 //////////////////////////////
@@ -883,7 +881,7 @@ HRESULT HitTarget::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool bac
    bw.WriteFloat(FID(ROTZ), m_d.m_rotZ);
    bw.WriteString(FID(IMAG), m_d.m_szImage);
    bw.WriteInt(FID(TRTY), m_d.m_targetType);
-   bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
+   bw.WriteWideString(FID(NAME), m_wzName);
    bw.WriteString(FID(MATR), m_d.m_szMaterial);
    bw.WriteBool(FID(TVIS), m_d.m_visible);
    bw.WriteBool(FID(LEMO), m_d.m_legacy);
@@ -924,7 +922,7 @@ HRESULT HitTarget::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int versi
 
    br.Load();
 
-   UpdateEditorView();
+   UpdateStatusBarInfo();
    return S_OK;
 }
 
@@ -938,7 +936,7 @@ bool HitTarget::LoadToken(const int id, BiffReader * const pbr)
    case FID(ROTZ): pbr->GetFloat(&m_d.m_rotZ); break;
    case FID(IMAG): pbr->GetString(m_d.m_szImage); break;
    case FID(TRTY): pbr->GetInt(&m_d.m_targetType); break;
-   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(NAME): pbr->GetWideString(m_wzName); break;
    case FID(MATR): pbr->GetString(m_d.m_szMaterial); break;
    case FID(TVIS): pbr->GetBool(&m_d.m_visible); break;
    case FID(LEMO): pbr->GetBool(&m_d.m_legacy); break;
@@ -973,7 +971,7 @@ bool HitTarget::LoadToken(const int id, BiffReader * const pbr)
 
 HRESULT HitTarget::InitPostLoad()
 {
-   UpdateEditorView();
+   UpdateStatusBarInfo();
 
    return S_OK;
 }
@@ -984,9 +982,8 @@ HRESULT HitTarget::InitPostLoad()
 
 STDMETHODIMP HitTarget::get_Image(BSTR *pVal)
 {
-   WCHAR wz[512];
-
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage.c_str(), -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -995,15 +992,14 @@ STDMETHODIMP HitTarget::get_Image(BSTR *pVal)
 STDMETHODIMP HitTarget::put_Image(BSTR newVal)
 {
    char szImage[MAXTOKEN];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, NULL, NULL);
    const Texture * const tex = m_ptable->GetImage(szImage);
    if (tex && tex->IsHDR())
    {
       ShowError("Cannot use a HDR image (.exr/.hdr) here");
       return E_FAIL;
    }
-
-   strcpy_s(m_d.m_szImage, szImage);
+   m_d.m_szImage = szImage;
 
    return S_OK;
 }
@@ -1021,8 +1017,8 @@ float HitTarget::GetDepth(const Vertex3Ds& viewDir) const
 
 STDMETHODIMP HitTarget::get_Material(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1030,7 +1026,9 @@ STDMETHODIMP HitTarget::get_Material(BSTR *pVal)
 
 STDMETHODIMP HitTarget::put_Material(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szMaterial, MAXNAMEBUFFER, NULL, NULL);
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   m_d.m_szMaterial = buf;
 
    return S_OK;
 }
@@ -1053,21 +1051,14 @@ STDMETHODIMP HitTarget::put_Visible(VARIANT_BOOL newVal)
 STDMETHODIMP HitTarget::get_X(float *pVal)
 {
    *pVal = m_d.m_vPosition.x;
-   g_pvp->SetStatusBarUnitInfo("", true);
+   m_vpinball->SetStatusBarUnitInfo("", true);
 
    return S_OK;
 }
 
 STDMETHODIMP HitTarget::put_X(float newVal)
 {
-   if (m_d.m_vPosition.x != newVal)
-   {
-      m_d.m_vPosition.x = newVal;
-
-      if (!g_pplayer)
-         UpdateEditorView();
-   }
-
+   m_d.m_vPosition.x = newVal;
    return S_OK;
 }
 
@@ -1080,13 +1071,7 @@ STDMETHODIMP HitTarget::get_Y(float *pVal)
 
 STDMETHODIMP HitTarget::put_Y(float newVal)
 {
-   if (m_d.m_vPosition.y != newVal)
-   {
-      m_d.m_vPosition.y = newVal;
-
-      if (!g_pplayer)
-         UpdateEditorView();
-   }
+   m_d.m_vPosition.y = newVal;
 
    return S_OK;
 }
@@ -1100,13 +1085,7 @@ STDMETHODIMP HitTarget::get_Z(float *pVal)
 
 STDMETHODIMP HitTarget::put_Z(float newVal)
 {
-   if (m_d.m_vPosition.z != newVal)
-   {
-      m_d.m_vPosition.z = newVal;
-
-      if (!g_pplayer)
-         UpdateEditorView();
-   }
+   m_d.m_vPosition.z = newVal;
 
    return S_OK;
 }
@@ -1120,13 +1099,7 @@ STDMETHODIMP HitTarget::get_ScaleX(float *pVal)
 
 STDMETHODIMP HitTarget::put_ScaleX(float newVal)
 {
-   if (m_d.m_vSize.x != newVal)
-   {
-      m_d.m_vSize.x = newVal;
-
-      if (!g_pplayer)
-         UpdateEditorView();
-   }
+   m_d.m_vSize.x = newVal;
 
    return S_OK;
 }
@@ -1140,13 +1113,7 @@ STDMETHODIMP HitTarget::get_ScaleY(float *pVal)
 
 STDMETHODIMP HitTarget::put_ScaleY(float newVal)
 {
-   if (m_d.m_vSize.y != newVal)
-   {
-      m_d.m_vSize.y = newVal;
-
-      if (!g_pplayer)
-         UpdateEditorView();
-   }
+   m_d.m_vSize.y = newVal;
 
    return S_OK;
 }
@@ -1160,13 +1127,7 @@ STDMETHODIMP HitTarget::get_ScaleZ(float *pVal)
 
 STDMETHODIMP HitTarget::put_ScaleZ(float newVal)
 {
-   if (m_d.m_vSize.z != newVal)
-   {
-      m_d.m_vSize.z = newVal;
-
-      if (!g_pplayer)
-         UpdateEditorView();
-   }
+   m_d.m_vSize.z = newVal;
 
    return S_OK;
 }
@@ -1180,13 +1141,7 @@ STDMETHODIMP HitTarget::get_Orientation(float *pVal)
 
 STDMETHODIMP HitTarget::put_Orientation(float newVal)
 {
-   if (m_d.m_rotZ != newVal)
-   {
-      m_d.m_rotZ = newVal;
-
-      if (!g_pplayer)
-         UpdateEditorView();
-   }
+   m_d.m_rotZ = newVal;
 
    return S_OK;
 }
@@ -1371,8 +1326,7 @@ STDMETHODIMP HitTarget::get_DepthBias(float *pVal)
 
 STDMETHODIMP HitTarget::put_DepthBias(float newVal)
 {
-   if (m_d.m_depthBias != newVal)
-      m_d.m_depthBias = newVal;
+   m_d.m_depthBias = newVal;
 
    return S_OK;
 }
@@ -1386,8 +1340,7 @@ STDMETHODIMP HitTarget::get_DropSpeed(float *pVal)
 
 STDMETHODIMP HitTarget::put_DropSpeed(float newVal)
 {
-   if (m_d.m_dropSpeed != newVal)
-      m_d.m_dropSpeed = newVal;
+   m_d.m_dropSpeed = newVal;
 
    return S_OK;
 }
@@ -1449,16 +1402,13 @@ STDMETHODIMP HitTarget::put_DrawStyle(TargetType newVal)
 {
    m_d.m_targetType = newVal;
 
-   if (!g_pplayer)
-      UpdateEditorView();
-
    return S_OK;
 }
 
 STDMETHODIMP HitTarget::get_PhysicsMaterial(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szPhysicsMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szPhysicsMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1466,7 +1416,9 @@ STDMETHODIMP HitTarget::get_PhysicsMaterial(BSTR *pVal)
 
 STDMETHODIMP HitTarget::put_PhysicsMaterial(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szPhysicsMaterial, MAXNAMEBUFFER, NULL, NULL);
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   m_d.m_szPhysicsMaterial = buf;
 
    return S_OK;
 }

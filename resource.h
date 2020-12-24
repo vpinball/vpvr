@@ -281,7 +281,7 @@
 #define IDS_SIZE                        193
 #define IDS_ASSIGN_TO_LAYER             197
 #define IDS_DRAWING_ORDER_SELECT        200
-#define IDR_APPMENU                     201
+#define IDW_MAIN                        201
 #define IDC_SOUNDLIST                   201
 #define IDC_MATERIAL_LIST               201
 #define IDR_POINTMENU                   202
@@ -922,6 +922,7 @@
 #define IDC_PLUNGERRETRACT              592
 #define IDC_TURN_VR_ON                  592
 #define IDC_DMD_SOURCE                  593
+#define IDC_IMPORT_NO_FORSYTH           593
 #define IDC_BG_SOURCE                   594
 #define IDD_PROPRUBBER_PHYSICS          602
 #define IDC_RUBBER                      602
@@ -976,6 +977,7 @@
 #define IDI_ICON5                       666
 #define IDI_CAMERA                      666
 #define IDC_DATE_SAVED                  667
+#define IDD_NOTES_DIALOG                668
 #define IDC_CVP_BUT_CANCEL              701
 #define IDC_CVP_BUT_OK                  702
 #define IDC_CVP_BUT_COL_COMPS           703
@@ -1066,6 +1068,7 @@
 #define IDC_COLOR_BUTTON5               769
 #define IDC_LAYER_NAME_EDIT             769
 #define IDC_LAYER_FILTER_EDIT           769
+#define IDC_NOTES_EDIT                  769
 #define IDC_OK                          770
 #define IDC_STATIC_ALPHA                771
 #define IDC_STATIC_BASE_COLOR           772
@@ -1160,7 +1163,10 @@
 #define IDC_FAR_LABEL                   838
 #define IDC_CAP_PUP                     839
 #define IDC_PostProcessAA_Label         839
+#define IDC_STATIC_ELEMENT_TYPE         839
+#define ID_APPLY                        840
 #define IDC_VR_MODE                     840
+#define IDC_NOTES_RICHEDIT              841
 #define IDC_DMD_MODE                    841
 #define IDC_BG_MODE                     842
 #define IDC_MSAASLIDER_LABEL            843
@@ -1236,6 +1242,7 @@
 #define ID_PREFERENCES_VR               4022
 #define ID_EDIT_SHOWTOOLBAR             4023
 #define ID_EDIT_VROPTIONS               4023
+#define ID_TABLE_NOTES                  4024
 #define IDC_ENABLE_EMREEL_CHECK         13432
 #define IDC_ENABLE_DECAL_CHECK          13433
 #define IDC_BG_TEST_DESKTOP_CHECK       13434
@@ -1344,6 +1351,8 @@
 #define ID_EXPORT_TABLEMESH             33002
 #define ID_ADD_CTRL_POINT               33003
 #define ID_ADD_SMOOTH_CTRL_POINT        33004
+#define ID_TABLE_STOP_PLAY              33005
+#define ID_TABLE_PLAYER_STOPPED         33006
 #define DZVALUE                         65535
 #define DZName                          65535
 
@@ -1351,9 +1360,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        668
-#define _APS_NEXT_COMMAND_VALUE         4024
-#define _APS_NEXT_CONTROL_VALUE         843
+#define _APS_NEXT_RESOURCE_VALUE        669
+#define _APS_NEXT_COMMAND_VALUE         4025
+#define _APS_NEXT_CONTROL_VALUE         844
 #define _APS_NEXT_SYMED_VALUE           188
 #endif
 #endif

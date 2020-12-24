@@ -28,8 +28,8 @@ public:
 
    Mesh() { middlePoint.x = 0.0f; middlePoint.y = 0.0f; middlePoint.z = 0.0f; }
    void Clear();
-   bool LoadWavefrontObj(const char *fname, const bool flipTV, const bool convertToLeftHanded);
-   void SaveWavefrontObj(const char *fname, const char *description = NULL);
+   bool LoadWavefrontObj(const string& fname, const bool flipTV, const bool convertToLeftHanded);
+   void SaveWavefrontObj(const string& fname, const string& description);
    bool LoadAnimation(const char *fname, const bool flipTV, const bool convertToLeftHanded);
 
    size_t NumVertices() const { return m_vertices.size(); }
@@ -56,7 +56,7 @@ public:
    Vertex3Ds m_vSize;
    float m_aRotAndTra[9];
    char m_szNormalMap[MAXTOKEN];
-   char m_meshFileName[256];
+   string m_meshFileName;
 
    COLORREF m_SideColor;
    TimerDataRoot m_tdr;
@@ -257,7 +257,6 @@ public:
 
    //virtual HRESULT InitVBA(BOOL fNew, int id, WCHAR * const wzName);
    virtual void WriteRegDefaults();
-   //!! here starts the more general primitive stuff:
 
    virtual bool LoadMeshDialog();
    virtual void ExportMeshDialog();
@@ -271,14 +270,12 @@ public:
    virtual void SetDefaultPhysics(bool fromMouseClick);
    virtual void ExportMesh(FILE *f);
    virtual void RenderBlueprint(Sur *psur, const bool solid);
-
+   virtual void UpdateStatusBarInfo();
 
    void CreateRenderGroup(const Collection * const collection);
    void RecalculateMatrices();
    void TransformVertices();
    void RenderObject();
-   void UpdateMeshInfo();
-   void UpdateEditorView();
 
    static INT_PTR CALLBACK ObjImportProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
@@ -304,7 +301,6 @@ private:
    int m_compressedVertices; // only used during loading
    int m_compressedAnimationVertices; // only used during loading
 #endif
-
 
    bool BrowseFor3DMeshFile();
    void SetupHitObject(vector<HitObject*> &pvho, HitObject * obj);

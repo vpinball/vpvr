@@ -14,9 +14,7 @@ Spinner::Spinner()
    m_plateVertexBuffer = 0;
    m_plateIndexBuffer = 0;
    m_vertexBuffer_spinneranimangle = -FLT_MAX;
-   memset(m_d.m_szImage, 0, MAXTOKEN);
-   memset(m_d.m_szMaterial, 0, MAXNAMEBUFFER);
-   memset(m_d.m_szSurface, 0, MAXTOKEN);
+   memset(m_d.m_szSurface, 0, sizeof(m_d.m_szSurface));
 }
 
 Spinner::~Spinner()
@@ -43,14 +41,66 @@ Spinner::~Spinner()
    }
 }
 
-void Spinner::UpdateUnitsInfo()
+void Spinner::UpdateStatusBarInfo()
 {
-   if (g_pplayer)
-      return;
-
    char tbuf[128];
-   sprintf_s(tbuf, "Length: %.3f | Height: %.3f", g_pvp->ConvertToUnit(m_d.m_length), g_pvp->ConvertToUnit(m_d.m_height));
-   g_pvp->SetStatusBarUnitInfo(tbuf, true);
+   sprintf_s(tbuf, "Length: %.3f | Height: %.3f", m_vpinball->ConvertToUnit(m_d.m_length), m_vpinball->ConvertToUnit(m_d.m_height));
+   m_vpinball->SetStatusBarUnitInfo(tbuf, true);
+}
+
+float Spinner::GetAngleMax() const
+{
+   return (g_pplayer) ? RADTOANG(m_phitspinner->m_spinnerMover.m_angleMax) : // player active value
+      m_d.m_angleMax;
+}
+
+void Spinner::SetAngleMax(const float angle)
+{
+   float newVal = angle;
+
+   if (g_pplayer)
+   {
+      if (m_d.m_angleMin != m_d.m_angleMax)	// allow only if in limited angle mode
+      {
+         if (newVal > m_d.m_angleMax) newVal = m_d.m_angleMax;
+         else if (newVal < m_d.m_angleMin) newVal = m_d.m_angleMin;
+
+         newVal = ANGTORAD(newVal);
+
+         if (m_phitspinner->m_spinnerMover.m_angleMin < newVal)  // Min is smaller???
+            m_phitspinner->m_spinnerMover.m_angleMax = newVal;  // yes set new max
+         else m_phitspinner->m_spinnerMover.m_angleMin = newVal; // no set new minumum
+      }
+   }
+   else
+      m_d.m_angleMax = newVal;
+}
+
+float Spinner::GetAngleMin() const
+{
+   return (g_pplayer) ? RADTOANG(m_phitspinner->m_spinnerMover.m_angleMin) : // player active value
+      m_d.m_angleMin;
+}
+
+void Spinner::SetAngleMin(const float angle)
+{
+   float newVal = angle;
+   if (g_pplayer)
+   {
+      if (m_d.m_angleMin != m_d.m_angleMax)	// allow only if in limited angle mode
+      {
+         if (newVal > m_d.m_angleMax) newVal = m_d.m_angleMax;
+         else if (newVal < m_d.m_angleMin) newVal = m_d.m_angleMin;
+
+         newVal = ANGTORAD(newVal);
+
+         if (m_phitspinner->m_spinnerMover.m_angleMax > newVal)  // max is bigger
+            m_phitspinner->m_spinnerMover.m_angleMin = newVal;  // then set new minumum
+         else m_phitspinner->m_spinnerMover.m_angleMax = newVal; // else set new max
+      }
+   }
+   else
+      m_d.m_angleMin = newVal;
 }
 
 HRESULT Spinner::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
@@ -103,11 +153,15 @@ void Spinner::SetDefaults(bool fromMouseClick)
    m_d.m_tdr.m_TimerEnabled = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Spinner", "TimerEnabled", false) : false;
    m_d.m_tdr.m_TimerInterval = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Spinner", "TimerInterval", 100) : 100;
 
-   HRESULT hr = LoadValueString("DefaultProps\\Spinner", "Image", m_d.m_szImage, MAXTOKEN);
-   if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_szImage[0] = 0;
 
-   hr = LoadValueString("DefaultProps\\Spinner", "Surface", &m_d.m_szSurface, MAXTOKEN);
+   char buf[MAXTOKEN] = { 0 };
+   HRESULT hr = LoadValueString("DefaultProps\\Spinner", "Image", buf, MAXTOKEN);
+   if ((hr != S_OK) || !fromMouseClick)
+      m_d.m_szImage.clear();
+   else
+      m_d.m_szImage = buf;
+
+   hr = LoadValueString("DefaultProps\\Spinner", "Surface", m_d.m_szSurface, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
       m_d.m_szSurface[0] = 0;
 }
@@ -224,9 +278,8 @@ void Spinner::EndPlay()
 
 void Spinner::ExportMesh(FILE *f)
 {
-   char name[MAX_PATH];
-   char subObjName[MAX_PATH];
-   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, MAX_PATH, NULL, NULL);
+   char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
+   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
    std::vector<Vertex3D_NoTex2> transformedVertices;
    vector<HitObject*> dummyHitObj;
 
@@ -237,8 +290,7 @@ void Spinner::ExportMesh(FILE *f)
 
    if (m_d.m_showBracket)
    {
-      strcpy_s(subObjName, name);
-      strcat_s(subObjName, "Bracket");
+      const string subObjName = name + string("Bracket");
       WaveFrontObj_WriteObjectName(f, subObjName);
 
       m_fullMatrix.RotateZMatrix(ANGTORAD(m_d.m_rotation));
@@ -265,7 +317,7 @@ void Spinner::ExportMesh(FILE *f)
       WaveFrontObj_WriteVertexInfo(f, transformedVertices.data(), spinnerBracketNumVertices);
 
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
-      WaveFrontObj_WriteMaterial(m_d.m_szMaterial, NULL, mat);
+      WaveFrontObj_WriteMaterial(m_d.m_szMaterial, string(), mat);
       WaveFrontObj_UseTexture(f, m_d.m_szMaterial);
       WaveFrontObj_WriteFaceInfoList(f, spinnerBracketIndices, spinnerBracketNumFaces);
       WaveFrontObj_UpdateFaceOffset(spinnerBracketNumVertices);
@@ -277,8 +329,7 @@ void Spinner::ExportMesh(FILE *f)
    m_vertexBuffer_spinneranimangle = -FLT_MAX;
    UpdatePlate(transformedVertices.data());
 
-   strcpy_s(subObjName, name);
-   strcat_s(subObjName, "Plate");
+   const string subObjName = name + string("Plate");
    WaveFrontObj_WriteObjectName(f, subObjName);
 
    WaveFrontObj_WriteVertexInfo(f, transformedVertices.data(), spinnerPlateNumVertices);
@@ -459,7 +510,7 @@ void Spinner::RenderStatic()
 
 void Spinner::SetObjectPos()
 {
-   g_pvp->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
+   m_vpinball->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
 }
 
 void Spinner::MoveOffset(const float dx, const float dy)
@@ -504,7 +555,7 @@ HRESULT Spinner::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backu
    bw.WriteString(FID(MATR), m_d.m_szMaterial);
    bw.WriteString(FID(IMGF), m_d.m_szImage);
    bw.WriteString(FID(SURF), m_d.m_szSurface);
-   bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
+   bw.WriteWideString(FID(NAME), m_wzName);
 
    ISelect::SaveData(pstm, hcrypthash);
 
@@ -545,7 +596,7 @@ bool Spinner::LoadToken(const int id, BiffReader * const pbr)
    case FID(SVIS): pbr->GetBool(&m_d.m_visible); break;
    case FID(IMGF): pbr->GetString(m_d.m_szImage); break;
    case FID(SURF): pbr->GetString(m_d.m_szSurface); break;
-   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(NAME): pbr->GetWideString(m_wzName); break;
    default: ISelect::LoadToken(id, pbr); break;
    }
    return true;
@@ -581,8 +632,6 @@ STDMETHODIMP Spinner::get_Length(float *pVal)
 STDMETHODIMP Spinner::put_Length(float newVal)
 {
    m_d.m_length = newVal;
-   UpdateUnitsInfo();
-
    return S_OK;
 }
 
@@ -610,8 +659,6 @@ STDMETHODIMP Spinner::get_Height(float *pVal)
 STDMETHODIMP Spinner::put_Height(float newVal)
 {
    m_d.m_height = newVal;
-   UpdateUnitsInfo();
-
    return S_OK;
 }
 
@@ -635,8 +682,8 @@ STDMETHODIMP Spinner::put_Damping(float newVal)
 
 STDMETHODIMP Spinner::get_Material(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -644,15 +691,17 @@ STDMETHODIMP Spinner::get_Material(BSTR *pVal)
 
 STDMETHODIMP Spinner::put_Material(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szMaterial, MAXNAMEBUFFER, NULL, NULL);
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   m_d.m_szMaterial = buf;
 
    return S_OK;
 }
 
 STDMETHODIMP Spinner::get_Image(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage.c_str(), -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -661,15 +710,14 @@ STDMETHODIMP Spinner::get_Image(BSTR *pVal)
 STDMETHODIMP Spinner::put_Image(BSTR newVal)
 {
    char szImage[MAXTOKEN];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, NULL, NULL);
    const Texture * const tex = m_ptable->GetImage(szImage);
    if (tex && tex->IsHDR())
    {
       ShowError("Cannot use a HDR image (.exr/.hdr) here");
       return E_FAIL;
    }
-
-   strcpy_s(m_d.m_szImage, szImage);
+   m_d.m_szImage = szImage;
 
    return S_OK;
 }
@@ -704,8 +752,8 @@ STDMETHODIMP Spinner::put_Y(float newVal)
 
 STDMETHODIMP Spinner::get_Surface(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -713,7 +761,7 @@ STDMETHODIMP Spinner::get_Surface(BSTR *pVal)
 
 STDMETHODIMP Spinner::put_Surface(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXTOKEN, NULL, NULL);
 
    return S_OK;
 }
@@ -734,31 +782,16 @@ STDMETHODIMP Spinner::put_ShowBracket(VARIANT_BOOL newVal)
 
 STDMETHODIMP Spinner::get_AngleMax(float *pVal)
 {
-   *pVal = (g_pplayer) ? RADTOANG(m_phitspinner->m_spinnerMover.m_angleMax) :	//player active value
-      m_d.m_angleMax;
-
+   *pVal = GetAngleMax();
    return S_OK;
 }
 
 STDMETHODIMP Spinner::put_AngleMax(float newVal)
 {
-   if (g_pplayer)
-   {
-      if (m_d.m_angleMin != m_d.m_angleMax)	// allow only if in limited angle mode
-      {
-         if (newVal > m_d.m_angleMax) newVal = m_d.m_angleMax;
-         else if (newVal < m_d.m_angleMin) newVal = m_d.m_angleMin;
+   if (g_pplayer && (m_d.m_angleMin == m_d.m_angleMax)) // allow only if in limited angle mode
+      return S_FAIL;
 
-         newVal = ANGTORAD(newVal);
-
-         if (m_phitspinner->m_spinnerMover.m_angleMin < newVal)  // Min is smaller???
-            m_phitspinner->m_spinnerMover.m_angleMax = newVal;   //yes set new max
-         else m_phitspinner->m_spinnerMover.m_angleMin = newVal; //no set new minumum
-      }
-      else return S_FAIL;
-   }
-   else
-      m_d.m_angleMax = newVal;
+   SetAngleMax(newVal);
 
    return S_OK;
 }
@@ -773,23 +806,10 @@ STDMETHODIMP Spinner::get_AngleMin(float *pVal)
 
 STDMETHODIMP Spinner::put_AngleMin(float newVal)
 {
-   if (g_pplayer)
-   {
-      if (m_d.m_angleMin != m_d.m_angleMax)	// allow only if in limited angle mode
-      {
-         if (newVal > m_d.m_angleMax) newVal = m_d.m_angleMax;
-         else if (newVal < m_d.m_angleMin) newVal = m_d.m_angleMin;
+   if (g_pplayer && (m_d.m_angleMin != m_d.m_angleMax))	// allow only if in limited angle mode
+      return S_FAIL;
 
-         newVal = ANGTORAD(newVal);
-
-         if (m_phitspinner->m_spinnerMover.m_angleMax > newVal)  // max is bigger
-            m_phitspinner->m_spinnerMover.m_angleMin = newVal;   //then set new minumum
-         else m_phitspinner->m_spinnerMover.m_angleMax = newVal; //else set new max
-      }
-      else return S_FAIL;
-   }
-   else
-      m_d.m_angleMin = newVal;
+   SetAngleMin(newVal);
 
    return S_OK;
 }

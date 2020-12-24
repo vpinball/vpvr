@@ -2,11 +2,13 @@
 #include "Properties/SpinnerPhysicsProperty.h"
 #include <WindowsX.h>
 
-SpinnerPhysicsProperty::SpinnerPhysicsProperty(VectorProtected<ISelect> *pvsel) : BasePropertyDialog(IDD_PROPSPINNER_PHYSICS, pvsel)
+SpinnerPhysicsProperty::SpinnerPhysicsProperty(const VectorProtected<ISelect> *pvsel) : BasePropertyDialog(IDD_PROPSPINNER_PHYSICS, pvsel)
 {
+    m_dampingEdit.SetDialog(this);
+    m_elasticityEdit.SetDialog(this);
 }
 
-void SpinnerPhysicsProperty::UpdateVisuals()
+void SpinnerPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
     for (int i = 0; i < m_pvsel->Size(); i++)
     {
@@ -14,8 +16,10 @@ void SpinnerPhysicsProperty::UpdateVisuals()
             continue;
         Spinner *const spinner = (Spinner *)m_pvsel->ElementAt(i);
 
-        PropertyDialog::SetFloatTextbox(m_dampingEdit, spinner->m_d.m_damping);
-        UpdateBaseVisuals(spinner, &spinner->m_d);
+        if (dispid == IDC_DAMPING_EDIT || dispid == -1)
+            PropertyDialog::SetFloatTextbox(m_dampingEdit, spinner->m_d.m_damping);
+
+        UpdateBaseVisuals(spinner, &spinner->m_d, dispid);
         //only show the first element on multi-select
         break;
     }
@@ -32,9 +36,7 @@ void SpinnerPhysicsProperty::UpdateProperties(const int dispid)
         switch (dispid)
         {
             case IDC_DAMPING_EDIT:
-                PropertyDialog::StartUndo(spinner);
-                spinner->m_d.m_damping = PropertyDialog::GetFloatTextbox(m_dampingEdit);
-                PropertyDialog::EndUndo(spinner);
+                CHECK_UPDATE_ITEM(spinner->m_d.m_damping, PropertyDialog::GetFloatTextbox(m_dampingEdit), spinner);
                 break;
 
             default:
@@ -42,13 +44,14 @@ void SpinnerPhysicsProperty::UpdateProperties(const int dispid)
                 break;
         }
     }
+    UpdateVisuals(dispid);
 }
 
 BOOL SpinnerPhysicsProperty::OnInitDialog()
 {
-    AttachItem(IDC_ELASTICITY_EDIT, m_elasticityEdit);
+    m_elasticityEdit.AttachItem(IDC_ELASTICITY_EDIT);
     m_baseElasticityEdit = &m_elasticityEdit;
-    AttachItem(IDC_DAMPING_EDIT, m_dampingEdit);
+    m_dampingEdit.AttachItem(IDC_DAMPING_EDIT);
     UpdateVisuals();
     return TRUE;
 }

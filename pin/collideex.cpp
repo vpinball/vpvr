@@ -242,6 +242,9 @@ void GateMoverObject::UpdateDisplacements(const float dtime)
             m_anglespeed = 0.0f;
       }
    }
+   if (m_anglespeed == 0.0f)
+      m_forcedMove = false;
+
    m_angle += m_anglespeed * dtime;
 }
 
@@ -666,21 +669,21 @@ void Hit3DPoly::Collide(const CollisionEvent& coll)
 
 void Hit3DPoly::CalcHitBBox()
 {
-   m_hitBBox.left = m_rgv[0].x;
-   m_hitBBox.right = m_rgv[0].x;
-   m_hitBBox.top = m_rgv[0].y;
+   m_hitBBox.left   = m_rgv[0].x;
+   m_hitBBox.right  = m_rgv[0].x;
+   m_hitBBox.top    = m_rgv[0].y;
    m_hitBBox.bottom = m_rgv[0].y;
-   m_hitBBox.zlow = m_rgv[0].z;
-   m_hitBBox.zhigh = m_rgv[0].z;
+   m_hitBBox.zlow   = m_rgv[0].z;
+   m_hitBBox.zhigh  = m_rgv[0].z;
 
    for (int i = 1; i < m_cvertex; i++)
    {
-      m_hitBBox.left = min(m_rgv[i].x, m_hitBBox.left);
-      m_hitBBox.right = max(m_rgv[i].x, m_hitBBox.right);
-      m_hitBBox.top = min(m_rgv[i].y, m_hitBBox.top);
+      m_hitBBox.left   = min(m_rgv[i].x, m_hitBBox.left);
+      m_hitBBox.right  = max(m_rgv[i].x, m_hitBBox.right);
+      m_hitBBox.top    = min(m_rgv[i].y, m_hitBBox.top);
       m_hitBBox.bottom = max(m_rgv[i].y, m_hitBBox.bottom);
-      m_hitBBox.zlow = min(m_rgv[i].z, m_hitBBox.zlow);
-      m_hitBBox.zhigh = max(m_rgv[i].z, m_hitBBox.zhigh);
+      m_hitBBox.zlow   = min(m_rgv[i].z, m_hitBBox.zlow);
+      m_hitBBox.zhigh  = max(m_rgv[i].z, m_hitBBox.zhigh);
    }
 }
 

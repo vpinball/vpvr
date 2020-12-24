@@ -40,17 +40,15 @@ void MaterialDialog::EnableAllMaterialDialogItems(const BOOL e)
 
 float MaterialDialog::getItemText(int id)
 {
-   const CString textStr(GetDlgItemText(id));
-   const float fv = sz2f(textStr.c_str());
+   const float fv = sz2f(GetDlgItemText(id).c_str());
    return fv;
 }
 
 void MaterialDialog::setItemText(int id, float value)
 {
-   char textBuf[256] = { 0 };
+   string textBuf;
    f2sz(value, textBuf);
-   const CString textStr(textBuf);
-   SetDlgItemText(id, textStr);
+   SetDlgItemText(id, textBuf.c_str());
 }
 
 MaterialDialog::MaterialDialog() : CDialog(IDD_MATERIALDIALOG)
@@ -122,14 +120,14 @@ BOOL MaterialDialog::OnInitDialog()
    ListView_SetExtendedListViewStyle(m_hMaterialList, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
    LVCOLUMN lvcol;
    lvcol.mask = LVCF_TEXT | LVCF_WIDTH;
-   LocalString ls(IDS_NAME);
-   lvcol.pszText = ls.m_szbuffer;// = "Name";
+   const LocalString ls(IDS_NAME);
+   lvcol.pszText = (LPSTR)ls.m_szbuffer; // = "Name";
    lvcol.cx = 230;
    ListView_InsertColumn(m_hMaterialList, 0, &lvcol);
 
    lvcol.mask = LVCF_TEXT | LVCF_WIDTH;
-   LocalString ls2(IDS_USED_IN_TABLE);
-   lvcol.pszText = ls2.m_szbuffer;// = "Used in Table";
+   const LocalString ls2(IDS_USED_IN_TABLE);
+   lvcol.pszText = (LPSTR)ls2.m_szbuffer; // = "Used in Table";
    lvcol.cx = 50;
    ListView_InsertColumn(m_hMaterialList, 1, &lvcol);
    pt->ListMaterials(m_hMaterialList);
@@ -151,6 +149,7 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
            CHOOSECOLOR cc = m_colorDialog.GetParameters();
            cc.Flags = CC_FULLOPEN | CC_RGBINIT;
            m_colorDialog.SetParameters(cc);
+           m_colorDialog.SetCustomColors(pt->m_rgcolorcustom);
 
            if (ListView_GetSelectedCount(m_hMaterialList))	// if some items are selected???
            {
@@ -163,23 +162,23 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                lvitem.iItem = sel;
                lvitem.iSubItem = 0;
                ListView_GetItem(m_hMaterialList, &lvitem);
-               Material * const pmat = (Material*)lvitem.lParam;
+               Material * pmat = (Material*)lvitem.lParam;
                m_colorDialog.SetColor(pmat->m_cBase);
                if (m_colorDialog.DoModal(GetHwnd()) == IDOK)
                {
                    pmat->m_cBase = m_colorDialog.GetColor();
+                   memcpy(pt->m_rgcolorcustom, m_colorDialog.GetCustomColors(), sizeof(pt->m_rgcolorcustom));
                    m_colorButton1.SetColor(pmat->m_cBase);
                    while (sel != -1)
                    {
                        sel = ListView_GetNextItem(m_hMaterialList, sel, LVNI_SELECTED);
                        if(sel!=-1)
                        {
-                           LVITEM lvitem;
                            lvitem.mask = LVIF_PARAM;
                            lvitem.iItem = sel;
                            lvitem.iSubItem = 0;
                            ListView_GetItem(m_hMaterialList, &lvitem);
-                           Material * const pmat = (Material*)lvitem.lParam;
+                           pmat = (Material*)lvitem.lParam;
                            pmat->m_cBase = m_colorDialog.GetColor();
                        }
                    }
@@ -193,7 +192,7 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
            CHOOSECOLOR cc = m_colorDialog.GetParameters();
            cc.Flags = CC_FULLOPEN | CC_RGBINIT;
            m_colorDialog.SetParameters(cc);
-
+           m_colorDialog.SetCustomColors(pt->m_rgcolorcustom);
            if (ListView_GetSelectedCount(m_hMaterialList))	// if some items are selected???
            {
                int sel = ListView_GetNextItem(m_hMaterialList, -1, LVNI_SELECTED);
@@ -205,23 +204,23 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                lvitem.iItem = sel;
                lvitem.iSubItem = 0;
                ListView_GetItem(m_hMaterialList, &lvitem);
-               Material * const pmat = (Material*)lvitem.lParam;
+               Material * pmat = (Material*)lvitem.lParam;
                m_colorDialog.SetColor(pmat->m_cGlossy);
                if (m_colorDialog.DoModal(GetHwnd()) == IDOK)
                {
                    pmat->m_cGlossy = m_colorDialog.GetColor();
+                   memcpy(pt->m_rgcolorcustom, m_colorDialog.GetCustomColors(), sizeof(pt->m_rgcolorcustom));
                    m_colorButton2.SetColor(pmat->m_cGlossy);
                    while (sel != -1)
                    {
                        sel = ListView_GetNextItem(m_hMaterialList, sel, LVNI_SELECTED);
                        if(sel!=-1)
                        {
-                           LVITEM lvitem;
                            lvitem.mask = LVIF_PARAM;
                            lvitem.iItem = sel;
                            lvitem.iSubItem = 0;
                            ListView_GetItem(m_hMaterialList, &lvitem);
-                           Material * const pmat = (Material*)lvitem.lParam;
+                           pmat = (Material*)lvitem.lParam;
                            pmat->m_cGlossy = m_colorDialog.GetColor();
                        }
                    }
@@ -235,7 +234,7 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
            CHOOSECOLOR cc = m_colorDialog.GetParameters();
            cc.Flags = CC_FULLOPEN | CC_RGBINIT;
            m_colorDialog.SetParameters(cc);
-
+           m_colorDialog.SetCustomColors(pt->m_rgcolorcustom);
            if (ListView_GetSelectedCount(m_hMaterialList))	// if some items are selected???
            {
                int sel = ListView_GetNextItem(m_hMaterialList, -1, LVNI_SELECTED);
@@ -247,10 +246,11 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                lvitem.iItem = sel;
                lvitem.iSubItem = 0;
                ListView_GetItem(m_hMaterialList, &lvitem);
-               Material * const pmat = (Material*)lvitem.lParam;
+               Material * pmat = (Material*)lvitem.lParam;
                m_colorDialog.SetColor(pmat->m_cClearcoat);
                if (m_colorDialog.DoModal(GetHwnd()) == IDOK)
                {
+                   memcpy(pt->m_rgcolorcustom, m_colorDialog.GetCustomColors(), sizeof(pt->m_rgcolorcustom));
                    pmat->m_cClearcoat = m_colorDialog.GetColor();
                    m_colorButton3.SetColor(pmat->m_cClearcoat);
                    while (sel != -1)
@@ -258,12 +258,11 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                        sel = ListView_GetNextItem(m_hMaterialList, sel, LVNI_SELECTED);
                        if(sel!=-1)
                        {
-                           LVITEM lvitem;
                            lvitem.mask = LVIF_PARAM;
                            lvitem.iItem = sel;
                            lvitem.iSubItem = 0;
                            ListView_GetItem(m_hMaterialList, &lvitem);
-                           Material * const pmat = (Material*)lvitem.lParam;
+                           pmat = (Material*)lvitem.lParam;
                            pmat->m_cClearcoat = m_colorDialog.GetColor();
                        }
                    }
@@ -310,18 +309,19 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       }
       case IDC_IMPORT:
       {
-         char szFileName[MAXSTRING];
+         std::vector<std::string> szFilename;
          char szInitialDir[MAXSTRING];
-         szFileName[0] = '\0';
-         int fileOffset;
-         /*const HRESULT hr =*/ LoadValueString("RecentDir", "MaterialDir", szInitialDir, MAXSTRING);
 
-         if (g_pvp->OpenFileDialog(szInitialDir, szFileName, "Material Files (.mat)\0*.mat\0", "mat", 0, fileOffset))
+         const HRESULT hr = LoadValueString("RecentDir", "MaterialDir", szInitialDir, MAXSTRING);
+         if (hr != S_OK)
+            lstrcpy(szInitialDir, "c:\\Visual Pinball\\Tables\\");
+
+         if (g_pvp->OpenFileDialog(szInitialDir, szFilename, "Material Files (.mat)\0*.mat\0", "mat", 0))
          {
             int materialCount = 0;
             int versionNumber = 0;
             FILE *f;
-            fopen_s(&f, szFileName, "rb");
+            fopen_s(&f, szFilename[0].c_str(), "rb");
 
             fread(&versionNumber, 4, 1, f);
             if (versionNumber != 1)
@@ -343,13 +343,20 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                fread(&scatterAngle, sizeof(float), 1, f);
 
                Material * const pmat = new Material(mat.fWrapLighting, mat.fRoughness, dequantizeUnsigned<8>(mat.fGlossyImageLerp), dequantizeUnsigned<8>(mat.fThickness), mat.fEdge, dequantizeUnsigned<7>(mat.bOpacityActive_fEdgeAlpha >> 1), mat.fOpacity, mat.cBase, mat.cGlossy, mat.cClearcoat, mat.bIsMetal, !!(mat.bOpacityActive_fEdgeAlpha & 1), elasticity, elasticityFalloff, friction, scatterAngle);
-               memcpy(pmat->m_szName, mat.szName, MAXNAMEBUFFER);
+               pmat->m_szName = mat.szName;
 
                pt->AddMaterial(pmat);
                pt->AddListMaterial(m_hMaterialList, pmat);
             }
             fclose(f);
-            SaveValueString("RecentDir", "MaterialDir", szInitialDir);
+
+            const size_t index = szFilename[0].find_last_of('\\');
+            if (index != std::string::npos)
+            {
+               const std::string newInitDir(szFilename[0].substr(0, index));
+               SaveValueString("RecentDir", "MaterialDir", newInitDir);
+            }
+
             pt->SetNonUndoableDirty(eSaveDirty);
          }
          break;
@@ -375,34 +382,32 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
             if (sel == -1)
                break;
 
-            strcpy_s(szFileName, "Materials.mat");
+            strncpy_s(szFileName, "Materials.mat", sizeof(szFileName)-1);
             OPENFILENAME ofn;
             ZeroMemory(&ofn, sizeof(OPENFILENAME));
             ofn.lStructSize = sizeof(OPENFILENAME);
-            ofn.hInstance = g_hinst;
+            ofn.hInstance = g_pvp->theInstance;
             ofn.hwndOwner = g_pvp->GetHwnd();
             ofn.lpstrFile = szFileName;
             //TEXT
             ofn.lpstrFilter = "Material Files (.mat)\0*.mat\0";
-            ofn.nMaxFile = MAXSTRING;
+            ofn.nMaxFile = sizeof(szFileName);
             ofn.lpstrDefExt = "mat";
 
             const HRESULT hr = LoadValueString("RecentDir", "MaterialDir", szInitialDir, MAXSTRING);
+            if (hr != S_OK)
+               lstrcpy(szInitialDir, "c:\\Visual Pinball\\Tables\\");
 
-            if (hr == S_OK) ofn.lpstrInitialDir = szInitialDir;
-            else ofn.lpstrInitialDir = NULL;
-
+            ofn.lpstrInitialDir = szInitialDir;
             ofn.lpstrTitle = "Export materials";
             ofn.Flags = OFN_NOREADONLYRETURN | OFN_CREATEPROMPT | OFN_OVERWRITEPROMPT | OFN_EXPLORER;
-
-            szInitialDir[ofn.nFileOffset] = 0;
 
             if (GetSaveFileName(&ofn))	//Get filename from user
             {
                FILE *f;
                fopen_s(&f, ofn.lpstrFile, "wb");
-               const int MATERIAL_VERSION = 1;
-               fwrite(&MATERIAL_VERSION, 4, 1, f);
+               const int mv = MATERIAL_VERSION;
+               fwrite(&mv, 4, 1, f);
                fwrite(&selCount, 4, 1, f);
                while (sel != -1)
                {
@@ -425,7 +430,7 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                   mat.fOpacity = pmat->m_fOpacity;
                   mat.bOpacityActive_fEdgeAlpha = pmat->m_bOpacityActive ? 1 : 0;
                   mat.bOpacityActive_fEdgeAlpha |= quantizeUnsigned<7>(clamp(pmat->m_fEdgeAlpha, 0.f, 1.f)) << 1;
-                  memcpy(mat.szName, pmat->m_szName, MAXNAMEBUFFER);
+                  strncpy_s(mat.szName, pmat->m_szName.c_str(), sizeof(mat.szName)-1);
 
                   fwrite(&mat, sizeof(SaveMaterial), 1, f);
                   fwrite(&pmat->m_fElasticity, sizeof(float), 1, f);
@@ -436,8 +441,15 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                   sel = ListView_GetNextItem(m_hMaterialList, sel, LVNI_SELECTED);
                }
                fclose(f);
+
+               const string szFilename(ofn.lpstrFile);
+               const size_t index = szFilename.find_last_of('\\');
+               if (index != std::string::npos)
+               {
+                   const std::string newInitDir(szFilename.substr(0, index));
+                   SaveValueString("RecentDir", "MaterialDir", newInitDir);
+               }
             }
-            SaveValueString("RecentDir", "MaterialDir", szInitialDir);
          }
          break;
       }
@@ -446,7 +458,7 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
          const int count = ListView_GetSelectedCount(m_hMaterialList);
          if (count > 0)
          {
-            LocalString ls(IDS_REMOVEMATERIAL);
+            const LocalString ls(IDS_REMOVEMATERIAL);
             const int ans = MessageBox(ls.m_szbuffer/*"Are you sure you want to remove this material?"*/, "Confirm Deletion", MB_YESNO | MB_DEFBUTTON2);
             if (ans == IDYES)
             {
@@ -491,8 +503,8 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 
 INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    m_resizer.HandleMessage(uMsg, wParam, lParam);
-    
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+
    switch (uMsg)
    {
       case WM_NOTIFY:
@@ -540,7 +552,7 @@ INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
                if (pt->IsMaterialNameUnique(pinfo->item.pszText))
                {
-                  strncpy_s(pmat->m_szName, pinfo->item.pszText, 31);
+                  pmat->m_szName = pinfo->item.pszText;
                   ListView_SetItemText(m_hMaterialList, pinfo->item.iItem, 0, pinfo->item.pszText);
                }
                else
@@ -552,8 +564,8 @@ INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                      sprintf_s(textBuf, "%s%i", pinfo->item.pszText, suffix);
                      suffix++;
                   } while (!pt->IsMaterialNameUnique(textBuf));
-                  strncpy_s(pmat->m_szName, textBuf, 31);
-                  ListView_SetItemText(m_hMaterialList, pinfo->item.iItem, 0, pmat->m_szName);
+                  pmat->m_szName = textBuf;
+                  ListView_SetItemText(m_hMaterialList, pinfo->item.iItem, 0, (LPSTR)pmat->m_szName.c_str());
                }
                pt->SetNonUndoableDirty(eSaveDirty);
                return TRUE;
@@ -658,11 +670,11 @@ INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                   size_t checked = SendDlgItemMessage(IDC_DIFFUSE_CHECK, BM_GETCHECK, 0, 0);
                   if (pmat->m_bIsMetal != (checked == 1))
                      pt->SetNonUndoableDirty(eSaveDirty);
-                  pmat->m_bIsMetal = checked == 1;
+                  pmat->m_bIsMetal = (checked == 1);
                   checked = SendDlgItemMessage(IDC_OPACITY_CHECK, BM_GETCHECK, 0, 0);
                   if (pmat->m_bOpacityActive != (checked == 1))
                      pt->SetNonUndoableDirty(eSaveDirty);
-                  pmat->m_bOpacityActive = checked == 1;
+                  pmat->m_bOpacityActive = (checked == 1);
                   fv = saturate(getItemText(IDC_EDGEALPHA_EDIT));
                   if (pmat->m_fEdgeAlpha != fv)
                      pt->SetNonUndoableDirty(eSaveDirty);
@@ -800,12 +812,12 @@ void MaterialDialog::OnOK()
          size_t checked = SendDlgItemMessage(IDC_DIFFUSE_CHECK, BM_GETCHECK, 0, 0);
          if (pmat->m_bIsMetal != (checked == 1))
             pt->SetNonUndoableDirty(eSaveDirty);
-         pmat->m_bIsMetal = checked == 1;
+         pmat->m_bIsMetal = (checked == 1);
 
          checked = SendDlgItemMessage(IDC_OPACITY_CHECK, BM_GETCHECK, 0, 0);
          if (pmat->m_bOpacityActive != (checked == 1))
             pt->SetNonUndoableDirty(eSaveDirty);
-         pmat->m_bOpacityActive = checked == 1;
+         pmat->m_bOpacityActive = (checked == 1);
 
          fv = getItemText(IDC_EDGEALPHA_EDIT);
          if (pmat->m_fEdgeAlpha != fv)

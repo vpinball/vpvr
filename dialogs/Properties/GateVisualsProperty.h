@@ -4,28 +4,28 @@
 class GateVisualsProperty: public BasePropertyDialog
 {
 public:
-    GateVisualsProperty(VectorProtected<ISelect> *pvsel);
+    GateVisualsProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~GateVisualsProperty()
     {
     }
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
     virtual BOOL OnInitDialog();
 
 private:
-    CComboBox m_typeCombo;
-    CComboBox m_materialCombo;
-    CComboBox m_surfaceCombo;
-    CEdit     m_xposEdit;
-    CEdit     m_yposEdit;
-    CEdit     m_lengthEdit;
-    CEdit     m_heightEdit;
-    CEdit     m_rotationEdit;
-    CEdit     m_openAngleEdit;
-    CEdit     m_closeAngleEdit;
+    ComboBox  m_typeCombo;
+    ComboBox  m_materialCombo;
+    ComboBox  m_surfaceCombo;
+    EditBox   m_xposEdit;
+    EditBox   m_yposEdit;
+    EditBox   m_lengthEdit;
+    EditBox   m_heightEdit;
+    EditBox   m_rotationEdit;
+    EditBox   m_openAngleEdit;
+    EditBox   m_closeAngleEdit;
     vector<string> m_typeList;
 };
 

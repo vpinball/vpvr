@@ -278,22 +278,22 @@ BOOL CALLBACK DIEnumJoystickCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef)
    {
       if (!WzSzStrCmp(dstr.wsz, "PinballWizard"))
       {
-         ppinput->uShockDevice = ppinput->e_JoyCnt;	// remember uShock
+         ppinput->uShockDevice = ppinput->e_JoyCnt;  // remember uShock
          ppinput->uShockType = USHOCKTYPE_PBWIZARD;  //set type 1 = PinballWizard
       }
       else if (!WzSzStrCmp(dstr.wsz, "UltraCade Pinball"))
       {
-         ppinput->uShockDevice = ppinput->e_JoyCnt;	// remember uShock
+         ppinput->uShockDevice = ppinput->e_JoyCnt;  // remember uShock
          ppinput->uShockType = USHOCKTYPE_ULTRACADE; //set type 2 = UltraCade Pinball
       }
       else if (!WzSzStrCmp(dstr.wsz, "Microsoft SideWinder Freestyle Pro (USB)"))
       {
-         ppinput->uShockDevice = ppinput->e_JoyCnt;	// remember uShock
+         ppinput->uShockDevice = ppinput->e_JoyCnt;  // remember uShock
          ppinput->uShockType = USHOCKTYPE_SIDEWINDER;//set type 3 = Microsoft SideWinder Freestyle Pro
       }
       else if (!WzSzStrCmp(dstr.wsz, "VirtuaPin Controller"))
       {
-         ppinput->uShockDevice = ppinput->e_JoyCnt;	// remember uShock
+         ppinput->uShockDevice = ppinput->e_JoyCnt;  // remember uShock
          ppinput->uShockType = USHOCKTYPE_VIRTUAPIN; //set type 4 = VirtuaPin Controller
       }
       else if (!WzSzStrCmp(dstr.wsz, "Pinscape Controller"))
@@ -304,7 +304,7 @@ BOOL CALLBACK DIEnumJoystickCallback(LPCDIDEVICEINSTANCE lpddi, LPVOID pvRef)
       }
       else
       {
-         ppinput->uShockDevice = ppinput->e_JoyCnt;	// remember uShock
+         ppinput->uShockDevice = ppinput->e_JoyCnt;  // remember uShock
          ppinput->uShockType = USHOCKTYPE_GENERIC;   //Generic Gamepad
       }
    }
@@ -547,9 +547,9 @@ void PinInput::Init(const HWND hwnd)
 
    HRESULT hr;
 #ifdef USE_DINPUT8
-   hr = DirectInput8Create(g_hinst, DIRECTINPUT_VERSION, IID_IDirectInput8, (void **)&m_pDI, NULL);
+   hr = DirectInput8Create(g_pvp->theInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void **)&m_pDI, NULL);
 #else
-   hr = DirectInputCreate(g_hinst, DIRECTINPUT_VERSION, &m_pDI, NULL);
+   hr = DirectInputCreate(g_pvp->theInstance, DIRECTINPUT_VERSION, &m_pDI, NULL);
 #endif
 
 #ifdef USE_DINPUT_FOR_KEYBOARD
@@ -577,7 +577,7 @@ void PinInput::Init(const HWND hwnd)
       {
          hr = m_pMouse->SetDataFormat(&c_dfDIMouse2);
 
-         //hr = m_pMouse->SetCooperativeLevel(hwnd, DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
+         hr = m_pMouse->SetCooperativeLevel(hwnd, DISCL_NONEXCLUSIVE | DISCL_FOREGROUND);
          DIPROPDWORD dipdwm;
          dipdwm.diph.dwSize = sizeof(DIPROPDWORD);
          dipdwm.diph.dwHeaderSize = sizeof(DIPROPHEADER);
@@ -848,10 +848,6 @@ void PinInput::button_exit(const U32 msecs, const U32 curr_time_msec)
    if (m_exit_stamp &&                         // Initialized.
       (curr_time_msec - m_exit_stamp > msecs)) // Held exit button for number of mseconds.
    {
-      if (uShockType == USHOCKTYPE_ULTRACADE)
-         ExitApp(); //remove pesky exit button
-      else
-         //exit(0); //Close out to desktop
          g_pvp->Quit();
    }
 }

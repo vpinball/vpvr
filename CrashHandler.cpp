@@ -171,7 +171,7 @@ namespace
 
       if (exceptionPtrs->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
       {
-         fprintf(f, "Attempt to %s 0x%08X\n",
+         fprintf(f, "Attempt to %s 0x%08llX\n",
             (exceptionPtrs->ExceptionRecord->ExceptionInformation[0] == 1 ?
             "write to" : "read from"), exceptionPtrs->ExceptionRecord->ExceptionInformation[1]);
       }
@@ -247,8 +247,8 @@ namespace
       const CONTEXT* ctx = exceptionPtrs->ContextRecord;
       fprintf(f, "Registers\n=========\n");
 #ifdef _WIN64
-      fprintf(f, "RAX=%08X RBX=%08X RCX=%08X RDX=%08X\n" \
-         "RSI=%08X RDI=%08X RBP=%08X RSP=%08X RIP=%08X\n" \
+      fprintf(f, "RAX=%08llX RBX=%08llX RCX=%08llX RDX=%08llX\n" \
+         "RSI=%08llX RDI=%08llX RBP=%08llX RSP=%08llX RIP=%08llX\n" \
          "FLG=%08X CS=%04X DS=%04X SS=%04X ES=%04X FS=%04X GS=%04X\n\n",
          ctx->Rax, ctx->Rbx, ctx->Rcx, ctx->Rdx, ctx->Rsi, ctx->Rdi,
          ctx->Rbp, ctx->Rsp, ctx->Rip, ctx->EFlags, ctx->SegCs,
@@ -291,8 +291,7 @@ namespace
       const bool miniDumpOK = WriteMiniDump(exceptionPtrs, s_miniDumpFileName);
 
       FILE* f;
-      fopen_s(&f,s_reportFileName, "wt");
-	  if (f)
+      if ((fopen_s(&f, s_reportFileName, "wt") == 0) && f)
 	  {
 		  WriteHeader(f);
 		  WriteExceptionInfo(f, exceptionPtrs);
@@ -321,11 +320,11 @@ namespace rde
 
    void CrashHandler::SetMiniDumpFileName(const char* name)
    {
-      strcpy_s(s_miniDumpFileName, name);
+      strncpy_s(s_miniDumpFileName, name, sizeof(s_miniDumpFileName) - 1);
    }
 
    void CrashHandler::SetCrashReportFileName(const char* name)
    {
-      strcpy_s(s_reportFileName, name);
+      strncpy_s(s_reportFileName, name, sizeof(s_reportFileName) - 1);
    }
 }

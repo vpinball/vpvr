@@ -4,12 +4,12 @@
 class PrimitiveVisualsProperty: public BasePropertyDialog
 {
 public:
-    PrimitiveVisualsProperty(VectorProtected<ISelect> *pvsel);
+    PrimitiveVisualsProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~PrimitiveVisualsProperty()
     {
     }
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
@@ -18,19 +18,19 @@ protected:
 private:
     CButton     m_importMeshButton;
     CButton     m_exportMeshButton;
-    CComboBox   m_imageCombo;
+    ComboBox    m_imageCombo;
+    ComboBox    m_normalMapCombo;
+    ComboBox    m_materialCombo;
     HWND        m_hDisplayImageCheck;
     HWND        m_hObjectSpaceCheck;
-    CComboBox   m_normalMapCombo;
-    CComboBox   m_materialCombo;
-    CEdit       m_depthBiasEdit;
+    EditBox     m_depthBiasEdit;
     HWND        m_hStaticRenderingCheck;
     HWND        m_hRenderBackfacingCheck;
     HWND        m_hDrawTexturesInsideCheck;
-    CEdit       m_disableLightingEdit;
-    CEdit       m_disableLightFromBelowEdit;
-    CEdit       m_legacySidesEdit;
-    CEdit       m_editorEdit;
+    EditBox     m_disableLightingEdit;
+    EditBox     m_disableLightFromBelowEdit;
+    EditBox     m_legacySidesEdit;
+    EditBox     m_edgeFactorUIEdit;
 };
 
 #endif // !H_PRIMITIVE_VISUALS_PROPERTY

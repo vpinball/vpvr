@@ -21,11 +21,7 @@ Bumper::Bumper()
    m_socketVertexBuffer = NULL;
    m_ringAnimate = false;
    m_propVisual = NULL;
-   memset(m_d.m_szBaseMaterial, 0, MAXNAMEBUFFER);
-   memset(m_d.m_szCapMaterial, 0, MAXNAMEBUFFER);
-   memset(m_d.m_szSkirtMaterial, 0, MAXNAMEBUFFER);
-   memset(m_d.m_szRingMaterial, 0, MAXNAMEBUFFER);
-   memset(m_d.m_szSurface, 0, MAXTOKEN);
+   memset(m_d.m_szSurface, 0, sizeof(m_d.m_szSurface));
    m_d.m_ringDropOffset = 0.0f;
    m_ringDown = false;
    m_updateSkirt = false;
@@ -212,7 +208,7 @@ void Bumper::UIRenderPass2(Sur * const psur)
    psur->Ellipse(m_d.m_vCenter.x, m_d.m_vCenter.y, m_d.m_radius*1.5f);
    psur->Ellipse(m_d.m_vCenter.x, m_d.m_vCenter.y, m_d.m_radius);
 
-   if (g_pvp->m_alwaysDrawLightCenters)
+   if (m_vpinball->m_alwaysDrawLightCenters)
    {
       psur->Line(m_d.m_vCenter.x - 10.0f, m_d.m_vCenter.y, m_d.m_vCenter.x + 10.0f, m_d.m_vCenter.y);
       psur->Line(m_d.m_vCenter.x, m_d.m_vCenter.y - 10.0f, m_d.m_vCenter.x, m_d.m_vCenter.y + 10.0f);
@@ -589,24 +585,22 @@ void Bumper::RenderDynamic()
 
 void Bumper::ExportMesh(FILE *f)
 {
-   char name[MAX_PATH];
-   char subObjName[MAX_PATH];
-   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, MAX_PATH, NULL, NULL);
+   char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
+   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
 
    m_baseHeight = m_ptable->GetSurfaceHeight(m_d.m_szSurface, m_d.m_vCenter.x, m_d.m_vCenter.y) * m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
    m_fullMatrix.RotateZMatrix(ANGTORAD(m_d.m_orientation));
 
    if (m_d.m_baseVisible)
    {
-      Vertex3D_NoTex2 *base = new Vertex3D_NoTex2[bumperBaseNumVertices];
-      strcpy_s(subObjName, name);
-      strcat_s(subObjName, "Base");
+      const string subObjName = name + string("Base");
       WaveFrontObj_WriteObjectName(f, subObjName);
 
+      Vertex3D_NoTex2* base = new Vertex3D_NoTex2[bumperBaseNumVertices];
       GenerateBaseMesh(base);
       WaveFrontObj_WriteVertexInfo(f, base, bumperBaseNumVertices);
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szBaseMaterial);
-      WaveFrontObj_WriteMaterial(m_d.m_szBaseMaterial, NULL, mat);
+      WaveFrontObj_WriteMaterial(m_d.m_szBaseMaterial, string(), mat);
       WaveFrontObj_UseTexture(f, m_d.m_szBaseMaterial);
       WaveFrontObj_WriteFaceInfoList(f, bumperBaseIndices, bumperBaseNumIndices);
       WaveFrontObj_UpdateFaceOffset(bumperBaseNumVertices);
@@ -614,11 +608,10 @@ void Bumper::ExportMesh(FILE *f)
    }
    if (m_d.m_ringVisible)
    {
-      Vertex3D_NoTex2 * const ring = new Vertex3D_NoTex2[bumperRingNumVertices];
-      strcpy_s(subObjName, name);
-      strcat_s(subObjName, "Ring");
+      const string subObjName = name + string("Ring");
       WaveFrontObj_WriteObjectName(f, subObjName);
 
+      Vertex3D_NoTex2* const ring = new Vertex3D_NoTex2[bumperRingNumVertices];
       GenerateRingMesh(ring);
       WaveFrontObj_WriteVertexInfo(f, ring, bumperRingNumVertices);
       WaveFrontObj_WriteFaceInfoList(f, bumperRingIndices, bumperRingNumIndices);
@@ -627,15 +620,14 @@ void Bumper::ExportMesh(FILE *f)
    }
    if (m_d.m_skirtVisible)
    {
-      Vertex3D_NoTex2 * const socket = new Vertex3D_NoTex2[bumperSocketNumVertices];
-      strcpy_s(subObjName, name);
-      strcat_s(subObjName, "Skirt");
+      const string subObjName = name + string("Skirt");
       WaveFrontObj_WriteObjectName(f, subObjName);
 
+      Vertex3D_NoTex2* const socket = new Vertex3D_NoTex2[bumperSocketNumVertices];
       GenerateSocketMesh(socket);
       WaveFrontObj_WriteVertexInfo(f, socket, bumperSocketNumVertices);
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szSkirtMaterial);
-      WaveFrontObj_WriteMaterial(m_d.m_szSkirtMaterial, NULL, mat);
+      WaveFrontObj_WriteMaterial(m_d.m_szSkirtMaterial, string(), mat);
       WaveFrontObj_UseTexture(f, m_d.m_szSkirtMaterial);
       WaveFrontObj_WriteFaceInfoList(f, bumperSocketIndices, bumperSocketNumIndices);
       WaveFrontObj_UpdateFaceOffset(bumperSocketNumVertices);
@@ -643,15 +635,14 @@ void Bumper::ExportMesh(FILE *f)
    }
    if (m_d.m_capVisible)
    {
-      Vertex3D_NoTex2 * const cap = new Vertex3D_NoTex2[bumperCapNumVertices];
-      strcpy_s(subObjName, name);
-      strcat_s(subObjName, "Cap");
+      const string subObjName = name + string("Cap");
       WaveFrontObj_WriteObjectName(f, subObjName);
 
+      Vertex3D_NoTex2* const cap = new Vertex3D_NoTex2[bumperCapNumVertices];
       GenerateCapMesh(cap);
       WaveFrontObj_WriteVertexInfo(f, cap, bumperCapNumVertices);
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szCapMaterial);
-      WaveFrontObj_WriteMaterial(m_d.m_szCapMaterial, NULL, mat);
+      WaveFrontObj_WriteMaterial(m_d.m_szCapMaterial, string(), mat);
       WaveFrontObj_UseTexture(f, m_d.m_szCapMaterial);
       WaveFrontObj_WriteFaceInfoList(f, bumperCapIndices, bumperCapNumIndices);
       WaveFrontObj_UpdateFaceOffset(bumperCapNumVertices);
@@ -862,7 +853,7 @@ void Bumper::RenderStatic()
 
 void Bumper::SetObjectPos()
 {
-   g_pvp->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
+   m_vpinball->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
 }
 
 void Bumper::MoveOffset(const float dx, const float dy)
@@ -901,7 +892,7 @@ HRESULT Bumper::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backup
    bw.WriteString(FID(SKMA), m_d.m_szSkirtMaterial);
    bw.WriteString(FID(RIMA), m_d.m_szRingMaterial);
    bw.WriteString(FID(SURF), m_d.m_szSurface);
-   bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
+   bw.WriteWideString(FID(NAME), m_wzName);
 
    bw.WriteBool(FID(CAVI), m_d.m_capVisible);
    bw.WriteBool(FID(BSVS), m_d.m_baseVisible);
@@ -952,7 +943,7 @@ bool Bumper::LoadToken(const int id, BiffReader * const pbr)
    case FID(ORIN): pbr->GetFloat(&m_d.m_orientation); break;
    case FID(RDLI): pbr->GetFloat(&m_d.m_ringDropOffset); break;
    case FID(SURF): pbr->GetString(m_d.m_szSurface); break;
-   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(NAME): pbr->GetWideString(m_wzName); break;
    case FID(BVIS):
    {
       // backwards compatibility when loading old VP9 tables
@@ -1106,9 +1097,8 @@ STDMETHODIMP Bumper::put_Threshold(float newVal)
 
 STDMETHODIMP Bumper::get_CapMaterial(BSTR *pVal)
 {
-   WCHAR wz[512];
-
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szCapMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szCapMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1116,16 +1106,17 @@ STDMETHODIMP Bumper::get_CapMaterial(BSTR *pVal)
 
 STDMETHODIMP Bumper::put_CapMaterial(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szCapMaterial, MAXNAMEBUFFER, NULL, NULL);
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   m_d.m_szCapMaterial = buf;
 
    return S_OK;
 }
 
 STDMETHODIMP Bumper::get_RingMaterial(BSTR *pVal)
 {
-   WCHAR wz[512];
-
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szRingMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szRingMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1133,16 +1124,17 @@ STDMETHODIMP Bumper::get_RingMaterial(BSTR *pVal)
 
 STDMETHODIMP Bumper::put_RingMaterial(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szRingMaterial, 32, NULL, NULL);
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   m_d.m_szRingMaterial = buf;
 
    return S_OK;
 }
 
 STDMETHODIMP Bumper::get_BaseMaterial(BSTR *pVal)
 {
-   WCHAR wz[512];
-
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szBaseMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szBaseMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1150,16 +1142,17 @@ STDMETHODIMP Bumper::get_BaseMaterial(BSTR *pVal)
 
 STDMETHODIMP Bumper::put_BaseMaterial(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szBaseMaterial, MAXNAMEBUFFER, NULL, NULL);
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   m_d.m_szBaseMaterial = buf;
 
    return S_OK;
 }
 
 STDMETHODIMP Bumper::get_SkirtMaterial(BSTR *pVal)
 {
-   WCHAR wz[512];
-
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSkirtMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSkirtMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1167,7 +1160,9 @@ STDMETHODIMP Bumper::get_SkirtMaterial(BSTR *pVal)
 
 STDMETHODIMP Bumper::put_SkirtMaterial(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSkirtMaterial, MAXNAMEBUFFER, NULL, NULL);
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   m_d.m_szSkirtMaterial = buf;
 
    return S_OK;
 }
@@ -1175,7 +1170,7 @@ STDMETHODIMP Bumper::put_SkirtMaterial(BSTR newVal)
 STDMETHODIMP Bumper::get_X(float *pVal)
 {
    *pVal = m_d.m_vCenter.x;
-   g_pvp->SetStatusBarUnitInfo("", true);
+   m_vpinball->SetStatusBarUnitInfo("", true);
 
    return S_OK;
 }
@@ -1203,9 +1198,8 @@ STDMETHODIMP Bumper::put_Y(float newVal)
 
 STDMETHODIMP Bumper::get_Surface(BSTR *pVal)
 {
-   WCHAR wz[512];
-
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1213,7 +1207,7 @@ STDMETHODIMP Bumper::get_Surface(BSTR *pVal)
 
 STDMETHODIMP Bumper::put_Surface(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXTOKEN, NULL, NULL);
 
    return S_OK;
 }

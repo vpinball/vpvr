@@ -4,10 +4,10 @@
 class TextboxVisualsProperty : public BasePropertyDialog
 {
 public:
-    TextboxVisualsProperty(VectorProtected<ISelect> *pvsel);
+    TextboxVisualsProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~TextboxVisualsProperty();
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
@@ -17,18 +17,18 @@ protected:
 private:
     HWND        m_hTransparentCheck;
     HWND        m_hUseScriptDMDCheck;
-    CComboBox   m_alignmentCombo;
+    ComboBox    m_alignmentCombo;
     CButton     m_fontDialogButton;
     CFontDialog m_fontDialog;
     ColorButton  m_backgroundColorButton;
     ColorButton  m_textColorButton;
     CColorDialog m_colorDialog;
-    CEdit        m_textIntensityEdit;
-    CEdit        m_posXEdit;
-    CEdit        m_posYEdit;
-    CEdit        m_widthEdit;
-    CEdit        m_heightEdit;
-    CEdit        m_textEdit;
+    EditBox      m_textIntensityEdit;
+    EditBox      m_posXEdit;
+    EditBox      m_posYEdit;
+    EditBox      m_widthEdit;
+    EditBox      m_heightEdit;
+    EditBox      m_textEdit;
     CFont       *m_font;
     vector<string> m_alignList;
 };

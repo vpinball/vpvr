@@ -7,16 +7,16 @@
 'just the standard VPinMAME.Controller is loaded for SS generation games, or no controller for EM ones.
 '
 'At the first launch of a table using Controller.vbs, it will write into the registry with these default values
-'ForceDisableB2S = 0
-'DOFContactors   = 2
-'DOFKnocker      = 2
-'DOFChimes       = 2
-'DOFBell         = 2
-'DOFGear         = 2
-'DOFShaker       = 2
-'DOFFlippers     = 2
-'DOFTargets      = 2
-'DOFDropTargets  = 2
+'ForceDisableB2S= 0
+'DOFContactors	= 2
+'DOFKnocker		= 2
+'DOFChimes		= 2
+'DOFBell		= 2
+'DOFGear		= 2
+'DOFShaker		= 2
+'DOFFlippers	= 2
+'DOFTargets		= 2
+'DOFDropTargets	= 2
 '
 'Note that the value can be 0,1 or 2 (0 enables only digital sound, 1 only DOF and 2 both)
 '
@@ -103,10 +103,12 @@
 '
 '  DOF(DOFevent, State)
 '
+'To selectively disable B2S for certain tables, use variable "B2SOff=True" (after ExecuteGlobal GetTextFile("controller.vbs"), but before LoadXXX)
+'
+
+Option Explicit
 
 Const directory = "HKEY_CURRENT_USER\SOFTWARE\Visual Pinball\Controller\"
-Dim objShell
-Dim PopupMessage
 Dim B2SController
 Dim Controller
 Const DOFContactors = 1
@@ -125,30 +127,32 @@ Const DOFPulse = 2
 Dim DOFeffects(9)
 Dim B2SOn
 Dim B2SOnALT
+Dim B2SOff
+B2SOff = False
 
 Sub LoadEM
-	LoadController("EM")
+	LoadController "EM", "0", "0", 0.0
 End Sub
 
 Sub LoadPROC(VPMver, VBSfile, VBSver)
-	LoadVBSFiles VPMver, VBSfile, VBSver
-	LoadController("PROC")
+	LoadVBSFiles VBSfile
+	LoadController "PROC", VPMver, VBSfile, VBSver
 End Sub
 
 Sub LoadVPM(VPMver, VBSfile, VBSver)
-	LoadVBSFiles VPMver, VBSfile, VBSver
-	LoadController("VPM")
+	LoadVBSFiles VBSfile
+	LoadController "VPM", VPMver, VBSfile, VBSver
 End Sub
 
 'This is used for tables that need 2 controllers to be launched, one for VPM and the second one for B2S.Server
 'Because B2S.Server can't handle certain solenoid or lamps, we use this workaround to communicate to B2S.Server and DOF
 'By scripting the effects using DOFAlT and SoundFXDOFALT and B2SController
 Sub LoadVPMALT(VPMver, VBSfile, VBSver)
-	LoadVBSFiles VPMver, VBSfile, VBSver
-	LoadController("VPMALT")
+	LoadVBSFiles VBSfile
+	LoadController "VPMALT", VPMver, VBSfile, VBSver
 End Sub
 
-Sub LoadVBSFiles(VPMver, VBSfile, VBSver)
+Sub LoadVBSFiles(VBSfile)
 	On Error Resume Next
 	If ScriptEngineMajorVersion < 5 Then MsgBox "VB Script Engine 5.0 or higher required"
 	ExecuteGlobal GetTextFile(VBSfile)
@@ -156,7 +160,7 @@ Sub LoadVBSFiles(VPMver, VBSfile, VBSver)
 	InitializeOptions
 End Sub
 
-Sub LoadVPinMAME
+Sub LoadVPinMAME(VPMver, VBSfile, VBSver)
 	Set Controller = CreateObject("VPinMAME.Controller")
 	If Err Then MsgBox "Can't load VPinMAME." & vbNewLine & Err.Description
 	If VPMver > "" Then If Controller.Version < VPMver Or Err Then MsgBox "VPinMAME ver " & VPMver & " required."
@@ -167,22 +171,18 @@ End Sub
 'Try to load b2s.server and if not possible, load VPinMAME.Controller instead.
 'The user can put a value of 1 for ForceDisableB2S, which will force to load VPinMAME or no controller for EM tables.
 'Also defines the array of toy categories that will either play the sound or trigger the DOF effect.
-Sub LoadController(TableType)
-	Dim FileObj
-	Dim DOFConfig
-	Dim TextStr2
+Sub LoadController(TableType, VPMver, VBSfile, VBSver)
 	Dim tempC
-	Dim count
-	Dim ISDOF
-	Dim Answer
-	
+
 	B2SOn = False
 	B2SOnALT = False
 	tempC = 0
 	on error resume next
+	Dim objShell
 	Set objShell = CreateObject("WScript.Shell")
 	objShell.RegRead(directory & "ForceDisableB2S")
 	If Err.number <> 0 Then
+		Dim PopupMessage
 		PopupMessage = "This latest version of Controller.vbs stores its settings in the registry. To adjust the values, you must use VP 10.2 (or newer) and setup your configuration in the DOF section of the -Keys, Nudge and DOF- dialog of Visual Pinball."
 		objShell.RegWrite directory & "ForceDisableB2S",0, "REG_DWORD"
 		objShell.RegWrite directory & "DOFContactors",2, "REG_DWORD"
@@ -208,13 +208,18 @@ Sub LoadController(TableType)
 	DOFeffects(9)=objShell.RegRead(directory & "DOFDropTargets")
 	Set objShell = nothing
 
+	'deactivate B2S via table script
+	if B2SOff then
+		tempc = 1
+	end if
+
 	If TableType = "PROC" or TableType = "VPMALT" Then
 		If TableType = "PROC" Then
 			Set Controller = CreateObject("VPROC.Controller")
 			If Err Then MsgBox "Can't load PROC"
 		Else
-			LoadVPinMAME
-		End If		
+			LoadVPinMAME VPMver, VBSfile, VBSver
+		End If
 		If tempC = 0 Then
 			On Error Resume Next
 			If Controller is Nothing Then
@@ -238,8 +243,8 @@ Sub LoadController(TableType)
 			Set Controller = CreateObject("B2S.Server")
 			If Controller is Nothing Then
 				Err.Clear
-				If TableType = "VPM" Then 
-					LoadVPinMAME
+				If TableType = "VPM" Then
+					LoadVPinMAME VPMver, VBSfile, VBSver
 				End If
 			Else
 				Controller.B2SName = cGameName
@@ -250,18 +255,16 @@ Sub LoadController(TableType)
 				B2SOn = True
 			End If
 		Else
-			If TableType = "VPM" Then 
-				LoadVPinMAME
+			If TableType = "VPM" Then
+				LoadVPinMAME VPMver, VBSfile, VBSver
 			End If
 		End If
-		Set DOFConfig=Nothing
-		Set FileObj=Nothing
 	End If
 End sub
 
 'Additional DOF sound vs toy/effect helpers:
 
-'Mostly used for SS tables, returns the sound to be played or no sound, 
+'Mostly used for SS tables, returns the sound to be played or no sound,
 'depending on the toy category that is set to play the sound or not.
 'The trigger of the DOF Effect is set at the DOF method level
 'because for SS tables we usually don't need to script the DOF calls.

@@ -14,15 +14,13 @@ Light::Light() : m_lightcenter(this)
    m_bulbLightVBuffer = NULL;
    m_bulbSocketIndexBuffer = NULL;
    m_bulbSocketVBuffer = NULL;
-   m_d.m_szImage[0] = 0;
    m_d.m_depthBias = 0.0f;
    m_d.m_shape = ShapeCustom;
    m_d.m_visible = true;
    m_roundLight = false;
    m_propVisual = NULL;
    m_updateBulbLightHeight = false;
-   memset(m_d.m_szImage, 0, MAXTOKEN);
-   memset(m_d.m_szSurface, 0, MAXTOKEN);
+   memset(m_d.m_szSurface, 0, sizeof(m_d.m_szSurface));
 }
 
 Light::~Light()
@@ -71,7 +69,7 @@ HRESULT Light::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
    InitShape();
 
    m_lockedByLS = false;
-   m_realState = m_d.m_state;
+   m_inPlayState = m_d.m_state;
    m_d.m_visible = true;
 
    return InitVBA(fTrue, 0, NULL);
@@ -93,13 +91,16 @@ void Light::SetDefaults(bool fromMouseClick)
    m_d.m_color = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "Color", RGB(255, 255, 0)) : RGB(255, 255, 0);
    m_d.m_color2 = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "ColorFull", RGB(255, 255, 255)) : RGB(255, 255, 255);
 
-   HRESULT hr = LoadValueString("DefaultProps\\Light", "OffImage", m_d.m_szImage, MAXTOKEN);
+   char buf[MAXTOKEN] = { 0 };
+   HRESULT hr = LoadValueString("DefaultProps\\Light", "OffImage", buf, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_szImage[0] = 0;
+      m_d.m_szImage.clear();
+   else
+      m_d.m_szImage = buf;
 
    hr = LoadValueString("DefaultProps\\Light", "BlinkPattern", m_rgblinkpattern, NUM_RGB_BLINK_PATTERN);
    if ((hr != S_OK) || !fromMouseClick)
-      strcpy_s(m_rgblinkpattern, sizeof(m_rgblinkpattern), "10");
+      strncpy_s(m_rgblinkpattern, "10", sizeof(m_rgblinkpattern) - 1);
 
    m_blinkinterval = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "BlinkInterval", 125) : 125;
    m_d.m_intensity = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Light", "Intensity", 1.0f) : 1.0f;
@@ -109,7 +110,7 @@ void Light::SetDefaults(bool fromMouseClick)
 
    //m_d.m_bordercolor = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "BorderColor", RGB(0,0,0)) : RGB(0,0,0);
 
-   hr = LoadValueString("DefaultProps\\Light", "Surface", &m_d.m_szSurface, MAXTOKEN);
+   hr = LoadValueString("DefaultProps\\Light", "Surface", m_d.m_szSurface, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
       m_d.m_szSurface[0] = 0;
 
@@ -184,7 +185,7 @@ void Light::UIRenderPass1(Sur * const psur)
 
 void Light::UIRenderPass2(Sur * const psur)
 {
-   bool drawDragpoints = ((m_selectstate != eNotSelected) || (g_pvp->m_alwaysDrawDragPoints));
+   bool drawDragpoints = ((m_selectstate != eNotSelected) || (m_vpinball->m_alwaysDrawDragPoints));
 
    // if the item is selected then draw the dragpoints (or if we are always to draw dragpoints)
    if (!drawDragpoints)
@@ -248,7 +249,7 @@ void Light::RenderOutline(Sur * const psur)
    }
    }
 
-   if (m_d.m_shape == ShapeCustom || g_pvp->m_alwaysDrawLightCenters)
+   if (m_d.m_shape == ShapeCustom || m_vpinball->m_alwaysDrawLightCenters)
    {
       psur->Line(m_d.m_vCenter.x - 10.0f, m_d.m_vCenter.y, m_d.m_vCenter.x + 10.0f, m_d.m_vCenter.y);
       psur->Line(m_d.m_vCenter.x, m_d.m_vCenter.y - 10.0f, m_d.m_vCenter.x, m_d.m_vCenter.y + 10.0f);
@@ -441,15 +442,15 @@ void Light::RenderDynamic()
 
    if ((m_duration > 0) && (m_timerDurationEndTime < m_d.m_time_msec))
    {
-      m_realState = (LightState)m_finalState;
+      m_inPlayState = (LightState)m_finalState;
       m_duration = 0;
-      if (m_realState == LightStateBlinking)
+      if (m_inPlayState == LightStateBlinking)
          RestartBlinker(g_pplayer->m_time_msec);
    }
-   if (m_realState == LightStateBlinking)
+   if (m_inPlayState == LightStateBlinking)
       UpdateBlinker(g_pplayer->m_time_msec);
 
-   const bool isOn = (m_realState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : (m_realState != LightStateOff);
+   const bool isOn = (m_inPlayState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : (m_inPlayState != LightStateOff);
 
    if (isOn)
    {
@@ -665,9 +666,9 @@ void Light::PrepareMoversCustom()
 
    if (vtri.size() == 0)
    {
-      char name[MAX_PATH];
+      char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
+      WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
       char textBuffer[MAX_PATH];
-      WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, MAX_PATH, NULL, NULL);
       _snprintf_s(textBuffer, MAX_PATH - 1, "%s has an invalid shape! It can not be rendered!", name);
       ShowError(textBuffer);
       return;
@@ -756,12 +757,12 @@ void Light::RenderSetup()
 
    m_surfaceHeight = m_initSurfaceHeight;
 
-   if (m_realState == LightStateBlinking)
+   if (m_inPlayState == LightStateBlinking)
       RestartBlinker(g_pplayer->m_time_msec);
-   else if (m_duration > 0 && m_realState == LightStateOn)
+   else if (m_duration > 0 && m_inPlayState == LightStateOn)
       m_timerDurationEndTime = g_pplayer->m_time_msec + m_duration;
 
-   const bool isOn = (m_realState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : (m_realState != LightStateOff);
+   const bool isOn = (m_inPlayState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : (m_inPlayState != LightStateOff);
    if (isOn)
       m_d.m_currentIntensity = m_d.m_intensity*m_d.m_intensity_scale;
    else
@@ -826,7 +827,7 @@ void Light::RenderStatic()
 
 void Light::SetObjectPos()
 {
-   g_pvp->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
+   m_vpinball->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
 }
 
 void Light::MoveOffset(const float dx, const float dy)
@@ -862,7 +863,7 @@ HRESULT Light::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupF
    bw.WriteFloat(FID(BWTH), m_d.m_intensity);
    bw.WriteFloat(FID(TRMS), m_d.m_transmissionScale);
    bw.WriteString(FID(SURF), m_d.m_szSurface);
-   bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
+   bw.WriteWideString(FID(NAME), m_wzName);
    bw.WriteBool(FID(BGLS), m_backglass);
    bw.WriteFloat(FID(LIDB), m_d.m_depthBias);
    bw.WriteFloat(FID(FASP), m_d.m_fadeSpeedUp);
@@ -903,7 +904,7 @@ HRESULT Light::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version, 
    m_d.m_color = RGB(255, 255, 0);
    m_d.m_color2 = RGB(255, 255, 255);
 
-   strcpy_s(m_rgblinkpattern, sizeof(m_rgblinkpattern), "10");
+   strncpy_s(m_rgblinkpattern, "10", sizeof(m_rgblinkpattern) - 1);
    m_blinkinterval = 125;
    //m_d.m_borderwidth = 0;
    //m_d.m_bordercolor = RGB(0,0,0);
@@ -913,7 +914,7 @@ HRESULT Light::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version, 
    m_ptable = ptable;
 
    m_lockedByLS = false;
-   m_realState = m_d.m_state;
+   m_inPlayState = m_d.m_state;
 
    br.Load();
    return S_OK;
@@ -930,7 +931,7 @@ bool Light::LoadToken(const int id, BiffReader * const pbr)
    case FID(STAT):
    {
       pbr->GetInt(&m_d.m_state);
-      m_realState = m_d.m_state;
+      m_inPlayState = m_d.m_state;
       break;
    }
    case FID(COLR): pbr->GetInt(&m_d.m_color); break;
@@ -945,7 +946,7 @@ bool Light::LoadToken(const int id, BiffReader * const pbr)
    case FID(BWTH): pbr->GetFloat(&m_d.m_intensity); break;
    case FID(TRMS): pbr->GetFloat(&m_d.m_transmissionScale); break;
    case FID(SURF): pbr->GetString(m_d.m_szSurface); break;
-   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(NAME): pbr->GetWideString(m_wzName); break;
    case FID(BGLS): pbr->GetBool(&m_backglass); break;
    case FID(LIDB): pbr->GetFloat(&m_d.m_depthBias); break;
    case FID(FASP): pbr->GetFloat(&m_d.m_fadeSpeedUp); break;
@@ -1106,20 +1107,18 @@ STDMETHODIMP Light::put_FalloffPower(float newVal)
 STDMETHODIMP Light::get_State(LightState *pVal)
 {
    if (g_pplayer && !m_lockedByLS)
-      *pVal = m_realState;
+      *pVal = m_inPlayState;
    else
-      *pVal = m_d.m_state; //the LS needs the old m_d.m_state and not the current one, m_fLockedByLS is true if under the light is under control of the LS
-
+      *pVal = getLightState(); //the LS needs the old m_d.m_state and not the current one, m_fLockedByLS is true if under the light is under control of the LS
    return S_OK;
 }
 
 STDMETHODIMP Light::put_State(LightState newVal)
 {
-   // if the light is locked by the LS then just change the state and don't change the actual light
    if (!m_lockedByLS)
-      setLightState(newVal);
-   m_d.m_state = newVal;
+      setInPlayState(newVal);
 
+   m_d.m_state = newVal;
    return S_OK;
 }
 
@@ -1179,7 +1178,7 @@ STDMETHODIMP Light::put_ColorFull(OLE_COLOR newVal)
 STDMETHODIMP Light::get_X(float *pVal)
 {
    *pVal = m_d.m_vCenter.x;
-   g_pvp->SetStatusBarUnitInfo("", true);
+   m_vpinball->SetStatusBarUnitInfo("", true);
 
    return S_OK;
 }
@@ -1232,8 +1231,8 @@ void Light::InitShape()
 
 STDMETHODIMP Light::get_BlinkPattern(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_rgblinkpattern, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[NUM_RGB_BLINK_PATTERN];
+   MultiByteToWideChar(CP_ACP, 0, m_rgblinkpattern, -1, wz, NUM_RGB_BLINK_PATTERN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1241,7 +1240,7 @@ STDMETHODIMP Light::get_BlinkPattern(BSTR *pVal)
 
 STDMETHODIMP Light::put_BlinkPattern(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_rgblinkpattern, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_rgblinkpattern, NUM_RGB_BLINK_PATTERN, NULL, NULL);
 
    if (m_rgblinkpattern[0] == '\0')
    {
@@ -1274,13 +1273,13 @@ STDMETHODIMP Light::put_BlinkInterval(long newVal)
 
 STDMETHODIMP Light::Duration(long startState, long newVal, long endState)
 {
-   m_realState = (LightState)startState;
+   m_inPlayState = (LightState)startState;
    m_duration = newVal;
    m_finalState = endState;
    if (g_pplayer)
    {
       m_timerDurationEndTime = g_pplayer->m_time_msec + m_duration;
-      if (m_realState == LightStateBlinking)
+      if (m_inPlayState == LightStateBlinking)
       {
          m_iblinkframe = 0;
          m_timenextblink = g_pplayer->m_time_msec + m_blinkinterval;
@@ -1301,7 +1300,7 @@ STDMETHODIMP Light::get_Intensity(float *pVal)
 STDMETHODIMP Light::put_Intensity(float newVal)
 {
    m_d.m_intensity = max(0.f, newVal);
-   const bool isOn = (m_realState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : (m_realState != LightStateOff);
+   const bool isOn = (m_inPlayState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : (m_inPlayState != LightStateOff);
    if (isOn)
       m_d.m_currentIntensity = m_d.m_intensity*m_d.m_intensity_scale;
 
@@ -1332,7 +1331,7 @@ STDMETHODIMP Light::get_IntensityScale(float *pVal)
 STDMETHODIMP Light::put_IntensityScale(float newVal)
 {
    m_d.m_intensity_scale = newVal;
-   const bool isOn = (m_realState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : (m_realState != LightStateOff);
+   const bool isOn = (m_inPlayState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : (m_inPlayState != LightStateOff);
    if (isOn)
       m_d.m_currentIntensity = m_d.m_intensity*m_d.m_intensity_scale;
 
@@ -1341,8 +1340,8 @@ STDMETHODIMP Light::put_IntensityScale(float newVal)
 
 STDMETHODIMP Light::get_Surface(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1350,7 +1349,7 @@ STDMETHODIMP Light::get_Surface(BSTR *pVal)
 
 STDMETHODIMP Light::put_Surface(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXTOKEN, NULL, NULL);
 
    return S_OK;
 }
@@ -1358,8 +1357,8 @@ STDMETHODIMP Light::put_Surface(BSTR newVal)
 
 STDMETHODIMP Light::get_Image(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage.c_str(), -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1367,7 +1366,9 @@ STDMETHODIMP Light::get_Image(BSTR *pVal)
 
 STDMETHODIMP Light::put_Image(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szImage, MAXNAMEBUFFER, NULL, NULL);
+   char szImage[MAXTOKEN];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, NULL, NULL);
+   m_d.m_szImage = szImage;
 
    return S_OK;
 }
@@ -1530,15 +1531,15 @@ STDMETHODIMP Light::put_BulbHaloHeight(float newVal)
    return S_OK;
 }
 
-void Light::setLightState(const LightState newVal)
+void Light::setInPlayState(const LightState newVal)
 {
-   if (newVal != m_realState) // state changed???
+   if (newVal != m_inPlayState) // state changed???
    {
-      m_realState = newVal;
+      m_inPlayState = newVal;
 
       if (g_pplayer)
       {
-         if (m_realState == LightStateBlinking)
+         if (m_inPlayState == LightStateBlinking)
          {
             m_timenextblink = g_pplayer->m_time_msec; // Start pattern right away // + m_d.m_blinkinterval;
             m_iblinkframe = 0; // reset pattern
@@ -1547,6 +1548,20 @@ void Light::setLightState(const LightState newVal)
             m_duration = 0; // disable duration if a state was set this way
       }
    }
+}
+
+void Light::setLightState(const LightState newVal)
+{
+   if (!m_lockedByLS)
+      setInPlayState(newVal);
+
+   m_d.m_state = newVal;
+
+}
+
+LightState Light::getLightState() const
+{
+   return m_d.m_state;
 }
 
 STDMETHODIMP Light::get_Visible(VARIANT_BOOL *pVal) //temporary value of object

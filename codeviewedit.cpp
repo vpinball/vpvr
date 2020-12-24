@@ -87,7 +87,7 @@ int UserData::FindClosestUD(vector<UserData>* ListIn, const int CurrentLine, con
    ++iNewPos;
    //Now at top of list
    //find nearest definition above current line
-   int ClosestLineNum = 0;
+   //int ClosestLineNum = 0;
    int ClosestPos = CurrentIdx;
    int Delta = -(INT_MAX - 1);
    while (true)
@@ -99,7 +99,7 @@ int UserData::FindClosestUD(vector<UserData>* ListIn, const int CurrentLine, con
          if (lowerCase(ListIn->at(iNewPos).m_keyName).compare(strSearchData) == 0)
          {
             Delta = NewDelta;
-            ClosestLineNum = NewLineNum;
+            //ClosestLineNum = NewLineNum;
             ClosestPos = iNewPos;
          }
       }
@@ -311,7 +311,6 @@ bool UserData::FindOrInsertStringIntoAutolist(vector<string>* ListIn, const stri
       ListIn->push_back(strIn);
       return true;
    }
-   vector<string>::iterator i = ListIn->begin();
    int result = -2;
    const unsigned int ListSize = (unsigned int)ListIn->size();
    UINT32 iCurPos = (ListSize >> 1);
@@ -337,7 +336,7 @@ bool UserData::FindOrInsertStringIntoAutolist(vector<string>* ListIn, const stri
       else { iNewPos = iCurPos + iJumpDelta; }
       iJumpDelta >>= 1;
    }
-   i = ListIn->begin() + iCurPos;
+   vector<string>::iterator i = ListIn->begin() + iCurPos;
 
    if (result == 0) return false; // Already in list.
 
@@ -372,17 +371,15 @@ bool UserData::FindOrInsertStringIntoAutolist(vector<string>* ListIn, const stri
 ////////////////Preferences
 CVPrefrence::CVPrefrence()
 {
-   szControlName = nullptr;
    m_rgb = 0;
    m_highlight = false;
-   szRegName = nullptr;
    m_sciKeywordID = 0;
    memset(&m_logFont, 0, sizeof(LOGFONT));
 }
 
 CVPrefrence* CVPrefrence::FillCVPreference(
-   const char* szCtrlNameIn, const COLORREF crTextColor,
-   const bool bDisplay, const char* szRegistryName,
+   const string& szCtrlNameIn, const COLORREF crTextColor,
+   const bool bDisplay, const string& szRegistryName,
    const int szScintillaKeyword, const int IDC_ChkBox,
    const int IDC_ColorBut, const int IDC_Font)
 {
@@ -399,104 +396,73 @@ CVPrefrence* CVPrefrence::FillCVPreference(
 
 void CVPrefrence::SetCheckBox(const HWND hwndDlg)
 {
-   const HWND hChkBox = GetDlgItem(hwndDlg, this->IDC_ChkBox_code);
-   SNDMSG(hChkBox, BM_SETCHECK, this->m_highlight ? BST_CHECKED : BST_UNCHECKED, 0L);
+   const HWND hChkBox = GetDlgItem(hwndDlg, IDC_ChkBox_code);
+   SNDMSG(hChkBox, BM_SETCHECK, m_highlight ? BST_CHECKED : BST_UNCHECKED, 0L);
 }
 
 void CVPrefrence::ReadCheckBox(const HWND hwndDlg)
 {
-   this->m_highlight = !!IsDlgButtonChecked(hwndDlg, this->IDC_ChkBox_code);
+   m_highlight = !!IsDlgButtonChecked(hwndDlg, IDC_ChkBox_code);
 }
 
 void CVPrefrence::GetPrefsFromReg()
 {
-   char RegEntry[33];
-   strcpy_s(RegEntry, this->szRegName);
-   this->m_highlight = LoadValueBoolWithDefault("CVEdit", RegEntry, this->m_highlight);
-   strcpy_s(RegEntry, this->szRegName);
-   strcat_s(RegEntry, "_color");
-   this->m_rgb = LoadValueIntWithDefault("CVEdit", RegEntry, this->m_rgb);
-   strcpy_s(RegEntry, this->szRegName);
-   strcat_s(RegEntry, "_FontPointSize");
-   this->m_pointSize = LoadValueIntWithDefault("CVEdit", RegEntry, this->m_pointSize);
-   strcpy_s(RegEntry, this->szRegName);
-   strcat_s(RegEntry, "_Font");
+   m_highlight = LoadValueBoolWithDefault("CVEdit", szRegName, m_highlight);
+   m_rgb = LoadValueIntWithDefault("CVEdit", szRegName + "_color", m_rgb);
+   m_pointSize = LoadValueIntWithDefault("CVEdit", szRegName + "_FontPointSize", m_pointSize);
+
    char bakupFaceName[LF_FACESIZE]; // to save the default font name, in case the corresponding registry entry is empty
-   strcpy_s(bakupFaceName, this->m_logFont.lfFaceName);
-   if (LoadValueString("CVEdit", RegEntry, this->m_logFont.lfFaceName, LF_FACESIZE) != S_OK)
-      strcpy_s(this->m_logFont.lfFaceName, bakupFaceName);
-   strcpy_s(RegEntry, this->szRegName);
-   strcat_s(RegEntry, "_FontWeight");
-   this->m_logFont.lfWeight = LoadValueIntWithDefault("CVEdit", RegEntry, this->m_logFont.lfWeight);
-   strcpy_s(RegEntry, this->szRegName);
-   strcat_s(RegEntry, "_FontItalic");
-   this->m_logFont.lfItalic = LoadValueIntWithDefault("CVEdit", RegEntry, this->m_logFont.lfItalic);
-   strcpy_s(RegEntry, this->szRegName);
-   strcat_s(RegEntry, "_FontUnderline");
-   this->m_logFont.lfUnderline = LoadValueIntWithDefault("CVEdit", RegEntry, this->m_logFont.lfUnderline);
-   strcpy_s(RegEntry, this->szRegName);
-   strcat_s(RegEntry, "_FontStrike");
-   this->m_logFont.lfStrikeOut = LoadValueIntWithDefault("CVEdit", RegEntry, this->m_logFont.lfStrikeOut);
+   strncpy_s(bakupFaceName, m_logFont.lfFaceName, sizeof(bakupFaceName) - 1);
+   if (LoadValueString("CVEdit", szRegName + "_Font", m_logFont.lfFaceName, LF_FACESIZE) != S_OK)
+      strncpy_s(m_logFont.lfFaceName, bakupFaceName, sizeof(m_logFont.lfFaceName) - 1);
+
+   m_logFont.lfWeight = LoadValueIntWithDefault("CVEdit", szRegName + "_FontWeight", m_logFont.lfWeight);
+   m_logFont.lfItalic = LoadValueIntWithDefault("CVEdit", szRegName + "_FontItalic", m_logFont.lfItalic);
+   m_logFont.lfUnderline = LoadValueIntWithDefault("CVEdit", szRegName + "_FontUnderline", m_logFont.lfUnderline);
+   m_logFont.lfStrikeOut = LoadValueIntWithDefault("CVEdit", szRegName + "_FontStrike", m_logFont.lfStrikeOut);
 }
 
 void CVPrefrence::SetPrefsToReg()
 {
-   char RegEntry[33];
-   strcpy_s(RegEntry, this->szRegName);
-   SaveValueBool("CVEdit", RegEntry, this->m_highlight);
-   strcpy_s(RegEntry, this->szRegName);
-   strcat_s(RegEntry, "_color");
-   SaveValueInt("CVEdit", RegEntry, this->m_rgb);
-   strcpy_s(RegEntry, this->szRegName);
-   strcat_s(RegEntry, "_FontPointSize");
-   SaveValueInt("CVEdit", RegEntry, this->m_pointSize);
-   strcpy_s(RegEntry, this->szRegName);
-   strcat_s(RegEntry, "_Font");
-   SaveValueString("CVEdit", RegEntry, this->m_logFont.lfFaceName);
-   strcpy_s(RegEntry, this->szRegName);
-   strcat_s(RegEntry, "_FontWeight");
-   SaveValueInt("CVEdit", RegEntry, this->m_logFont.lfWeight);
-   strcpy_s(RegEntry, this->szRegName);
-   strcat_s(RegEntry, "_FontItalic");
-   SaveValueInt("CVEdit", RegEntry, this->m_logFont.lfItalic);
-   strcpy_s(RegEntry, this->szRegName);
-   strcat_s(RegEntry, "_FontUnderline");
-   SaveValueInt("CVEdit", RegEntry, this->m_logFont.lfUnderline);
-   strcpy_s(RegEntry, this->szRegName);
-   strcat_s(RegEntry, "_FontStrike");
-   SaveValueInt("CVEdit", RegEntry, this->m_logFont.lfStrikeOut);
+   SaveValueBool("CVEdit", szRegName, m_highlight);
+   SaveValueInt("CVEdit", szRegName + "_color", m_rgb);
+   SaveValueInt("CVEdit", szRegName + "_FontPointSize", m_pointSize);
+   SaveValueString("CVEdit", szRegName + "_Font", m_logFont.lfFaceName);
+   SaveValueInt("CVEdit", szRegName + "_FontWeight", m_logFont.lfWeight);
+   SaveValueInt("CVEdit", szRegName + "_FontItalic", m_logFont.lfItalic);
+   SaveValueInt("CVEdit", szRegName + "_FontUnderline", m_logFont.lfUnderline);
+   SaveValueInt("CVEdit", szRegName + "_FontStrike", m_logFont.lfStrikeOut);
 }
 
 void CVPrefrence::SetDefaultFont(const HWND hwndDlg)
 {
-   LOGFONT* const plfont = &this->m_logFont;
-   memset(&this->m_logFont, 0, sizeof(LOGFONT));
+   LOGFONT* const plfont = &m_logFont;
+   memset(plfont, 0, sizeof(LOGFONT));
    HFONT hFont = (HFONT)GetStockObject(ANSI_FIXED_FONT);
    if (hFont == NULL)
       hFont = (HFONT)GetStockObject(SYSTEM_FONT);
    GetObject(hFont, sizeof(LOGFONT), plfont);
-   this->m_pointSize = 10;
-   this->GetHeightFromPointSize(hwndDlg);
+   m_pointSize = 10;
+   GetHeightFromPointSize(hwndDlg);
 }
 
 int CVPrefrence::GetHeightFromPointSize(const HWND hwndDlg)
 {
-   const HDC hdc = GetDC(hwndDlg);
-   const int Height = -MulDiv(this->m_pointSize, GetDeviceCaps(hdc, LOGPIXELSY), 72);
-   ReleaseDC(hwndDlg, hdc);
+   CClientDC clientDC(hwndDlg);
+   const int Height = -MulDiv(m_pointSize, clientDC.GetDeviceCaps(LOGPIXELSY), 72);
    return Height;
 }
 
 void CVPrefrence::ApplyPreferences(const HWND hwndScin, const CVPrefrence* DefaultPref)
 {
-   const int id = this->m_sciKeywordID;
-   const bool HL = this->m_highlight;
-   SendMessage(hwndScin, SCI_STYLESETFORE, id, HL ? (LPARAM)this->m_rgb : (LPARAM)DefaultPref->m_rgb);
-   SendMessage(hwndScin, SCI_STYLESETFONT, id, HL ? (LPARAM)this->m_logFont.lfFaceName : (LPARAM)DefaultPref->m_logFont.lfFaceName);
-   SendMessage(hwndScin, SCI_STYLESETSIZE, id, HL ? (LPARAM)(this->m_pointSize) : (LPARAM)DefaultPref->m_pointSize);
-   SendMessage(hwndScin, SCI_STYLESETWEIGHT, id, HL ? (LPARAM)this->m_logFont.lfWeight : (LPARAM)DefaultPref->m_logFont.lfWeight);
-   SendMessage(hwndScin, SCI_STYLESETITALIC, id, HL ? (LPARAM)this->m_logFont.lfItalic : (LPARAM)DefaultPref->m_logFont.lfItalic);
-   SendMessage(hwndScin, SCI_STYLESETUNDERLINE, id, HL ? (LPARAM)this->m_logFont.lfUnderline : (LPARAM)DefaultPref->m_logFont.lfUnderline);
+   const int id = m_sciKeywordID;
+   const bool HL = m_highlight;
+   SendMessage(hwndScin, SCI_STYLESETFORE, id, HL ? (LPARAM)m_rgb : (LPARAM)DefaultPref->m_rgb);
+   SendMessage(hwndScin, SCI_STYLESETFONT, id, HL ? (LPARAM)m_logFont.lfFaceName : (LPARAM)DefaultPref->m_logFont.lfFaceName);
+   SendMessage(hwndScin, SCI_STYLESETSIZE, id, HL ? (LPARAM)m_pointSize : (LPARAM)DefaultPref->m_pointSize);
+   SendMessage(hwndScin, SCI_STYLESETWEIGHT, id, HL ? (LPARAM)m_logFont.lfWeight : (LPARAM)DefaultPref->m_logFont.lfWeight);
+   SendMessage(hwndScin, SCI_STYLESETITALIC, id, HL ? (LPARAM)m_logFont.lfItalic : (LPARAM)DefaultPref->m_logFont.lfItalic);
+   SendMessage(hwndScin, SCI_STYLESETUNDERLINE, id, HL ? (LPARAM)m_logFont.lfUnderline : (LPARAM)DefaultPref->m_logFont.lfUnderline);
    // There is no strike through in Scintilla (yet!)
 }
 

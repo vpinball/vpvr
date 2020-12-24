@@ -6,18 +6,12 @@ IEditable::IEditable()
    m_phittimer = NULL;
 
    m_backglass = false;
-   m_isVisible = true;
    VariantInit(&m_uservalue);
    m_singleEvents = true;
 }
 
 IEditable::~IEditable()
 {
-}
-
-Hitable *IEditable::GetIHitable()
-{
-   return NULL;
 }
 
 void IEditable::SetDirtyDraw()
@@ -211,28 +205,32 @@ char *IEditable::GetName()
    return NULL;
 }
 
-void IEditable::SetName(const char* name)
+void IEditable::SetName(const std::string& name)
 {
-   const int l = lstrlen(name);
-   if ((l > MAXNAMEBUFFER) || (l < 1))
+   if (name.empty())
       return;
-
    if (GetItemType() == eItemDecal)
       return;
-
    PinTable* const pt = GetPTable();
    if (pt == nullptr)
       return;
 
-   WCHAR newName[MAXNAMEBUFFER];
-   MultiByteToWideChar(CP_ACP, 0, name, -1, newName, MAXNAMEBUFFER);
+   WCHAR newName[sizeof(GetScriptable()->m_wzName)];
+   WCHAR uniqueName[sizeof(GetScriptable()->m_wzName)];
+   WCHAR* namePtr = newName;
+   MultiByteToWideChar(CP_ACP, 0, name.c_str(), -1, newName, sizeof(GetScriptable()->m_wzName));
+   if (!pt->IsNameUnique(newName))
+   {
+      pt->GetUniqueName(newName, uniqueName);
+      namePtr = uniqueName;
+   }
    STARTUNDO
-      lstrcpynW(GetScriptable()->m_wzName, newName, MAXNAMEBUFFER);
-   pt->m_pcv->ReplaceName(GetScriptable(), newName);
+      // first update name in the codeview before updating it in the element itself
+      pt->m_pcv->ReplaceName(GetScriptable(), namePtr);
+   lstrcpynW(GetScriptable()->m_wzName, namePtr, sizeof(GetScriptable()->m_wzName));
    g_pvp->GetLayersListDialog()->UpdateElement(this);
-   g_pvp->SetPropSel(&GetPTable()->m_vmultisel);
+   g_pvp->SetPropSel(GetPTable()->m_vmultisel);
    STOPUNDO
-
 }
 
 void IEditable::InitScript()

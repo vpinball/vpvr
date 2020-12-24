@@ -2,11 +2,14 @@
 #include "Properties/KickerPhysicsProperty.h"
 #include <WindowsX.h>
 
-KickerPhysicsProperty::KickerPhysicsProperty(VectorProtected<ISelect> *pvsel) : BasePropertyDialog(IDD_PROPKICKER_STATE, pvsel)
+KickerPhysicsProperty::KickerPhysicsProperty(const VectorProtected<ISelect> *pvsel) : BasePropertyDialog(IDD_PROPKICKER_STATE, pvsel)
 {
+    m_scatterAngleEdit.SetDialog(this);
+    m_hitAccuracyEdit.SetDialog(this);
+    m_hitHeightEdit.SetDialog(this);
 }
 
-void KickerPhysicsProperty::UpdateVisuals()
+void KickerPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
     for (int i = 0; i < m_pvsel->Size(); i++)
     {
@@ -14,12 +17,17 @@ void KickerPhysicsProperty::UpdateVisuals()
             continue;
         Kicker * const kicker = (Kicker *)m_pvsel->ElementAt(i);
 
-        PropertyDialog::SetCheckboxState(m_hEnableCheck, kicker->m_d.m_enabled);
-        PropertyDialog::SetCheckboxState(m_hFallThroughCheck, kicker->m_d.m_fallThrough);
-        PropertyDialog::SetCheckboxState(m_hLegacyCheck, kicker->m_d.m_legacyMode);
-        PropertyDialog::SetFloatTextbox(m_hitHeightEdit, kicker->m_d.m_hit_height);
-        PropertyDialog::SetFloatTextbox(m_hitAccuracyEdit, kicker->m_d.m_hitAccuracy);
-        UpdateBaseVisuals(kicker, &kicker->m_d);
+        if (dispid == DISPID_Enabled || dispid == -1)
+            PropertyDialog::SetCheckboxState(m_hEnableCheck, kicker->m_d.m_enabled);
+        if (dispid == IDC_FALL_THROUGH_HOLE || dispid == -1)
+            PropertyDialog::SetCheckboxState(m_hFallThroughCheck, kicker->m_d.m_fallThrough);
+        if (dispid == IDC_LEGACYMODE || dispid == -1)
+            PropertyDialog::SetCheckboxState(m_hLegacyCheck, kicker->m_d.m_legacyMode);
+        if (dispid == IDC_KICKER_HIT_HEIGHT_EDIT || dispid == -1)
+            PropertyDialog::SetFloatTextbox(m_hitHeightEdit, kicker->m_d.m_hit_height);
+        if (dispid == IDC_HIT_ACC_EDIT || dispid == -1)
+            PropertyDialog::SetFloatTextbox(m_hitAccuracyEdit, kicker->m_d.m_hitAccuracy);
+        UpdateBaseVisuals(kicker, &kicker->m_d, dispid);
         //only show the first element on multi-select
         break;
     }
@@ -35,36 +43,26 @@ void KickerPhysicsProperty::UpdateProperties(const int dispid)
         switch (dispid)
         {
             case DISPID_Enabled:
-                PropertyDialog::StartUndo(kicker);
-                kicker->m_d.m_enabled = PropertyDialog::GetCheckboxState(m_hEnableCheck);
-                PropertyDialog::EndUndo(kicker);
+                CHECK_UPDATE_ITEM(kicker->m_d.m_enabled, PropertyDialog::GetCheckboxState(m_hEnableCheck), kicker);
                 break;
             case IDC_FALL_THROUGH_HOLE:
-                PropertyDialog::StartUndo(kicker);
-                kicker->m_d.m_fallThrough = PropertyDialog::GetCheckboxState(m_hFallThroughCheck);
-                PropertyDialog::EndUndo(kicker);
+                CHECK_UPDATE_ITEM(kicker->m_d.m_fallThrough, PropertyDialog::GetCheckboxState(m_hFallThroughCheck), kicker);
                 break;
             case IDC_LEGACYMODE:
-                PropertyDialog::StartUndo(kicker);
-                kicker->m_d.m_legacyMode = PropertyDialog::GetCheckboxState(m_hLegacyCheck);
-                PropertyDialog::EndUndo(kicker);
+                CHECK_UPDATE_ITEM(kicker->m_d.m_legacyMode, PropertyDialog::GetCheckboxState(m_hLegacyCheck), kicker);
                 break;
             case IDC_KICKER_HIT_HEIGHT_EDIT:
-                PropertyDialog::StartUndo(kicker);
-                kicker->m_d.m_hit_height = PropertyDialog::GetFloatTextbox(m_hitHeightEdit);
-                PropertyDialog::EndUndo(kicker);
+                CHECK_UPDATE_ITEM(kicker->m_d.m_hit_height, PropertyDialog::GetFloatTextbox(m_hitHeightEdit), kicker);
                 break;
             case IDC_HIT_ACC_EDIT:
-                PropertyDialog::StartUndo(kicker);
-                kicker->m_d.m_hitAccuracy = PropertyDialog::GetFloatTextbox(m_hitAccuracyEdit);
-                PropertyDialog::EndUndo(kicker);
+                CHECK_UPDATE_ITEM(kicker->m_d.m_hitAccuracy, PropertyDialog::GetFloatTextbox(m_hitAccuracyEdit), kicker);
                 break;
             default:
                 UpdateBaseProperties(kicker, &kicker->m_d, dispid);
                 break;
         }
     }
-    UpdateVisuals();
+    UpdateVisuals(dispid);
 }
 
 BOOL KickerPhysicsProperty::OnInitDialog()
@@ -72,10 +70,11 @@ BOOL KickerPhysicsProperty::OnInitDialog()
     m_hEnableCheck = ::GetDlgItem(GetHwnd(), DISPID_Enabled);
     m_hFallThroughCheck = ::GetDlgItem(GetHwnd(), IDC_FALL_THROUGH_HOLE);
     m_hLegacyCheck = ::GetDlgItem(GetHwnd(), IDC_LEGACYMODE);
-    AttachItem(IDC_SCATTER_ANGLE_EDIT, m_scatterAngleEdit);
+    m_scatterAngleEdit.AttachItem(IDC_SCATTER_ANGLE_EDIT);
     m_baseScatterAngleEdit = &m_scatterAngleEdit;
-    AttachItem(IDC_HIT_ACC_EDIT, m_hitAccuracyEdit);
-    AttachItem(IDC_KICKER_HIT_HEIGHT_EDIT, m_hitHeightEdit);
+
+    m_hitAccuracyEdit.AttachItem(IDC_HIT_ACC_EDIT);
+    m_hitHeightEdit.AttachItem(IDC_KICKER_HIT_HEIGHT_EDIT);
     UpdateVisuals();
     return TRUE;
 }

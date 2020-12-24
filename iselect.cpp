@@ -10,13 +10,14 @@ ISelect::ISelect()
    m_locked = false;
 
    m_menuid = -1;
-   m_layerIndex = 0;
-   m_layerName = "";
+   m_oldLayerIndex = 0;
+   m_isVisible = true;
+   m_vpinball = g_pvp;
 }
 
 void ISelect::SetObjectPos()
 {
-   g_pvp->ClearObjectPosCur();
+   m_vpinball->ClearObjectPosCur();
 }
 
 void ISelect::OnLButtonDown(int x, int y)
@@ -127,14 +128,14 @@ void ISelect::DoCommand(int icmd, int x, int y)
    switch (icmd)
    {
    case ID_EDIT_DRAWINGORDER_HIT:
-      g_pvp->ShowDrawingOrderDialog(false);
+      m_vpinball->ShowDrawingOrderDialog(false);
       break;
    case ID_EDIT_DRAWINGORDER_SELECT:
-      g_pvp->ShowDrawingOrderDialog(true);
+      m_vpinball->ShowDrawingOrderDialog(true);
       break;
    case ID_ASSIGN_TO_LAYER:
    {
-      g_pvp->GetLayersListDialog()->OnAssignButton();
+      m_vpinball->GetLayersListDialog()->OnAssignButton();
       break;
    }
    case ID_DRAWINFRONT:
@@ -178,8 +179,8 @@ void ISelect::DoCommand(int icmd, int x, int y)
       break;
    }
    /*default:
-   psel->DoCommand(command, x, y);
-   break;*/
+      psel->DoCommand(command, x, y);
+      break;*/
    }
 }
 
@@ -188,8 +189,8 @@ void ISelect::DoCommand(int icmd, int x, int y)
 
 void ISelect::SetSelectFormat(Sur *psur)
 {
-   const DWORD color = m_locked ? g_pvp->m_elemSelectLockedColor
-      : g_pvp->m_elemSelectColor;//GetSysColor(COLOR_HIGHLIGHT);
+   const DWORD color = m_locked ? m_vpinball->m_elemSelectLockedColor
+      : m_vpinball->m_elemSelectColor;//GetSysColor(COLOR_HIGHLIGHT);
 
    psur->SetBorderColor(color, false, 4);
    psur->SetLineColor(color, false, 4);
@@ -198,8 +199,8 @@ void ISelect::SetSelectFormat(Sur *psur)
 void ISelect::SetMultiSelectFormat(Sur *psur)
 {
    const DWORD color = m_locked ?
-      g_pvp->m_elemSelectLockedColor :
-      g_pvp->m_elemSelectColor;//GetSysColor(COLOR_HIGHLIGHT);
+      m_vpinball->m_elemSelectLockedColor :
+      m_vpinball->m_elemSelectColor;//GetSysColor(COLOR_HIGHLIGHT);
 
    psur->SetBorderColor(color, false, 3);
    psur->SetLineColor(color, false, 3);
@@ -207,8 +208,8 @@ void ISelect::SetMultiSelectFormat(Sur *psur)
 
 void ISelect::SetLockedFormat(Sur *psur)
 {
-   psur->SetBorderColor(g_pvp->m_elemSelectLockedColor, false, 1);
-   psur->SetLineColor(g_pvp->m_elemSelectLockedColor, false, 1);
+   psur->SetBorderColor(m_vpinball->m_elemSelectLockedColor, false, 1);
+   psur->SetLineColor(m_vpinball->m_elemSelectLockedColor, false, 1);
 }
 
 void ISelect::FlipY(const Vertex2D& pvCenter)
@@ -281,9 +282,9 @@ HRESULT ISelect::GetTypeName(BSTR *pVal)
    return S_OK;
 }
 
-void ISelect::GetTypeNameForType(ItemTypeEnum type, WCHAR * buf)
+void ISelect::GetTypeNameForType(const ItemTypeEnum type, WCHAR * const buf) const
 {
-   int strID;
+   UINT strID;
 
    switch (type)
    {
@@ -295,7 +296,7 @@ void ISelect::GetTypeNameForType(ItemTypeEnum type, WCHAR * buf)
       strID = EditableRegistry::GetTypeNameStringID(type); break;
    }
 
-   /*const int len =*/ LoadStringW(g_hinst, strID, buf, 256);
+   /*const int len =*/ LoadStringW(m_vpinball->theInstance, strID, buf, 256);
 }
 
 bool ISelect::LoadToken(const int id, BiffReader * const pbr)
@@ -307,14 +308,17 @@ bool ISelect::LoadToken(const int id, BiffReader * const pbr)
    {
       int tmp;
       pbr->GetInt(&tmp);
-      m_layerIndex = (char)tmp;
+      m_oldLayerIndex = (char)tmp;
       break;
    }
    case FID(LANR):
    {
-      char name[MAX_PATH];
-      pbr->GetString(name);
-      m_layerName = string(name);
+      pbr->GetString(m_layerName);
+      break;
+   }
+   case FID(LVIS):
+   {
+      pbr->GetBool(&m_isVisible);
       break;
    }
    }
@@ -326,8 +330,14 @@ HRESULT ISelect::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
    BiffWriter bw(pstm, hcrypthash);
 
    bw.WriteBool(FID(LOCK), m_locked);
-   bw.WriteInt(FID(LAYR), m_layerIndex);
+   bw.WriteInt(FID(LAYR), m_oldLayerIndex);
    bw.WriteString(FID(LANR), m_layerName.c_str());
+   bw.WriteBool(FID(LVIS), m_isVisible);
 
    return S_OK;
+}
+
+void ISelect::UpdateStatusBarInfo()
+{
+   m_vpinball->SetStatusBarUnitInfo("", false);
 }

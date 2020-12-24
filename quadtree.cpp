@@ -257,21 +257,21 @@ void HitQuadtree::InitSseArrays()
 
 /*  RLC
 
-Hit logic needs to be expanded, during static and pseudo-static conditions, multiple hits (multi-face contacts)
-are possible and should be handled, with embedding (pentrations) some contacts persist for long periods
-and may cause others not to be seen (masked because of their position in the object list).
+    Hit logic needs to be expanded, during static and pseudo-static conditions, multiple hits (multi-face contacts)
+    are possible and should be handled, with embedding (pentrations) some contacts persist for long periods
+    and may cause others not to be seen (masked because of their position in the object list).
 
-A short term solution might be to rotate the object list on each collision round. Currently, its a linear array.
-and some subscript magic might be needed, where the actually collision counts are used to cycle the starting position
-for the next search. This could become a Ball property ... i.e my last hit object index, start at the next
-and cycle around until the last hit object is the last to be tested ... this could be made complex due to
-scripts removing objects .... i.e. balls ... better study well before I start
+    A short term solution might be to rotate the object list on each collision round. Currently, its a linear array.
+    and some subscript magic might be needed, where the actually collision counts are used to cycle the starting position
+    for the next search. This could become a Ball property ... i.e my last hit object index, start at the next
+    and cycle around until the last hit object is the last to be tested ... this could be made complex due to
+    scripts removing objects .... i.e. balls ... better study well before I start
 
-The most effective would be to sort the search results, always moving the last hit to the end of it's grouping
+    The most effective would be to sort the search results, always moving the last hit to the end of it's grouping
 
-At this instance, I'm reporting static contacts as random hitimes during the specific physics frame; the zero time
-slot is not in the random time generator algorithm, it is offset by STATICTIME so not to compete with the fast moving
-collisions
+    At this instance, I'm reporting static contacts as random hitimes during the specific physics frame; the zero time
+    slot is not in the random time generator algorithm, it is offset by STATICTIME so not to compete with the fast moving
+    collisions
 
 */
 
@@ -284,7 +284,7 @@ void HitQuadtree::HitTestBall(const Ball * const pball, CollisionEvent& coll) co
 
 #else   /// without SSE optimization ////////////////////////
 
-   for (unsigned i = 0; i<m_vho.size(); i++)
+   for (unsigned i = 0; i < m_vho.size(); i++)
    {
 #ifdef DEBUGPHYSICS
       g_pplayer->c_tested++;
@@ -366,8 +366,8 @@ void HitQuadtree::HitTestBallSse(const Ball * const pball, CollisionEvent& coll)
 #ifdef DEBUGPHYSICS
                g_pplayer->c_tested++; //!! +=4? or is this more fair?
 #endif
-                                      // comparisons set bits if bounds miss. if all bits are set, there is no collision. otherwise continue comparisons
-                                      // bits set, there is a bounding box collision
+               // comparisons set bits if bounds miss. if all bits are set, there is no collision. otherwise continue comparisons
+               // bits set, there is a bounding box collision
                __m128 cmp = _mm_cmpge_ps(bright, pL[i]);
                int mask = _mm_movemask_ps(cmp);
                if (mask == 0) continue;

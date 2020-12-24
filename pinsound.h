@@ -5,7 +5,7 @@
 #if !defined(AFX_PINSOUND_H__61491D0B_9950_480C_B453_911B3A2CDB8E__INCLUDED_)
 #define AFX_PINSOUND_H__61491D0B_9950_480C_B453_911B3A2CDB8E__INCLUDED_
 
-void BASS_ErrorMapCode(const int code, char text[MAXSTRING]);
+void BASS_ErrorMapCode(const int code, string& text);
 
 struct DSAudioDevice
 {
@@ -27,8 +27,10 @@ typedef vector<DSAudioDevice*> DSAudioDevices;
 BOOL CALLBACK DSEnumCallBack(LPGUID guid, LPCSTR desc, LPCSTR mod, LPVOID list);
 
 enum SoundOutTypes : char { SNDOUT_TABLE = 0, SNDOUT_BACKGLASS = 1 };
-enum SoundConfigTypes : int { SNDCFG_SND3D2CH = 0, SNDCFG_SND3DALLREAR = 1, SNDCFG_SND3DFRONTISREAR = 2, 
-                              SNDCFG_SND3DFRONTISFRONT = 3, SNDCFG_SND3D6CH = 4};
+enum SoundConfigTypes : int {
+   SNDCFG_SND3D2CH = 0, SNDCFG_SND3DALLREAR = 1, SNDCFG_SND3DFRONTISREAR = 2,
+   SNDCFG_SND3DFRONTISFRONT = 3, SNDCFG_SND3D6CH = 4
+};
 
 // Surround modes
 // ==============
@@ -79,9 +81,21 @@ public:
    void SetDevice(); //!! BASS only
 #ifdef ONLY_USE_BASS
    bool IsWav() const { return false; }
-   bool IsWav2() const { return (_stricmp(strrchr(m_szPath, '.'), ".wav") == 0); }
+   bool IsWav2() const
+   {
+      const size_t pos = m_szPath.find_last_of('.');
+      if (pos == string::npos)
+         return true;
+      return (_stricmp(m_szPath.substr(pos + 1).c_str(), "wav") == 0);
+   }
 #else
-   bool IsWav() const { return (_stricmp(strrchr(m_szPath, '.'), ".wav") == 0); }
+   bool IsWav() const
+   {
+      const size_t pos = m_szPath.find_last_of('.');
+      if (pos == string::npos)
+         return true;
+      return (_stricmp(m_szPath.substr(pos + 1).c_str(), "wav") == 0);
+   }
    bool IsWav2() const { return IsWav(); }
 #endif
    void Play(const float volume, const float randompitch, const int pitch, const float pan, const float front_rear_fade, const int flags, const bool restart);
@@ -97,9 +111,8 @@ public:
       //};
    };
 
-   char m_szName[MAXTOKEN]; // only filename, no ext
-   char m_szInternalName[MAXTOKEN]; // only lower case filename, no ext
-   char m_szPath[MAX_PATH]; // full filename, incl. path
+   string m_szName; // only filename, no ext
+   string m_szPath; // full filename, incl. path
 
    SoundOutTypes m_outputTarget;
    int m_balance;
@@ -180,7 +193,7 @@ public:
       for (size_t i = 0; i < m_copiedwav.size(); i++)
       {
          PinDirectSoundWavCopy * const ppsc = m_copiedwav[i];
-         if (!lstrcmp(ppsc->m_ppsOriginal->m_szInternalName, szName))
+         if (!lstrcmpi(ppsc->m_ppsOriginal->m_szName.c_str(), szName))
          {
             ppsc->m_pDSBuffer->Stop();
             break;
@@ -269,7 +282,7 @@ public:
       }
    }
 
-   PinSound *LoadFile(const TCHAR* const strFileName);
+   PinSound *LoadFile(const string& strFileName);
 
 private:
    PinDirectSound m_pds;

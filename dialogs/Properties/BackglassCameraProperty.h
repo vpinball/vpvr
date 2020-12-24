@@ -4,12 +4,12 @@
 class BackglassCameraProperty : public BasePropertyDialog
 {
 public:
-    BackglassCameraProperty(VectorProtected<ISelect> *pvsel);
+    BackglassCameraProperty(const VectorProtected<ISelect>* pvsel);
     virtual ~BackglassCameraProperty()
     {
     }
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
@@ -18,17 +18,17 @@ protected:
 private:
     HWND            m_hFssModeCheck;
     HWND            m_hTestDesktopCheck;
-    CComboBox       m_modeCombo;
-    CEdit           m_inclinationEdit;
-    CEdit           m_fovEdit;
-    CEdit           m_laybackEdit;
-    CEdit           m_xyRotationEdit;
-    CEdit           m_xScaleEdit;
-    CEdit           m_yScaleEdit;
-    CEdit           m_zScaleEdit;
-    CEdit           m_xOffsetEdit;
-    CEdit           m_yOffsetEdit;
-    CEdit           m_zOffsetEdit;
+    ComboBox        m_modeCombo;
+    EditBox         m_inclinationEdit;
+    EditBox         m_fovEdit;
+    EditBox         m_laybackEdit;
+    EditBox         m_xyRotationEdit;
+    EditBox         m_xScaleEdit;
+    EditBox         m_yScaleEdit;
+    EditBox         m_zScaleEdit;
+    EditBox         m_xOffsetEdit;
+    EditBox         m_yOffsetEdit;
+    EditBox         m_zOffsetEdit;
     vector<string>  m_modeList;
 };
 

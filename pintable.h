@@ -6,7 +6,7 @@
 #define AFX_PINTABLE_H__D14A2DAB_2984_4FE7_A102_D0283ECE31B4__INCLUDED_
 
 #include <unordered_map>
-
+#include <atomic>
 #include "hash.h"
 #include "SearchSelectDialog.h"
 
@@ -38,23 +38,49 @@ struct ProtectionData {
 
 class ScriptGlobalTable;
 
-class PinTableMDI :public CMDIChild
+class PinTableMDI : public CMDIChild
 {
 public:
-   PinTableMDI(PinTable *table);
+   PinTableMDI(VPinball *vpinball);
    virtual ~PinTableMDI();
-   PinTable *GetTable()
+   CComObject<PinTable> *GetTable()
    {
       return m_table;
    }
+   bool CanClose() const;
+
 protected:
    virtual void PreCreate(CREATESTRUCT &cs);
-   virtual int OnCreate(CREATESTRUCT &cs);
+   virtual int  OnCreate(CREATESTRUCT &cs);
    virtual void OnClose();
+   virtual LRESULT OnMDIActivate(UINT msg, WPARAM wparam, LPARAM lparam);
 
 private:
-   PinTable * m_table;
-   CMenu m_menu;
+   CComObject<PinTable> *m_table;
+   VPinball             *m_vpinball;
+   CMenu                 m_menu;
+};
+
+class ProgressDialog : public CDialog
+{
+public:
+   ProgressDialog();
+   void SetProgress(const int value)
+   {
+      m_progressBar.SetPos(value);
+   }
+
+   void SetName(const std::string& text)
+   {
+      m_progressName.SetWindowText(text.c_str());
+   }
+
+protected:
+   virtual BOOL OnInitDialog();
+
+private:
+   CProgressBar m_progressBar;
+   CStatic      m_progressName;
 };
 
 class PinTable :
@@ -304,7 +330,7 @@ public:
 
    virtual HRESULT GetTypeName(BSTR *pVal);
 
-   void SetCaption(const char * const szCaption);
+   void SetCaption(const string& szCaption);
    void SetMouseCapture();
    int  ShowMessageBox(const char *text) const;
    POINT GetScreenPoint() const;
@@ -327,8 +353,8 @@ public:
 
    void ExportBlueprint();
    void ExportTableMesh();
-   void ImportBackdropPOV(const char *filename);
-   void ExportBackdropPOV(const char *filename);
+   void ImportBackdropPOV(const string& filename);
+   void ExportBackdropPOV(const string& filename);
 
    //void FireVoidEvent(int dispid);
    void FireKeyEvent(int dispid, int keycode);
@@ -338,8 +364,8 @@ public:
    // called before Player instance gets deleted
    void StopPlaying();
 
-   void ImportSound(const HWND hwndListView, const char * const filename);
-   void ReImportSound(const HWND hwndListView, PinSound * const pps, const char * const filename);
+   void ImportSound(const HWND hwndListView, const string& filename);
+   void ReImportSound(const HWND hwndListView, PinSound * const pps, const string& filename);
    bool ExportSound(PinSound * const pps, const char * const filename);
    void ListSounds(HWND hwndListView);
    int AddListSound(HWND hwndListView, PinSound * const pps);
@@ -347,20 +373,20 @@ public:
    HRESULT SaveSoundToStream(PinSound * const pps, IStream *pstm);
    HRESULT LoadSoundFromStream(IStream *pstm, const int LoadFileVersion);
    bool ExportImage(Texture * const ppi, const char * const filename);
-   void ImportImage(HWND hwndListView, const char * const filename);
-   void ReImportImage(Texture * const ppi, const char * const filename);
+   void ImportImage(HWND hwndListView, const string& filename);
+   void ReImportImage(Texture * const ppi, const string& filename);
    void ListImages(HWND hwndListView);
    int AddListImage(HWND hwndListView, Texture * const ppi);
    void RemoveImage(Texture * const ppi);
-   HRESULT LoadImageFromStream(IStream *pstm, int version);
-   Texture* GetImage(const char * const szName) const;
+   HRESULT LoadImageFromStream(IStream *pstm, unsigned int idx, int version);
+   Texture* GetImage(const std::string &szName) const;
    bool GetImageLink(Texture * const ppi) const;
    PinBinary *GetImageLinkBinary(const int id);
 
    void ListCustomInfo(HWND hwndListView);
-   int AddListItem(HWND hwndListView, char *szName, char *szValue1, LPARAM lparam);
+   int AddListItem(HWND hwndListView, const string& szName, const string& szValue1, LPARAM lparam);
 
-   void ImportFont(HWND hwndListView, char *filename);
+   void ImportFont(HWND hwndListView, const string& filename);
    void ListFonts(HWND hwndListView);
    int AddListBinary(HWND hwndListView, PinBinary *ppb);
    void RemoveFont(PinFont * const ppf);
@@ -369,7 +395,7 @@ public:
    void ListCollections(HWND hwndListView);
    int AddListCollection(HWND hwndListView, CComObject<Collection> *pcol);
    void RemoveCollection(CComObject<Collection> *pcol);
-   void SetCollectionName(Collection *pcol, char *szName, HWND hwndList, int index);
+   void SetCollectionName(Collection *pcol, const char *szName, HWND hwndList, int index);
 
    void DoContextMenu(int x, int y, const int menuid, ISelect *psel);
    virtual void DoCommand(int icmd, int x, int y);
@@ -395,12 +421,14 @@ public:
    virtual HRESULT InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version, HCRYPTHASH hcrypthash, HCRYPTKEY hcryptkey);
    virtual HRESULT InitPostLoad();
    virtual HRESULT InitVBA(BOOL fNew, int id, WCHAR * const wzName);
-   virtual ISelect *GetISelect();
+   virtual ISelect *GetISelect() { return (ISelect *)this; }
+   virtual const ISelect *GetISelect() const { return (const ISelect *)this; }
    virtual void SetDefaults(bool fromMouseClick);
    virtual IScriptable *GetScriptable() { return (IScriptable *)this; }
    virtual void SetDefaultPhysics(bool fromMouseClick);
 
    virtual PinTable *GetPTable() { return this; }
+   virtual const PinTable *GetPTable() const { return this; }
    const char *GetElementName(IEditable *pedit) const;
 
    IEditable *GetElementByName(const char * const name);
@@ -435,22 +463,24 @@ public:
    HRESULT SaveToStorage(IStorage *pstg);
    HRESULT SaveInfo(IStorage* pstg, HCRYPTHASH hcrypthash);
    HRESULT SaveCustomInfo(IStorage* pstg, IStream *pstmTags, HCRYPTHASH hcrypthash);
-   HRESULT WriteInfoValue(IStorage* pstg, const WCHAR * const wzName, const char *szValue, HCRYPTHASH hcrypthash);
+   HRESULT WriteInfoValue(IStorage* pstg, const WCHAR * const wzName, const string& szValue, HCRYPTHASH hcrypthash);
    HRESULT ReadInfoValue(IStorage* pstg, const WCHAR * const wzName, char **pszValue, HCRYPTHASH hcrypthash);
    HRESULT SaveData(IStream* pstm, HCRYPTHASH hcrypthash, const bool backupForPlay);
-   HRESULT LoadGameFromFilename(char *szFileName);
+   HRESULT LoadGameFromFilename(const string& szFileName);
    HRESULT LoadGameFromStorage(IStorage *pstgRoot);
    HRESULT LoadInfo(IStorage* pstg, HCRYPTHASH hcrypthash, int version);
    HRESULT LoadCustomInfo(IStorage* pstg, IStream *pstmTags, HCRYPTHASH hcrypthash, int version);
    HRESULT LoadData(IStream* pstm, int& csubobj, int& csounds, int& ctextures, int& cfonts, int& ccollection, int version, HCRYPTHASH hcrypthash, HCRYPTKEY hcryptkey);
    void ReadAccelerometerCalibration();
    virtual IEditable *GetIEditable() { return (IEditable *)this; }
+   virtual const IEditable *GetIEditable() const { return (const IEditable *)this; }
    virtual void Delete() {} // Can't delete table itself
    virtual void Uncreate() {}
    virtual bool LoadToken(const int id, BiffReader * const pbr);
 
    virtual IDispatch *GetPrimary() { return this->GetDispatch(); }
    virtual IDispatch *GetDispatch() { return (IDispatch *)this; }
+   virtual const IDispatch *GetDispatch() const { return (const IDispatch *)this; }
    virtual IFireEvents *GetIFireEvents() { return (IFireEvents *)this; }
    virtual IDebugCommands *GetDebugCommands() { return NULL; }
 
@@ -484,9 +514,9 @@ public:
    void GetViewRect(FRect *pfrect) const;
 
    bool IsNameUnique(const WCHAR * const wzName) const;
-   void GetUniqueName(ItemTypeEnum type, WCHAR * const wzUniqueName) const;
-   void GetUniqueName(WCHAR * const prefix, WCHAR * const wzUniqueName) const;
-   void GetUniqueNamePasting(int type, WCHAR *wzUniqueName);
+   void GetUniqueName(const ItemTypeEnum type, WCHAR * const wzUniqueName) const;
+   void GetUniqueName(const WCHAR * const prefix, WCHAR * const wzUniqueName) const;
+   void GetUniqueNamePasting(const int type, WCHAR * const wzUniqueName);
 
    float GetSurfaceHeight(const char * const szName, float x, float y) const;
 
@@ -505,8 +535,6 @@ public:
    HRESULT StopSound(BSTR Sound);
    void StopAllSounds();
 
-   void RestoreLayers();
-   void BackupLayers();
    void DeleteFromLayer(IEditable *obj);
    void UpdateCollection(const int index);
    void MoveCollectionUp(CComObject<Collection> *pcol);
@@ -546,8 +574,8 @@ public:
    void AddDbgMaterial(Material * const pmat);
    void UpdateDbgMaterial();
 
-   bool IsMaterialNameUnique(const char * const name) const;
-   Material* GetMaterial(const char * const szName) const;
+   bool IsMaterialNameUnique(const std::string &name) const;
+   Material* GetMaterial(const std::string &szName) const;
    Material* GetSurfaceMaterial(const char * const szName) const;
    Texture* GetSurfaceImage(const char * const szName) const;
 
@@ -555,10 +583,8 @@ public:
 
    void LockElements();
 
-   char m_szFileName[MAXSTRING];
-   char m_szBlueprintFileName[MAXSTRING];
-   char m_szObjFileName[MAXSTRING];
-   char m_szTitle[MAX_LINE_LENGTH];
+   string m_szFileName;
+   string m_szTitle;
 
    VPinball *m_pvp;
 
@@ -673,14 +699,14 @@ public:
 
 
    vector< Texture* > m_vimage;
-   vector<Texture *> GetImageList() const
+   const vector<Texture *>& GetImageList() const
    {
       return m_vimage;
    }
 
    int m_numMaterials;
    vector< Material* > m_materials;
-   vector<Material *> GetMaterialList() const
+   const vector<Material *>& GetMaterialList() const
    {
       return m_materials;
    }
@@ -714,23 +740,23 @@ public:
    SaveDirtyState m_sdsCurrentDirtyState;
 
    // Table info
-   std::string m_szTableName;
-   std::string m_szAuthor;
-   std::string m_szVersion;
-   std::string m_szReleaseDate;
-   std::string m_szAuthorEMail;
-   std::string m_szWebSite;
-   std::string m_szBlurb;
-   std::string m_szDescription;
-   std::string m_szRules;
-   char m_szScreenShot[MAXTOKEN];
-   std::string m_szDateSaved;
+   string m_szTableName;
+   string m_szAuthor;
+   string m_szVersion;
+   string m_szReleaseDate;
+   string m_szAuthorEMail;
+   string m_szWebSite;
+   string m_szBlurb;
+   string m_szDescription;
+   string m_szRules;
+   string m_szScreenShot;
+   string m_szDateSaved;
    unsigned int m_numTimesSaved;
 
    PinBinary *m_pbTempScreenshot; // Holds contents of screenshot image until the image asks for it
 
-   vector<char*> m_vCustomInfoTag;
-   vector<char*> m_vCustomInfoContent;
+   vector<string> m_vCustomInfoTag;
+   vector<string> m_vCustomInfoContent;
 
    vector<HANDLE> m_vAsyncHandles;
 
@@ -763,13 +789,11 @@ public:
 
    HWND  m_hMaterialManager;
    SearchSelectDialog m_searchSelectDlg;
+   ProgressDialog m_progressDialog;
+
+   volatile std::atomic<bool> m_savingActive;
 
    bool  m_dirtyDraw; // Whether our background bitmap is up to date
-
-   bool  m_activeLayers[MAX_LAYERS];
-   bool  m_toggleAllLayers;
-   volatile bool m_savingActive;
-
    bool  m_renderSolid;
 
    bool  m_grid; // Display grid or not
@@ -817,9 +841,10 @@ public:
    int   m_jolt_trigger_time;
    int   m_tilt_trigger_time;
 #endif
+
    virtual void OnInitialUpdate();
    virtual LRESULT WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam);
-   virtual void OnClose();
+   virtual BOOL OnCommand(WPARAM wparam, LPARAM lparam);
 
    void SetMouseCursor();
    void OnLeftButtonDown(const short x, const short y);
@@ -854,21 +879,34 @@ public:
    float GetHeight() const;
    void SetHeight(const float value);
 
-   //HWND m_hMDI;
-   PinTableMDI *m_mdiTable;
    void SetMDITable(PinTableMDI * const table)
    {
       m_mdiTable = table;
    }
-   PinTableMDI *GetMDITable()
+   PinTableMDI *GetMDITable() const
    {
       return m_mdiTable;
    }
-   WCHAR *GetCollectionNameByElement(const ISelect * const element);
+
+   WCHAR* GetCollectionNameByElement(const ISelect* const element);
    void RefreshProperties();
+
+   void SetNotesText(const CString& text)
+   {
+      m_notesText = text;
+      SetDirtyDraw();
+   }
+   CString GetNotesText() const
+   {
+      return m_notesText;
+   }
+
 private:
-   std::unordered_map<const char *, Texture *, StringHashFunctor, StringComparator> m_textureMap;      // hash table to speed up texture lookup by name
-   std::unordered_map<const char*, Material*, StringHashFunctor, StringComparator> m_materialMap;    // hash table to speed up material lookup by name
+   PinTableMDI *m_mdiTable;
+   bool m_moving;
+   CString m_notesText;
+   std::unordered_map<const char*, Texture *, StringHashFunctor, StringComparator> m_textureMap;  // hash table to speed up texture lookup by name
+   std::unordered_map<const char*, Material*, StringHashFunctor, StringComparator> m_materialMap; // hash table to speed up material lookup by name
 };
 
 class ScriptGlobalTable :
@@ -945,6 +983,7 @@ public:
    STDMETHOD(GetBalls)(/*[out, retval]*/ LPSAFEARRAY *pVal);
    STDMETHOD(GetElements)(/*[out, retval]*/ LPSAFEARRAY *pVal);
    STDMETHOD(GetElementByName)(/*[in]*/ BSTR name, /*[out, retval]*/ IDispatch* *pVal);
+   STDMETHOD(get_ActiveTable)(/*[out, retval]*/ ITable **pVal);
 
    STDMETHOD(get_Version)(/*[out, retval]*/ int *pVal);
    STDMETHOD(get_VPBuildVersion)(/*[out, retval]*/ int *pVal);
@@ -955,14 +994,20 @@ public:
    STDMETHOD(UpdateMaterial)(BSTR pVal, float wrapLighting, float roughness, float glossyImageLerp, float thickness, float edge, float edgeAlpha, float opacity,
       OLE_COLOR base, OLE_COLOR glossy, OLE_COLOR clearcoat, VARIANT_BOOL isMetal, VARIANT_BOOL opacityActive,
       float elasticity, float elasticityFalloff, float friction, float scatterAngle);
+   STDMETHOD(GetMaterial)(BSTR pVal, float *wrapLighting, float *roughness, float *glossyImageLerp, float *thickness, float *edge, float *edgeAlpha, float *opacity,
+      OLE_COLOR *base, OLE_COLOR *glossy, OLE_COLOR *clearcoat, VARIANT_BOOL *isMetal, VARIANT_BOOL *opacityActive,
+      float *elasticity, float *elasticityFalloff, float *friction, float *scatterAngle);
    STDMETHOD(UpdateMaterialPhysics)(BSTR pVal, float elasticity, float elasticityFalloff, float friction, float scatterAngle);
+   STDMETHOD(GetMaterialPhysics)(BSTR pVal, float *elasticity, float *elasticityFalloff, float *friction, float *scatterAngle);
    STDMETHOD(MaterialColor)(BSTR pVal, OLE_COLOR newVal);
 
-   void Init(PinTable *pt);
+   void Init(VPinball *vpinball, PinTable *pt);
 
    virtual IDispatch *GetDispatch() { return (IDispatch *)this; }
+   virtual const IDispatch *GetDispatch() const { return (const IDispatch *)this; }
 
    virtual ISelect *GetISelect() { return NULL; }
+   virtual const ISelect *GetISelect() const { return NULL; }
 
    BEGIN_COM_MAP(ScriptGlobalTable)
       COM_INTERFACE_ENTRY(ITableGlobal)
@@ -973,6 +1018,7 @@ private:
    bool GetTextFileFromDirectory(const char * const szfilename, const char * const dirname, BSTR *pContents);
 
    PinTable *m_pt;
+   VPinball *m_vpinball;
 };
 
 #endif // !defined(AFX_PINTABLE_H__D14A2DAB_2984_4FE7_A102_D0283ECE31B4__INCLUDED_)

@@ -9,15 +9,16 @@ public:
    Vertex2D m_Center;
    TimerDataRoot m_tdr;
    float m_slingshot_threshold;	// speed at which ball needs to trigger slingshot 
-   char m_szSideImage[MAXTOKEN];
-   char m_szTopMaterial[MAXNAMEBUFFER];
-   char m_szSideMaterial[MAXNAMEBUFFER];
-   char m_szSlingShotMaterial[MAXNAMEBUFFER];
+   std::string m_szSideImage;
+   std::string m_szTopMaterial;
+   std::string m_szSideMaterial;
+   std::string m_szSlingShotMaterial;
    float m_heightbottom;
    float m_heighttop;
    float m_slingshotforce;
    float m_disableLightingTop;   // was bool, now 0..1
    float m_disableLightingBelow; // 0..1
+   float m_elasticityFalloff;    // old tables had this fixed to 0.0
    bool m_droppable;
    bool m_flipbook;              // if enabled, dropped walls are not rendered
    bool m_displayTexture;        // in editor
@@ -119,6 +120,7 @@ public:
    virtual void SetDefaultPhysics(bool fromMouseClick);
    virtual void ExportMesh(FILE *f);
    virtual void AddPoint(int x, int y, const bool smooth);
+   virtual void UpdateStatusBarInfo();
 
 
    float    GetSlingshotStrength() const { return m_d.m_slingshotforce * (float)(1.0 / 10.0); }
@@ -143,7 +145,6 @@ private:
 
    void FreeBuffers();
 
-   void UpdateUnitsInfo();
 
    PinTable *m_ptable;
 
@@ -174,6 +175,8 @@ public:
    STDMETHOD(put_Visible)(/*[in]*/ VARIANT_BOOL newVal);
    STDMETHOD(get_Elasticity)(/*[out, retval]*/ float *pVal);
    STDMETHOD(put_Elasticity)(/*[in]*/ float newVal);
+   STDMETHOD(get_ElasticityFalloff)(/*[out, retval]*/ float* pVal);
+   STDMETHOD(put_ElasticityFalloff)(/*[in]*/ float newVal);
 
    STDMETHOD(get_Friction)(/*[out, retval]*/ float *pVal);
    STDMETHOD(put_Friction)(/*[in]*/ float newVal);

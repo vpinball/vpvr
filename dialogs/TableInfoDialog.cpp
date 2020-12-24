@@ -67,10 +67,10 @@ BOOL TableInfoDialog::OnInitDialog()
    {
       Texture * const pin = pt->m_vimage[i];
       if (pin->m_ppb)
-         ::SendMessage(hwndList, CB_ADDSTRING, 0, (LPARAM)pin->m_szName);
+         ::SendMessage(hwndList, CB_ADDSTRING, 0, (LPARAM)pin->m_szName.c_str());
    }
 
-   ::SendMessage(hwndList, CB_SELECTSTRING, ~0u, (LPARAM)pt->m_szScreenShot);
+   ::SendMessage(hwndList, CB_SELECTSTRING, ~0u, (LPARAM)pt->m_szScreenShot.c_str());
 
    //ListView_SetExtendedListViewStyle(GetDlgItem(IDC_CUSTOMLIST).GetHwnd(), LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
    m_customListView.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
@@ -79,13 +79,13 @@ BOOL TableInfoDialog::OnInitDialog()
    {
       LVCOLUMN lvcol;
       lvcol.mask = LVCF_TEXT | LVCF_WIDTH;
-      LocalString ls3(IDS_NAME);
-      lvcol.pszText = ls3.m_szbuffer;// = "Name";
+      const LocalString ls3(IDS_NAME);
+      lvcol.pszText = (LPSTR)ls3.m_szbuffer; // = "Name";
       lvcol.cx = 90;
       m_customListView.InsertColumn(0,lvcol);
 
-      LocalString ls2(IDS_VALUE);
-      lvcol.pszText = ls2.m_szbuffer; // = "Value";
+      const LocalString ls2(IDS_VALUE);
+      lvcol.pszText = (LPSTR)ls2.m_szbuffer; // = "Value";
       lvcol.cx = 100;
       m_customListView.InsertColumn(1, lvcol);
 
@@ -129,13 +129,9 @@ INT_PTR TableInfoDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
    return DialogProcDefault(uMsg, wParam, lParam);
 }
 
-void TableInfoDialog::VPGetDialogItemText(CEdit &edit, char **psztext)
+void TableInfoDialog::VPGetDialogItemText(CEdit &edit, string &psztext)
 {
-    const int length = edit.GetWindowTextLength();
-   *psztext = new char[length + 1];
-
-   CString txt = edit.GetWindowText();
-   strcpy_s((char*)(*psztext), length+1, txt.c_str());
+   psztext = edit.GetWindowText();
 }
 
 
@@ -148,25 +144,22 @@ BOOL TableInfoDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       case IDC_ADD:
       {
          CCO(PinTable) * const pt = g_pvp->GetActiveTable();
-         char *szCustomName;
-         VPGetDialogItemText(m_customNameEdit, &szCustomName);
-         if (szCustomName[0] != '\0')
+         string szCustomName;
+         VPGetDialogItemText(m_customNameEdit, szCustomName);
+         if (!szCustomName.empty())
          {
             LVFINDINFO lvfi;
             lvfi.flags = LVFI_STRING;
-            lvfi.psz = szCustomName;
-
+            lvfi.psz = szCustomName.c_str();
             const int found = m_customListView.FindItem(lvfi, -1);
 
             if (found != -1)
                m_customListView.DeleteItem(found);
 
-            char *szCustomValue;
-            VPGetDialogItemText(m_customValueEdit, &szCustomValue);
+            string szCustomValue;
+            VPGetDialogItemText(m_customValueEdit, szCustomValue);
             pt->AddListItem(m_customListView.GetHwnd(), szCustomName, szCustomValue, NULL);
-            delete[] szCustomValue;
          }
-         delete[] szCustomName;
          break;
       }
       case IDC_DELETE:
@@ -177,17 +170,13 @@ BOOL TableInfoDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       }
       case IDC_GOWEBSITE:
       {
-         CString url = m_websiteEdit.GetWindowText();
-         OpenURL(url.c_str());
+         OpenURL(string(m_websiteEdit.GetWindowText()));
          break;
       }
       case IDC_SENDMAIL:
       {
-         CString email = m_emailEdit.GetWindowText();
-         CString tableName = m_tableNameEdit.GetWindowText();
-
-         CString url = CString("mailto:") + email + CString("?subject=") + tableName;
-         OpenURL(url.c_str());
+         const string url = string("mailto:") + string(m_emailEdit.GetWindowText()) + string("?subject=") + string(m_tableNameEdit.GetWindowText());
+         OpenURL(url);
          break;
       }
       default: 
@@ -210,23 +199,15 @@ void TableInfoDialog::OnOK()
    pt->m_szDescription = m_descriptionEdit.GetWindowText();
    pt->m_szRules = m_rulesEdits.GetWindowTextA();
 
-   const HWND hwndList = GetDlgItem(IDC_SCREENSHOT).GetHwnd();
-
-   ::GetWindowText(hwndList, pt->m_szScreenShot, MAXTOKEN);
+   const CString sshot = GetDlgItem(IDC_SCREENSHOT).GetWindowText();
 
    const LocalString ls(IDS_NONE);
-   if (!lstrcmp(pt->m_szScreenShot, ls.m_szbuffer))
-   {
-      // <None> is selected
-      pt->m_szScreenShot[0] = '\0';
-   }
+   if (!lstrcmp(sshot.c_str(), ls.m_szbuffer))
+      pt->m_szScreenShot.clear();
+   else
+      pt->m_szScreenShot = sshot.c_str();
 
    // Clear old custom values, read back new ones
-   for (size_t i = 0; i < pt->m_vCustomInfoTag.size(); i++)
-   {
-      delete pt->m_vCustomInfoTag[i];
-      delete pt->m_vCustomInfoContent[i];
-   }
    pt->m_vCustomInfoTag.clear();
    pt->m_vCustomInfoContent.clear();
 
@@ -234,15 +215,10 @@ void TableInfoDialog::OnOK()
    for (int i = 0; i < customcount; i++)
    {
       const CString name = m_customListView.GetItemText(i, 0, MAXSTRING);
-
-      char * const szName = new char[name.GetLength() + 1];
-      lstrcpy(szName, name.c_str());
-      pt->m_vCustomInfoTag.push_back(szName);
+      pt->m_vCustomInfoTag.push_back(name.c_str());
 
       const CString value = m_customListView.GetItemText(i, 1, MAXSTRING);
-      char * const szValue = new char[value.GetLength() + 1];
-      lstrcpy(szValue, value.c_str());
-      pt->m_vCustomInfoContent.push_back(szValue);
+      pt->m_vCustomInfoContent.push_back(value.c_str());
    }
 
    pt->SetNonUndoableDirty(eSaveDirty);

@@ -1,12 +1,12 @@
-// Win32++   Version 8.7.0
-// Release Date: 12th August 2019
+// Win32++   Version 8.8
+// Release Date: 15th October 2020
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2019  David Nash
+// Copyright (c) 2005-2020  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -80,6 +80,8 @@ namespace Win32xx
     const UINT UWM_FINDMSGSTRING = ::RegisterWindowMessage(FINDMSGSTRING);      // Used by the Find/Replace common dialog. Sent when the user clicks the Find Next, Replace, or Replace All button, or closes the dialog box.
 #endif
 
+
+    //////////////////////////////////////////////////////////
     // CCommonDialog is the base class for all common dialogs.
     class CCommonDialog : public CDialog
     {
@@ -95,15 +97,16 @@ namespace Win32xx
 
         // static callback
         static INT_PTR CALLBACK CDHookProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam);
-        
+
     private:
         CCommonDialog(const CCommonDialog&);              // Disable copy construction
-        CCommonDialog& operator = (const CCommonDialog&); // Disable assignment operator        
+        CCommonDialog& operator = (const CCommonDialog&); // Disable assignment operator
     };
 
 
-
-    // The color choice common dialog box class.
+    //////////////////////////////////////////////////////////////
+    // CColorDialog manages Color dialog box that enables the user
+    // to select a color.
     class CColorDialog : public CCommonDialog
     {
     public:
@@ -133,8 +136,9 @@ namespace Win32xx
     };
 
 
-
-    // The file open/save-as common dialog box class.
+    ///////////////////////////////////////////////////////
+    // CFileDialog manages the file open and save-as common
+    // dialog boxes.
     class CFileDialog : public CCommonDialog
     {
     public:
@@ -142,6 +146,7 @@ namespace Win32xx
         // Constructor/destructor
         CFileDialog (BOOL isOpenFileDialog = TRUE,
                 LPCTSTR pDefExt = NULL,
+                LPCTSTR pInitFileDir = NULL,
                 LPCTSTR pFileName = NULL,
                 DWORD   flags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
                 LPCTSTR pFilter   = NULL );
@@ -248,7 +253,9 @@ namespace Win32xx
     };
 
 
-    // The font choice common dialog box class.
+    ////////////////////////////////////////////////
+    // CFontDialog manages a dialog box that allows
+    // users to select a font.
     class CFontDialog : public CCommonDialog
     {
     public:
@@ -256,7 +263,7 @@ namespace Win32xx
         CFontDialog(const CHARFORMAT& charformat, DWORD flags = 0, HDC printer = 0);
         CFontDialog(DWORD flags = 0, HDC printer = 0);
 
-        virtual ~CFontDialog(void)  {}
+        virtual ~CFontDialog()  {}
 
         virtual INT_PTR DoModal(HWND owner = 0);
         CHARFORMAT  GetCharFormat() const;
@@ -331,6 +338,7 @@ namespace Win32xx
             // The HWND wasn't in the map, so add it now
             TLSData* pTLSData = GetApp()->GetTlsData();
             assert(pTLSData);
+            if (!pTLSData) return 0;
 
             // Retrieve pointer to CWnd object from Thread Local Storage TLS
             pCommonDlg = static_cast<CCommonDialog*>(pTLSData->pWnd);
@@ -344,7 +352,7 @@ namespace Win32xx
         return pCommonDlg->DialogProc(msg, wparam, lparam);
     }
 
-    
+
     /////////////////////////////////////////
     // Definitions for the CColorDialog class
     //
@@ -429,11 +437,11 @@ namespace Win32xx
         m_ofn.hwndOwner = owner;
 
         // invoke the control and save the result on success
-        BOOL IsValid = ::ChooseColor(&m_ofn);
+        BOOL isValid = ::ChooseColor(&m_ofn);
 
         m_wnd = 0;
 
-        if (!IsValid)
+        if (!isValid)
         {
             DWORD error = CommDlgExtendedError();
             if ((error != 0) && (error != CDERR_DIALOGFAILURE))
@@ -480,7 +488,7 @@ namespace Win32xx
     // Definitions for the CFileDialog class
     //
 
-    // Construct a CFileDialog object. IsOpenFileDialog specifies the type of
+    // Construct a CFileDialog object. isOpenFileDialog specifies the type of
     // dialog box, OpenFile or SaveFile. The file's default extent and name can
     // be specified, along with the flags for the OPENFILENAME struct.
     // The pFilter contains a series of string pairs that specify file filters,
@@ -488,6 +496,7 @@ namespace Win32xx
     // struct in the Windows API documentation.
     inline CFileDialog::CFileDialog(BOOL isOpenFileDialog  /* = TRUE */,
         LPCTSTR pDefExt /* = NULL */,
+        LPCTSTR pInitFileDir /* = NULL */,
         LPCTSTR pFileName /* = NULL */,
         DWORD   flags /* = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT */,
         LPCTSTR pFilter /* = NULL */)
@@ -501,6 +510,7 @@ namespace Win32xx
         // fill in the OPENFILENAME struct
         m_ofn.lpstrFile     = const_cast<LPTSTR>(pFileName);
         m_ofn.lpstrFilter   = pFilter;
+        m_ofn.lpstrInitialDir = const_cast<LPTSTR>(pInitFileDir);
         m_ofn.lpstrDefExt   = pDefExt;
         m_ofn.Flags         = flags;
 
@@ -605,7 +615,7 @@ namespace Win32xx
 
     // Display either a FileOpen or FileSave dialog, and allow the user to
     // select various options. An exception is thrown if the dialog isn't created.
-    // If the OFN_ALLOWMULTISELECT flag is used, the size of the buffer required 
+    // If the OFN_ALLOWMULTISELECT flag is used, the size of the buffer required
     // to hold the file names can be quite large. An exception is thrown if the
     // buffer size specified by m_OFN.nMaxFile turns out to be too small.
     // Use SetParamaters to set a larger size if required.
@@ -845,6 +855,8 @@ namespace Win32xx
 
         OFNOTIFY* pNotify = reinterpret_cast<OFNOTIFY*>(lparam);
         assert(pNotify);
+        if (!pNotify) return 0;
+
         switch(pNotify->hdr.code)
         {
             case CDN_INITDONE:
@@ -1178,6 +1190,8 @@ namespace Win32xx
     {
         assert(lparam != 0);
         LPFINDREPLACE pFR = reinterpret_cast<LPFINDREPLACE>(lparam);
+        if (!pFR) return NULL;
+
         CFindReplaceDialog* pDlg = reinterpret_cast<CFindReplaceDialog*>(pFR->lCustData);
         return pDlg;
     }

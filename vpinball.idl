@@ -89,6 +89,7 @@ typedef [uuid(28F7715B-E800-49B6-B86E-A0C55898297E)]
                 TriggerButton = 4,
                 TriggerWireC = 5,
                 TriggerWireD = 6,
+                TriggerInder = 7,
                 }
                 TriggerShape;
 
@@ -748,11 +749,12 @@ typedef [uuid(D09B9F0E-C1AE-40dd-84D6-B1F74053AA8E)]
                 [id(41), helpstring("method GetBalls")] HRESULT GetBalls([out, retval] SAFEARRAY(VARIANT) *pVal);
                 [id(42), helpstring("method GetElements")] HRESULT GetElements([out, retval] SAFEARRAY(VARIANT) *pVal);
                 [id(43), helpstring("method GetElementByName")] HRESULT GetElementByName([in] BSTR name, [out, retval] IDispatch* *pVal);
+                [propget, id(48), helpstring("property ActiveTable")] HRESULT ActiveTable([out, retval] ITable **pVal);
 
-                [propput, id(44), helpstring("method DMDWidth")] HRESULT DMDWidth([in] int pVal);
-                [propput, id(45), helpstring("method DMDHeight")] HRESULT DMDHeight([in] int pVal);
-                [propput, id(46), helpstring("method DMDPixels")] HRESULT DMDPixels([in] VARIANT pVal);
-                [propput, id(47), helpstring("method DMDColoredPixels")] HRESULT DMDColoredPixels([in] VARIANT pVal);
+                [propput, id(44), helpstring("property DMDWidth")] HRESULT DMDWidth([in] int pVal);
+                [propput, id(45), helpstring("property DMDHeight")] HRESULT DMDHeight([in] int pVal);
+                [propput, id(46), helpstring("property DMDPixels")] HRESULT DMDPixels([in] VARIANT pVal);
+                [propput, id(47), helpstring("property DMDColoredPixels")] HRESULT DMDColoredPixels([in] VARIANT pVal);
 
                 [propget, id(219), helpstring("property Version")] HRESULT Version([out, retval] int *pVal);
                 [propget, id(38), helpstring("property VersionMajor")] HRESULT VersionMajor([out, retval] int *pVal);
@@ -763,8 +765,13 @@ typedef [uuid(D09B9F0E-C1AE-40dd-84D6-B1F74053AA8E)]
                 [id(230), helpstring("method UpdateMaterial")] HRESULT UpdateMaterial([in] BSTR pVal, [in] float wrapLighting, [in] float roughness, [in] float glossyImageLerp, [in] float thickness, [in] float edge, [in] float edgeAlpha, [in] float opacity,
                     [in] OLE_COLOR base, [in] OLE_COLOR glossy, [in] OLE_COLOR clearcoat, [in] VARIANT_BOOL isMetal, [in] VARIANT_BOOL opacityActive,
                     [in] float elasticity, [in] float elasticityFalloff, [in] float friction, [in] float scatterAngle);
+                [id(231), helpstring("method GetMaterial")] HRESULT GetMaterial([in] BSTR pVal, [out] float *wrapLighting, [out] float *roughness, [out] float *glossyImageLerp, [out] float *thickness, [out] float *edge, [out] float *edgeAlpha, [out] float *opacity,
+                    [out] OLE_COLOR *base, [out] OLE_COLOR *glossy, [out] OLE_COLOR *clearcoat, [out] VARIANT_BOOL *isMetal, [out] VARIANT_BOOL *opacityActive,
+                    [out] float *elasticity, [out] float *elasticityFalloff, [out] float *friction, [out] float *scatterAngle);
                 [id(247), helpstring("method UpdateMaterialPhysics")] HRESULT UpdateMaterialPhysics([in] BSTR pVal,
                     [in] float elasticity, [in] float elasticityFalloff, [in] float friction, [in] float scatterAngle);
+                [id(248), helpstring("method GetMaterialPhysics")] HRESULT GetMaterialPhysics([in] BSTR pVal,
+                    [out] float *elasticity, [out] float *elasticityFalloff, [out] float *friction, [out] float *scatterAngle);
                 [id(224), helpstring("method MaterialColor")] HRESULT MaterialColor([in] BSTR name, [in] OLE_COLOR newVal);
 
                 [propget, id(226), helpstring("property WindowWidth")] HRESULT WindowWidth([out, retval] int *pVal);
@@ -849,6 +856,8 @@ typedef [uuid(D09B9F0E-C1AE-40dd-84D6-B1F74053AA8E)]
                 [propput, id(14), helpstring("property SlingshotStrength")] HRESULT SlingshotStrength([in] float newVal);
                 [propget, id(110), helpstring("property Elasticity")] HRESULT Elasticity([out, retval] float *pVal);
                 [propput, id(110), helpstring("property Elasticity")] HRESULT Elasticity([in] float newVal);
+                [propget, id(120), helpstring("property ElasticityFalloff")] HRESULT ElasticityFalloff([out, retval] float *pVal);
+                [propput, id(120), helpstring("property ElasticityFalloff")] HRESULT ElasticityFalloff([in] float newVal);
                 [propget, id(DISPID_Image2), helpstring("property SideImage")] HRESULT SideImage([out, retval] BSTR *pVal);
                 [propput, id(DISPID_Image2), helpstring("property SideImage")] HRESULT SideImage([in] BSTR newVal);
                 [propget, id(16), helpstring("property Visible")] HRESULT Visible([out, retval] VARIANT_BOOL *pVal);
@@ -1805,14 +1814,14 @@ typedef [uuid(D09B9F0E-C1AE-40dd-84D6-B1F74053AA8E)]
                 [propput, id(114), helpstring("property Friction")] HRESULT Friction([in] float newVal);
                 [propget, id(115), helpstring("property Scatter")] HRESULT Scatter([out, retval] float *pVal);
                 [propput, id(115), helpstring("property Scatter")] HRESULT Scatter([in] float newVal);
-                [propget, id(431), helpstring("property DisableLighting")] HRESULT DisableLighting([out, retval] VARIANT_BOOL *pVal);
-                [propput, id(431), helpstring("property DisableLighting")] HRESULT DisableLighting([in] VARIANT_BOOL newVal);
+                [propget, id(483), helpstring("property DisableLighting")] HRESULT DisableLighting([out, retval] VARIANT_BOOL *pVal);
+                [propput, id(483), helpstring("property DisableLighting")] HRESULT DisableLighting([in] VARIANT_BOOL newVal);
                 [propget, id(494), helpstring("property BlendDisableLighting")] HRESULT BlendDisableLighting([out, retval] float *pVal);
                 [propput, id(494), helpstring("property BlendDisableLighting")] HRESULT BlendDisableLighting([in] float newVal);
                 [propget, id(496), helpstring("property BlendDisableLightingFromBelow")] HRESULT BlendDisableLightingFromBelow([out, retval] float *pVal);
                 [propput, id(496), helpstring("property BlendDisableLightingFromBelow")] HRESULT BlendDisableLightingFromBelow([in] float newVal);
-                [propget, id(483), helpstring("property ReflectionEnabled")] HRESULT ReflectionEnabled([out, retval] VARIANT_BOOL *pVal);
-                [propput, id(483), helpstring("property ReflectionEnabled")] HRESULT ReflectionEnabled([in] VARIANT_BOOL newVal);
+                [propget, id(431), helpstring("property ReflectionEnabled")] HRESULT ReflectionEnabled([out, retval] VARIANT_BOOL *pVal);
+                [propput, id(431), helpstring("property ReflectionEnabled")] HRESULT ReflectionEnabled([in] VARIANT_BOOL newVal);
 
                 [propget, id(397), helpstring("property DepthBias")] HRESULT DepthBias([out, retval] float *pVal);
                 [propput, id(397), helpstring("property DepthBias")] HRESULT DepthBias([in] float newVal);

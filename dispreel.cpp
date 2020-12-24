@@ -3,14 +3,7 @@
 
 DispReel::DispReel()
 {
-   memset(m_d.m_szImage, 0, MAXTOKEN);
-   memset(m_d.m_szSound, 0, MAXTOKEN);
-
    m_dispreelanim.m_pDispReel = this;
-}
-
-DispReel::~DispReel()
-{
 }
 
 // This function is called when ever a new instance of this object is created
@@ -41,14 +34,18 @@ void DispReel::SetDefaults(bool fromMouseClick)
 
    // set all the Data defaults
    HRESULT hr;
-
-   hr = LoadValueString("DefaultProps\\Ramp", "Image", m_d.m_szImage, MAXTOKEN);
+   char buf[MAXTOKEN] = { 0 };
+   hr = LoadValueString("DefaultProps\\Ramp", "Image", buf, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_szImage[0] = 0;
+      m_d.m_szImage.clear();
+   else
+      m_d.m_szImage = buf;
 
-   hr = LoadValueString("DefaultProps\\Ramp", "Sound", m_d.m_szSound, MAXTOKEN);
+   hr = LoadValueString("DefaultProps\\Ramp", "Sound", buf, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_szSound[0] = 0;
+      m_d.m_szSound = "";
+   else
+      m_d.m_szSound = buf;
 
    m_d.m_useImageGrid = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\EMReel", "UseImageGrid", false) : false;
    m_d.m_visible = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\EMReel", "Visible", true) : true;
@@ -386,10 +383,10 @@ void DispReel::Animate()
             m_reelInfo[i].motorOffset = 0;
 
             // play the sound (if any) for each click of the reel
-            if (m_d.m_szSound[0] != 0)
+            if (!m_d.m_szSound.empty())
             {
-               WCHAR mySound[512];
-               MultiByteToWideChar(CP_ACP, 0, m_d.m_szSound, -1, mySound, MAXNAMEBUFFER);
+               WCHAR mySound[MAXTOKEN];
+               MultiByteToWideChar(CP_ACP, 0, m_d.m_szSound.c_str(), -1, mySound, MAXTOKEN);
                BSTR mySoundBSTR = SysAllocString(mySound);
                m_ptable->PlaySound(mySoundBSTR, 0, 1.0f, 0.f, 0.f, 0, VARIANT_FALSE, VARIANT_TRUE, 0.f);
                SysFreeString(mySoundBSTR);
@@ -440,7 +437,7 @@ void DispReel::Animate()
 
 void DispReel::SetObjectPos()
 {
-   g_pvp->SetObjectPosCur(m_d.m_v1.x, m_d.m_v1.y);
+   m_vpinball->SetObjectPosCur(m_d.m_v1.x, m_d.m_v1.y);
 }
 
 
@@ -479,7 +476,7 @@ HRESULT DispReel::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool back
    bw.WriteBool(FID(TRNS), m_d.m_transparent);
    bw.WriteString(FID(IMAG), m_d.m_szImage);
    bw.WriteString(FID(SOUN), m_d.m_szSound);
-   bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
+   bw.WriteWideString(FID(NAME), m_wzName);
    bw.WriteFloat(FID(WDTH), m_d.m_width);
    bw.WriteFloat(FID(HIGH), m_d.m_height);
    bw.WriteFloat(FID(RCNT), (float)m_d.m_reelcount);
@@ -522,7 +519,7 @@ bool DispReel::LoadToken(const int id, BiffReader * const pbr)
    case FID(CLRB): pbr->GetInt(&m_d.m_backcolor); break;
    case FID(TMON): pbr->GetBool(&m_d.m_tdr.m_TimerEnabled); break;
    case FID(TMIN): pbr->GetInt(&m_d.m_tdr.m_TimerInterval); break;
-   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(NAME): pbr->GetWideString(m_wzName); break;
    case FID(TRNS): pbr->GetBool(&m_d.m_transparent); break;
    case FID(IMAG): pbr->GetString(m_d.m_szImage); break;
    case FID(RCNT):
@@ -648,7 +645,7 @@ STDMETHODIMP DispReel::put_Height(float newVal)
 STDMETHODIMP DispReel::get_X(float *pVal)
 {
    *pVal = GetX();
-   g_pvp->SetStatusBarUnitInfo("", true);
+   m_vpinball->SetStatusBarUnitInfo("", true);
 
    return S_OK;
 }
@@ -690,8 +687,8 @@ STDMETHODIMP DispReel::put_IsTransparent(VARIANT_BOOL newVal)
 
 STDMETHODIMP DispReel::get_Image(BSTR *pVal)
 {
-   OLECHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage, -1, wz, MAXNAMEBUFFER);
+   OLECHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage.c_str(), -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -700,15 +697,14 @@ STDMETHODIMP DispReel::get_Image(BSTR *pVal)
 STDMETHODIMP DispReel::put_Image(BSTR newVal)
 {
    char szImage[MAXTOKEN];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, NULL, NULL);
    const Texture * const tex = m_ptable->GetImage(szImage);
    if (tex && tex->IsHDR())
    {
       ShowError("Cannot use a HDR image (.exr/.hdr) here");
       return E_FAIL;
    }
-
-   strcpy_s(m_d.m_szImage, szImage);
+   m_d.m_szImage = szImage;
 
    return S_OK;
 }
@@ -728,8 +724,8 @@ STDMETHODIMP DispReel::put_Spacing(float newVal)
 
 STDMETHODIMP DispReel::get_Sound(BSTR *pVal)
 {
-   OLECHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSound, -1, wz, MAXNAMEBUFFER);
+   OLECHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSound.c_str(), -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -737,7 +733,9 @@ STDMETHODIMP DispReel::get_Sound(BSTR *pVal)
 
 STDMETHODIMP DispReel::put_Sound(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSound, MAXNAMEBUFFER, NULL, NULL);
+   char buf[MAXTOKEN];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXTOKEN, NULL, NULL);
+   m_d.m_szSound = buf;
 
    return S_OK;
 }

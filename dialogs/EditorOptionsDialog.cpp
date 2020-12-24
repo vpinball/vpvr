@@ -29,7 +29,7 @@ BOOL EditorOptionsDialog::OnInitDialog()
 {
     m_toolTip = new CToolTip();
 
-    const HWND toolTipHwnd = ::CreateWindowEx(NULL, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_ALWAYSTIP | TTS_BALLOON, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, GetHwnd(), NULL, g_hinst, NULL);
+    const HWND toolTipHwnd = ::CreateWindowEx(NULL, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_ALWAYSTIP | TTS_BALLOON, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, GetHwnd(), NULL, g_pvp->theInstance, NULL);
     if (toolTipHwnd)
     {
         SendMessage(toolTipHwnd, TTM_SETMAXTIPWIDTH, 0, 180);
@@ -86,10 +86,9 @@ BOOL EditorOptionsDialog::OnInitDialog()
     SendDlgItemMessage(IDC_START_VP_FILE_DIALOG, BM_SETCHECK, startVPfileDialog ? BST_CHECKED : BST_UNCHECKED, 0);
 
     const float throwBallMass = LoadValueFloatWithDefault("Editor", "ThrowBallMass", 1.0f);
-    char textBuf[256] = { 0 };
+    string textBuf;
     f2sz(throwBallMass, textBuf);
-    const CString textStr(textBuf);
-    SetDlgItemText(IDC_THROW_BALLS_MASS_EDIT, textStr);
+    SetDlgItemText(IDC_THROW_BALLS_MASS_EDIT, textBuf.c_str());
 
     const int units = LoadValueIntWithDefault("Editor", "Units", 0);
     SendMessage(GetDlgItem(IDC_UNIT_LIST_COMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"VPUnits");
@@ -128,7 +127,7 @@ BOOL EditorOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
            if (m_colorDialog.DoModal(GetHwnd()) == IDOK)
            {
                g_pvp->m_elemSelectColor = m_colorDialog.GetColor();
-               m_colorButton2.SetColor(g_pvp->m_elemSelectColor);
+               m_colorButton3.SetColor(g_pvp->m_elemSelectColor);
            }
            break;
        }
@@ -141,7 +140,7 @@ BOOL EditorOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
            if (m_colorDialog.DoModal(GetHwnd()) == IDOK)
            {
                g_pvp->m_elemSelectLockedColor = m_colorDialog.GetColor();
-               m_colorButton2.SetColor(g_pvp->m_elemSelectLockedColor);
+               m_colorButton4.SetColor(g_pvp->m_elemSelectLockedColor);
            }
            break;
        }
@@ -154,7 +153,7 @@ BOOL EditorOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
            if (m_colorDialog.DoModal(GetHwnd()) == IDOK)
            {
                g_pvp->m_fillColor = m_colorDialog.GetColor();
-               m_colorButton2.SetColor(g_pvp->m_fillColor);
+               m_colorButton5.SetColor(g_pvp->m_fillColor);
            }
            break;
        }
@@ -167,7 +166,7 @@ BOOL EditorOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
            if (m_colorDialog.DoModal(GetHwnd()) == IDOK)
            {
                g_pvp->m_backgroundColor = m_colorDialog.GetColor();
-               m_colorButton2.SetColor(g_pvp->m_backgroundColor);
+               m_colorButton6.SetColor(g_pvp->m_backgroundColor);
            }
            break;
        }
@@ -290,10 +289,7 @@ void EditorOptionsDialog::OnOK()
     const int ballSize = GetDlgItemInt(IDC_THROW_BALLS_SIZE_EDIT, nothing, FALSE);
     SaveValueInt("Editor", "ThrowBallSize", ballSize);
 
-    CString textStr;
-    float fv;
-    textStr = GetDlgItemText(IDC_THROW_BALLS_MASS_EDIT);
-    fv = sz2f(textStr.c_str());
+    const float fv = sz2f(GetDlgItemText(IDC_THROW_BALLS_MASS_EDIT).c_str());
     SaveValueFloat("Editor", "ThrowBallMass", fv);
 
     checked = (SendDlgItemMessage(IDC_DEFAULT_GROUP_COLLECTION_CHECK, BM_GETCHECK, 0, 0) == BST_CHECKED);

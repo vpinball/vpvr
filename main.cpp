@@ -177,30 +177,34 @@ PCHAR* CommandLineToArgvA(PCHAR CmdLine, int* _argc)
 
 std::map<ItemTypeEnum, EditableInfo> EditableRegistry::m_map;
 int disEnableTrueFullscreen = -1;
-
+bool table_played_via_command_line = false;
+int logicalNumberOfProcessors = -1;
 
 class VPApp : public CWinApp
 {
 private:
-   HINSTANCE theInstance;
    bool run;
    bool play;
    bool extractPov;
    bool file;
+   bool loadFileResult;
    bool extractScript;
-   TCHAR szTableFileName[MAXSTRING];
+   string szTableFileName;
+   VPinball m_vpinball;
 
 public:
    VPApp(HINSTANCE hInstance)
    {
-      theInstance = GetInstanceHandle();
-      SetResourceHandle(theInstance);
+      m_vpinball.theInstance = GetInstanceHandle();
+      SetResourceHandle(m_vpinball.theInstance);
    }
 
    virtual ~VPApp()
    {
       _Module.Term();
       CoUninitialize();
+      g_pvp = NULL;
+
 #ifdef _CRTDBG_MAP_ALLOC
 #ifdef DEBUG_XXX  //disable this in perference to DevPartner
       _CrtSetDumpClient(MemLeakAlert);
@@ -208,7 +212,6 @@ public:
       _CrtDumpMemoryLeaks();
 #endif
    }
-
    virtual BOOL InitInstance()
    {
 #ifdef CRASH_HANDLER
@@ -225,22 +228,27 @@ public:
       SetDisplayAutoRotationPreferences(ORIENTATION_PREFERENCE_LANDSCAPE);
 #endif
 
-      g_hinst = theInstance;
+      //!! max(2u, std::thread::hardware_concurrency()) ??
+      SYSTEM_INFO sysinfo;
+      GetSystemInfo(&sysinfo);
+      logicalNumberOfProcessors = sysinfo.dwNumberOfProcessors; //!! this ignores processor groups, so if at some point we need extreme multi threading, implement this in addition!
+
 #if _WIN32_WINNT >= 0x0400 & defined(_ATL_FREE_THREADED)
       const HRESULT hRes = CoInitializeEx(NULL, COINIT_MULTITHREADED);
 #else
       const HRESULT hRes = CoInitialize(NULL);
 #endif
       _ASSERTE(SUCCEEDED(hRes));
-      _Module.Init(ObjectMap, theInstance, &LIBID_VPinballLib);
+      _Module.Init(ObjectMap, m_vpinball.theInstance, &LIBID_VPinballLib);
 
       file = false;
       play = false;
       extractPov = false;
       run = true;
+      loadFileResult = true;
       extractScript = false;
 
-      memset(szTableFileName, 0, MAXSTRING);
+      szTableFileName.clear();
 
       // Start VP with file dialog open and then also playing that one?
       const bool stos = LoadValueBoolWithDefault("Editor", "SelectTableOnStart", true);
@@ -248,7 +256,6 @@ public:
       {
          file = true;
          play = true;
-         extractPov = false;
       }
 
       int nArgs;
@@ -260,7 +267,7 @@ public:
             || lstrcmpi(szArglist[i], _T("-Help")) == 0 || lstrcmpi(szArglist[i], _T("/Help")) == 0
             || lstrcmpi(szArglist[i], _T("-?")) == 0 || lstrcmpi(szArglist[i], _T("/?")) == 0)
          {
-            ::MessageBox(NULL, "-UnregServer  Unregister VP functions\n-RegServer  Register VP functions\n\n-DisableTrueFullscreen  Force-disable True Fullscreen setting\n\n-EnableTrueFullscreen  Force-enable True Fullscreen setting\n\n-Edit [filename]  load file into VP\n-Play [filename]  load and play file\n-Pov [filename]  load, export pov and close\n-ExtractVBS [filename]  load, export table script and close\n-c1 [customparam] .. -c9 [customparam]  custom user parameters that can be accessed in the script via GetCustomParam(X)",
+            m_vpinball.MessageBox("-UnregServer  Unregister VP functions\n-RegServer  Register VP functions\n\n-DisableTrueFullscreen  Force-disable True Fullscreen setting\n\n-EnableTrueFullscreen  Force-enable True Fullscreen setting\n\n-Edit [filename]  load file into VP\n-Play [filename]  load and play file\n-Pov [filename]  load, export pov and close\n-ExtractVBS [filename]  load, export table script and close\n-c1 [customparam] .. -c9 [customparam]  custom user parameters that can be accessed in the script via GetCustomParam(X)",
                "VPinball Usage", MB_OK);
             run = false;
             break;
@@ -316,13 +323,12 @@ public:
             customIdx++;
          }
 
-         if (useCustomParams && (i + 1<nArgs))
+         if (useCustomParams && (i + 1 < nArgs))
          {
             const size_t len = strlen(szArglist[i + 1]);
             VPinball::m_customParameters[customIdx - 1] = new WCHAR[len + 1];
 
             MultiByteToWideChar(CP_ACP, 0, szArglist[i + 1], (int)len, VPinball::m_customParameters[customIdx - 1], (int)len + 1);
-            VPinball::m_customParameters[customIdx - 1][len] = L'\0';
 
             ++i; // two params processed
 
@@ -345,37 +351,28 @@ public:
             extractScript = extractscript;
 
             // Remove leading - or /
-            char* filename;
             if ((szArglist[i + 1][0] == '-') || (szArglist[i + 1][0] == '/'))
-               filename = szArglist[i + 1] + 1;
+               szTableFileName = szArglist[i + 1] + 1;
             else
-               filename = szArglist[i + 1];
+               szTableFileName = szArglist[i + 1];
 
             // Remove " "
-            if (filename[0] == '"') {
-               strcpy_s(szTableFileName, filename + 1);
-               szTableFileName[lstrlen(szTableFileName) - 1] = '\0';
-            }
-            else
-               strcpy_s(szTableFileName, filename);
+            if (szTableFileName[0] == '"')
+               szTableFileName = szTableFileName.substr(1, szTableFileName.size() - 1);
 
             // Add current path
-            char szLoadDir[MAX_PATH];
             if (szTableFileName[1] != ':') {
-               GetCurrentDirectory(MAX_PATH, szLoadDir);
-               strcat_s(szLoadDir, "\\");
-               strcat_s(szLoadDir, szTableFileName);
-               strcpy_s(szTableFileName, szLoadDir);
+               char szLoadDir[MAXSTRING];
+               GetCurrentDirectory(MAXSTRING, szLoadDir);
+               szTableFileName = string(szLoadDir) + '\\' + szTableFileName;
             }
             else
                // Or set from table path
                if (playfile) {
-                  PathFromFilename(szTableFileName, szLoadDir);
-                  SetCurrentDirectory(szLoadDir);
+                  string dir;
+                  PathFromFilename(szTableFileName, dir);
+                  SetCurrentDirectory(dir.c_str());
                }
-
-            if (playfile || extractpov || extractscript)
-               VPinball::SetOpenMinimized();
 
             ++i; // two params processed
 
@@ -390,7 +387,7 @@ public:
 
       // load and register VP type library for COM integration
       char szFileName[MAXSTRING];
-      if (GetModuleFileName(theInstance, szFileName, MAXSTRING))
+      if (GetModuleFileName(m_vpinball.theInstance, szFileName, MAXSTRING))
       {
          ITypeLib *ptl = NULL;
          MAKE_WIDEPTR_FROMANSI(wszFileName, szFileName);
@@ -403,112 +400,102 @@ public:
                // if failed, register only for current user
                hr = RegisterTypeLibForUser(ptl, wszFileName, NULL);
                if (!SUCCEEDED(hr))
-                  MessageBox(0, "Could not register type library. Try running Visual Pinball as administrator.", "Error", MB_ICONWARNING);
+                  m_vpinball.MessageBox("Could not register type library. Try running Visual Pinball as administrator.", "Error", MB_ICONWARNING);
             }
             ptl->Release();
          }
          else
-            MessageBox(0, "Could not load type library.", "Error", MB_ICONSTOP);
+            m_vpinball.MessageBox("Could not load type library.", "Error", MB_ICONSTOP);
       }
 
+      InitVPX();
       //SET_CRT_DEBUG_FIELD( _CRTDBG_LEAK_CHECK_DF );
       return TRUE;
+   }
+
+   void InitVPX()
+   {
+#if _WIN32_WINNT >= 0x0400 & defined(_ATL_FREE_THREADED)
+      const HRESULT hRes = _Module.RegisterClassObjects(CLSCTX_LOCAL_SERVER,
+         REGCLS_MULTIPLEUSE | REGCLS_SUSPENDED);
+      _ASSERTE(SUCCEEDED(hRes));
+      hRes = CoResumeClassObjects();
+#else
+      const HRESULT hRes = _Module.RegisterClassObjects(CLSCTX_LOCAL_SERVER,
+         REGCLS_MULTIPLEUSE);
+#endif
+      _ASSERTE(SUCCEEDED(hRes));
+
+      INITCOMMONCONTROLSEX iccex;
+      iccex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+      iccex.dwICC = ICC_COOL_CLASSES;
+      InitCommonControlsEx(&iccex);
+
+      {
+         EditableRegistry::RegisterEditable<Bumper>();
+         EditableRegistry::RegisterEditable<Decal>();
+         EditableRegistry::RegisterEditable<DispReel>();
+         EditableRegistry::RegisterEditable<Flasher>();
+         EditableRegistry::RegisterEditable<Flipper>();
+         EditableRegistry::RegisterEditable<Gate>();
+         EditableRegistry::RegisterEditable<Kicker>();
+         EditableRegistry::RegisterEditable<Light>();
+         EditableRegistry::RegisterEditable<LightSeq>();
+         EditableRegistry::RegisterEditable<Plunger>();
+         EditableRegistry::RegisterEditable<Primitive>();
+         EditableRegistry::RegisterEditable<Ramp>();
+         EditableRegistry::RegisterEditable<Rubber>();
+         EditableRegistry::RegisterEditable<Spinner>();
+         EditableRegistry::RegisterEditable<Surface>();
+         EditableRegistry::RegisterEditable<Textbox>();
+         EditableRegistry::RegisterEditable<Timer>();
+         EditableRegistry::RegisterEditable<Trigger>();
+         EditableRegistry::RegisterEditable<HitTarget>();
+      }
+
+      m_vpinball.AddRef();
+      g_pvp = &m_vpinball;
+      m_vpinball.Create(NULL);
+      g_haccel = LoadAccelerators(m_vpinball.theInstance, MAKEINTRESOURCE(IDR_VPACCEL));
+
+      if (file)
+      {
+         if (!szTableFileName.empty())
+         {
+            m_vpinball.LoadFileName(szTableFileName, !play);
+            table_played_via_command_line = play;
+         }
+         else
+            loadFileResult = m_vpinball.LoadFile();
+
+         if (extractScript && loadFileResult)
+         {
+            string szScriptFilename = szTableFileName;
+            if (ReplaceExtensionFromFilename(szScriptFilename, "vbs"))
+               m_vpinball.m_ptableActive->m_pcv->SaveToFile(szScriptFilename);
+            m_vpinball.Quit();
+         }
+         if (extractPov && loadFileResult)
+         {
+            string szPOVFilename = szTableFileName;
+            if (ReplaceExtensionFromFilename(szPOVFilename, "pov"))
+               m_vpinball.m_ptableActive->ExportBackdropPOV(szPOVFilename);
+            m_vpinball.Quit();
+         }
+      }
    }
 
    virtual int Run()
    {
       if (run)
       {
-#if _WIN32_WINNT >= 0x0400 & defined(_ATL_FREE_THREADED)
-         const HRESULT hRes = _Module.RegisterClassObjects(CLSCTX_LOCAL_SERVER,
-            REGCLS_MULTIPLEUSE | REGCLS_SUSPENDED);
-         _ASSERTE(SUCCEEDED(hRes));
-         hRes = CoResumeClassObjects();
-#else
-         const HRESULT hRes = _Module.RegisterClassObjects(CLSCTX_LOCAL_SERVER,
-            REGCLS_MULTIPLEUSE);
-#endif
-         _ASSERTE(SUCCEEDED(hRes));
-
-         INITCOMMONCONTROLSEX iccex;
-         iccex.dwSize = sizeof(INITCOMMONCONTROLSEX);
-         iccex.dwICC = ICC_COOL_CLASSES;
-         InitCommonControlsEx(&iccex);
-
-         {
-            EditableRegistry::RegisterEditable<Bumper>();
-            EditableRegistry::RegisterEditable<Decal>();
-            EditableRegistry::RegisterEditable<DispReel>();
-            EditableRegistry::RegisterEditable<Flasher>();
-            EditableRegistry::RegisterEditable<Flipper>();
-            EditableRegistry::RegisterEditable<Gate>();
-            EditableRegistry::RegisterEditable<Kicker>();
-            EditableRegistry::RegisterEditable<Light>();
-            EditableRegistry::RegisterEditable<LightSeq>();
-            EditableRegistry::RegisterEditable<Plunger>();
-            EditableRegistry::RegisterEditable<Primitive>();
-            EditableRegistry::RegisterEditable<Ramp>();
-            EditableRegistry::RegisterEditable<Rubber>();
-            EditableRegistry::RegisterEditable<Spinner>();
-            EditableRegistry::RegisterEditable<Surface>();
-            EditableRegistry::RegisterEditable<Textbox>();
-            EditableRegistry::RegisterEditable<Timer>();
-            EditableRegistry::RegisterEditable<Trigger>();
-            EditableRegistry::RegisterEditable<HitTarget>();
-         }
-
-         g_pvp = new VPinball();
-         g_pvp->AddRef();
-         g_pvp->Create(NULL);
-         g_haccel = LoadAccelerators(g_hinst, MAKEINTRESOURCE(IDR_VPACCEL));
-
-         if (file)
-         {
-            bool lf = true;
-            if (szTableFileName[0] != '\0')
-               g_pvp->LoadFileName(szTableFileName);
-            else
-               lf = g_pvp->LoadFile();
-
-            if (extractScript && lf)
-            {
-               TCHAR szScriptFilename[MAX_PATH];
-               strcpy_s(szScriptFilename, szTableFileName);
-               TCHAR *pos = strrchr(szScriptFilename, '.');
-               if (pos)
-               {
-                  *pos = 0;
-                  strcat_s(szScriptFilename, ".vbs");
-                  g_pvp->m_ptableActive->m_pcv->SaveToFile(szScriptFilename);
-               }
-               g_pvp->Quit();
-            }
-            if (extractPov && lf)
-            {
-               TCHAR szPOVFilename[MAX_PATH];
-               strcpy_s(szPOVFilename, szTableFileName);
-               TCHAR *pos = strrchr(szPOVFilename, '.');
-               if (pos)
-               {
-                  *pos = 0;
-                  strcat_s(szPOVFilename, ".pov");
-                  g_pvp->m_ptableActive->ExportBackdropPOV(szPOVFilename);
-               }
-               g_pvp->Quit();
-            }
-
-            if (play && lf)
-               g_pvp->DoPlay(false);
-         }
+         if (play && loadFileResult)
+            m_vpinball.DoPlay(false);
 
          // VBA APC handles message loop (bastards)
-         g_pvp->MainMsgLoop();
+         m_vpinball.MainMsgLoop();
 
-         g_pvp->Release();
-
-         // delete g_pvp;
-         // Above causes frequent crashing!  COM objects should self destruct when they reach refcount 0?!
-         g_pvp = NULL;
+         m_vpinball.Release();
 
          DestroyAcceleratorTable(g_haccel);
 

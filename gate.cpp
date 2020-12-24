@@ -18,8 +18,7 @@ Gate::Gate()
    m_wireIndexBuffer = NULL;
    m_wireVertexBuffer = NULL;
    m_vertexbuffer_angle = FLT_MAX;
-   memset(m_d.m_szMaterial, 0, MAXNAMEBUFFER);
-   memset(m_d.m_szSurface, 0, MAXTOKEN);
+   memset(m_d.m_szSurface, 0, sizeof(m_d.m_szSurface));
    m_d.m_type = GateWireW;
    m_vertices = 0;
    m_indices = 0;
@@ -29,36 +28,44 @@ Gate::Gate()
 
 void Gate::SetGateType(GateType type)
 {
-    if (m_d.m_type == GateWireW)
-    {
-        m_vertices = gateWire;
-        m_indices = gateWireIndices;
-        m_numIndices = gateWireNumIndices;
-        m_numVertices = gateWireNumVertices;
-    }
-    else if (m_d.m_type == GateWireRectangle)
-    {
-        m_vertices = gateWireRectangleMesh;
-        m_indices = gateWireRectangleIndices;
-        m_numIndices = gateWireRectangleNumIndices;
-        m_numVertices = gateWireRectangleNumVertices;
-    }
-    else if (m_d.m_type == GateLongPlate)
-    {
-        m_vertices = gateLongPlateMesh;
-        m_indices = gateLongPlateIndices;
-        m_numIndices = gateLongPlateNumIndices;
-        m_numVertices = gateLongPlateVertices;
-    }
-    else if (m_d.m_type == GatePlate)
-    {
-        m_vertices = gatePlateMesh;
-        m_indices = gatePlateIndices;
-        m_numIndices = gatePlateNumIndices;
-        m_numVertices = gatePlateNumVertices;
-    }
-    else
-       ShowError("Unknown Gate type");
+   switch (m_d.m_type)
+   {
+   case GateWireW:
+   {
+      m_vertices = gateWire;
+      m_indices = gateWireIndices;
+      m_numIndices = gateWireNumIndices;
+      m_numVertices = gateWireNumVertices;
+      break;
+   }
+   case GateWireRectangle:
+   {
+      m_vertices = gateWireRectangleMesh;
+      m_indices = gateWireRectangleIndices;
+      m_numIndices = gateWireRectangleNumIndices;
+      m_numVertices = gateWireRectangleNumVertices;
+      break;
+   }
+   case GateLongPlate:
+   {
+      m_vertices = gateLongPlateMesh;
+      m_indices = gateLongPlateIndices;
+      m_numIndices = gateLongPlateNumIndices;
+      m_numVertices = gateLongPlateVertices;
+      break;
+   }
+   case GatePlate:
+   {
+      m_vertices = gatePlateMesh;
+      m_indices = gatePlateIndices;
+      m_numIndices = gatePlateNumIndices;
+      m_numVertices = gatePlateNumVertices;
+      break;
+   }
+   default:
+      ShowError("Unknown Gate type");
+      break;
+   }
 }
 
 Gate::~Gate()
@@ -85,14 +92,11 @@ Gate::~Gate()
    }
 }
 
-void Gate::UpdateUnitsInfo()
+void Gate::UpdateStatusBarInfo()
 {
-   if (g_pplayer)
-      return;
-
    char tbuf[128];
-   sprintf_s(tbuf, "Length: %.3f | Height: %.3f", g_pvp->ConvertToUnit(m_d.m_length), g_pvp->ConvertToUnit(m_d.m_height));
-   g_pvp->SetStatusBarUnitInfo(tbuf, true);
+   sprintf_s(tbuf, "Length: %.3f | Height: %.3f", m_vpinball->ConvertToUnit(m_d.m_length), m_vpinball->ConvertToUnit(m_d.m_height));
+   m_vpinball->SetStatusBarUnitInfo(tbuf, true);
 }
 
 HRESULT Gate::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
@@ -123,7 +127,7 @@ void Gate::SetDefaults(bool fromMouseClick)
    m_d.m_tdr.m_TimerEnabled = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Gate", "TimerEnabled", false) : false;
    m_d.m_tdr.m_TimerInterval = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Gate", "TimerInterval", 100) : 100;
 
-   const HRESULT hr = LoadValueString("DefaultProps\\Gate", "Surface", &m_d.m_szSurface, MAXTOKEN);
+   const HRESULT hr = LoadValueString("DefaultProps\\Gate", "Surface", m_d.m_szSurface, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
       m_d.m_szSurface[0] = 0;
 
@@ -153,6 +157,48 @@ void Gate::WriteRegDefaults()
    SaveValueBool("DefaultProps\\Gate", "TwoWay", m_d.m_twoWay);
    SaveValueBool("DefaultProps\\Gate", "ReflectionEnabled", m_d.m_reflectionEnabled);
    SaveValueInt("DefaultProps\\Gate", "GateType", m_d.m_type);
+}
+
+float Gate::GetOpenAngle() const
+{
+   return RADTOANG(g_pplayer ? m_phitgate->m_gateMover.m_angleMax : m_d.m_angleMax);	// player active value
+}
+
+void Gate::SetOpenAngle(const float angle)
+{
+   float newVal = ANGTORAD(angle);
+   if (g_pplayer)
+   {
+      if (newVal > m_d.m_angleMax) newVal = m_d.m_angleMax;
+      else if (newVal < m_d.m_angleMin) newVal = m_d.m_angleMin;
+
+      if (m_phitgate->m_gateMover.m_angleMin < newVal)  // min is smaller
+         m_phitgate->m_gateMover.m_angleMax = newVal;  // then set new maximum
+      else m_phitgate->m_gateMover.m_angleMin = newVal; // else set new min
+   }
+   else
+      m_d.m_angleMax = newVal;
+}
+
+float Gate::GetCloseAngle() const
+{
+   return RADTOANG(g_pplayer ? m_phitgate->m_gateMover.m_angleMin : m_d.m_angleMin);
+}
+
+void Gate::SetCloseAngle(const float angle)
+{
+   float newVal = ANGTORAD(angle);
+   if (g_pplayer)
+   {
+      if (newVal > m_d.m_angleMax) newVal = m_d.m_angleMax;
+      else if (newVal < m_d.m_angleMin) newVal = m_d.m_angleMin;
+
+      if (m_phitgate->m_gateMover.m_angleMax > newVal)  // max is bigger
+         m_phitgate->m_gateMover.m_angleMin = newVal;  // then set new minumum
+      else m_phitgate->m_gateMover.m_angleMax = newVal; // else set new max
+   }
+   else
+      m_d.m_angleMin = newVal;
 }
 
 void Gate::UIRenderPass1(Sur * const psur)
@@ -442,23 +488,20 @@ void Gate::RenderDynamic()
 
 void Gate::ExportMesh(FILE *f)
 {
-   char name[MAX_PATH];
-   char subName[MAX_PATH];
-   Vertex3D_NoTex2 *buf;
+   char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
+   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
 
-   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, MAX_PATH, NULL, NULL);
    m_baseHeight = m_ptable->GetSurfaceHeight(m_d.m_szSurface, m_d.m_vCenter.x, m_d.m_vCenter.y)*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
 
    if (m_d.m_showBracket)
    {
-      buf = new Vertex3D_NoTex2[gateBracketNumVertices];
-      strcpy_s(subName, name);
-      strcat_s(subName, "Bracket");
+      const string subName = name + string("Bracket");
       WaveFrontObj_WriteObjectName(f, subName);
+      Vertex3D_NoTex2* const buf = new Vertex3D_NoTex2[gateBracketNumVertices];
       GenerateBracketMesh(buf);
       WaveFrontObj_WriteVertexInfo(f, buf, gateBracketNumVertices);
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
-      WaveFrontObj_WriteMaterial(m_d.m_szMaterial, NULL, mat);
+      WaveFrontObj_WriteMaterial(m_d.m_szMaterial, string(), mat);
       WaveFrontObj_UseTexture(f, m_d.m_szMaterial);
       WaveFrontObj_WriteFaceInfoList(f, gateBracketIndices, gateBracketNumIndices);
       WaveFrontObj_UpdateFaceOffset(gateBracketNumVertices);
@@ -467,14 +510,13 @@ void Gate::ExportMesh(FILE *f)
 
    SetGateType(m_d.m_type);
 
-   buf = new Vertex3D_NoTex2[m_numVertices];
-   strcpy_s(subName, name);
-   strcat_s(subName, "Wire");
+   const string subName = name + string("Wire");
    WaveFrontObj_WriteObjectName(f, subName);
+   Vertex3D_NoTex2* const buf = new Vertex3D_NoTex2[m_numVertices];
    GenerateWireMesh(buf);
    WaveFrontObj_WriteVertexInfo(f, buf, m_numVertices);
    const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
-   WaveFrontObj_WriteMaterial(m_d.m_szMaterial, NULL, mat);
+   WaveFrontObj_WriteMaterial(m_d.m_szMaterial, string(), mat);
    WaveFrontObj_UseTexture(f, m_d.m_szMaterial);
    WaveFrontObj_WriteFaceInfoList(f, m_indices, m_numIndices);
    WaveFrontObj_UpdateFaceOffset(m_numVertices);
@@ -566,7 +608,7 @@ void Gate::RenderStatic() // only the support structures are rendered here
 
 void Gate::SetObjectPos()
 {
-   g_pvp->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
+   m_vpinball->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
 }
 
 void Gate::MoveOffset(const float dx, const float dy)
@@ -606,7 +648,7 @@ HRESULT Gate::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupFo
    bw.WriteFloat(FID(AFRC), m_d.m_damping);
    bw.WriteFloat(FID(GGFC), m_d.m_gravityfactor);
    bw.WriteBool(FID(GVSB), m_d.m_visible);
-   bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
+   bw.WriteWideString(FID(NAME), m_wzName);
    bw.WriteBool(FID(TWWA), m_d.m_twoWay);
    bw.WriteBool(FID(REEN), m_d.m_reflectionEnabled);
    bw.WriteInt(FID(GATY), m_d.m_type);
@@ -655,7 +697,7 @@ bool Gate::LoadToken(const int id, BiffReader * const pbr)
    case FID(REEN): pbr->GetBool(&m_d.m_reflectionEnabled); break;
    case FID(TMIN): pbr->GetInt(&m_d.m_tdr.m_TimerInterval); break;
    case FID(SURF): pbr->GetString(m_d.m_szSurface); break;
-   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(NAME): pbr->GetWideString(m_wzName); break;
    case FID(ELAS): pbr->GetFloat(&m_d.m_elasticity); break;
    case FID(GAMA): pbr->GetFloat(&m_d.m_angleMax); break;
    case FID(GAMI): pbr->GetFloat(&m_d.m_angleMin); break;
@@ -690,31 +732,24 @@ STDMETHODIMP Gate::InterfaceSupportsErrorInfo(REFIID riid)
 STDMETHODIMP Gate::get_Length(float *pVal)
 {
    *pVal = m_d.m_length;
-   UpdateUnitsInfo();
-
    return S_OK;
 }
 
 STDMETHODIMP Gate::put_Length(float newVal)
 {
    m_d.m_length = newVal;
-   UpdateUnitsInfo();
-
    return S_OK;
 }
 
 STDMETHODIMP Gate::get_Height(float *pVal)
 {
    *pVal = m_d.m_height;
-   UpdateUnitsInfo();
    return S_OK;
 }
 
 STDMETHODIMP Gate::put_Height(float newVal)
 {
    m_d.m_height = newVal;
-   UpdateUnitsInfo();
-
    return S_OK;
 }
 
@@ -762,8 +797,8 @@ STDMETHODIMP Gate::put_Y(float newVal)
 
 STDMETHODIMP Gate::get_Surface(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -771,15 +806,15 @@ STDMETHODIMP Gate::get_Surface(BSTR *pVal)
 
 STDMETHODIMP Gate::put_Surface(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXTOKEN, NULL, NULL);
 
    return S_OK;
 }
 
 STDMETHODIMP Gate::get_Material(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -787,7 +822,9 @@ STDMETHODIMP Gate::get_Material(BSTR *pVal)
 
 STDMETHODIMP Gate::put_Material(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szMaterial, MAXNAMEBUFFER, NULL, NULL);
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   m_d.m_szMaterial = buf;
 
    return S_OK;
 }
@@ -863,7 +900,7 @@ STDMETHODIMP Gate::put_ShowBracket(VARIANT_BOOL newVal)
 
 STDMETHODIMP Gate::get_CloseAngle(float *pVal)
 {
-   *pVal = RADTOANG(g_pplayer ? m_phitgate->m_gateMover.m_angleMin : m_d.m_angleMin);
+   *pVal = GetCloseAngle();
 
    return S_OK;
 }
@@ -875,27 +912,15 @@ STDMETHODIMP Gate::put_CloseAngle(float newVal)
       newVal = 0;
       ShowError("Gate is collidable! closing angles other than 0 aren't possible!");
    }
-   else newVal = ANGTORAD(newVal);
 
-   if (g_pplayer)
-   {
-      if (newVal > m_d.m_angleMax) newVal = m_d.m_angleMax;
-      else if (newVal < m_d.m_angleMin) newVal = m_d.m_angleMin;
-
-      if (m_phitgate->m_gateMover.m_angleMax > newVal)	// max is bigger
-         m_phitgate->m_gateMover.m_angleMin = newVal;	//then set new minumum
-      else m_phitgate->m_gateMover.m_angleMax = newVal;//else set new max
-   }
-   else
-      m_d.m_angleMin = newVal;
-
+   SetCloseAngle(newVal);
    return S_OK;
 }
 
 
 STDMETHODIMP Gate::get_OpenAngle(float *pVal)
 {
-   *pVal = RADTOANG((g_pplayer) ? m_phitgate->m_gateMover.m_angleMax : m_d.m_angleMax);	//player active value
+   *pVal = GetOpenAngle();
 
    return S_OK;
 }
@@ -907,20 +932,7 @@ STDMETHODIMP Gate::put_OpenAngle(float newVal)
       newVal = (float)(M_PI / 2.0);
       ShowError("Gate is collidable! open angles other than 90 aren't possible!");
    }
-   else newVal = ANGTORAD(newVal);
-
-   if (g_pplayer)
-   {
-      if (newVal > m_d.m_angleMax) newVal = m_d.m_angleMax;
-      else if (newVal < m_d.m_angleMin) newVal = m_d.m_angleMin;
-
-      if (m_phitgate->m_gateMover.m_angleMin < newVal)	// min is smaller
-         m_phitgate->m_gateMover.m_angleMax = newVal;	//then set new maximum
-      else m_phitgate->m_gateMover.m_angleMin = newVal;  //else set new min
-   }
-   else
-      m_d.m_angleMax = newVal;
-
+   SetOpenAngle(newVal);
    return S_OK;
 }
 

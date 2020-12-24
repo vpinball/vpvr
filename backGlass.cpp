@@ -256,11 +256,11 @@ void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DM
       const vec4 c = convertColor(DMDcolor, intensity);
       m_pd3dDevice->DMDShader->SetVector("vColor_Intensity", &c);
 #ifdef DMD_UPSCALE
-      const vec4 r((float)(m_dmdx * 3), (float)(m_dmdy * 3), 1.f, 0.f);
+      const vec4 r((float)(m_dmdx * 3), (float)(m_dmdy * 3), 1.f, (float)(g_pplayer->m_overall_frames % 2048));
 #else
-      const vec4 r((float)g_pplayer->m_dmdx, (float)g_pplayer->m_dmdy, 1.f, 0.f);
+      const vec4 r((float)g_pplayer->m_dmdx, (float)g_pplayer->m_dmdy, 1.f, (float)(g_pplayer->m_overall_frames % 2048));
 #endif
-      m_pd3dDevice->DMDShader->SetVector("vRes_Alpha", &r);
+      m_pd3dDevice->DMDShader->SetVector("vRes_Alpha_time", &r);
 
       // If we're capturing Freezy DMD switch to ext technique to avoid incorrect colorization
       if (captureExternalDMD())

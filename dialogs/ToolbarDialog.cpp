@@ -58,11 +58,11 @@ BOOL ToolbarDialog::OnInitDialog()
 
     m_tooltip.Create(*this);
     m_tooltip.AddTool(m_magnifyButton, _T("Zoom in/out"));
-    m_tooltip.AddTool(m_selectButton, _T("Select element"));
-    m_tooltip.AddTool(m_scriptButton, _T("Toggle script editor"));
-    m_tooltip.AddTool(m_backglassButton, _T("Toggle backglass view"));
-    m_tooltip.AddTool(m_playButton, _T("Play table"));
-    m_tooltip.AddTool(m_playCameraButton, _T("Play table in camera mode"));
+    m_tooltip.AddTool(m_selectButton, _T("Select Element"));
+    m_tooltip.AddTool(m_scriptButton, _T("Toggle Script Editor"));
+    m_tooltip.AddTool(m_backglassButton, _T("Toggle Backglass View"));
+    m_tooltip.AddTool(m_playButton, _T("Play Table"));
+    m_tooltip.AddTool(m_playCameraButton, _T("Interactive edit Table (Camera/Lights/Materials)"));
 
     m_tooltip.AddTool(m_wallButton, _T("Insert Wall"));
     m_tooltip.AddTool(m_gateButton, _T("Insert Gate"));
@@ -248,6 +248,13 @@ void ToolbarDialog::EnableButtons()
     }
     else if (g_pvp->m_backglassView)
     {
+        m_magnifyButton.EnableWindow(TRUE);
+        m_selectButton.EnableWindow(TRUE);
+        m_scriptButton.EnableWindow(TRUE);
+        m_backglassButton.EnableWindow(TRUE);
+        m_playButton.EnableWindow(TRUE);
+        m_playCameraButton.EnableWindow(TRUE);
+
         m_textboxButton.EnableWindow(TRUE);
         m_reelButton.EnableWindow(TRUE);
         m_decalButton.EnableWindow(TRUE);
@@ -300,6 +307,23 @@ void ToolbarDialog::EnableButtons()
     }
 }
 
+bool ToolbarDialog::PreTranslateMessage(MSG* msg)
+{
+   if (!IsWindow())
+      return false;
+
+   // only pre-translate mouse and keyboard input events
+   if (((msg->message >= WM_KEYFIRST && msg->message <= WM_KEYLAST) || (msg->message >= WM_MOUSEFIRST && msg->message <= WM_MOUSELAST)))
+   {
+      const int keyPressed = LOWORD(msg->wParam);
+      // only pass F1-F12 to the main VPinball class to open subdialogs from everywhere
+      if (keyPressed >= VK_F1 && keyPressed <= VK_F12 && TranslateAccelerator(g_pvp->GetHwnd(), g_haccel, msg))
+         return true;
+   }
+
+   return !!IsDialogMessage(*msg);
+}
+
 BOOL ToolbarDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
@@ -331,27 +355,21 @@ BOOL ToolbarDialog::OnCommand(WPARAM wParam, LPARAM lParam)
             if (type != eItemInvalid)
             {
                 g_pvp->m_ToolCur = (int)id;
-
-                POINT pt;
-                GetCursorPos(&pt);
-                SetCursorPos(pt.x, pt.y);
-                return FALSE;
+                return TRUE;
             }
             break;
         }
         case IDC_SELECT:
         case ID_TABLE_MAGNIFY:
         {
-            g_pvp->m_ToolCur = (int)id;
+            g_pvp->m_ToolCur = id;
             m_selectButton.SetCheck(BST_UNCHECKED);
             m_magnifyButton.SetCheck(BST_UNCHECKED);
             switch (HIWORD(wParam))
             {
                 case BN_CLICKED:
                 {
-                    if (SendDlgItemMessage(id, BM_GETCHECK, 0, 0))
-                        g_pvp->m_ToolCur = id;
-                    else
+                    if (SendDlgItemMessage(id, BM_GETCHECK, 0, 0)==BST_UNCHECKED)
                         SendDlgItemMessage(id, BM_SETCHECK, BST_CHECKED, 0);
 
                     return TRUE;

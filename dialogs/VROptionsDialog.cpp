@@ -174,7 +174,7 @@ void VROptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes, co
 BOOL VROptionsDialog::OnInitDialog()
 {
    const HWND hwndDlg = GetHwnd();
-   const HWND toolTipHwnd = CreateWindowEx(NULL, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_ALWAYSTIP | TTS_BALLOON, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hwndDlg, NULL, g_hinst, NULL);
+   const HWND toolTipHwnd = CreateWindowEx(NULL, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_ALWAYSTIP | TTS_BALLOON, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hwndDlg, NULL, g_pvp->theInstance, NULL);
    if (toolTipHwnd)
    {
       SendMessage(toolTipHwnd, TTM_SETMAXTIPWIDTH, 0, 180);
@@ -583,9 +583,9 @@ BOOL VROptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
          tmpStr.Replace(',', '.');
          char tmp[256];
          if (oldScaleValue)
-            scaleAbsolute = atof(tmpStr.c_str());
+            scaleAbsolute = (float)atof(tmpStr.c_str());
          else
-            scaleRelative = atof(tmpStr.c_str());
+            scaleRelative = (float)atof(tmpStr.c_str());
 
          sprintf_s(tmp, 256, newScaleValue ? "%0.1f" : "%0.3f", newScaleValue ? scaleAbsolute : scaleRelative);
          SetDlgItemTextA(IDC_VR_SCALE, tmp);
@@ -613,7 +613,7 @@ void VROptionsDialog::OnOK()
    CString tmpStr;
 
    tmpStr = GetDlgItemTextA(IDC_NUDGE_STRENGTH);
-   SaveValueString("PlayerVR", "NudgeStrength", tmpStr.c_str());
+   SaveValueString("PlayerVR", "NudgeStrength", tmpStr);
 
    const bool reflection = (SendMessage(GetDlgItem(IDC_GLOBAL_REFLECTION_CHECK).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
    SaveValueBool("PlayerVR", "BallReflection", reflection);
@@ -631,7 +631,7 @@ void VROptionsDialog::OnOK()
    SaveValueFloat("PlayerVR", "AAFactor", AAfactor);
 
    const size_t MSAASamplesIndex = SendMessage(GetDlgItem(IDC_MSAASLIDER).GetHwnd(), TBM_GETPOS, 0, 0);
-   const float MSAASamples = (MSAASamplesIndex < MSAASampleCount) ? MSAASamplesOpts[MSAASamplesIndex] : 1;
+   const int MSAASamples = (MSAASamplesIndex < MSAASampleCount) ? MSAASamplesOpts[MSAASamplesIndex] : 1;
    SaveValueInt("PlayerVR", "MSAASamples", MSAASamples);
 
    size_t useAO = SendMessage(GetDlgItem(IDC_DYNAMIC_AO).GetHwnd(), BM_GETCHECK, 0, 0);
@@ -660,30 +660,30 @@ void VROptionsDialog::OnOK()
    SaveValueInt("PlayerVR", "scaleToFixedWidth", scaleToFixedWidth);
 
    tmpStr = GetDlgItemTextA(IDC_VR_SCALE);
-   SaveValueString("PlayerVR", scaleToFixedWidth ? "scaleAbsolute" : "scaleRelative", tmpStr.c_str());
+   SaveValueString("PlayerVR", scaleToFixedWidth ? "scaleAbsolute" : "scaleRelative", tmpStr);
    //SaveValueFloat("PlayerVR", scaleToFixedWidth ? "scaleRelative" : "scaleAbsolute", scaleToFixedWidth ? scaleRelative : scaleAbsolute); //Also update hidden value?
 
    tmpStr = GetDlgItemTextA(IDC_NEAR_PLANE);
-   SaveValueString("PlayerVR", "nearPlane", tmpStr.c_str());
+   SaveValueString("PlayerVR", "nearPlane", tmpStr);
 
    tmpStr = GetDlgItemTextA(IDC_FAR_PLANE);
-   SaveValueString("PlayerVR", "farPlane", tmpStr.c_str());
+   SaveValueString("PlayerVR", "farPlane", tmpStr);
 
    //For compatibility keep these in Player instead of PlayerVR
    tmpStr = GetDlgItemTextA(IDC_VR_SLOPE);
-   SaveValueString("Player", "VRSlope", tmpStr.c_str());
+   SaveValueString("Player", "VRSlope", tmpStr);
 
    tmpStr = GetDlgItemTextA(IDC_3D_VR_ORIENTATION);
-   SaveValueString("Player", "VROrientation", tmpStr.c_str());
+   SaveValueString("Player", "VROrientation", tmpStr);
 
    tmpStr = GetDlgItemTextA(IDC_VR_OFFSET_X);
-   SaveValueString("Player", "VRTableX", tmpStr.c_str());
+   SaveValueString("Player", "VRTableX", tmpStr);
 
    tmpStr = GetDlgItemTextA(IDC_VR_OFFSET_Y);
-   SaveValueString("Player", "VRTableY", tmpStr.c_str());
+   SaveValueString("Player", "VRTableY", tmpStr);
 
    tmpStr = GetDlgItemTextA(IDC_VR_OFFSET_Z);
-   SaveValueString("Player", "VRTableZ", tmpStr.c_str());
+   SaveValueString("Player", "VRTableZ", tmpStr);
 
    const size_t bloomOff = SendMessage(GetDlgItem(IDC_BLOOM_OFF).GetHwnd(), BM_GETCHECK, 0, 0);
    SaveValueInt("PlayerVR", "ForceBloomOff", bloomOff);

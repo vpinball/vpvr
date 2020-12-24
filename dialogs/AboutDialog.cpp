@@ -7,7 +7,6 @@
 
 AboutDialog::AboutDialog() : CDialog(IDD_ABOUT)
 {
-   m_urlString[0] = '\0';
 }
 
 AboutDialog::~AboutDialog()
@@ -36,9 +35,9 @@ INT_PTR AboutDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
          GetDlgItem(IDC_ABOUT_VERSION).SetWindowText(versionString);
 
          {
-            std::ifstream file(string(g_pvp->m_szMyPath) + "Changelog.txt");
+            std::ifstream file(g_pvp->m_szMyPath + "Changelog.txt");
             if (!file.is_open())
-               file = std::ifstream(string(g_pvp->m_szMyPath) + "Doc\\Changelog.txt");
+               file = std::ifstream(g_pvp->m_szMyPath + "Doc\\Changelog.txt");
             std::string line;
             std::string text;
             while (std::getline(file, line))
@@ -85,7 +84,7 @@ BOOL AboutDialog::OnCommand(WPARAM wParam, LPARAM lParam)
          else
          {
             const LPCTSTR szSite = GetDlgItem(IDC_TRANSWEBSITE).GetWindowText();
-            strncpy_s(m_urlString, szSite, MAX_PATH-1);
+            m_urlString = szSite;
             /*const HRESULT hr =*/ OpenURL(m_urlString);
          }
          return TRUE;

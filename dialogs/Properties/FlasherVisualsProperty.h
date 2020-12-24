@@ -4,12 +4,12 @@
 class FlasherVisualsProperty: public BasePropertyDialog
 {
 public:
-    FlasherVisualsProperty(VectorProtected<ISelect> *pvsel);
+    FlasherVisualsProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~FlasherVisualsProperty()
     {
     }
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
@@ -17,26 +17,26 @@ protected:
     virtual INT_PTR DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 private:
-    CEdit       m_opacyitAmountEdit;
-    CEdit       m_filterAmountEdit;
-    CEdit       m_intensityEdit;
-    CEdit       m_fadeSpeedUpEdit;
-    CEdit       m_fadeSpeedDownEdit;
-    CComboBox   m_imageACombo;
-    CComboBox   m_imageBCombo;
+    ComboBox    m_imageACombo;
+    ComboBox    m_imageBCombo;
+    ComboBox    m_modeCombo;
+    ComboBox    m_filterCombo;
     HWND        m_hAdditiveBlendCheck;
     HWND        m_hUseDMDCheck;
     HWND        m_hDisplayInEditorCheck;
-    CEdit       m_heightEdit;
-    CEdit       m_rotXEdit;
-    CEdit       m_rotYEdit;
-    CEdit       m_rotZEdit;
-    CEdit       m_posXEdit;
-    CEdit       m_posYEdit;
-    CEdit       m_depthBiasEdit;
-    CEdit       m_modulateEdit;
-    CComboBox   m_modeCombo;
-    CComboBox   m_filterCombo;
+    EditBox     m_opacityAmountEdit;
+    EditBox     m_filterAmountEdit;
+    EditBox     m_intensityEdit;
+    EditBox     m_fadeSpeedUpEdit;
+    EditBox     m_fadeSpeedDownEdit;
+    EditBox     m_heightEdit;
+    EditBox     m_rotXEdit;
+    EditBox     m_rotYEdit;
+    EditBox     m_rotZEdit;
+    EditBox     m_posXEdit;
+    EditBox     m_posYEdit;
+    EditBox     m_depthBiasEdit;
+    EditBox     m_modulateEdit;
     CColorDialog m_colorDialog;
     ColorButton m_colorButton;
     vector<string> m_filterList;

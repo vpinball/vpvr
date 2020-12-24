@@ -2,23 +2,29 @@
 #include "Properties/LightStatesProperty.h"
 #include <WindowsX.h>
 
-LightStatesProperty::LightStatesProperty(VectorProtected<ISelect> *pvsel) : BasePropertyDialog(IDD_PROPLIGHT_STATE, pvsel)
+LightStatesProperty::LightStatesProperty(const VectorProtected<ISelect> *pvsel) : BasePropertyDialog(IDD_PROPLIGHT_STATE, pvsel)
 {
     m_stateList.push_back("Off");
     m_stateList.push_back("On");
     m_stateList.push_back("Blinking");
+    m_blinkPatternEdit.SetDialog(this);
+    m_blinkIntervalEdit.SetDialog(this);
+    m_stateCombo.SetDialog(this);
 }
 
-void LightStatesProperty::UpdateVisuals()
+void LightStatesProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
     for (int i = 0; i < m_pvsel->Size(); i++)
     {
         if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemLight))
             continue;
         Light * const light = (Light *)m_pvsel->ElementAt(i);
-        PropertyDialog::UpdateComboBox(m_stateList, m_stateCombo, m_stateList[(int)light->m_d.m_state].c_str());
-        m_blinkPatternEdit.SetWindowText(light->m_rgblinkpattern);
-        PropertyDialog::SetIntTextbox(m_blinkIntervalEdit, light->m_blinkinterval);
+        if (dispid == DISPID_Light_State || dispid == -1)
+            PropertyDialog::UpdateComboBox(m_stateList, m_stateCombo, m_stateList[(int)light->getLightState()]);
+        if (dispid == IDC_BLINK_PATTERN_EDIT || dispid == -1)
+            m_blinkPatternEdit.SetWindowText(light->m_rgblinkpattern);
+        if (dispid == DISPID_Light_BlinkInterval || dispid == -1)
+            PropertyDialog::SetIntTextbox(m_blinkIntervalEdit, light->m_blinkinterval);
         //only show the first element on multi-select
         break;
     }
@@ -34,35 +40,34 @@ void LightStatesProperty::UpdateProperties(const int dispid)
         switch (dispid)
         {
             case DISPID_Light_State:
-                PropertyDialog::StartUndo(light);
-                light->m_d.m_state = (LightState)(PropertyDialog::GetComboBoxIndex(m_stateCombo, m_stateList));
-                PropertyDialog::EndUndo(light);
+                CHECK_UPDATE_COMBO_VALUE_SETTER(light->setLightState, light->getLightState, (LightState)(PropertyDialog::GetComboBoxIndex(m_stateCombo, m_stateList)), light);
                 break;
             case IDC_BLINK_PATTERN_EDIT:
             {
-                PropertyDialog::StartUndo(light);
-                CString pattern = m_blinkPatternEdit.GetWindowText();
-                strncpy_s(light->m_rgblinkpattern, 32, pattern, pattern.GetLength());
-                PropertyDialog::EndUndo(light);
+                const CString pattern = m_blinkPatternEdit.GetWindowText();
+                if (pattern != CString(light->m_rgblinkpattern))
+                {
+                    PropertyDialog::StartUndo(light);
+                    strncpy_s(light->m_rgblinkpattern, pattern.c_str(), sizeof(light->m_rgblinkpattern)-1);
+                    PropertyDialog::EndUndo(light);
+                }
                 break;
             }
             case DISPID_Light_BlinkInterval:
-                PropertyDialog::StartUndo(light);
-                light->m_blinkinterval = PropertyDialog::GetIntTextbox(m_blinkIntervalEdit);
-                PropertyDialog::EndUndo(light);
+                CHECK_UPDATE_ITEM(light->m_blinkinterval, PropertyDialog::GetIntTextbox(m_blinkIntervalEdit), light);
                 break;
             default:
                 break;
         }
     }
-    UpdateVisuals();
+    UpdateVisuals(dispid);
 }
 
 BOOL LightStatesProperty::OnInitDialog()
 {
-    AttachItem(DISPID_Light_State, m_stateCombo);
-    AttachItem(IDC_BLINK_PATTERN_EDIT, m_blinkPatternEdit);
-    AttachItem(DISPID_Light_BlinkInterval, m_blinkIntervalEdit);
+    m_stateCombo.AttachItem(DISPID_Light_State);
+    m_blinkPatternEdit.AttachItem(IDC_BLINK_PATTERN_EDIT);
+    m_blinkIntervalEdit.AttachItem(DISPID_Light_BlinkInterval);
     UpdateVisuals();
     return TRUE;
 }

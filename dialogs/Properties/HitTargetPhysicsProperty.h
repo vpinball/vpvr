@@ -4,24 +4,24 @@
 class HitTargetPhysicsProperty: public BasePropertyDialog
 {
 public:
-    HitTargetPhysicsProperty(VectorProtected<ISelect> *pvsel);
+    HitTargetPhysicsProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~HitTargetPhysicsProperty()
     {
     }
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
     virtual BOOL OnInitDialog();
 
 private:
-    CEdit       m_hitThresholdEdit;
-    CComboBox   m_physicsMaterialCombo;
-    CEdit       m_elasticityEdit;
-    CEdit       m_elasticityFalloffEdit;
-    CEdit       m_frictionEdit;
-    CEdit       m_scatterAngleEdit;
+    ComboBox    m_physicsMaterialCombo;
+    EditBox     m_hitThresholdEdit;
+    EditBox     m_elasticityEdit;
+    EditBox     m_elasticityFalloffEdit;
+    EditBox     m_frictionEdit;
+    EditBox     m_scatterAngleEdit;
     HWND        m_hLegacyModeCheck;
     HWND        m_hIsDroppedCheck;
 };

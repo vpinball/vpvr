@@ -47,15 +47,15 @@ public:
    int IDC_Font_code;
 
 private:
-   const char* szControlName; // unused
-   const char *szRegName;
+   string szControlName; //!! unused
+   string szRegName;
    bool m_highlight;
 
 public:
    CVPrefrence();
    CVPrefrence* FillCVPreference(
-      const char* szCtrlNameIn, const COLORREF crTextColor,
-      const bool bDisplay, const char* szRegistryName,
+      const string& szCtrlNameIn, const COLORREF crTextColor,
+      const bool bDisplay, const string& szRegistryName,
       const int szScintillaKeyword, const int IDC_ChkBox,
       const int IDC_ColorBut, const int IDC_Font);
    ~CVPrefrence();

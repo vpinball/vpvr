@@ -71,12 +71,10 @@ static void NormalizeNormals()
 }
 #endif
 
-bool WaveFrontObjLoadMaterial(const char *filename, Material * const mat)
+bool WaveFrontObj_LoadMaterial(const string& filename, Material * const mat)
 {
    FILE *f;
-
-   fopen_s(&f, filename, "r");
-   if (!f)
+   if ((fopen_s(&f, filename.c_str(), "r") != 0) || !f)
       return false;
 
    while (1)
@@ -90,13 +88,15 @@ bool WaveFrontObjLoadMaterial(const char *filename, Material * const mat)
       }
       if (strcmp(lineHeader, "newmtl") == 0)
       {
-         fscanf_s(f, "%s\n", mat->m_szName, MAXNAMEBUFFER);
+         char buf[MAXSTRING];
+         fscanf_s(f, "%s\n", buf, MAXSTRING);
+         mat->m_szName = buf;
       }
       else if (strcmp(lineHeader, "Ns") == 0)
       {
          float tmp;
          fscanf_s(f, "%f\n", &tmp);
-         const int d = (int)(tmp*100.f);
+         const int d = (int)(tmp*100.f + 0.5f);
          tmp = d / 100.0f;
          // normally a wavefront material specular exponent ranges from 0..1000.
          // but our shininess calculation differs from the way how e.g. Blender is calculating the specular exponent
@@ -149,11 +149,10 @@ bool WaveFrontObjLoadMaterial(const char *filename, Material * const mat)
    return true;
 }
 
-bool WaveFrontObj_Load(const char *filename, const bool flipTv, const bool convertToLeftHanded)
+bool WaveFrontObj_Load(const string& filename, const bool flipTv, const bool convertToLeftHanded)
 {
    FILE *f;
-   fopen_s(&f, filename, "r");
-   if (!f)
+   if ((fopen_s(&f, filename.c_str(), "r") != 0) || !f)
       return false;
 
    tmpVerts.clear();
@@ -289,7 +288,7 @@ bool WaveFrontObj_Load(const char *filename, const bool flipTv, const bool conve
       if (idx == tmpCombined.end())
       {
          verts.push_back(tmp);
-         tmpCombined.insert(std::pair<const Vertex3D_NoTex2*, const unsigned int>(&verts.back(), (unsigned int)(verts.size() - 1)));
+         tmpCombined.emplace(std::pair<const Vertex3D_NoTex2*, const unsigned int>(&verts.back(), (unsigned int)(verts.size() - 1)));
          indices.push_back((unsigned int)(verts.size() - 1));
       }
       else
@@ -307,7 +306,7 @@ bool WaveFrontObj_Load(const char *filename, const bool flipTv, const bool conve
       if (idx == tmpCombined.end())
       {
          verts.push_back(tmp);
-         tmpCombined.insert(std::pair<const Vertex3D_NoTex2*, const unsigned int>(&verts.back(), (unsigned int)(verts.size() - 1)));
+         tmpCombined.emplace(std::pair<const Vertex3D_NoTex2*, const unsigned int>(&verts.back(), (unsigned int)(verts.size() - 1)));
          indices.push_back((unsigned int)(verts.size() - 1));
       }
       else
@@ -325,7 +324,7 @@ bool WaveFrontObj_Load(const char *filename, const bool flipTv, const bool conve
       if (idx == tmpCombined.end())
       {
          verts.push_back(tmp);
-         tmpCombined.insert(std::pair<const Vertex3D_NoTex2*, const unsigned int>(&verts.back(), (unsigned int)(verts.size() - 1)));
+         tmpCombined.emplace(std::pair<const Vertex3D_NoTex2*, const unsigned int>(&verts.back(), (unsigned int)(verts.size() - 1)));
          indices.push_back((unsigned int)(verts.size() - 1));
       }
       else
@@ -363,17 +362,10 @@ void WaveFrontObj_GetIndices(std::vector<unsigned int>& idx) // clears temporary
    indices.clear();
 }
 
-FILE* WaveFrontObj_ExportStart(const char *filename)
+FILE* WaveFrontObj_ExportStart(const string& filename)
 {
-   FILE *f;
-   char matName[MAX_PATH];
-   char nameOnly[MAX_PATH] = { 0 };
-   int len = lstrlen(filename);
+   const int len = min((int)filename.length(), MAX_PATH - 1);
    int i;
-
-   if (len > MAX_PATH)
-      len = MAX_PATH - 1;
-
    for (i = len; i >= 0; i--)
    {
       if (filename[i] == '.')
@@ -382,12 +374,13 @@ FILE* WaveFrontObj_ExportStart(const char *filename)
          break;
       }
    }
-   strcpy_s(matName, filename);
+   char matName[MAX_PATH];
+   strncpy_s(matName, filename.c_str(), sizeof(matName) - 1);
    if (i < len)
    {
-      memcpy(matName, filename, i);
+      memcpy(matName, filename.c_str(), i);
       matName[i] = 0;
-      strcat_s(matName, "mtl");
+      strncat_s(matName, "mtl", sizeof(matName) - strnlen_s(matName, sizeof(matName)) - 1);
    }
 
    for (i = len; i >= 0; i--)
@@ -398,14 +391,14 @@ FILE* WaveFrontObj_ExportStart(const char *filename)
          break;
       }
    }
+   char nameOnly[MAX_PATH] = { 0 };
    memcpy(nameOnly, matName + i, len - i);
-   fopen_s(&matFile, matName, "wt");
-   if (!matFile)
+   if ((fopen_s(&matFile, matName, "wt") != 0) || !matFile)
       return 0;
    fprintf_s(matFile, "# Visual Pinball table mat file\n");
 
-   fopen_s(&f, filename, "wt");
-   if (!f)
+   FILE *f;
+   if ((fopen_s(&f, filename.c_str(), "wt") != 0) || !f)
       return 0;
    faceIndexOffset = 0;
    fprintf_s(f, "# Visual Pinball table OBJ file\n");
@@ -419,10 +412,10 @@ void WaveFrontObj_ExportEnd(FILE *f)
    fclose(matFile);
 }
 
-void WaveFrontObj_WriteMaterial(const char *texelName, const char *texelFilename, const Material * const mat)
+void WaveFrontObj_WriteMaterial(const string& texelName, const string& texelFilename, const Material * const mat)
 {
    char texelNameCopy[MAX_PATH];
-   strcpy_s(texelNameCopy, texelName);
+   strncpy_s(texelNameCopy, texelName.c_str(), sizeof(texelNameCopy) - 1);
    RemoveSpaces(texelNameCopy);
    fprintf_s(matFile, "newmtl %s\n", texelNameCopy);
    fprintf_s(matFile, "Ns 7.843137\n");
@@ -434,9 +427,9 @@ void WaveFrontObj_WriteMaterial(const char *texelName, const char *texelFilename
    fprintf_s(matFile, "Ni 1.500000\n");
    fprintf_s(matFile, "d %f\n", mat->m_fOpacity);
    fprintf_s(matFile, "illum 5\n");
-   if (texelFilename != NULL)
+   if (!texelFilename.empty())
    {
-      strcpy_s(texelNameCopy, texelFilename);
+      strncpy_s(texelNameCopy, texelFilename.c_str(), sizeof(texelNameCopy) - 1);
       RemoveSpaces(texelNameCopy);
 
       fprintf_s(matFile, "map_kd %s\n", texelNameCopy);
@@ -444,9 +437,9 @@ void WaveFrontObj_WriteMaterial(const char *texelName, const char *texelFilename
    }
 }
 
-void WaveFrontObj_UseTexture(FILE *f, const char *texelName)
+void WaveFrontObj_UseTexture(FILE *f, const string& texelName)
 {
-   fprintf_s(f, "usemtl %s\n", texelName);
+   fprintf_s(f, "usemtl %s\n", texelName.c_str());
 }
 
 void WaveFrontObj_UpdateFaceOffset(unsigned int numVertices)
@@ -454,9 +447,9 @@ void WaveFrontObj_UpdateFaceOffset(unsigned int numVertices)
    faceIndexOffset += numVertices;
 }
 
-void WaveFrontObj_WriteObjectName(FILE *f, const char *objname)
+void WaveFrontObj_WriteObjectName(FILE *f, const string& objname)
 {
-   fprintf_s(f, "o %s\n", objname);
+   fprintf_s(f, "o %s\n", objname.c_str());
 }
 
 void WaveFrontObj_WriteVertexInfo(FILE *f, const Vertex3D_NoTex2 *in_verts, unsigned int numVerts)
@@ -517,11 +510,11 @@ void WaveFrontObj_WriteFaceInfoLong(FILE *f, const std::vector<unsigned int> &in
 }
 
 // exporting a mesh to a Wavefront .OBJ file. The mesh is converted into right-handed coordinate system (VP uses left-handed)
-void WaveFrontObj_Save(const char *filename, const char *description, const Mesh& mesh)
+void WaveFrontObj_Save(const string& filename, const string& description, const Mesh& mesh)
 {
    FILE *f;
    /*
-   f = fopen(filename, "wt");
+   f = fopen(filename.c_str(), "wt");
    fprintf_s(f,"const unsigned int hitTargetT2Vertices=%i;\n",mesh.NumVertices());
    fprintf_s(f,"const unsigned int hitTargetT2NumFaces=%i;\n", mesh.NumIndices());
    fprintf_s(f,"Vertex3D_NoTex2 hitTargetT2Mesh[%i]=\n{\n",mesh.NumVertices());
@@ -564,9 +557,9 @@ void WaveFrontObj_Save(const char *filename, const char *description, const Mesh
    }
    else
    {
-      string fname(filename);
-      std::size_t pos = fname.find_last_of('.');
-      string name = fname.substr(0, pos);
+      const std::size_t pos = filename.find_last_of('.');
+      assert(pos != string::npos);
+      const string name = filename.substr(0, pos);
       char number[32] = { 0 };
       for (unsigned int i = 0; i < mesh.m_animationFrames.size(); i++)
       {
@@ -583,8 +576,8 @@ void WaveFrontObj_Save(const char *filename, const char *description, const Mesh
             vertsTmp[t].nz = vi.nz;
          }
          sprintf_s(number, "%05u", i);
-         fname = name + "_" + string(number) + ".obj";
-         f = WaveFrontObj_ExportStart(fname.c_str());
+         const string fname = name + '_' + number + ".obj";
+         f = WaveFrontObj_ExportStart(fname);
          if (!f)
             return;
          fprintf_s(f, "# Visual Pinball OBJ file\n");

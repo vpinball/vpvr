@@ -17,12 +17,6 @@ Surface::Surface()
    m_VBuffer = 0;
    m_IBuffer = 0;
    m_propPhysics = NULL;
-   memset(m_d.m_szImage, 0, MAXTOKEN);
-   memset(m_d.m_szSideImage, 0, MAXTOKEN);
-   memset(m_d.m_szSideMaterial, 0, MAXNAMEBUFFER);
-   memset(m_d.m_szTopMaterial, 0, MAXNAMEBUFFER);
-   memset(m_d.m_szSlingShotMaterial, 0, MAXNAMEBUFFER);
-   memset(m_d.m_szPhysicsMaterial, 0, MAXNAMEBUFFER);
    m_d.m_overwritePhysics = true;
 }
 
@@ -108,6 +102,7 @@ void Surface::WriteRegDefaults()
    SaveValueFloat(strKeyName, "SlingshotForce", m_d.m_slingshotforce);
    SaveValueBool(strKeyName, "SlingshotAnimation", m_d.m_slingshotAnimation);
    SaveValueFloat(strKeyName, "Elasticity", m_d.m_elasticity);
+   SaveValueFloat(strKeyName, "ElasticityFallOff", m_d.m_elasticityFalloff);
    SaveValueFloat(strKeyName, "Friction", m_d.m_friction);
    SaveValueFloat(strKeyName, "Scatter", m_d.m_scatter);
    SaveValueBool(strKeyName, "Visible", m_d.m_topBottomVisible);
@@ -175,11 +170,11 @@ HRESULT Surface::InitTarget(PinTable * const ptable, const float x, const float 
 
    HRESULT hr = LoadValueString(strKeyName, "TopImage", m_d.m_szImage, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_szImage[0] = 0;
+      m_d.m_szImage = "";
 
    hr = LoadValueString(strKeyName, "SideImage", m_d.m_szSideImage, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_szSideImage[0] = 0;
+      m_d.m_szSideImage = "";
 
    m_d.m_droppable = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "Droppable", false) : false;
    m_d.m_flipbook = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "Flipbook", false) : false;
@@ -217,13 +212,18 @@ void Surface::SetDefaults(bool fromMouseClick)
    m_d.m_slingshot_threshold = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "SlingshotThreshold", 0.0f) : 0.0f;
    m_d.m_inner = true; //!! Deprecated, do not use anymore
 
-   hr = LoadValueString(strKeyName, "TopImage", m_d.m_szImage, MAXTOKEN);
+   char buf[MAXTOKEN] = { 0 };
+   hr = LoadValueString(strKeyName, "TopImage", buf, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_szImage[0] = 0;
+      m_d.m_szImage.clear();
+   else
+      m_d.m_szImage = buf;
 
-   hr = LoadValueString(strKeyName, "SideImage", m_d.m_szSideImage, MAXTOKEN);
+   hr = LoadValueString(strKeyName, "SideImage", buf, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_szSideImage[0] = 0;
+      m_d.m_szSideImage.clear();
+   else
+      m_d.m_szSideImage = buf;
 
    m_d.m_droppable = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "Droppable", false) : false;
    m_d.m_flipbook = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "Flipbook", false) : false;
@@ -249,7 +249,7 @@ void Surface::SetDefaults(bool fromMouseClick)
 
 void Surface::UIRenderPass1(Sur * const psur)
 {
-   psur->SetFillColor(m_ptable->RenderSolid() ? g_pvp->m_fillColor : -1);
+   psur->SetFillColor(m_ptable->RenderSolid() ? m_vpinball->m_fillColor : -1);
    psur->SetObject(this);
    // Don't want border color to be over-ridden when selected - that will be drawn later
    psur->SetBorderColor(-1, false, 0);
@@ -260,7 +260,7 @@ void Surface::UIRenderPass1(Sur * const psur)
    Texture *ppi;
    if (m_ptable->RenderSolid() && m_d.m_displayTexture && (ppi = m_ptable->GetImage(m_d.m_szImage)))
    {
-      ppi->EnsureHBitmap();
+      ppi->CreateGDIVersion();
       if (ppi->m_hbmGDIVersion)
          psur->PolygonImage(vvertex, ppi->m_hbmGDIVersion, m_ptable->m_left, m_ptable->m_top, m_ptable->m_right, m_ptable->m_bottom, ppi->m_width, ppi->m_height);
       else
@@ -286,7 +286,7 @@ void Surface::UIRenderPass2(Sur * const psur)
    }
 
    // if the item is selected then draw the dragpoints (or if we are always to draw dragpoints)
-   bool drawDragpoints = ((m_selectstate != eNotSelected) || g_pvp->m_alwaysDrawDragPoints);
+   bool drawDragpoints = ((m_selectstate != eNotSelected) || m_vpinball->m_alwaysDrawDragPoints);
 
    if (!drawDragpoints)
    {
@@ -420,12 +420,14 @@ void Surface::SetupHitObject(vector<HitObject*> &pvho, HitObject * const obj)
    if (!m_d.m_overwritePhysics)
    {
       obj->m_elasticity = mat->m_fElasticity;
+      obj->m_elasticityFalloff = mat->m_fElasticityFalloff;
       obj->SetFriction(mat->m_fFriction);
       obj->m_scatter = ANGTORAD(mat->m_fScatterAngle);
    }
    else
    {
       obj->m_elasticity = m_d.m_elasticity;
+      obj->m_elasticityFalloff = m_d.m_elasticityFalloff;
       obj->SetFriction(m_d.m_friction);
       obj->m_scatter = ANGTORAD(m_d.m_scatter);
    }
@@ -497,9 +499,9 @@ void Surface::GetBoundingVertices(std::vector<Vertex3Ds>& pvvertex3D)
    for (int i = 0; i < 8; i++)
    {
       const Vertex3Ds pv(
-         i & 1 ? m_ptable->m_right : m_ptable->m_left,
-         i & 2 ? m_ptable->m_bottom : m_ptable->m_top,
-         i & 4 ? m_d.m_heighttop : m_d.m_heightbottom);
+         (i & 1) ? m_ptable->m_right : m_ptable->m_left,
+         (i & 2) ? m_ptable->m_bottom : m_ptable->m_top,
+         (i & 4) ? m_d.m_heighttop : m_d.m_heightbottom);
 
       pvvertex3D.push_back(pv);
    }
@@ -678,7 +680,7 @@ void Surface::GenerateMesh(std::vector<Vertex3D_NoTex2> &topBuf, std::vector<Ver
       }
 
       // not necessary to reorder
-      /*WORD* tmp = reorderForsyth(sideIndices.data(), sideIndices.size() / 3, m_numVertices * 4);
+      /*WORD* const tmp = reorderForsyth(sideIndices, sideIndices.size() / 3, m_numVertices * 4);
       if (tmp != NULL)
       {
       memcpy(sideIndices.data(), tmp, sideIndices.size()*sizeof(WORD));
@@ -767,8 +769,8 @@ void Surface::ExportMesh(FILE *f)
    m_d.m_heightbottom = oldBottomHeight;
    m_d.m_heighttop = oldTopHeight;
 
-   char name[MAX_PATH];
-   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, MAX_PATH, NULL, NULL);
+   char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
+   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
    if (topBuf.size() > 0 && m_d.m_topBottomVisible && !m_d.m_sideVisible)
    {
       WaveFrontObj_WriteObjectName(f, name);
@@ -782,7 +784,7 @@ void Surface::ExportMesh(FILE *f)
       }
       else
       {
-         WaveFrontObj_WriteMaterial("none", NULL, mat);
+         WaveFrontObj_WriteMaterial("none", string(), mat);
          WaveFrontObj_UseTexture(f, "none");
       }
       WaveFrontObj_WriteFaceInfo(f, topBottomIndices);
@@ -798,7 +800,7 @@ void Surface::ExportMesh(FILE *f)
       delete[] tmp;
 
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szTopMaterial);
-      WaveFrontObj_WriteMaterial(m_d.m_szTopMaterial, NULL, mat);
+      WaveFrontObj_WriteMaterial(m_d.m_szTopMaterial, string(), mat);
       WaveFrontObj_UseTexture(f, m_d.m_szTopMaterial);
       WORD * const idx = new WORD[topBottomIndices.size() + sideIndices.size()];
       memcpy(idx, sideIndices.data(), sideIndices.size() * sizeof(WORD));
@@ -813,7 +815,7 @@ void Surface::ExportMesh(FILE *f)
       WaveFrontObj_WriteObjectName(f, name);
       WaveFrontObj_WriteVertexInfo(f, sideBuf.data(), m_numVertices * 4);
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szSideMaterial);
-      WaveFrontObj_WriteMaterial(m_d.m_szSideMaterial, NULL, mat);
+      WaveFrontObj_WriteMaterial(m_d.m_szSideMaterial, string(), mat);
       WaveFrontObj_UseTexture(f, m_d.m_szSideMaterial);
       WaveFrontObj_WriteFaceInfo(f, sideIndices);
       WaveFrontObj_UpdateFaceOffset(m_numVertices * 4);
@@ -1248,11 +1250,13 @@ HRESULT Surface::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backu
    bw.WriteFloat(FID(HTBT), m_d.m_heightbottom);
    bw.WriteFloat(FID(HTTP), m_d.m_heighttop);
    //bw.WriteBool(FID(INNR), m_d.m_inner); //!! Deprecated
+   bw.WriteWideString(FID(NAME), m_wzName);
    bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
    bw.WriteBool(FID(DSPT), m_d.m_displayTexture);
    bw.WriteFloat(FID(SLGF), m_d.m_slingshotforce);
    bw.WriteFloat(FID(SLTH), m_d.m_slingshot_threshold);
    bw.WriteFloat(FID(ELAS), m_d.m_elasticity);
+   bw.WriteFloat(FID(ELFO), m_d.m_elasticityFalloff);
    bw.WriteFloat(FID(WFCT), m_d.m_friction);
    bw.WriteFloat(FID(WSCT), m_d.m_scatter);
    bw.WriteBool(FID(VSBL), m_d.m_topBottomVisible);
@@ -1391,11 +1395,12 @@ bool Surface::LoadToken(const int id, BiffReader * const pbr)
    case FID(HTBT): pbr->GetFloat(&m_d.m_heightbottom); break;
    case FID(HTTP): pbr->GetFloat(&m_d.m_heighttop); break;
    case FID(INNR): pbr->GetBool(&m_d.m_inner); break; //!! Deprecated, do not use anymore
-   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(NAME): pbr->GetWideString(m_wzName); break;
    case FID(DSPT): pbr->GetBool(&m_d.m_displayTexture); break;
    case FID(SLGF): pbr->GetFloat(&m_d.m_slingshotforce); break;
    case FID(SLTH): pbr->GetFloat(&m_d.m_slingshot_threshold); break;
    case FID(ELAS): pbr->GetFloat(&m_d.m_elasticity); break;
+   case FID(ELFO): pbr->GetFloat(&m_d.m_elasticityFalloff); break;
    case FID(WFCT): pbr->GetFloat(&m_d.m_friction); break;
    case FID(WSCT): pbr->GetFloat(&m_d.m_scatter); break;
    case FID(VSBL): pbr->GetBool(&m_d.m_topBottomVisible); break;
@@ -1426,14 +1431,11 @@ HRESULT Surface::InitPostLoad()
    return S_OK;
 }
 
-void Surface::UpdateUnitsInfo()
+void Surface::UpdateStatusBarInfo()
 {
-   if (g_pplayer)
-      return;
-
    char tbuf[128];
-   sprintf_s(tbuf, "TopHeight: %.03f | BottomHeight: %0.3f", g_pvp->ConvertToUnit(m_d.m_heighttop), g_pvp->ConvertToUnit(m_d.m_heightbottom));
-   g_pvp->SetStatusBarUnitInfo(tbuf, true);
+   sprintf_s(tbuf, "TopHeight: %.03f | BottomHeight: %0.3f", m_vpinball->ConvertToUnit(m_d.m_heighttop), m_vpinball->ConvertToUnit(m_d.m_heightbottom));
+   m_vpinball->SetStatusBarUnitInfo(tbuf, true);
 }
 
 STDMETHODIMP Surface::get_HasHitEvent(VARIANT_BOOL *pVal)
@@ -1466,8 +1468,8 @@ STDMETHODIMP Surface::put_Threshold(float newVal)
 
 STDMETHODIMP Surface::get_Image(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage.c_str(), -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1476,23 +1478,22 @@ STDMETHODIMP Surface::get_Image(BSTR *pVal)
 STDMETHODIMP Surface::put_Image(BSTR newVal)
 {
    char szImage[MAXTOKEN];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, NULL, NULL);
    const Texture * const tex = m_ptable->GetImage(szImage);
    if (tex && tex->IsHDR())
    {
       ShowError("Cannot use a HDR image (.exr/.hdr) here");
       return E_FAIL;
    }
-
-   strcpy_s(m_d.m_szImage, szImage);
+   m_d.m_szImage = szImage;
 
    return S_OK;
 }
 
 STDMETHODIMP Surface::get_SideMaterial(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSideMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSideMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1500,15 +1501,17 @@ STDMETHODIMP Surface::get_SideMaterial(BSTR *pVal)
 
 STDMETHODIMP Surface::put_SideMaterial(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSideMaterial, MAXNAMEBUFFER, NULL, NULL);
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   m_d.m_szSideMaterial = buf;
 
    return S_OK;
 }
 
 STDMETHODIMP Surface::get_SlingshotMaterial(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSlingShotMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSlingShotMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1516,7 +1519,9 @@ STDMETHODIMP Surface::get_SlingshotMaterial(BSTR *pVal)
 
 STDMETHODIMP Surface::put_SlingshotMaterial(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSlingShotMaterial, MAXNAMEBUFFER, NULL, NULL);
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   m_d.m_szSlingShotMaterial = buf;
 
    return S_OK;
 }
@@ -1545,8 +1550,6 @@ STDMETHODIMP Surface::get_HeightBottom(float *pVal)
 STDMETHODIMP Surface::put_HeightBottom(float newVal)
 {
    m_d.m_heightbottom = newVal;
-   UpdateUnitsInfo();
-
    return S_OK;
 }
 
@@ -1560,15 +1563,13 @@ STDMETHODIMP Surface::get_HeightTop(float *pVal)
 STDMETHODIMP Surface::put_HeightTop(float newVal)
 {
    m_d.m_heighttop = newVal;
-   UpdateUnitsInfo();
-
    return S_OK;
 }
 
 STDMETHODIMP Surface::get_TopMaterial(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szTopMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szTopMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1576,15 +1577,17 @@ STDMETHODIMP Surface::get_TopMaterial(BSTR *pVal)
 
 STDMETHODIMP Surface::put_TopMaterial(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szTopMaterial, MAXNAMEBUFFER, NULL, NULL);
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   m_d.m_szTopMaterial = buf;
 
    return S_OK;
 }
 
 STDMETHODIMP Surface::get_PhysicsMaterial(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szPhysicsMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szPhysicsMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1592,7 +1595,9 @@ STDMETHODIMP Surface::get_PhysicsMaterial(BSTR *pVal)
 
 STDMETHODIMP Surface::put_PhysicsMaterial(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szPhysicsMaterial, MAXNAMEBUFFER, NULL, NULL);
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   m_d.m_szPhysicsMaterial = buf;
 
    return S_OK;
 }
@@ -1726,6 +1731,19 @@ STDMETHODIMP Surface::put_Elasticity(float newVal)
    return S_OK;
 }
 
+STDMETHODIMP Surface::get_ElasticityFalloff(float* pVal)
+{
+   *pVal = m_d.m_elasticityFalloff;
+
+   return S_OK;
+}
+
+STDMETHODIMP Surface::put_ElasticityFalloff(float newVal)
+{
+   m_d.m_elasticityFalloff = newVal;
+
+   return S_OK;
+}
 
 STDMETHODIMP Surface::get_Friction(float *pVal)
 {
@@ -1771,8 +1789,8 @@ STDMETHODIMP Surface::put_Visible(VARIANT_BOOL newVal)
 
 STDMETHODIMP Surface::get_SideImage(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSideImage, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSideImage.c_str(), -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1781,15 +1799,14 @@ STDMETHODIMP Surface::get_SideImage(BSTR *pVal)
 STDMETHODIMP Surface::put_SideImage(BSTR newVal)
 {
    char szSideImage[MAXTOKEN];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szSideImage, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szSideImage, MAXTOKEN, NULL, NULL);
    const Texture * const tex = m_ptable->GetImage(szSideImage);
    if (tex && tex->IsHDR())
    {
       ShowError("Cannot use a HDR image (.exr/.hdr) here");
       return E_FAIL;
    }
-
-   strcpy_s(m_d.m_szSideImage, szSideImage);
+   m_d.m_szSideImage = szSideImage;
 
    return S_OK;
 }
@@ -1948,6 +1965,7 @@ void Surface::SetDefaultPhysics(bool fromMouseClick)
 {
    static const char strKeyName[] = "DefaultProps\\Wall";
    m_d.m_elasticity = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "Elasticity", 0.3f) : 0.3f;
+   m_d.m_elasticityFalloff = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "ElasticityFallOff", 0.0f) : 0.0f;
    m_d.m_friction = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "Friction", 0.3f) : 0.3f;
    m_d.m_scatter = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "Scatter", 0) : 0;
 }

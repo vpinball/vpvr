@@ -21,6 +21,7 @@ HitPlunger::HitPlunger(const float x, const float y, const float x2, const float
    m_plungerMover.m_reverseImpulse = 0.0f;
    m_plungerMover.m_fireTimer = 0;
    m_plungerMover.m_autoFireTimer = 0;
+   m_plungerMover.m_fireSpeed = 0;
 
    m_plungerMover.m_strokeEventsArmed = false;
    m_plungerMover.m_speed = 0.0f;
@@ -190,18 +191,23 @@ void PlungerMoverObject::PullBack(float speed)
    // start the pull by applying the artificial "pull force"
    m_speed = 0.0f;
    m_pullForce = speed;
+
    // deactivate the retract code
    m_addRetractMotion = false;
+   m_retractMotion = false;
+   m_initialSpeed = speed;
 }
-
 
 void PlungerMoverObject::PullBackandRetract(float speed)
 {
    // start the pull by applying the artificial "pull force"
    m_speed = 0.0f;
    m_pullForce = speed;
-   // activate the retract code
-   m_addRetractMotion = true;
+
+   // check if we're acting as an auto plunger
+   const bool autoPlunger = m_plunger->m_d.m_autoPlunger;
+   // (de)activate the retract code
+   m_addRetractMotion = !autoPlunger;
    m_retractMotion = false;
    m_initialSpeed = speed;
 }

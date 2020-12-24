@@ -4,21 +4,21 @@
 class DispreelStateProperty: public BasePropertyDialog
 {
 public:
-    DispreelStateProperty(VectorProtected<ISelect> *pvsel);
+    DispreelStateProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~DispreelStateProperty()
     {
     }
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
     virtual BOOL OnInitDialog();
 
 private:
-    CComboBox   m_soundCombo;
-    CEdit       m_motorStepsEdit;
-    CEdit       m_updateIntervalEdit;
+    ComboBox    m_soundCombo;
+    EditBox     m_motorStepsEdit;
+    EditBox     m_updateIntervalEdit;
 };
 
 #endif // !H_DISPREEL_STATE_PROPERTY

@@ -17,9 +17,6 @@ Ramp::Ramp()
    m_d.m_wireDistanceY = 88.0f;
    m_propPosition = NULL;
    m_propPhysics = NULL;
-   memset(m_d.m_szImage, 0, MAXTOKEN);
-   memset(m_d.m_szMaterial, 0, MAXNAMEBUFFER);
-   memset(m_d.m_szPhysicsMaterial, 0, MAXNAMEBUFFER);
    m_d.m_hitEvent = false;
    m_d.m_overwritePhysics = true;
    m_rgheightInit = NULL;
@@ -37,18 +34,14 @@ Ramp::~Ramp()
       delete[] m_rgheightInit;
 }
 
-void Ramp::UpdateUnitsInfo()
+void Ramp::UpdateStatusBarInfo()
 {
-   if (g_pplayer)
-      return;
-
    char tbuf[128];
-   sprintf_s(tbuf, "TopH: %.03f | BottomH: %0.3f | TopW: %.03f | BottomW: %.03f | LeftW: %.03f | RightW: %.03f", g_pvp->ConvertToUnit(m_d.m_heighttop), g_pvp->ConvertToUnit(m_d.m_heightbottom),
-      g_pvp->ConvertToUnit(m_d.m_widthtop), g_pvp->ConvertToUnit(m_d.m_widthbottom),
-      g_pvp->ConvertToUnit(m_d.m_leftwallheightvisible), g_pvp->ConvertToUnit(m_d.m_rightwallheightvisible));
-   g_pvp->SetStatusBarUnitInfo(tbuf, true);
+   sprintf_s(tbuf, "TopH: %.03f | BottomH: %0.3f | TopW: %.03f | BottomW: %.03f | LeftW: %.03f | RightW: %.03f", m_vpinball->ConvertToUnit(m_d.m_heighttop), m_vpinball->ConvertToUnit(m_d.m_heightbottom),
+      m_vpinball->ConvertToUnit(m_d.m_widthtop), m_vpinball->ConvertToUnit(m_d.m_widthbottom),
+      m_vpinball->ConvertToUnit(m_d.m_leftwallheightvisible), m_vpinball->ConvertToUnit(m_d.m_rightwallheightvisible));
+   m_vpinball->SetStatusBarUnitInfo(tbuf, true);
 }
-
 
 bool Ramp::IsTransparent() const
 {
@@ -100,9 +93,12 @@ void Ramp::SetDefaults(bool fromMouseClick)
    m_d.m_tdr.m_TimerEnabled = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "TimerEnabled", false) : false;
    m_d.m_tdr.m_TimerInterval = fromMouseClick ? LoadValueIntWithDefault(strKeyName, "TimerInterval", 100) : 100;
 
-   HRESULT hr = LoadValueString(strKeyName, "Image", m_d.m_szImage, MAXTOKEN);
+   char buf[MAXTOKEN] = { 0 };
+   HRESULT hr = LoadValueString(strKeyName, "Image", buf, MAXTOKEN);
    if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_szImage[0] = 0;
+      m_d.m_szImage.clear();
+   else
+      m_d.m_szImage = buf;
 
    m_d.m_imagealignment = fromMouseClick ? (RampImageAlignment)LoadValueIntWithDefault(strKeyName, "ImageMode", ImageModeWorld) : ImageModeWorld;
    m_d.m_imageWalls = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "ImageWalls", true) : true;
@@ -159,7 +155,7 @@ void Ramp::WriteRegDefaults()
 void Ramp::UIRenderPass1(Sur * const psur)
 {
    //make 1 wire ramps look unique in editor - uses ramp color
-   psur->SetFillColor(m_ptable->RenderSolid() ? g_pvp->m_fillColor : -1);
+   psur->SetFillColor(m_ptable->RenderSolid() ? m_vpinball->m_fillColor : -1);
    psur->SetBorderColor(-1, false, 0);
    psur->SetObject(this);
 
@@ -209,7 +205,7 @@ void Ramp::UIRenderPass2(Sur * const psur)
    delete[] pfCross;
    delete[] middlePoints;
 
-   bool drawDragpoints = ((m_selectstate != eNotSelected) || g_pvp->m_alwaysDrawDragPoints);
+   bool drawDragpoints = ((m_selectstate != eNotSelected) || m_vpinball->m_alwaysDrawDragPoints);
    // if the item is selected then draw the dragpoints (or if we are always to draw dragpoints)
    if (!drawDragpoints)
    {
@@ -318,9 +314,9 @@ void Ramp::GetBoundingVertices(std::vector<Vertex3Ds>& pvvertex3D)
    for (int i = 0; i < 8; i++)
    {
       const Vertex3Ds pv(
-         i & 1 ? bbox_min.x : bbox_max.x,
-         i & 2 ? bbox_min.y : bbox_max.y,
-         i & 4 ? bbox_min.z : bbox_max.z);
+         (i & 1) ? bbox_min.x : bbox_max.x,
+         (i & 2) ? bbox_min.y : bbox_max.y,
+         (i & 4) ? bbox_min.z : bbox_max.z);
 
       pvvertex3D.push_back(pv);
    }
@@ -1241,7 +1237,7 @@ void Ramp::RenderStatic()
 
 void Ramp::SetObjectPos()
 {
-   g_pvp->SetObjectPosCur(0, 0);
+   m_vpinball->SetObjectPosCur(0, 0);
 }
 
 void Ramp::MoveOffset(const float dx, const float dy)
@@ -1272,7 +1268,7 @@ HRESULT Ramp::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupFo
    bw.WriteBool(FID(TMON), m_d.m_tdr.m_TimerEnabled);
    bw.WriteInt(FID(TMIN), m_d.m_tdr.m_TimerInterval);
    bw.WriteInt(FID(TYPE), m_d.m_type);
-   bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
+   bw.WriteWideString(FID(NAME), m_wzName);
    bw.WriteString(FID(IMAG), m_d.m_szImage);
    bw.WriteInt(FID(ALGN), m_d.m_imagealignment);
    bw.WriteBool(FID(IMGW), m_d.m_imageWalls);
@@ -1335,7 +1331,7 @@ bool Ramp::LoadToken(const int id, BiffReader * const pbr)
    case FID(IMAG): pbr->GetString(m_d.m_szImage); break;
    case FID(ALGN): pbr->GetInt(&m_d.m_imagealignment); break;
    case FID(IMGW): pbr->GetBool(&m_d.m_imageWalls); break;
-   case FID(NAME): pbr->GetWideString((WCHAR *)m_wzName); break;
+   case FID(NAME): pbr->GetWideString(m_wzName); break;
    case FID(WLHL): pbr->GetFloat(&m_d.m_leftwallheight); break;
    case FID(WLHR): pbr->GetFloat(&m_d.m_rightwallheight); break;
    case FID(WVHL): pbr->GetFloat(&m_d.m_leftwallheightvisible); break;
@@ -1478,7 +1474,6 @@ STDMETHODIMP Ramp::InterfaceSupportsErrorInfo(REFIID riid)
 STDMETHODIMP Ramp::get_HeightBottom(float *pVal)
 {
    *pVal = m_d.m_heightbottom;
-   UpdateUnitsInfo();
 
    return S_OK;
 }
@@ -1489,8 +1484,6 @@ STDMETHODIMP Ramp::put_HeightBottom(float newVal)
    {
       m_d.m_heightbottom = newVal;
       m_dynamicVertexBufferRegenerate = true;
-
-      UpdateUnitsInfo();
    }
 
    return S_OK;
@@ -1499,7 +1492,6 @@ STDMETHODIMP Ramp::put_HeightBottom(float newVal)
 STDMETHODIMP Ramp::get_HeightTop(float *pVal)
 {
    *pVal = m_d.m_heighttop;
-   UpdateUnitsInfo();
 
    return S_OK;
 }
@@ -1510,8 +1502,6 @@ STDMETHODIMP Ramp::put_HeightTop(float newVal)
    {
       m_d.m_heighttop = newVal;
       m_dynamicVertexBufferRegenerate = true;
-
-      UpdateUnitsInfo();
    }
 
    return S_OK;
@@ -1520,7 +1510,6 @@ STDMETHODIMP Ramp::put_HeightTop(float newVal)
 STDMETHODIMP Ramp::get_WidthBottom(float *pVal)
 {
    *pVal = m_d.m_widthbottom;
-   UpdateUnitsInfo();
 
    return S_OK;
 }
@@ -1531,8 +1520,6 @@ STDMETHODIMP Ramp::put_WidthBottom(float newVal)
    {
       m_d.m_widthbottom = newVal;
       m_dynamicVertexBufferRegenerate = true;
-
-      UpdateUnitsInfo();
    }
 
    return S_OK;
@@ -1541,7 +1528,6 @@ STDMETHODIMP Ramp::put_WidthBottom(float newVal)
 STDMETHODIMP Ramp::get_WidthTop(float *pVal)
 {
    *pVal = m_d.m_widthtop;
-   UpdateUnitsInfo();
 
    return S_OK;
 }
@@ -1552,8 +1538,6 @@ STDMETHODIMP Ramp::put_WidthTop(float newVal)
    {
       m_d.m_widthtop = newVal;
       m_dynamicVertexBufferRegenerate = true;
-
-      UpdateUnitsInfo();
    }
 
    return S_OK;
@@ -1561,8 +1545,8 @@ STDMETHODIMP Ramp::put_WidthTop(float newVal)
 
 STDMETHODIMP Ramp::get_Material(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1570,7 +1554,9 @@ STDMETHODIMP Ramp::get_Material(BSTR *pVal)
 
 STDMETHODIMP Ramp::put_Material(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szMaterial, MAXNAMEBUFFER, NULL, NULL);
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   m_d.m_szMaterial = buf;
 
    return S_OK;
 }
@@ -1595,8 +1581,8 @@ STDMETHODIMP Ramp::put_Type(RampType newVal)
 
 STDMETHODIMP Ramp::get_Image(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXTOKEN];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage.c_str(), -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1604,20 +1590,18 @@ STDMETHODIMP Ramp::get_Image(BSTR *pVal)
 
 STDMETHODIMP Ramp::put_Image(BSTR newVal)
 {
-   char m_szImage[MAXTOKEN];
-   memset(m_szImage, 0, MAXTOKEN);
-
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_szImage, MAXNAMEBUFFER, NULL, NULL);
-   const Texture * const tex = m_ptable->GetImage(m_szImage);
+   char szImage[MAXTOKEN];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, NULL, NULL);
+   const Texture * const tex = m_ptable->GetImage(szImage);
    if (tex && tex->IsHDR())
    {
       ShowError("Cannot use a HDR image (.exr/.hdr) here");
       return E_FAIL;
    }
 
-   if (strcmp(m_szImage, m_d.m_szImage) != 0)
+   if (_stricmp(szImage, m_d.m_szImage.c_str()) != 0)
    {
-      strcpy_s(m_d.m_szImage, MAXTOKEN, m_szImage);
+      m_d.m_szImage = szImage;
       m_dynamicVertexBufferRegenerate = true;
    }
 
@@ -1924,8 +1908,8 @@ STDMETHODIMP Ramp::put_WireDistanceY(float newVal)
 
 STDMETHODIMP Ramp::get_PhysicsMaterial(BSTR *pVal)
 {
-   WCHAR wz[512];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szPhysicsMaterial, -1, wz, MAXNAMEBUFFER);
+   WCHAR wz[MAXNAMEBUFFER];
+   MultiByteToWideChar(CP_ACP, 0, m_d.m_szPhysicsMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1933,7 +1917,9 @@ STDMETHODIMP Ramp::get_PhysicsMaterial(BSTR *pVal)
 
 STDMETHODIMP Ramp::put_PhysicsMaterial(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szPhysicsMaterial, MAXNAMEBUFFER, NULL, NULL);
+   char buf[MAXNAMEBUFFER];
+   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   m_d.m_szPhysicsMaterial = std::string(buf);
 
    return S_OK;
 }
@@ -1954,10 +1940,10 @@ STDMETHODIMP Ramp::put_OverwritePhysics(VARIANT_BOOL newVal)
 
 void Ramp::ExportMesh(FILE *f)
 {
-   char name[MAX_PATH];
    if (m_d.m_visible)
    {
-      WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, MAX_PATH, NULL, NULL);
+      char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
+      WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
       WaveFrontObj_WriteObjectName(f, name);
       if (!isHabitrail())
       {
@@ -1969,7 +1955,7 @@ void Ramp::ExportMesh(FILE *f)
          if (m_d.m_rightwallheightvisible == 0.0f && m_d.m_leftwallheightvisible == 0.0f)
             numVers = m_numVertices;
          WaveFrontObj_WriteVertexInfo(f, rampMesh, numVers);
-         WaveFrontObj_WriteMaterial(m_d.m_szMaterial, NULL, mat);
+         WaveFrontObj_WriteMaterial(m_d.m_szMaterial, string(), mat);
          WaveFrontObj_UseTexture(f, m_d.m_szMaterial);
 
          if (m_d.m_rightwallheightvisible != 0.f && m_d.m_leftwallheightvisible != 0.f)
@@ -2007,7 +1993,7 @@ void Ramp::ExportMesh(FILE *f)
          if (m_d.m_type == RampType1Wire)
          {
             WaveFrontObj_WriteVertexInfo(f, tmpBuf1, m_numVertices);
-            WaveFrontObj_WriteMaterial(m_d.m_szMaterial, NULL, mat);
+            WaveFrontObj_WriteMaterial(m_d.m_szMaterial, string(), mat);
             WaveFrontObj_UseTexture(f, m_d.m_szMaterial);
             WaveFrontObj_WriteFaceInfo(f, m_meshIndices);
             WaveFrontObj_UpdateFaceOffset(m_numVertices);
@@ -2022,7 +2008,7 @@ void Ramp::ExportMesh(FILE *f)
             WaveFrontObj_WriteVertexInfo(f, tmp, m_numVertices * 2);
             delete[] tmp;
             WaveFrontObj_WriteFaceInfo(f, m_meshIndices);
-            WaveFrontObj_WriteMaterial(m_d.m_szMaterial, NULL, mat);
+            WaveFrontObj_WriteMaterial(m_d.m_szMaterial, string(), mat);
             WaveFrontObj_UseTexture(f, m_d.m_szMaterial);
             WORD * const idx = new WORD[m_meshIndices.size()];
             for (size_t i = 0; i < m_meshIndices.size(); i++)
@@ -2045,7 +2031,7 @@ void Ramp::ExportMesh(FILE *f)
                tmp[i].z += 3.0f;
             WaveFrontObj_WriteVertexInfo(f, tmp, m_numVertices * 4);
             delete[] tmp;
-            WaveFrontObj_WriteMaterial(m_d.m_szMaterial, NULL, mat);
+            WaveFrontObj_WriteMaterial(m_d.m_szMaterial, string(), mat);
             WaveFrontObj_UseTexture(f, m_d.m_szMaterial);
             WaveFrontObj_WriteFaceInfo(f, m_meshIndices);
             WORD * const idx = new WORD[m_meshIndices.size()];
@@ -2074,7 +2060,7 @@ void Ramp::ExportMesh(FILE *f)
                tmp[i].z += 3.0f;
             WaveFrontObj_WriteVertexInfo(f, tmp, m_numVertices * 3);
             delete[] tmp;
-            WaveFrontObj_WriteMaterial(m_d.m_szMaterial, NULL, mat);
+            WaveFrontObj_WriteMaterial(m_d.m_szMaterial, string(), mat);
             WaveFrontObj_UseTexture(f, m_d.m_szMaterial);
             WaveFrontObj_WriteFaceInfo(f, m_meshIndices);
             WORD * const idx = new WORD[m_meshIndices.size()];
@@ -2100,7 +2086,7 @@ void Ramp::ExportMesh(FILE *f)
                tmp[i].z += 3.0f;
             WaveFrontObj_WriteVertexInfo(f, tmp, m_numVertices * 3);
             delete[] tmp;
-            WaveFrontObj_WriteMaterial(m_d.m_szMaterial, NULL, mat);
+            WaveFrontObj_WriteMaterial(m_d.m_szMaterial, string(), mat);
             WaveFrontObj_UseTexture(f, m_d.m_szMaterial);
             WaveFrontObj_WriteFaceInfo(f, m_meshIndices);
             WORD * const idx = new WORD[m_meshIndices.size()];
@@ -2432,7 +2418,7 @@ void Ramp::GenerateVertexBuffer()
    m_dynamicVertexBuffer->unlock();
 
    // not necessary to reorder //!! also potentially unsafe, as walls can be disabled, so order is important!
-   /*WORD* const tmp = reorderForsyth(m_meshIndices.data(), m_meshIndices.size() / 3, m_numVertices * 3);
+   /*WORD* const tmp = reorderForsyth(m_meshIndices, m_numVertices * 3);
    if (tmp != NULL)
    {
    memcpy(m_meshIndices.data(), tmp, m_meshIndices.size()*sizeof(WORD));

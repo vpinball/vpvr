@@ -3,8 +3,10 @@
 // only used for loading and saving
 struct SaveMaterial
 {
+   SaveMaterial() { memset(szName, 0, sizeof(szName)); }
+
    char szName[MAXNAMEBUFFER];
-   COLORREF cBase; // can be overriden by texture on object itself
+   COLORREF cBase; // can be overridden by texture on object itself
    COLORREF cGlossy; // specular of glossy layer
    COLORREF cClearcoat; // specular of clearcoat layer
    float fWrapLighting; // wrap/rim lighting factor (0(off)..1(full))
@@ -19,12 +21,16 @@ struct SaveMaterial
 
 struct SavePhysicsMaterial
 {
+   SavePhysicsMaterial() { memset(szName, 0, sizeof(szName)); }
+
    char szName[MAXNAMEBUFFER];
    float fElasticity;
    float fElasticityFallOff;
    float fFriction;
    float fScatterAngle;
 };
+
+#define MATERIAL_VERSION 1 // for im/export
 
 class Material
 {
@@ -48,8 +54,7 @@ public:
       , m_fFriction(0.0f)
       , m_fScatterAngle(0.0f)
    {
-      memset(m_szName, 0, MAXNAMEBUFFER);
-      strcpy_s(m_szName, "dummyMaterial");
+      m_szName = "dummyMaterial";
    }
 
    inline Material(float wrapLighting, float roughness, float glossyImageLerp, float thickness, float edge, float edgeAlpha, float opacity,
@@ -72,8 +77,7 @@ public:
       , m_fFriction(friction)
       , m_fScatterAngle(scatterAngle)
    {
-      memset(m_szName, 0, MAXNAMEBUFFER);
-      strcpy_s(m_szName, "dummyMaterial");
+      m_szName = "dummyMaterial";
    }
 
    inline Material(const Material * const pmat) :
@@ -94,7 +98,7 @@ public:
       , m_fFriction(pmat->m_fFriction)
       , m_fScatterAngle(pmat->m_fScatterAngle)
    {
-      memcpy(m_szName, pmat->m_szName, MAXNAMEBUFFER);
+      m_szName = pmat->m_szName;
    }
 
    inline unsigned long long hash() const
@@ -135,7 +139,7 @@ public:
       return (unsigned long long)h;*/
    }
 
-   char m_szName[MAXNAMEBUFFER];
+   std::string m_szName;
    float m_fWrapLighting;
    float m_fRoughness;
    float m_fGlossyImageLerp;

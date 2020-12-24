@@ -4,22 +4,22 @@
 class GatePhysicsProperty: public BasePropertyDialog
 {
 public:
-    GatePhysicsProperty(VectorProtected<ISelect> *pvsel);
+    GatePhysicsProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~GatePhysicsProperty()
     {
     }
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
     virtual BOOL OnInitDialog();
 
 private:
-    CEdit     m_elasticityEdit;
-    CEdit     m_frictionEdit;
-    CEdit     m_dampingEdit;
-    CEdit     m_gravityFactorEdit;
+    EditBox    m_elasticityEdit;
+    EditBox    m_frictionEdit;
+    EditBox    m_dampingEdit;
+    EditBox    m_gravityFactorEdit;
 };
 
 #endif

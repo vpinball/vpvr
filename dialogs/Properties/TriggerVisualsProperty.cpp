@@ -2,7 +2,7 @@
 #include "Properties/TriggerVisualsProperty.h"
 #include <WindowsX.h>
 
-TriggerVisualsProperty::TriggerVisualsProperty(VectorProtected<ISelect> *pvsel) : BasePropertyDialog(IDD_PROPTRIGGER_VISUALS, pvsel)
+TriggerVisualsProperty::TriggerVisualsProperty(const VectorProtected<ISelect> *pvsel) : BasePropertyDialog(IDD_PROPTRIGGER_VISUALS, pvsel)
 {
     m_shapeList.push_back("None");
     m_shapeList.push_back("Wire A");
@@ -11,9 +11,20 @@ TriggerVisualsProperty::TriggerVisualsProperty(VectorProtected<ISelect> *pvsel) 
     m_shapeList.push_back("Button");
     m_shapeList.push_back("Wire C");
     m_shapeList.push_back("Wire D");
+    m_shapeList.push_back("Inder");
+
+    m_wireThicknessEdit.SetDialog(this);
+    m_starRadiusEdit.SetDialog(this);
+    m_rotationEdit.SetDialog(this);
+    m_animationSpeedEdit.SetDialog(this);
+    m_posXEdit.SetDialog(this);
+    m_posYEdit.SetDialog(this);
+    m_shapeCombo.SetDialog(this);
+    m_materialCombo.SetDialog(this);
+    m_surfaceCombo.SetDialog(this);
 }
 
-void TriggerVisualsProperty::UpdateVisuals()
+void TriggerVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
     for (int i = 0; i < m_pvsel->Size(); i++)
     {
@@ -21,18 +32,29 @@ void TriggerVisualsProperty::UpdateVisuals()
             continue;
         Trigger * const trigger = (Trigger *)m_pvsel->ElementAt(i);
 
-        PropertyDialog::UpdateComboBox(m_shapeList, m_shapeCombo, m_shapeList[(int)trigger->m_d.m_shape].c_str());
-        PropertyDialog::SetFloatTextbox(m_posXEdit, trigger->m_d.m_vCenter.x);
-        PropertyDialog::SetFloatTextbox(m_posYEdit, trigger->m_d.m_vCenter.y);
-        PropertyDialog::SetCheckboxState(m_hVisibleCheck, trigger->m_d.m_visible);
-        PropertyDialog::SetCheckboxState(m_hReflectionEnabledCheck, trigger->m_d.m_reflectionEnabled);
-        PropertyDialog::SetFloatTextbox(m_wireThicknessEdit, trigger->m_d.m_wireThickness);
-        PropertyDialog::SetFloatTextbox(m_starRadiusEdit, trigger->m_d.m_radius);
-        PropertyDialog::SetFloatTextbox(m_rotationEdit, trigger->m_d.m_rotation);
-        PropertyDialog::SetFloatTextbox(m_animationSpeedEdit, trigger->m_d.m_animSpeed);
-        PropertyDialog::UpdateSurfaceComboBox(trigger->GetPTable(), m_surfaceCombo, trigger->m_d.m_szSurface);
-        UpdateBaseVisuals(trigger, &trigger->m_d);
-        trigger->UpdateEditorView();
+        if (dispid == 1503 || dispid == -1)
+            PropertyDialog::UpdateComboBox(m_shapeList, m_shapeCombo, m_shapeList[(int)trigger->m_d.m_shape]);
+        if (dispid == 902 || dispid == -1)
+            PropertyDialog::SetFloatTextbox(m_posXEdit, trigger->m_d.m_vCenter.x);
+        if (dispid == 903 || dispid == -1)
+            PropertyDialog::SetFloatTextbox(m_posYEdit, trigger->m_d.m_vCenter.y);
+        if (dispid == IDC_VISIBLE_CHECK || dispid == -1)
+            PropertyDialog::SetCheckboxState(m_hVisibleCheck, trigger->m_d.m_visible);
+        if (dispid == IDC_REFLECT_ENABLED_CHECK || dispid == -1)
+            PropertyDialog::SetCheckboxState(m_hReflectionEnabledCheck, trigger->m_d.m_reflectionEnabled);
+        if (dispid == IDC_STAR_THICKNESS_EDIT || dispid == -1)
+            PropertyDialog::SetFloatTextbox(m_wireThicknessEdit, trigger->m_d.m_wireThickness);
+        if (dispid == IDC_STAR_RADIUS_EDIT || dispid == -1)
+            PropertyDialog::SetFloatTextbox(m_starRadiusEdit, trigger->m_d.m_radius);
+        if (dispid == IDC_ROTATION_EDIT || dispid == -1)
+            PropertyDialog::SetFloatTextbox(m_rotationEdit, trigger->m_d.m_rotation);
+        if (dispid == IDC_RINGSPEED_EDIT || dispid == -1)
+            PropertyDialog::SetFloatTextbox(m_animationSpeedEdit, trigger->m_d.m_animSpeed);
+        if (dispid == IDC_SURFACE_COMBO || dispid == -1)
+            PropertyDialog::UpdateSurfaceComboBox(trigger->GetPTable(), m_surfaceCombo, trigger->m_d.m_szSurface);
+
+        UpdateBaseVisuals(trigger, &trigger->m_d, dispid);
+        trigger->UpdateStatusBarInfo();
         //only show the first element on multi-select
         break;
     }
@@ -48,67 +70,52 @@ void TriggerVisualsProperty::UpdateProperties(const int dispid)
         switch (dispid)
         {
             case 1503:
-                PropertyDialog::StartUndo(trigger);
-                trigger->m_d.m_shape = (TriggerShape)(PropertyDialog::GetComboBoxIndex(m_shapeCombo, m_shapeList));
-                PropertyDialog::EndUndo(trigger);
+                CHECK_UPDATE_ITEM(trigger->m_d.m_shape, (TriggerShape)(PropertyDialog::GetComboBoxIndex(m_shapeCombo, m_shapeList)), trigger);
                 break;
             case 902:
-                PropertyDialog::StartUndo(trigger);
-                trigger->m_d.m_vCenter.x = PropertyDialog::GetFloatTextbox(m_posXEdit);
-                PropertyDialog::EndUndo(trigger);
+                CHECK_UPDATE_ITEM(trigger->m_d.m_vCenter.x, PropertyDialog::GetFloatTextbox(m_posXEdit), trigger);
                 break;
             case 903:
-                PropertyDialog::StartUndo(trigger);
-                trigger->m_d.m_vCenter.y = PropertyDialog::GetFloatTextbox(m_posYEdit);
-                PropertyDialog::EndUndo(trigger);
+                CHECK_UPDATE_ITEM(trigger->m_d.m_vCenter.y, PropertyDialog::GetFloatTextbox(m_posYEdit), trigger);
                 break;
             case IDC_SURFACE_COMBO:
-                PropertyDialog::StartUndo(trigger);
-                PropertyDialog::GetComboBoxText(m_surfaceCombo, trigger->m_d.m_szSurface);
-                PropertyDialog::EndUndo(trigger);
+                CHECK_UPDATE_COMBO_TEXT(trigger->m_d.m_szSurface, m_surfaceCombo, trigger);
                 break;
             case IDC_STAR_THICKNESS_EDIT:
-                PropertyDialog::StartUndo(trigger);
-                trigger->m_d.m_wireThickness = PropertyDialog::GetFloatTextbox(m_wireThicknessEdit);
-                PropertyDialog::EndUndo(trigger);
+                CHECK_UPDATE_ITEM(trigger->m_d.m_wireThickness, PropertyDialog::GetFloatTextbox(m_wireThicknessEdit), trigger);
                 break;
             case IDC_STAR_RADIUS_EDIT:
-                PropertyDialog::StartUndo(trigger);
-                trigger->m_d.m_radius = PropertyDialog::GetFloatTextbox(m_starRadiusEdit);
-                PropertyDialog::EndUndo(trigger);
+                CHECK_UPDATE_ITEM(trigger->m_d.m_radius, PropertyDialog::GetFloatTextbox(m_starRadiusEdit), trigger);
                 break;
             case IDC_ROTATION_EDIT:
-                PropertyDialog::StartUndo(trigger);
-                trigger->m_d.m_rotation = PropertyDialog::GetFloatTextbox(m_rotationEdit);
-                PropertyDialog::EndUndo(trigger);
+                CHECK_UPDATE_ITEM(trigger->m_d.m_rotation, PropertyDialog::GetFloatTextbox(m_rotationEdit), trigger);
                 break;
             case IDC_RINGSPEED_EDIT:
-                PropertyDialog::StartUndo(trigger);
-                trigger->m_d.m_animSpeed = PropertyDialog::GetFloatTextbox(m_animationSpeedEdit);
-                PropertyDialog::EndUndo(trigger);
+                CHECK_UPDATE_ITEM(trigger->m_d.m_animSpeed, PropertyDialog::GetFloatTextbox(m_animationSpeedEdit), trigger);
                 break;
             default:
                 UpdateBaseProperties(trigger, &trigger->m_d, dispid);
                 break;
         }
+        trigger->UpdateStatusBarInfo();
     }
-    UpdateVisuals();
+    UpdateVisuals(dispid);
 }
 
 BOOL TriggerVisualsProperty::OnInitDialog()
 {
-    AttachItem(IDC_MATERIAL_COMBO, m_materialCombo);
+    m_materialCombo.AttachItem(IDC_MATERIAL_COMBO);
     m_baseMaterialCombo = &m_materialCombo;
-    AttachItem(IDC_SURFACE_COMBO, m_surfaceCombo);
-    AttachItem(1503, m_shapeCombo);
+    m_surfaceCombo.AttachItem(IDC_SURFACE_COMBO);
+    m_shapeCombo.AttachItem(1503);
     m_hVisibleCheck = ::GetDlgItem(GetHwnd(), IDC_VISIBLE_CHECK);
     m_hReflectionEnabledCheck = ::GetDlgItem(GetHwnd(), IDC_REFLECT_ENABLED_CHECK);
-    AttachItem(902, m_posXEdit);
-    AttachItem(903, m_posYEdit);
-    AttachItem(IDC_STAR_THICKNESS_EDIT, m_wireThicknessEdit);
-    AttachItem(IDC_STAR_RADIUS_EDIT, m_starRadiusEdit);
-    AttachItem(IDC_ROTATION_EDIT, m_rotationEdit);
-    AttachItem(IDC_RINGSPEED_EDIT, m_animationSpeedEdit);
+    m_posXEdit.AttachItem(902);
+    m_posYEdit.AttachItem(903);
+    m_wireThicknessEdit.AttachItem(IDC_STAR_THICKNESS_EDIT);
+    m_starRadiusEdit.AttachItem(IDC_STAR_RADIUS_EDIT);
+    m_rotationEdit.AttachItem(IDC_ROTATION_EDIT);
+    m_animationSpeedEdit.AttachItem(IDC_RINGSPEED_EDIT);
 
     UpdateVisuals();
     return TRUE;

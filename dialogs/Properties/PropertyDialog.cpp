@@ -42,119 +42,521 @@
 #include "Properties/TableLightsProperty.h"
 #include <WindowsX.h>
 
+#pragma region PropertyDialog
 
-PropertyDialog::PropertyDialog() : CDialog(IDD_PROPERTY_DIALOG), m_curTabIndex(0)
+LRESULT EditBox::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    switch (msg)
+    {
+        case WM_KEYUP:
+        {
+            if (wparam == VK_RETURN)
+            {
+                if (m_basePropertyDialog)
+                    m_basePropertyDialog->UpdateProperties(m_id);
+                return 0;
+            }
+        }
+    }
+    return WndProcDefault(msg, wparam, lparam);
+}
+
+LRESULT ComboBox::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    switch (msg)
+    {
+    case WM_KEYUP:
+    {
+        if (wparam == VK_RETURN)
+        {
+            if (m_basePropertyDialog)
+                m_basePropertyDialog->UpdateProperties(m_id);
+            ShowDropDown(FALSE);
+            return 0;
+        }
+    }
+    }
+    return WndProcDefault(msg, wparam, lparam);
+}
+
+PropertyDialog::PropertyDialog() : CDialog(IDD_PROPERTY_DIALOG), m_curTabIndex(0), m_previousType((ItemTypeEnum)0), m_backglassView(false)
 {
     memset(m_tabs, 0, sizeof(m_tabs));
 }
 
-void PropertyDialog::UpdateTextureComboBox(const vector<Texture *>& contentList, CComboBox &combo, const char *selectName)
+void PropertyDialog::CreateTabs(VectorProtected<ISelect> &pvsel)
 {
-    combo.ResetContent();
-    combo.AddString(_T("<None>"));
-    for (size_t i = 0; i < contentList.size(); i++)
-        combo.AddString(contentList[i]->m_szName);
-    combo.SetCurSel(combo.FindStringExact(1,selectName));
-}
-
-void PropertyDialog::UpdateMaterialComboBox(const vector<Material *>& contentList, CComboBox &combo, const char *selectName)
-{
-    combo.ResetContent();
-    combo.AddString(_T("<None>"));
-    for (size_t i = 0; i < contentList.size(); i++)
-        combo.AddString(contentList[i]->m_szName);
-    combo.SetCurSel(combo.FindStringExact(1, selectName));
-}
-
-void PropertyDialog::UpdateSurfaceComboBox(const PinTable * const ptable, CComboBox &combo, const char *selectName)
-{
-    vector<string> contentList;
-
-    for (size_t i = 0; i < ptable->m_vedit.size(); i++)
-    {
-        if (ptable->m_vedit[i]->GetItemType() == eItemSurface || (ptable->m_vedit[i]->GetItemType() == eItemRamp) ||
-            //!! **************** warning **********************
-            // added to render to surface of DMD style lights and emreels
-            // but no checks are being performed at moment:
-            (ptable->m_vedit[i]->GetItemType() == eItemFlasher))
-        {
-            contentList.push_back(ptable->GetElementName(ptable->m_vedit[i]));
-        }
-    }
-    combo.ResetContent();
-    combo.AddString(_T("<None>"));
-    for (size_t i = 0; i < contentList.size(); i++)
-        combo.AddString(contentList[i].c_str());
-    combo.SetCurSel(combo.FindStringExact(1, selectName));
-}
-
-void PropertyDialog::UpdateSoundComboBox(const PinTable *const ptable, CComboBox &combo, const char *selectName)
-{
-    combo.ResetContent();
-    combo.AddString(_T("<None>"));
-    for (size_t i=0;i<ptable->m_vsound.size();i++)
-        combo.AddString(ptable->m_vsound[i]->m_szName);
-    combo.SetCurSel(combo.FindStringExact(1, selectName));
-}
-
-void PropertyDialog::UpdateCollectionComboBox(const PinTable *const ptable, CComboBox &combo, const char *selectName)
-{
-    combo.ResetContent();
-    combo.AddString(_T("<None>"));
-    for (int i = 0; i < ptable->m_vcollection.Size(); i++)
-    {
-        char szT[MAX_PATH];
-        WideCharToMultiByte(CP_ACP, 0, ptable->m_vcollection[i].m_wzName, -1, szT, MAX_PATH, NULL, NULL);
-        combo.AddString(szT);
-    }
-    combo.SetCurSel(combo.FindStringExact(1, selectName));
-}
-
-void PropertyDialog::UpdateComboBox(const vector<string>& contentList, CComboBox &combo, const char *selectName)
-{
-    combo.ResetContent();
-    for (size_t i = 0; i < contentList.size(); i++)
-        combo.AddString(contentList[i].c_str());
-    combo.SetCurSel(combo.FindStringExact(0, selectName));
-}
-
-void PropertyDialog::UpdateTabs(VectorProtected<ISelect> *pvsel)
-{
-    ISelect * const psel = pvsel->ElementAt(0);
+    ISelect* const psel = pvsel.ElementAt(0);
     if (psel == NULL)
         return;
 
-    ShowWindow(SW_HIDE);
+    int activePage = m_tab.m_activePage;
+    m_backglassView = g_pvp->m_backglassView;
+    switch (psel->GetItemType())
+    {
+    case eItemTable:
+    {
+        if (g_pvp->m_backglassView)
+        {
+            m_elementTypeName.SetWindowText("Backglass");
+            m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new BackglassVisualsProperty(&pvsel), _T("Visuals")));
+            m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new BackglassCameraProperty(&pvsel), _T("Camera")));
+            if (m_tab.m_activeTabText == CString("Visuals"))
+                activePage = 0;
+        }
+        else
+        {
+            m_elementTypeName.SetWindowText("Table");
+            m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TableCustomProperty(&pvsel), _T("User")));
+            m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TableVisualsProperty(&pvsel), _T("Visuals")));
+            m_tabs[2] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TablePhysicsProperty(&pvsel), _T("Physics")));
+            m_tabs[3] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TableLightsProperty(&pvsel), _T("Lights")));
+            if (m_tab.m_activeTabText == CString("User"))
+                activePage = 0;
+            else if (m_tab.m_activeTabText == CString("Visuals"))
+                activePage = 1;
+            else if (m_tab.m_activeTabText == CString("Physics"))
+                activePage = 2;
+            else if (m_tab.m_activeTabText == CString("Lights"))
+                activePage = 3;
 
+        }
+        break;
+    }
+    case eItemSurface:
+    {
+        m_elementTypeName.SetWindowText("Wall");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new WallVisualsProperty(&pvsel), _T("Visuals")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new WallPhysicsProperty(&pvsel), _T("Physics")));
+        m_tabs[2] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("Physics"))
+            activePage = 1;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 2;
+        break;
+    }
+    case eItemGate:
+    {
+        m_elementTypeName.SetWindowText("Gate");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new GateVisualsProperty(&pvsel), _T("Visuals")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new GatePhysicsProperty(&pvsel), _T("Physics")));
+        m_tabs[2] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("Physics"))
+            activePage = 1;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 2;
+        break;
+    }
+    case eItemRamp:
+    {
+        m_elementTypeName.SetWindowText("Ramp");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new RampVisualsProperty(&pvsel), _T("Visuals")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new RampPhysicsProperty(&pvsel), _T("Physics")));
+        m_tabs[2] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("Physics"))
+            activePage = 1;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 2;
+        break;
+    }
+    case eItemFlipper:
+    {
+        m_elementTypeName.SetWindowText("Flipper");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new FlipperVisualsProperty(&pvsel), _T("Visuals")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new FlipperPhysicsProperty(&pvsel), _T("Physics")));
+        m_tabs[2] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("Physics"))
+            activePage = 1;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 2;
+        break;
+    }
+    case eItemPlunger:
+    {
+        m_elementTypeName.SetWindowText("Plunger");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new PlungerVisualsProperty(&pvsel), _T("Visuals")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new PlungerPhysicsProperty(&pvsel), _T("Physics")));
+        m_tabs[2] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("Physics"))
+            activePage = 1;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 2;
+        break;
+    }
+    case eItemBumper:
+    {
+        m_elementTypeName.SetWindowText("Bumper");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new BumperVisualsProperty(&pvsel), _T("Visuals")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new BumperPhysicsProperty(&pvsel), _T("Physics")));
+        m_tabs[2] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("Physics"))
+            activePage = 1;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 2;
+        break;
+    }
+    case eItemSpinner:
+    {
+        m_elementTypeName.SetWindowText("Spinner");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new SpinnerVisualsProperty(&pvsel), _T("Visuals")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new SpinnerPhysicsProperty(&pvsel), _T("Physics")));
+        m_tabs[2] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("Physics"))
+            activePage = 1;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 2;
+        break;
+    }
+    case eItemTimer:
+    {
+        m_elementTypeName.SetWindowText("Timer");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        activePage = 0;
+        break;
+    }
+    case eItemTrigger:
+    {
+        m_elementTypeName.SetWindowText("Trigger");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TriggerVisualsProperty(&pvsel), _T("Visuals")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TriggerPhysicsProperty(&pvsel), _T("Physics")));
+        m_tabs[2] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("Physics"))
+            activePage = 1;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 2;
+        break;
+    }
+    case eItemLight:
+    {
+        m_elementTypeName.SetWindowText("Light");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new LightVisualsProperty(&pvsel), _T("Visuals")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new LightStatesProperty(&pvsel), _T("States")));
+        m_tabs[2] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("States"))
+            activePage = 1;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 2;
+        break;
+    }
+    case eItemKicker:
+    {
+        m_elementTypeName.SetWindowText("Kicker");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new KickerVisualsProperty(&pvsel), _T("Visuals")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new KickerPhysicsProperty(&pvsel), _T("Physics")));
+        m_tabs[2] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("Physics"))
+            activePage = 1;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 2;
+        break;
+    }
+    case eItemHitTarget:
+    {
+        m_elementTypeName.SetWindowText("Target");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new HitTargetVisualsProperty(&pvsel), _T("Visuals")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new HitTargetPhysicsProperty(&pvsel), _T("Physics")));
+        m_tabs[2] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("Physics"))
+            activePage = 1;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 2;
+        break;
+    }
+    case eItemDecal:
+    {
+        m_elementTypeName.SetWindowText("Decal");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new DecalVisualsProperty(&pvsel), _T("Visuals")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("Physics"))
+            activePage = 1;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 2;
+        break;
+    }
+    case eItemTextbox:
+    {
+        m_elementTypeName.SetWindowText("Textbox");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TextboxVisualsProperty(&pvsel), _T("Visuals")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 1;
+        break;
+    }
+    case eItemDispReel:
+    {
+        m_elementTypeName.SetWindowText("Reel");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new DispreelVisualsProperty(&pvsel), _T("Visuals")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new DispreelStateProperty(&pvsel), _T("States")));
+        m_tabs[2] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("States"))
+            activePage = 1;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 2;
+        break;
+    }
+    case eItemLightSeq:
+    {
+        m_elementTypeName.SetWindowText("Light Sequence");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new LightseqStatesProperty(&pvsel), _T("States")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        if (m_tab.m_activeTabText == CString("States"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 1;
+        break;
+    }
+    case eItemPrimitive:
+    {
+        m_elementTypeName.SetWindowText("Primitive");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new PrimitiveVisualsProperty(&pvsel), _T("Visuals")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new PrimitivePositionProperty(&pvsel), _T("Position")));
+        m_tabs[2] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new PrimitivePhysicsProperty(&pvsel), _T("Physics")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("Position"))
+            activePage = 1;
+        else if (m_tab.m_activeTabText == CString("Physics"))
+            activePage = 2;
+        break;
+    }
+    case eItemFlasher:
+    {
+        m_elementTypeName.SetWindowText("Flasher");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new FlasherVisualsProperty(&pvsel), _T("Visuals")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 1;
+        break;
+    }
+    case eItemRubber:
+    {
+        m_elementTypeName.SetWindowText("Rubber");
+        m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new RubberVisualsProperty(&pvsel), _T("Visuals")));
+        m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new RubberPhysicsProperty(&pvsel), _T("Physics")));
+        m_tabs[2] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new TimerProperty(&pvsel), _T("Timer")));
+        if (m_tab.m_activeTabText == CString("Visuals"))
+            activePage = 0;
+        else if (m_tab.m_activeTabText == CString("Physics"))
+            activePage = 1;
+        else if (m_tab.m_activeTabText == CString("Timer"))
+            activePage = 2;
+        break;
+    }
+    case eItemDragPoint:
+    {
+        m_elementTypeName.SetWindowText("Control Point");
+        const DragPoint* const dpoint = (DragPoint*)psel;
+        const ItemTypeEnum itemType = dpoint->m_pihdp->GetIEditable()->GetItemType();
+        if (itemType == eItemRamp)
+            m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new DragpointVisualsProperty(IDD_PROPPOINT_VISUALSWHEIGHT, &pvsel), _T("Visuals")));
+        else if (itemType == eItemLight || itemType == eItemTrigger)
+            m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new DragpointVisualsProperty(IDD_PROPPOINT_VISUALS, &pvsel), _T("Visuals")));
+        else
+            m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new DragpointVisualsProperty(IDD_PROPPOINT_VISUALSWTEX, &pvsel), _T("Visuals")));
 
-    m_curTabIndex = m_tab.GetCurSel();
+        break;
+    }
+    default:
+        break;
+    }
+    m_tab.SetCurFocus(activePage);
+    m_previousType = psel->GetItemType();
+}
+
+void PropertyDialog::DeleteAllTabs()
+{
+    BasePropertyDialog::m_disableEvents = true;
     for (int i = 0; i < PROPERTY_TABS; i++)
         if (m_tabs[i] != NULL)
         {
             m_tab.RemoveTabPage(m_tab.GetTabIndex(m_tabs[i]));
             m_tabs[i] = NULL;
         }
+    m_previousType = (ItemTypeEnum)0;
+    m_backglassView = false;
+}
 
-    for (int i = 0; i < pvsel->Size(); i++)
+void PropertyDialog::UpdateTextureComboBox(const vector<Texture *>& contentList, CComboBox &combo, const std::string &selectName)
+{
+    bool texelFound = false;
+    for (auto texel : contentList)
     {
-        if (psel->GetItemType() != pvsel->ElementAt(i)->GetItemType())
+        if (strncmp(texel->m_szName.c_str(), selectName.c_str(), MAXTOKEN) == 0) //!! _stricmp?
+            texelFound = true;
+    }
+    if (combo.FindStringExact(1, selectName.c_str()) == CB_ERR || !texelFound)
+    {
+        combo.ResetContent();
+        combo.AddString(_T("<None>"));
+        for (size_t i = 0; i < contentList.size(); i++)
+            combo.AddString(contentList[i]->m_szName.c_str());
+    }
+    combo.SetCurSel(combo.FindStringExact(1, selectName.c_str()));
+}
+
+void PropertyDialog::UpdateMaterialComboBox(const vector<Material *>& contentList, CComboBox &combo, const std::string &selectName)
+{
+    bool matFound = false;
+    for (auto mat : contentList)
+    {
+        if (mat->m_szName==selectName)
+            matFound = true;
+    }
+    if(combo.FindStringExact(1, selectName.c_str()) == CB_ERR || !matFound)
+    {
+        combo.ResetContent();
+        combo.AddString(_T("<None>"));
+        for (size_t i = 0; i < contentList.size(); i++)
+            combo.AddString(contentList[i]->m_szName.c_str());
+    }
+    combo.SetCurSel(combo.FindStringExact(1, selectName.c_str()));
+}
+
+void PropertyDialog::UpdateSurfaceComboBox(const PinTable * const ptable, CComboBox &combo, const char *selectName)
+{
+    vector<string> contentList;
+
+    if(combo.FindStringExact(1, selectName) == CB_ERR)
+    {
+        for (size_t i = 0; i < ptable->m_vedit.size(); i++)
         {
-            m_multipleElementsStatic.ShowWindow(SW_SHOW);
-            m_nameEdit.ShowWindow(SW_HIDE);
-            m_tab.ShowWindow(SW_HIDE);
-            ShowWindow(SW_SHOW);
-            return;
+            if (ptable->m_vedit[i]->GetItemType() == eItemSurface || (ptable->m_vedit[i]->GetItemType() == eItemRamp) ||
+                //!! **************** warning **********************
+                // added to render to surface of DMD style lights and emreels
+                // but no checks are being performed at moment:
+                (ptable->m_vedit[i]->GetItemType() == eItemFlasher))
+            {
+                contentList.push_back(ptable->GetElementName(ptable->m_vedit[i]));
+            }
+        }
+        combo.ResetContent();
+        combo.AddString(_T("<None>"));
+        for (size_t i = 0; i < contentList.size(); i++)
+            combo.AddString(contentList[i].c_str());
+    }
+    combo.SetCurSel(combo.FindStringExact(1, selectName));
+}
+
+void PropertyDialog::UpdateSoundComboBox(const PinTable *const ptable, CComboBox &combo, const string& selectName)
+{
+    if(combo.FindStringExact(1, selectName.c_str())==CB_ERR)
+    {
+        combo.ResetContent();
+        combo.AddString(_T("<None>"));
+        for (size_t i = 0; i < ptable->m_vsound.size(); i++)
+            combo.AddString(ptable->m_vsound[i]->m_szName.c_str());
+    }
+    combo.SetCurSel(combo.FindStringExact(1, selectName.c_str()));
+}
+
+void PropertyDialog::UpdateCollectionComboBox(const PinTable *const ptable, CComboBox &combo, const char *selectName)
+{
+    if(combo.FindStringExact(1, selectName)==CB_ERR)
+    {
+        combo.ResetContent();
+        combo.AddString(_T("<None>"));
+        for (int i = 0; i < ptable->m_vcollection.Size(); i++)
+        {
+            char szT[sizeof(ptable->m_vcollection[i].m_wzName)/sizeof(ptable->m_vcollection[i].m_wzName[0])];
+            WideCharToMultiByte(CP_ACP, 0, ptable->m_vcollection[i].m_wzName, -1, szT, sizeof(szT), NULL, NULL);
+            combo.AddString(szT);
         }
     }
+    combo.SetCurSel(combo.FindStringExact(1, selectName));
+}
+
+void PropertyDialog::UpdateComboBox(const vector<string>& contentList, CComboBox &combo, const string& selectName)
+{
+    bool strFound = false;
+    for (auto str : contentList)
+    {
+        if (str == selectName)
+            strFound = true;
+    }
+    if(combo.FindStringExact(1, selectName.c_str())==CB_ERR || !strFound)
+    {
+        combo.ResetContent();
+        for (size_t i = 0; i < contentList.size(); i++)
+            combo.AddString(contentList[i].c_str());
+    }
+    combo.SetCurSel(combo.FindStringExact(0, selectName.c_str()));
+}
+
+void PropertyDialog::UpdateTabs(VectorProtected<ISelect> &pvsel)
+{
+    ISelect * const psel = pvsel.ElementAt(0);
+
+    if (psel == nullptr)
+        return;
+
+    ShowWindow(SW_HIDE);
+    if (m_previousType != psel->GetItemType() || m_backglassView!=g_pvp->m_backglassView)
+    {
+        BasePropertyDialog::m_disableEvents = true;
+        m_curTabIndex = m_tab.GetCurSel();
+        for (int i = 0; i < PROPERTY_TABS; i++)
+            if (m_tabs[i] != NULL)
+            {
+                m_tab.RemoveTabPage(m_tab.GetTabIndex(m_tabs[i]));
+                m_tabs[i] = NULL;
+            }
+
+        for (int i = 0; i < pvsel.Size(); i++)
+        {
+            // check for multiple selection
+            if (psel->GetItemType() != pvsel.ElementAt(i)->GetItemType())
+            {
+                m_multipleElementsStatic.ShowWindow(SW_SHOW);
+                m_nameEdit.ShowWindow(SW_HIDE);
+                m_elementTypeName.ShowWindow(SW_HIDE);
+                m_tab.ShowWindow(SW_HIDE);
+                ShowWindow(SW_SHOW);
+                BasePropertyDialog::m_disableEvents = false;
+                return;
+            }
+        }
+        CreateTabs(pvsel);
+    }
+
 
     if (m_multipleElementsStatic.IsWindowVisible())
     {
         m_multipleElementsStatic.ShowWindow(SW_HIDE);
         m_nameEdit.ShowWindow(SW_SHOW);
+        m_elementTypeName.ShowWindow(SW_SHOW);
         m_tab.ShowWindow(SW_SHOW);
     }
 
-    if (pvsel->Size() > 1)
+    if (pvsel.Size() > 1)
     {
         char header[64];
         char collection[64] = {0};
@@ -168,12 +570,12 @@ void PropertyDialog::UpdateTabs(VectorProtected<ISelect> *pvsel)
         CComBSTR bstr;
         psel->GetTypeName(&bstr);
         WideCharToMultiByte(CP_ACP, 0, bstr, -1, name, 64, NULL, NULL);
-        sprintf_s(header, "%s(%d)", name, pvsel->Size());
+        sprintf_s(header, "%s(%d)", name, pvsel.Size());
 
         if (collection[0] != 0)
-            sprintf_s(header, "%s [%s](%d)", collection, name, pvsel->Size());
+            sprintf_s(header, "%s [%s](%d)", collection, name, pvsel.Size());
         else
-            sprintf_s(header, "%s(%d)", name, pvsel->Size());
+            sprintf_s(header, "%s(%d)", name, pvsel.Size());
 
         m_nameEdit.SetWindowText(header);
         m_nameEdit.SetReadOnly();
@@ -183,281 +585,31 @@ void PropertyDialog::UpdateTabs(VectorProtected<ISelect> *pvsel)
         m_nameEdit.SetWindowText(psel->GetPTable()->GetElementName(psel->GetIEditable()));
         m_nameEdit.SetReadOnly(0);
     }
-    int activePage = m_tab.m_activePage;
-    switch (psel->GetItemType())
+
+    for (int i = 0; i < PROPERTY_TABS; i++)
     {
-        case eItemTable:
-        {
-            if (g_pvp->m_backglassView)
-            {
-                m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new BackglassVisualsProperty(pvsel), _T("Visuals")));
-                m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new BackglassCameraProperty(pvsel), _T("Camera")));
-                if (m_tab.m_activeTabText == CString("Visuals"))
-                   activePage = 0;
-            }
-            else
-            {
-                m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TableCustomProperty(pvsel), _T("User")));
-                m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TableVisualsProperty(pvsel), _T("Visuals")));
-                m_tabs[2] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TablePhysicsProperty(pvsel), _T("Physics")));
-                m_tabs[3] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TableLightsProperty(pvsel), _T("Lights")));
-                if (m_tab.m_activeTabText == CString("User"))
-                   activePage = 0;
-                else if (m_tab.m_activeTabText == CString("Visuals"))
-                   activePage = 1;
-                else if (m_tab.m_activeTabText == CString("Physics"))
-                   activePage = 2;
-                else if (m_tab.m_activeTabText == CString("Lights"))
-                   activePage = 3;
-
-            }
-            break;
-        }
-        case eItemSurface:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new WallVisualsProperty(pvsel), _T("Visuals")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new WallPhysicsProperty(pvsel), _T("Physics")));
-            m_tabs[2] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-               activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Physics"))
-               activePage = 1;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-               activePage = 2;
-            break;
-        }
-        case eItemGate:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new GateVisualsProperty(pvsel), _T("Visuals")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new GatePhysicsProperty(pvsel), _T("Physics")));
-            m_tabs[2] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Physics"))
-                activePage = 1;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-                activePage = 2;
-            break;
-        }
-        case eItemRamp:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new RampVisualsProperty(pvsel), _T("Visuals")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new RampPhysicsProperty(pvsel), _T("Physics")));
-            m_tabs[2] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Physics"))
-                activePage = 1;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-                activePage = 2;
-            break;
-        }
-        case eItemFlipper:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new FlipperVisualsProperty(pvsel), _T("Visuals")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new FlipperPhysicsProperty(pvsel), _T("Physics")));
-            m_tabs[2] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Physics"))
-                activePage = 1;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-                activePage = 2;
-            break;
-        }
-        case eItemPlunger:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new PlungerVisualsProperty(pvsel), _T("Visuals")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new PlungerPhysicsProperty(pvsel), _T("Physics")));
-            m_tabs[2] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Physics"))
-                activePage = 1;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-                activePage = 2;
-            break;
-        }
-        case eItemBumper:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new BumperVisualsProperty(pvsel), _T("Visuals")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new BumperPhysicsProperty(pvsel), _T("Physics")));
-            m_tabs[2] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Physics"))
-                activePage = 1;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-                activePage = 2;
-            break;
-        }
-        case eItemSpinner:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new SpinnerVisualsProperty(pvsel), _T("Visuals")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new SpinnerPhysicsProperty(pvsel), _T("Physics")));
-            m_tabs[2] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Physics"))
-                activePage = 1;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-                activePage = 2;
-            break;
-        }
-        case eItemTimer:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            activePage = 0;
-            break;
-        }
-        case eItemTrigger:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TriggerVisualsProperty(pvsel), _T("Visuals")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TriggerPhysicsProperty(pvsel), _T("Physics")));
-            m_tabs[2] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Physics"))
-                activePage = 1;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-                activePage = 2;
-            break;
-        }
-        case eItemLight:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new LightVisualsProperty(pvsel), _T("Visuals")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new LightStatesProperty(pvsel), _T("States")));
-            m_tabs[2] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Physics"))
-                activePage = 1;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-                activePage = 2;
-            break;
-        }
-        case eItemKicker:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new KickerVisualsProperty(pvsel), _T("Visuals")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new KickerPhysicsProperty(pvsel), _T("Physics")));
-            m_tabs[2] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Physics"))
-                activePage = 1;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-                activePage = 2;
-            break;
-        }
-        case eItemHitTarget:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new HitTargetVisualsProperty(pvsel), _T("Visuals")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new HitTargetPhysicsProperty(pvsel), _T("Physics")));
-            m_tabs[2] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Physics"))
-                activePage = 1;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-                activePage = 2;
-            break;
-        }
-        case eItemDecal:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new DecalVisualsProperty(pvsel), _T("Visuals")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Physics"))
-                activePage = 1;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-                activePage = 2;
-            break;
-        }
-        case eItemTextbox:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TextboxVisualsProperty(pvsel), _T("Visuals")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-                activePage = 1;
-            break;
-        }
-        case eItemDispReel:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new DispreelVisualsProperty(pvsel), _T("Visuals")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new DispreelStateProperty(pvsel), _T("States")));
-            m_tabs[2] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Physics"))
-                activePage = 1;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-                activePage = 2;
-            break;
-        }
-        case eItemLightSeq:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new LightseqStatesProperty(pvsel), _T("States")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-                activePage = 1;
-            break;
-        }
-        case eItemPrimitive:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new PrimitiveVisualsProperty(pvsel), _T("Visuals")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new PrimitivePositionProperty(pvsel), _T("Position")));
-            m_tabs[2] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new PrimitivePhysicsProperty(pvsel), _T("Physics")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Physics"))
-                activePage = 2;
-            break;
-        }
-        case eItemFlasher:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new FlasherVisualsProperty(pvsel), _T("Visuals")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-                activePage = 1;
-            break;
-        }
-        case eItemRubber:
-        {
-            m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new RubberVisualsProperty(pvsel), _T("Visuals")));
-            m_tabs[1] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new RubberPhysicsProperty(pvsel), _T("Physics")));
-            m_tabs[2] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new TimerProperty(pvsel), _T("Timer")));
-            if (m_tab.m_activeTabText == CString("Visuals"))
-                activePage = 0;
-            else if (m_tab.m_activeTabText == CString("Physics"))
-                activePage = 1;
-            else if (m_tab.m_activeTabText == CString("Timer"))
-                activePage = 2;
-            break;
-        }
-        case eItemDragPoint:
-        {
-            const DragPoint * const dpoint = (DragPoint *)psel;
-            const ItemTypeEnum itemType = dpoint->m_pihdp->GetIEditable()->GetItemType();
-            if(itemType==eItemRamp)
-                m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new DragpointVisualsProperty(IDD_PROPPOINT_VISUALSWHEIGHT, pvsel), _T("Visuals")));
-            else if(itemType == eItemLight || itemType==eItemTrigger)
-                m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new DragpointVisualsProperty(IDD_PROPPOINT_VISUALS, pvsel), _T("Visuals")));
-            else
-                m_tabs[0] = static_cast<BasePropertyDialog *>(m_tab.AddTabPage(new DragpointVisualsProperty(IDD_PROPPOINT_VISUALSWTEX, pvsel), _T("Visuals")));
-
-            break;
-        }
-        default:
-            break;
+        if (m_tabs[i])
+            m_tabs[i]->UpdateVisuals(-1);
     }
+    BasePropertyDialog::m_disableEvents = false;
     ShowWindow();
-    m_tab.SetCurFocus(activePage);
+}
+
+bool PropertyDialog::PreTranslateMessage(MSG* msg)
+{
+   if (!IsWindow())
+      return false;
+
+   // only pre-translate mouse and keyboard input events
+   if (((msg->message >= WM_KEYFIRST && msg->message <= WM_KEYLAST) || (msg->message >= WM_MOUSEFIRST && msg->message <= WM_MOUSELAST)))
+   {
+      const int keyPressed = LOWORD(msg->wParam);
+      // only pass F1-F12 to the main VPinball class to open subdialogs from everywhere
+      if(keyPressed>=VK_F1 && keyPressed<=VK_F12 && TranslateAccelerator(g_pvp->GetHwnd(), g_haccel, msg))
+         return true;
+   }
+
+   return !!IsSubDialogMessage(*msg);
 }
 
 BOOL PropertyDialog::OnInitDialog()
@@ -465,18 +617,21 @@ BOOL PropertyDialog::OnInitDialog()
     AttachItem(IDC_MULTIPLE_ELEMENTS_SELECTED_STATIC, m_multipleElementsStatic);
     AttachItem(IDC_PROP_TAB, m_tab);
     AttachItem(IDC_NAME_EDIT, m_nameEdit);
+    AttachItem(IDC_STATIC_ELEMENT_TYPE, m_elementTypeName);
     m_multipleElementsStatic.ShowWindow(SW_HIDE);
 
-//    m_resizer.Initialize(*this, CRect(0, 0, 243, 308));
-//     m_resizer.AddChild(m_nameEdit, topleft, RD_STRETCH_WIDTH);
-//     m_resizer.AddChild(m_tab, topcenter, RD_STRETCH_HEIGHT | RD_STRETCH_WIDTH);
+    m_resizer.Initialize(*this, CRect(0, 0, 243, 308));
+    m_resizer.AddChild(m_elementTypeName, topcenter, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_nameEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_multipleElementsStatic, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_tab, topcenter, RD_STRETCH_HEIGHT | RD_STRETCH_WIDTH);
     return TRUE;
 }
 
 INT_PTR PropertyDialog::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     // Pass resizing messages on to the resizer
-    //m_resizer.HandleMessage(msg, wparam, lparam);
+    m_resizer.HandleMessage(msg, wparam, lparam);
     // Pass unhandled messages on to parent DialogProc
     return DialogProcDefault(msg, wparam, lparam);
 }
@@ -487,11 +642,13 @@ void PropertyDialog::OnClose()
     CDialog::OnCancel();
 }
 
+
+
 BOOL PropertyDialog::IsSubDialogMessage(MSG &msg) const
 {
     for (int i = 0; i < PROPERTY_TABS; i++)
     {
-        if (m_tabs[i]!=NULL)
+        if (m_tabs[i]!=nullptr)
         {
             if (msg.message == WM_KEYDOWN && msg.wParam == VK_RETURN)
                 return TRUE;                    //disable enter key for any input otherwise the app would crash!?
@@ -500,14 +657,15 @@ BOOL PropertyDialog::IsSubDialogMessage(MSG &msg) const
                 const CString className = GetFocus().GetClassName();
                 if (className != "Edit")
                 {
-                    g_pvp->ParseCommand(ID_DELETE, FALSE);
+                    g_pvp->ParseCommand(ID_DELETE, false);
                     return TRUE;
                 }
             }
             else
             {
                 const BOOL ret = m_tabs[i]->IsDialogMessage(msg);
-                if (ret)
+
+                if (ret==TRUE)
                     return TRUE;
             }
         }
@@ -537,17 +695,22 @@ BOOL PropertyDialog::OnCommand(WPARAM wParam, LPARAM lParam)
         case CBN_SELCHANGE:
         case BN_CLICKED:
         {
-            CString name = m_nameEdit.GetWindowText();
             if (m_tabs[0] && m_tabs[0]->m_pvsel->ElementAt(0) != NULL)
-                m_tabs[0]->m_pvsel->ElementAt(0)->GetIEditable()->SetName(name.c_str());
+                m_tabs[0]->m_pvsel->ElementAt(0)->GetIEditable()->SetName(string(m_nameEdit.GetWindowText()));
             return TRUE;
         }
     }
     return FALSE;
 }
 
-TimerProperty::TimerProperty(VectorProtected<ISelect> *pvsel) : BasePropertyDialog(IDD_PROPTIMER, pvsel)
+#pragma endregion
+
+#pragma region TimeProperty
+
+TimerProperty::TimerProperty(const VectorProtected<ISelect> *pvsel) : BasePropertyDialog(IDD_PROPTIMER, pvsel)
 {
+    m_timerIntervalEdit.SetDialog(this);
+    m_userValueEdit.SetDialog(this);
 }
 
 void TimerProperty::UpdateProperties(const int dispid)
@@ -732,9 +895,10 @@ void TimerProperty::UpdateProperties(const int dispid)
                 break;
         }
     }
+    UpdateVisuals(dispid);
 }
 
-void TimerProperty::UpdateVisuals()
+void TimerProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
     for (int i = 0; i < m_pvsel->Size(); i++)
     {
@@ -903,8 +1067,8 @@ void TimerProperty::UpdateVisuals()
 
 BOOL TimerProperty::OnInitDialog()
 {
-    AttachItem(901, m_timerIntervalEdit);
-    AttachItem(1504, m_userValueEdit);
+    m_timerIntervalEdit.AttachItem(901);
+    m_userValueEdit.AttachItem(1504);
     UpdateVisuals();
     return TRUE;
 }
@@ -918,6 +1082,7 @@ BOOL TimerProperty::OnCommand(WPARAM wParam, LPARAM lParam)
     {
         case EN_KILLFOCUS:
         case CBN_KILLFOCUS:
+        case CBN_SELCHANGE:
         case BN_CLICKED:
         {
             UpdateProperties(dispID);
@@ -927,6 +1092,10 @@ BOOL TimerProperty::OnCommand(WPARAM wParam, LPARAM lParam)
     return FALSE;
 }
 
+#pragma endregion
+
+#pragma region BasePropertyDialog
+
 void BasePropertyDialog::UpdateBaseProperties(ISelect *psel, BaseProperty *property, const int dispid)
 {
     if (!property || psel==NULL)
@@ -935,96 +1104,72 @@ void BasePropertyDialog::UpdateBaseProperties(ISelect *psel, BaseProperty *prope
     switch (dispid)
     {
         case IDC_HIT_THRESHOLD_EDIT:
-            PropertyDialog::StartUndo(psel);
-            property->m_threshold = PropertyDialog::GetFloatTextbox(*m_baseHitThresholdEdit);
-            PropertyDialog::EndUndo(psel);
+            CHECK_UPDATE_ITEM(property->m_threshold, PropertyDialog::GetFloatTextbox(*m_baseHitThresholdEdit), psel);
             break;
         case IDC_HAS_HITEVENT_CHECK:
-            PropertyDialog::StartUndo(psel);
-            property->m_hitEvent = PropertyDialog::GetCheckboxState(m_hHitEventCheck);
-            PropertyDialog::EndUndo(psel);
+            CHECK_UPDATE_ITEM(property->m_hitEvent, PropertyDialog::GetCheckboxState(m_hHitEventCheck), psel);
             break;
         case IDC_ELASTICITY_EDIT:
-            PropertyDialog::StartUndo(psel);
-            property->m_elasticity = PropertyDialog::GetFloatTextbox(*m_baseElasticityEdit);
-            PropertyDialog::EndUndo(psel);
+            CHECK_UPDATE_ITEM(property->m_elasticity, PropertyDialog::GetFloatTextbox(*m_baseElasticityEdit), psel);
             break;
         case IDC_COLLIDABLE_CHECK:
-            PropertyDialog::StartUndo(psel);
-            property->m_collidable = PropertyDialog::GetCheckboxState(m_hCollidableCheck);
-            PropertyDialog::EndUndo(psel);
+            CHECK_UPDATE_ITEM(property->m_collidable, PropertyDialog::GetCheckboxState(m_hCollidableCheck), psel);
             break;
         case IDC_VISIBLE_CHECK:
-            PropertyDialog::StartUndo(psel);
-            property->m_visible = PropertyDialog::GetCheckboxState(m_hVisibleCheck);
-            PropertyDialog::EndUndo(psel);
+            CHECK_UPDATE_ITEM(property->m_visible, PropertyDialog::GetCheckboxState(m_hVisibleCheck), psel);
             break;
         case IDC_REFLECT_ENABLED_CHECK:
-            PropertyDialog::StartUndo(psel);
-            property->m_reflectionEnabled = PropertyDialog::GetCheckboxState(m_hReflectionEnabledCheck);
-            PropertyDialog::EndUndo(psel);
+            CHECK_UPDATE_ITEM(property->m_reflectionEnabled, PropertyDialog::GetCheckboxState(m_hReflectionEnabledCheck), psel);
             break;
         case IDC_FRICTION_EDIT:
-            PropertyDialog::StartUndo(psel);
-            property->m_friction = PropertyDialog::GetFloatTextbox(*m_baseFrictionEdit);
-            PropertyDialog::EndUndo(psel);
+            CHECK_UPDATE_ITEM(property->m_friction, PropertyDialog::GetFloatTextbox(*m_baseFrictionEdit), psel);
             break;
         case IDC_SCATTER_ANGLE_EDIT:
-            PropertyDialog::StartUndo(psel);
-            property->m_scatter = PropertyDialog::GetFloatTextbox(*m_baseScatterAngleEdit);
-            PropertyDialog::EndUndo(psel);
+            CHECK_UPDATE_ITEM(property->m_scatter, PropertyDialog::GetFloatTextbox(*m_baseScatterAngleEdit), psel);
             break;
         case DISPID_Image:
-            PropertyDialog::StartUndo(psel);
-            PropertyDialog::GetComboBoxText(*m_baseImageCombo, property->m_szImage);
-            PropertyDialog::EndUndo(psel);
+            CHECK_UPDATE_COMBO_TEXT_STRING(property->m_szImage, *m_baseImageCombo, psel);
             break;
         case IDC_MATERIAL_COMBO:
-            PropertyDialog::StartUndo(psel);
-            PropertyDialog::GetComboBoxText(*m_baseMaterialCombo, property->m_szMaterial);
-            PropertyDialog::EndUndo(psel);
+            CHECK_UPDATE_COMBO_TEXT_STRING(property->m_szMaterial, *m_baseMaterialCombo, psel);
             break;
         case IDC_MATERIAL_COMBO4:
-            PropertyDialog::StartUndo(psel);
-            PropertyDialog::GetComboBoxText(*m_basePhysicsMaterialCombo, property->m_szPhysicsMaterial);
-            PropertyDialog::EndUndo(psel);
+            CHECK_UPDATE_COMBO_TEXT_STRING(property->m_szPhysicsMaterial, *m_basePhysicsMaterialCombo, psel);
             break;
         case IDC_OVERWRITE_MATERIAL_SETTINGS:
-            PropertyDialog::StartUndo(psel);
-            property->m_overwritePhysics = PropertyDialog::GetCheckboxState(m_hOverwritePhysicsCheck);
-            PropertyDialog::EndUndo(psel);
+            CHECK_UPDATE_ITEM(property->m_overwritePhysics, PropertyDialog::GetCheckboxState(m_hOverwritePhysicsCheck), psel);
             break;
     }
 }
 
-void BasePropertyDialog::UpdateBaseVisuals(ISelect *psel, BaseProperty *property)
+void BasePropertyDialog::UpdateBaseVisuals(ISelect *psel, BaseProperty *property, const int dispid)
 {
     if (!property)
         return;
 
-    if (m_baseHitThresholdEdit)
+    if (m_baseHitThresholdEdit && (dispid == IDC_HIT_THRESHOLD_EDIT || dispid == -1))
         PropertyDialog::SetFloatTextbox(*m_baseHitThresholdEdit, property->m_threshold);
-    if (m_baseElasticityEdit)
+    if (m_baseElasticityEdit && (dispid == IDC_ELASTICITY_EDIT || dispid == -1))
         PropertyDialog::SetFloatTextbox(*m_baseElasticityEdit, property->m_elasticity);
-    if (m_baseFrictionEdit)
+    if (m_baseFrictionEdit && (dispid == IDC_FRICTION_EDIT || dispid == -1))
         PropertyDialog::SetFloatTextbox(*m_baseFrictionEdit, property->m_friction);
-    if (m_baseScatterAngleEdit)
+    if (m_baseScatterAngleEdit && (dispid == IDC_SCATTER_ANGLE_EDIT || dispid == -1))
         PropertyDialog::SetFloatTextbox(*m_baseScatterAngleEdit, property->m_scatter);
-    if (m_hHitEventCheck)
+    if (m_hHitEventCheck && (dispid == IDC_HAS_HITEVENT_CHECK || dispid == -1))
         PropertyDialog::SetCheckboxState(m_hHitEventCheck, property->m_hitEvent);
-    if (m_hCollidableCheck)
+    if (m_hCollidableCheck && (dispid == IDC_COLLIDABLE_CHECK || dispid == -1))
         PropertyDialog::SetCheckboxState(m_hCollidableCheck, property->m_collidable);
-    if (m_hReflectionEnabledCheck)
+    if (m_hReflectionEnabledCheck && (dispid == IDC_REFLECT_ENABLED_CHECK || dispid == -1))
         PropertyDialog::SetCheckboxState(m_hReflectionEnabledCheck, property->m_reflectionEnabled);
-    if (m_hVisibleCheck)
+    if (m_hVisibleCheck && (dispid == IDC_VISIBLE_CHECK || dispid == -1))
         PropertyDialog::SetCheckboxState(m_hVisibleCheck, property->m_visible);
-    if(m_basePhysicsMaterialCombo)
+    if(m_basePhysicsMaterialCombo && (dispid == IDC_MATERIAL_COMBO4 || dispid == -1))
         PropertyDialog::UpdateMaterialComboBox(psel->GetPTable()->GetMaterialList(), *m_basePhysicsMaterialCombo, property->m_szPhysicsMaterial);
-    if(m_hOverwritePhysicsCheck)
+    if(m_hOverwritePhysicsCheck && (dispid == IDC_OVERWRITE_MATERIAL_SETTINGS || dispid == -1))
         PropertyDialog::SetCheckboxState(m_hOverwritePhysicsCheck, property->m_overwritePhysics);
-    if(m_baseMaterialCombo)
+    if(m_baseMaterialCombo && (dispid == IDC_MATERIAL_COMBO || dispid == -1))
         PropertyDialog::UpdateMaterialComboBox(psel->GetPTable()->GetMaterialList(), *m_baseMaterialCombo, property->m_szMaterial);
-    if (m_baseImageCombo)
+    if (m_baseImageCombo && (dispid == DISPID_Image || dispid == -1))
         PropertyDialog::UpdateTextureComboBox(psel->GetPTable()->GetImageList(), *m_baseImageCombo, property->m_szImage);
 
     if (m_hCollidableCheck)
@@ -1048,6 +1193,17 @@ void BasePropertyDialog::UpdateBaseVisuals(ISelect *psel, BaseProperty *property
     }
 }
 
+bool BasePropertyDialog::m_disableEvents = false;
+INT_PTR BasePropertyDialog::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    // Pass unhandled messages on to parent DialogProc
+    return DialogProcDefault(msg, wparam, lparam);
+
+}
+#pragma endregion
+
+#pragma region Docking
+
 CContainProperties::CContainProperties()
 {
     SetTabText(_T("Properties"));
@@ -1066,3 +1222,5 @@ void CDockProperty::OnClose()
 {
     // nothing to do only to prevent closing the window
 }
+
+#pragma endregion

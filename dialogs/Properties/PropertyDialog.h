@@ -1,11 +1,14 @@
 #ifndef H_PROPERTY_DIALOG
 #define H_PROPERTY_DIALOG
 
+#pragma region BasePropertyDialog
 
+class EditBox;
+class ComboBox;
 class BasePropertyDialog: public CDialog
 {
 public:
-    BasePropertyDialog(int id, VectorProtected<ISelect> *pvsel) : CDialog(id), m_pvsel(pvsel)
+    BasePropertyDialog(const int id, const VectorProtected<ISelect> *pvsel) : CDialog(id), m_pvsel(pvsel)
     {
         m_baseHitThresholdEdit = NULL;
         m_baseElasticityEdit = NULL;
@@ -21,37 +24,47 @@ public:
         m_hVisibleCheck = 0;
     }
     virtual void UpdateProperties(const int dispid) = 0;
-    virtual void UpdateVisuals() = 0;
+    virtual void UpdateVisuals(const int dispid=-1) = 0;
     virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam)
     {
         UNREFERENCED_PARAMETER(lParam);
         const int dispID = LOWORD(wParam);
 
-        switch (HIWORD(wParam))
+        if(!m_disableEvents)
         {
+            switch (HIWORD(wParam))
+            {
+            //case CBN_KILLFOCUS:
             case EN_KILLFOCUS:
-            case CBN_KILLFOCUS:
+            {
+               if(m_pvsel->Size()>1)
+                  break;   //early out here for multi-selected elements, otherwise the value of the last element in the list is assigned to all other elements as well
+            }
             case CBN_SELCHANGE:
             case BN_CLICKED:
             {
                 UpdateProperties(dispID);
                 return TRUE;
             }
+            }
         }
         return FALSE;
     }
     void UpdateBaseProperties(ISelect *psel, BaseProperty *property, const int dispid);
-    void UpdateBaseVisuals(ISelect *psel, BaseProperty *property);
+    void UpdateBaseVisuals(ISelect *psel, BaseProperty *property, const int dispid = -1);
 
-    VectorProtected<ISelect>* m_pvsel;
+    const VectorProtected<ISelect>* m_pvsel;
+    static bool               m_disableEvents;
 protected:
-    CEdit     *m_baseHitThresholdEdit;
-    CEdit     *m_baseElasticityEdit;
-    CEdit     *m_baseFrictionEdit;
-    CEdit     *m_baseScatterAngleEdit;
-    CComboBox *m_basePhysicsMaterialCombo;
-    CComboBox *m_baseMaterialCombo;
-    CComboBox *m_baseImageCombo;
+    virtual INT_PTR DialogProc(UINT msg, WPARAM wparam, LPARAM lparam);
+
+    EditBox   *m_baseHitThresholdEdit;
+    EditBox   *m_baseElasticityEdit;
+    EditBox   *m_baseFrictionEdit;
+    EditBox   *m_baseScatterAngleEdit;
+    ComboBox  *m_basePhysicsMaterialCombo;
+    ComboBox  *m_baseMaterialCombo;
+    ComboBox  *m_baseImageCombo;
     HWND      m_hHitEventCheck;
     HWND      m_hCollidableCheck;
     HWND      m_hOverwritePhysicsCheck;
@@ -59,19 +72,63 @@ protected:
     HWND      m_hVisibleCheck;
 };
 
+class EditBox : public CEdit
+{
+public:
+    EditBox() : m_basePropertyDialog(nullptr), m_id(-1) {}
+    virtual ~EditBox() {}
+    void    SetDialog(BasePropertyDialog* dialog) { m_basePropertyDialog = dialog; }
+    virtual void AttachItem(int id)
+    {
+        m_id = id;
+        m_basePropertyDialog->AttachItem(id, *this);
+    }
+protected:
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
+
+private:
+    BasePropertyDialog* m_basePropertyDialog;
+    int m_id;
+};
+
+class ComboBox : public CComboBox
+{
+public:
+    ComboBox() : m_basePropertyDialog(nullptr), m_id(-1) {}
+    virtual ~ComboBox() {}
+    void    SetDialog(BasePropertyDialog* dialog) { m_basePropertyDialog = dialog; }
+    virtual void AttachItem(int id)
+    {
+        m_id = id;
+        m_basePropertyDialog->AttachItem(id, *this);
+    }
+protected:
+    virtual LRESULT WndProc(UINT msg, WPARAM wparam, LPARAM lparam);
+
+private:
+    BasePropertyDialog* m_basePropertyDialog;
+    int m_id;
+};
+#pragma endregion
+
+#pragma region TimerProperty
+
 class TimerProperty: public BasePropertyDialog
 {
 public:
-    TimerProperty(VectorProtected<ISelect> *pvsel);
+    TimerProperty(const VectorProtected<ISelect> *pvsel);
     virtual void UpdateProperties(const int dispid);
-    virtual void UpdateVisuals();
+    virtual void UpdateVisuals(const int dispid=-1);
 protected:
     virtual BOOL OnInitDialog();
     virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 private:
-    CEdit   m_timerIntervalEdit;
-    CEdit   m_userValueEdit;
+    EditBox m_timerIntervalEdit;
+    EditBox m_userValueEdit;
 };
+#pragma endregion
+
+#pragma region ColorButton
 
 class ColorButton: public CButton
 {
@@ -145,6 +202,9 @@ public:
 private:
     COLORREF m_color;
 };
+#pragma endregion
+
+#pragma region PropertyDialog
 
 class PropertyTab : public CTab
 {
@@ -170,78 +230,80 @@ class PropertyDialog : public CDialog
 public:
     PropertyDialog();
 
-    void UpdateTabs(VectorProtected<ISelect> *pvsel);
+    void CreateTabs(VectorProtected<ISelect> &pvsel);
+    void DeleteAllTabs();
+    void UpdateTabs(VectorProtected<ISelect> &pvsel);
+    bool PreTranslateMessage(MSG* msg);
 
-    static void UpdateTextureComboBox(const vector<Texture*>& contentList, CComboBox &combo, const char *selectName);
-    static void UpdateComboBox(const vector<string>& contentList, CComboBox &combo, const char *selectName);
-    static void UpdateMaterialComboBox(const vector<Material *>& contentList, CComboBox &combo, const char *selectName);
-    static void UpdateSurfaceComboBox(const PinTable * const ptable, CComboBox &combo, const char *selectName);
-    static void UpdateSoundComboBox(const PinTable *const ptable, CComboBox &combo, const char *selectName);
+    static void UpdateTextureComboBox(const vector<Texture*>& contentList, CComboBox &combo, const string &selectName);
+    static void UpdateComboBox(const vector<string>& contentList, CComboBox &combo, const string &selectName);
+    static void UpdateMaterialComboBox(const vector<Material *>& contentList, CComboBox &combo, const string &selectName);
+    static void UpdateSurfaceComboBox(const PinTable *const ptable, CComboBox &combo, const char *selectName);
+    static void UpdateSoundComboBox(const PinTable *const ptable, CComboBox &combo, const string &selectName);
     static void UpdateCollectionComboBox(const PinTable *const ptable, CComboBox &combo, const char *selectName);
 
-    static void StartUndo(ISelect *psel)
+    static void StartUndo(ISelect *const psel)
     {
         psel->GetIEditable()->BeginUndo();
         psel->GetIEditable()->MarkForUndo();
     }
 
-    static void EndUndo(ISelect *psel)
+    static void EndUndo(ISelect *const psel)
     {
         psel->GetIEditable()->EndUndo();
         psel->GetIEditable()->SetDirtyDraw();
     }
 
-    static bool GetCheckboxState(HWND checkBoxHwnd)
+    static bool GetCheckboxState(const HWND checkBoxHwnd)
     {
         const size_t selected = ::SendMessage(checkBoxHwnd, BM_GETCHECK, 0, 0);
         return selected != 0;
     }
-    static void SetCheckboxState(HWND checkBoxHwnd, bool checked)
+
+    static void SetCheckboxState(const HWND checkBoxHwnd, const bool checked)
     {
         ::SendMessage(checkBoxHwnd, BM_SETCHECK, checked ? BST_CHECKED : BST_UNCHECKED, 0);
     }
     
     static float GetFloatTextbox(CEdit &textbox)
     {
-        const CString textStr(textbox.GetWindowText());
-        const float fv = sz2f(textStr.c_str());
+        const float fv = sz2f(string(textbox.GetWindowText()));
         return fv;
     }
 
     static int GetIntTextbox(CEdit &textbox)
     {
-        const CString textStr(textbox.GetWindowText());
         int value = 0;
-        sscanf_s(textStr.c_str(), "%i", &value);
+        sscanf_s(textbox.GetWindowText().c_str(), "%i", &value);
         return value;
     }
 
     static void SetFloatTextbox(CEdit &textbox, const float value)
     {
-        char strValue[256];
+        string strValue;
         f2sz(value, strValue);
-        textbox.SetWindowText(strValue);
+        textbox.SetWindowText(strValue.c_str());
     }
 
     static void SetIntTextbox(CEdit &textbox, const int value)
     {
-        textbox.SetWindowText(CString(value).c_str());
+        textbox.SetWindowText(std::to_string(value).c_str());
     }
 
-    static void GetComboBoxText(CComboBox &combo, char *strbuf)
+    static void GetComboBoxText(CComboBox &combo, char * const strbuf, const size_t maxlength)
     {
-        char buf[MAXTOKEN];
+        char buf[MAXSTRING];
         combo.GetLBText(combo.GetCurSel(), buf);
-        const CString str(buf);
-        strncpy_s(strbuf, MAXNAMEBUFFER, str.c_str(), (str.GetLength()> MAXNAMEBUFFER) ? MAXNAMEBUFFER-1:str.GetLength());
+        strncpy_s(strbuf, maxlength, buf, maxlength-1);
     }
 
     static int GetComboBoxIndex(CComboBox &combo, const vector<string>& contentList)
     {
-        char buf[MAXTOKEN];
+        char buf[MAXSTRING];
         combo.GetLBText(combo.GetCurSel(), buf);
+        const string s(buf);
         for (size_t i = 0; i < contentList.size(); i++)
-            if (contentList[i].compare(buf)==0)
+            if (contentList[i] == s)
                 return (int)i;
         return -1;
     }
@@ -256,13 +318,80 @@ protected:
     virtual void OnClose();
 
 private:
-    PropertyTab m_tab;
+    PropertyTab  m_tab;
     BasePropertyDialog *m_tabs[PROPERTY_TABS];
-    int  m_curTabIndex;
-    CEdit m_nameEdit;
+    ItemTypeEnum m_previousType;
+    bool         m_backglassView;
+
+    int      m_curTabIndex;
+    CEdit    m_nameEdit;
     CResizer m_resizer;
-    CStatic m_multipleElementsStatic;
+    CStatic  m_multipleElementsStatic;
+    CStatic  m_elementTypeName;
 };
+#pragma endregion
+
+#pragma region UpdateMacros
+
+#define CHECK_UPDATE_ITEM(classValue, uiValue, element)\
+{\
+    auto value = uiValue; \
+    if(classValue!=value) \
+    { \
+        PropertyDialog::StartUndo(element); \
+        classValue=value; \
+        PropertyDialog::EndUndo(element); \
+    }\
+}
+#define CHECK_UPDATE_COMBO_TEXT_STRING(classValue, uiCombo, element)\
+{\
+    char szName[MAXSTRING]={0}; \
+    PropertyDialog::GetComboBoxText(uiCombo, szName, sizeof(szName)); \
+    if(szName!=classValue) \
+    { \
+        PropertyDialog::StartUndo(element); \
+        classValue = szName; \
+        PropertyDialog::EndUndo(element); \
+    }\
+}
+
+#define CHECK_UPDATE_COMBO_TEXT(classValue, uiCombo, element)\
+{\
+    char szName[sizeof(classValue)]={0}; \
+    PropertyDialog::GetComboBoxText(uiCombo, szName, sizeof(classValue)); \
+    if (strcmp(szName, classValue) != 0) \
+    { \
+        PropertyDialog::StartUndo(element); \
+        strncpy_s(classValue, szName, sizeof(classValue)-1); \
+        PropertyDialog::EndUndo(element); \
+    }\
+}
+
+#define CHECK_UPDATE_VALUE_SETTER(classSetter, classGetter, uiGetter, uiGetterParameter, element) \
+{ \
+    auto value = uiGetter(uiGetterParameter); \
+    if (classGetter() != value) \
+    { \
+        PropertyDialog::StartUndo(element); \
+        classSetter(value); \
+        PropertyDialog::EndUndo(element); \
+    } \
+}
+
+#define CHECK_UPDATE_COMBO_VALUE_SETTER(classSetter, classGetter, uiComboValue, element) \
+{\
+   auto value =  uiComboValue; \
+   if(classGetter() != value) \
+   { \
+      PropertyDialog::StartUndo(element); \
+      classSetter(value); \
+      PropertyDialog::EndUndo(element); \
+   } \
+}
+
+#pragma endregion
+
+#pragma region Docking
 
 class CContainProperties: public CDockContainer
 {
@@ -298,5 +427,6 @@ public:
 private:
     CContainProperties m_propContainer;
 };
+#pragma endregion
 
 #endif

@@ -4,25 +4,25 @@
 class KickerVisualsProperty: public BasePropertyDialog
 {
 public:
-    KickerVisualsProperty(VectorProtected<ISelect> *pvsel);
+    KickerVisualsProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~KickerVisualsProperty()
     {
     }
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
     virtual BOOL OnInitDialog();
 
 private:
-    CComboBox m_materialCombo;
-    CComboBox m_displayCombo;
-    CEdit     m_radiusEdit;
-    CEdit     m_orientationEdit;
-    CEdit     m_posXEdit;
-    CEdit     m_posYEdit;
-    CComboBox m_surfaceCombo;
+    ComboBox  m_materialCombo;
+    ComboBox  m_displayCombo;
+    ComboBox  m_surfaceCombo;
+    EditBox   m_radiusEdit;
+    EditBox   m_orientationEdit;
+    EditBox   m_posXEdit;
+    EditBox   m_posYEdit;
     vector<string> m_typeList;
 };
 

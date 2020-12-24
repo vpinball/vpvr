@@ -32,6 +32,9 @@
 #define EDITOR_BG_WIDTH 1000
 #define EDITOR_BG_HEIGHT 750
 
+#define MAIN_WINDOW_WIDTH  1280
+#define MAIN_WINDOW_HEIGHT (720-50)
+
 #define BASEDEPTHBIAS 5e-5f
 
 #define THREADS_PAUSE 1000 // msecs/time to wait for threads to finish up
@@ -80,6 +83,18 @@
 //#define DEBUGPHYSICS          // enables detailed physics/collision handling output for the 'F11' stats/debug texts
 
 #define DEBUG_BALL_SPIN         // enables dots glued to balls if in 'F11' mode
+
+//
+
+#define LAST_OPENED_TABLE_COUNT 8
+
+#define MAX_CUSTOM_PARAM_INDEX  10
+
+#define MAX_OPEN_TABLES         9
+
+#define AUTOSAVE_DEFAULT_TIME   10
+
+#define DEFAULT_SECURITY_LEVEL  0
 
 //VR Support
 

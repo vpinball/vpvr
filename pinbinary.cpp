@@ -14,16 +14,15 @@ PinBinary::~PinBinary()
    }
 }
 
-bool PinBinary::ReadFromFile(const char * const szfilename)
+bool PinBinary::ReadFromFile(const string& szFileName)
 {
-   HANDLE hFile = CreateFile(szfilename,
+   HANDLE hFile = CreateFile(szFileName.c_str(),
       GENERIC_READ, FILE_SHARE_READ,
       NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
    if (hFile == INVALID_HANDLE_VALUE)
    {
-      char text[MAX_PATH];
-      sprintf_s(text, "The file \"%s\" could not be opened.", szfilename);
+      const string text = "The file \"" + szFileName + "\" could not be opened.";
       ShowError(text);
       return false;
    }
@@ -42,26 +41,21 @@ bool PinBinary::ReadFromFile(const char * const szfilename)
 
    /*foo =*/ CloseHandle(hFile);
 
-   strncpy_s(m_szPath, szfilename, MAX_PATH - 1);
+   m_szPath = szFileName;
+   TitleFromFilename(szFileName, m_szName);
 
-   TitleFromFilename(szfilename, m_szName);
-
-   strncpy_s(m_szInternalName, m_szName, MAXTOKEN - 1);
-
-   CharLowerBuff(m_szInternalName, lstrlen(m_szInternalName));
    return true;
 }
 
-bool PinBinary::WriteToFile(const char * const szfilename)
+bool PinBinary::WriteToFile(const string& szfilename)
 {
-   HANDLE hFile = CreateFile(szfilename,
+   HANDLE hFile = CreateFile(szfilename.c_str(),
       GENERIC_WRITE, FILE_SHARE_READ,
       NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
    if (hFile == INVALID_HANDLE_VALUE)
    {
-      char bla[MAXSTRING];
-      sprintf_s(bla, "The temporary file %s could not be written.", szfilename);
+      const string bla = "The temporary file \"" + szfilename + "\" could not be written.";
       ShowError(bla);
       return false;
    }
@@ -80,15 +74,9 @@ HRESULT PinBinary::SaveToStream(IStream *pstream)
    BiffWriter bw(pstream, NULL);
 
    bw.WriteString(FID(NAME), m_szName);
-
-   bw.WriteString(FID(INME), m_szInternalName);
-
    bw.WriteString(FID(PATH), m_szPath);
-
    bw.WriteInt(FID(SIZE), m_cdata);
-
    bw.WriteStruct(FID(DATA), m_pdata, m_cdata);
-
    bw.WriteTag(FID(ENDB));
 
    return S_OK;
@@ -108,7 +96,6 @@ bool PinBinary::LoadToken(const int id, BiffReader * const pbr)
    switch (id)
    {
    case FID(NAME): pbr->GetString(m_szName); break;
-   case FID(INME): pbr->GetString(m_szInternalName); break;
    case FID(PATH): pbr->GetString(m_szPath); break;
    case FID(SIZE):
    {
@@ -145,9 +132,8 @@ void PinFont::Register()
 
    ReleaseDC(NULL, hdcScreen);
 
-   char szPath[MAX_PATH];
-
-   GetModuleFileName(NULL, szPath, MAX_PATH);
+   char szPath[MAXSTRING];
+   GetModuleFileName(NULL, szPath, MAXSTRING);
 
    char *szEnd = szPath + lstrlen(szPath);
 
@@ -164,22 +150,15 @@ void PinFont::Register()
    static int tempFontNumber = -1;
    tempFontNumber++;
 
-   lstrcat(szPath, "VPTemp");
-   char tempFontNumber_s[4];
-   _itoa_s(tempFontNumber, tempFontNumber_s, 10);
-   lstrcat(szPath, tempFontNumber_s);
-   lstrcat(szPath, ".ttf");
-
-   strcpy_s(m_szTempFile, sizeof(m_szTempFile), szPath);
-
+   m_szTempFile = szPath + string("VPTemp") + std::to_string(tempFontNumber) + ".ttf";
    WriteToFile(m_szTempFile);
 
-   /*const int fonts =*/ AddFontResource(m_szTempFile);
+   /*const int fonts =*/ AddFontResource(m_szTempFile.c_str());
 }
 
 void PinFont::UnRegister()
 {
-   /*const BOOL foo =*/ RemoveFontResource(m_szTempFile);
+   /*const BOOL foo =*/ RemoveFontResource(m_szTempFile.c_str());
 
-   DeleteFile(m_szTempFile);
+   DeleteFile(m_szTempFile.c_str());
 }

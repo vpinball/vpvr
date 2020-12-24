@@ -27,7 +27,7 @@ public:
    COLORREF m_color;
 
    COLORREF m_rubbercolor;
-   char m_szRubberMaterial[MAXNAMEBUFFER];
+   std::string  m_szRubberMaterial;
    float m_rubberthickness;
    float m_rubberheight;
    float m_rubberwidth;
@@ -161,13 +161,16 @@ public:
       else
          m_d.m_return = clamp(value, 0.0f, 1.0f);
    }
+   float     GetReturn(void) const
+   {
+      return m_d.m_return;
+   }
+
    float     GetFlipperRadiusMin() const { return m_d.m_FlipperRadiusMin; }
    void      SetFlipperRadiusMin(const float value)
    {
       m_d.m_FlipperRadiusMin = max(value, 0.0f);
    }
-
-   void UpdateUnitsInfo();
 
    FlipperData m_d;
    PinTable *m_ptable;

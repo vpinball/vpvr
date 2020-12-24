@@ -456,7 +456,7 @@ int getDisplayList(std::vector<DisplayConfig>& displays)
       std::map<std::string, DisplayConfig>::iterator display = displayMap.find(adapter.DeviceName);
       if (display != displayMap.end()) {
          display->second.adapter = i;
-         strncpy_s(display->second.GPU_Name, adapter.Description, MAX_DEVICE_IDENTIFIER_STRING-1);
+         strncpy_s(display->second.GPU_Name, adapter.Description, sizeof(display->second.GPU_Name) - 1);
       }
    }
    SAFE_RELEASE(pD3D);
@@ -468,7 +468,7 @@ int getDisplayList(std::vector<DisplayConfig>& displays)
       if (display->second.adapter >= 0) {
          display->second.display = i;
 #ifdef ENABLE_SDL
-         strncpy_s(display->second.GPU_Name, SDL_GetDisplayName(display->second.adapter), MAX_DEVICE_IDENTIFIER_STRING-1);
+         strncpy_s(display->second.GPU_Name, SDL_GetDisplayName(display->second.adapter), sizeof(display->second.GPU_Name) - 1);
 #endif
          displays.push_back(display->second);
       }
@@ -566,7 +566,9 @@ bool RenderDevice::isVRinstalled()
 #endif
 }
 
+#ifdef ENABLE_VR
 vr::IVRSystem* RenderDevice::m_pHMD = nullptr;
+#endif
 
 bool RenderDevice::isVRturnedOn()
 {
@@ -591,11 +593,13 @@ bool RenderDevice::isVRturnedOn()
 
 void RenderDevice::turnVROff()
 {
+#ifdef ENABLE_VR
    if (m_pHMD)
    {
       vr::VR_Shutdown();
       m_pHMD = nullptr;
    }
+#endif
 }
 
 void RenderDevice::InitVR() {
@@ -1298,7 +1302,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    else
 #endif
    {
-      HRESULT hr = m_pD3D->CreateDevice(
+      hr = m_pD3D->CreateDevice(
          m_adapter,
          devtype,
          m_windowHwnd,
@@ -1521,16 +1525,21 @@ RenderDevice::~RenderDevice()
 #endif
 
 #ifdef USE_D3D9EX
+   //!! if (m_pD3DDeviceEx == m_pD3DDevice) m_pD3DDevice = NULL; //!! needed for Caligula if m_adapter > 0 ?? weird!! BUT MESSES UP FULLSCREEN EXIT (=hangs)
    SAFE_RELEASE_NO_RCC(m_pD3DDeviceEx);
 #endif
+#ifdef DEBUG_REFCOUNT_TRIGGER
    SAFE_RELEASE(m_pD3DDevice);
+#else
+   FORCE_RELEASE(m_pD3DDevice); //!! why is this necessary for some setups? is the refcount still off for some settings?
+#endif
 #ifdef USE_D3D9EX
    SAFE_RELEASE_NO_RCC(m_pD3DEx);
 #endif
+#ifdef DEBUG_REFCOUNT_TRIGGER
    SAFE_RELEASE(m_pD3D);
-
-#ifdef ENABLE_VR
-   delete[] m_rTrackedDevicePose;
+#else
+   FORCE_RELEASE(m_pD3D); //!! why is this necessary for some setups? is the refcount still off for some settings?
 #endif
 
    /*
@@ -2370,7 +2379,7 @@ bool RenderDevice::SetRenderStateCache(const RenderStates p1, DWORD p2)
 {
    if (renderStateCache.find(p1) == renderStateCache.end())
    {
-      renderStateCache.insert(std::pair<RenderStates, DWORD>(p1, p2));
+      renderStateCache.emplace(std::pair<RenderStates, DWORD>(p1, p2));
       return false;
    }
    else if (renderStateCache[p1] != p2) {

@@ -4,12 +4,12 @@
 class KickerPhysicsProperty: public BasePropertyDialog
 {
 public:
-    KickerPhysicsProperty(VectorProtected<ISelect> *pvsel);
+    KickerPhysicsProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~KickerPhysicsProperty()
     {
     }
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
@@ -19,9 +19,9 @@ private:
     HWND    m_hEnableCheck;
     HWND    m_hFallThroughCheck;
     HWND    m_hLegacyCheck;
-    CEdit   m_scatterAngleEdit;
-    CEdit   m_hitAccuracyEdit;
-    CEdit   m_hitHeightEdit;
+    EditBox m_scatterAngleEdit;
+    EditBox m_hitAccuracyEdit;
+    EditBox m_hitHeightEdit;
 };
 
 #endif // !H_KICKER_PHYSICS_PROPERTY

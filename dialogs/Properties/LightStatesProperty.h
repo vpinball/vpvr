@@ -4,21 +4,21 @@
 class LightStatesProperty: public BasePropertyDialog
 {
 public:
-    LightStatesProperty(VectorProtected<ISelect> *pvsel);
+    LightStatesProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~LightStatesProperty()
     {
     }
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
     virtual BOOL OnInitDialog();
 
 private:
-    CEdit       m_blinkPatternEdit;
-    CEdit       m_blinkIntervalEdit;
-    CComboBox   m_stateCombo;
+    EditBox     m_blinkPatternEdit;
+    EditBox     m_blinkIntervalEdit;
+    ComboBox    m_stateCombo;
     vector<string> m_stateList;
 };
 

@@ -6,7 +6,7 @@
 uniform vec4 quadOffsetScale; //.xy =>Offset from center .wz =>Scale (1.0 is fullscreen)
 uniform vec4 quadOffsetScaleTex; //.xy =>Offset from center .wz =>Scale (1.0 is fullscreen)
 uniform vec4 vColor_Intensity;
-uniform vec3 vRes_Alpha;
+uniform vec3 vRes_Alpha_time;
 
 layout(std140) uniform matrixBlock {
    mat4 matWorldViewProj[eyes];
@@ -144,7 +144,7 @@ void main()
                 color.rgb *= rgba.b * (255.9 / 100.);
 
       // simulate dot within the sampled texel
-            vec2 dist = fract(uv*vRes_Alpha.xy) * 2.2 - 1.1;
+            vec2 dist = fract(uv*vRes_Alpha_time.xy) * 2.2 - 1.1;
             float d = dist.x * dist.x + dist.y * dist.y;
 
             color2 += color.rgb * smoothstep(0., 1., 1.0 - d * d);
@@ -162,7 +162,7 @@ void main()
    //if (rgba.b > 200.0)
    //   return vec4(InvToneMap(InvGamma(min(color2,vec3(1.5,1.5,1.5))/*+colorg*/)), 0.5);
    //else
-    color = vec4(InvToneMap(InvGamma(color2 /*+colorg*/)), vRes_Alpha.z); //!! meh, this sucks a bit performance-wise, but how to avoid this when doing fullscreen-tonemap/gamma without stencil and depth read?
+    color = vec4(InvToneMap(InvGamma(color2 /*+colorg*/)), vRes_Alpha_time.z); //!! meh, this sucks a bit performance-wise, but how to avoid this when doing fullscreen-tonemap/gamma without stencil and depth read?
 }
 
 ////ps_main_DMD_ext
@@ -173,7 +173,7 @@ void main()
 {
    vec4 rgba = texture(Texture0, tex0); //!! lots of tex access by doing this all the time, but (tex) cache should be able to catch all of it
    color.rgb = rgba.rgb;
-   color.a = vRes_Alpha.z;
+   color.a = vRes_Alpha_time.z;
 }
 
 ////ps_main_noDMD

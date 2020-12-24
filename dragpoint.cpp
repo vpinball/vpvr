@@ -84,19 +84,19 @@ void IHaveDragPoints::FlipPointX(const Vertex2D& pvCenter)
 
 void IHaveDragPoints::RotateDialog()
 {
-   DialogBoxParam(g_hinst, MAKEINTRESOURCE(IDD_ROTATE),
+   DialogBoxParam(g_pvp->theInstance, MAKEINTRESOURCE(IDD_ROTATE),
       g_pvp->GetHwnd(), RotateProc, (size_t)this->GetIEditable()->GetISelect());//(long)this);
 }
 
 void IHaveDragPoints::ScaleDialog()
 {
-   DialogBoxParam(g_hinst, MAKEINTRESOURCE(IDD_SCALE),
+   DialogBoxParam(g_pvp->theInstance, MAKEINTRESOURCE(IDD_SCALE),
       g_pvp->GetHwnd(), ScaleProc, (size_t)this->GetIEditable()->GetISelect());
 }
 
 void IHaveDragPoints::TranslateDialog()
 {
-   DialogBoxParam(g_hinst, MAKEINTRESOURCE(IDD_TRANSLATE),
+   DialogBoxParam(g_pvp->theInstance, MAKEINTRESOURCE(IDD_TRANSLATE),
       g_pvp->GetHwnd(), TranslateProc, (size_t)this->GetIEditable()->GetISelect());
 }
 
@@ -253,7 +253,6 @@ void IHaveDragPoints::ReverseOrder()
 
    m_vdpoint[m_vdpoint.size() - 1]->m_slingshot = slingshotTemp;
 }
-
 
 void IHaveDragPoints::GetTextureCoords(const std::vector<RenderVertex> & vv, float **ppcoords)
 {
@@ -437,7 +436,7 @@ void DragPoint::OnLButtonUp(int x, int y)
 
 void DragPoint::SetObjectPos()
 {
-   g_pvp->SetObjectPosCur(m_v.x, m_v.y);
+   m_vpinball->SetObjectPosCur(m_v.x, m_v.y);
 }
 
 void DragPoint::MoveOffset(const float dx, const float dy)
@@ -568,11 +567,6 @@ bool DragPoint::LoadToken(const int id, BiffReader * const pbr)
    default: ISelect::LoadToken(id, pbr); break;
    }
    return true;
-}
-
-IDispatch *DragPoint::GetDispatch()
-{
-   return (IDispatch *)this;
 }
 
 void DragPoint::Copy()
@@ -706,14 +700,14 @@ INT_PTR CALLBACK RotateProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 
       SendDlgItemMessage(hwndDlg, IDC_CHECK_ROTATE_CENTER, BM_SETCHECK, BST_CHECKED, 0);
 
-      char szT[256];
+      string szT;
       f2sz(angle, szT);
-      SetDlgItemText(hwndDlg, IDC_ROTATEBY, szT);
+      SetDlgItemText(hwndDlg, IDC_ROTATEBY, szT.c_str());
       const Vertex2D v = psel->GetCenter();
       f2sz(v.x, szT);
-      SetDlgItemText(hwndDlg, IDC_CENTERX, szT);
+      SetDlgItemText(hwndDlg, IDC_CENTERX, szT.c_str());
       f2sz(v.y, szT);
-      SetDlgItemText(hwndDlg, IDC_CENTERY, szT);
+      SetDlgItemText(hwndDlg, IDC_CENTERY, szT.c_str());
    }
    return TRUE;
    break;
@@ -732,21 +726,21 @@ INT_PTR CALLBACK RotateProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
          {
          case BN_CLICKED:
          {
-            char szT[256];
+            string szT;
             if (!(SendDlgItemMessage(hwndDlg, IDC_CHECK_ROTATE_CENTER, BM_GETCHECK, 0, 0) == BST_CHECKED))
             {
                f2sz(g_pvp->m_mouseCursorPosition.x, szT);
-               SetDlgItemText(hwndDlg, IDC_CENTERX, szT);
+               SetDlgItemText(hwndDlg, IDC_CENTERX, szT.c_str());
                f2sz(g_pvp->m_mouseCursorPosition.y, szT);
-               SetDlgItemText(hwndDlg, IDC_CENTERY, szT);
+               SetDlgItemText(hwndDlg, IDC_CENTERY, szT.c_str());
             }
             else
             {
                const Vertex2D v = psel->GetCenter();
                f2sz(v.x, szT);
-               SetDlgItemText(hwndDlg, IDC_CENTERX, szT);
+               SetDlgItemText(hwndDlg, IDC_CENTERX, szT.c_str());
                f2sz(v.y, szT);
-               SetDlgItemText(hwndDlg, IDC_CENTERY, szT);
+               SetDlgItemText(hwndDlg, IDC_CENTERY, szT.c_str());
             }
             break;
          }
@@ -844,19 +838,19 @@ INT_PTR CALLBACK ScaleProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
 
       Vertex2D v = psel->GetScale();
 
-      char szT[256];
+      string szT;
       f2sz(v.x, szT);
-      SetDlgItemText(hwndDlg, IDC_SCALEFACTOR, szT);
+      SetDlgItemText(hwndDlg, IDC_SCALEFACTOR, szT.c_str());
       f2sz(v.y, szT);
-      SetDlgItemText(hwndDlg, IDC_SCALEY, szT);
+      SetDlgItemText(hwndDlg, IDC_SCALEY, szT.c_str());
       v = psel->GetCenter();
 
       SendDlgItemMessage(hwndDlg, IDC_CHECK_SCALE_CENTER, BM_SETCHECK, BST_CHECKED, 0);
 
       f2sz(v.x, szT);
-      SetDlgItemText(hwndDlg, IDC_CENTERX, szT);
+      SetDlgItemText(hwndDlg, IDC_CENTERX, szT.c_str());
       f2sz(v.y, szT);
-      SetDlgItemText(hwndDlg, IDC_CENTERY, szT);
+      SetDlgItemText(hwndDlg, IDC_CENTERY, szT.c_str());
 
       SendDlgItemMessage(hwndDlg, IDC_SQUARE, BM_SETCHECK, TRUE, 0);
 
@@ -880,21 +874,21 @@ INT_PTR CALLBACK ScaleProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
          {
          case BN_CLICKED:
          {
-            char szT[256];
+            string szT;
             if (!(SendDlgItemMessage(hwndDlg, IDC_CHECK_SCALE_CENTER, BM_GETCHECK, 0, 0) == BST_CHECKED))
             {
                f2sz(g_pvp->m_mouseCursorPosition.x, szT);
-               SetDlgItemText(hwndDlg, IDC_CENTERX, szT);
+               SetDlgItemText(hwndDlg, IDC_CENTERX, szT.c_str());
                f2sz(g_pvp->m_mouseCursorPosition.y, szT);
-               SetDlgItemText(hwndDlg, IDC_CENTERY, szT);
+               SetDlgItemText(hwndDlg, IDC_CENTERY, szT.c_str());
             }
             else
             {
                const Vertex2D v = psel->GetCenter();
                f2sz(v.x, szT);
-               SetDlgItemText(hwndDlg, IDC_CENTERX, szT);
+               SetDlgItemText(hwndDlg, IDC_CENTERX, szT.c_str());
                f2sz(v.y, szT);
-               SetDlgItemText(hwndDlg, IDC_CENTERY, szT);
+               SetDlgItemText(hwndDlg, IDC_CENTERY, szT.c_str());
             }
             break;
          }
@@ -1023,11 +1017,11 @@ INT_PTR CALLBACK TranslateProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 
       SetWindowLongPtr(hwndDlg, GWLP_USERDATA, lParam);
 
-      char szT[256];
+      string szT;
       f2sz(0, szT);
-      SetDlgItemText(hwndDlg, IDC_OFFSETX, szT);
+      SetDlgItemText(hwndDlg, IDC_OFFSETX, szT.c_str());
       f2sz(0, szT);
-      SetDlgItemText(hwndDlg, IDC_OFFSETY, szT);
+      SetDlgItemText(hwndDlg, IDC_OFFSETY, szT.c_str());
    }
    return TRUE;
    break;

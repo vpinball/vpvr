@@ -4,21 +4,21 @@
 class BumperPhysicsProperty: public BasePropertyDialog
 {
 public:
-    BumperPhysicsProperty(VectorProtected<ISelect> *pvsel);
+    BumperPhysicsProperty(const VectorProtected<ISelect> *pvsel);
     virtual ~BumperPhysicsProperty()
     {
     }
 
-    void UpdateVisuals();
+    void UpdateVisuals(const int dispid=-1);
     void UpdateProperties(const int dispid);
 
 protected:
     virtual BOOL OnInitDialog();
 
 private:
-    CEdit   m_forceEdit;
-    CEdit   m_hitThresholdEdit;
-    CEdit   m_scatterAngleEdit;
+    EditBox   m_forceEdit;
+    EditBox   m_hitThresholdEdit;
+    EditBox   m_scatterAngleEdit;
 };
 
 #endif
