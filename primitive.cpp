@@ -1203,19 +1203,19 @@ void Primitive::RenderObject()
 
       if (pin && nMap)
       {
-         pd3dDevice->basicShader->SetTechnique("basic_with_texture");
-         pd3dDevice->basicShader->SetTexture("Texture0", pin, false);
-         pd3dDevice->basicShader->SetTexture("Texture4", nMap, true);
+         pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_with_texture);
+         pd3dDevice->basicShader->SetTexture(SHADER_Texture0, pin, false);
+         pd3dDevice->basicShader->SetTexture(SHADER_Texture4, nMap, true);
          pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
-         pd3dDevice->basicShader->SetBool("objectSpaceNormalMap", m_d.m_objectSpaceNormalMap);
+         pd3dDevice->basicShader->SetBool(SHADER_objectSpaceNormalMap, m_d.m_objectSpaceNormalMap);
          //g_pplayer->m_pin3d.SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
          // accommodate models with UV coords outside of [0,1]
          pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_WRAP);
       }
       else if (pin)
       {
-         pd3dDevice->basicShader->SetTechnique("basic_with_texture");
-         pd3dDevice->basicShader->SetTexture("Texture0", pin, false);
+         pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_with_texture);
+         pd3dDevice->basicShader->SetTexture(SHADER_Texture0, pin, false);
          pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
 
          //g_pplayer->m_pin3d.SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
@@ -1223,10 +1223,10 @@ void Primitive::RenderObject()
          pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_WRAP);
       }
       else
-         pd3dDevice->basicShader->SetTechnique("basic_without_texture");
+         pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_without_texture);
 
-      pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
-      pd3dDevice->basicShader->SetBool("doNormalMapping", nMap);
+      pd3dDevice->basicShader->SetBool(SHADER_is_metal, mat->m_bIsMetal);
+      pd3dDevice->basicShader->SetBool(SHADER_doNormalMapping, nMap);
 
       // set transform
       g_pplayer->UpdateBasicShaderMatrix(&m_fullMatrix);
@@ -1249,7 +1249,7 @@ void Primitive::RenderObject()
             pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, m_vertexBuffer, 0, (DWORD)m_mesh.NumVertices(), m_indexBuffer, 0, (DWORD)m_mesh.NumIndices());
          pd3dDevice->basicShader->End();
       }
-      if (nMap) pd3dDevice->basicShader->SetBool("doNormalMapping", false);//Only place where nMap is used
+      if (nMap) pd3dDevice->basicShader->SetBool(SHADER_doNormalMapping, false);//Only place where nMap is used
       // reset transform
       g_pplayer->UpdateBasicShaderMatrix();
 

@@ -184,9 +184,9 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice,Texture * backgroundFallback
    g_pplayer->m_ptable->get_Width(&tableWidth);
    g_pplayer->m_ptable->get_GlassHeight(&glassHeight);
    if (backglass_width>0 && backglass_height>0)
-      m_pd3dDevice->DMDShader->SetVector("backBoxSize", tableWidth * (0.5f - backglass_scale / 2.0f), glassHeight, backglass_scale * tableWidth, backglass_scale * tableWidth / (float)backglass_width*(float)backglass_height);
+      m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - backglass_scale / 2.0f), glassHeight, backglass_scale * tableWidth, backglass_scale * tableWidth / (float)backglass_width*(float)backglass_height);
    else
-      m_pd3dDevice->DMDShader->SetVector("backBoxSize", tableWidth * (0.5f - backglass_scale / 2.0f), glassHeight, backglass_scale * tableWidth, backglass_scale * tableWidth / 16.0f*9.0f);
+      m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - backglass_scale / 2.0f), glassHeight, backglass_scale * tableWidth, backglass_scale * tableWidth / 16.0f*9.0f);
    if (backglass_dmd_width > 0 && backglass_dmd_height > 0 && backglass_width > 0 && backglass_height > 0) {
       dmd_width = (float)backglass_dmd_width / (float)backglass_width;
       dmd_height = (float)backglass_dmd_height / (float)backglass_height;
@@ -213,15 +213,15 @@ void BackGlass::Render()
       g_pplayer->m_ptable->get_Width(&tableWidth);
       g_pplayer->m_ptable->get_GlassHeight(&glassHeight);
       if (backglass_width > 0 && backglass_height > 0)
-         m_pd3dDevice->DMDShader->SetVector("backBoxSize", tableWidth * (0.5f - backglass_scale / 2.0f), glassHeight, backglass_scale * tableWidth, backglass_scale * tableWidth / (float)backglass_width*(float)backglass_height);
+         m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - backglass_scale / 2.0f), glassHeight, backglass_scale * tableWidth, backglass_scale * tableWidth / (float)backglass_width*(float)backglass_height);
       else
-         m_pd3dDevice->DMDShader->SetVector("backBoxSize", tableWidth * (0.5f - backglass_scale / 2.0f), glassHeight, backglass_scale * tableWidth, backglass_scale * tableWidth / 16.0f*9.0f);
+         m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - backglass_scale / 2.0f), glassHeight, backglass_scale * tableWidth, backglass_scale * tableWidth / 16.0f*9.0f);
    }
 
    if (m_backgroundTexture)
-      m_pd3dDevice->DMDShader->SetTexture("Texture0", m_backgroundTexture, false);
+      m_pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, m_backgroundTexture, false);
    else if (m_backgroundFallback)
-      m_pd3dDevice->DMDShader->SetTexture("Texture0", m_backgroundFallback, false);
+      m_pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, m_backgroundFallback, false);
    else return;
 
    m_pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
@@ -230,15 +230,15 @@ void BackGlass::Render()
 
    m_pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
 
-   m_pd3dDevice->DMDShader->SetTechnique("basic_noDMD");
+   m_pd3dDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_noDMD);
 
-   m_pd3dDevice->DMDShader->SetVector("vColor_Intensity", 1.0, 1.0, 1.0, 1.0);
+   m_pd3dDevice->DMDShader->SetVector(SHADER_vColor_Intensity, 1.0, 1.0, 1.0, 1.0);
 
    m_pd3dDevice->DMDShader->Begin(0);
    m_pd3dDevice->DrawTexturedQuad();
    m_pd3dDevice->DMDShader->End();
 
-   m_pd3dDevice->DMDShader->SetVector("quadOffsetScale", 0.0f, 0.0f, 1.0f, 1.0f);
+   m_pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScale, 0.0f, 0.0f, 1.0f, 1.0f);
 
    m_pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 
@@ -251,24 +251,24 @@ void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DM
    if (g_pplayer->m_texdmd || captureExternalDMD()) // If DMD capture is enabled check if external DMD exists (for capturing UltraDMD+P-ROC DMD)
    {
       //const float width = g_pplayer->m_pin3d.m_useAA ? 2.0f*(float)m_width : (float)m_width;
-      m_pd3dDevice->DMDShader->SetTechnique("basic_DMD"); //!! DMD_UPSCALE ?? -> should just work
+      m_pd3dDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD); //!! DMD_UPSCALE ?? -> should just work
 
       const vec4 c = convertColor(DMDcolor, intensity);
-      m_pd3dDevice->DMDShader->SetVector("vColor_Intensity", &c);
+      m_pd3dDevice->DMDShader->SetVector(SHADER_vColor_Intensity, &c);
 #ifdef DMD_UPSCALE
       const vec4 r((float)(m_dmdx * 3), (float)(m_dmdy * 3), 1.f, (float)(g_pplayer->m_overall_frames % 2048));
 #else
       const vec4 r((float)g_pplayer->m_dmdx, (float)g_pplayer->m_dmdy, 1.f, (float)(g_pplayer->m_overall_frames % 2048));
 #endif
-      m_pd3dDevice->DMDShader->SetVector("vRes_Alpha_time", &r);
+      m_pd3dDevice->DMDShader->SetVector(SHADER_vRes_Alpha_time, &r);
 
       // If we're capturing Freezy DMD switch to ext technique to avoid incorrect colorization
       if (captureExternalDMD())
-         m_pd3dDevice->DMDShader->SetTechnique("basic_DMD_ext");
+         m_pd3dDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD_ext);
 
       if (g_pplayer->m_texdmd != NULL)
-         m_pd3dDevice->DMDShader->SetTexture("Texture0", m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, false), false);
-      //      m_pd3dPrimaryDevice->DMDShader->SetVector("quadOffsetScale", 0.0f, -1.0f, backglass_scale, backglass_scale*(float)backglass_height / (float)backglass_width);
+         m_pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, false), false);
+      //      m_pd3dPrimaryDevice->DMDShader->SetVector(SHADER_quadOffsetScale, 0.0f, -1.0f, backglass_scale, backglass_scale*(float)backglass_height / (float)backglass_width);
       bool zDisabled = false;
       const float scale = 0.5f;// 0.5 => use 50% of the height of the grill.
       m_pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
@@ -285,12 +285,12 @@ void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DM
                dmd_y = (tableWidth * (float)backglass_grill_height*(0.5f - scale / 2.0f) / (float)backglass_width);
             }
          }
-         m_pd3dDevice->DMDShader->SetVector("quadOffsetScale", dmd_x, dmd_y, dmd_width, dmd_height);
+         m_pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScale, dmd_x, dmd_y, dmd_width, dmd_height);
          m_pd3dDevice->SetRenderState(RenderDevice::ZENABLE, FALSE);
          zDisabled = true;
       }
       else//No VR, so place it where it was intended
-         m_pd3dDevice->DMDShader->SetVector("quadOffsetScale", DMDposx, DMDposy, DMDwidth, DMDheight);
+         m_pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScale, DMDposx, DMDposy, DMDwidth, DMDheight);
 
       m_pd3dDevice->DMDShader->Begin(0);
       m_pd3dDevice->DrawTexturedQuad();
@@ -299,6 +299,6 @@ void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DM
       if (zDisabled)
          m_pd3dDevice->SetRenderState(RenderDevice::ZENABLE, TRUE);
 
-      m_pd3dDevice->DMDShader->SetVector("quadOffsetScale", 0.0f, 0.0f, 1.0f, 1.0f);
+      m_pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScale, 0.0f, 0.0f, 1.0f, 1.0f);
    }
 }

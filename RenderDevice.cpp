@@ -965,14 +965,14 @@ bool RenderDevice::LoadShaders()
       shaderCompilationOkay = DMDShader->Load("DMDShaderVR.glfx", 0) && shaderCompilationOkay;
    else
       shaderCompilationOkay = DMDShader->Load("DMDShader.glfx", 0) && shaderCompilationOkay;
-   DMDShader->SetVector("quadOffsetScale", 0.0f, 0.0f, 1.0f, 1.0f);
-   DMDShader->SetVector("quadOffsetScaleTex", 0.0f, 0.0f, 1.0f, 1.0f);
+   DMDShader->SetVector(SHADER_quadOffsetScale, 0.0f, 0.0f, 1.0f, 1.0f);
+   DMDShader->SetVector(SHADER_quadOffsetScaleTex, 0.0f, 0.0f, 1.0f, 1.0f);
 
    FBShader = new Shader(this);
    shaderCompilationOkay = FBShader->Load("FBShader.glfx", 0) && shaderCompilationOkay;
    shaderCompilationOkay = FBShader->Load("SMAA.glfx", 0) && shaderCompilationOkay;
-   FBShader->SetVector("quadOffsetScale", 0.0f, 0.0f, 1.0f, 1.0f);
-   FBShader->SetVector("quadOffsetScaleTex", 0.0f, 0.0f, 1.0f, 1.0f);
+   FBShader->SetVector(SHADER_quadOffsetScale, 0.0f, 0.0f, 1.0f, 1.0f);
+   FBShader->SetVector(SHADER_quadOffsetScaleTex, 0.0f, 0.0f, 1.0f, 1.0f);
 
    if (m_stereo3D) {
       StereoShader = new Shader(this);
@@ -1568,54 +1568,54 @@ void RenderDevice::FreeShader()
 {
    if (basicShader)
    {
-      basicShader->SetTextureNull("Texture0");
-      basicShader->SetTextureNull("Texture1");
-      basicShader->SetTextureNull("Texture2");
-      basicShader->SetTextureNull("Texture3");
-      basicShader->SetTextureNull("Texture4");
+      basicShader->SetTextureNull(SHADER_Texture0);
+      basicShader->SetTextureNull(SHADER_Texture1);
+      basicShader->SetTextureNull(SHADER_Texture2);
+      basicShader->SetTextureNull(SHADER_Texture3);
+      basicShader->SetTextureNull(SHADER_Texture4);
       delete basicShader;
       basicShader = 0;
    }
    if (ballShader)
    {
-      ballShader->SetTextureNull("Texture0");
-      ballShader->SetTextureNull("Texture1");
-      ballShader->SetTextureNull("Texture2");
-      ballShader->SetTextureNull("Texture3");
+      ballShader->SetTextureNull(SHADER_Texture0);
+      ballShader->SetTextureNull(SHADER_Texture1);
+      ballShader->SetTextureNull(SHADER_Texture2);
+      ballShader->SetTextureNull(SHADER_Texture3);
       delete ballShader;
       ballShader = 0;
    }
    if (DMDShader)
    {
-      DMDShader->SetTextureNull("Texture0");
+      DMDShader->SetTextureNull(SHADER_Texture0);
       delete DMDShader;
       DMDShader = 0;
    }
    if (FBShader)
    {
-      FBShader->SetTextureNull("Texture0");
-      FBShader->SetTextureNull("Texture1");
-      FBShader->SetTextureNull("Texture3");
-      FBShader->SetTextureNull("Texture4");
+      FBShader->SetTextureNull(SHADER_Texture0);
+      FBShader->SetTextureNull(SHADER_Texture1);
+      FBShader->SetTextureNull(SHADER_Texture3);
+      FBShader->SetTextureNull(SHADER_Texture4);
 
-      FBShader->SetTextureNull("areaTex2D");
-      FBShader->SetTextureNull("searchTex2D");
+      FBShader->SetTextureNull(SHADER_areaTex2D);
+      FBShader->SetTextureNull(SHADER_searchTex2D);
 
       delete FBShader;
       FBShader = 0;
    }
    if (StereoShader)
    {
-      StereoShader->SetTextureNull("Texture0");
-      StereoShader->SetTextureNull("Texture1");
+      StereoShader->SetTextureNull(SHADER_Texture0);
+      StereoShader->SetTextureNull(SHADER_Texture1);
 
       delete StereoShader;
       StereoShader = 0;
    }
    if (flasherShader)
    {
-      flasherShader->SetTextureNull("Texture0");
-      flasherShader->SetTextureNull("Texture1");
+      flasherShader->SetTextureNull(SHADER_Texture0);
+      flasherShader->SetTextureNull(SHADER_Texture1);
       delete flasherShader;
       flasherShader = 0;
    }
@@ -1627,9 +1627,9 @@ void RenderDevice::FreeShader()
 #ifdef SEPARATE_CLASSICLIGHTSHADER
    if (classicLightShader)
    {
-      classicLightShader->SetTextureNull("Texture0");
-      classicLightShader->SetTextureNull("Texture1");
-      classicLightShader->SetTextureNull("Texture2");
+      classicLightShader->SetTextureNull(SHADER_Texture0);
+      classicLightShader->SetTextureNull(SHADER_Texture1);
+      classicLightShader->SetTextureNull(SHADER_Texture2);
       delete classicLightShader;
       classicLightShader = 0;
    }
@@ -1813,8 +1813,8 @@ void RenderDevice::UploadAndSetSMAATextures()
    m_SMAAsearchTexture = CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, STATIC, GREY, (void*)&searchTexBytes[0], 0);
    m_SMAAareaTexture = CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, STATIC, GREY_ALPHA, (void*)&areaTexBytes[0], 0);
 
-   FBShader->SetTexture("areaTex2D", m_SMAAareaTexture, true);
-   FBShader->SetTexture("searchTex2D", m_SMAAsearchTexture, true);
+   FBShader->SetTexture(SHADER_areaTex2D, m_SMAAareaTexture, true);
+   FBShader->SetTexture(SHADER_searchTex2D, m_SMAAsearchTexture, true);
 }
 #else 
 
@@ -1966,9 +1966,9 @@ void RenderDevice::CopyDepth(D3DTexture* dest, D3DTexture* src)
    CHECKD3D(dest->GetSurfaceLevel(0, &destTextureSurface));
    SetRenderTarget(destTextureSurface);
 
-   FBShader->SetTexture("Texture0", src);
-   FBShader->SetFloat("mirrorFactor", 1.f); //!! use separate pass-through shader instead??
-   FBShader->SetTechnique("fb_mirror");
+   FBShader->SetTexture(SHADER_Texture0, src);
+   FBShader->SetFloat(SHADER_mirrorFactor, 1.f); //!! use separate pass-through shader instead??
+   FBShader->SetTechnique(SHADER_TECHNIQUE_fb_mirror);
 
    SetRenderState(RenderDevice::ALPHABLENDENABLE, FALSE); // paranoia set //!!
    SetRenderStateCulling(RenderDevice::CULL_NONE);
@@ -2145,8 +2145,8 @@ void RenderDevice::UploadAndSetSMAATextures()
 
    //
 
-   FBShader->SetTexture("areaTex2D", m_SMAAareaTexture, true);
-   FBShader->SetTexture("searchTex2D", m_SMAAsearchTexture, true);
+   FBShader->SetTexture(SHADER_areaTex2D, m_SMAAareaTexture, true);
+   FBShader->SetTexture(SHADER_searchTex2D, m_SMAAsearchTexture, true);
 }
 #endif
 
@@ -2316,7 +2316,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
          switch (texture->stereo) {
          case STEREO_OFF:
             CHECKD3D(glViewport(0, 0, texture->width, texture->height));
-            lightShader->SetBool("ignoreStereo", true); // For non-stereo lightbulb texture, can't use pre-processor for this
+            lightShader->SetBool(SHADER_ignoreStereo, true); // For non-stereo lightbulb texture, can't use pre-processor for this
             break;
          case STEREO_TB:
          case STEREO_INT:
@@ -2326,7 +2326,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
             viewPorts[4] = 0.0f;
             viewPorts[5] = (float)texture->height / 2.0f;
             CHECKD3D(glViewportArrayv(0, 2, viewPorts));
-            lightShader->SetBool("ignoreStereo", false);
+            lightShader->SetBool(SHADER_ignoreStereo, false);
             break;
          case STEREO_SBS:
          case STEREO_VR:
@@ -2336,7 +2336,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
             viewPorts[4] = (float)texture->width / 2.0f;
             viewPorts[5] = 0.0f;
             CHECKD3D(glViewportArrayv(0, 2, viewPorts));
-            lightShader->SetBool("ignoreStereo", false);
+            lightShader->SetBool(SHADER_ignoreStereo, false);
             break;
          }
    }

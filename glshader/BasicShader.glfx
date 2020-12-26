@@ -62,7 +62,7 @@ uniform vec4 cGlossy_ImageLerp;
 //!! Gemstones are 0.05-0.17
 //!! Metals have high specular reflectance: 0.5-1.0
 
-uniform float fAlphaTestValue;
+uniform float alphaTestValue;
 
 out vec4 color;
 
@@ -432,7 +432,7 @@ in vec3 normal;
 void main() {
    vec4 pixel = texture(Texture0, tex01);
 
-   if (pixel.a <= fAlphaTestValue)
+   if (pixel.a <= alphaTestValue)
       discard;           //stop the pixel shader if alpha test should reject pixel
 
    vec3 t = InvGamma(pixel.xyz);
@@ -475,7 +475,7 @@ void main() {
 in vec2 tex0;
 
 void main() {
-   if (textureLod(Texture0, tex0, 0).a <= fAlphaTestValue)
+   if (textureLod(Texture0, tex0, 0).a <= alphaTestValue)
       discard;           //stop the pixel shader if alpha test should reject pixel
 
    color = vec4(0., 0., 0., 1.);
@@ -496,7 +496,7 @@ in vec2 tex01;
 void main() {
    vec4 pixel = texture(Texture0, tex01);
 
-   //if (pixel.a <= fAlphaTestValue) discard;
+   //if (pixel.a <= alphaTestValue) discard;
 
     pixel.a = clamp(pixel.a * cBase_Alpha.a, 0.0, 1.0);
    float3 t = InvGamma(pixel.xyz); // DX9: uses automatic sRGB trafo instead in sampler! - still missing in OpenGL so we still need InvGamma

@@ -565,9 +565,9 @@ void Kicker::RenderDynamic()
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
       pd3dDevice->basicShader->SetMaterial(mat);
 
-      pd3dDevice->basicShader->SetTechnique("kickerBoolean");
-      pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
-      pd3dDevice->basicShader->SetFloat("fKickerScale", m_ptable->m_BG_scalez[m_ptable->m_BG_current_set]);
+      pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_kickerBoolean);
+      pd3dDevice->basicShader->SetBool(SHADER_is_metal, mat->m_bIsMetal);
+      pd3dDevice->basicShader->SetFloat(SHADER_fKickerScale, m_ptable->m_BG_scalez[m_ptable->m_BG_current_set]);
       pd3dDevice->SetRenderState(RenderDevice::ZFUNC, RenderDevice::Z_ALWAYS);
 
       pd3dDevice->basicShader->Begin(0);
@@ -578,13 +578,13 @@ void Kicker::RenderDynamic()
 
       if (m_d.m_kickertype != KickerHoleSimple)
       {
-         pd3dDevice->basicShader->SetTechnique("basic_with_texture");
-         pd3dDevice->basicShader->SetTexture("Texture0", &m_texture, false);
+         pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_with_texture);
+         pd3dDevice->basicShader->SetTexture(SHADER_Texture0, &m_texture, false);
       }
       else
-         pd3dDevice->basicShader->SetTechnique("basic_without_texture");
+         pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_without_texture);
 
-      pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
+      pd3dDevice->basicShader->SetBool(SHADER_is_metal, mat->m_bIsMetal);
       g_pplayer->m_pin3d.EnableAlphaBlend(false);
       pd3dDevice->basicShader->SetAlphaTestValue(-1.0f);
 

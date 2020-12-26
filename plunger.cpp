@@ -248,14 +248,14 @@ void Plunger::RenderDynamic()
    Texture * const pin = m_ptable->GetImage(m_d.m_szImage);
    if (pin)
    {
-      pd3dDevice->basicShader->SetTechnique("basic_with_texture");
-      pd3dDevice->basicShader->SetTexture("Texture0", pin, false);
+      pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_with_texture);
+      pd3dDevice->basicShader->SetTexture(SHADER_Texture0, pin, false);
       pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
    }
    else
-      pd3dDevice->basicShader->SetTechnique("basic_without_texture");
+      pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_without_texture);
 
-   pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
+   pd3dDevice->basicShader->SetBool(SHADER_is_metal, mat->m_bIsMetal);
 
    pd3dDevice->basicShader->Begin(0);
    pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, m_vertexBuffer,

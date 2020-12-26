@@ -896,15 +896,15 @@ void Ramp::RenderStaticHabitrail(const Material * const mat)
 
    Texture * const pin = m_ptable->GetImage(m_d.m_szImage);
    if (!pin)
-      pd3dDevice->basicShader->SetTechnique("basic_without_texture");
+      pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_without_texture);
    else
    {
-      pd3dDevice->basicShader->SetTexture("Texture0", pin, false);
-      pd3dDevice->basicShader->SetTechnique("basic_with_texture");
+      pd3dDevice->basicShader->SetTexture(SHADER_Texture0, pin, false);
+      pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_with_texture);
 
       //g_pplayer->m_pin3d.SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
    }
-   pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
+   pd3dDevice->basicShader->SetBool(SHADER_is_metal, mat->m_bIsMetal);
 
    {
       pd3dDevice->basicShader->Begin(0);
@@ -2142,16 +2142,16 @@ void Ramp::RenderRamp(const Material * const mat)
 
       if (pin)
       {
-         pd3dDevice->basicShader->SetTechnique("basic_with_texture");
-         pd3dDevice->basicShader->SetTexture("Texture0", pin, false);
+         pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_with_texture);
+         pd3dDevice->basicShader->SetTexture(SHADER_Texture0, pin, false);
          pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
 
          //ppin3d->SetPrimaryTextureFilter ( 0, TEXTURE_MODE_TRILINEAR );
       }
       else
-         pd3dDevice->basicShader->SetTechnique("basic_without_texture");
+         pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_without_texture);
 
-      pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
+      pd3dDevice->basicShader->SetBool(SHADER_is_metal, mat->m_bIsMetal);
 
       //ppin3d->EnableAlphaBlend( false ); //!! not necessary anymore
 
@@ -2173,8 +2173,8 @@ void Ramp::RenderRamp(const Material * const mat)
             if (pin && !m_d.m_imageWalls)
             {
                pd3dDevice->basicShader->End();
-               pd3dDevice->basicShader->SetTechnique("basic_without_texture");
-               pd3dDevice->basicShader->SetBool("is_metal", mat->m_bIsMetal);
+               pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_without_texture);
+               pd3dDevice->basicShader->SetBool(SHADER_is_metal, mat->m_bIsMetal);
                pd3dDevice->basicShader->Begin(0);
             }
 

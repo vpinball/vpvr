@@ -1097,23 +1097,23 @@ void Flasher::RenderDynamic()
          g_pplayer->m_pin3d.EnableAlphaTestReference(0x80);*/
 
        //const float width = g_pplayer->m_pin3d.m_useAA ? 2.0f*(float)m_width : (float)m_width; //!! AA ?? -> should just work
-       pd3dDevice->DMDShader->SetTechnique("basic_DMD_world"); //!! DMD_UPSCALE ?? -> should just work
+       pd3dDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD_world); //!! DMD_UPSCALE ?? -> should just work
 
-       pd3dDevice->DMDShader->SetVector("vColor_Intensity", &color);
+       pd3dDevice->DMDShader->SetVector(SHADER_vColor_Intensity, &color);
 
 #ifdef DMD_UPSCALE
        const vec4 r((float)(g_pplayer->m_dmdx*3), (float)(g_pplayer->m_dmdy*3), m_d.m_modulate_vs_add, (float)(g_pplayer->m_overall_frames % 2048)); //(float)(0.5 / m_width), (float)(0.5 / m_height));
 #else
        const vec4 r((float)g_pplayer->m_dmdx, (float)g_pplayer->m_dmdy, m_d.m_modulate_vs_add, (float)(g_pplayer->m_overall_frames % 2048)); //(float)(0.5 / m_width), (float)(0.5 / m_height));
 #endif
-       pd3dDevice->DMDShader->SetVector("vRes_Alpha_time", &r);
+       pd3dDevice->DMDShader->SetVector(SHADER_vRes_Alpha_time, &r);
 
        // If we're capturing Freezy DMD switch to ext technique to avoid incorrect colorization
        if (captureExternalDMD())
-          pd3dDevice->DMDShader->SetTechnique("basic_DMD_world_ext");
+          pd3dDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD_world_ext);
 
        if (g_pplayer->m_texdmd != NULL)
-          pd3dDevice->DMDShader->SetTexture("Texture0", g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, false), false);
+          pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, false), false);
 
        pd3dDevice->DMDShader->Begin(0);
        pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_TEX, m_dynamicVertexBuffer, 0, m_numVertices, m_dynamicIndexBuffer, 0, m_numPolys * 3);
@@ -1145,18 +1145,18 @@ void Flasher::RenderDynamic()
 
        const vec4 ab((float)m_d.m_filterAmount / 100.0f, min(max(m_d.m_modulate_vs_add, 0.00001f), 0.9999f), // avoid 0, as it disables the blend and avoid 1 as it looks not good with day->night changes
            hdrTex0 ? 1.f : 0.f, (pinA && pinB && pinB->IsHDR()) ? 1.f : 0.f);
-       pd3dDevice->flasherShader->SetVector("amount_blend_modulate_vs_add_hdrTexture01", &ab);
+       pd3dDevice->flasherShader->SetVector(SHADER_amount_blend_modulate_vs_add_hdrTexture01, &ab);
 
        pd3dDevice->flasherShader->SetFlasherColorAlpha(color);
 
        vec4 flasherData(-1.f, -1.f, (float)m_d.m_filter, m_d.m_addBlend ? 1.f : 0.f);
        float flasherMode;
-       pd3dDevice->flasherShader->SetTechnique("basic_noLight");
+       pd3dDevice->flasherShader->SetTechnique(SHADER_TECHNIQUE_basic_noLight);
 
        if (pinA && !pinB)
        {
           flasherMode = 0.f;
-          pd3dDevice->flasherShader->SetTexture("Texture0", pinA, false);
+          pd3dDevice->flasherShader->SetTexture(SHADER_Texture0, pinA, false);
 
           if (!m_d.m_addBlend)
              flasherData.x = pinA->m_alphaTestValue * (float)(1.0 / 255.0);
@@ -1166,7 +1166,7 @@ void Flasher::RenderDynamic()
        else if (!pinA && pinB)
        {
           flasherMode = 0.f;
-          pd3dDevice->flasherShader->SetTexture("Texture0", pinB, false);
+          pd3dDevice->flasherShader->SetTexture(SHADER_Texture0, pinB, false);
 
           if (!m_d.m_addBlend)
              flasherData.x = pinB->m_alphaTestValue * (float)(1.0 / 255.0);
@@ -1176,8 +1176,8 @@ void Flasher::RenderDynamic()
        else if (pinA && pinB)
        {
           flasherMode = 1.f;
-          pd3dDevice->flasherShader->SetTexture("Texture0", pinA, false);
-          pd3dDevice->flasherShader->SetTexture("Texture1", pinB, false);
+          pd3dDevice->flasherShader->SetTexture(SHADER_Texture0, pinA, false);
+          pd3dDevice->flasherShader->SetTexture(SHADER_Texture1, pinB, false);
 
           if (!m_d.m_addBlend)
           {
