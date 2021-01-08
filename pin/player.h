@@ -305,6 +305,8 @@ private:
    void PhysicsSimulateCycle(float dtime);
 
 public:
+   HRESULT PreInit();
+
    void LockForegroundWindow(const bool enable);
    void Render();
    void RenderDynamics();

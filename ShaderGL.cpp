@@ -604,7 +604,6 @@ void Shader::setAttributeFormat(DWORD fvf)
       int location = m_currentTechnique->attributeLocation[i].location;
       if (location >= 0) {
          int offset;
-         int size;
          CHECKD3D(glEnableVertexAttribArray(m_currentTechnique->attributeLocation[i].location));
          switch (i) {
          case SHADER_ATTRIBUTE_POS:

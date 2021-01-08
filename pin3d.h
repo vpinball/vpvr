@@ -51,7 +51,9 @@ public:
    Pin3D();
    ~Pin3D();
 
-   HRESULT InitPin3D(const bool fullScreen, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl);
+   HRESULT InitRenderDevice(const bool fullScreen, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl);
+
+   HRESULT InitPin3D();
 
    void InitLayoutFS();
    void InitLayout(const bool FSS_mode, const float xpixoff = 0.f, const float ypixoff = 0.f);

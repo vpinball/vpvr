@@ -962,6 +962,9 @@ void Player::OnInitialUpdate()
 
 void Player::Shutdown()
 {
+#ifdef ENABLE_SDL
+   Detach();
+#endif
    captureStop();
 
 #ifdef USE_IMGUI
@@ -1575,6 +1578,28 @@ void Player::DebugPrint(int x, int y, LPCSTR text, bool center /*= false*/)
 #endif
 }
 
+HRESULT Player::PreInit()
+{
+   int vsync = (m_stereo3D == STEREO_VR || m_ptable->m_TableAdaptiveVSync == -1) ? m_VSync : m_ptable->m_TableAdaptiveVSync;
+
+   const float AAfactor = ((m_ptable->m_useAA == -1) || (m_ptable->m_useAA == 1)) ? m_AAfactor : 1.0f;
+   const unsigned int FXAA = (m_ptable->m_useFXAA == -1) ? m_FXAA : m_ptable->m_useFXAA;
+   const bool ss_refl = (m_ss_refl && (m_ptable->m_useSSR == -1)) || (m_ptable->m_useSSR == 1);
+
+   const int colordepth = LoadValueIntWithDefault("Player", "ColorDepth", 32);
+
+   // colordepth & refreshrate are only defined if fullscreen is true.
+
+   const HRESULT hr = m_pin3d.InitRenderDevice(m_fullScreen, m_width, m_height, colordepth, m_refreshrate, vsync, AAfactor, m_stereo3D, FXAA, !m_disableAO, ss_refl);
+   if (hr != S_OK)
+   {
+      char szfoo[64];
+      sprintf_s(szfoo, "Pin3D InitRenderDevice Error code: %x", hr);
+      ShowError(szfoo);
+   }
+   return hr;
+}
+
 HRESULT Player::Init()
 {
    TRACE_FUNCTION();
@@ -1626,39 +1651,29 @@ HRESULT Player::Init()
 
    //
 
-   int vsync = (m_stereo3D == STEREO_VR || m_ptable->m_TableAdaptiveVSync == -1) ? m_VSync : m_ptable->m_TableAdaptiveVSync;
-
-   const float AAfactor = ((m_ptable->m_useAA == -1) || (m_ptable->m_useAA == 1)) ? m_AAfactor : 1.0f;
-   const unsigned int FXAA = (m_ptable->m_useFXAA == -1) ? m_FXAA : m_ptable->m_useFXAA;
-   const bool ss_refl = (m_ss_refl && (m_ptable->m_useSSR == -1)) || (m_ptable->m_useSSR == 1);
-
-   const int colordepth = LoadValueIntWithDefault("Player", "ColorDepth", 32);
-
-   // colordepth & refreshrate are only defined if fullscreen is true.
-   
-   const HRESULT hr = m_pin3d.InitPin3D(m_fullScreen, m_width, m_height, colordepth,
-      m_refreshrate, vsync, AAfactor, m_stereo3D, FXAA, !m_disableAO, ss_refl);
+   const HRESULT hr = m_pin3d.InitPin3D();
    if (hr != S_OK)
    {
       char szfoo[64];
-      sprintf_s(szfoo, "InitPin3D Error code: %x", hr);
+      sprintf_s(szfoo, "Pin3D InitPin3D Error code: %x", hr);
       ShowError(szfoo);
       return hr;
    }
 
-   if (m_fullScreen)
-      SetWindowPos(NULL, 0, 0, m_width, m_height, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
+#ifdef ENABLE_SDL
+   // SDL Window appears after InitPin3D, set window default position and flags
+   int x = 0;
+   int y = 0;
+
+   int display = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "Display", -1);
+   display = (display < getNumberOfDisplays()) ? display : -1;
+
+   getDisplaySetupByID(display, x, y, m_screenwidth, m_screenheight);
+   if (m_fullScreen) {
+      SetWindowPos(NULL, x, y, m_screenwidth, m_screenheight, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
+   }
    else
    {
-#ifdef ENABLE_SDL
-      // SDL Window appears after InitPin3D, set window default position and flags
-      int x = 0;
-      int y = 0;
-
-      int display = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "Display", -1);
-      display = (display < getNumberOfDisplays()) ? display : -1;
-
-      getDisplaySetupByID(display, x, y, m_screenwidth, m_screenheight);
       m_refreshrate = 0; // The default
 
       // constrain window to screen
@@ -1673,22 +1688,33 @@ HRESULT Player::Init()
          m_height = m_screenheight;
          m_width = m_height * 16 / 9;
       }
-      x += (m_screenwidth - m_width) / 2;
-      y += (m_screenheight - m_height) / 2;
+      int xPos = x + (m_screenwidth - m_width) / 2;
+      int yPos = y + (m_screenheight - m_height) / 2;
 
       // is this a non-fullscreen window? -> get previously saved window position
       if ((m_height != m_screenheight) || (m_width != m_screenwidth))
       {
-         x = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "WindowPosX", x); //!! does this handle multi-display correctly like this?
-         y = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "WindowPosY", y);
+         int xTemp = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "WindowPosX", xPos); //!! does this handle multi-display correctly like this?
+         int yTemp = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "WindowPosY", yPos);
+         if (xTemp >= x && (xTemp + m_width < x + m_screenwidth) && yTemp >= y && (yTemp + m_height < y + m_screenheight)) {//Absolute Window position is on screen
+            xPos = xTemp;
+            yPos = yTemp;
+         }
+         else if (xTemp >= 0 && xTemp < (m_screenwidth- m_width) && yTemp >=0 && yTemp < (m_screenheight- m_height)) {//Relative window Position is on screen
+            xPos = x+xTemp;
+            yPos = y+yTemp;
+         }
          m_showWindowedCaption = false;
          int windowflags = WS_POPUP;
          SetWindowLong(GetHwnd(), GWL_STYLE, windowflags);
-         SetWindowPos(NULL, x, y, m_width, m_height, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
-         ShowWindow(SW_SHOW);
+         SetWindowPos(HWND_TOP, xPos, yPos, m_width, m_height, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+         ShowWindow(SW_SHOWNORMAL);
       }
-#endif
    }
+#else
+   if (m_fullScreen)
+      SetWindowPos(NULL, 0, 0, m_width, m_height, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
+#endif
 
    m_pininput.Init(GetHwnd());
 
@@ -1808,7 +1834,7 @@ HRESULT Player::Init()
             CHAR wzDst[256];
             sprintf_s(wzDst, "Initializing Object-Physics %s...", bstr2);
             delete[] bstr2;
-            m_ptable->m_progressDialog.SetName(std::string(bstr2));
+            m_ptable->m_progressDialog.SetName(std::string(wzDst));
          }
 #endif
          const size_t currentsize = m_vho.size();

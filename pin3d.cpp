@@ -410,6 +410,7 @@ void EnvmapPrecalc(const void* /*const*/ __restrict envmap, const DWORD env_xres
       free((void*)envmap);
 #endif
 }
+
 HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
 {
    const unsigned int display = LoadValueIntWithDefault(stereo3D == STEREO_VR ? "PlayerVR" : "Player", "Display", 0);
@@ -483,7 +484,7 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
    return S_OK;
 }
 
-HRESULT Pin3D::InitPin3D(const bool fullScreen, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
+HRESULT Pin3D::InitRenderDevice(const bool fullScreen, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
 {
    m_proj.m_stereo3D = m_stereo3D = stereo3D;
    m_AAfactor = AAfactor;
@@ -500,7 +501,11 @@ HRESULT Pin3D::InitPin3D(const bool fullScreen, const int width, const int heigh
       return E_FAIL;
 
    m_pd3dSecondaryDevice = m_pd3dPrimaryDevice;
+   return S_OK;
+}
 
+HRESULT Pin3D::InitPin3D()
+{
    m_backGlass = new BackGlass(m_pd3dSecondaryDevice, g_pplayer->m_ptable->GetDecalsEnabled()
       ? g_pplayer->m_ptable->GetImage(g_pplayer->m_ptable->m_BG_szImage[g_pplayer->m_ptable->m_BG_current_set]) : NULL);
 
@@ -527,7 +532,6 @@ HRESULT Pin3D::InitPin3D(const bool fullScreen, const int width, const int heigh
 
    if (m_pddsBackBuffer)
       SetPrimaryRenderTarget(m_pddsBackBuffer, m_pddsZBuffer);
-
    return S_OK;
 }
 
