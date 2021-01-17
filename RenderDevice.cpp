@@ -580,6 +580,8 @@ bool RenderDevice::isVRturnedOn()
       if (VRError == vr::VRInitError_None && vr::VRCompositor()) {
          for (int device = 0; device < vr::k_unMaxTrackedDeviceCount; device++) {
             if ((m_pHMD->GetTrackedDeviceClass(device) == vr::TrackedDeviceClass_HMD)) {
+               vr::VR_Shutdown();
+               m_pHMD = nullptr;
                return true;
             }
          }
@@ -640,9 +642,9 @@ void RenderDevice::InitVR() {
    matEye2Head.Invert();
 
    float nearPlane = LoadValueFloatWithDefault("PlayerVR", "nearPlane", 5.0f) / 100.0f;
-   float farPlane = LoadValueFloatWithDefault("PlayerVR", "farPlane", 500.0f) / 100.0f;
+   float farPlane = LoadValueFloatWithDefault("PlayerVR", "farPlane", 5000.0f) / 100.0f;
 
-   mat44 = m_pHMD->GetProjectionMatrix(vr::Eye_Left, nearPlane, farPlane);//5cm to 5m should be a reasonable range
+   mat44 = m_pHMD->GetProjectionMatrix(vr::Eye_Left, nearPlane, farPlane);//5cm to 50m should be a reasonable range
    for (int i = 0;i < 4;i++)
       for (int j = 0;j < 4;j++)
             matProjection.m[j][i] = mat44.m[i][j];
@@ -659,7 +661,7 @@ void RenderDevice::InitVR() {
 
    matEye2Head.Invert();
 
-   mat44 = m_pHMD->GetProjectionMatrix(vr::Eye_Right, nearPlane, farPlane);//5cm to 5m should be a reasonable range
+   mat44 = m_pHMD->GetProjectionMatrix(vr::Eye_Right, nearPlane, farPlane);//5cm to 500m should be a reasonable range
    for (int i = 0;i < 4;i++)
       for (int j = 0;j < 4;j++)
             matProjection.m[j][i] = mat44.m[i][j];
@@ -1379,7 +1381,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    // alloc one more temporary buffer for SMAA
    if (m_FXAA == Quality_SMAA)
    {
-      hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), (D3DPOOL)memoryPool::DEFAULT, &m_pOffscreenBackBufferSMAATexture, NULL);
+      hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), (D3DPOOL)memoryPool::DEFAULT, &m_pOffscreenBackBufferPPTexture1, NULL);
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create SMAA buffer!", hr, __FILE__, __LINE__);
    }
@@ -1799,9 +1801,9 @@ void RenderDevice::CopyDepth(RenderTarget* dest, RenderTarget* src) {
    //Not required for GL.
 }
 
-D3DTexture* RenderDevice::UploadTexture(BaseTexture* surf, int *pTexWidth, int *pTexHeight, const bool linearRGB)
+D3DTexture* RenderDevice::UploadTexture(BaseTexture* surf, int *pTexWidth, int *pTexHeight, const bool linearRGB, const bool clamptoedge)
 {
-   D3DTexture *tex = CreateTexture(surf->width(), surf->height(), 0, STATIC, surf->m_format == BaseTexture::RGB_FP ? RGB32F : RGBA, surf->m_data.data(), 0);
+   D3DTexture *tex = CreateTexture(surf->width(), surf->height(), 0, STATIC, surf->m_format == BaseTexture::RGB_FP ? RGB32F : RGBA, surf->m_data.data(), 0, clamptoedge);
 
    if (pTexWidth) *pTexWidth = surf->width();
    if (pTexHeight) *pTexHeight = surf->height();
@@ -2627,6 +2629,9 @@ void RenderDevice::DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, V
 
 void RenderDevice::DrawIndexedPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, IndexBuffer* ib, const DWORD startIndex, const DWORD indexCount)
 {
+   if (vb == NULL || ib == NULL)
+      return;
+
    const unsigned int np = ComputePrimitiveCount(type, indexCount);
    m_stats_drawn_triangles += np;
    vb->bind();
@@ -2780,7 +2785,7 @@ void RenderDevice::GetViewport(ViewPort* p1)
 #endif
 }
 
-D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, void* data, int stereo) {
+D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, void* data, int stereo, bool clamptoedge) {
 #ifdef ENABLE_SDL
    D3DTexture* tex = new D3DTexture();
    tex->usage = Usage;
@@ -2894,8 +2899,16 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    CHECKD3D(glGenTextures(1, &tex->texture));
    CHECKD3D(glBindTexture(GL_TEXTURE_2D, tex->texture));
 
-   CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
-   CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+   if (clamptoedge)
+   {
+      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+   }
+   else
+   {
+      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
+      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+   }
 
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)); // Use mipmap filtering GL_LINEAR_MIPMAP_LINEAR
    CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));; // MAG Filter does not support mipmaps

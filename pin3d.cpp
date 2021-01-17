@@ -473,9 +473,9 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
 
    if (m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && useAO) 
    {
-      m_pddsAOBackTmpBuffer = m_pd3dPrimaryDevice->CreateTexture(m_viewPort.Width, m_viewPort.Height, 1, RENDERTARGET, colorFormat::GREY, NULL, stereo3D);
+      m_pddsAOBackTmpBuffer = m_pd3dPrimaryDevice->CreateTexture(m_pd3dPrimaryDevice->getBufwidth(), m_pd3dPrimaryDevice->getBufheight(), 1, RENDERTARGET, colorFormat::GREY, NULL, stereo3D);
 
-      m_pddsAOBackBuffer = m_pd3dPrimaryDevice->CreateTexture(m_viewPort.Width, m_viewPort.Height, 1, RENDERTARGET, colorFormat::GREY, NULL, stereo3D);
+      m_pddsAOBackBuffer = m_pd3dPrimaryDevice->CreateTexture(m_pd3dPrimaryDevice->getBufwidth(), m_pd3dPrimaryDevice->getBufheight(), 1, RENDERTARGET, colorFormat::GREY, NULL, stereo3D);
 
        if (!m_pddsAOBackBuffer || !m_pddsAOBackTmpBuffer)
           return E_FAIL;

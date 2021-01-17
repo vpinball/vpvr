@@ -116,8 +116,8 @@
 
 #define _WINSOCKAPI_ // workaround some issue where windows.h is included before winsock2.h in some of the various includes
 
-#define _SECURE_SCL 0
-#define _HAS_ITERATOR_DEBUGGING 0
+//#define _SECURE_SCL 0
+//#define _HAS_ITERATOR_DEBUGGING 0
 
 #define STRICT
 

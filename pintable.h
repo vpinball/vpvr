@@ -13,7 +13,7 @@
 #define VIEW_PLAYFIELD 1
 #define VIEW_BACKGLASS 2
 
-#define MIN_ZOOM 0.126f // purposely make them offset from powers to 2 to account for roundoff error
+#define MIN_ZOOM 0.0078f // purposely make them offset from powers to 2 to account for roundoff error - use 0.0078f instead of 0.126f for VR for room editing
 #define MAX_ZOOM 63.9f
 
 #define DISABLE_SCRIPT_EDITING  0x00000002 // cannot open script windows (stops editing and viewing)

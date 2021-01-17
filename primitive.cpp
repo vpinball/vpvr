@@ -365,11 +365,16 @@ void Primitive::SetDefaults(bool fromMouseClick)
    m_d.m_aRotAndTra[8] = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "RotAndTra8", 0.0f) : 0.0f;
 
    char buf[MAXTOKEN] = { 0 };
+
    HRESULT hr = LoadValueString(strKeyName, "Image", buf, MAXTOKEN);
-   if ((hr != S_OK) && fromMouseClick)
+   if ((hr != S_OK) && fromMouseClick) {
+      m_d.m_isBackGlassImage = false;
       m_d.m_szImage.clear();
-   else
+   }
+   else {
       m_d.m_szImage = buf;
+      m_d.m_isBackGlassImage = (_stricmp(buf, "backglassimage") == 0);
+   }
 
    hr = LoadValueString(strKeyName, "NormalMap", m_d.m_szNormalMap, MAXTOKEN);
    if ((hr != S_OK) && fromMouseClick)
@@ -1198,32 +1203,44 @@ void Primitive::RenderObject()
 
       pd3dDevice->basicShader->SetDisableLighting(vec4(m_d.m_disableLightingTop, m_d.m_disableLightingBelow, 0.f, 0.f));
 
-      Texture * const pin = m_ptable->GetImage(m_d.m_szImage);
       Texture * const nMap = m_ptable->GetImage(m_d.m_szNormalMap);
 
-      if (pin && nMap)
+      if (g_pplayer->m_texPUP && m_d.m_isBackGlassImage)
       {
          pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_with_texture);
-         pd3dDevice->basicShader->SetTexture(SHADER_Texture0, pin, false);
-         pd3dDevice->basicShader->SetTexture(SHADER_Texture4, nMap, true);
-         pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
-         pd3dDevice->basicShader->SetBool(SHADER_objectSpaceNormalMap, m_d.m_objectSpaceNormalMap);
-         //g_pplayer->m_pin3d.SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
-         // accommodate models with UV coords outside of [0,1]
-         pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_WRAP);
-      }
-      else if (pin)
-      {
-         pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_with_texture);
-         pd3dDevice->basicShader->SetTexture(SHADER_Texture0, pin, false);
-         pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
+         pd3dDevice->basicShader->SetTexture(SHADER_Texture0, pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texPUP, true, false), false);
 
          //g_pplayer->m_pin3d.SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
          // accommodate models with UV coords outside of [0,1]
          pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_WRAP);
       }
       else
-         pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_without_texture);
+      {
+         Texture * const pin = m_ptable->GetImage(m_d.m_szImage);
+         if (pin && nMap)
+         {
+            pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_with_texture);
+            pd3dDevice->basicShader->SetTexture(SHADER_Texture0, pin, false);
+            pd3dDevice->basicShader->SetTexture(SHADER_Texture4, nMap, true);
+            pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
+            pd3dDevice->basicShader->SetBool(SHADER_objectSpaceNormalMap, m_d.m_objectSpaceNormalMap);
+            //g_pplayer->m_pin3d.SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
+            // accommodate models with UV coords outside of [0,1]
+            pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_WRAP);
+         }
+         else if (pin)
+         {
+            pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_with_texture);
+            pd3dDevice->basicShader->SetTexture(SHADER_Texture0, pin, false);
+            pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
+
+            //g_pplayer->m_pin3d.SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
+            // accommodate models with UV coords outside of [0,1]
+            pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_WRAP);
+         }
+         else
+            pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_without_texture);
+      }
 
       pd3dDevice->basicShader->SetBool(SHADER_is_metal, mat->m_bIsMetal);
       pd3dDevice->basicShader->SetBool(SHADER_doNormalMapping, nMap);
@@ -1273,6 +1290,9 @@ void Primitive::RenderObject()
       pd3dDevice->basicShader->End();
       // reset transform
       g_pplayer->UpdateBasicShaderMatrix();
+
+      if (m_d.m_disableLightingTop != 0.f || m_d.m_disableLightingBelow != 0.f)
+         pd3dDevice->basicShader->SetDisableLighting(vec4(0.f, 0.f, 0.f, 0.f));
    }
 }
 
@@ -1532,7 +1552,7 @@ bool Primitive::LoadToken(const int id, BiffReader * const pbr)
    case FID(RTV6): pbr->GetFloat(&m_d.m_aRotAndTra[6]); break;
    case FID(RTV7): pbr->GetFloat(&m_d.m_aRotAndTra[7]); break;
    case FID(RTV8): pbr->GetFloat(&m_d.m_aRotAndTra[8]); break;
-   case FID(IMAG): pbr->GetString(m_d.m_szImage); break;
+   case FID(IMAG): pbr->GetString(m_d.m_szImage);m_d.m_isBackGlassImage = (_stricmp(m_d.m_szImage.c_str(), "backglassimage") == 0); break;
    case FID(NRMA): pbr->GetString(m_d.m_szNormalMap); break;
    case FID(SIDS): pbr->GetInt(&m_d.m_Sides); break;
    case FID(NAME): pbr->GetWideString(m_wzName); break;
@@ -2008,7 +2028,7 @@ STDMETHODIMP Primitive::put_Image(BSTR newVal)
       return E_FAIL;
    }
    m_d.m_szImage = szImage;
-
+   m_d.m_isBackGlassImage = (_stricmp(m_d.m_szImage.c_str(), "backglassimage") == 0);
    return S_OK;
 }
 

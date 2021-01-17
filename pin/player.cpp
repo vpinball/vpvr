@@ -584,7 +584,7 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
       m_bloomOff = LoadValueBoolWithDefault("PlayerVR", "ForceBloomOff", false);
       m_VSync = 0; //Disable VSync for VR
       m_reflectionForBalls = LoadValueBoolWithDefault("PlayerVR", "BallReflection", true);
-      m_reflectionForBalls = false; // Ball reflections work fine but is a performance hog in it's current implementation so force disable for now.
+      //m_reflectionForBalls = false; // Ball reflections work fine but is a performance hog in it's current implementation so force disable for now.
    }
    else {
       m_stereo3D = LoadValueIntWithDefault("Player", "Stereo3D", STEREO_OFF);
@@ -1380,7 +1380,7 @@ void Player::InitShader()
 
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetBool(SHADER_hdrEnvTextures, (m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture)->IsHDR());
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture1, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, false);
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture2, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_pin3d.m_envRadianceTexture, false), false);
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture2, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_pin3d.m_envRadianceTexture, false, false), false);
 #ifdef SEPARATE_CLASSICLIGHTSHADER
    m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetBool(SHADER_hdrEnvTextures, (m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture)->IsHDR());
    m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_Texture1, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, false);
@@ -1467,7 +1467,7 @@ void Player::InitBallShader()
    if (playfield)
       m_pin3d.m_pd3dPrimaryDevice->ballShader->SetTexture(SHADER_Texture1, playfield, false);
 
-   m_pin3d.m_pd3dPrimaryDevice->ballShader->SetTexture(SHADER_Texture2, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_pin3d.m_envRadianceTexture, false), false);
+   m_pin3d.m_pd3dPrimaryDevice->ballShader->SetTexture(SHADER_Texture2, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_pin3d.m_envRadianceTexture, false, false), false);
 
    assert(m_ballIndexBuffer == NULL);
    const bool lowDetailBall = (m_ptable->GetDetailLevel() < 10);
@@ -5208,8 +5208,7 @@ void Player::Render()
    if (m_ptable->m_pcv->m_scriptError)
    {
       // Crash back to the editor
-      //SendMessage(WM_CLOSE, 0, 0);
-      m_ptable->SendMessage(WM_COMMAND, ID_TABLE_STOP_PLAY, 0);
+      Shutdown();
    }
    else
    {
@@ -6107,8 +6106,8 @@ INT_PTR CALLBACK PauseProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam
       GetWindowRect(hwndDlg, &rcDialog);
 
       SetWindowPos(hwndDlg, NULL,
-         (rcMain.right + rcMain.left) / 2 - (rcDialog.right - rcDialog.left) / 2,
-         (rcMain.bottom + rcMain.top) / 2 - (rcDialog.bottom - rcDialog.top) / 2,
+         (((rcMain.right + rcMain.left) / 2 - (rcDialog.right - rcDialog.left) / 2 >= 0) ? ((rcMain.right + rcMain.left) / 2 - (rcDialog.right - rcDialog.left) / 2) : GetSystemMetrics(SM_CXSCREEN) / 2 - (rcDialog.left + rcDialog.right / 2)),
+         (((rcMain.bottom + rcMain.top) / 2 - (rcDialog.bottom - rcDialog.top) / 2 >= 0) ? ((rcMain.bottom + rcMain.top) / 2 - (rcDialog.bottom - rcDialog.top) / 2) : GetSystemMetrics(SM_CYSCREEN) / 2 - (rcDialog.top + rcDialog.bottom / 2)),
          0, 0, SWP_NOOWNERZORDER | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE/* | SWP_NOMOVE*/);
 
       return TRUE;
