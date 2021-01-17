@@ -677,7 +677,7 @@ void Shader::Begin(const unsigned int pass)
    }
    m_currentTechnique = &shaderList[technique];
    if (m_currentTechnique->program == -1) {
-      sprintf_s(msg, 256, "Could not find shader technique %s", shaderTechniqueNames[technique]);
+      sprintf_s(msg, 256, "Could not find shader technique %s", shaderTechniqueNames[technique].c_str());
       ShowError(msg);
       exit(-1);
    }

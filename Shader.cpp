@@ -22,15 +22,6 @@ Shader::Shader(RenderDevice *renderDevice) : currentMaterial(-FLT_MAX, -FLT_MAX,
 #ifndef ENABLE_SDL
    m_shader = 0;
 #elif defined(TWEAK_GL_SHADER)
-   for (int i = 0; i < SHADER_TECHNIQUE_COUNT; ++i) {
-      //shaderList[i].program = -1;
-      //for (int j = 0; j < SHADER_ATTRIBUTE_COUNT; ++j) {
-      //   shaderList[i].attributeLocation[j] = { 0, -1, 0 };
-      //}
-      //for (int j = 0; j < SHADER_UNIFORM_COUNT; ++j) {
-      //   shaderList[i].uniformLocation[j] = { 0, -1, 0, 0 };
-      //}
-   }
    for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i) {
       uniformFloat[i] = 0.0f;
       uniformFloatP[i] = { 0, nullptr };

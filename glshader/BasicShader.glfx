@@ -281,8 +281,6 @@ out vec3 worldPos;
 in vec3 normal_gs[];
 out vec3 normal;
 
-out int gl_ViewportIndex;
-
 void main()
 {
    gl_ViewportIndex = gl_InvocationID;

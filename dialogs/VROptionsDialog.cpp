@@ -116,7 +116,7 @@ void VROptionsDialog::ResetVideoPreferences() // 0 = default, 1 = lowend PC, 2 =
    sprintf_s(tmp, 256, "%0.1f", vrNearPlane);
    SetDlgItemTextA(IDC_NEAR_PLANE, tmp);
 
-   const float vrFarPlane = 20000.0f;
+   const float vrFarPlane = 5000.0f;
    sprintf_s(tmp, 256, "%0.1f", vrFarPlane);
    SetDlgItemTextA(IDC_FAR_PLANE, tmp);
 
@@ -288,7 +288,7 @@ BOOL VROptionsDialog::OnInitDialog()
    sprintf_s(tmp, 256, "%0.1f", vrNearPlane);
    SetDlgItemTextA(IDC_NEAR_PLANE, tmp);
 
-   const float vrFarPlane = LoadValueFloatWithDefault("PlayerVR", "farPlane", 20000.0f);
+   const float vrFarPlane = LoadValueFloatWithDefault("PlayerVR", "farPlane", 5000.0f);
    sprintf_s(tmp, 256, "%0.1f", vrFarPlane);
    SetDlgItemTextA(IDC_FAR_PLANE, tmp);
 
