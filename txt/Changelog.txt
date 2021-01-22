@@ -1,9 +1,11 @@
 SDL2 / VR Changelog
 ------------------------
 
-- Updated to VPX 10.7 commit R4367
+- Updated to VPX 10.7 commit R4383
 
-- Various updates from Rawnei (improving Render Quality)
+- Shader Uniform lookup improved (performance)
+
+- Various updates from Rawnei and DJRobX (improving Render Quality)
 
 - Updated to VPX 10.7 commit R3991
 
@@ -158,6 +160,12 @@ FEATURES:
 
 - when exporting/importing a POV file, the custom user settings per table are now also exported/imported
 - when importing a primitive mesh, there is now a new option that prevents internal reordering/optimization of the data
+
+- add support for loading VPP/physics settings automatically: One can define an extra VPP(.vpp) file for each table, named like the VPX file.
+  Example: you have some custom VPP settings for the table "QBerts Quest (Gottlieb 1983).vpx". Save the VPP settings into the file
+           "QBerts Quest (Gottlieb 1983).vpp" and place it in the same directory as the VPX file. VPX will then also load the VPP settings
+           automatically when loading the "QBerts Quest (Gottlieb 1983).vpx" (in the editor/player).
+  Or if you like to have default VPP settings that are used for any other tables, save it as "autovpp.vpp".
 
 - add MP3 and OGG support (via the BASS library) to the sound manager and the 'standard' sound commands
   these new file types are now also saved directly into the VPX file, unlike the music commands (which still use the 'music' folder for legacy reasons)

@@ -38,8 +38,9 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
-Additionally all code written by me alone (Sebastian/Caligula) can also be reused with GPLv3+ for VPE. For code were I'm not the sole contributor you still need the permission of all other contributors. To check who contributed
-the code it is not sufficient to check only this repository, but at least also https://sourceforge.net/projects/vpinball/.
+Additionally all code written by me alone (Sebastian/Caligula) can also be reused with GPLv3+ for VPE. Please check if the commit is not only uploaded by, but also is not a port from other repositories (normally this is noted
+in the commit). For code were I'm not the sole contributor you still need the permission of all other contributors. To check who contributed the code it is not sufficient to check only this repository, but at least 
+also https://sourceforge.net/projects/vpinball/ and https://github.com/djrobx/vpvr
 
 This software uses the FreeImage open source image library. See http://freeimage.sourceforge.net for details.
 FreeImage is used under the (GNU GPL or FIPL), version (license version), see http://freeimage.sourceforge.net/freeimage-license.txt for details.

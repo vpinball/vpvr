@@ -292,6 +292,9 @@
     <ClCompile Include="dialogs\Properties\WallVisualsProperty.cpp">
       <Filter>dialogs\Properties</Filter>
     </ClCompile>
+    <ClCompile Include="imgui\imgui_tables.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="vpinball.rc">

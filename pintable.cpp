@@ -23,10 +23,6 @@ using namespace rapidxml;
 const unsigned char TABLE_KEY[] = "Visual Pinball";
 //const unsigned char PARAPHRASE_KEY[] = { 0xB4, 0x0B, 0xBE, 0x37, 0xC3, 0x0C, 0x8E, 0xA1, 0x5A, 0x05, 0xDF, 0x1B, 0x2D, 0x02, 0xEF, 0x8D };
 
-INT_PTR CALLBACK ProgressProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
-LRESULT CALLBACK TableWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-
 #pragma region ScriptGlobalTable
 
 //////////////////////////////////////////////////////////////////////
@@ -206,8 +202,8 @@ STDMETHODIMP ScriptGlobalTable::PlayMusic(BSTR str, float volume)
 
       char szT[512];
       char szPath[MAX_PATH + 512];
-      WideCharToMultiByte(CP_ACP, 0, m_vpinball->m_wzMyPath.c_str(), -1, szPath, MAX_PATH + 512, NULL, NULL);
-      WideCharToMultiByte(CP_ACP, 0, str, -1, szT, 512, NULL, NULL);
+      WideCharToMultiByteNull(CP_ACP, 0, m_vpinball->m_wzMyPath.c_str(), -1, szPath, MAX_PATH + 512, NULL, NULL);
+      WideCharToMultiByteNull(CP_ACP, 0, str, -1, szT, 512, NULL, NULL);
 
       //string szextension;
       //ExtensionFromFilename(szT, szextension);
@@ -216,7 +212,7 @@ STDMETHODIMP ScriptGlobalTable::PlayMusic(BSTR str, float volume)
 
       lstrcat(szPath, "Music\\");
 
-      //WideCharToMultiByte(CP_ACP, 0, str, -1, szT, 512, NULL, NULL);
+      //WideCharToMultiByteNull(CP_ACP, 0, str, -1, szT, 512, NULL, NULL);
 
       // We know that szT can't be more than 512 characters as this point, and that szPath can't be more than MAX_PATH
       lstrcat(szPath, szT);
@@ -397,8 +393,7 @@ bool ScriptGlobalTable::GetTextFileFromDirectory(const char * const szfilename, 
       {
          WCHAR * const wzContents = new WCHAR[len + 1];
 
-         MultiByteToWideChar(encoding, 0, (char *)szDataStart, len, wzContents, len + 1);
-         wzContents[len] = L'\0';
+         MultiByteToWideCharNull(encoding, 0, (char *)szDataStart, len, wzContents, len + 1);
 
          *pContents = SysAllocString(wzContents);
          delete[] wzContents;
@@ -424,7 +419,7 @@ STDMETHODIMP ScriptGlobalTable::GetCustomParam(long index, BSTR *param)
 STDMETHODIMP ScriptGlobalTable::GetTextFile(BSTR FileName, BSTR *pContents)
 {
    char szFileName[MAX_PATH];
-   WideCharToMultiByte(CP_ACP, 0, FileName, -1, szFileName, MAX_PATH, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, FileName, -1, szFileName, MAX_PATH, NULL, NULL);
 
    // try to load the file from the current directory
    bool success = GetTextFileFromDirectory(szFileName, NULL, pContents);
@@ -685,7 +680,7 @@ STDMETHODIMP ScriptGlobalTable::UpdateMaterial(BSTR pVal, float wrapLighting, fl
       return E_POINTER;
 
    char Name[MAX_PATH];
-   WideCharToMultiByte(CP_ACP, 0, pVal, -1, Name, MAX_PATH, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, pVal, -1, Name, MAX_PATH, NULL, NULL);
 
    Material * const pMat = m_pt->GetMaterial(Name);
    if (pMat != &m_vpinball->m_dummyMaterial)
@@ -721,7 +716,7 @@ STDMETHODIMP ScriptGlobalTable::GetMaterial(BSTR pVal, float *wrapLighting, floa
       return E_POINTER;
 
    char Name[MAX_PATH];
-   WideCharToMultiByte(CP_ACP, 0, pVal, -1, Name, MAX_PATH, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, pVal, -1, Name, MAX_PATH, NULL, NULL);
 
    const Material * const pMat = m_pt->GetMaterial(Name);
    if (pMat != &m_vpinball->m_dummyMaterial)
@@ -755,7 +750,7 @@ STDMETHODIMP ScriptGlobalTable::UpdateMaterialPhysics(BSTR pVal, float elasticit
       return E_POINTER;
 
    char Name[MAX_PATH];
-   WideCharToMultiByte(CP_ACP, 0, pVal, -1, Name, MAX_PATH, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, pVal, -1, Name, MAX_PATH, NULL, NULL);
 
    Material * const pMat = m_pt->GetMaterial(Name);
    if (pMat != &m_vpinball->m_dummyMaterial)
@@ -777,7 +772,7 @@ STDMETHODIMP ScriptGlobalTable::GetMaterialPhysics(BSTR pVal, float *elasticity,
       return E_POINTER;
 
    char Name[MAX_PATH];
-   WideCharToMultiByte(CP_ACP, 0, pVal, -1, Name, MAX_PATH, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, pVal, -1, Name, MAX_PATH, NULL, NULL);
 
    const Material * const pMat = m_pt->GetMaterial(Name);
    if (pMat != &m_vpinball->m_dummyMaterial)
@@ -800,7 +795,7 @@ STDMETHODIMP ScriptGlobalTable::MaterialColor(BSTR pVal, OLE_COLOR newVal)
       return E_POINTER;
 
    char Name[MAX_PATH];
-   WideCharToMultiByte(CP_ACP, 0, pVal, -1, Name, MAX_PATH, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, pVal, -1, Name, MAX_PATH, NULL, NULL);
 
    Material * const pMat = m_pt->GetMaterial(Name);
    if (pMat != &m_vpinball->m_dummyMaterial)
@@ -3081,7 +3076,7 @@ HRESULT PinTable::WriteInfoValue(IStorage* pstg, const WCHAR * const wzName, con
 
       const int len = (int)szValue.length();
       WCHAR * const wzT = new WCHAR[len + 1];
-      MultiByteToWideChar(CP_ACP, 0, szValue.c_str(), -1, wzT, len + 1);
+      MultiByteToWideCharNull(CP_ACP, 0, szValue.c_str(), -1, wzT, len + 1);
 
       bw.WriteBytes(wzT, len*(int)sizeof(WCHAR), &writ);
       delete[] wzT;
@@ -3150,7 +3145,7 @@ HRESULT PinTable::SaveCustomInfo(IStorage* pstg, IStream *pstmTags, HCRYPTHASH h
    {
       const int len = (int)m_vCustomInfoTag[i].length();
       WCHAR * const wzName = new WCHAR[len + 1];
-      MultiByteToWideChar(CP_ACP, 0, m_vCustomInfoTag[i].c_str(), -1, wzName, len + 1);
+      MultiByteToWideCharNull(CP_ACP, 0, m_vCustomInfoTag[i].c_str(), -1, wzName, len + 1);
 
       WriteInfoValue(pstg, wzName, m_vCustomInfoContent[i], hcrypthash);
 
@@ -3182,7 +3177,7 @@ HRESULT PinTable::ReadInfoValue(IStorage* pstg, const WCHAR * const wzName, char
       br.ReadBytes(wzT, ss.cbSize.LowPart, &read);
       wzT[len] = L'\0';
 
-      WideCharToMultiByte(CP_ACP, 0, wzT, -1, *pszValue, len + 1, NULL, NULL);
+      WideCharToMultiByteNull(CP_ACP, 0, wzT, -1, *pszValue, len + 1, NULL, NULL);
 
       //delete br;
       //pstm->Read(*pszValue, ss.cbSize.LowPart, &read);
@@ -3318,7 +3313,7 @@ HRESULT PinTable::LoadCustomInfo(IStorage* pstg, IStream *pstmTags, HCRYPTHASH h
    {
       const int len = (int)m_vCustomInfoTag[i].length();
       WCHAR * const wzName = new WCHAR[len + 1];
-      MultiByteToWideChar(CP_ACP, 0, m_vCustomInfoTag[i].c_str(), -1, wzName, len + 1);
+      MultiByteToWideCharNull(CP_ACP, 0, m_vCustomInfoTag[i].c_str(), -1, wzName, len + 1);
 
       char *szValue;
       ReadInfoValue(pstg, wzName, &szValue, hcrypthash);
@@ -3466,7 +3461,7 @@ HRESULT PinTable::SaveData(IStream* pstm, HCRYPTHASH hcrypthash, const bool back
    bw.WriteInt(FID(MASI), (int)m_materials.size());
    if (m_materials.size() > 0)
    {
-      SaveMaterial * const mats = (SaveMaterial*)malloc(sizeof(SaveMaterial)*m_materials.size());
+      vector<SaveMaterial> mats(m_materials.size());
       for (size_t i = 0; i < m_materials.size(); i++)
       {
          const Material* const m = m_materials[i];
@@ -3486,9 +3481,9 @@ HRESULT PinTable::SaveData(IStream* pstm, HCRYPTHASH hcrypthash, const bool back
          for (size_t c = strnlen_s(mats[i].szName, sizeof(mats[i].szName)); c < sizeof(mats[i].szName); ++c) // to avoid garbage after 0
             mats[i].szName[c] = 0;
       }
-      bw.WriteStruct(FID(MATE), mats, (int)(sizeof(SaveMaterial)*m_materials.size()));
-
-      SavePhysicsMaterial * const phymats = (SavePhysicsMaterial*)malloc(sizeof(SavePhysicsMaterial)*m_materials.size());
+      bw.WriteStruct(FID(MATE), mats.data(), (int)(sizeof(SaveMaterial)*m_materials.size()));
+      
+      vector<SavePhysicsMaterial> phymats(m_materials.size());
       for (size_t i = 0; i < m_materials.size(); i++)
       {
          const Material* const m = m_materials[i];
@@ -3500,10 +3495,7 @@ HRESULT PinTable::SaveData(IStream* pstm, HCRYPTHASH hcrypthash, const bool back
          phymats[i].fFriction = m->m_fFriction;
          phymats[i].fScatterAngle = m->m_fScatterAngle;
       }
-      bw.WriteStruct(FID(PHMA), phymats, (int)(sizeof(SavePhysicsMaterial)*m_materials.size()));
-
-      free(mats);
-      free(phymats);
+      bw.WriteStruct(FID(PHMA), phymats.data(), (int)(sizeof(SavePhysicsMaterial)*m_materials.size()));
    }
    // HACK!!!! - Don't save special values when copying for undo.  For instance, don't reset the code.
    // Someday save these values into there own stream, used only when saving to file.
@@ -4146,8 +4138,8 @@ bool PinTable::LoadToken(const int id, BiffReader * const pbr)
    case FID(MASI): pbr->GetInt(&m_numMaterials); break;
    case FID(MATE):
    {
-      SaveMaterial * const mats = (SaveMaterial*)malloc(sizeof(SaveMaterial)*m_numMaterials);
-      pbr->GetStruct(mats, (int)sizeof(SaveMaterial)*m_numMaterials);
+      vector<SaveMaterial> mats(m_numMaterials);
+      pbr->GetStruct(mats.data(), (int)sizeof(SaveMaterial)*m_numMaterials);
 
       for (size_t i = 0; i < m_materials.size(); ++i)
          delete m_materials[i];
@@ -4171,13 +4163,12 @@ bool PinTable::LoadToken(const int id, BiffReader * const pbr)
          pmat->m_szName = mats[i].szName;
          m_materials.push_back(pmat);
       }
-      free(mats);
       break;
    }
    case FID(PHMA):
    {
-      SavePhysicsMaterial * const mats = (SavePhysicsMaterial*)malloc(sizeof(SavePhysicsMaterial)*m_numMaterials);
-      pbr->GetStruct(mats, (int)sizeof(SavePhysicsMaterial)*m_numMaterials);
+      vector<SavePhysicsMaterial> mats(m_numMaterials);
+      pbr->GetStruct(mats.data(), (int)sizeof(SavePhysicsMaterial)*m_numMaterials);
 
       for (int i = 0; i < m_numMaterials; i++)
       {
@@ -4197,7 +4188,6 @@ bool PinTable::LoadToken(const int id, BiffReader * const pbr)
          if (!found)
             m_materials.push_back(pmat);
       }
-      free(mats);
       break;
    }
    }
@@ -4452,7 +4442,7 @@ void PinTable::NewCollection(const HWND hwndListView, const bool fromSelection)
 int PinTable::AddListCollection(HWND hwndListView, CComObject<Collection> *pcol)
 {
    char szT[sizeof(pcol->m_wzName) / sizeof(pcol->m_wzName[0])];
-   WideCharToMultiByte(CP_ACP, 0, pcol->m_wzName, -1, szT, sizeof(szT), NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, pcol->m_wzName, -1, szT, sizeof(szT), NULL, NULL);
 
    LVITEM lvitem;
    lvitem.mask = LVIF_DI_SETITEM | LVIF_TEXT | LVIF_PARAM;
@@ -4561,7 +4551,7 @@ void PinTable::MoveCollectionDown(CComObject<Collection> *pcol)
 void PinTable::SetCollectionName(Collection *pcol, const char *szName, HWND hwndList, int index)
 {
    WCHAR wzT[MAXSTRING];
-   MultiByteToWideChar(CP_ACP, 0, szName, -1, wzT, MAXSTRING);
+   MultiByteToWideCharNull(CP_ACP, 0, szName, -1, wzT, MAXSTRING);
    if (m_pcv->ReplaceName((IScriptable *)pcol, wzT) == S_OK)
    {
       if (hwndList)
@@ -4774,7 +4764,7 @@ void PinTable::FillCollectionContextMenu(CMenu &mainMenu, CMenu &colSubMenu, ISe
       CComBSTR bstr;
       m_vcollection.ElementAt(i)->get_Name(&bstr);
       char szT[MAXNAMEBUFFER * 2]; // Names can only be 32 characters (plus terminator)
-      WideCharToMultiByte(CP_ACP, 0, bstr, -1, szT, MAXNAMEBUFFER * 2, NULL, NULL);
+      WideCharToMultiByteNull(CP_ACP, 0, bstr, -1, szT, MAXNAMEBUFFER * 2, NULL, NULL);
 
       colSubMenu.AppendMenu(MF_POPUP, 0x40000 + i, szT);
       colSubMenu.CheckMenuItem(0x40000 + i, MF_UNCHECKED);
@@ -4935,7 +4925,7 @@ const char *PinTable::GetElementName(IEditable *pedit) const
    if (elemName)
    {
       static char elementName[256];
-      WideCharToMultiByte(CP_ACP, 0, elemName, -1, elementName, 256, NULL, NULL);
+      WideCharToMultiByteNull(CP_ACP, 0, elemName, -1, elementName, 256, NULL, NULL);
       return elementName;
    }
    return NULL;
@@ -5509,7 +5499,7 @@ void PinTable::ExportBlueprint()
 void PinTable::ExportMesh(FILE *f)
 {
    char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
-   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
 
    Vertex3D_NoTex2 rgv[7];
    rgv[0].x = m_left;     rgv[0].y = m_top;      rgv[0].z = m_tableheight;
@@ -6525,8 +6515,13 @@ void PinTable::OnDelete()
 
    for (size_t i = 0; i < m_vseldelete.size(); i++)
    {
-      m_vpinball->GetLayersListDialog()->DeleteElement(m_vseldelete[i]->GetIEditable());
-      m_vseldelete[i]->Delete();
+      ISelect* pisel = m_vseldelete[i];
+      if (pisel != nullptr)
+      {
+         if (pisel->GetItemType() != eItemDragPoint)
+            m_vpinball->GetLayersListDialog()->DeleteElement(m_vseldelete[i]->GetIEditable());
+         m_vseldelete[i]->Delete();
+      }
    }
    // update properties to show the properties of the table
    m_vpinball->SetPropSel(m_vmultisel);
@@ -6814,7 +6809,7 @@ STDMETHODIMP PinTable::put_Offset(float newVal)
 HRESULT PinTable::StopSound(BSTR Sound)
 {
    char szName[MAXSTRING];
-   WideCharToMultiByte(CP_ACP, 0, Sound, -1, szName, MAXSTRING, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, Sound, -1, szName, MAXSTRING, NULL, NULL);
 
    // In case we were playing any of the main buffers
    for (size_t i = 0; i < m_vsound.size(); i++)
@@ -6842,7 +6837,7 @@ void PinTable::StopAllSounds()
 STDMETHODIMP PinTable::PlaySound(BSTR bstr, int loopcount, float volume, float pan, float randompitch, int pitch, VARIANT_BOOL usesame, VARIANT_BOOL restart, float front_rear_fade)
 {
    char szName[MAXSTRING];
-   WideCharToMultiByte(CP_ACP, 0, bstr, -1, szName, MAXSTRING, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, bstr, -1, szName, MAXSTRING, NULL, NULL);
 
    if (!lstrcmpi("knock", szName) || !lstrcmpi("knocker", szName))
       hid_knock();
@@ -7654,7 +7649,7 @@ HRESULT PinTable::LoadImageFromStream(IStream *pstm, unsigned int idx, int versi
 STDMETHODIMP PinTable::get_Image(BSTR *pVal)
 {
    WCHAR wz[MAXTOKEN];
-   MultiByteToWideChar(CP_ACP, 0, m_szImage, -1, wz, MAXTOKEN);
+   MultiByteToWideCharNull(CP_ACP, 0, m_szImage, -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -7663,7 +7658,7 @@ STDMETHODIMP PinTable::get_Image(BSTR *pVal)
 STDMETHODIMP PinTable::put_Image(BSTR newVal)
 {
    char szImage[sizeof(m_szImage)];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, sizeof(m_szImage), NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szImage, sizeof(m_szImage), NULL, NULL);
    const Texture * const tex = GetImage(szImage);
    if (tex && tex->IsHDR())
    {
@@ -7716,7 +7711,7 @@ STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaString
       WCHAR *wzDst = (WCHAR *)CoTaskMemAlloc(7 * sizeof(WCHAR));
       // TEXT
       const LocalString ls(IDS_NONE);
-      MultiByteToWideChar(CP_ACP, 0, ls.m_szbuffer, -1, wzDst, 7);
+      MultiByteToWideCharNull(CP_ACP, 0, ls.m_szbuffer, -1, wzDst, 7);
       rgstr[0] = wzDst;
       rgdw[0] = ~0u;
 
@@ -7727,7 +7722,7 @@ STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaString
          if (wzDst == NULL)
             ShowError("DISPID_Image alloc failed");
 
-         MultiByteToWideChar(CP_ACP, 0, m_vimage[ivar]->m_szName.c_str(), -1, wzDst, cwch);
+         MultiByteToWideCharNull(CP_ACP, 0, m_vimage[ivar]->m_szName.c_str(), -1, wzDst, cwch);
 
          //MsoWzCopy(szSrc,szDst);
          rgstr[ivar + 1] = wzDst;
@@ -7748,7 +7743,7 @@ STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaString
       WCHAR *wzDst = (WCHAR *)CoTaskMemAlloc(7 * sizeof(WCHAR));
       // TEXT
       const LocalString ls(IDS_NONE);
-      MultiByteToWideChar(CP_ACP, 0, ls.m_szbuffer, -1, wzDst, 7);
+      MultiByteToWideCharNull(CP_ACP, 0, ls.m_szbuffer, -1, wzDst, 7);
       rgstr[0] = wzDst;
       rgdw[0] = ~0u;
 
@@ -7759,7 +7754,7 @@ STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaString
          if (wzDst == NULL)
             ShowError("IDC_MATERIAL_COMBO alloc failed");
 
-         MultiByteToWideChar(CP_ACP, 0, m_materials[ivar]->m_szName.c_str(), -1, wzDst, cwch);
+         MultiByteToWideCharNull(CP_ACP, 0, m_materials[ivar]->m_szName.c_str(), -1, wzDst, cwch);
 
          //MsoWzCopy(szSrc,szDst);
          rgstr[ivar + 1] = wzDst;
@@ -7777,7 +7772,7 @@ STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaString
 
       WCHAR * wzDst = (WCHAR *)CoTaskMemAlloc(7 * sizeof(WCHAR));
       // TEXT
-      MultiByteToWideChar(CP_ACP, 0, "<None>", -1, wzDst, 7);
+      MultiByteToWideCharNull(CP_ACP, 0, "<None>", -1, wzDst, 7);
       rgstr[0] = wzDst;
       rgdw[0] = ~0u;
 
@@ -7788,7 +7783,7 @@ STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaString
          if (wzDst == NULL)
             ShowError("DISPID_Sound alloc failed");
 
-         MultiByteToWideChar(CP_ACP, 0, m_vsound[ivar]->m_szName.c_str(), -1, wzDst, cwch);
+         MultiByteToWideCharNull(CP_ACP, 0, m_vsound[ivar]->m_szName.c_str(), -1, wzDst, cwch);
 
          //MsoWzCopy(szSrc,szDst);
          rgstr[ivar + 1] = wzDst;
@@ -7807,7 +7802,7 @@ STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaString
 
       WCHAR *wzDst = (WCHAR *)CoTaskMemAlloc(7 * sizeof(WCHAR));
       // TEXT
-      MultiByteToWideChar(CP_ACP, 0, "<None>", -1, wzDst, 7);
+      MultiByteToWideCharNull(CP_ACP, 0, "<None>", -1, wzDst, 7);
       rgstr[0] = wzDst;
       rgdw[0] = ~0u;
 
@@ -7848,7 +7843,6 @@ STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaString
       cvar = 0;
 
       WCHAR *wzDst = (WCHAR *)CoTaskMemAlloc(7 * sizeof(WCHAR));
-      //MultiByteToWideChar(CP_ACP, 0, "None", -1, wzDst, 5);
       // TEXT
       WideStrCopy(L"<None>", wzDst);
       rgstr[cvar] = wzDst;
@@ -7875,10 +7869,6 @@ STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaString
                ShowError("DISPID_Surface alloc failed (1)");
 
             WideStrCopy(bstr, wzDst);
-
-            //MultiByteToWideChar(CP_ACP, 0, "Hello", -1, wzDst, cwch);
-
-            //MsoWzCopy(szSrc,szDst);
             rgstr[cvar] = wzDst;
             rgdw[cvar] = (DWORD)ivar;
             cvar++;
@@ -7894,23 +7884,23 @@ STDMETHODIMP PinTable::GetPredefinedStrings(DISPID dispID, CALPOLESTR *pcaString
       rgdw = (DWORD *)CoTaskMemAlloc((cvar) * sizeof(DWORD));
 
       WCHAR * wzDst = (WCHAR *)CoTaskMemAlloc(5 * sizeof(WCHAR));
-      MultiByteToWideChar(CP_ACP, 0, "None", -1, wzDst, 5);
+      MultiByteToWideCharNull(CP_ACP, 0, "None", -1, wzDst, 5);
       rgstr[0] = wzDst;
       rgdw[0] = ~0u;
       wzDst = (WCHAR *)CoTaskMemAlloc(9 * sizeof(WCHAR));
-      MultiByteToWideChar(CP_ACP, 0, "Additive", -1, wzDst, 9);
+      MultiByteToWideCharNull(CP_ACP, 0, "Additive", -1, wzDst, 9);
       rgstr[1] = wzDst;
       rgdw[1] = 1;
       wzDst = (WCHAR *)CoTaskMemAlloc(9 * sizeof(WCHAR));
-      MultiByteToWideChar(CP_ACP, 0, "Multiply", -1, wzDst, 9);
+      MultiByteToWideCharNull(CP_ACP, 0, "Multiply", -1, wzDst, 9);
       rgstr[2] = wzDst;
       rgdw[2] = 2;
       wzDst = (WCHAR *)CoTaskMemAlloc(8 * sizeof(WCHAR));
-      MultiByteToWideChar(CP_ACP, 0, "Overlay", -1, wzDst, 8);
+      MultiByteToWideCharNull(CP_ACP, 0, "Overlay", -1, wzDst, 8);
       rgstr[3] = wzDst;
       rgdw[3] = 3;
       wzDst = (WCHAR *)CoTaskMemAlloc(7 * sizeof(WCHAR));
-      MultiByteToWideChar(CP_ACP, 0, "Screen", -1, wzDst, 7);
+      MultiByteToWideCharNull(CP_ACP, 0, "Screen", -1, wzDst, 7);
       rgstr[4] = wzDst;
       rgdw[4] = 4;
 
@@ -7956,7 +7946,7 @@ STDMETHODIMP PinTable::GetPredefinedValue(DISPID dispID, DWORD dwCookie, VARIANT
          const DWORD cwch = (DWORD)m_vimage[dwCookie]->m_szName.length() + 1;
          wzDst = (WCHAR *)CoTaskMemAlloc(cwch * sizeof(WCHAR));
 
-         MultiByteToWideChar(CP_ACP, 0, m_vimage[dwCookie]->m_szName.c_str(), -1, wzDst, cwch);
+         MultiByteToWideCharNull(CP_ACP, 0, m_vimage[dwCookie]->m_szName.c_str(), -1, wzDst, cwch);
       }
    }
    break;
@@ -7975,7 +7965,7 @@ STDMETHODIMP PinTable::GetPredefinedValue(DISPID dispID, DWORD dwCookie, VARIANT
          const DWORD cwch = (DWORD)m_materials[dwCookie]->m_szName.length() + 1;
          wzDst = (WCHAR *)CoTaskMemAlloc(cwch * sizeof(WCHAR));
 
-         MultiByteToWideChar(CP_ACP, 0, m_materials[dwCookie]->m_szName.c_str(), -1, wzDst, cwch);
+         MultiByteToWideCharNull(CP_ACP, 0, m_materials[dwCookie]->m_szName.c_str(), -1, wzDst, cwch);
       }
       break;
    }
@@ -7994,7 +7984,7 @@ STDMETHODIMP PinTable::GetPredefinedValue(DISPID dispID, DWORD dwCookie, VARIANT
          wzDst = (WCHAR *)CoTaskMemAlloc(cwch * sizeof(WCHAR));
          if (wzDst == NULL)
             ShowError("DISPID_Sound alloc failed");
-         MultiByteToWideChar(CP_ACP, 0, m_vsound[dwCookie]->m_szName.c_str(), -1, wzDst, cwch);
+         MultiByteToWideCharNull(CP_ACP, 0, m_vsound[dwCookie]->m_szName.c_str(), -1, wzDst, cwch);
       }
    }
    break;
@@ -8023,7 +8013,7 @@ STDMETHODIMP PinTable::GetPredefinedValue(DISPID dispID, DWORD dwCookie, VARIANT
       const DWORD cwch = lstrlen(filterNames[idx]) + 1;
       wzDst = (WCHAR *)CoTaskMemAlloc(cwch * sizeof(WCHAR));
 
-      MultiByteToWideChar(CP_ACP, 0, filterNames[idx], -1, wzDst, cwch);
+      MultiByteToWideCharNull(CP_ACP, 0, filterNames[idx], -1, wzDst, cwch);
       break;
    }
    case DISPID_Surface:
@@ -8260,7 +8250,7 @@ STDMETHODIMP PinTable::put_Height(float newVal)
 STDMETHODIMP PinTable::get_PlayfieldMaterial(BSTR *pVal)
 {
    WCHAR wz[MAXNAMEBUFFER];
-   MultiByteToWideChar(CP_ACP, 0, m_szPlayfieldMaterial, -1, wz, MAXNAMEBUFFER);
+   MultiByteToWideCharNull(CP_ACP, 0, m_szPlayfieldMaterial, -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -8269,7 +8259,7 @@ STDMETHODIMP PinTable::get_PlayfieldMaterial(BSTR *pVal)
 STDMETHODIMP PinTable::put_PlayfieldMaterial(BSTR newVal)
 {
    STARTUNDO
-      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_szPlayfieldMaterial, MAXNAMEBUFFER, NULL, NULL);
+      WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, m_szPlayfieldMaterial, MAXNAMEBUFFER, NULL, NULL);
    STOPUNDO
 
       return S_OK;
@@ -8787,7 +8777,7 @@ STDMETHODIMP PinTable::put_ShowFSS(VARIANT_BOOL newVal)
 STDMETHODIMP PinTable::get_BackdropImage_DT(BSTR *pVal)
 {
    WCHAR wz[MAXTOKEN];
-   MultiByteToWideChar(CP_ACP, 0, m_BG_szImage[0], -1, wz, MAXTOKEN);
+   MultiByteToWideCharNull(CP_ACP, 0, m_BG_szImage[0], -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -8796,7 +8786,7 @@ STDMETHODIMP PinTable::get_BackdropImage_DT(BSTR *pVal)
 STDMETHODIMP PinTable::put_BackdropImage_DT(BSTR newVal) //!! HDR??
 {
    STARTUNDO
-      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_BG_szImage[0], MAXTOKEN, NULL, NULL);
+      WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, m_BG_szImage[0], MAXTOKEN, NULL, NULL);
    STOPUNDO
 
       return S_OK;
@@ -8805,7 +8795,7 @@ STDMETHODIMP PinTable::put_BackdropImage_DT(BSTR newVal) //!! HDR??
 STDMETHODIMP PinTable::get_BackdropImage_FS(BSTR *pVal)
 {
    WCHAR wz[MAXTOKEN];
-   MultiByteToWideChar(CP_ACP, 0, m_BG_szImage[1], -1, wz, MAXTOKEN);
+   MultiByteToWideCharNull(CP_ACP, 0, m_BG_szImage[1], -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -8814,7 +8804,7 @@ STDMETHODIMP PinTable::get_BackdropImage_FS(BSTR *pVal)
 STDMETHODIMP PinTable::put_BackdropImage_FS(BSTR newVal) //!! HDR??
 {
    STARTUNDO
-      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_BG_szImage[1], MAXTOKEN, NULL, NULL);
+      WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, m_BG_szImage[1], MAXTOKEN, NULL, NULL);
    STOPUNDO
 
       return S_OK;
@@ -8823,7 +8813,7 @@ STDMETHODIMP PinTable::put_BackdropImage_FS(BSTR newVal) //!! HDR??
 STDMETHODIMP PinTable::get_BackdropImage_FSS(BSTR *pVal)
 {
    WCHAR wz[MAXTOKEN];
-   MultiByteToWideChar(CP_ACP, 0, m_BG_szImage[2], -1, wz, MAXTOKEN);
+   MultiByteToWideCharNull(CP_ACP, 0, m_BG_szImage[2], -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -8832,7 +8822,7 @@ STDMETHODIMP PinTable::get_BackdropImage_FSS(BSTR *pVal)
 STDMETHODIMP PinTable::put_BackdropImage_FSS(BSTR newVal) //!! HDR??
 {
    STARTUNDO
-      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_BG_szImage[2], MAXTOKEN, NULL, NULL);
+      WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, m_BG_szImage[2], MAXTOKEN, NULL, NULL);
    STOPUNDO
 
       return S_OK;
@@ -8841,7 +8831,7 @@ STDMETHODIMP PinTable::put_BackdropImage_FSS(BSTR newVal) //!! HDR??
 STDMETHODIMP PinTable::get_ColorGradeImage(BSTR *pVal)
 {
    WCHAR wz[MAXTOKEN];
-   MultiByteToWideChar(CP_ACP, 0, m_szImageColorGrade, -1, wz, MAXTOKEN);
+   MultiByteToWideCharNull(CP_ACP, 0, m_szImageColorGrade, -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -8850,7 +8840,7 @@ STDMETHODIMP PinTable::get_ColorGradeImage(BSTR *pVal)
 STDMETHODIMP PinTable::put_ColorGradeImage(BSTR newVal)
 {
    char szImage[sizeof(m_szImageColorGrade)];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, sizeof(m_szImageColorGrade), NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szImage, sizeof(m_szImageColorGrade), NULL, NULL);
    const Texture * const tex = GetImage(szImage);
    if (tex && (tex->m_width != 256 || tex->m_height != 16))
    {
@@ -9286,7 +9276,7 @@ STDMETHODIMP PinTable::put_SlopeMin(float newVal)
 STDMETHODIMP PinTable::get_BallImage(BSTR *pVal)
 {
    WCHAR wz[MAXTOKEN];
-   MultiByteToWideChar(CP_ACP, 0, m_szBallImage, -1, wz, MAXTOKEN);
+   MultiByteToWideCharNull(CP_ACP, 0, m_szBallImage, -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -9295,7 +9285,7 @@ STDMETHODIMP PinTable::get_BallImage(BSTR *pVal)
 STDMETHODIMP PinTable::put_BallImage(BSTR newVal)
 {
    STARTUNDO
-      WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_szBallImage, MAXTOKEN, NULL, NULL);
+      WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, m_szBallImage, MAXTOKEN, NULL, NULL);
    STOPUNDO
 
       return S_OK;
@@ -9304,7 +9294,7 @@ STDMETHODIMP PinTable::put_BallImage(BSTR newVal)
 STDMETHODIMP PinTable::get_EnvironmentImage(BSTR *pVal)
 {
    WCHAR wz[MAXTOKEN];
-   MultiByteToWideChar(CP_ACP, 0, m_szEnvImage, -1, wz, MAXTOKEN);
+   MultiByteToWideCharNull(CP_ACP, 0, m_szEnvImage, -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -9313,7 +9303,7 @@ STDMETHODIMP PinTable::get_EnvironmentImage(BSTR *pVal)
 STDMETHODIMP PinTable::put_EnvironmentImage(BSTR newVal)
 {
    char szImage[sizeof(m_szEnvImage)];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, sizeof(m_szEnvImage), NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szImage, sizeof(m_szEnvImage), NULL, NULL);
    const Texture * const tex = GetImage(szImage);
    if (tex && (tex->m_width != tex->m_height * 2))
    {
@@ -9470,12 +9460,19 @@ STDMETHODIMP PinTable::ImportPhysics()
       hr = SaveValueString("RecentDir", "PhysicsDir", newInitDir);
    }
 
+   ImportVPP(szFileName[0]);
+
+   return S_OK;
+}
+
+void PinTable::ImportVPP(const string& filename)
+{
    xml_document<> xmlDoc;
    float FlipperPhysicsMass, FlipperPhysicsStrength, FlipperPhysicsElasticity, FlipperPhysicsScatter, FlipperPhysicsTorqueDamping, FlipperPhysicsTorqueDampingAngle, FlipperPhysicsReturnStrength, FlipperPhysicsElasticityFalloff, FlipperPhysicsFriction, FlipperPhysicsCoilRampUp;
    try
    {
       std::stringstream buffer;
-      std::ifstream myFile(szFileName[0]);
+      std::ifstream myFile(filename);
       buffer << myFile.rdbuf();
       myFile.close();
 
@@ -9676,8 +9673,6 @@ STDMETHODIMP PinTable::ImportPhysics()
          flipper->put_EOSTorque(FlipperPhysicsTorqueDamping);
          flipper->put_EOSTorqueAngle(FlipperPhysicsTorqueDampingAngle);
       }
-
-   return S_OK;
 }
 
 STDMETHODIMP PinTable::ExportPhysics()
@@ -10090,7 +10085,7 @@ STDMETHODIMP PinTable::put_TiltTriggerTime(int newVal)
 STDMETHODIMP PinTable::get_BallFrontDecal(BSTR *pVal)
 {
    WCHAR wz[MAXNAMEBUFFER];
-   MultiByteToWideChar(CP_ACP, 0, m_szBallImageDecal, -1, wz, MAXNAMEBUFFER);
+   MultiByteToWideCharNull(CP_ACP, 0, m_szBallImageDecal, -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -10099,7 +10094,7 @@ STDMETHODIMP PinTable::get_BallFrontDecal(BSTR *pVal)
 STDMETHODIMP PinTable::put_BallFrontDecal(BSTR newVal)
 {
    char szImage[sizeof(m_szBallImageDecal)];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, sizeof(m_szBallImageDecal), NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szImage, sizeof(m_szBallImageDecal), NULL, NULL);
    const Texture * const tex = GetImage(szImage);
    if (tex && tex->IsHDR())
    {

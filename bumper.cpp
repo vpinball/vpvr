@@ -586,7 +586,7 @@ void Bumper::RenderDynamic()
 void Bumper::ExportMesh(FILE *f)
 {
    char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
-   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
 
    m_baseHeight = m_ptable->GetSurfaceHeight(m_d.m_szSurface, m_d.m_vCenter.x, m_d.m_vCenter.y) * m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
    m_fullMatrix.RotateZMatrix(ANGTORAD(m_d.m_orientation));
@@ -1098,7 +1098,7 @@ STDMETHODIMP Bumper::put_Threshold(float newVal)
 STDMETHODIMP Bumper::get_CapMaterial(BSTR *pVal)
 {
    WCHAR wz[MAXNAMEBUFFER];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szCapMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
+   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szCapMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1107,7 +1107,7 @@ STDMETHODIMP Bumper::get_CapMaterial(BSTR *pVal)
 STDMETHODIMP Bumper::put_CapMaterial(BSTR newVal)
 {
    char buf[MAXNAMEBUFFER];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
    m_d.m_szCapMaterial = buf;
 
    return S_OK;
@@ -1116,7 +1116,7 @@ STDMETHODIMP Bumper::put_CapMaterial(BSTR newVal)
 STDMETHODIMP Bumper::get_RingMaterial(BSTR *pVal)
 {
    WCHAR wz[MAXNAMEBUFFER];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szRingMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
+   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szRingMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1125,7 +1125,7 @@ STDMETHODIMP Bumper::get_RingMaterial(BSTR *pVal)
 STDMETHODIMP Bumper::put_RingMaterial(BSTR newVal)
 {
    char buf[MAXNAMEBUFFER];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
    m_d.m_szRingMaterial = buf;
 
    return S_OK;
@@ -1134,7 +1134,7 @@ STDMETHODIMP Bumper::put_RingMaterial(BSTR newVal)
 STDMETHODIMP Bumper::get_BaseMaterial(BSTR *pVal)
 {
    WCHAR wz[MAXNAMEBUFFER];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szBaseMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
+   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szBaseMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1143,7 +1143,7 @@ STDMETHODIMP Bumper::get_BaseMaterial(BSTR *pVal)
 STDMETHODIMP Bumper::put_BaseMaterial(BSTR newVal)
 {
    char buf[MAXNAMEBUFFER];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
    m_d.m_szBaseMaterial = buf;
 
    return S_OK;
@@ -1152,7 +1152,7 @@ STDMETHODIMP Bumper::put_BaseMaterial(BSTR newVal)
 STDMETHODIMP Bumper::get_SkirtMaterial(BSTR *pVal)
 {
    WCHAR wz[MAXNAMEBUFFER];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSkirtMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
+   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szSkirtMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1161,7 +1161,7 @@ STDMETHODIMP Bumper::get_SkirtMaterial(BSTR *pVal)
 STDMETHODIMP Bumper::put_SkirtMaterial(BSTR newVal)
 {
    char buf[MAXNAMEBUFFER];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
    m_d.m_szSkirtMaterial = buf;
 
    return S_OK;
@@ -1199,7 +1199,7 @@ STDMETHODIMP Bumper::put_Y(float newVal)
 STDMETHODIMP Bumper::get_Surface(BSTR *pVal)
 {
    WCHAR wz[MAXTOKEN];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXTOKEN);
+   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1207,7 +1207,7 @@ STDMETHODIMP Bumper::get_Surface(BSTR *pVal)
 
 STDMETHODIMP Bumper::put_Surface(BSTR newVal)
 {
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXTOKEN, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXTOKEN, NULL, NULL);
 
    return S_OK;
 }

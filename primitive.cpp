@@ -453,7 +453,7 @@ void Primitive::GetTimers(vector<HitTimer*> &pvht)
 void Primitive::GetHitShapes(vector<HitObject*> &pvho)
 {
    char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
-   WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
    if (strcmp(name, "playfield_mesh") == 0)
    {
       m_d.m_visible = false;
@@ -1128,7 +1128,7 @@ void Primitive::ExportMesh(FILE *f)
    if (m_d.m_visible)
    {
       char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
-      WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
+      WideCharToMultiByteNull(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
       Vertex3D_NoTex2 *const buf = new Vertex3D_NoTex2[m_mesh.NumVertices()];
       RecalculateMatrices();
       for (size_t i = 0; i < m_mesh.NumVertices(); i++)
@@ -2011,7 +2011,7 @@ bool Primitive::BrowseFor3DMeshFile()
 STDMETHODIMP Primitive::get_Image(BSTR *pVal)
 {
    WCHAR wz[MAXTOKEN];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szImage.c_str(), -1, wz, MAXTOKEN);
+   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szImage.c_str(), -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -2020,7 +2020,7 @@ STDMETHODIMP Primitive::get_Image(BSTR *pVal)
 STDMETHODIMP Primitive::put_Image(BSTR newVal)
 {
    char szImage[MAXTOKEN];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, NULL, NULL);
    const Texture * const tex = m_ptable->GetImage(szImage);
    if (tex && tex->IsHDR())
    {
@@ -2035,7 +2035,7 @@ STDMETHODIMP Primitive::put_Image(BSTR newVal)
 STDMETHODIMP Primitive::get_NormalMap(BSTR *pVal)
 {
    WCHAR wz[MAXTOKEN];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szNormalMap, -1, wz, MAXTOKEN);
+   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szNormalMap, -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -2044,7 +2044,7 @@ STDMETHODIMP Primitive::get_NormalMap(BSTR *pVal)
 STDMETHODIMP Primitive::put_NormalMap(BSTR newVal)
 {
    char szImage[sizeof(m_d.m_szNormalMap)];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, szImage, sizeof(m_d.m_szNormalMap), NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szImage, sizeof(m_d.m_szNormalMap), NULL, NULL);
    const Texture * const tex = m_ptable->GetImage(szImage);
    if (tex && tex->IsHDR())
    {
@@ -2060,7 +2060,7 @@ STDMETHODIMP Primitive::put_NormalMap(BSTR newVal)
 STDMETHODIMP Primitive::get_MeshFileName(BSTR *pVal)
 {
    WCHAR wz[MAXSTRING];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_meshFileName.c_str(), -1, wz, MAXSTRING);
+   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_meshFileName.c_str(), -1, wz, MAXSTRING);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -2069,7 +2069,7 @@ STDMETHODIMP Primitive::get_MeshFileName(BSTR *pVal)
 STDMETHODIMP Primitive::put_MeshFileName(BSTR newVal)
 {
    char buf[MAXSTRING];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXSTRING, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXSTRING, NULL, NULL);
    m_d.m_meshFileName = buf;
 
    return S_OK;
@@ -2104,7 +2104,7 @@ void Primitive::ExportMeshDialog()
       }
 
       char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
-      WideCharToMultiByte(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
+      WideCharToMultiByteNull(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
       m_mesh.SaveWavefrontObj(szFileName[0], m_d.m_use3DMesh ? name : "Primitive");
    }
 }
@@ -2149,7 +2149,7 @@ STDMETHODIMP Primitive::put_Sides(int newVal)
 STDMETHODIMP Primitive::get_Material(BSTR *pVal)
 {
    WCHAR wz[MAXNAMEBUFFER];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
+   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -2158,7 +2158,7 @@ STDMETHODIMP Primitive::get_Material(BSTR *pVal)
 STDMETHODIMP Primitive::put_Material(BSTR newVal)
 {
    char buf[MAXNAMEBUFFER];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
    m_d.m_szMaterial = buf;
 
    return S_OK;
@@ -2798,7 +2798,7 @@ STDMETHODIMP Primitive::put_ReflectionEnabled(VARIANT_BOOL newVal)
 STDMETHODIMP Primitive::get_PhysicsMaterial(BSTR *pVal)
 {
    WCHAR wz[MAXNAMEBUFFER];
-   MultiByteToWideChar(CP_ACP, 0, m_d.m_szPhysicsMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
+   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szPhysicsMaterial.c_str(), -1, wz, MAXNAMEBUFFER);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -2807,7 +2807,7 @@ STDMETHODIMP Primitive::get_PhysicsMaterial(BSTR *pVal)
 STDMETHODIMP Primitive::put_PhysicsMaterial(BSTR newVal)
 {
    char buf[MAXNAMEBUFFER];
-   WideCharToMultiByte(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
    m_d.m_szPhysicsMaterial = buf;
 
    return S_OK;
