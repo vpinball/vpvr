@@ -707,6 +707,7 @@ RenderDevice::RenderDevice(const int width, const int height, const bool fullscr
    m_pHMD = NULL;
    m_rTrackedDevicePose = NULL;
 #endif
+   for (int i = 0; i < RENDERSTATE_COUNT; ++i) renderStateCache[i] = 0;
 }
 
 void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
@@ -2381,14 +2382,13 @@ void RenderDevice::UnSetZBuffer()
 #endif
 }
 
-bool RenderDevice::SetRenderStateCache(const RenderStates p1, DWORD p2)
+inline bool RenderDevice::SetRenderStateCache(const RenderStates p1, DWORD p2)
 {
-   if (renderStateCache.find(p1) == renderStateCache.end())
-   {
-      renderStateCache.emplace(std::pair<RenderStates, DWORD>(p1, p2));
-      return false;
-   }
-   else if (renderStateCache[p1] != p2) {
+#ifdef DEBUG
+   if (p1 >= RENDERSTATE_COUNT)
+      return false;//Throw error or similar?
+#endif
+   if (renderStateCache[p1] != p2) {
       renderStateCache[p1] = p2;
       return false;
    }
@@ -2402,10 +2402,10 @@ void RenderDevice::SetRenderState(const RenderStates p1, DWORD p2)
    switch (p1) {
       //glEnable and glDisable functions
    case ALPHABLENDENABLE:
-      if (p2 != RS_FALSE)
-         CHECKD3D(glEnable(GL_BLEND));
+      CHECKD3D({ if (p2) glEnable(GL_BLEND); else glDisable(GL_BLEND); });
+      break;
    case ZENABLE:
-      CHECKD3D({ if (p2) glEnable(p1); else glDisable(p1); });
+      CHECKD3D({ if (p2) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST); });
       break;
    case BLENDOP:
       CHECKD3D(glBlendEquation(p2));

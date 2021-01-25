@@ -94,9 +94,9 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
 #ifdef ENABLE_SDL
    enum RenderStates
    {
-      ALPHABLENDENABLE = GL_BLEND,
-      ZENABLE = GL_DEPTH_TEST,
-      DEPTHBIAS = GL_POLYGON_OFFSET_FILL,
+      ALPHABLENDENABLE,
+      ZENABLE,
+      DEPTHBIAS,
       ALPHATESTENABLE,
       ALPHAREF,
       ALPHAFUNC,
@@ -110,7 +110,9 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
       SRGBWRITEENABLE,
       ZFUNC,
       ZWRITEENABLE,
-      COLORWRITEENABLE
+      COLORWRITEENABLE,
+      RENDERSTATE_COUNT,
+      RENDERSTATE_INVALID
    };
 
    enum RenderStateValue
@@ -445,7 +447,7 @@ private:
    static const DWORD TEXTURE_STATE_CACHE_SIZE = 256;
    static const DWORD TEXTURE_SAMPLER_CACHE_SIZE = 14;
 
-   std::map<RenderStates, DWORD> renderStateCache;          // for caching
+   DWORD renderStateCache[RENDERSTATE_COUNT];          // for caching
    DWORD textureStateCache[TEXTURE_SAMPLERS][TEXTURE_STATE_CACHE_SIZE];     // dto.
    DWORD textureSamplerCache[TEXTURE_SAMPLERS][TEXTURE_SAMPLER_CACHE_SIZE]; // dto.
 
