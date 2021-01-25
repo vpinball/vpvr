@@ -1269,13 +1269,13 @@ Vertex3Ds g_viewDir;
 static bool CompareHitableDepth(Hitable* h1, Hitable* h2)
 {
    // GetDepth approximates direction in view distance to camera; sort ascending
-   return h1->GetDepth(g_viewDir) >= h2->GetDepth(g_viewDir);
+   return h1->GetDepth(g_viewDir) > h2->GetDepth(g_viewDir);
 }
 
 static bool CompareHitableDepthInverse(Hitable* h1, Hitable* h2)
 {
    // GetDepth approximates direction in view distance to camera; sort descending
-   return h1->GetDepth(g_viewDir) <= h2->GetDepth(g_viewDir);
+   return h1->GetDepth(g_viewDir) < h2->GetDepth(g_viewDir);
 }
 
 static bool CompareHitableDepthReverse(Hitable* h1, Hitable* h2)
@@ -3143,6 +3143,7 @@ void Player::PhysicsSimulateCycle(float dtime) // move physics forward to this t
 
                                                          // Collide may have changed the velocity of the ball, 
                                                          // and therefore the bounding box for the next hit cycle
+            if (i >= m_vball.size()) break;              // If the last ball of the list was just removed.
             if (m_vball[i] != pball) // Ball still exists? may have been deleted from list
             {
                // collision script deleted the ball, back up one count
