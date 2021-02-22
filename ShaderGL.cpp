@@ -45,7 +45,7 @@ static string shaderUniformNames[] = {
    "fDisableLighting_top_below", "backBoxSize", "quadOffsetScale", "quadOffsetScaleTex", "vColor_Intensity", "w_h_height", "alphaTestValueAB_filterMode_addBlend",
    "amount_blend_modulate_vs_add_hdrTexture01", "staticColor_Alpha", "width_height_rotated_flipLR", "vRes_Alpha_time", "mirrorFactor", "SSR_bumpHeight_fresnelRefl_scale_FS", "AO_scale_timeblur",
    //Integer and Bool
-   "ignoreStereo", "SRGBTexture", "hdrTexture0", "lightSources", "doNormalMapping", "hdrEnvTextures", "is_metal", "color_grade", "do_bloom", "lightingOff", "objectSpaceNormalMap",
+   "ignoreStereo", "SRGBTexture", "hdrTexture0", "lightSources", "doNormalMapping", "hdrEnvTextures", "is_metal", "color_grade", "do_bloom", "lightingOff", "objectSpaceNormalMap", "do_dither",
    //Textures
    "Texture0", "Texture1", "Texture2", "Texture3", "Texture4", "edgesTex2D", "blendTex2D", "areaTex2D", "searchTex2D"
 };

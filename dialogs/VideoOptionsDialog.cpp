@@ -6,7 +6,7 @@
 #define GET_FULLSCREENMODES		WM_USER+101
 #define RESET_SIZELIST_CONTENT	WM_USER+102
 
-static const int rgwindowsize[] = { 640, 720, 800, 912, 1024, 1152, 1280, 1440, 1600, 1920, 2048, 2560, 3440, 3840, 4096, 5120, 6400, 7680, 8192, 11520, 15360 };  // windowed resolutions for selection list
+static const int rgwindowsize[] = { 640, 720, 800, 912, 1024, 1152, 1280, 1360, 1366, 1400, 1440, 1600, 1680, 1920, 2048, 2560, 3440, 3840, 4096, 5120, 6400, 7680, 8192, 11520, 15360 };  // windowed resolutions for selection list
 
 const float AAfactors[] = { 0.5f, 0.75f, 1.0f, 1.25f, 4.0f/3.0f, 1.5f, 1.75f, 2.0f }; // factor is applied to width and to height, so 2.0f increases pixel count by 4. Additional values can be added.
 const int AAfactorCount = 8;
@@ -49,11 +49,11 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
 
    const int refreshrate = LoadValueIntWithDefault("Player", "RefreshRate", 0);
 
-   const int widthcur = LoadValueIntWithDefault("Player", "Width", true ? DEFAULT_PLAYER_FS_WIDTH : DEFAULT_PLAYER_WIDTH);
+   const int widthcur = LoadValueIntWithDefault("Player", "Width", true ? -1 : DEFAULT_PLAYER_WIDTH);
 
    const int heightcur = LoadValueIntWithDefault("Player", "Height", widthcur * 9 / 16);
 
-   SendMessage(GetHwnd(), true ? GET_FULLSCREENMODES : GET_WINDOW_MODES, widthcur << 16 | refreshrate, heightcur << 16 | depthcur);
+   SendMessage(GetHwnd(), true ? GET_FULLSCREENMODES : GET_WINDOW_MODES, (unsigned int)widthcur << 16 | refreshrate, (unsigned int)heightcur << 16 | depthcur);
 
    SendMessage(GetDlgItem(IDC_10BIT_VIDEO).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_Tex3072).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
@@ -137,8 +137,7 @@ void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes,
    int bestMatch = 0; // to find closest matching res
    int bestMatchingPoints = 0; // dto.
 
-   int screenwidth;
-   int screenheight;
+   int screenwidth, screenheight;
    int x, y;
    const int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
    getDisplaySetupByID(display, x, y, screenwidth, screenheight);
@@ -483,14 +482,14 @@ BOOL VideoOptionsDialog::OnInitDialog()
 
    const bool fullscreen = LoadValueBoolWithDefault("Player", "FullScreen", IsWindows10_1803orAbove());
 
-   const int widthcur = LoadValueIntWithDefault("Player", "Width", fullscreen ? DEFAULT_PLAYER_FS_WIDTH : DEFAULT_PLAYER_WIDTH);
+   const int widthcur = LoadValueIntWithDefault("Player", "Width", fullscreen ? -1 : DEFAULT_PLAYER_WIDTH);
 
    const int heightcur = LoadValueIntWithDefault("Player", "Height", widthcur * 9 / 16);
 
    const HWND hwndFullscreen = GetDlgItem(IDC_FULLSCREEN).GetHwnd();
    if (fullscreen)
    {
-      SendMessage(hwndDlg, GET_FULLSCREENMODES, widthcur << 16 | refreshrate, heightcur << 16 | depthcur);
+      SendMessage(hwndDlg, GET_FULLSCREENMODES, (unsigned int)widthcur << 16 | refreshrate, (unsigned int)heightcur << 16 | depthcur);
       SendMessage(hwndFullscreen, BM_SETCHECK, BST_CHECKED, 0);
    }
    else
@@ -574,9 +573,9 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
          // 21:9 aspect ratio resolutions:  3440*1440,2560*1080
          // 21:10 aspect ratio resolution:  3840*1600
          // 4:3  aspect ratio resolutions:  1280*1024
-         const unsigned int num_portrait_modes = 17;
-         const int portrait_modes_width[num_portrait_modes] =  { 720, 720, 1024, 768, 800, 900, 900,1050,1050,1080,1200,1080,1440,1440,1600,1600,2160};
-         const int portrait_modes_height[num_portrait_modes] = {1024,1280, 1280,1366,1280,1440,1600,1600,1680,1920,1920,2560,2560,3440,2560,3840,3840};
+         const unsigned int num_portrait_modes = 28;
+         const int portrait_modes_width[num_portrait_modes] = { 720, 768, 864, 600, 720, 768, 960,1024, 768, 768, 800,1050, 900, 900,1050,1200,1050,1080,1200,1536,1080,1440,1440,1600,1920,2048,1600,2160 };
+         const int portrait_modes_height[num_portrait_modes] = { 1024,1024,1152,1280,1280,1280,1280,1280,1360,1366,1280,1400,1440,1600,1600,1600,1680,1920,1920,2048,2560,2560,3440,2560,2560,2560,3840,3840 };
 
          for (unsigned int i = 0; i < num_portrait_modes; ++i)
             if ((portrait_modes_width[i] <= screenwidth) && (portrait_modes_height[i] <= screenheight))
@@ -683,12 +682,11 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
       case GET_FULLSCREENMODES:
       {
          HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
-         HWND hwndDisplay = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
-         int display = (int)SendMessage(hwndDisplay, CB_GETCURSEL, 0, 0);
+         int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
          EnumerateDisplayModes(display, allVideoModes);
 
          VideoMode curSelMode;
-         curSelMode.width = (int)wParam >> 16;
+         curSelMode.width = (int)wParam >> 16; //!! is this 64bit safe? especially if res was not setup in video preferences yet! (width should be -1 then here)
          curSelMode.height = (int)lParam >> 16;
          curSelMode.depth = (int)lParam & 0xffff;
          curSelMode.refreshrate = (int)wParam & 0xffff;
@@ -756,6 +754,12 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       ResetVideoPreferences(2);
       break;
    }
+   case IDC_RESET_WINDOW:
+   {
+      (void)DeleteValue("Player", "WindowPosX");
+      (void)DeleteValue("Player", "WindowPosY");
+      break;
+   }
    case IDC_OVERWRITE_BALL_IMAGE_CHECK:
    {
       const BOOL overwriteEnabled = (IsDlgButtonChecked(IDC_OVERWRITE_BALL_IMAGE_CHECK) == BST_CHECKED) ? TRUE : FALSE;
@@ -816,8 +820,7 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       const size_t checked = SendDlgItemMessage(IDC_FULLSCREEN, BM_GETCHECK, 0, 0);
       const size_t index = SendMessage(GetDlgItem(IDC_SIZELIST).GetHwnd(), LB_GETCURSEL, 0, 0);
       if (allVideoModes.size() == 0) {
-         const HWND hwndDisplay = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
-         const int display = (int)SendMessage(hwndDisplay, CB_GETCURSEL, 0, 0);
+         const int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
          EnumerateDisplayModes(display, allVideoModes);
       }
       if (allVideoModes.size() > index) {

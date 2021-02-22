@@ -278,11 +278,13 @@ void HitQuadtree::InitSseArrays()
 #ifndef USE_EMBREE
 void HitQuadtree::HitTestBall(const Ball * const pball, CollisionEvent& coll) const
 {
-#if 1   /// with SSE optimizations //////////////////////////
+#if defined(_M_IX86) || defined(_M_X64) /// with SSE optimizations //////////////////////////
 
    HitTestBallSse(pball, coll);
 
 #else   /// without SSE optimization ////////////////////////
+
+   const float rcHitRadiusSqr = pball->HitRadiusSqr();
 
    for (unsigned i = 0; i < m_vho.size(); i++)
    {
@@ -291,7 +293,7 @@ void HitQuadtree::HitTestBall(const Ball * const pball, CollisionEvent& coll) co
 #endif
       if ((pball != m_vho[i]) // ball can not hit itself
          && fRectIntersect3D(pball->m_hitBBox, m_vho[i]->m_hitBBox)
-         && fRectIntersect3D(pball->m_pos, pball->m_rcHitRadiusSqr, m_vho[i]->m_hitBBox))
+         && fRectIntersect3D(pball->m_d.m_pos, rcHitRadiusSqr, m_vho[i]->m_hitBBox))
       {
          DoHitTest(pball, m_vho[i], coll);
       }
@@ -319,6 +321,7 @@ void HitQuadtree::HitTestBall(const Ball * const pball, CollisionEvent& coll) co
 #endif
 }
 
+#if defined(_M_IX86) || defined(_M_X64)
 void HitQuadtree::HitTestBallSse(const Ball * const pball, CollisionEvent& coll) const
 {
    const HitQuadtree* stack[128]; //!! should be enough, but better implement test in construction to not exceed this
@@ -449,6 +452,7 @@ void HitQuadtree::HitTestBallSse(const Ball * const pball, CollisionEvent& coll)
 
    } while (current);
 }
+#endif
 #endif
 
 void HitQuadtree::HitTestXRay(const Ball * const pball, vector<HitObject*> &pvhoHit, CollisionEvent& coll) const

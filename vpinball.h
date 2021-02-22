@@ -84,7 +84,7 @@ public:
    void ReInitSound();
 
    CComObject<PinTable> *GetActiveTable();
-   bool LoadFile();
+   bool LoadFile(const bool updateEditor);
    void LoadFileName(const string& szFileName, const bool updateEditor);
    void SetClipboard(vector<IStream*> * const pvstm);
 
@@ -98,6 +98,8 @@ public:
 
    void SetActionCur(const string& szaction);
    void SetCursorCur(HINSTANCE hInstance, LPCTSTR lpCursorName);
+
+   void ProfileLog(const string& msg);
 
    STDMETHOD(QueryInterface)(REFIID riid, void** ppvObj);
    STDMETHOD_(ULONG, AddRef)();
@@ -281,6 +283,8 @@ private:
    CDockLayers *m_dockLayers = nullptr;
    NotesDialog *m_notesDialog = nullptr;
    CDockNotes* m_dockNotes = nullptr;
+
+   FILE *m_profile_file;
 };
 
 #endif // !defined(AFX_VPINBALL_H__4D32616D_55B5_4FE0_87D9_3D4CB0BE3C76__INCLUDED_)

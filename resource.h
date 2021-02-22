@@ -1057,6 +1057,7 @@
 #define IDC_SET_DEFAULTS_BUTTON         765
 #define IDC_COLOR_BUTTON1               765
 #define IDC_DELETE_LAYER_BUTTON         765
+#define IDC_RESET_WINDOW                765
 #define IDC_DBG_BULB_MODULATE_VS_ADD    766
 #define IDC_COLOR_BUTTON2               766
 #define IDC_DBG_TRANSMISSION_SCALE      767

@@ -23,6 +23,12 @@ using namespace rapidxml;
 const unsigned char TABLE_KEY[] = "Visual Pinball";
 //const unsigned char PARAPHRASE_KEY[] = { 0xB4, 0x0B, 0xBE, 0x37, 0xC3, 0x0C, 0x8E, 0xA1, 0x5A, 0x05, 0xDF, 0x1B, 0x2D, 0x02, 0xEF, 0x8D };
 
+static void ProfileLog(const string& msg)
+{
+   if (g_pvp)
+      g_pvp->ProfileLog(msg);
+}
+
 #pragma region ScriptGlobalTable
 
 //////////////////////////////////////////////////////////////////////
@@ -1641,10 +1647,8 @@ void PinTable::DeleteFromLayer(IEditable *obj)
    }
 }
 
-void PinTable::InitBuiltinTable(VPinball * const pvp, const bool useBlankTable)
+void PinTable::InitBuiltinTable(const bool useBlankTable)
 {
-   m_pvp = pvp;
-
    HRSRC hrsrc;
    // Get our new table resource, get it to be opened as a storage, and open it like a normal file
    if (useBlankTable)
@@ -1684,8 +1688,6 @@ void PinTable::InitBuiltinTable(VPinball * const pvp, const bool useBlankTable)
 
    //MAKE_WIDEPTR_FROMANSI(wszFileName, m_szFileName.c_str());
    //ApcProject->APC_PUT(DisplayName)(wszFileName);
-
-   InitPostLoad(pvp);
 }
 
 void PinTable::SetDefaultView()
@@ -1737,10 +1739,34 @@ if (it == m_textureMap.end()) \
 if (it == m_textureMap.end()) \
    pEditImage[0] = 0;}
 
-void PinTable::InitPostLoad(VPinball *pvp)
+#define CLEAN_SURFACE(pEditSurface) \
+{if (!(pEditSurface == NULL || pEditSurface[0] == 0)) \
+{ \
+bool found = false; \
+for (size_t ie = 0; ie < m_vedit.size(); ie++) \
+{ \
+    IEditable* const item = m_vedit[ie]; \
+    if (item->GetItemType() == eItemSurface || item->GetItemType() == eItemRamp) \
+    { \
+        CComBSTR bstr; \
+        item->GetScriptable()->get_Name(&bstr); \
+        if (!WzSzStrCmp(bstr, pEditSurface)) \
+        { \
+            found = true; \
+            break; \
+        } \
+    } \
+} \
+if(!found) \
+    pEditSurface[0] = '\0'; \
+}}
+
+
+void PinTable::InitTablePostLoad()
 {
-   m_pvp = pvp;
-   pvp->m_ptableActive = (CComObject<PinTable> *)this;
+   ProfileLog("InitTablePostLoad");
+
+   g_pvp->m_ptableActive = (CComObject<PinTable> *)this;
 
    for (unsigned int i = 1; i < NUM_BG_SETS; ++i)
       if (m_BG_FOV[i] == FLT_MAX) // old table, copy FS and/or FSS settings over from old DT setting
@@ -1831,6 +1857,7 @@ void PinTable::InitPostLoad(VPinball *pvp)
          CLEAN_MATERIAL(((Decal*)pEdit)->m_d.m_szMaterial);
          //CLEAN_MATERIAL(((Decal*)pEdit)->m_d.m_szPhysicsMaterial);
          CLEAN_IMAGE(((Decal*)pEdit)->m_d.m_szImage);
+         CLEAN_SURFACE(((Decal*)pEdit)->m_d.m_szSurface);
          break;
       }
       case eItemFlipper:
@@ -1839,6 +1866,7 @@ void PinTable::InitPostLoad(VPinball *pvp)
          //CLEAN_MATERIAL(((Flipper*)pEdit)->m_d.m_szPhysicsMaterial);
          CLEAN_MATERIAL(((Flipper*)pEdit)->m_d.m_szRubberMaterial);
          CLEAN_IMAGE(((Flipper*)pEdit)->m_d.m_szImage);
+         CLEAN_SURFACE(((Flipper*)pEdit)->m_d.m_szSurface);
          break;
       }
       case eItemHitTarget:
@@ -1853,6 +1881,7 @@ void PinTable::InitPostLoad(VPinball *pvp)
          CLEAN_MATERIAL(((Plunger*)pEdit)->m_d.m_szMaterial);
          //CLEAN_MATERIAL(((Plunger*)pEdit)->m_d.m_szPhysicsMaterial);
          CLEAN_IMAGE(((Plunger*)pEdit)->m_d.m_szImage);
+         CLEAN_SURFACE(((Plunger*)pEdit)->m_d.m_szSurface);
          break;
       }
       case eItemSpinner:
@@ -1860,6 +1889,7 @@ void PinTable::InitPostLoad(VPinball *pvp)
          CLEAN_MATERIAL(((Spinner*)pEdit)->m_d.m_szMaterial);
          //CLEAN_MATERIAL(((Spinner*)pEdit)->m_d.m_szPhysicsMaterial);
          CLEAN_IMAGE(((Spinner*)pEdit)->m_d.m_szImage);
+         CLEAN_SURFACE(((Spinner*)pEdit)->m_d.m_szSurface);
          break;
       }
       case eItemRubber:
@@ -1877,12 +1907,14 @@ void PinTable::InitPostLoad(VPinball *pvp)
          CLEAN_MATERIAL(((Bumper*)pEdit)->m_d.m_szBaseMaterial);
          CLEAN_MATERIAL(((Bumper*)pEdit)->m_d.m_szSkirtMaterial);
          CLEAN_MATERIAL(((Bumper*)pEdit)->m_d.m_szRingMaterial);
+         CLEAN_SURFACE(((Bumper*)pEdit)->m_d.m_szSurface);
          break;
       }
       case eItemKicker:
       {
          CLEAN_MATERIAL(((Kicker*)pEdit)->m_d.m_szMaterial);
          //CLEAN_MATERIAL(((Kicker*)pEdit)->m_d.m_szPhysicsMaterial);
+         CLEAN_SURFACE(((Kicker*)pEdit)->m_d.m_szSurface);
          break;
       }
       case eItemTrigger:
@@ -1905,6 +1937,12 @@ void PinTable::InitPostLoad(VPinball *pvp)
       case eItemLight:
       {
          CLEAN_IMAGE(((Light*)pEdit)->m_d.m_szImage);
+         CLEAN_SURFACE(((Light*)pEdit)->m_d.m_szSurface);
+         break;
+      }
+      case eItemGate:
+      {
+         CLEAN_SURFACE(((Gate*)pEdit)->m_d.m_szSurface);
          break;
       }
       default:
@@ -3059,6 +3097,14 @@ HRESULT PinTable::LoadSoundFromStream(IStream *pstm, const int LoadFileVersion)
       return hr;
    }
 
+   // search for duplicate names, do not load dupes
+   for (size_t i = 0; i < m_vsound.size(); ++i)
+      if (m_vsound[i]->m_szName == pps->m_szName && m_vsound[i]->m_szPath == pps->m_szPath)
+      {
+         delete pps;
+         return S_FAIL;
+      }
+
    m_vsound.push_back(pps);
    return S_OK;
 }
@@ -3531,6 +3577,8 @@ HRESULT PinTable::LoadGameFromFilename(const string& szFileName)
       return S_FALSE;
    }
 
+   ProfileLog("LoadGameFromFilename " + szFileName);
+
    m_szFileName = szFileName;
 
    MAKE_WIDEPTR_FROMANSI(wszCodeFile, m_szFileName.c_str());
@@ -3549,6 +3597,8 @@ HRESULT PinTable::LoadGameFromFilename(const string& szFileName)
 
 HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
 {
+   ProfileLog("LoadGameFromStorage");
+
    RECT rc;
    ::SendMessage(m_vpinball->m_hwndStatusBar, SB_GETRECT, 2, (size_t)&rc);
 
@@ -3663,6 +3713,8 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
 
             for (int i = 0; i < csubobj; i++)
             {
+               ProfileLog("LoadData");
+
                const string szStmName = "GameItem" + std::to_string(i);
                MAKE_WIDEPTR_FROMANSI(wszStmName, szStmName.c_str());
 
@@ -3675,7 +3727,6 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
 
                   IEditable * const piedit = EditableRegistry::Create(type);
 
-                  //AddSpriteProjItem();
                   int id = 0; // VBA id for this item
                   hr = piedit->InitLoad(pstmItem, this, &id, loadfileversion, (loadfileversion < 1000) ? hch : NULL, (loadfileversion < 1000) ? hkey : NULL); // 1000 (VP10 beta) removed the encryption
                   piedit->InitVBA(fFalse, id, NULL);
@@ -3690,6 +3741,8 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
                cloadeditems++;
                ::SendMessage(hwndProgressBar, PBM_SETPOS, cloadeditems, 0);
             }
+
+            ProfileLog("GameItem");
 
             for (int i = 0; i < csounds; i++)
             {
@@ -3706,6 +3759,8 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
                cloadeditems++;
                ::SendMessage(hwndProgressBar, PBM_SETPOS, cloadeditems, 0);
             }
+
+            ProfileLog("Sound");
 
             assert(m_vimage.size() == 0);
             m_vimage.resize(ctextures); // due to multithreaded loading do pre-allocation
@@ -3738,6 +3793,17 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
                   m_vimage.erase(m_vimage.begin() + i);
             ::SendMessage(hwndProgressBar, PBM_SETPOS, cloadeditems, 0);
 
+            // search for duplicate names, delete dupes
+            for (size_t i = 0; i < m_vimage.size() - 1; ++i)
+               for (size_t i2 = i + 1; i2 < m_vimage.size(); ++i2)
+                  if (m_vimage[i]->m_szName == m_vimage[i2]->m_szName && m_vimage[i]->m_szPath == m_vimage[i2]->m_szPath)
+                  {
+                     m_vimage.erase(m_vimage.begin() + i2);
+                     --i2;
+                  }
+
+            ProfileLog("Image");
+
             for (int i = 0; i < cfonts; i++)
             {
                const string szStmName = "Font" + std::to_string(i);
@@ -3756,6 +3822,8 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
                cloadeditems++;
                ::SendMessage(hwndProgressBar, PBM_SETPOS, cloadeditems, 0);
             }
+
+            ProfileLog("Font");
 
             for (int i = 0; i < ccollection; i++)
             {
@@ -3778,11 +3846,15 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
                ::SendMessage(hwndProgressBar, PBM_SETPOS, cloadeditems, 0);
             }
 
+            ProfileLog("Collection");
+
             for (size_t i = 0; i < m_vedit.size(); i++)
             {
                IEditable * const piedit = m_vedit[i];
                piedit->InitPostLoad();
             }
+
+            ProfileLog("IEditable PostLoad");
          }
          pstmGame->Release();
 
@@ -5094,8 +5166,8 @@ LRESULT PinTable::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
    case WM_ACTIVATE:
       if (LOWORD(wParam) != WA_INACTIVE)
       {
-         if (m_pvp->m_ptableActive != (CComObject<PinTable>*)this)
-            m_pvp->m_ptableActive = (CComObject<PinTable>*)this;
+         if (g_pvp->m_ptableActive != (CComObject<PinTable>*)this)
+            g_pvp->m_ptableActive = (CComObject<PinTable>*)this;
       }
       return FinalWindowProc(uMsg, wParam, lParam);
    case WM_PAINT:
@@ -10188,6 +10260,8 @@ void PinTable::InvokeBallBallCollisionCallback(Ball *b1, Ball *b2, float hitVelo
 
 void PinTable::OnInitialUpdate()
 {
+   ProfileLog("PinTable OnInitialUpdate");
+
    BeginAutoSaveCounter();
    SetWindowText(m_szFileName.c_str());
    SetCaption(m_szTitle);

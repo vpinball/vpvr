@@ -398,16 +398,16 @@ BEGIN
     CONTROL         "3072",IDC_Tex3072,"Button",BS_AUTORADIOBUTTON,215,290,28,10
     CONTROL         "2048",IDC_Tex2048,"Button",BS_AUTORADIOBUTTON,255,290,32,10
     CONTROL         "1024",IDC_Tex1024,"Button",BS_AUTORADIOBUTTON,294,290,32,10
-    CONTROL         "",IDC_ARASlider,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,155,323,191,20
-    PUSHBUTTON      "Reset to Defaults",IDC_DEFAULTS,154,367,63,14
-    PUSHBUTTON      "Set for LowEnd PC",IDC_DEFAULTS_LOW,154,345,63,14
-    PUSHBUTTON      "Set for HighEnd PC",IDC_DEFAULTS_HIGH,225,345,65,14
-    DEFPUSHBUTTON   "OK",IDOK,240,367,50,14
+    CONTROL         "",IDC_ARASlider,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,155,319,191,18
+    PUSHBUTTON      "Reset to Defaults",IDC_DEFAULTS,154,342,61,14
+    PUSHBUTTON      "Set for LowEnd PC",IDC_DEFAULTS_LOW,216,342,65,14
+    PUSHBUTTON      "Set for HighEnd PC",IDC_DEFAULTS_HIGH,282,342,65,14
+    DEFPUSHBUTTON   "OK",IDOK,245,360,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,297,367,50,14
     GROUPBOX        "Display",IDC_STATIC,7,21,141,360
     GROUPBOX        "Ball Rendering",IDC_STATIC,154,7,94,92
     GROUPBOX        "3D Stereo Output",IDC_STATIC,11,287,134,89
-    GROUPBOX        "Performance and Troubleshooting",IDC_STATIC,154,148,193,196
+    GROUPBOX        "Performance and Troubleshooting",IDC_STATIC,154,148,193,192
     GROUPBOX        "Max Texture Dimension (for low-end gfx boards)",IDC_STATIC,159,280,183,25
     LTEXT           "Elements Detail Level (decrease = performance)",IDC_STATIC,163,311,156,8
     GROUPBOX        "Ball aspect ratio for stretched Tables",IDC_STATIC,12,212,132,75
@@ -416,6 +416,7 @@ BEGIN
     GROUPBOX        "Fullscreen",IDC_STATIC,159,232,183,43
     LTEXT           "(post-processed Anti-Aliasing)",IDC_STATIC,29,195,101,8
     GROUPBOX        "Anti-Aliasing",IDC_STATIC,12,147,132,64
+    PUSHBUTTON      "Reset PlayerWindow Pos",IDC_RESET_WINDOW,154,360,88,14
     CONTROL         "BAM Headtracking",IDC_HEADTRACKING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,364,77,10
     LTEXT           "Offset",IDC_3D_STEREO_OFS_LABEL,17,326,50,10
 END

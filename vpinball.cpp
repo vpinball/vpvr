@@ -100,6 +100,18 @@ static void AddToolTip(char *text, HWND parentHwnd, HWND toolTipHwnd, HWND contr
 ///</summary>
 VPinball::VPinball()
 {
+   if ((fopen_s(&m_profile_file, "Profile.txt", "r") == 0) && m_profile_file)
+   {
+      fclose(m_profile_file);
+      if ((fopen_s(&m_profile_file, "Profile.txt", "a") == 0) && m_profile_file)
+      {
+         const time_t curr = time(0);
+         char buf[26];
+         ctime_s(buf, sizeof(buf), &curr);
+         fprintf(m_profile_file, "\nTrace from %s\n", buf);
+      }
+   }
+
    // DLL_API void DLL_CALLCONV FreeImage_Initialise(BOOL load_local_plugins_only FI_DEFAULT(FALSE)); //add FreeImage support BDS
    m_closing = false;
    m_unloadingTable = false;
@@ -153,6 +165,9 @@ VPinball::~VPinball()
    // DLL_API void DLL_CALLCONV FreeImage_DeInitialise(); //remove FreeImage support BDS
    SetClipboard(nullptr);
    FreeLibrary(m_scintillaDll);
+
+   if (m_profile_file)
+      fclose(m_profile_file);
 }
 
 ///<summary>
@@ -675,7 +690,7 @@ bool VPinball::ParseCommand(const size_t code, const bool notify)
 
        case IDM_OPEN:
        {
-           LoadFile();
+           LoadFile(true);
            return true;
        }
        case IDM_CLOSE:
@@ -902,13 +917,15 @@ void VPinball::ToggleToolbar()
 
 void VPinball::DoPlay(const bool _cameraMode)
 {
+   ProfileLog("DoPlay");
+
    NumVideoBytes = 0;
    CComObject<PinTable> * const ptCur = GetActiveTable();
    if (ptCur)
       ptCur->Play(_cameraMode);
 }
 
-bool VPinball::LoadFile()
+bool VPinball::LoadFile(const bool updateEditor)
 {
    std::vector<std::string> szFileName;
    char szInitialDir[MAXSTRING];
@@ -927,7 +944,7 @@ bool VPinball::LoadFile()
        hr = SaveValueString("RecentDir", "LoadDir", newInitDir);
    }
 
-   LoadFileName(szFileName[0],true);
+   LoadFileName(szFileName[0], updateEditor);
 
    return true;
 }
@@ -964,7 +981,7 @@ void VPinball::LoadFileName(const string& szFileName, const bool updateEditor)
    else
    {
       TitleFromFilename(szFileName, ppt->m_szTitle);
-      ppt->InitPostLoad(this);
+      ppt->InitTablePostLoad();
 
       AddMDITable(mdiTable);
 
@@ -1007,6 +1024,9 @@ void VPinball::LoadFileName(const string& szFileName, const bool updateEditor)
       // make sure the load directory is the active directory
       SetCurrentDirectory(m_currentTablePath.c_str());
       UpdateRecentFileList(szFileName);
+
+      ProfileLog("UI Post Load Start");
+
       ppt->AddMultiSel(ppt, false, true, false);
       ppt->SetDirty(eSaveClean);
       if(updateEditor)
@@ -1019,6 +1039,8 @@ void VPinball::LoadFileName(const string& szFileName, const bool updateEditor)
 
           SetFocus();
       }
+
+      ProfileLog("UI Post Load End");
    }
 }
 
@@ -1495,6 +1517,8 @@ void VPinball::OnInitialUpdate()
         return;
 
     wintimer_init();                    // calibrate the timer routines
+
+    ProfileLog("OnInitialUpdate");
 
     const int foo[6] = {120, 240, 400, 600, 800, 1400};
 
@@ -2278,9 +2302,10 @@ void VPinball::OpenNewTable(size_t tableId)
     }
 
     PinTableMDI *mdiTable = new PinTableMDI(this);
-
-    mdiTable->GetTable()->InitBuiltinTable(this, tableId != ID_NEW_EXAMPLETABLE);
-    m_vtable.push_back(mdiTable->GetTable());
+    CComObject<PinTable>* ppt = mdiTable->GetTable();
+    m_vtable.push_back(ppt);
+    ppt->InitBuiltinTable(tableId != ID_NEW_EXAMPLETABLE);
+    ppt->InitTablePostLoad();
 
     AddMDITable(mdiTable);
     mdiTable->GetTable()->AddMultiSel(mdiTable->GetTable(), false, true, false);
@@ -2335,4 +2360,13 @@ void VPinball::CopyPasteElement(const CopyPasteModes mode)
                 break;
         }
     }
+}
+
+void VPinball::ProfileLog(const string& msg)
+{
+   if (m_profile_file)
+   {
+      const double sec = msec() * (1.0 / 1000.0);
+      fprintf(m_profile_file, "%.3f : %s\n", sec, msg.c_str());
+   }
 }

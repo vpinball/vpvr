@@ -1,7 +1,7 @@
 SDL2 / VR Changelog
 ------------------------
 
-- Updated to VPX 10.7 commit R4383
+- Updated to VPX 10.7 commit R4407
 
 - Shader Uniform lookup improved (performance)
 
@@ -195,7 +195,16 @@ FEATURES:
 
 - add ElasticityFalloff to the wall physics properties
 
+- ability to do a rough profiling of the table loading
+  if a file 'Profile.txt' exists in the same directory as VPX, then statistics for the loaded tables will be appended
+
+- add a button to the video preferences that resets the (windowed mode) player window position
+
 FIXES:
+
+- deleting an image will not copy the old alpha value over to the next image in the list anymore
+
+- fix wrong bounceback direction of gate
 
 - fix problem with gate animations introduced in 10.1 when the open/close script functions were used before
 
@@ -212,7 +221,12 @@ FIXES:
 - do not mark table as dirty if just starting to play it (i.e. due to backup phase)
 
 - replace dithering code with blue noise, fixes flickering patterns (especially in darker table areas)
+
+- disable dithering code when running in 10bit output mode
+
 - tweak AO (Ambient Occlusion) and SSR (Screen Space Reflections) to be a bit less noisy
+
+- fix a small error in the original SMAA shader code, and also increase quality parameters slightly (to match reshade)
 
 - tweak minimum physics cycle time, which mainly influences kickers
   also update default kicker physics (Hit height 0.35 and Hit accuracy 0.5)
@@ -232,8 +246,12 @@ FIXES:
 
 - add many more different windowed mode resolutions
 
+- more robustly handle display resolutions that are greater FullHD(1920x1080)
+
 - also search for table-script replacements (i.e. external .vbs with the same/table name) in the "Scripts" folder to match the core script behavior
 - when modifying the table-script, check if it was loaded from an external .vbs, and if yes, then save the modifications to that file (and only optionally to the .vpx table itself)
+
+- delete duplicate images and sounds (same filename/path in the Sound/Image Manager) and remove dead image/material/surface links from items (i.e. if that thingie's name does not exist anymore)
 
 - tweak flipper shadows (via script) implementation in the example/blank table
 

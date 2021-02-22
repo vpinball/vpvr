@@ -50,6 +50,22 @@ float atan2_approx_div2PI( float y,  float x)
 	return (y < 0.) ? -angle : angle;
 }
 
+#if 0
+float asin_approx(const float v)
+{
+	return (0.5*PI) - acos_approx(v);
+}
+
+//!! this one is untested for special values (see atan2 approx!)
+// 4th order hyperbolical approximation
+// 7 * 10^-5 radians precision 
+// Reference : Efficient approximations for the arctangent function, Rajan, S. Sichun Wang Inkol, R. Joyal, A., May 2006
+float atan_approx(const float x)
+{
+	return x * (-0.1784 * abs(x) - 0.0663 * x*x + 1.0301);
+}
+#endif
+
 //
 // Gamma & ToneMapping
 //

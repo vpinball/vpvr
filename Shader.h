@@ -21,7 +21,7 @@ enum shaderUniforms {
    SHADER_fDisableLighting_top_below, SHADER_backBoxSize, SHADER_quadOffsetScale, SHADER_quadOffsetScaleTex, SHADER_vColor_Intensity, SHADER_w_h_height, SHADER_alphaTestValueAB_filterMode_addBlend,
    SHADER_amount_blend_modulate_vs_add_hdrTexture01, SHADER_staticColor_Alpha, SHADER_width_height_rotated_flipLR, SHADER_vRes_Alpha_time, SHADER_mirrorFactor, SHADER_SSR_bumpHeight_fresnelRefl_scale_FS, SHADER_AO_scale_timeblur,
    //Integer and Bool
-   SHADER_ignoreStereo, SHADER_SRGBTexture, SHADER_hdrTexture0, SHADER_lightSources, SHADER_doNormalMapping, SHADER_hdrEnvTextures, SHADER_is_metal, SHADER_color_grade, SHADER_do_bloom, SHADER_lightingOff, SHADER_objectSpaceNormalMap,
+   SHADER_ignoreStereo, SHADER_SRGBTexture, SHADER_hdrTexture0, SHADER_lightSources, SHADER_doNormalMapping, SHADER_hdrEnvTextures, SHADER_is_metal, SHADER_color_grade, SHADER_do_bloom, SHADER_lightingOff, SHADER_objectSpaceNormalMap, SHADER_do_dither,
    //Textures
    SHADER_Texture0, SHADER_Texture1, SHADER_Texture2, SHADER_Texture3, SHADER_Texture4, SHADER_edgesTex2D, SHADER_blendTex2D, SHADER_areaTex2D, SHADER_searchTex2D,
    SHADER_UNIFORM_COUNT, SHADER_UNIFORM_INVALID
@@ -100,6 +100,7 @@ typedef void ID3DXEffect;
 #define SHADER_do_bloom "do_bloom"
 #define SHADER_lightingOff "lightningOff"
 #define SHADER_objectSpaceNormalMap "objectSpaceNormalMap"
+#define SHADER_do_dither "do_dither"
 
 //Textures
 #define SHADER_Texture0 "Texture0"
