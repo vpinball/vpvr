@@ -654,7 +654,7 @@ STDMETHODIMP ScriptGlobalTable::get_NightDay(int *pVal)
 STDMETHODIMP ScriptGlobalTable::get_ShowDT(VARIANT_BOOL *pVal)
 {
    if (g_pplayer)
-      *pVal = (VARIANT_BOOL)FTOVB(g_pplayer->m_ptable->m_BG_current_set == BG_DESKTOP || g_pplayer->m_ptable->m_BG_current_set == BG_FSS || g_pplayer->m_stereo3D == STEREO_VR); // DT & FSS & VR
+      *pVal = FTOVB(m_pt->m_BG_current_set == BG_DESKTOP || m_pt->m_BG_current_set == BG_FSS); // DT & FSS
    return S_OK;
 }
 
@@ -1807,7 +1807,7 @@ void PinTable::InitTablePostLoad()
    m_pcv->AddItem(m_pcv->m_pdm, false);
 
    //
-   // cleanup old bugs, i.e. currently buggy/non-existing material and image names
+   // cleanup old bugs, i.e. currently buggy/non-existing material, image & surface names
    //
 
    // set up the texture & material hashtables for faster access
@@ -1921,6 +1921,7 @@ void PinTable::InitTablePostLoad()
       {
          CLEAN_MATERIAL(((Trigger*)pEdit)->m_d.m_szMaterial);
          //CLEAN_MATERIAL(((Trigger*)pEdit)->m_d.m_szPhysicsMaterial);
+         CLEAN_SURFACE(((Trigger*)pEdit)->m_d.m_szSurface);
          break;
       }
       case eItemDispReel:
@@ -3707,14 +3708,14 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
 
          if (SUCCEEDED(hr = LoadData(pstmGame, csubobj, csounds, ctextures, cfonts, ccollection, loadfileversion, hch, (loadfileversion < NO_ENCRYPTION_FORMAT_VERSION) ? hkey : NULL)))
          {
+            ProfileLog("LoadData");
+
             const int ctotalitems = csubobj + csounds + ctextures + cfonts;
             int cloadeditems = 0;
             ::SendMessage(hwndProgressBar, PBM_SETRANGE, 0, MAKELPARAM(0, ctotalitems));
 
             for (int i = 0; i < csubobj; i++)
             {
-               ProfileLog("LoadData");
-
                const string szStmName = "GameItem" + std::to_string(i);
                MAKE_WIDEPTR_FROMANSI(wszStmName, szStmName.c_str());
 
@@ -3791,7 +3792,6 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
             for (size_t i = 0; i < m_vimage.size(); ++i)
                if (!m_vimage[i] || m_vimage[i]->m_pdsBuffer == NULL)
                   m_vimage.erase(m_vimage.begin() + i);
-            ::SendMessage(hwndProgressBar, PBM_SETPOS, cloadeditems, 0);
 
             // search for duplicate names, delete dupes
             for (size_t i = 0; i < m_vimage.size() - 1; ++i)
@@ -3803,6 +3803,8 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
                   }
 
             ProfileLog("Image");
+
+            ::SendMessage(hwndProgressBar, PBM_SETPOS, cloadeditems, 0);
 
             for (int i = 0; i < cfonts; i++)
             {

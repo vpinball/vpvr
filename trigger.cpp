@@ -522,7 +522,7 @@ void Trigger::UpdateAnimation()
    {
       m_doAnimation = true;
       m_hitEvent = false;
-      // m_unhitEvent = false;   // Bugfix: If HitEvent and m_unhitEvent happen at the same time, you want to favor the unhit, otherwise the switch gets stuck down.
+      // unhitEvent = false;   // Bugfix: If HitEvent and unhitEvent happen at the same time, you want to favor the unhit, otherwise the switch gets stuck down.
       m_animHeightOffset = 0.0f;
       m_moveDown = true;
    }

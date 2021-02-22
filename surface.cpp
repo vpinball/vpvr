@@ -690,7 +690,7 @@ void Surface::GenerateMesh(std::vector<Vertex3D_NoTex2> &topBuf, std::vector<Ver
 
    // draw top
    SAFE_VECTOR_DELETE(rgtexcoord);
-   //if (m_d.m_fVisible)      // Visible could still be set later if rendered dynamically
+   //if (m_d.m_visible)      // Visible could still be set later if rendered dynamically
    {
       topBottomIndices.clear();
 
@@ -1251,7 +1251,6 @@ HRESULT Surface::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backu
    bw.WriteFloat(FID(HTTP), m_d.m_heighttop);
    //bw.WriteBool(FID(INNR), m_d.m_inner); //!! Deprecated
    bw.WriteWideString(FID(NAME), m_wzName);
-   bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
    bw.WriteBool(FID(DSPT), m_d.m_displayTexture);
    bw.WriteFloat(FID(SLGF), m_d.m_slingshotforce);
    bw.WriteFloat(FID(SLTH), m_d.m_slingshot_threshold);

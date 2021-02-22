@@ -3102,11 +3102,11 @@ void Player::PhysicsSimulateCycle(float dtime) // move physics forward to this t
 #endif
                ///////////////////////////////////////////////////////////////////////////
 
-               if (hittime < STATICTIME)            // less than static time interval
+               if (htz <= hittime)                     // smaller hit time??
                {
                   hittime = htz;                       // record actual event time
 
-                  if (htz < STATICTIME)                // less than static time interval
+                  if (hittime < STATICTIME)            // less than static time interval
                   {
                      /*if (!pball->m_coll.m_hitRigid) hittime = STATICTIME; // non-rigid ... set Static time
                      else*/ if (--StaticCnts < 0)
@@ -3757,10 +3757,10 @@ void Player::RenderDynamics()
          m_pin3d.m_gpu_profiler.Timestamp(GTS_NonTransparent);
       m_limiter.Execute(m_pin3d.m_pd3dPrimaryDevice); //!! move below other draw calls??
 
+      DrawBulbLightBuffer();
+
       if (ProfilingMode() == 1)
          m_pin3d.m_gpu_profiler.Timestamp(GTS_LightBuffer);
-
-      DrawBulbLightBuffer();
 
       m_dmdstate = 0;
       // Draw transparent objects. No DMD's

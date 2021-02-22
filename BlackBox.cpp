@@ -92,7 +92,8 @@ namespace
       QueryPerformanceCounter(&TimerNow);
       messages[i].ticks = TimerNow.QuadPart;
 #else
-      strncpy_s(messages[i].message, msg, sizeof(messages[i].message) - 1);      messages[i].threadId = RDE_GET_CURRENT_THREAD_ID();
+      strncpy_s(messages[i].message, msg, sizeof(messages[i].message) - 1);
+      messages[i].threadId = RDE_GET_CURRENT_THREAD_ID();
       LARGE_INTEGER TimerNow;
       QueryPerformanceCounter(&TimerNow);
       messages[i].ticks = TimerNow.QuadPart;

@@ -46,6 +46,7 @@ void LightSeq::WriteRegDefaults()
 {
    char strTmp[MAXSTRING];
    WideCharToMultiByteNull(CP_ACP, 0, m_d.m_wzCollection.c_str(), -1, strTmp, MAXSTRING, NULL, NULL);
+   SaveValueInt("DefaultProps\\LightSequence", "UpdateInterval", m_d.m_updateinterval);
    SaveValueString("DefaultProps\\LightSequence", "Collection", strTmp);
    SaveValueFloat("DefaultProps\\LightSequence", "CenterX", m_d.m_vCenter.x);
    SaveValueFloat("DefaultProps\\LightSequence", "CenterY", m_d.m_vCenter.y);
@@ -1649,7 +1650,7 @@ void LightSeq::SetElementToState(const int index, const LightState State)
    {
       Light * const pLight = (Light *)m_pcollection->m_visel.ElementAt(index);
       pLight->m_lockedByLS = true;
-      pLight->setLightState(State);
+      pLight->setInPlayState(State);
    }
 }
 

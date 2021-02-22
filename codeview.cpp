@@ -1713,7 +1713,7 @@ bool CodeViewer::FUserManuallyOkaysControl(CONFIRMSAFETY *pcs)
 
    const int len = lstrlenW(wzT) + 1; // include null termination
    char * const szName = new char[len];
-   WideCharToMultiByteNull(CP_ACP, 0, wzT, len, szName, len, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, wzT, -1, szName, len, NULL, NULL);
 
    const LocalString ls1(IDS_UNSECURECONTROL1);
    const LocalString ls2(IDS_UNSECURECONTROL2);
@@ -2367,8 +2367,7 @@ void CodeViewer::ReadLineToParseBrain(string wholeline, const int linecount, vec
          UD.m_keyName = sSubName;
          //UserData ud(linecount, line, sSubName, Type);
          if (!ParseStructureName(ListIn, UD, UCline, line, linecount))
-         {/*A critical brain error occured */
-         }
+         {/*A critical brain error occured */}
       }// if ( idx != string::npos)
    }// while (wholeline.length > 1) 
 }

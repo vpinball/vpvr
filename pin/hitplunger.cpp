@@ -412,7 +412,7 @@ void PlungerMoverObject::UpdateVelocities()
             m_speed = 0.0f;
             m_pos = m_frameStart;
             m_retractWaitLoop++;
-            if (m_retractWaitLoop > 1000)
+            if (m_retractWaitLoop > 1000) // 1 sec, related to PHYSICS_STEPTIME
             {
                m_pullForce = -m_initialSpeed;
                m_pos = m_frameStart;
@@ -432,7 +432,7 @@ void PlungerMoverObject::UpdateVelocities()
          if ((m_pos > (1.0f + m_frameEnd + (m_restPos * m_frameLen))) && (m_pullForce > 0))
          {
             m_retractMotion = false;
-            m_speed = 2.0f * m_pullForce;
+            m_speed = 3.0f * m_pullForce; // 3 = magic
          }
       }
 

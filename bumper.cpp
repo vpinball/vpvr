@@ -447,7 +447,6 @@ void Bumper::UpdateSkirt(const bool doCalculation)
 void Bumper::RenderDynamic()
 {
    RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
-
    TRACE_FUNCTION();
 
    if (m_ptable->m_reflectionEnabled && !m_d.m_reflectionEnabled)

@@ -357,7 +357,8 @@ void Flasher::RenderSetup()
    }
 
    m_numPolys = (int)(vtri.size() / 3);
-   if (m_numPolys == 0) {
+   if (m_numPolys == 0)
+   {
       // no polys to render leave vertex buffer undefined 
       return;
    }

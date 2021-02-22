@@ -602,7 +602,7 @@ void Gate::RenderSetup()
    m_wireVertexBuffer->unlock();
 }
 
-void Gate::RenderStatic() // only the support structures are rendered here
+void Gate::RenderStatic()
 {
 }
 

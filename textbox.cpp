@@ -128,7 +128,7 @@ void Textbox::WriteRegDefaults()
    SaveValueFloat("DefaultProps\\TextBox", "FontSize", fTmp);
    size_t charCnt = wcslen(fd.lpstrName) + 1;
    char * const strTmp = new char[2 * charCnt];
-   WideCharToMultiByteNull(CP_ACP, 0, fd.lpstrName, (int)charCnt, strTmp, (int)(2 * charCnt), NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, fd.lpstrName, -1, strTmp, (int)(2 * charCnt), NULL, NULL);
    SaveValueString("DefaultProps\\TextBox", "FontName", strTmp);
    delete[] strTmp;
    int weight = fd.sWeight;
