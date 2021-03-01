@@ -268,7 +268,7 @@ void Matrix3D::GetRotationPart(Matrix3D& rot)
    rot._41 = rot._42 = rot._43 = 0.0f; rot._44 = 1.0f;
 }
 
-Vertex3Ds Matrix3D::MulVector(const Vertex3Ds &v) const
+Vertex3Ds Matrix3D::MultiplyVector(const Vertex3Ds &v) const
 {
    // Transform it through the current matrix set
    const float xp = _11 * v.x + _21 * v.y + _31 * v.z + _41;

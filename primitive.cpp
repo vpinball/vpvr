@@ -1135,7 +1135,7 @@ void Primitive::ExportMesh(FILE *f)
       {
          const Vertex3D_NoTex2 &v = m_mesh.m_vertices[i];
          Vertex3Ds vert(v.x, v.y, v.z);
-         vert = m_fullMatrix.MulVector(vert);
+         vert = m_fullMatrix.MultiplyVector(vert);
          buf[i].x = vert.x;
          buf[i].y = vert.y;
          buf[i].z = vert.z;

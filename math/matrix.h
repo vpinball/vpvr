@@ -104,14 +104,14 @@ public:
    }
 
    template <class VecType>
-   Vertex3Ds MulVector(const VecType& v) const
+   Vertex3Ds MultiplyVector(const VecType& v) const
    {
       return (*this) * v;
    }
 
    // multiply vector with matrix transpose
    template <class VecType>
-   Vertex3Ds MulVectorT(const VecType& v) const
+   Vertex3Ds MultiplyVectorT(const VecType& v) const
    {
       return Vertex3Ds(
          m_d[0][0] * v.x + m_d[1][0] * v.y + m_d[2][0] * v.z,
@@ -167,7 +167,7 @@ public:
       vOut.y = yp * inv_wp;
       vOut.z = zp * inv_wp;
    }
-   Vertex3Ds MulVector(const Vertex3Ds &v) const;
+   Vertex3Ds MultiplyVector(const Vertex3Ds &v) const;
    Vertex3Ds MultiplyVectorNoTranslate(const Vertex3Ds &v) const;
    template <class VecIn, class VecOut>
    void MultiplyVectorNoTranslate(const VecIn& vIn, VecOut& vOut) const

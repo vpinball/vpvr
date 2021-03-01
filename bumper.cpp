@@ -428,7 +428,7 @@ void Bumper::UpdateSkirt(const bool doCalculation)
    for (int i = 0; i < bumperSocketNumVertices; i++)
    {
       Vertex3Ds vert(bumperSocket[i].x, bumperSocket[i].y, bumperSocket[i].z);
-      vert = rMatrix.MulVector(vert);
+      vert = rMatrix.MultiplyVector(vert);
       buf[i].x = vert.x*scalexy + m_d.m_vCenter.x;
       buf[i].y = vert.y*scalexy + m_d.m_vCenter.y;
       buf[i].z = vert.z*(m_d.m_heightScale*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set]) + (m_baseHeight + 5.0f);
@@ -655,7 +655,7 @@ void Bumper::GenerateBaseMesh(Vertex3D_NoTex2 *buf)
    for (int i = 0; i < bumperBaseNumVertices; i++)
    {
       Vertex3Ds vert(bumperBase[i].x, bumperBase[i].y, bumperBase[i].z);
-      vert = m_fullMatrix.MulVector(vert);
+      vert = m_fullMatrix.MultiplyVector(vert);
       buf[i].x = vert.x*scalexy + m_d.m_vCenter.x;
       buf[i].y = vert.y*scalexy + m_d.m_vCenter.y;
       buf[i].z = vert.z*(m_d.m_heightScale*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set]) + m_baseHeight;
@@ -677,7 +677,7 @@ void Bumper::GenerateSocketMesh(Vertex3D_NoTex2 *buf)
    for (int i = 0; i < bumperSocketNumVertices; i++)
    {
       Vertex3Ds vert(bumperSocket[i].x, bumperSocket[i].y, bumperSocket[i].z);
-      vert = m_fullMatrix.MulVector(vert);
+      vert = m_fullMatrix.MultiplyVector(vert);
       buf[i].x = vert.x*scalexy + m_d.m_vCenter.x;
       buf[i].y = vert.y*scalexy + m_d.m_vCenter.y;
       buf[i].z = vert.z*(m_d.m_heightScale*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set]) + (m_baseHeight + 5.0f);
@@ -699,7 +699,7 @@ void Bumper::GenerateRingMesh(Vertex3D_NoTex2 *buf)
    for (int i = 0; i < bumperRingNumVertices; i++)
    {
       Vertex3Ds vert(bumperRing[i].x, bumperRing[i].y, bumperRing[i].z);
-      vert = m_fullMatrix.MulVector(vert);
+      vert = m_fullMatrix.MultiplyVector(vert);
       buf[i].x = vert.x*scalexy + m_d.m_vCenter.x;
       buf[i].y = vert.y*scalexy + m_d.m_vCenter.y;
       buf[i].z = vert.z*(m_d.m_heightScale*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set]) + m_baseHeight;
@@ -721,7 +721,7 @@ void Bumper::GenerateCapMesh(Vertex3D_NoTex2 *buf)
    for (int i = 0; i < bumperCapNumVertices; i++)
    {
       Vertex3Ds vert(bumperCap[i].x, bumperCap[i].y, bumperCap[i].z);
-      vert = m_fullMatrix.MulVector(vert);
+      vert = m_fullMatrix.MultiplyVector(vert);
       buf[i].x = vert.x*scalexy + m_d.m_vCenter.x;
       buf[i].y = vert.y*scalexy + m_d.m_vCenter.y;
       buf[i].z = (vert.z*m_d.m_heightScale + m_d.m_heightScale)*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set] + m_baseHeight;

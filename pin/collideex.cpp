@@ -976,7 +976,7 @@ float HitLine3D::HitTest(const BallS& ball, const float dtime, CollisionEvent& c
    const float hittime = HitLineZ::HitTest(ball_tmp, dtime, coll);
 
    if (hittime >= 0.f)       // transform hit normal back to world coordinate system
-      coll.m_hitnormal = m_matrix.MulVectorT(coll.m_hitnormal);
+      coll.m_hitnormal = m_matrix.MultiplyVectorT(coll.m_hitnormal);
 
    return hittime;
 }

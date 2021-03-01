@@ -742,7 +742,7 @@ void Trigger::GenerateMesh()
    for (int i = 0; i < m_numVertices; i++)
    {
       Vertex3Ds vert(verts[i].x, verts[i].y, verts[i].z);
-      vert = fullMatrix.MulVector(vert);
+      vert = fullMatrix.MultiplyVector(vert);
 
       if (m_d.m_shape == TriggerButton || m_d.m_shape == TriggerStar)
       {

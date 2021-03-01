@@ -1186,7 +1186,7 @@ Vertex3Ds Pin3D::Unproject(const Vertex3Ds& point)
    p.x = 2.0f * (point.x - (float)m_viewPort.X) / (float)m_viewPort.Width - 1.0f;
    p.y = 1.0f - 2.0f * (point.y - (float)m_viewPort.Y) / (float)m_viewPort.Height;
    p.z = (point.z - m_viewPort.MinZ) / (m_viewPort.MaxZ - m_viewPort.MinZ);
-   p3 = m2.MulVector(p);
+   p3 = m2.MultiplyVector(p);
    return p3;
 }
 
@@ -1317,7 +1317,7 @@ void PinProjection::FitCameraToVertices(std::vector<Vertex3Ds>& pvvertex3D, floa
 
    for (size_t i = 0; i < pvvertex3D.size(); ++i)
    {
-      Vertex3Ds v = laybackTrans.MulVector(pvvertex3D[i]);
+      Vertex3Ds v = laybackTrans.MultiplyVector(pvvertex3D[i]);
 
       // Rotate vertex about x axis according to incoming inclination
       float temp = v.y;
@@ -1360,7 +1360,7 @@ void PinProjection::ComputeNearFarPlane(std::vector<Vertex3Ds>& verts)
 
    for (size_t i = 0; i < verts.size(); ++i)
    {
-      const float tempz = matWorldView.MulVector(verts[i]).z;
+      const float tempz = matWorldView.MultiplyVector(verts[i]).z;
 
       // Extend z-range if necessary
       m_rznear = min(m_rznear, tempz);

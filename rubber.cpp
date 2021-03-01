@@ -1482,7 +1482,7 @@ void Rubber::UpdateRubber(const bool updateVB, const float height)
    for (int i = 0; i < m_numVertices; i++)
    {
       Vertex3Ds vert(m_vertices[i].x, m_vertices[i].y, m_vertices[i].z);
-      vert = vertMatrix.MulVector(vert);
+      vert = vertMatrix.MultiplyVector(vert);
       buf[i].x = vert.x;
       buf[i].y = vert.y;
       buf[i].z = vert.z;

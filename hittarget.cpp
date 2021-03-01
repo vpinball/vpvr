@@ -312,7 +312,7 @@ void HitTarget::GetHitShapes(vector<HitObject*> &pvho)
             vert.x *= m_d.m_vSize.x;
             vert.y *= m_d.m_vSize.y;
             vert.z *= m_d.m_vSize.z;
-            vert = fullMatrix.MulVector(vert);
+            vert = fullMatrix.MultiplyVector(vert);
 
             rgv3D[i].x = vert.x + m_d.m_vPosition.x;
             rgv3D[i].y = vert.y + m_d.m_vPosition.y;
@@ -451,7 +451,7 @@ void HitTarget::GenerateMesh(std::vector<Vertex3D_NoTex2> &buf)
       vert.x *= m_d.m_vSize.x;
       vert.y *= m_d.m_vSize.y;
       vert.z *= m_d.m_vSize.z;
-      vert = fullMatrix.MulVector(vert);
+      vert = fullMatrix.MultiplyVector(vert);
 
       buf[i].x = vert.x + m_d.m_vPosition.x;
       buf[i].y = vert.y + m_d.m_vPosition.y;
@@ -485,7 +485,7 @@ void HitTarget::TransformVertices()
       vert.x *= m_d.m_vSize.x;
       vert.y *= m_d.m_vSize.y;
       vert.z *= m_d.m_vSize.z;
-      vert = fullMatrix.MulVector(vert);
+      vert = fullMatrix.MultiplyVector(vert);
 
       m_hitUIVertices[i].x = vert.x + m_d.m_vPosition.x;
       m_hitUIVertices[i].y = vert.y + m_d.m_vPosition.y;
@@ -766,7 +766,7 @@ void HitTarget::UpdateTarget()
       for (unsigned int i = 0; i < m_numVertices; i++)
       {
          Vertex3Ds vert(m_vertices[i].x, m_vertices[i].y, m_vertices[i].z);
-         vert = vertMatrix.MulVector(vert);
+         vert = vertMatrix.MultiplyVector(vert);
          buf[i].x = vert.x;
          buf[i].y = vert.y;
          buf[i].z = vert.z;
