@@ -4043,6 +4043,8 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
    static int blitMode = -1;
    if (blitMode == -1) {
       blitMode = LoadValueIntWithDefault("Player", "blitModeVR", 0);
+      if (blitMode == 1 && m_pin3d.m_pd3dPrimaryDevice->getGLVersion() < 405)
+         blitMode = 0;
    }
    static int disableVRPreview = -1;
    if (disableVRPreview == -1) {

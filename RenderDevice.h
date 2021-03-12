@@ -385,6 +385,11 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    {
       return nullptr;
    }
+
+   inline int getGLVersion() const
+   {
+      return m_GLversion;
+   }
 #else
    inline IDirect3DDevice9* GetCoreDevice() const
    {
@@ -457,6 +462,7 @@ private:
 
 #ifdef ENABLE_SDL
    GLfloat m_maxaniso;
+   int m_GLversion;
 #else
    DWORD m_maxaniso;
 #endif

@@ -701,7 +701,7 @@ void RenderDevice::InitVR() {
 RenderDevice::RenderDevice(const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice)
    : m_texMan(*this), m_width(width), m_height(height), m_fullscreen(fullscreen),
    m_colorDepth(colordepth), m_vsync(VSync), m_AAfactor(AAfactor), m_stereo3D(stereo3D), m_FXAA(FXAA),
-   m_ssRefl(ss_refl), m_useNvidiaApi(useNvidiaApi), m_disableDwm(disable_dwm), m_BWrendering(BWrendering)
+   m_ssRefl(ss_refl), m_useNvidiaApi(useNvidiaApi), m_disableDwm(disable_dwm), m_BWrendering(BWrendering), m_GLversion(0)
 {
 #ifdef ENABLE_VR
    m_pHMD = NULL;
@@ -726,8 +726,6 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 
    bool video10bit = (m_colorDepth == SDL_PIXELFORMAT_ARGB2101010);
 
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, GL_VERSION_NUMBER / 100);
-   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, GL_VERSION_NUMBER % 100);
    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
 /*   SDL_GL_SetAttribute(SDL_GL_RED_SIZE, video10bit ? 10 : 8);
@@ -769,6 +767,21 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       ShowError("Glad failed");
       exit(-1);
    }
+
+   int gl_majorVersion = 0;
+   int gl_minorVersion = 0;
+   glGetIntegerv(GL_MAJOR_VERSION, &gl_majorVersion);
+   glGetIntegerv(GL_MINOR_VERSION, &gl_minorVersion);
+
+   if (gl_majorVersion < 3 || (gl_majorVersion == 3 && gl_minorVersion < 2)) {
+      char errorMsg[256];
+      int gl_minorVersion = 999;
+      sprintf_s(errorMsg, 256, "You'r graphics card only support OpenGL %d.%d, but VPVR requires OpenGL 3.2 or newer.", gl_majorVersion, gl_minorVersion);
+      ShowError(errorMsg);
+      exit(-1);
+   }
+
+   m_GLversion = gl_majorVersion * 100 + gl_minorVersion;
 
    GLint frameBuffer[4];
    glGetIntegerv(GL_VIEWPORT, frameBuffer);
@@ -2945,7 +2958,19 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    if (data)
    {
       int num_mips = (int)std::log2(float(std::max(Width, Height))) + 1;
-      CHECKD3D(glTexStorage2D(GL_TEXTURE_2D, num_mips, Format, Width, Height));
+      if (m_GLversion >= 403) {
+         CHECKD3D(glTexStorage2D(GL_TEXTURE_2D, num_mips, Format, Width, Height));
+      }
+      else {
+         GLsizei w = Width;
+         GLsizei h = Height;
+         for (int i = 0; i < num_mips; i++) {
+            CHECKD3D(glTexImage2D(GL_TEXTURE_2D, i, Format, w, h, 0, col_format, col_type, NULL));
+            w = max(1, (w / 2));
+            h = max(1, (h / 2));
+         }
+      }
+
       CHECKD3D(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Width, Height, col_format, col_type, data));
       CHECKD3D(glGenerateMipmap(GL_TEXTURE_2D)); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwhise good idea to limit by GL_TEXTURE_MAX_LEVEL
    }
