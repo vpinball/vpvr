@@ -6,6 +6,7 @@
 #include "Debugger.h"
 #include "typeDefs3D.h"
 #include "sdl2/SDL_TTF.h"
+#include "pininput.h"
 
 #define DEFAULT_PLAYER_WIDTH 1024
 #define DEFAULT_PLAYER_FS_WIDTH 1920

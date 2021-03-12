@@ -1,5 +1,27 @@
 #pragma once
 
+#ifdef USE_DINPUT8
+#define DIRECTINPUT_VERSION 0x0800
+#else
+#define DIRECTINPUT_VERSION 0x0700
+#endif
+#include <dinput.h>
+
+#ifdef ENABLE_XINPUT
+#include <Xinput.h>
+#pragma comment(lib, "XInput.lib")
+#endif
+
+#ifdef ENABLE_SDL_INPUT
+#include <sdl2/SDL.h>
+#include <sdl2/SDL_gamecontroller.h>
+#endif
+
+#ifdef ENABLE_IGAMECONTROLLER
+#include "windows.gaming.input.h"
+#pragma comment(lib, "runtimeobject.lib")
+#endif
+
 #define MAX_KEYQUEUE_SIZE 32
 
 #if MAX_KEYQUEUE_SIZE & (MAX_KEYQUEUE_SIZE-1)
@@ -34,7 +56,7 @@ class PinInput
 public:
    PinInput();
    void LoadSettings();
-   ~PinInput() {}
+   ~PinInput();
 
    void Init(const HWND hwnd);
    void UnInit();
@@ -100,6 +122,11 @@ private:
    int started();
    void Joy(const unsigned int n, const int updown, const bool start);
 
+   void handleInputDI(DIDEVICEOBJECTDATA *didod);
+   void handleInputXI(DIDEVICEOBJECTDATA *didod);
+   void handleInputSDL(DIDEVICEOBJECTDATA *didod);
+   void handleInputIGC(DIDEVICEOBJECTDATA *didod);
+
    //int InputControlRun;
 
 #ifdef USE_DINPUT8
@@ -150,6 +177,19 @@ private:
    int m_cameraMode;
    bool m_keyPressedState[4];
    DWORD m_nextKeyPressedTime;
+
+   int m_inputApi; //0=DirectInput 1=XInput, 2=SDL, 3=iGamecontroller
+   int m_rumbleMode; //0 Off, 1=Table only, 2=Generic only, 3=Table with generic as fallback
+
+#ifdef ENABLE_XINPUT
+   int m_inputDeviceXI;
+   XINPUT_STATE m_inputDeviceXIstate;
+#endif
+#ifdef ENABLE_SDL_INPUT
+   SDL_Joystick* m_inputDeviceSDL;
+#endif
+#ifdef ENABLE_IGAMECONTROLLER
+#endif
 };
 
 #define VK_TO_DIK_SIZE 105

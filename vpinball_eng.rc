@@ -14,7 +14,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (United States) resources
+// Englisch (USA) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
@@ -596,7 +596,7 @@ BEGIN
     GROUPBOX        "",IDC_STATIC,262,128,128,21
     GROUPBOX        "",IDC_STATIC,262,146,128,21
     LTEXT           "* To assign Custom Keys to Gamepad Buttons, click on the button and select desired key, then choose desired gamepad button from dropdown box.",IDC_STATIC,7,304,243,16
-    LTEXT           "To interactively set, calibrate and test the Nudge parameters, please load the\n'Nudge Test and Calibration.vpx' table and run it",IDC_STATIC,255,292,168,25
+    LTEXT           "To interactively set, calibrate and test the Nudge parameters, please load the\n'Nudge Test and Calibration.vpx' table and run it",IDC_STATIC,255,271,168,25
     CONTROL         "Enable Mouse handling during Play",IDC_ENABLE_MOUSE_PLAYER,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,254,244,150,10
     CONTROL         "Enable flying around (Arrow Keys + Left Alt Key) during Camera/Light/Material Edit Mode",IDC_ENABLE_CAMERA_FLY_AROUND,
@@ -642,6 +642,10 @@ BEGIN
     PUSHBUTTON      "Table Down",IDC_BTTABLEDOWN,191,254,50,14
     CTEXT           "",IDC_TABLEDOWN_TEXT,193,268,50,8,SS_CENTERIMAGE
     COMBOBOX        IDC_JOYTABLEDOWN,191,278,50,100,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_COMBO_INPUT_API,543,271,77,67,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    RTEXT           "Input API",IDC_LABEL_INPUT_API,473,273,67,8
+    COMBOBOX        IDC_COMBO_RUMBLE,543,286,77,64,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    RTEXT           "Rumble behavior",IDC_LABEL_RUMBLE,473,289,67,8
 END
 
 IDD_TRANSLATE DIALOGEX 0, 0, 186, 97
@@ -2510,7 +2514,7 @@ BEGIN
     IDD_PROP_NAME, DIALOG
     BEGIN
     END
-	
+
     IDD_PROPLIGHT_VISUALS, DIALOG
     BEGIN
     END
@@ -2536,7 +2540,6 @@ BEGIN
 
     IDD_PROPWALL_PHYSICS, DIALOG
     BEGIN
-		BOTTOMMARGIN, 163
     END
 
     IDD_PROPGATE_VISUALS, DIALOG
@@ -2764,7 +2767,7 @@ BEGIN
     IDD_LAYERS, DIALOG
     BEGIN
     END
-	
+
     IDD_NOTES_DIALOG, DIALOG
     BEGIN
         LEFTMARGIN, 7
@@ -3831,7 +3834,7 @@ BEGIN
     IDS_STEP                "Step"
 END
 
-#endif    // English (United States) resources
+#endif    // Englisch (USA) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

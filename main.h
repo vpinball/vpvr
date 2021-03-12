@@ -10,12 +10,6 @@
 #include <windows.h>
 #include <MMSystem.h>
 
-#ifdef USE_DINPUT8
-#define DIRECTINPUT_VERSION 0x0800
-#else
-#define DIRECTINPUT_VERSION 0x0700
-#endif
-#include <dinput.h>
 #include <dsound.h>
 
 #ifdef _DEBUG
@@ -129,7 +123,6 @@ using std::vector;
 
 #include "media/wavread.h"
 
-#include "pininput.h"
 #include "pinsound.h"
 #include "pinbinary.h"
 
