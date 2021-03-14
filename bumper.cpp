@@ -460,6 +460,11 @@ void Bumper::RenderDynamic()
    pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
    pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 
+   //This is for testing haptic/Rumble. Not final code.
+   if (m_pbumperhitcircle->m_bumperanim_hitEvent) {
+      g_pplayer->m_pininput.playRumble(65535, 65535, 300);
+   }
+
    const int state = m_pbumperhitcircle->m_bumperanim_hitEvent ? 1 : 0;    // 0 = not hit, 1 = hit
    m_pbumperhitcircle->m_bumperanim_hitEvent = false;
 

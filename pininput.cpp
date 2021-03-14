@@ -133,6 +133,8 @@ PinInput::PinInput()
 PinInput::~PinInput()
 {
 #ifdef ENABLE_SDL_INPUT
+   if (m_rumbleDeviceSDL)
+      SDL_HapticClose(m_rumbleDeviceSDL);
    if (m_inputDeviceSDL) {
       SDL_JoystickClose(m_inputDeviceSDL);
    }
@@ -605,6 +607,15 @@ void PinInput::handleInputXI(DIDEVICEOBJECTDATA *didod)
          }
       }
    }
+   if (m_rumbleRunning && m_inputDeviceXI >= 0) {
+      DWORD now = timeGetTime();
+      if (m_rumbleOffTime <= now || m_rumbleOffTime - now > 65535) {
+         m_rumbleRunning = false;
+         XINPUT_VIBRATION vibration;
+         ZeroMemory(&vibration, sizeof(XINPUT_VIBRATION));
+         XInputSetState(m_inputDeviceXI, &vibration);
+      }
+   }
    int i = 0;
    int j = 0;
    while (mappingTable[i].xi != 0) {
@@ -677,14 +688,37 @@ void PinInput::handleInputSDL(DIDEVICEOBJECTDATA *didod)
          //Open Exit dialog
          break;
       case SDL_JOYDEVICEADDED:
-         if (!m_inputDeviceSDL)
+         if (!m_inputDeviceSDL) {
             m_inputDeviceSDL = SDL_JoystickOpen(0);
+            if (m_inputDeviceSDL && SDL_JoystickIsHaptic(m_inputDeviceSDL)) {
+               m_rumbleDeviceSDL = SDL_HapticOpenFromJoystick(m_inputDeviceSDL);
+               int error = SDL_HapticRumbleInit(m_rumbleDeviceSDL);
+               if (error < 0) {
+                  ShowError(SDL_GetError());
+                  SDL_HapticClose(m_rumbleDeviceSDL);
+                  m_rumbleDeviceSDL = nullptr;
+               }
+            }
+         }
          break;
       case SDL_JOYDEVICEREMOVED:
+         if (m_rumbleDeviceSDL)
+            SDL_HapticClose(m_rumbleDeviceSDL);
+         m_rumbleDeviceSDL = nullptr;
          if (m_inputDeviceSDL)
-         SDL_JoystickClose(m_inputDeviceSDL);
-         if (SDL_NumJoysticks() > 0)
+            SDL_JoystickClose(m_inputDeviceSDL);
+         if (SDL_NumJoysticks() > 0) {
             m_inputDeviceSDL = SDL_JoystickOpen(0);
+            if (m_inputDeviceSDL && SDL_JoystickIsHaptic(m_inputDeviceSDL)) {
+               m_rumbleDeviceSDL = SDL_HapticOpenFromJoystick(m_inputDeviceSDL);
+               int error = SDL_HapticRumbleInit(m_rumbleDeviceSDL);
+               if (error < 0) {
+                  ShowError(SDL_GetError());
+                  SDL_HapticClose(m_rumbleDeviceSDL);
+                  m_rumbleDeviceSDL = nullptr;
+               }
+            }
+         }
          else
             m_inputDeviceSDL = nullptr;
          break;
@@ -714,6 +748,37 @@ void PinInput::handleInputIGC(DIDEVICEOBJECTDATA *didod)
 {
 #ifdef ENABLE_IGAMECONTROLLER
 #endif
+}
+
+void PinInput::playRumble(int leftMotor, int rightMotor, int duration)
+{
+   if (m_rumbleMode == 0) return;
+
+   switch (m_inputApi) {
+   case 1: //XInput
+#ifdef ENABLE_XINPUT
+      if (m_inputDeviceXI >= 0) {
+         m_rumbleOffTime = duration + timeGetTime();
+         m_rumbleRunning = true;
+         XINPUT_VIBRATION vibration;
+         ZeroMemory(&vibration, sizeof(XINPUT_VIBRATION));
+         vibration.wLeftMotorSpeed = leftMotor;
+         vibration.wRightMotorSpeed = rightMotor;
+         XInputSetState(m_inputDeviceXI, &vibration);
+      }
+#endif
+      break;
+   case 2: //SDL2
+#ifdef ENABLE_SDL_INPUT
+      if (m_rumbleDeviceSDL)
+         SDL_HapticRumblePlay(m_rumbleDeviceSDL, (float)max(leftMotor, rightMotor) / 65535.0f, duration);
+#endif
+      break;
+   case 3: //IGameControler
+#ifdef ENABLE_IGAMECONTROLLER
+#endif
+      break;
+   }
 }
 
 
@@ -793,13 +858,23 @@ void PinInput::Init(const HWND hwnd)
 #ifdef ENABLE_XINPUT
       m_inputDeviceXI = -1;
       uShockType = USHOCKTYPE_GENERIC;
+      m_rumbleRunning = false;
 #else
       m_inputApi = 0;
 #endif
       break;
    case 2: //SDL2
 #ifdef ENABLE_SDL_INPUT
-      m_inputDeviceSDL = nullptr;
+      m_inputDeviceSDL = SDL_JoystickOpen(0);
+      if (m_inputDeviceSDL && SDL_JoystickIsHaptic(m_inputDeviceSDL)) {
+         m_rumbleDeviceSDL = SDL_HapticOpenFromJoystick(m_inputDeviceSDL);
+         int error = SDL_HapticRumbleInit(m_rumbleDeviceSDL);
+         if (error < 0) {
+            ShowError(SDL_GetError());
+            SDL_HapticClose(m_rumbleDeviceSDL);
+            m_rumbleDeviceSDL = nullptr;
+         }
+      }
       uShockType = USHOCKTYPE_GENERIC;
 #else
       m_inputApi = 0;

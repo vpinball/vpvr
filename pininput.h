@@ -80,6 +80,8 @@ public:
    void ProcessThrowBalls(const DIDEVICEOBJECTDATA * __restrict input);
    void ProcessBallControl(const DIDEVICEOBJECTDATA * __restrict input);
 
+   void playRumble(int leftMotor, int rightMotor, int duration);
+
    int GetNextKey();
 
    void GetInputDeviceData(/*const U32 curr_time_msec*/);
@@ -184,9 +186,12 @@ private:
 #ifdef ENABLE_XINPUT
    int m_inputDeviceXI;
    XINPUT_STATE m_inputDeviceXIstate;
+   DWORD m_rumbleOffTime;
+   bool m_rumbleRunning;
 #endif
 #ifdef ENABLE_SDL_INPUT
    SDL_Joystick* m_inputDeviceSDL;
+   SDL_Haptic* m_rumbleDeviceSDL;
 #endif
 #ifdef ENABLE_IGAMECONTROLLER
 #endif
