@@ -18,7 +18,7 @@ public:
    float m_damping;
    float m_angleMax;
    float m_angleMin;
-   char m_szSurface[MAXTOKEN];
+   std::string m_szSurface;
    bool m_showBracket;
 };
 
@@ -64,7 +64,7 @@ public:
 
    STANDARD_EDITABLE_DECLARES(Spinner, eItemSpinner, SPINNER, 1)
 
-      DECLARE_REGISTRY_RESOURCEID(IDR_SPINNER)
+   DECLARE_REGISTRY_RESOURCEID(IDR_SPINNER)
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
 
@@ -78,7 +78,7 @@ public:
    virtual unsigned long long GetMaterialID() const { return m_ptable->GetMaterial(m_d.m_szMaterial)->hash(); }
    virtual unsigned long long GetImageID() const { return (unsigned long long)(m_ptable->GetImage(m_d.m_szImage)); }
    virtual ItemTypeEnum HitableGetItemType() const { return eItemSpinner; }
-   virtual void ExportMesh(FILE *f);
+   virtual void ExportMesh(ObjLoader& loader);
 
    virtual void WriteRegDefaults();
    virtual void UpdateStatusBarInfo();

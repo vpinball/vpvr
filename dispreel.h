@@ -70,7 +70,7 @@ public:
 
    STANDARD_EDITABLE_DECLARES(DispReel, eItemDispReel, DISPREEL, 2)
 
-      virtual void MoveOffset(const float dx, const float dy);
+   virtual void MoveOffset(const float dx, const float dy);
    virtual void SetObjectPos();
    // Multi-object manipulation
    virtual Vertex2D GetCenter() const;
@@ -89,60 +89,60 @@ public:
    int     GetReels() const { return m_d.m_reelcount; }
    void    SetReels(const int reels)
    {
-      m_d.m_reelcount = min(max(1, reels), MAX_REELS); // must have at least 1 reel and a max of MAX_REELS
-      m_d.m_v2.x = m_d.m_v1.x + getBoxWidth();
-      m_d.m_v2.y = m_d.m_v1.y + getBoxHeight();
+       m_d.m_reelcount = min(max(1, reels), MAX_REELS); // must have at least 1 reel and a max of MAX_REELS
+       m_d.m_v2.x = m_d.m_v1.x + getBoxWidth();
+       m_d.m_v2.y = m_d.m_v1.y + getBoxHeight();
    }
    int     GetRange() const { return m_d.m_digitrange; }
    void    SetRange(const int newRange)
    {
-      m_d.m_digitrange = max(0, newRange);                        // must have at least 1 digit (0 is a digit)
-      if (m_d.m_digitrange > 512 - 1) m_d.m_digitrange = 512 - 1; // and a max of 512 (0->511) //!! 512 requested by highrise
+       m_d.m_digitrange = max(0, newRange);                        // must have at least 1 digit (0 is a digit)
+       if (m_d.m_digitrange > 512 - 1) m_d.m_digitrange = 512 - 1; // and a max of 512 (0->511) //!! 512 requested by highrise
    }
    float   GetX() const { return m_d.m_v1.x; }
    void    SetX(const float x)
    {
-      const float delta = x - m_d.m_v1.x;
-      m_d.m_v1.x += delta;
-      m_d.m_v2.x = m_d.m_v1.x + getBoxWidth();
+       const float delta = x - m_d.m_v1.x;
+       m_d.m_v1.x += delta;
+       m_d.m_v2.x = m_d.m_v1.x + getBoxWidth();
    }
    float   GetY() const { return m_d.m_v1.y; }
    void    SetY(const float y)
    {
-      const float delta = y - m_d.m_v1.y;
-      m_d.m_v1.y += delta;
-      m_d.m_v2.y = m_d.m_v1.y + getBoxHeight();
+       const float delta = y - m_d.m_v1.y;
+       m_d.m_v1.y += delta;
+       m_d.m_v2.y = m_d.m_v1.y + getBoxHeight();
    }
    float   GetWidth() const { return m_d.m_width; }
    void    SetWidth(const float width)
    {
-      m_d.m_width = max(0.0f, width);
-      m_d.m_v2.x = m_d.m_v1.x + getBoxWidth();
+       m_d.m_width = max(0.0f, width);
+       m_d.m_v2.x = m_d.m_v1.x + getBoxWidth();
 
    }
 
    float   GetHeight() const { return m_d.m_height; }
    void    SetHeight(const float height)
    {
-      m_d.m_height = max(0.0f, height);
-      m_d.m_v2.y = m_d.m_v1.y + getBoxHeight();
+       m_d.m_height = max(0.0f, height);
+       m_d.m_v2.y = m_d.m_v1.y + getBoxHeight();
    }
    float   GetSpacing() const { return m_d.m_reelspacing; }
-   void    SetSpacing(const float newSpace)
+   void    SetSpacing(const float newSpace) 
    {
-      m_d.m_reelspacing = max(0.0f, newSpace);
-      m_d.m_v2.x = m_d.m_v1.x + getBoxWidth();
-      m_d.m_v2.y = m_d.m_v1.y + getBoxHeight();
+       m_d.m_reelspacing = max(0.0f, newSpace);
+       m_d.m_v2.x = m_d.m_v1.x + getBoxWidth();
+       m_d.m_v2.y = m_d.m_v1.y + getBoxHeight();
    }
    int     GetMotorSteps() const { return m_d.m_motorsteps; }
    void    SetMotorSteps(const int steps)
    {
-      m_d.m_motorsteps = max(1, steps); // must have at least 1 step)
+       m_d.m_motorsteps = max(1, steps); // must have at least 1 step)
    }
    int     GetUpdateInterval() const { return m_d.m_updateinterval; }
    void    SetUpdateInterval(const int interval)
    {
-      m_d.m_updateinterval = max((int)5, interval);
+       m_d.m_updateinterval = max((int)5, interval);
    }
 
    void    Animate();

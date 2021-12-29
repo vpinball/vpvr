@@ -13,12 +13,12 @@
 
 #pragma once
 
-   //---------------------------------------------------------------------------
-   // Allocates a temporary buffer that will disappear when it goes out of scope
-   // NOTE: Be careful of that-- make sure you use the string in the same or
-   // nested scope in which you created this buffer.  People should not use this
-   // class directly; use the macro(s) below.
-   //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+// Allocates a temporary buffer that will disappear when it goes out of scope
+// NOTE: Be careful of that-- make sure you use the string in the same or
+// nested scope in which you created this buffer.  People should not use this
+// class directly; use the macro(s) below.
+//---------------------------------------------------------------------------
 class TempBuffer
 {
 public:
@@ -87,7 +87,7 @@ private:
     const WCHAR * const __pwsz##ptrname = pwszUnicode?pwszUnicode:L""; \
     const long __l##ptrname = lstrlenW(__pwsz##ptrname) + 1; \
     TempBuffer __TempBuffer##ptrname(__l##ptrname * (long)sizeof(char)); \
-    WideCharToMultiByteNull(CP_ACP, 0, __pwsz##ptrname, -1, (LPSTR)__TempBuffer##ptrname.GetBuffer(), __l##ptrname, NULL, NULL); \
+    WideCharToMultiByteNull(CP_ACP, 0, __pwsz##ptrname, -1, (LPSTR)__TempBuffer##ptrname.GetBuffer(), __l##ptrname, nullptr, nullptr); \
     const LPSTR ptrname = (LPSTR)__TempBuffer##ptrname.GetBuffer()
 
 //--- EOF -------------------------------------------------------------------

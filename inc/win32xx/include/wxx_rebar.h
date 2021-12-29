@@ -1,12 +1,12 @@
-// Win32++   Version 8.8
-// Release Date: 15th October 2020
+// Win32++   Version 8.9.1
+// Release Date: 10th September 2021
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2020  David Nash
+// Copyright (c) 2005-2021  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -93,7 +93,7 @@ namespace Win32xx
         void SetToolTips(HWND toolTip) const;
 
     protected:
-        //Overridables
+        // Overridables
         virtual BOOL OnEraseBkgnd(CDC& dc);
         virtual LRESULT OnLButtonDown(UINT msg, WPARAM wparam, LPARAM lparam);
         virtual LRESULT OnLButtonUp(UINT msg, WPARAM wparam, LPARAM lparam);
@@ -148,7 +148,7 @@ namespace Win32xx
         assert(IsWindow());
 
         int result = -1;
-        if (NULL == wnd) return result;
+        if (0 == wnd) return result;
 
         for (int band = 0; band < GetBandCount(); ++band)
         {
@@ -251,7 +251,7 @@ namespace Win32xx
 
         UINT uSizeof = sizeof(REBARBANDINFO);
 
-    #if defined REBARBANDINFO_V6_SIZE   // only defined for VS2008 or higher
+    #if defined REBARBANDINFO_V6_SIZE   // Only defined for VS2008 or higher.
       #if !defined (_WIN32_WINNT) || _WIN32_WINNT >= 0x0600
         if ((GetWinVersion() < 2600) || (GetComCtlVersion() < 610)) // Vista and Vista themes?
             uSizeof = REBARBANDINFO_V6_SIZE;
@@ -278,15 +278,15 @@ namespace Win32xx
         return static_cast<int>(SendMessage(RB_HITTEST, 0, (LPARAM)&hitTestInfo));
     }
 
-    // Return the child HWND at the given point
+    // Return the child HWND at the given point.
     inline HWND CReBar::HitTest(POINT pt) const
     {
         assert(IsWindow());
 
-        // Convert the point to client co-ordinates
-        ScreenToClient(pt);
+        // Convert the point to client co-ordinates.
+        VERIFY(ScreenToClient(pt));
 
-        // Get the rebar band with the point
+        // Get the rebar band with the point.
         RBHITTESTINFO rbhti;
         ZeroMemory(&rbhti, sizeof(rbhti));
         rbhti.pt = pt;
@@ -294,7 +294,7 @@ namespace Win32xx
 
         if (iBand >= 0)
         {
-            // Get the rebar band's wnd
+            // Get the rebar band's wnd.
             REBARBANDINFO rbbi;
             ZeroMemory(&rbbi, GetSizeofRBBI());
             rbbi.cbSize = GetSizeofRBBI();
@@ -304,7 +304,7 @@ namespace Win32xx
             return rbbi.hwndChild;
         }
         else
-            return NULL;
+            return 0;
     }
 
     // Converts a band identifier to a band index in a rebar control.
@@ -468,12 +468,8 @@ namespace Win32xx
     }
 
     // Called when a child toolbar window is resizing.
-    inline LRESULT CReBar::OnTBWinPosChanging(UINT msg, WPARAM wparam, LPARAM lparam)
+    inline LRESULT CReBar::OnTBWinPosChanging(UINT, WPARAM, LPARAM)
     {
-        UNREFERENCED_PARAMETER(msg);
-        UNREFERENCED_PARAMETER(wparam);
-        UNREFERENCED_PARAMETER(lparam);
-
         // Adjust size for toolbars inside a rebar
         ReBarTheme* pTheme = reinterpret_cast<ReBarTheme*>(GetParent().SendMessage(UWM_GETRBTHEME, 0, 0));
 

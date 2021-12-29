@@ -127,5 +127,36 @@ BOOL BackglassCameraProperty::OnInitDialog()
 
     UpdateVisuals();
 
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, 0);
+    m_resizer.AddChild(m_hFssModeCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hTestDesktopCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_modeCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_inclinationEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_fovEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_laybackEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_xyRotationEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_xScaleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_yScaleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_zScaleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_xOffsetEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_yOffsetEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_zOffsetEdit, topleft, RD_STRETCH_WIDTH);
     return TRUE;
+}
+
+INT_PTR BackglassCameraProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

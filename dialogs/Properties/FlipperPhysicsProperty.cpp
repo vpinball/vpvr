@@ -29,9 +29,9 @@ FlipperPhysicsProperty::FlipperPhysicsProperty(const VectorProtected<ISelect> *p
 
 void FlipperPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemFlipper))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemFlipper))
             continue;
         Flipper * const flipper = (Flipper *)m_pvsel->ElementAt(i);
         if (dispid == DISPID_Flipper_Speed || dispid == -1)
@@ -58,9 +58,9 @@ void FlipperPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void FlipperPhysicsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemFlipper))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemFlipper))
             continue;
         Flipper * const flipper = (Flipper *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -117,6 +117,34 @@ BOOL FlipperPhysicsProperty::OnInitDialog()
     m_eosTorqueAngleEdit.AttachItem(189);
     m_overwriteSettingsCombo.AttachItem(1044);
     UpdateVisuals();
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, 0);
+    m_resizer.AddChild(m_massEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_strengthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_elasticityEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_elasticityFalloffEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_frictionEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_returnStrengthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_coilUpRampEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_scatterAngleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_eosTorqueEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_eosTorqueAngleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_overwriteSettingsCombo, topleft, RD_STRETCH_WIDTH);
     return TRUE;
 }
 
+INT_PTR FlipperPhysicsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
+}

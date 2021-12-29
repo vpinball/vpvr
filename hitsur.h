@@ -29,7 +29,7 @@ public:
    ISelect *m_pselected;
 
 private:
-   ISelect * m_pcur;
+   ISelect *m_pcur;
 
    int m_hitx, m_hity;
 };

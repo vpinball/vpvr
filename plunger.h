@@ -7,7 +7,7 @@
 
 #include "resource.h"       // main symbols
 
-const int MAXTIPSHAPE = 256;
+constexpr int MAXTIPSHAPE = 256;
 
 class PlungerData : public BaseProperty
 {
@@ -25,7 +25,7 @@ public:
    int m_animFrames;
    TimerDataRoot m_tdr;
    float m_parkPosition;
-   char m_szSurface[MAXTOKEN];
+   std::string m_szSurface;
    float m_scatterVelocity;
    float m_momentumXfer;
    char m_szTipShape[MAXTIPSHAPE];
@@ -74,8 +74,8 @@ struct PlungerCoord
 
    void set(const float _r, const float _y, const float _tv, const float _nx, const float _ny)
    {
-      r = _r;
-      y = _y;
+      r  = _r;
+      y  = _y;
       tv = _tv;
       nx = _nx;
       ny = _ny;
@@ -155,7 +155,7 @@ public:
    PlungerData m_d;
 
 private:
-   PinTable * m_ptable;
+   PinTable *m_ptable;
 
    VertexBuffer *m_vertexBuffer;
    IndexBuffer *m_indexBuffer;
@@ -176,7 +176,7 @@ private:
    // number of triangle indices per frame
    int m_indicesPerFrame;
 
-   // IPlunger
+// IPlunger
 public:
    STDMETHOD(get_Surface)(/*[out, retval]*/ BSTR *pVal);
    STDMETHOD(put_Surface)(/*[in]*/ BSTR newVal);

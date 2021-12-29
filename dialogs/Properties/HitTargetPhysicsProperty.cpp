@@ -14,9 +14,9 @@ HitTargetPhysicsProperty::HitTargetPhysicsProperty(const VectorProtected<ISelect
 
 void HitTargetPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemHitTarget))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemHitTarget))
             continue;
         HitTarget * const target = (HitTarget*)m_pvsel->ElementAt(i);
 
@@ -39,9 +39,9 @@ void HitTargetPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void HitTargetPhysicsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemHitTarget))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemHitTarget))
             continue;
         HitTarget * const target = (HitTarget*)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -85,5 +85,29 @@ BOOL HitTargetPhysicsProperty::OnInitDialog()
     m_baseScatterAngleEdit = &m_scatterAngleEdit;
     m_elasticityFalloffEdit.AttachItem(112);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(m_hitThresholdEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hHitEventCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hOverwritePhysicsCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hLegacyModeCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hCollidableCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hIsDroppedCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_physicsMaterialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_elasticityEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_frictionEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_scatterAngleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_elasticityFalloffEdit, topleft, RD_STRETCH_WIDTH);
     return TRUE;
+}
+
+INT_PTR HitTargetPhysicsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

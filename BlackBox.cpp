@@ -68,8 +68,8 @@ namespace
       LONGLONG			ticks;
    };
 
-   const int	kMaxMessages = 128;
-   ScopedPtr<BlackBoxEntry>							s_messages;
+   constexpr int	kMaxMessages = 128;
+   ScopedPtr<BlackBoxEntry>		s_messages;
 
    volatile long	s_topMessageIndex(0);
    volatile long	s_enabled(1);
@@ -84,15 +84,15 @@ namespace
       messages[i].message[0] = '\0';
       if (threadName != 0)
       {
-         strncpy_s(messages[i].message, threadName, sizeof(messages[i].message) - 1);
-         strncat_s(messages[i].message, ": ", sizeof(messages[i].message) - strnlen_s(messages[i].message, sizeof(messages[i].message)) - 1);
+         strncpy_s(messages[i].message, threadName, sizeof(messages[i].message)-1);
+         strncat_s(messages[i].message, ": ", sizeof(messages[i].message)-strnlen_s(messages[i].message, sizeof(messages[i].message))-1);
       }
-      strncat_s(messages[i].message, msg, sizeof(messages[i].message) - strnlen_s(messages[i].message, sizeof(messages[i].message)) - 1);
+      strncat_s(messages[i].message, msg, sizeof(messages[i].message)-strnlen_s(messages[i].message, sizeof(messages[i].message))-1);
       LARGE_INTEGER TimerNow;
       QueryPerformanceCounter(&TimerNow);
       messages[i].ticks = TimerNow.QuadPart;
 #else
-      strncpy_s(messages[i].message, msg, sizeof(messages[i].message) - 1);
+      strncpy_s(messages[i].message, msg, sizeof(messages[i].message)-1);
       messages[i].threadId = RDE_GET_CURRENT_THREAD_ID();
       LARGE_INTEGER TimerNow;
       QueryPerformanceCounter(&TimerNow);
@@ -130,8 +130,7 @@ namespace rde
       {
          va_list args;
          va_start(args, fmt);
-         char buff[sizeof(BlackBoxMessage)];
-         memset(buff, 0, sizeof(buff));
+         char buff[sizeof(BlackBoxMessage)] = {};
          _vsnprintf_s(buff, sizeof(buff) - 1, fmt, args);
          va_end(args);
          AddMessage(buff);

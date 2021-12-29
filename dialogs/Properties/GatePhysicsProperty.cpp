@@ -12,9 +12,9 @@ GatePhysicsProperty::GatePhysicsProperty(const VectorProtected<ISelect> *pvsel) 
 
 void GatePhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemGate))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemGate))
             continue;
         Gate * const gate = (Gate *)m_pvsel->ElementAt(i);
 
@@ -32,9 +32,9 @@ void GatePhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void GatePhysicsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemGate))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemGate))
             continue;
         Gate * const gate = (Gate *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -67,6 +67,24 @@ BOOL GatePhysicsProperty::OnInitDialog()
     m_baseElasticityEdit = &m_elasticityEdit;
     m_baseFrictionEdit = &m_frictionEdit;
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(m_dampingEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_gravityFactorEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_elasticityEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_frictionEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hCollidableCheck, topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_TWO_WAY_CHECK), topleft, 0);
+
     return TRUE;
 }
 
+INT_PTR GatePhysicsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
+}

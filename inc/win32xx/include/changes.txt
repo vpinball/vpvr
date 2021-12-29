@@ -1,8 +1,179 @@
+Version 8.9.1
+=============
+
+New Features and Enhancements
+-----------------------------
+* Added CPrintDialogEx.
+  - The CPrintDialogEx class uses PrintDlgEx to display a property sheet
+    which allows the user to select the printer to use.
+    Requires Windows 2000 or newer ( WINVER >= 0500 ).
+
+* Updated CMenuBar.
+  - CMenuBar now emulates the behavior of a traditional menu more closely.
+  - The accelerator prefixes are now normally hidden, but are displayed for
+    keyboard navigation.
+
+ * Updated CDC.
+  - A CDC restores its device context to its original state when its last
+    copy is destroyed, unless the Detach function is used to detach it.
+    Use Detach to keep changes made to the device context, such as when
+    handling WM_CTLCOLORBTN, WM_CTLCOLOREDIT, WM_CTLCOLORDLG,
+    WM_CTLCOLORLISTBOX, WM_CTLCOLORSCROLLBAR or WM_CTLCOLORSTATIC.
+    Detach is not required unless we need to keep the changes made to the
+    device context.
+
+ * Updated CBitmap.
+  - Added CopyImage.
+  - Added GetSize.
+
+ * Updated CString.
+  - Added << operator overload. It accepts integers, doubles, characters,
+    character arrays and CStrings. Use as follows:
+    CString str;
+    int x = 5;
+    double y = 3.14;
+    str << "Equation: " << x << " + " << y << " = " << x+y << '\n';
+
+ * Updated CPropertySheet.
+   OnSetDEFID can be overridden to set the default push button for the 
+   property sheet.
+
+ * Updated CTaskTialog
+   The declarations of several member functions have changed. Member functions
+   which previously used a LPTCSTR parameter now use use a LPWCSTR parameter.   
+
+ * Added ListView sample.
+
+
+
+Changes in Detail
+-----------------
+Added CPrintDialogEx                class
+Added CBitmap::CopyImage            member function
+Added CBitmap::GetSize              member function
+Added CBitmap::LoadImage            (additional overloads)
+Added CFrameT::OnKeyboardHook       member function
+Added CMenuBar::IsAltMode           member function
+Added CPropertySheet::OnSetDEFID    member function
+Added CString::operator <<          global function
+Added CStringT::operator <<         global function
+Modified CTaskDialog. Replaced LPCTSTR function arguments with LPCWSTR
+
+
+Version 8.9
+===========
+
+This version adds support for the Clang compiler, and improves the handling
+of error messages.
+
+Bug fixes:
+- Corrected CRegKey::SetMultiStringValue
+- Corrected CRegKey::SetStringValue
+- Corrected CDC::LoadImage
+- Corrected CDC::GetNearestColor
+- Corrected CMDIFrameT<T>::OnViewStatusBar
+- Corrected CMDIFrameT<T>::OnViewToolBar()
+- CWnd::Close can now be used to close applications with a Ribbon UI.
+
+New Features and Enhancements
+-----------------------------
+* Adds support for the Clang C++ compiler available with Microsoft's
+   Visual Studio Community 2019.
+
+* The error messages displayed when an exception is raised have been moved to
+  CWinApp as a set of virtual member functions. These can be overridden to
+  support other languages if required.
+
+* A CResource exception is now thrown in additional circumstances:
+  - CMenu throws a CResourceException if the menu can't be created.
+  - CImageList throws a CResourceException if the image list can't be created.
+  - CDC throws a CResourceException the selection of a GDI object fails.
+
+* Updated CPrintPreview to support changes to Windows 10.
+
+* The samples demonstrate exception handling in their window procedures.
+   Exceptions that are raised when messages are processed are handled
+   gracefully, and allow the program to continue. Adding exception handling
+   to WndProc and DialogProc also catches exceptions raised in OnCommand,
+   OnNotify, OnDraw etc.
+   
+* Updated the manifests used in the samples.
+   The manifests now use GDI scaling. This provides better support for dual
+   monitors, and monitors with high resolution.
+
+
+Changes in detail
+-----------------
+Added the following set of virtual functions to CWinApp for error messages.
+  CWinApp::MsgAppThreadFailed
+  CWinApp::MsgArReadFail
+  CWinApp::MsgArNotCStringA
+  CWinApp::MsgArNotCStringW
+  CWinApp::MsgCriticalSection
+  CWinApp::MsgMtxEvent
+  CWinApp::MsgMtxMutex
+  CWinApp::MsgMtxSemaphore
+  CWinApp::MsgWndCreateEx
+  CWinApp::MsgWndDoModal
+  CWinApp::MsgWndGlobalLock
+  CWinApp::MsgWndPropertSheet
+  CWinApp::MsgSocWSAStartup
+  CWinApp::MsgSocWS2Dll
+  CWinApp::MsgIPControl
+  CWinApp::MsgRichEditDll
+  CWinApp::MsgTaskDialog
+  CWinApp::MsgFileClose
+  CWinApp::MsgFileFlush
+  CWinApp::MsgFileLock
+  CWinApp::MsgFileOpen
+  CWinApp::MsgFileRead
+  CWinApp::MsgFileRename
+  CWinApp::MsgFileRemove
+  CWinApp::MsgFileLength
+  CWinApp::MsgFileUnlock
+  CWinApp::MsgFileWrite
+  CWinApp::MsgGdiDC
+  CWinApp::MsgGdiIC
+  CWinApp::MsgGdiBitmap
+  CWinApp::MsgGdiBrush
+  CWinApp::MsgGdiFont
+  CWinApp::MsgGdiPalette
+  CWinApp::MsgGdiPen
+  CWinApp::MsgGdiRegion
+  CWinApp::MsgGdiGetDC
+  CWinApp::MsgGdiGetDCEx
+  CWinApp::MsgGdiSelObject
+  CWinApp::MsgGdiGetWinDC
+  CWinApp::MsgGdiBeginPaint
+  CWinApp::MsgImageList
+  CWinApp::MsgMenu
+  CWinApp::MsgPrintFound
+  CWinApp::MsgDDX_Byte
+  CWinApp::MsgDDX_Int
+  CWinApp::MsgDDX_Long
+  CWinApp::MsgDDX_Short
+  CWinApp::MsgDDX_Real
+  CWinApp::MsgDDX_UINT
+  CWinApp::MsgDDX_ULONG
+  CWinApp::MsgDDV_IntRange
+  CWinApp::MsgDDV_UINTRange
+  CWinApp::MsgDDV_RealRange
+  CWinApp::MsgDDV_StringSize
+
+The following functions now throw a CResourceException on failure:
+  CDC::SelectObject
+  CDC::SelectPalette
+  CImageList::Create
+  CImageList::CreateDisabledImageList
+  CMenu::CreateMenu
+  CMenu::CreatePopupMenu
+
+
 Version 8.8
 ===========
 
-This version adds the BrowserATL, MovieShow and WinPlot samples. It also adds support
-for Code::Blocks version 20.03.
+This version adds the BrowserATL, MovieShow and WinPlot samples. It also adds
+support for Code::Blocks version 20.03.
 
 Bug Fixes:
 - Corrected the definition of CEventSink in the Browser sample.
@@ -32,8 +203,8 @@ New Features and Enhancements
    It does the same thing as the Browser sample, except that it uses ATL.
 
 * Extended the Toolbar sample.
-   The toobar sample now demonstrates how to add additional toolbars to the
-   frame. It continues to demonstrate how to customise a toolbar in runtime,
+   The toolbar sample now demonstrates how to add additional toolbars to the
+   frame. It continues to demonstrate how to customisz a toolbar in runtime,
    and how to add a horizontal or vertical toolbar to the frame's view.
 
 * Updated the Code::Blocks project files support version 20.03.
@@ -70,13 +241,13 @@ Added BrowserATL                                   sample
 Added MovieShow                                    sample
 Added WinPlot                                      sample
 
-Added CDC::AbortPath                               member function  
+Added CDC::AbortPath                               member function
 Added CDC::CreatePointFont                         member function
 Added CDC::CreatePointFontIndirect                 member function
-Added CDC::CreateRgnFromData                       member function                     
+Added CDC::CreateRgnFromData                       member function
 Added CDC::CreateRgnFromPath                       member function
 Added CDC::CreateRoundRectRgn                      member function
-Added CDC::ExtCreatePen                            member function             
+Added CDC::ExtCreatePen                            member function
 Added CDC::StrokePath                              member function
 Added CDC::StrokeAndFillPath                       member function
 Added CFrameT::AddMenuIcon (additional overload)   member function
@@ -865,7 +1036,7 @@ New Features and Enhancements
       to resource.rc in the frame sample for an example.
 
 * Updated Dockers
-   - Dock targets invalidated by DS_NO_DOCKCHILD_XXXX are hidden or greyed.
+   - Dock targets invalidated by DS_NO_DOCKCHILD_XXXX are hidden or grayed.
    - Click and drag tab swaps to swap them for DockContainers and TabbedMDIs.
    - Parent dockers have a minimum size.
    - Added support for DS_FIXED_RESIZE. Normally dock children are resized
@@ -1001,7 +1172,7 @@ New Features and Enhancements
       without Aero continue to use the Win32++ theme for popup menus.
     - Frames now honour the current window theme's menu and status fonts.
     - the frame's appearance changes dynamically to reflect changes to the window theme.
-    - minor adjustment to the ReBar theme colours for the "Modern" theme.
+    - minor adjustment to the ReBar theme colors for the "Modern" theme.
 * Added the following controls
    - CDateTime
    - CHeader

@@ -26,9 +26,9 @@ TriggerVisualsProperty::TriggerVisualsProperty(const VectorProtected<ISelect> *p
 
 void TriggerVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemTrigger))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemTrigger))
             continue;
         Trigger * const trigger = (Trigger *)m_pvsel->ElementAt(i);
 
@@ -62,9 +62,9 @@ void TriggerVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void TriggerVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemTrigger))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemTrigger))
             continue;
         Trigger * const trigger = (Trigger *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -79,7 +79,7 @@ void TriggerVisualsProperty::UpdateProperties(const int dispid)
                 CHECK_UPDATE_ITEM(trigger->m_d.m_vCenter.y, PropertyDialog::GetFloatTextbox(m_posYEdit), trigger);
                 break;
             case IDC_SURFACE_COMBO:
-                CHECK_UPDATE_COMBO_TEXT(trigger->m_d.m_szSurface, m_surfaceCombo, trigger);
+                CHECK_UPDATE_COMBO_TEXT_STRING(trigger->m_d.m_szSurface, m_surfaceCombo, trigger);
                 break;
             case IDC_STAR_THICKNESS_EDIT:
                 CHECK_UPDATE_ITEM(trigger->m_d.m_wireThickness, PropertyDialog::GetFloatTextbox(m_wireThicknessEdit), trigger);
@@ -118,5 +118,35 @@ BOOL TriggerVisualsProperty::OnInitDialog()
     m_animationSpeedEdit.AttachItem(IDC_RINGSPEED_EDIT);
 
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
+    m_resizer.AddChild(m_materialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_surfaceCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_shapeCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hVisibleCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hReflectionEnabledCheck, topleft, 0);
+    m_resizer.AddChild(m_posXEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posYEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_wireThicknessEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_starRadiusEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rotationEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_animationSpeedEdit, topleft, RD_STRETCH_WIDTH);
+
     return TRUE;
+}
+
+INT_PTR TriggerVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

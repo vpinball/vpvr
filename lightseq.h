@@ -56,7 +56,7 @@ struct _tracer {
    float	processStepY;
    float	radius;
    float	stepRadius;
-   bool	processRadiusNeg;
+   bool		processRadiusNeg;
    float	angle;
    float	stepAngle;
 };
@@ -76,7 +76,7 @@ class LightSeq :
    public IFireEvents,
    public Hitable,
    public IPerPropertyBrowsing     // Ability to fill in dropdown(s) in property browser
-                                   //public EditableImpl<LightSeq>
+   //public EditableImpl<LightSeq>
 {
 public:
    LightSeq();
@@ -158,24 +158,24 @@ public:
    float    GetX() const { return m_d.m_vCenter.x; }
    void     SetX(const float value)
    {
-      if ((value < 0.f) || (value >= (float)EDITOR_BG_WIDTH))
-         return;
+       if ((value < 0.f) || (value >= (float)EDITOR_BG_WIDTH))
+           return;
 
-      m_d.m_vCenter.x = value;
-      // set the center point of the grid for effects which start from the center
-      m_GridXCenter = floorf(m_d.m_vCenter.x * (float)(1.0 / LIGHTSEQGRIDSCALE));
-      m_GridXCenterAdjust = abs(m_lightSeqGridWidth / 2 - (int)m_GridXCenter);
+       m_d.m_vCenter.x = value;
+       // set the center point of the grid for effects which start from the center
+       m_GridXCenter = floorf(m_d.m_vCenter.x * (float)(1.0 / LIGHTSEQGRIDSCALE));
+       m_GridXCenterAdjust = abs(m_lightSeqGridWidth / 2 - (int)m_GridXCenter);
    }
    float    GetY() const { return m_d.m_vCenter.y; }
    void     SetY(const float value)
    {
-      if ((value < 0.f) || (value >= (float)(2 * EDITOR_BG_WIDTH)))
-         return;
+       if ((value < 0.f) || (value >= (float)(2 * EDITOR_BG_WIDTH)))
+           return;
 
-      m_d.m_vCenter.y = value;
-      // set the center point of the grid for effects which start from the center
-      m_GridYCenter = floorf(m_d.m_vCenter.y * (float)(1.0 / LIGHTSEQGRIDSCALE));
-      m_GridYCenterAdjust = abs(m_lightSeqGridHeight / 2 - (int)m_GridYCenter);
+       m_d.m_vCenter.y = value;
+       // set the center point of the grid for effects which start from the center
+       m_GridYCenter = floorf(m_d.m_vCenter.y * (float)(1.0 / LIGHTSEQGRIDSCALE));
+       m_GridYCenterAdjust = abs(m_lightSeqGridHeight / 2 - (int)m_GridYCenter);
    }
 
    long     GetUpdateInterval() const { return m_d.m_updateinterval; }
@@ -194,14 +194,14 @@ public:
    LightSeqData m_d;
 
 private:
-   PinTable * m_ptable;
+   PinTable     *m_ptable;
 
-   void		SetupTracers(const SequencerState Animation, long TailLength, long Repeat, long Pause);
-   bool		ProcessTracer(_tracer * const pTracer, const LightState State);
-   void		SetAllLightsToState(const LightState State);
-   void 		SetElementToState(const int index, const LightState State);
-   LightState	GetElementState(const int index) const;
-   bool		VerifyAndSetGridElement(const int x, const int y, const LightState State);
+   void     SetupTracers(const SequencerState Animation, long TailLength, long Repeat, long Pause);
+   bool     ProcessTracer(_tracer * const pTracer, const LightState State);
+   void     SetAllLightsToState(const LightState State);
+   void     SetElementToState(const int index, const LightState State);
+   LightState GetElementState(const int index) const;
+   bool     VerifyAndSetGridElement(const int x, const int y, const LightState State);
 };
 
 #endif // !defined(AFX_LIGHTSEQ_H__5EC2D0B7_3868_4CCC_81EC_A4653460DF7E__INCLUDED_)

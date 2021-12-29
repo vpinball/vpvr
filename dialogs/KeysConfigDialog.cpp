@@ -2,7 +2,7 @@
 #include "resource.h"
 #include "KeysConfigDialog.h"
 
-const char rgszKeyName[][10] = {
+static constexpr char rgszKeyName[][10] = {
     "",
     "Escape", //DIK_ESCAPE          0x01
     "1", //DIK_1               0x02
@@ -320,7 +320,7 @@ BOOL KeysConfigDialog::OnInitDialog()
     on = LoadValueBoolWithDefault("Player", "ReversePlungerAxis", false);
     ::SendMessage(GetDlgItem(IDC_ReversePlunger).GetHwnd(), BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
 
-    on = LoadValueBoolWithDefault("Player", "PlungerRetract", true);
+    on = LoadValueBoolWithDefault("Player", "PlungerRetract", false);
     ::SendMessage(GetDlgItem(IDC_PLUNGERRETRACT).GetHwnd(), BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
 
     on = LoadValueBoolWithDefault("Player", "LRAxisFlip", false);
@@ -362,41 +362,41 @@ BOOL KeysConfigDialog::OnInitDialog()
         int item,selected;
         switch (i)
         {
-            case 0: hr = LoadValueInt("Player", "JoyLFlipKey", &selected); item = IDC_JOYLFLIPCOMBO; break;
-            case 1: hr = LoadValueInt("Player", "JoyRFlipKey", &selected); item = IDC_JOYRFLIPCOMBO; break;
-            case 2: hr = LoadValueInt("Player", "JoyPlungerKey", &selected); item = IDC_JOYPLUNGERCOMBO; break;
-            case 3: hr = LoadValueInt("Player", "JoyAddCreditKey", &selected); item = IDC_JOYADDCREDITCOMBO; break;
-            case 4: hr = LoadValueInt("Player", "JoyAddCredit2Key", &selected); item = IDC_JOYADDCREDIT2COMBO; break;
-            case 5: hr = LoadValueInt("Player", "JoyLMagnaSave", &selected); item = IDC_JOYLMAGNACOMBO; break;
-            case 6: hr = LoadValueInt("Player", "JoyRMagnaSave", &selected); item = IDC_JOYRMAGNACOMBO; break;
-            case 7: hr = LoadValueInt("Player", "JoyStartGameKey", &selected); item = IDC_JOYSTARTCOMBO; break;
-            case 8: hr = LoadValueInt("Player", "JoyExitGameKey", &selected); item = IDC_JOYEXITCOMBO; break;
-            case 9: hr = LoadValueInt("Player", "JoyFrameCount", &selected); item = IDC_JOYFPSCOMBO; break;
-            case 10:hr = LoadValueInt("Player", "JoyVolumeUp", &selected); item = IDC_JOYVOLUPCOMBO; break;
-            case 11:hr = LoadValueInt("Player", "JoyVolumeDown", &selected); item = IDC_JOYVOLDNCOMBO; break;
-            case 12:hr = LoadValueInt("Player", "JoyLTiltKey", &selected); item = IDC_JOYLTILTCOMBO; break;
-            case 13:hr = LoadValueInt("Player", "JoyCTiltKey", &selected); item = IDC_JOYCTILTCOMBO; break;
-            case 14:hr = LoadValueInt("Player", "JoyRTiltKey", &selected); item = IDC_JOYRTILTCOMBO; break;
-            case 15:hr = LoadValueInt("Player", "JoyMechTiltKey", &selected); item = IDC_JOYMECHTILTCOMBO; break;
-            case 16:hr = LoadValueInt("Player", "JoyDebugKey", &selected); item = IDC_JOYDEBUGCOMBO; break;
-            case 17:hr = LoadValueInt("Player", "JoyDebuggerKey", &selected); item = IDC_JOYDEBUGGERCOMBO; break;
-            case 18:hr = LoadValueInt("Player", "JoyCustom1", &selected); item = IDC_JOYCUSTOM1COMBO; break;
-            case 19:hr = LoadValueInt("Player", "JoyCustom2", &selected); item = IDC_JOYCUSTOM2COMBO; break;
-            case 20:hr = LoadValueInt("Player", "JoyCustom3", &selected); item = IDC_JOYCUSTOM3COMBO; break;
-            case 21:hr = LoadValueInt("Player", "JoyCustom4", &selected); item = IDC_JOYCUSTOM4COMBO; break;
-            case 22:hr = LoadValueInt("Player", "JoyPMBuyIn", &selected); item = IDC_JOYPMBUYIN; break;
-            case 23:hr = LoadValueInt("Player", "JoyPMCoin3", &selected); item = IDC_JOYPMCOIN3; break;
-            case 24:hr = LoadValueInt("Player", "JoyPMCoin4", &selected); item = IDC_JOYPMCOIN4; break;
-            case 25:hr = LoadValueInt("Player", "JoyPMCoinDoor", &selected); item = IDC_JOYPMCOINDOOR; break;
-            case 26:hr = LoadValueInt("Player", "JoyPMCancel", &selected); item = IDC_JOYPMCANCEL; break;
-            case 27:hr = LoadValueInt("Player", "JoyPMDown", &selected); item = IDC_JOYPMDOWN; break;
-            case 28:hr = LoadValueInt("Player", "JoyPMUp", &selected); item = IDC_JOYPMUP; break;
-            case 29:hr = LoadValueInt("Player", "JoyPMEnter", &selected); item = IDC_JOYPMENTER; break;
-            case 30:hr = LoadValueInt("Player", "JoyLockbarKey", &selected); item = IDC_JOYLOCKBARCOMBO; break;
-            case 31:hr = LoadValueInt("Player", "JoyRoomRecenterKey", &selected); item = IDC_JOYROOMRECENTER; break;
-            case 32:hr = LoadValueInt("Player", "JoyTableRecenterKey", &selected); item = IDC_JOYTABLERECENTER; break;
-            case 33:hr = LoadValueInt("Player", "JoyTableUpKey", &selected); item = IDC_JOYTABLEUP; break;
-            case 34:hr = LoadValueInt("Player", "JoyTableDownKey", &selected); item = IDC_JOYTABLEDOWN; break;
+            case 0: hr = LoadValue("Player", "JoyLFlipKey", selected); item = IDC_JOYLFLIPCOMBO; break;
+            case 1: hr = LoadValue("Player", "JoyRFlipKey", selected); item = IDC_JOYRFLIPCOMBO; break;
+            case 2: hr = LoadValue("Player", "JoyPlungerKey", selected); item = IDC_JOYPLUNGERCOMBO; break;
+            case 3: hr = LoadValue("Player", "JoyAddCreditKey", selected); item = IDC_JOYADDCREDITCOMBO; break;
+            case 4: hr = LoadValue("Player", "JoyAddCredit2Key", selected); item = IDC_JOYADDCREDIT2COMBO; break;
+            case 5: hr = LoadValue("Player", "JoyLMagnaSave", selected); item = IDC_JOYLMAGNACOMBO; break;
+            case 6: hr = LoadValue("Player", "JoyRMagnaSave", selected); item = IDC_JOYRMAGNACOMBO; break;
+            case 7: hr = LoadValue("Player", "JoyStartGameKey", selected); item = IDC_JOYSTARTCOMBO; break;
+            case 8: hr = LoadValue("Player", "JoyExitGameKey", selected); item = IDC_JOYEXITCOMBO; break;
+            case 9: hr = LoadValue("Player", "JoyFrameCount", selected); item = IDC_JOYFPSCOMBO; break;
+            case 10:hr = LoadValue("Player", "JoyVolumeUp", selected); item = IDC_JOYVOLUPCOMBO; break;
+            case 11:hr = LoadValue("Player", "JoyVolumeDown", selected); item = IDC_JOYVOLDNCOMBO; break;
+            case 12:hr = LoadValue("Player", "JoyLTiltKey", selected); item = IDC_JOYLTILTCOMBO; break;
+            case 13:hr = LoadValue("Player", "JoyCTiltKey", selected); item = IDC_JOYCTILTCOMBO; break;
+            case 14:hr = LoadValue("Player", "JoyRTiltKey", selected); item = IDC_JOYRTILTCOMBO; break;
+            case 15:hr = LoadValue("Player", "JoyMechTiltKey", selected); item = IDC_JOYMECHTILTCOMBO; break;
+            case 16:hr = LoadValue("Player", "JoyDebugKey", selected); item = IDC_JOYDEBUGCOMBO; break;
+            case 17:hr = LoadValue("Player", "JoyDebuggerKey", selected); item = IDC_JOYDEBUGGERCOMBO; break;
+            case 18:hr = LoadValue("Player", "JoyCustom1", selected); item = IDC_JOYCUSTOM1COMBO; break;
+            case 19:hr = LoadValue("Player", "JoyCustom2", selected); item = IDC_JOYCUSTOM2COMBO; break;
+            case 20:hr = LoadValue("Player", "JoyCustom3", selected); item = IDC_JOYCUSTOM3COMBO; break;
+            case 21:hr = LoadValue("Player", "JoyCustom4", selected); item = IDC_JOYCUSTOM4COMBO; break;
+            case 22:hr = LoadValue("Player", "JoyPMBuyIn", selected); item = IDC_JOYPMBUYIN; break;
+            case 23:hr = LoadValue("Player", "JoyPMCoin3", selected); item = IDC_JOYPMCOIN3; break;
+            case 24:hr = LoadValue("Player", "JoyPMCoin4", selected); item = IDC_JOYPMCOIN4; break;
+            case 25:hr = LoadValue("Player", "JoyPMCoinDoor", selected); item = IDC_JOYPMCOINDOOR; break;
+            case 26:hr = LoadValue("Player", "JoyPMCancel", selected); item = IDC_JOYPMCANCEL; break;
+            case 27:hr = LoadValue("Player", "JoyPMDown", selected); item = IDC_JOYPMDOWN; break;
+            case 28:hr = LoadValue("Player", "JoyPMUp", selected); item = IDC_JOYPMUP; break;
+            case 29:hr = LoadValue("Player", "JoyPMEnter", selected); item = IDC_JOYPMENTER; break;
+            case 30:hr = LoadValue("Player", "JoyLockbarKey", selected); item = IDC_JOYLOCKBARCOMBO; break;
+ 			case 31:hr = LoadValue("Player", "JoyRoomRecenterKey", selected); item = IDC_JOYROOMRECENTER; break;
+            case 32:hr = LoadValue("Player", "JoyTableRecenterKey", selected); item = IDC_JOYTABLERECENTER; break;
+            case 33:hr = LoadValue("Player", "JoyTableUpKey", selected); item = IDC_JOYTABLEUP; break;
+            case 34:hr = LoadValue("Player", "JoyTableDownKey", selected); item = IDC_JOYTABLEDOWN; break;
         }
 
         if (hr != S_OK)
@@ -449,100 +449,112 @@ BOOL KeysConfigDialog::OnInitDialog()
     ::SendMessage(GetDlgItem(IDC_CAP_PUP).GetHwnd(), BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
 
     int selected = LoadValueIntWithDefault("Controller", "DOFContactors", 2); // assume both as standard
-    ::SendMessage(GetDlgItem(IDC_DOF_CONTACTORS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Sound FX");
-    ::SendMessage(GetDlgItem(IDC_DOF_CONTACTORS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"DOF");
-    ::SendMessage(GetDlgItem(IDC_DOF_CONTACTORS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Both");
-    ::SendMessage(GetDlgItem(IDC_DOF_CONTACTORS).GetHwnd(), CB_SETCURSEL, selected, 0);
+    HWND hwnd = GetDlgItem(IDC_DOF_CONTACTORS).GetHwnd();
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Sound FX");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"DOF");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Both");
+    ::SendMessage(hwnd, CB_SETCURSEL, selected, 0);
 
     selected = LoadValueIntWithDefault("Controller", "DOFKnocker", 2); // assume both as standard
-    ::SendMessage(GetDlgItem(IDC_DOF_KNOCKER).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Sound FX");
-    ::SendMessage(GetDlgItem(IDC_DOF_KNOCKER).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"DOF");
-    ::SendMessage(GetDlgItem(IDC_DOF_KNOCKER).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Both");
-    ::SendMessage(GetDlgItem(IDC_DOF_KNOCKER).GetHwnd(), CB_SETCURSEL, selected, 0);
+    hwnd = GetDlgItem(IDC_DOF_KNOCKER).GetHwnd();
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Sound FX");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"DOF");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Both");
+    ::SendMessage(hwnd, CB_SETCURSEL, selected, 0);
 
     selected = LoadValueIntWithDefault("Controller", "DOFChimes", 2); // assume both as standard
-    ::SendMessage(GetDlgItem(IDC_DOF_CHIMES).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Sound FX");
-    ::SendMessage(GetDlgItem(IDC_DOF_CHIMES).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"DOF");
-    ::SendMessage(GetDlgItem(IDC_DOF_CHIMES).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Both");
-    ::SendMessage(GetDlgItem(IDC_DOF_CHIMES).GetHwnd(), CB_SETCURSEL, selected, 0);
+    hwnd = GetDlgItem(IDC_DOF_CHIMES).GetHwnd();
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Sound FX");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"DOF");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Both");
+    ::SendMessage(hwnd, CB_SETCURSEL, selected, 0);
 
     selected = LoadValueIntWithDefault("Controller", "DOFBell", 2); // assume both as standard
-    ::SendMessage(GetDlgItem(IDC_DOF_BELL).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Sound FX");
-    ::SendMessage(GetDlgItem(IDC_DOF_BELL).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"DOF");
-    ::SendMessage(GetDlgItem(IDC_DOF_BELL).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Both");
-    ::SendMessage(GetDlgItem(IDC_DOF_BELL).GetHwnd(), CB_SETCURSEL, selected, 0);
+    hwnd = GetDlgItem(IDC_DOF_BELL).GetHwnd();
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Sound FX");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"DOF");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Both");
+    ::SendMessage(hwnd, CB_SETCURSEL, selected, 0);
 
     selected = LoadValueIntWithDefault("Controller", "DOFGear", 2); // assume both as standard
-    ::SendMessage(GetDlgItem(IDC_DOF_GEAR).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Sound FX");
-    ::SendMessage(GetDlgItem(IDC_DOF_GEAR).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"DOF");
-    ::SendMessage(GetDlgItem(IDC_DOF_GEAR).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Both");
-    ::SendMessage(GetDlgItem(IDC_DOF_GEAR).GetHwnd(), CB_SETCURSEL, selected, 0);
+    hwnd = GetDlgItem(IDC_DOF_GEAR).GetHwnd();
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Sound FX");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"DOF");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Both");
+    ::SendMessage(hwnd, CB_SETCURSEL, selected, 0);
 
     selected = LoadValueIntWithDefault("Controller", "DOFShaker", 2); // assume both as standard
-    ::SendMessage(GetDlgItem(IDC_DOF_SHAKER).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Sound FX");
-    ::SendMessage(GetDlgItem(IDC_DOF_SHAKER).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"DOF");
-    ::SendMessage(GetDlgItem(IDC_DOF_SHAKER).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Both");
-    ::SendMessage(GetDlgItem(IDC_DOF_SHAKER).GetHwnd(), CB_SETCURSEL, selected, 0);
+    hwnd = GetDlgItem(IDC_DOF_SHAKER).GetHwnd();
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Sound FX");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"DOF");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Both");
+    ::SendMessage(hwnd, CB_SETCURSEL, selected, 0);
 
     selected = LoadValueIntWithDefault("Controller", "DOFFlippers", 2); // assume both as standard
-    ::SendMessage(GetDlgItem(IDC_DOF_FLIPPERS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Sound FX");
-    ::SendMessage(GetDlgItem(IDC_DOF_FLIPPERS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"DOF");
-    ::SendMessage(GetDlgItem(IDC_DOF_FLIPPERS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Both");
-    ::SendMessage(GetDlgItem(IDC_DOF_FLIPPERS).GetHwnd(), CB_SETCURSEL, selected, 0);
+    hwnd = GetDlgItem(IDC_DOF_FLIPPERS).GetHwnd();
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Sound FX");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"DOF");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Both");
+    ::SendMessage(hwnd, CB_SETCURSEL, selected, 0);
 
     selected = LoadValueIntWithDefault("Controller", "DOFTargets", 2); // assume both as standard
-    ::SendMessage(GetDlgItem(IDC_DOF_TARGETS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Sound FX");
-    ::SendMessage(GetDlgItem(IDC_DOF_TARGETS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"DOF");
-    ::SendMessage(GetDlgItem(IDC_DOF_TARGETS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Both");
-    ::SendMessage(GetDlgItem(IDC_DOF_TARGETS).GetHwnd(), CB_SETCURSEL, selected, 0);
+    hwnd = GetDlgItem(IDC_DOF_TARGETS).GetHwnd();
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Sound FX");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"DOF");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Both");
+    ::SendMessage(hwnd, CB_SETCURSEL, selected, 0);
 
     selected = LoadValueIntWithDefault("Controller", "DOFDropTargets", 2); // assume both as standard
-    ::SendMessage(GetDlgItem(IDC_DOF_DROPTARGETS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Sound FX");
-    ::SendMessage(GetDlgItem(IDC_DOF_DROPTARGETS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"DOF");
-    ::SendMessage(GetDlgItem(IDC_DOF_DROPTARGETS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Both");
-    ::SendMessage(GetDlgItem(IDC_DOF_DROPTARGETS).GetHwnd(), CB_SETCURSEL, selected, 0);
+    hwnd = GetDlgItem(IDC_DOF_DROPTARGETS).GetHwnd();
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Sound FX");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"DOF");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Both");
+    ::SendMessage(hwnd, CB_SETCURSEL, selected, 0);
 
     //
 
     selected = LoadValueIntWithDefault("Player", "PlungerAxis", 3); // assume Z Axis as standard
-    ::SendMessage(GetDlgItem(IDC_PLUNGERAXIS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"(disabled)");
-    ::SendMessage(GetDlgItem(IDC_PLUNGERAXIS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"X Axis");
-    ::SendMessage(GetDlgItem(IDC_PLUNGERAXIS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Y Axis");
-    ::SendMessage(GetDlgItem(IDC_PLUNGERAXIS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Z Axis");
-    ::SendMessage(GetDlgItem(IDC_PLUNGERAXIS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"rX Axis");
-    ::SendMessage(GetDlgItem(IDC_PLUNGERAXIS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"rY Axis");
-    ::SendMessage(GetDlgItem(IDC_PLUNGERAXIS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"rZ Axis");
-    ::SendMessage(GetDlgItem(IDC_PLUNGERAXIS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Slider 1");
-    ::SendMessage(GetDlgItem(IDC_PLUNGERAXIS).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Slider 2");
-    ::SendMessage(GetDlgItem(IDC_PLUNGERAXIS).GetHwnd(), CB_SETCURSEL, selected, 0);
+    hwnd = GetDlgItem(IDC_PLUNGERAXIS).GetHwnd();
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"(disabled)");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"X Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Y Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Z Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"rX Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"rY Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"rZ Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Slider 1");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Slider 2");
+    ::SendMessage(hwnd, CB_SETCURSEL, selected, 0);
 
     selected = LoadValueIntWithDefault("Player", "LRAxis", 1); // assume X Axis as standard
-    ::SendMessage(GetDlgItem(IDC_LRAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"(disabled)");
-    ::SendMessage(GetDlgItem(IDC_LRAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"X Axis");
-    ::SendMessage(GetDlgItem(IDC_LRAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Y Axis");
-    ::SendMessage(GetDlgItem(IDC_LRAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Z Axis");
-    ::SendMessage(GetDlgItem(IDC_LRAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"rX Axis");
-    ::SendMessage(GetDlgItem(IDC_LRAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"rY Axis");
-    ::SendMessage(GetDlgItem(IDC_LRAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"rZ Axis");
-    ::SendMessage(GetDlgItem(IDC_LRAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Slider 1");
-    ::SendMessage(GetDlgItem(IDC_LRAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Slider 2");
-    ::SendMessage(GetDlgItem(IDC_LRAXISCOMBO).GetHwnd(), CB_SETCURSEL, selected, 0);
+    hwnd = GetDlgItem(IDC_LRAXISCOMBO).GetHwnd();
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"(disabled)");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"X Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Y Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Z Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"rX Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"rY Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"rZ Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Slider 1");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Slider 2");
+    ::SendMessage(hwnd, CB_SETCURSEL, selected, 0);
 
     selected = LoadValueIntWithDefault("Player", "UDAxis", 2); // assume Y Axis as standard
-    ::SendMessage(GetDlgItem(IDC_UDAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"(disabled)");
-    ::SendMessage(GetDlgItem(IDC_UDAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"X Axis");
-    ::SendMessage(GetDlgItem(IDC_UDAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Y Axis");
-    ::SendMessage(GetDlgItem(IDC_UDAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Z Axis");
-    ::SendMessage(GetDlgItem(IDC_UDAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"rX Axis");
-    ::SendMessage(GetDlgItem(IDC_UDAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"rY Axis");
-    ::SendMessage(GetDlgItem(IDC_UDAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"rZ Axis");
-    ::SendMessage(GetDlgItem(IDC_UDAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Slider 1");
-    ::SendMessage(GetDlgItem(IDC_UDAXISCOMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Slider 2");
-    ::SendMessage(GetDlgItem(IDC_UDAXISCOMBO).GetHwnd(), CB_SETCURSEL, selected, 0);
+    hwnd = GetDlgItem(IDC_UDAXISCOMBO).GetHwnd();
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"(disabled)");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"X Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Y Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Z Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"rX Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"rY Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"rZ Axis");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Slider 1");
+    ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Slider 2");
+    ::SendMessage(hwnd, CB_SETCURSEL, selected, 0);
 
     for (unsigned int i = 0; i < eCKeys; ++i) if (regkey_idc[i] != -1)
     {
-        const HRESULT hr = LoadValueInt("Player", regkey_string[i], &key);
+        const HRESULT hr = LoadValue("Player", regkey_string[i], key);
         if (hr != S_OK || key > 0xdd)
             key = regkey_defdik[i];
         const HWND hwndControl = GetDlgItem(regkey_idc[i]);
@@ -550,28 +562,28 @@ BOOL KeysConfigDialog::OnInitDialog()
         ::SetWindowLongPtr(hwndControl, GWLP_USERDATA, key);
     }
 
-    HRESULT hr = LoadValueInt("Player", "JoyCustom1Key", &key);
+    HRESULT hr = LoadValue("Player", "JoyCustom1Key", key);
     if (hr != S_OK || key > 0xdd)
         key = DIK_UP;
     HWND hwndControl = GetDlgItem(IDC_JOYCUSTOM1);
     ::SetWindowText(hwndControl, rgszKeyName[key]);
     ::SetWindowLongPtr(hwndControl, GWLP_USERDATA, key);
 
-    hr = LoadValueInt("Player", "JoyCustom2Key", &key);
+    hr = LoadValue("Player", "JoyCustom2Key", key);
     if (hr != S_OK || key > 0xdd)
         key = DIK_DOWN;
     hwndControl = GetDlgItem(IDC_JOYCUSTOM2);
     ::SetWindowText(hwndControl, rgszKeyName[key]);
     ::SetWindowLongPtr(hwndControl, GWLP_USERDATA, key);
 
-    hr = LoadValueInt("Player", "JoyCustom3Key", &key);
+    hr = LoadValue("Player", "JoyCustom3Key", key);
     if (hr != S_OK || key > 0xdd)
         key = DIK_LEFT;
     hwndControl = GetDlgItem(IDC_JOYCUSTOM3);
     ::SetWindowText(hwndControl, rgszKeyName[key]);
     ::SetWindowLongPtr(hwndControl, GWLP_USERDATA, key);
 
-    hr = LoadValueInt("Player", "JoyCustom4Key", &key);
+    hr = LoadValue("Player", "JoyCustom4Key", key);
     if (hr != S_OK || key > 0xdd)
         key = DIK_RIGHT;
     hwndControl = GetDlgItem(IDC_JOYCUSTOM4);
@@ -757,7 +769,7 @@ INT_PTR KeysConfigDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                 if (key < 0xDD)	// Key mapping
                 {
                     int key_esc;
-                    const HRESULT hr = LoadValueInt("Player", "EscapeKey", &key_esc);
+                    const HRESULT hr = LoadValue("Player", "EscapeKey", key_esc);
                     if (hr != S_OK || key_esc > 0xdd)
                         key_esc = DIK_ESCAPE;
 
@@ -1143,7 +1155,7 @@ void KeysConfigDialog::SetValue(int nID, const char * const regKey, const char *
 void KeysConfigDialog::StartTimer(int nID)
 {
     KeyWindowStruct * const pksw = (KeyWindowStruct *)::GetWindowLongPtr(GetHwnd(), GWLP_USERDATA);
-    HWND hwndKeyWindow = GetItemHwnd(nID);
+    const HWND hwndKeyWindow = GetItemHwnd(nID);
     if (pksw->m_timerid == NULL) //add
     { //add
         // corrects input error with space bar
@@ -1156,7 +1168,7 @@ void KeysConfigDialog::StartTimer(int nID)
 
         pksw->pi.GetNextKey(); // Clear the current buffer out
 
-        pksw->m_timerid = ::SetTimer(GetHwnd(), 100, 50, NULL);
+        pksw->m_timerid = ::SetTimer(GetHwnd(), 100, 50, nullptr);
         pksw->hwndKeyControl = hwndKeyWindow;
         ::SetWindowText(pksw->hwndKeyControl, "????");
         while (pksw->pi.GetNextKey() != NULL) //clear entire keyboard buffer contents

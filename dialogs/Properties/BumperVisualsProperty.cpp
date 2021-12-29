@@ -20,12 +20,12 @@ BumperVisualsProperty::BumperVisualsProperty(const VectorProtected<ISelect> *pvs
 
 void BumperVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemBumper))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemBumper))
             continue;
         Bumper *const bumper = (Bumper*)m_pvsel->ElementAt(i);
-        if(dispid == IDC_MATERIAL_COMBO || dispid == -1)
+        if (dispid == IDC_MATERIAL_COMBO || dispid == -1)
             PropertyDialog::UpdateMaterialComboBox(bumper->GetPTable()->GetMaterialList(), m_capMaterialCombo, bumper->m_d.m_szCapMaterial);
         if (dispid == IDC_MATERIAL_COMBO2 || dispid == -1)
             PropertyDialog::UpdateMaterialComboBox(bumper->GetPTable()->GetMaterialList(), m_bumpBaseMaterialCombo, bumper->m_d.m_szBaseMaterial);
@@ -65,9 +65,9 @@ void BumperVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void BumperVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemBumper))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemBumper))
             continue;
         Bumper *const bumper = (Bumper *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -118,7 +118,7 @@ void BumperVisualsProperty::UpdateProperties(const int dispid)
                 CHECK_UPDATE_ITEM(bumper->m_d.m_vCenter.y, PropertyDialog::GetFloatTextbox(m_posYEdit), bumper);
                 break;
             case IDC_SURFACE_COMBO:
-                CHECK_UPDATE_COMBO_TEXT(bumper->m_d.m_szSurface, m_surfaceCombo, bumper);
+                CHECK_UPDATE_COMBO_TEXT_STRING(bumper->m_d.m_szSurface, m_surfaceCombo, bumper);
                 break;
 
             default:
@@ -150,5 +150,43 @@ BOOL BumperVisualsProperty::OnInitDialog()
     m_posYEdit.AttachItem(903);
     m_surfaceCombo.AttachItem(1502);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC12), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC13), topleft, 0);
+    m_resizer.AddChild(m_capMaterialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_bumpBaseMaterialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_skirtMaterialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_ringMaterialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_radiusEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_heightScaleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_orientationEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_ringSpeedEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_ringDropOffsetEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hCapVisibleCheck, topleft, 0);
+    m_resizer.AddChild(m_hBaseVisibleCheck, topleft, 0);
+    m_resizer.AddChild(m_hRingVisibleCheck, topleft, 0);
+    m_resizer.AddChild(m_hSkirtVisibleCheck, topleft, 0);
+    m_resizer.AddChild(m_hReflectionEnabledCheck, topleft, 0);
+    m_resizer.AddChild(m_posXEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posYEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_surfaceCombo, topleft, RD_STRETCH_WIDTH);
     return TRUE;
+}
+
+INT_PTR BumperVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

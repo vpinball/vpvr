@@ -377,16 +377,15 @@ BOOL VideoOptionsDialog::OnInitDialog()
    const bool overwiteBallImage = LoadValueBoolWithDefault("Player", "OverwriteBallImage", false);
    SendMessage(GetDlgItem(IDC_OVERWRITE_BALL_IMAGE_CHECK).GetHwnd(), BM_SETCHECK, overwiteBallImage ? BST_CHECKED : BST_UNCHECKED, 0);
 
-   char imageName[MAX_PATH] = { 0 };
-   HRESULT hr = LoadValueString("Player", "BallImage", imageName, MAX_PATH);
+   string imageName;
+   HRESULT hr = LoadValue("Player", "BallImage", imageName);
    if (hr != S_OK)
-      imageName[0] = 0;
-   SetDlgItemText(IDC_BALL_IMAGE_EDIT, imageName);
-   imageName[0] = 0;
-   hr = LoadValueString("Player", "DecalImage", imageName, MAX_PATH);
+      imageName.clear();
+   SetDlgItemText(IDC_BALL_IMAGE_EDIT, imageName.c_str());
+   hr = LoadValue("Player", "DecalImage", imageName);
    if (hr != S_OK)
-      imageName[0] = 0;
-   SetDlgItemText(IDC_BALL_DECAL_EDIT, imageName);
+      imageName.clear();
+   SetDlgItemText(IDC_BALL_DECAL_EDIT, imageName.c_str());
    if (overwiteBallImage == 0)
    {
       ::EnableWindow(GetDlgItem(IDC_BROWSE_BALL_IMAGE).GetHwnd(), FALSE);
@@ -395,15 +394,23 @@ BOOL VideoOptionsDialog::OnInitDialog()
       ::EnableWindow(GetDlgItem(IDC_BALL_DECAL_EDIT).GetHwnd(), FALSE);
    }
 
-   const int fxaa = LoadValueIntWithDefault("Player", "FXAA", 2);
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Disabled");
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Fast FXAA");
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Standard FXAA");
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Quality FXAA");
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Fast NFAA");
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Standard DLAA");
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Quality SMAA");
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_SETCURSEL, fxaa, 0);
+   const int fxaa = LoadValueIntWithDefault("Player", "FXAA", Standard_FXAA);
+   HWND hwnd = GetDlgItem(IDC_FXAACB).GetHwnd();
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Disabled");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Fast FXAA");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Standard FXAA");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Quality FXAA");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Fast NFAA");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Standard DLAA");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Quality SMAA");
+   SendMessage(hwnd, CB_SETCURSEL, fxaa, 0);
+
+   const int sharpen = LoadValueIntWithDefault("Player", "Sharpen", 0);
+   hwnd = GetDlgItem(IDC_SHARPENCB).GetHwnd();
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Disabled");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"CAS");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Bilateral CAS");
+   SendMessage(hwnd, CB_SETCURSEL, sharpen, 0);
 
    const bool scaleFX_DMD = LoadValueBoolWithDefault("Player", "ScaleFXDMD", false);
    SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_SETCHECK, scaleFX_DMD ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -412,11 +419,27 @@ BOOL VideoOptionsDialog::OnInitDialog()
    SendMessage(GetDlgItem(IDC_BG_SET).GetHwnd(), BM_SETCHECK, (bgset != 0) ? BST_CHECKED : BST_UNCHECKED, 0);
 
    const int stereo3D = LoadValueIntWithDefault("Player", "Stereo3D", 0);
-   SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Disabled");
-   SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"TB (Top / Bottom)");
-   SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Interlaced (e.g. LG TVs)");
-   SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"SBS (Side by Side)");
-   SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_SETCURSEL, stereo3D, 0);
+   hwnd = GetDlgItem(IDC_3D_STEREO).GetHwnd();
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Disabled");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"TB (Top / Bottom)");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Interlaced (e.g. LG TVs)");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Flipped Interlaced (e.g. LG TVs)");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"SBS (Side by Side)");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Anaglyph Red/Cyan");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Anaglyph Green/Magenta");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Anaglyph Dubois Red/Cyan");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Anaglyph Dubois Green/Magenta");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Anaglyph Deghosted Red/Cyan");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Anaglyph Deghosted Green/Magenta");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Anaglyph Blue/Amber");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Anaglyph Cyan/Red");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Anaglyph Magenta/Green");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Anaglyph Dubois Cyan/Red");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Anaglyph Dubois Magenta/Green");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Anaglyph Deghosted Cyan/Red");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Anaglyph Deghosted Magenta/Green");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Anaglyph Amber/Blue");
+   SendMessage(hwnd, CB_SETCURSEL, stereo3D, 0);
 
    const bool stereo3DY = LoadValueBoolWithDefault("Player", "Stereo3DYAxis", false);
    SendMessage(GetDlgItem(IDC_3D_STEREO_Y).GetHwnd(), BM_SETCHECK, stereo3DY ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -435,6 +458,14 @@ BOOL VideoOptionsDialog::OnInitDialog()
 
    const int bamHeadtracking = LoadValueIntWithDefault("Player", "BAMheadTracking", 0);
    SendMessage(GetDlgItem(IDC_HEADTRACKING).GetHwnd(), BM_SETCHECK, bamHeadtracking ? BST_CHECKED : BST_UNCHECKED, 0);
+
+   const float stereo3DContrast = LoadValueFloatWithDefault("Player", "Stereo3DContrast", 1.0f);
+   sprintf_s(tmp, 256, "%f", stereo3DContrast);
+   SetDlgItemTextA(IDC_3D_STEREO_CONTRAST, tmp);
+
+   const float stereo3DDesaturation = LoadValueFloatWithDefault("Player", "Stereo3DDesaturation", 0.0f);
+   sprintf_s(tmp, 256, "%f", stereo3DDesaturation);
+   SetDlgItemTextA(IDC_3D_STEREO_DESATURATION, tmp);
 
    const bool disableDWM = LoadValueBoolWithDefault("Player", "DisableDWM", false);
    SendMessage(GetDlgItem(IDC_DISABLE_DWM).GetHwnd(), BM_SETCHECK, disableDWM ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -462,7 +493,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
    const int refreshrate = LoadValueIntWithDefault("Player", "RefreshRate", 0);
 
    int display;
-   hr = LoadValueInt("Player", "Display", &display);
+   hr = LoadValue("Player", "Display", display);
    std::vector<DisplayConfig> displays;
    getDisplayList(displays);
    if ((hr != S_OK) || ((int)displays.size() <= display))
@@ -519,17 +550,18 @@ BOOL VideoOptionsDialog::OnInitDialog()
    // set selected Monitors
    // Monitors: 4:3, 16:9, 16:10, 21:10, 21:9
    /*const int selected = LoadValueIntWithDefault("Player", "BallStretchMonitor", 1); // assume 16:9 as standard
-   SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"4:3");
-   SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"16:9");
-   SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"16:10");
-   SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"21:10");
-   SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"3:4 (R)");
-   SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"9:16 (R)");
-   SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"10:16 (R)");
-   SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"10:21 (R)");
-   SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"9:21 (R)");
-   SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"21:9");
-   SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_SETCURSEL, selected, 0);*/
+   HWND hwnd = GetDlgItem(IDC_MonitorCombo).GetHwnd();
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"4:3");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"16:9");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"16:10");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"21:10");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"3:4 (R)");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"9:16 (R)");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"10:16 (R)");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"10:21 (R)");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"9:21 (R)");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"21:9");
+   SendMessage(hwnd, CB_SETCURSEL, selected, 0);*/
 
    return TRUE;
 }
@@ -594,6 +626,7 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             }
 
          // add landscape play modes
+         static constexpr int rgwindowsize[] = { 640, 720, 800, 912, 1024, 1152, 1280, 1360, 1366, 1400, 1440, 1600, 1680, 1920, 2048, 2560, 3440, 3840, 4096, 5120, 6400, 7680, 8192, 11520, 15360 };
 
          for (size_t i = 0; i < sizeof(rgwindowsize)/sizeof(int) * 5; ++i)
          {
@@ -609,14 +642,17 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                case 4: mulx = 10; divy = 21; break;
             }
 
-            if ((xsize <= screenwidth) && ((xsize * mulx / divy) <= screenheight))
+            const int ysize = xsize * mulx / divy;
+
+            if ((xsize <= screenwidth) && (ysize <= screenheight)
+                && ((xsize != screenwidth) || (ysize != screenheight))) // windowed fullscreen is added to the end separately
             {
-               if ((xsize == widthcur) && ((xsize * mulx / divy) == heightcur))
-                  indx = i + cnt;
+               if ((xsize == widthcur) && (ysize == heightcur))
+                  indx = allVideoModes.size();
 
                VideoMode mode;
                mode.width = xsize;
-               mode.height = xsize * mulx / divy;
+               mode.height = ysize;
                mode.depth = 0;
                mode.refreshrate = 0;
 
@@ -892,25 +928,29 @@ void VideoOptionsDialog::OnOK()
 
    CString tmpStr;
    tmpStr = GetDlgItemTextA(IDC_CORRECTION_X);
-   SaveValueString("Player", "BallCorrectionX", tmpStr);
+   SaveValue("Player", "BallCorrectionX", tmpStr);
 
    tmpStr = GetDlgItemTextA(IDC_CORRECTION_Y);
-   SaveValueString("Player", "BallCorrectionY", tmpStr);
+   SaveValue("Player", "BallCorrectionY", tmpStr);
 
    tmpStr = GetDlgItemTextA(IDC_DN_LONGITUDE);
-   SaveValueString("Player", "Longitude", tmpStr);
+   SaveValue("Player", "Longitude", tmpStr);
 
    tmpStr = GetDlgItemTextA(IDC_DN_LATITUDE);
-   SaveValueString("Player", "Latitude", tmpStr);
+   SaveValue("Player", "Latitude", tmpStr);
 
    tmpStr = GetDlgItemTextA(IDC_NUDGE_STRENGTH);
-   SaveValueString("Player", "NudgeStrength", tmpStr);
+   SaveValue("Player", "NudgeStrength", tmpStr);
 
-   const HWND hwndFXAA = GetDlgItem(IDC_FXAACB).GetHwnd();
-   size_t fxaa = SendMessage(hwndFXAA, CB_GETCURSEL, 0, 0);
+   size_t fxaa = SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_GETCURSEL, 0, 0);
    if (fxaa == LB_ERR)
-      fxaa = 2;
+      fxaa = Standard_FXAA;
    SaveValueInt("Player", "FXAA", (int)fxaa);
+
+   size_t sharpen = SendMessage(GetDlgItem(IDC_SHARPENCB).GetHwnd(), CB_GETCURSEL, 0, 0);
+   if (sharpen == LB_ERR)
+      sharpen = 0;
+   SaveValueInt("Player", "Sharpen", (int)sharpen);
 
    const bool scaleFX_DMD = (SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
    SaveValueBool("Player", "ScaleFXDMD", scaleFX_DMD);
@@ -964,13 +1004,19 @@ void VideoOptionsDialog::OnOK()
    SaveValueInt("Player", "AlphaRampAccuracy", (int)alphaRampsAccuracy);
 
    tmpStr = GetDlgItemTextA(IDC_3D_STEREO_OFS);
-   SaveValueString("Player", "Stereo3DOffset", tmpStr);
+   SaveValue("Player", "Stereo3DOffset", tmpStr);
 
    tmpStr = GetDlgItemTextA(IDC_3D_STEREO_MS);
-   SaveValueString("Player", "Stereo3DMaxSeparation", tmpStr);
+   SaveValue("Player", "Stereo3DMaxSeparation", tmpStr);
 
    tmpStr = GetDlgItemTextA(IDC_3D_STEREO_ZPD);
-   SaveValueString("Player", "Stereo3DZPD", tmpStr);
+   SaveValue("Player", "Stereo3DZPD", tmpStr);
+
+   tmpStr = GetDlgItemTextA(IDC_3D_STEREO_CONTRAST);
+   SaveValue("Player", "Stereo3DContrast", tmpStr);
+
+   tmpStr = GetDlgItemTextA(IDC_3D_STEREO_DESATURATION);
+   SaveValue("Player", "Stereo3DDesaturation", tmpStr);
 
    size_t bamHeadtracking = SendMessage(GetDlgItem(IDC_HEADTRACKING).GetHwnd(), BM_GETCHECK, 0, 0);
    SaveValueInt("Player", "BAMheadTracking", bamHeadtracking);
@@ -1005,9 +1051,9 @@ void VideoOptionsDialog::OnOK()
    {
       SaveValueBool("Player", "OverwriteBallImage", true);
       tmpStr = GetDlgItemText(IDC_BALL_IMAGE_EDIT);
-      SaveValueString("Player", "BallImage", tmpStr);
+      SaveValue("Player", "BallImage", tmpStr);
       tmpStr = GetDlgItemText(IDC_BALL_DECAL_EDIT);
-      SaveValueString("Player", "DecalImage", tmpStr);
+      SaveValue("Player", "DecalImage", tmpStr);
    }
    else
       SaveValueBool("Player", "OverwriteBallImage", false);
@@ -1017,6 +1063,6 @@ void VideoOptionsDialog::OnOK()
 
 void VideoOptionsDialog::OnClose()
 {
-   SendMessage(RESET_SIZELIST_CONTENT, 0, 0);
+   SendMessage(GetDlgItem(IDC_SIZELIST).GetHwnd(), LB_RESETCONTENT, 0, 0);
    CDialog::OnClose();
 }

@@ -11,7 +11,7 @@ public:
    Vertex2D m_vCenter;
    float m_width, m_height;
    float m_rotation;
-   char m_szSurface[MAXTOKEN];
+   std::string m_szSurface;
    DecalType m_decaltype;
    string m_sztext;
    SizingType m_sizingtype;
@@ -68,7 +68,7 @@ public:
 
    STANDARD_NOSCRIPT_EDITABLE_DECLARES(Decal, eItemDecal, DECAL, VIEW_PLAYFIELD | VIEW_BACKGLASS)
 
-      virtual void MoveOffset(const float dx, const float dy) { m_d.m_vCenter.x += dx; m_d.m_vCenter.y += dy; }
+   virtual void MoveOffset(const float dx, const float dy) { m_d.m_vCenter.x += dx; m_d.m_vCenter.y += dy; }
    virtual void SetObjectPos();
    // Multi-object manipulation
    virtual Vertex2D GetCenter() const { return m_d.m_vCenter; }
@@ -91,12 +91,10 @@ public:
 private:
    void EnsureSize();
    void GetTextSize(int * const px, int * const py);
-
    void PreRenderText();
    void RenderObject();
 
    PinTable *m_ptable;
-
 
    BaseTexture *m_textImg;
    float m_leading, m_descent;

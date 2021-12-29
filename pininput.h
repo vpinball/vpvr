@@ -22,6 +22,23 @@
 #pragma comment(lib, "runtimeobject.lib")
 #endif
 
+#define ENABLE_XINPUT
+
+#ifdef ENABLE_XINPUT
+#include <XInput.h>
+#pragma comment(lib, "XInput.lib")
+#endif
+
+#ifdef ENABLE_SDL_INPUT //!! test
+#include <sdl2/SDL.h>
+#include <sdl2/SDL_gamecontroller.h>
+#endif
+
+#ifdef ENABLE_IGAMECONTROLLER //!! not implemented yet
+#include "windows.gaming.input.h"
+#pragma comment(lib, "runtimeobject.lib")
+#endif
+
 #define MAX_KEYQUEUE_SIZE 32
 
 #if MAX_KEYQUEUE_SIZE & (MAX_KEYQUEUE_SIZE-1)
@@ -82,6 +99,9 @@ public:
 
    void playRumble(int leftMotor, int rightMotor, int duration);
 
+   // Speed: 0..1
+   void PlayRumble(const float lowFrequencySpeed, const float highFrequencySpeed, const int ms_duration);
+
    int GetNextKey();
 
    void GetInputDeviceData(/*const U32 curr_time_msec*/);
@@ -105,7 +125,6 @@ public:
    UINT64 m_lastclick_ballcontrol_usec;
 
    int e_JoyCnt;
-   int uShockDevice;	// only one uShock device
    int uShockType;
 
    int mouseX;

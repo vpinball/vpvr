@@ -23,7 +23,7 @@ public:
    Vertex2D m_Center;
    TimerDataRoot m_tdr;
 
-   char m_szSurface[MAXTOKEN];
+   std::string m_szSurface;
    COLORREF m_color;
 
    COLORREF m_rubbercolor;
@@ -77,117 +77,117 @@ public:
 
    STANDARD_EDITABLE_DECLARES(Flipper, eItemFlipper, FLIPPER, 1)
 
-   BEGIN_COM_MAP(Flipper)
-      COM_INTERFACE_ENTRY(IFlipper)
-      COM_INTERFACE_ENTRY(IDispatch)
-      COM_INTERFACE_ENTRY_IMPL(IConnectionPointContainer)
-      COM_INTERFACE_ENTRY(IPerPropertyBrowsing)
-      COM_INTERFACE_ENTRY(IProvideClassInfo)
-      COM_INTERFACE_ENTRY(IProvideClassInfo2)
-   END_COM_MAP()
+      BEGIN_COM_MAP(Flipper)
+         COM_INTERFACE_ENTRY(IFlipper)
+         COM_INTERFACE_ENTRY(IDispatch)
+         COM_INTERFACE_ENTRY_IMPL(IConnectionPointContainer)
+         COM_INTERFACE_ENTRY(IPerPropertyBrowsing)
+         COM_INTERFACE_ENTRY(IProvideClassInfo)
+         COM_INTERFACE_ENTRY(IProvideClassInfo2)
+      END_COM_MAP()
 
-   BEGIN_CONNECTION_POINT_MAP(Flipper)
-      CONNECTION_POINT_ENTRY(DIID_IFlipperEvents)
-   END_CONNECTION_POINT_MAP()
+      BEGIN_CONNECTION_POINT_MAP(Flipper)
+         CONNECTION_POINT_ENTRY(DIID_IFlipperEvents)
+      END_CONNECTION_POINT_MAP()
 
-   virtual void MoveOffset(const float dx, const float dy);
-   virtual void SetObjectPos();
-   // Multi-object manipulation
-   virtual Vertex2D GetCenter() const;
-   virtual void PutCenter(const Vertex2D& pv);
-   virtual void SetDefaultPhysics(bool fromMouseClick);
-   virtual void ExportMesh(FILE *f);
+      virtual void MoveOffset(const float dx, const float dy);
+      virtual void SetObjectPos();
+      // Multi-object manipulation
+      virtual Vertex2D GetCenter() const;
+      virtual void PutCenter(const Vertex2D& pv);
+      virtual void SetDefaultPhysics(bool fromMouseClick);
+      virtual void ExportMesh(ObjLoader& loader);
 
-   virtual unsigned long long GetMaterialID() const
-   {
-      const unsigned long long m1 = m_ptable->GetMaterial(m_d.m_szMaterial)->hash();
-      const unsigned long long m2 = m_ptable->GetMaterial(m_d.m_szRubberMaterial)->hash();
-      if (m1 == m2 || (m_d.m_rubberthickness <= 0.f))
-         return m1;
-      else
-         return 0;
-   }
-   virtual unsigned long long GetImageID() const { return (unsigned long long)(m_ptable->GetImage(m_d.m_szImage)); }
-   virtual ItemTypeEnum HitableGetItemType() const { return eItemFlipper; }
-   virtual void WriteRegDefaults();
-
-   //DECLARE_NOT_AGGREGATABLE(Flipper) 
-   // Remove the comment from the line above if you don't want your object to 
-   // support aggregation. 
-
-   DECLARE_REGISTRY_RESOURCEID(IDR_FLIPPER)
-   // ISupportsErrorInfo
-   STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
-
-   float     GetElastacityFalloff() const
-   {
-      return m_phitflipper ? m_phitflipper->m_elasticityFalloff : m_d.m_elasticityFalloff;
-   }
-   void      SetElastacityFalloff(const float newVal)
-   {
-      if (m_phitflipper)
+      virtual unsigned long long GetMaterialID() const
       {
-         if (!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
-            m_phitflipper->m_elasticityFalloff = newVal;
+		  const unsigned long long m1 = m_ptable->GetMaterial(m_d.m_szMaterial)->hash();
+		  const unsigned long long m2 = m_ptable->GetMaterial(m_d.m_szRubberMaterial)->hash();
+		  if (m1 == m2 || (m_d.m_rubberthickness <= 0.f))
+			  return m1;
+		  else
+			  return 0;
       }
-      else
-      {
-         m_d.m_elasticityFalloff = newVal;
-      }
-   }
-   float     GetRampUp() const
-   {
-      return (m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)) ? m_d.m_OverrideCoilRampUp : m_d.m_rampUp;
-   }
-   void      SetRampUp(const float value)
-   {
-      if (m_phitflipper)
-      {
-         if (!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
-            m_d.m_rampUp = value;
-      }
-      else
-      {
-         m_d.m_rampUp = value;
-      }
-   }
-   void      SetReturn(const float value)
-   {
-      if (m_phitflipper)
-      {
-         if (!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
-            m_d.m_return = clamp(value, 0.0f, 1.0f);
-      }
-      else
-         m_d.m_return = clamp(value, 0.0f, 1.0f);
-   }
-   float     GetReturn(void) const
-   {
-      return m_d.m_return;
-   }
+      virtual unsigned long long GetImageID() const { return (unsigned long long)(m_ptable->GetImage(m_d.m_szImage)); }
+      virtual ItemTypeEnum HitableGetItemType() const { return eItemFlipper; }
+      virtual void WriteRegDefaults();
 
-   float     GetFlipperRadiusMin() const { return m_d.m_FlipperRadiusMin; }
-   void      SetFlipperRadiusMin(const float value)
-   {
-      m_d.m_FlipperRadiusMin = max(value, 0.0f);
-   }
+      //DECLARE_NOT_AGGREGATABLE(Flipper) 
+      // Remove the comment from the line above if you don't want your object to 
+      // support aggregation. 
 
-   FlipperData m_d;
-   PinTable *m_ptable;
+      DECLARE_REGISTRY_RESOURCEID(IDR_FLIPPER)
+      // ISupportsErrorInfo
+      STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
+
+      float     GetElastacityFalloff() const
+      {
+          return m_phitflipper ? m_phitflipper->m_elasticityFalloff : m_d.m_elasticityFalloff;
+      }
+      void      SetElastacityFalloff(const float newVal)
+      {
+          if (m_phitflipper)
+          {
+              if (!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
+                  m_phitflipper->m_elasticityFalloff = newVal;
+          }
+          else
+          {
+              m_d.m_elasticityFalloff = newVal;
+          }
+      }
+      float     GetRampUp() const
+      {
+          return (m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)) ? m_d.m_OverrideCoilRampUp : m_d.m_rampUp;
+      }
+      void      SetRampUp(const float value)
+      {
+          if (m_phitflipper)
+          {
+              if (!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
+                  m_d.m_rampUp = value;
+          }
+          else
+          {
+              m_d.m_rampUp = value;
+          }
+      }
+      void      SetReturn(const float value)
+      {
+          if (m_phitflipper)
+          {
+              if (!(m_d.m_OverridePhysics || (m_ptable->m_overridePhysicsFlipper && m_ptable->m_overridePhysics)))
+                  m_d.m_return = clamp(value, 0.0f, 1.0f);
+          }
+          else
+              m_d.m_return = clamp(value, 0.0f, 1.0f);
+      }
+      float     GetReturn(void) const 
+      {
+          return m_d.m_return;
+      }
+
+      float     GetFlipperRadiusMin() const { return m_d.m_FlipperRadiusMin; }
+      void      SetFlipperRadiusMin(const float value)
+      {
+          m_d.m_FlipperRadiusMin = max(value,0.0f);
+      }
+
+      FlipperData m_d;
+      PinTable *m_ptable;
 
 private:
-   void SetVertices(const float basex, const float basey, const float angle, Vertex2D * const pvEndCenter, Vertex2D * const rgvTangents, const float baseradius, const float endradius) const;
+      void SetVertices(const float basex, const float basey, const float angle, Vertex2D * const pvEndCenter, Vertex2D * const rgvTangents, const float baseradius, const float endradius) const;
 
-   void GenerateBaseMesh(Vertex3D_NoTex2 *buf);
+      void GenerateBaseMesh(Vertex3D_NoTex2 *buf);
 
-   void UpdatePhysicsSettings();
+      void UpdatePhysicsSettings();
 
-   VertexBuffer *m_vertexBuffer;
-   IndexBuffer *m_indexBuffer;
+      VertexBuffer *m_vertexBuffer;
+      IndexBuffer *m_indexBuffer;
 
-   HitFlipper *m_phitflipper;
+      HitFlipper *m_phitflipper;
 
-   // IFlipper
+// IFlipper
 public:
    STDMETHOD(get_Elasticity)(/*[out, retval]*/ float *pVal);
    STDMETHOD(put_Elasticity)(/*[in]*/ float newVal);

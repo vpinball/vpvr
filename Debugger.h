@@ -15,7 +15,7 @@ protected:
 
 private:
     Light           *GetLight();
-    void            SetCheckButtonState(Light *plight);
+    void            SetCheckButtonState(const Light *plight);
 
     CComboBox       m_lightsCombo;
     HWND            m_hLightOnCheck;
@@ -64,7 +64,6 @@ private:
     CButton m_pauseButton;
     CButton m_stepButton;
     CEdit   m_stepAmountEdit;
-    CButton m_editorExpandButton;
     CButton m_dbgLightsButton;
     CButton m_dbgMaterialsButton;
     HWND    m_hThrowBallsInPlayerCheck;
@@ -74,4 +73,7 @@ private:
 
     DbgLightDialog    m_lightDialog;
     DbgMaterialDialog m_materialDialog;
+
+    CResizer  m_resizer;
+    CEdit     m_notesEdit;
 };

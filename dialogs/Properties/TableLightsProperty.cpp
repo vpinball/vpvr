@@ -17,6 +17,8 @@ TableLightsProperty::TableLightsProperty(const VectorProtected<ISelect> *pvsel) 
 void TableLightsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
     CComObject<PinTable> * const table = g_pvp->GetActiveTable();
+    if (table == nullptr)
+        return;
 
     if (dispid == IDC_COLOR_BUTTON1 || dispid == -1)
         m_colorButton1.SetColor(table->m_lightAmbient);
@@ -29,7 +31,7 @@ void TableLightsProperty::UpdateVisuals(const int dispid/*=-1*/)
     if (dispid == IDC_LIGHTRANGE || dispid == -1)
         PropertyDialog::SetFloatTextbox(m_lightRangeEdit, table->m_lightRange);
     if (dispid == DISPID_Image7 || dispid == -1)
-        PropertyDialog::UpdateTextureComboBox(table->GetImageList(), m_envEmissionImageCombo, table->m_szEnvImage);
+        PropertyDialog::UpdateTextureComboBox(table->GetImageList(), m_envEmissionImageCombo, table->m_envImage);
     if (dispid == IDC_ENVEMISSIONSCALE || dispid == -1)
         PropertyDialog::SetFloatTextbox(m_envEmissionScaleEdit, table->m_envEmissionScale);
     if (dispid == IDC_AOSCALE || dispid == -1)
@@ -43,7 +45,6 @@ void TableLightsProperty::UpdateVisuals(const int dispid/*=-1*/)
 void TableLightsProperty::UpdateProperties(const int dispid)
 {
     CComObject<PinTable> * const table = g_pvp->GetActiveTable();
-
     if (table == nullptr)
         return;
 
@@ -95,7 +96,7 @@ void TableLightsProperty::UpdateProperties(const int dispid)
             CHECK_UPDATE_ITEM(table->m_lightRange, PropertyDialog::GetFloatTextbox(m_lightRangeEdit), table);
             break;
         case DISPID_Image7:
-            CHECK_UPDATE_COMBO_TEXT(table->m_szEnvImage, m_envEmissionImageCombo, table);
+            CHECK_UPDATE_COMBO_TEXT_STRING(table->m_envImage, m_envEmissionImageCombo, table);
             break;
         case IDC_ENVEMISSIONSCALE:
             CHECK_UPDATE_ITEM(table->m_envEmissionScale, PropertyDialog::GetFloatTextbox(m_envEmissionScaleEdit), table);
@@ -129,16 +130,38 @@ BOOL TableLightsProperty::OnInitDialog()
     m_screenSpaceReflEdit.AttachItem(IDC_SSR_STRENGTH);
 
     UpdateVisuals();
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
+    m_resizer.AddChild(m_colorButton1, topleft, 0);
+    m_resizer.AddChild(m_colorButton2, topleft, 0);
+    m_resizer.AddChild(m_lightEmissionScaleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_lightHeightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_lightRangeEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_envEmissionImageCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_envEmissionScaleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_ambientOcclusionScaleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_bloomStrengthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_screenSpaceReflEdit, topleft, RD_STRETCH_WIDTH);
     return TRUE;
 }
 
 INT_PTR TableLightsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    m_resizer.HandleMessage(uMsg, wParam, lParam);
     switch (uMsg)
     {
         case WM_DRAWITEM:
         {
-            LPDRAWITEMSTRUCT lpDrawItemStruct = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
+            const LPDRAWITEMSTRUCT lpDrawItemStruct = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
             const UINT nID = static_cast<UINT>(wParam);
             if (nID == IDC_COLOR_BUTTON1)
             {

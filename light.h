@@ -8,7 +8,7 @@
 #include "resource.h"       // main symbols
 #include "RenderDevice.h"
 
-#define NUM_RGB_BLINK_PATTERN 33
+#define NUM_RGB_BLINK_PATTERN 33 //!! remove
 
 class LightData : public BaseProperty
 {
@@ -32,7 +32,7 @@ public:
    Shape m_shape;
    //float m_borderwidth;
    //COLORREF m_bordercolor;
-   char m_szSurface[MAXTOKEN];
+   std::string m_szSurface;
 
    float m_depthBias; // for determining depth sorting
    float m_bulbHaloHeight;
@@ -128,6 +128,8 @@ public:
 
    void InitShape();
    void setInPlayState(const LightState newVal);
+   STDMETHOD(GetInPlayState)(/*[out, retval]*/ LightState* pVal);
+   STDMETHOD(GetInPlayStateBool)(/*[out, retval]*/ VARIANT_BOOL* pVal);
    void setLightState(const LightState newVal);
    LightState getLightState() const;
    void RenderBulbMesh();
@@ -137,7 +139,7 @@ public:
    LightState m_inPlayState;
    float m_surfaceHeight;
    bool  m_lockedByLS;
-   char m_rgblinkpattern[NUM_RGB_BLINK_PATTERN];
+   string m_rgblinkpattern;
    int m_blinkinterval;
 
 private:
@@ -167,14 +169,14 @@ private:
       virtual void PutCenter(const Vertex2D& pv) { m_plight->m_d.m_vCenter = pv; }
 
       virtual void MoveOffset(const float dx, const float dy) {
-         m_plight->m_d.m_vCenter.x += dx;
-         m_plight->m_d.m_vCenter.y += dy;
+          m_plight->m_d.m_vCenter.x += dx;
+          m_plight->m_d.m_vCenter.y += dy;
       }
 
       virtual ItemTypeEnum GetItemType() const { return eItemLightCenter; }
 
    private:
-      Light * m_plight;
+      Light *m_plight;
    };
 
 
@@ -271,7 +273,7 @@ private:
       if (m_timenextblink <= time_msec)
       {
          m_iblinkframe++;
-         if (m_rgblinkpattern[m_iblinkframe] == 0)
+         if (m_iblinkframe >= m_rgblinkpattern.length() || m_rgblinkpattern[m_iblinkframe] == '\0')
             m_iblinkframe = 0;
 
          m_timenextblink += m_blinkinterval;

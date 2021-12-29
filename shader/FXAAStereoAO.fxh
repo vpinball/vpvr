@@ -1,3 +1,6 @@
+const float2 Anaglyph_DeSaturation__Contrast; // Anaglyph (de)saturation to preprocess/remove color from the anaglyph image: 1 = Black & White, 0 = normal color
+
+
 //!! add reflection direction occlusion, so that that will be used for blocking reflection/envmap?
 //!! opt.?
 
@@ -80,7 +83,7 @@ float3 rotate_to_vector_upper(const float3 vec, const float3 normal)
 	return normal + spherePoint;
 }*/
 
-/*float4 ps_main_normals(in VS_OUTPUT_2D IN) : COLOR // separate pass to generate normals (should actually reduce bandwidth needed in AO pass, but overall close to no performance difference or even much worse perf, depending on gfxboard)
+/*float4 ps_main_normals(const in VS_OUTPUT_2D IN) : COLOR // separate pass to generate normals (should actually reduce bandwidth needed in AO pass, but overall close to no performance difference or even much worse perf, depending on gfxboard)
 {
 	const float2 u = IN.tex0 + w_h_height.xy*0.5;
 
@@ -174,7 +177,7 @@ float3 decompress_normal(const float2 c)
 }
 #endif
 
-float4 ps_main_ao(in VS_OUTPUT_2D IN) : COLOR
+float4 ps_main_ao(const in VS_OUTPUT_2D IN) : COLOR
 {
 	const float2 u = IN.tex0 + w_h_height.xy*0.5;
 
@@ -224,8 +227,96 @@ float4 ps_main_ao(in VS_OUTPUT_2D IN) : COLOR
 
 // stereo
 
+float3 anaglyph(const float3 L, const float3 R)
+{
+	const float c = saturate(Anaglyph_DeSaturation__Contrast.y*0.5 + 0.5);
+
+	float DeGhost = 0.06;
+
+	const float3 LMA = lerp(L, dot(L,float3(0.299, 0.587, 0.114)), Anaglyph_DeSaturation__Contrast.x);
+	const float3 RMA = lerp(R, dot(R,float3(0.299, 0.587, 0.114)), Anaglyph_DeSaturation__Contrast.x);
+
+	[branch] if (ms_zpd_ya_td.w == 5.0 || ms_zpd_ya_td.w == 12.0) // Anaglyph 3D Red/Cyan
+		return pow(float3(LMA.r,RMA.g,RMA.b), 1./Anaglyph_DeSaturation__Contrast.y); //!! Contrast is meh here
+	[branch] if (ms_zpd_ya_td.w == 6.0 || ms_zpd_ya_td.w == 13.0) // Anaglyph 3D Green/Magenta
+		return pow(float3(RMA.r,LMA.g,RMA.b), 1./Anaglyph_DeSaturation__Contrast.y); //!! Contrast is meh here
+	[branch] if (ms_zpd_ya_td.w == 7.0 || ms_zpd_ya_td.w == 14.0) // Anaglyph 3D Dubois Red/Cyan
+	{
+		const float r = dot(LMA,float3( 0.437,  0.449,  0.164)) + dot(RMA,float3(-0.011, -0.032, -0.007));
+		const float g = dot(LMA,float3(-0.062, -0.062, -0.024)) + dot(RMA,float3( 0.377,  0.761,  0.009));
+		const float b = dot(LMA,float3(-0.048, -0.050, -0.017)) + dot(RMA,float3(-0.026, -0.093,  1.234));
+		return saturate(pow(float3(r,g,b), 1./Anaglyph_DeSaturation__Contrast.y)); //!! Contrast is meh here
+	}
+	[branch] if (ms_zpd_ya_td.w == 8.0 || ms_zpd_ya_td.w == 15.0) // Anaglyph 3D Dubois Green/Magenta
+	{
+		const float r = dot(LMA,float3(-0.062, -0.158, -0.039)) + dot(RMA,float3( 0.529,  0.705, 0.024));
+		const float g = dot(LMA,float3( 0.284,  0.668,  0.143)) + dot(RMA,float3(-0.016, -0.015, 0.065));
+		const float b = dot(LMA,float3(-0.015, -0.027,  0.021)) + dot(RMA,float3( 0.009,  0.075, 0.937));
+		return saturate(pow(float3(r,g,b), 1./Anaglyph_DeSaturation__Contrast.y)); //!! Contrast is meh here
+	}
+	[branch] if (ms_zpd_ya_td.w == 9.0 || ms_zpd_ya_td.w == 16.0) // Anaglyph 3D Deghosted Red/Cyan Code From http://iaian7.com/quartz/AnaglyphCompositing & vectorform.com by John Einselen
+	{
+		const float LOne = c*0.45;
+		const float ROne = c;
+		DeGhost *= 0.1;
+
+		float3 accum = saturate(LMA * float3(LOne,(1.0-LOne)*0.5,(1.0-LOne)*0.5));
+		const float r = /*pow(*/accum.r+accum.g+accum.b/*, 1.00)*/;
+
+			   accum = saturate(RMA * float3(1.0-ROne,ROne,ROne));
+		const float g = pow(accum.r+accum.g, 1.15);
+		const float b = pow(accum.r+accum.b, 1.15);
+
+		float3 color;
+		color.r = r + r* DeGhost        + g*(DeGhost* -0.5) + b*(DeGhost*-0.5);
+		color.g = g + r*(DeGhost*-0.25) + g*(DeGhost*  0.5) + b*(DeGhost*-0.25);
+		color.b = b + r*(DeGhost*-0.25) + g*(DeGhost*-0.25) + b*(DeGhost* 0.5);
+		return saturate(color);
+	}
+	[branch] if (ms_zpd_ya_td.w == 10.0 || ms_zpd_ya_td.w == 17.0) // Anaglyph 3D Deghosted Green/Magenta Code From http://iaian7.com/quartz/AnaglyphCompositing & vectorform.com by John Einselen
+	{
+		const float LOne = c*0.45;
+		const float ROne = c*0.8;
+		DeGhost *= 0.275;
+
+		float3 accum = saturate(RMA * float3(ROne,1.0-ROne,ROne));
+		const float r = pow(accum.r+accum.g, 1.15);
+		const float b = pow(accum.g+accum.b, 1.15);
+
+			   accum = saturate(LMA * float3((1.0-LOne)*0.5,LOne,(1.0-LOne)*0.5));
+		const float g = pow(accum.r+accum.g+accum.b, 1.05);
+
+		float3 color;
+		color.r = r + r*(DeGhost* 0.5)  + g*(DeGhost*-0.25) + b*(DeGhost*-0.25);
+		color.g = g + r*(DeGhost*-0.5)  + g*(DeGhost* 0.25) + b*(DeGhost*-0.5);
+		color.b = b + r*(DeGhost*-0.25) + g*(DeGhost*-0.25) + b*(DeGhost*0.5);
+		return saturate(color);
+	}
+	[branch] if (ms_zpd_ya_td.w == 11.0 || ms_zpd_ya_td.w == 18.0) // Anaglyph 3D Blue/Amber Code From http://iaian7.com/quartz/AnaglyphCompositing & vectorform.com by John Einselen
+	{
+		const float LOne = c*0.45;
+		const float ROne = c;
+		DeGhost *= 0.275;
+
+		float3 accum = saturate(LMA * float3(ROne,ROne,1.0-ROne));
+		const float r = pow(accum.r+accum.b, 1.05);
+		const float g = pow(accum.g+accum.b, 1.10);
+
+			   accum = saturate(RMA * float3((1.0-LOne)*0.5,(1.0-LOne)*0.5,LOne));
+		float b = /*pow(*/accum.r+accum.g+accum.b/*, 1.0)*/;
+			  b = lerp(pow(b,(DeGhost*0.15)+1.0), 1.0-pow(abs(1.0-b),(DeGhost*0.15)+1.0), b);
+
+		float3 color;
+		color.r = r + r*(DeGhost*  1.5) + g*(DeGhost*-0.75) + b*(DeGhost*-0.75);
+		color.g = g + r*(DeGhost*-0.75) + g*(DeGhost*  1.5) + b*(DeGhost*-0.75);
+		color.b = b + r*(DeGhost* -1.5) + g*(DeGhost* -1.5) + b*(DeGhost*3.0);
+		return saturate(color);
+	}
+	return LMA; //!! testing mode
+}
+
 //!! opt.?
-float4 ps_main_stereo(in VS_OUTPUT_2D IN) : COLOR
+float4 ps_main_stereo(const in VS_OUTPUT_2D IN) : COLOR
 {
 	float2 u = IN.tex0 + w_h_height.xy*0.5;
 	const float MaxSeparation = ms_zpd_ya_td.x;
@@ -234,7 +325,9 @@ float4 ps_main_stereo(in VS_OUTPUT_2D IN) : COLOR
 	const bool topdown = (ms_zpd_ya_td.w == 1.0); //!! uniform
 	const bool sidebyside = (ms_zpd_ya_td.w == 2.0); //!! uniform
 	const int y = w_h_height.z*u.y;
-	const bool l = sidebyside ? (u.x < 0.5) : topdown ? (u.y < 0.5) : ((y+1)/2 == y/2); //last check actually means (y&1) //!! %2 //!! float diff = frac(dot(tex,(screen_size / 2.0))+0.25); if(diff < 0.5)... //returns 0.25 and 0.75
+	bool l = sidebyside ? (u.x < 0.5) : topdown ? (u.y < 0.5) : ((y+1)/2 == y/2); //last check actually means (y&1) //!! %2 //!! float diff = frac(dot(tex,(screen_size / 2.0))+0.25); if(diff < 0.5)... //returns 0.25 and 0.75
+	if(ms_zpd_ya_td.w == 0.5)
+		l = !l;
 	if(topdown) { u.y *= 2.0; if(!l) u.y -= 1.0; }  //!! !topdown: (u.y+w_h_height.y) ?
 	else if(sidebyside) { u.x *= 2.0; if(!l) u.x -= 1.0; }
 	const float su = l ? MaxSeparation : -MaxSeparation;
@@ -255,6 +348,30 @@ float4 ps_main_stereo(in VS_OUTPUT_2D IN) : COLOR
 	if(yaxis)
 		parallax = -parallax;
 	return float4((col + tex2Dlod(texSampler5, float4(u + (yaxis ? float2(0.0,parallax) : float2(parallax,0.0)) + aaoffs, 0.,0.)).xyz)*0.5, 1.0);
+}
+
+// more or less copy pasted from above
+float4 ps_main_stereo_anaglyph(const in VS_OUTPUT_2D IN) : COLOR
+{
+	float2 u = IN.tex0 + w_h_height.xy*0.5;
+	const float MaxSeparation = ms_zpd_ya_td.x;
+	const float ZPD = ms_zpd_ya_td.y;
+	const bool yaxis = (ms_zpd_ya_td.z != 0.0); //!! uniform
+	const int y = w_h_height.z*u.y;
+
+	const float lminDepth = min(min(tex2Dlod(texSamplerDepth, float4(u + (yaxis ? float2(0.0,0.5*MaxSeparation) : float2(0.5*MaxSeparation,0.0)), 0.,0.)).x, tex2Dlod(texSamplerDepth, float4(u + (yaxis ? float2(0.0,0.666*MaxSeparation) : float2(0.666*MaxSeparation,0.0)), 0.,0.)).x), tex2Dlod(texSamplerDepth, float4(u + (yaxis ? float2(0.0,MaxSeparation) : float2(MaxSeparation,0.0)), 0.,0.)).x);
+	float lparallax = (w_h_height.w+MaxSeparation) - min(MaxSeparation/(0.5+lminDepth*(1.0/ZPD-0.5)), (w_h_height.w+MaxSeparation));
+	if(yaxis)
+		lparallax = -lparallax;
+	const float3 lcol = tex2Dlod(texSampler5, float4(u + (yaxis ? float2(0.0,lparallax) : float2(lparallax,0.0)), 0.,0.)).xyz;
+
+	const float rminDepth = min(min(tex2Dlod(texSamplerDepth, float4(u + (yaxis ? float2(0.0,0.5*-MaxSeparation) : float2(0.5*-MaxSeparation,0.0)), 0.,0.)).x, tex2Dlod(texSamplerDepth, float4(u + (yaxis ? float2(0.0,0.666*-MaxSeparation) : float2(0.666*-MaxSeparation,0.0)), 0.,0.)).x), tex2Dlod(texSamplerDepth, float4(u + (yaxis ? float2(0.0,-MaxSeparation) : float2(-MaxSeparation,0.0)), 0.,0.)).x);
+	float rparallax = (w_h_height.w+MaxSeparation) - min(MaxSeparation/(0.5+rminDepth*(1.0/ZPD-0.5)), (w_h_height.w+MaxSeparation));
+	if(!yaxis)
+		rparallax = -rparallax;
+	const float3 rcol = tex2Dlod(texSampler5, float4(u + (yaxis ? float2(0.0,rparallax) : float2(rparallax,0.0)), 0.,0.)).xyz;
+
+	return float4(anaglyph((ms_zpd_ya_td.w > 11.0) ? rcol : lcol,(ms_zpd_ya_td.w > 11.0) ? lcol : rcol), 1.0); // > 10.0 means: flip the color trafo?
 }
 
 // NFAA
@@ -338,7 +455,7 @@ float2 findContrastByColor(const float2 XYCoord, const float filterSpread)
 }
 #endif
 
-float4 ps_main_nfaa(in VS_OUTPUT_2D IN) : COLOR
+float4 ps_main_nfaa(const in VS_OUTPUT_2D IN) : COLOR
 {
 #ifndef NFAA_VARIANT2
  #ifdef NFAA_VARIANT
@@ -415,7 +532,7 @@ float avg(const float3 l)
    return (l.x+l.y+l.z) * (1.0 / 3.0);
 }
 
-float4 ps_main_dlaa_edge(in VS_OUTPUT_2D IN) : COLOR
+float4 ps_main_dlaa_edge(const in VS_OUTPUT_2D IN) : COLOR
 {
    const float2 u = IN.tex0 + w_h_height.xy*0.5;
 
@@ -432,7 +549,7 @@ float4 ps_main_dlaa_edge(in VS_OUTPUT_2D IN) : COLOR
 }
 
 
-float4 ps_main_dlaa(in VS_OUTPUT_2D IN) : COLOR
+float4 ps_main_dlaa(const in VS_OUTPUT_2D IN) : COLOR
 {
    const float2 u = IN.tex0 + w_h_height.xy*0.5;
 
@@ -542,11 +659,11 @@ float luma(const float3 l)
 }
 
 // Approximation of FXAA
-float4 ps_main_fxaa1(in VS_OUTPUT_2D IN) : COLOR
+float4 ps_main_fxaa1(const in VS_OUTPUT_2D IN) : COLOR
 {
 	const float2 u = IN.tex0 + w_h_height.xy*0.5;
 
-	const float3 rMc = tex2Dlod(texSampler5, float4(u, 0.,0.)).xyz;
+	const float3 rMc = tex2Dlod(texSampler4, float4(u, 0.,0.)).xyz;
 	[branch] if(w_h_height.w == 1.0) // depth buffer available?
 	{
 		const float depth0 = tex2Dlod(texSamplerDepth, float4(u, 0.,0.)).x;
@@ -555,15 +672,15 @@ float4 ps_main_fxaa1(in VS_OUTPUT_2D IN) : COLOR
 	}
 
 	const float2 offs = w_h_height.xy;
-	const float rNW = luma(tex2Dlod(texSampler5, float4(u - offs, 0.,0.)).xyz);
-	const float rN = luma(tex2Dlod(texSampler5, float4(u - float2(0.0,offs.y), 0.,0.)).xyz);
-	const float rNE = luma(tex2Dlod(texSampler5, float4(u - float2(-offs.x,offs.y), 0.,0.)).xyz);
-	const float rW = luma(tex2Dlod(texSampler5, float4(u - float2(offs.x,0.0), 0.,0.)).xyz);
+	const float rNW = luma(tex2Dlod(texSampler4, float4(u - offs, 0.,0.)).xyz);
+	const float rN = luma(tex2Dlod(texSampler4, float4(u - float2(0.0,offs.y), 0.,0.)).xyz);
+	const float rNE = luma(tex2Dlod(texSampler4, float4(u - float2(-offs.x,offs.y), 0.,0.)).xyz);
+	const float rW = luma(tex2Dlod(texSampler4, float4(u - float2(offs.x,0.0), 0.,0.)).xyz);
 	const float rM = luma(rMc);
-	const float rE = luma(tex2Dlod(texSampler5, float4(u + float2(offs.x,0.0), 0.,0.)).xyz);
-	const float rSW = luma(tex2Dlod(texSampler5, float4(u + float2(-offs.x,offs.y), 0.,0.)).xyz);
-	const float rS = luma(tex2Dlod(texSampler5, float4(u + float2(0.0,offs.y), 0.,0.)).xyz);
-	const float rSE = luma(tex2Dlod(texSampler5, float4(u + offs, 0.,0.)).xyz);
+	const float rE = luma(tex2Dlod(texSampler4, float4(u + float2(offs.x,0.0), 0.,0.)).xyz);
+	const float rSW = luma(tex2Dlod(texSampler4, float4(u + float2(-offs.x,offs.y), 0.,0.)).xyz);
+	const float rS = luma(tex2Dlod(texSampler4, float4(u + float2(0.0,offs.y), 0.,0.)).xyz);
+	const float rSE = luma(tex2Dlod(texSampler4, float4(u + offs, 0.,0.)).xyz);
 	const float rMrN = rM+rN;
 	const float lumaNW = rMrN+rNW+rW;
 	const float lumaNE = rMrN+rNE+rE;
@@ -594,11 +711,11 @@ float4 ps_main_fxaa1(in VS_OUTPUT_2D IN) : COLOR
 #define FXAA_QUALITY__P2 8.0
 
 // Full mid-quality PC FXAA 3.11
-float4 ps_main_fxaa2(in VS_OUTPUT_2D IN) : COLOR
+float4 ps_main_fxaa2(const in VS_OUTPUT_2D IN) : COLOR
 {
 	const float2 u = IN.tex0 + w_h_height.xy*0.5;
 
-	const float3 rgbyM = tex2Dlod(texSampler5, float4(u, 0.,0.)).xyz;
+	const float3 rgbyM = tex2Dlod(texSampler4, float4(u, 0.,0.)).xyz;
 	[branch] if(w_h_height.w == 1.0) // depth buffer available?
 	{
 		const float depth0 = tex2Dlod(texSamplerDepth, float4(u, 0.,0.)).x;
@@ -607,15 +724,15 @@ float4 ps_main_fxaa2(in VS_OUTPUT_2D IN) : COLOR
 	}
 
 	const float2 offs = w_h_height.xy;
-	const float lumaNW = luma(tex2Dlod(texSampler5, float4(u - offs, 0.f,0.f)).xyz);
-	float lumaN = luma(tex2Dlod(texSampler5, float4(u - float2(0.0,offs.y), 0.f,0.f)).xyz);
-	const float lumaNE = luma(tex2Dlod(texSampler5, float4(u - float2(-offs.x,offs.y), 0.f,0.f)).xyz);
-	const float lumaW = luma(tex2Dlod(texSampler5, float4(u - float2(offs.x,0.0), 0.f,0.f)).xyz);
+	const float lumaNW = luma(tex2Dlod(texSampler4, float4(u - offs, 0.,0.)).xyz);
+	float lumaN = luma(tex2Dlod(texSampler4, float4(u - float2(0.0,offs.y), 0.,0.)).xyz);
+	const float lumaNE = luma(tex2Dlod(texSampler4, float4(u - float2(-offs.x,offs.y), 0.,0.)).xyz);
+	const float lumaW = luma(tex2Dlod(texSampler4, float4(u - float2(offs.x,0.0), 0.,0.)).xyz);
 	const float lumaM = luma(rgbyM);
-	const float lumaE = luma(tex2Dlod(texSampler5, float4(u + float2(offs.x,0.0), 0.f,0.f)).xyz);
-	const float lumaSW = luma(tex2Dlod(texSampler5, float4(u + float2(-offs.x,offs.y), 0.f,0.f)).xyz);
-	float lumaS = luma(tex2Dlod(texSampler5, float4(u + float2(0.0,offs.y), 0.f,0.f)).xyz);
-	const float lumaSE = luma(tex2Dlod(texSampler5, float4(u + offs, 0.f,0.f)).xyz);
+	const float lumaE = luma(tex2Dlod(texSampler4, float4(u + float2(offs.x,0.0), 0.,0.)).xyz);
+	const float lumaSW = luma(tex2Dlod(texSampler4, float4(u + float2(-offs.x,offs.y), 0.,0.)).xyz);
+	float lumaS = luma(tex2Dlod(texSampler4, float4(u + float2(0.0,offs.y), 0.,0.)).xyz);
+	const float lumaSE = luma(tex2Dlod(texSampler4, float4(u + offs, 0.,0.)).xyz);
 	const float maxSM = max(lumaS, lumaM);
 	const float minSM = min(lumaS, lumaM);
 	const float maxESM = max(lumaE, maxSM);
@@ -624,9 +741,9 @@ float4 ps_main_fxaa2(in VS_OUTPUT_2D IN) : COLOR
 	const float minWN = min(lumaN, lumaW);
 	const float rangeMax = max(maxWN, maxESM);
 	const float rangeMin = min(minWN, minESM);
-	const float rangeMaxScaled = rangeMax * 0.166; //0.333 (faster) .. 0.063 (slower)
+	const float rangeMaxScaled = rangeMax * 0.125; //0.333 (faster) .. 0.063 (slower) // reshade: 0.125, fxaa : 0.166
 	const float range = rangeMax - rangeMin;
-	const float rangeMaxClamped = max(0.0833, rangeMaxScaled); //0.0625 (high quality/faster) .. 0.0312 (visible limit/slower)
+	const float rangeMaxClamped = max(0.0833, rangeMaxScaled); //0.0625 (high quality/faster) .. 0.0312 (visible limit/slower) // reshade: 0.0, fxaa : 0.0833
 	const bool earlyExit = range < rangeMaxClamped;
 	[branch] if(earlyExit)
 		return float4(rgbyM, 1.0);
@@ -672,9 +789,9 @@ float4 ps_main_fxaa2(in VS_OUTPUT_2D IN) : COLOR
 	float2 posN = float2(posB.x - offNP.x * FXAA_QUALITY__P0, posB.y - offNP.y * FXAA_QUALITY__P0);
 	float2 posP = float2(posB.x + offNP.x * FXAA_QUALITY__P0, posB.y + offNP.y * FXAA_QUALITY__P0);
 	const float subpixD = -2.0 * subpixC + 3.0;
-	float lumaEndN = luma(tex2Dlod(texSampler5, float4(posN, 0.f,0.f)).xyz);
+	float lumaEndN = luma(tex2Dlod(texSampler5, float4(posN, 0.,0.)).xyz);
 	const float subpixE = subpixC * subpixC;
-	float lumaEndP = luma(tex2Dlod(texSampler5, float4(posP, 0.f,0.f)).xyz);
+	float lumaEndP = luma(tex2Dlod(texSampler5, float4(posP, 0.,0.)).xyz);
 	if(!pairN) lumaNN = lumaSS;
 	const float gradientScaled = gradient * (1.0/4.0);
 	const float lumaMM = lumaM - lumaNN * 0.5;
@@ -690,8 +807,8 @@ float4 ps_main_fxaa2(in VS_OUTPUT_2D IN) : COLOR
 	if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P1;
 	if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P1;
 	if(doneNP) {
-		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.f,0.f)).xyz);
-		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.f,0.f)).xyz);
+		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.,0.)).xyz);
+		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.,0.)).xyz);
 		if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 		if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 		doneN = abs(lumaEndN) >= gradientScaled;
@@ -713,14 +830,14 @@ float4 ps_main_fxaa2(in VS_OUTPUT_2D IN) : COLOR
 	const bool goodSpan = directionN ? goodSpanN : goodSpanP;
 	const float subpixG = subpixF * subpixF;
 	const float pixelOffset = 0.5 - dst * spanLengthRcp;
-	const float subpixH = subpixG * 0.75; //1.00 (upper limit/softer) .. 0.50 (lower limit/sharper) .. 0.00 (completely off)
+	const float subpixH = subpixG * 0.5; //1.00 (upper limit/softer) .. 0.50 (lower limit/sharper) .. 0.00 (completely off) // reshade : 0.25, fxaa : 0.75
 	const float pixelOffsetGood = goodSpan ? pixelOffset : 0.0;
 	const float pixelOffsetSubpix = max(pixelOffsetGood, subpixH);
 	float2 un = u;
 	const float pl = pixelOffsetSubpix * lengthSign;
 	if(horzSpan) un.y += pl;
 	else un.x += pl;
-	return float4(tex2Dlod(texSampler5, float4(un, 0.f,0.f)).xyz, 1.0f);
+	return float4(tex2Dlod(texSampler5, float4(un, 0.,0.)).xyz, 1.0);
 }
 
 #undef FXAA_QUALITY__P0
@@ -741,11 +858,11 @@ float4 ps_main_fxaa2(in VS_OUTPUT_2D IN) : COLOR
 #define FXAA_QUALITY__P11 8.0
 
 // Full extreme-quality PC FXAA 3.11
-float4 ps_main_fxaa3(in VS_OUTPUT_2D IN) : COLOR
+float4 ps_main_fxaa3(const in VS_OUTPUT_2D IN) : COLOR
 {
 	const float2 u = IN.tex0 + w_h_height.xy*0.5;
 
-	const float3 rgbyM = tex2Dlod(texSampler5, float4(u, 0.,0.)).xyz;
+	const float3 rgbyM = tex2Dlod(texSampler4, float4(u, 0.,0.)).xyz;
 	[branch] if(w_h_height.w == 1.0) // depth buffer available?
 	{
 		const float depth0 = tex2Dlod(texSamplerDepth, float4(u, 0.,0.)).x;
@@ -754,15 +871,15 @@ float4 ps_main_fxaa3(in VS_OUTPUT_2D IN) : COLOR
 	}
 
 	const float2 offs = w_h_height.xy;
-	const float lumaNW = luma(tex2Dlod(texSampler5, float4(u - offs, 0.f,0.f)).xyz);
-	float lumaN = luma(tex2Dlod(texSampler5, float4(u - float2(0.0,offs.y), 0.f,0.f)).xyz);
-	const float lumaNE = luma(tex2Dlod(texSampler5, float4(u - float2(-offs.x,offs.y), 0.f,0.f)).xyz);
-	const float lumaW = luma(tex2Dlod(texSampler5, float4(u - float2(offs.x,0.0), 0.f,0.f)).xyz);
+	const float lumaNW = luma(tex2Dlod(texSampler4, float4(u - offs, 0.,0.)).xyz);
+	float lumaN = luma(tex2Dlod(texSampler4, float4(u - float2(0.0,offs.y), 0.,0.)).xyz);
+	const float lumaNE = luma(tex2Dlod(texSampler4, float4(u - float2(-offs.x,offs.y), 0.,0.)).xyz);
+	const float lumaW = luma(tex2Dlod(texSampler4, float4(u - float2(offs.x,0.0), 0.,0.)).xyz);
 	const float lumaM = luma(rgbyM);
-	const float lumaE = luma(tex2Dlod(texSampler5, float4(u + float2(offs.x,0.0), 0.f,0.f)).xyz);
-	const float lumaSW = luma(tex2Dlod(texSampler5, float4(u + float2(-offs.x,offs.y), 0.f,0.f)).xyz);
-	float lumaS = luma(tex2Dlod(texSampler5, float4(u + float2(0.0,offs.y), 0.f,0.f)).xyz);
-	const float lumaSE = luma(tex2Dlod(texSampler5, float4(u + offs, 0.f,0.f)).xyz);
+	const float lumaE = luma(tex2Dlod(texSampler4, float4(u + float2(offs.x,0.0), 0.,0.)).xyz);
+	const float lumaSW = luma(tex2Dlod(texSampler4, float4(u + float2(-offs.x,offs.y), 0.,0.)).xyz);
+	float lumaS = luma(tex2Dlod(texSampler4, float4(u + float2(0.0,offs.y), 0.,0.)).xyz);
+	const float lumaSE = luma(tex2Dlod(texSampler4, float4(u + offs, 0.,0.)).xyz);
 	const float maxSM = max(lumaS, lumaM);
 	const float minSM = min(lumaS, lumaM);
 	const float maxESM = max(lumaE, maxSM);
@@ -771,12 +888,12 @@ float4 ps_main_fxaa3(in VS_OUTPUT_2D IN) : COLOR
 	const float minWN = min(lumaN, lumaW);
 	const float rangeMax = max(maxWN, maxESM);
 	const float rangeMin = min(minWN, minESM);
-	const float rangeMaxScaled = rangeMax * 0.166; //0.333 (faster) .. 0.063 (slower)
+	const float rangeMaxScaled = rangeMax * 0.125; //0.333 (faster) .. 0.063 (slower) // reshade: 0.125, fxaa : 0.166
 	const float range = rangeMax - rangeMin;
-	const float rangeMaxClamped = max(0.0833, rangeMaxScaled); //0.0625 (high quality/faster) .. 0.0312 (visible limit/slower)
+	const float rangeMaxClamped = max(0.0833, rangeMaxScaled); //0.0625 (high quality/faster) .. 0.0312 (visible limit/slower) // reshade: 0.0, fxaa : 0.0833
 	const bool earlyExit = range < rangeMaxClamped;
 	[branch] if(earlyExit)
-		return float4(rgbyM, 1.0f);
+		return float4(rgbyM, 1.0);
 	const float lumaNS = lumaN + lumaS;
 	const float lumaWE = lumaW + lumaE;
 	const float subpixRcpRange = 1.0/range;
@@ -819,9 +936,9 @@ float4 ps_main_fxaa3(in VS_OUTPUT_2D IN) : COLOR
 	float2 posN = float2(posB.x - offNP.x * FXAA_QUALITY__P0, posB.y - offNP.y * FXAA_QUALITY__P0);
 	float2 posP = float2(posB.x + offNP.x * FXAA_QUALITY__P0, posB.y + offNP.y * FXAA_QUALITY__P0);
 	const float subpixD = -2.0 * subpixC + 3.0;
-	float lumaEndN = luma(tex2Dlod(texSampler5, float4(posN, 0.f,0.f)).xyz);
+	float lumaEndN = luma(tex2Dlod(texSampler5, float4(posN, 0.,0.)).xyz);
 	const float subpixE = subpixC * subpixC;
-	float lumaEndP = luma(tex2Dlod(texSampler5, float4(posP, 0.f,0.f)).xyz);
+	float lumaEndP = luma(tex2Dlod(texSampler5, float4(posP, 0.,0.)).xyz);
 	if(!pairN) lumaNN = lumaSS;
 	const float gradientScaled = gradient * (1.0/4.0);
 	const float lumaMM = lumaM - lumaNN * 0.5;
@@ -837,8 +954,8 @@ float4 ps_main_fxaa3(in VS_OUTPUT_2D IN) : COLOR
 	if(!doneP) posP.x += offNP.x * FXAA_QUALITY__P1;
 	if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P1;
 	[branch] if(doneNP) {
-		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.f,0.f)).xyz);
-		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.f,0.f)).xyz);
+		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.,0.)).xyz);
+		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.,0.)).xyz);
 		if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 		if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 		doneN = abs(lumaEndN) >= gradientScaled;
@@ -852,8 +969,8 @@ float4 ps_main_fxaa3(in VS_OUTPUT_2D IN) : COLOR
 		//
 
 		if(doneNP) {
-		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.f,0.f)).xyz);
-		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.f,0.f)).xyz);
+		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.,0.)).xyz);
+		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.,0.)).xyz);
 		if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 		if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 		doneN = abs(lumaEndN) >= gradientScaled;
@@ -865,8 +982,8 @@ float4 ps_main_fxaa3(in VS_OUTPUT_2D IN) : COLOR
 		if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P3;
 
 		if(doneNP) {
-		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.f,0.f)).xyz);
-		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.f,0.f)).xyz);
+		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.,0.)).xyz);
+		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.,0.)).xyz);
 		if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 		if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 		doneN = abs(lumaEndN) >= gradientScaled;
@@ -878,8 +995,8 @@ float4 ps_main_fxaa3(in VS_OUTPUT_2D IN) : COLOR
 		if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P4;
 
 		if(doneNP) {
-		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.f,0.f)).xyz);
-		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.f,0.f)).xyz);
+		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.,0.)).xyz);
+		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.,0.)).xyz);
 		if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 		if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 		doneN = abs(lumaEndN) >= gradientScaled;
@@ -891,8 +1008,8 @@ float4 ps_main_fxaa3(in VS_OUTPUT_2D IN) : COLOR
 		if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P5;
 
 		if(doneNP) {
-		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.f,0.f)).xyz);
-		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.f,0.f)).xyz);
+		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.,0.)).xyz);
+		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.,0.)).xyz);
 		if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 		if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 		doneN = abs(lumaEndN) >= gradientScaled;
@@ -904,8 +1021,8 @@ float4 ps_main_fxaa3(in VS_OUTPUT_2D IN) : COLOR
 		if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P6;
 
 		if(doneNP) {
-		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.f,0.f)).xyz);
-		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.f,0.f)).xyz);
+		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.,0.)).xyz);
+		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.,0.)).xyz);
 		if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 		if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 		doneN = abs(lumaEndN) >= gradientScaled;
@@ -917,8 +1034,8 @@ float4 ps_main_fxaa3(in VS_OUTPUT_2D IN) : COLOR
 		if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P7;
 
 		if(doneNP) {
-		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.f,0.f)).xyz);
-		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.f,0.f)).xyz);
+		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.,0.)).xyz);
+		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.,0.)).xyz);
 		if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 		if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 		doneN = abs(lumaEndN) >= gradientScaled;
@@ -930,8 +1047,8 @@ float4 ps_main_fxaa3(in VS_OUTPUT_2D IN) : COLOR
 		if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P8;
 
 		if(doneNP) {
-		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.f,0.f)).xyz);
-		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.f,0.f)).xyz);
+		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.,0.)).xyz);
+		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.,0.)).xyz);
 		if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 		if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 		doneN = abs(lumaEndN) >= gradientScaled;
@@ -943,8 +1060,8 @@ float4 ps_main_fxaa3(in VS_OUTPUT_2D IN) : COLOR
 		if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P9;
 
 		if(doneNP) {
-		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.f,0.f)).xyz);
-		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.f,0.f)).xyz);
+		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.,0.)).xyz);
+		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.,0.)).xyz);
 		if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 		if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 		doneN = abs(lumaEndN) >= gradientScaled;
@@ -956,8 +1073,8 @@ float4 ps_main_fxaa3(in VS_OUTPUT_2D IN) : COLOR
 		if(!doneP) posP.y += offNP.y * FXAA_QUALITY__P10;
 
 		if(doneNP) {
-		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.f,0.f)).xyz);
-		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.f,0.f)).xyz);
+		if(!doneN) lumaEndN = luma(tex2Dlod(texSampler5, float4(posN.xy, 0.,0.)).xyz);
+		if(!doneP) lumaEndP = luma(tex2Dlod(texSampler5, float4(posP.xy, 0.,0.)).xyz);
 		if(!doneN) lumaEndN = lumaEndN - lumaNN * 0.5;
 		if(!doneP) lumaEndP = lumaEndP - lumaNN * 0.5;
 		doneN = abs(lumaEndN) >= gradientScaled;
@@ -988,12 +1105,144 @@ float4 ps_main_fxaa3(in VS_OUTPUT_2D IN) : COLOR
 	const bool goodSpan = directionN ? goodSpanN : goodSpanP;
 	const float subpixG = subpixF * subpixF;
 	const float pixelOffset = 0.5 - dst * spanLengthRcp;
-	const float subpixH = subpixG * 0.75; //1.00 (upper limit/softer) .. 0.50 (lower limit/sharper) .. 0.00 (completely off)
+	const float subpixH = subpixG * 0.5; //1.00 (upper limit/softer) .. 0.50 (lower limit/sharper) .. 0.00 (completely off) // reshade : 0.25, fxaa : 0.75
 	const float pixelOffsetGood = goodSpan ? pixelOffset : 0.0;
 	const float pixelOffsetSubpix = max(pixelOffsetGood, subpixH);
 	float2 un = u;
 	const float pl = pixelOffsetSubpix * lengthSign;
 	if(horzSpan) un.y += pl;
 	else un.x += pl;
-	return float4(tex2Dlod(texSampler5, float4(un, 0.f,0.f)).xyz, 1.0f);
+	return float4(tex2Dlod(texSampler5, float4(un, 0.,0.)).xyz, 1.0);
+}
+
+
+float4 ps_main_CAS(const in VS_OUTPUT_2D IN) : COLOR
+{
+	// variant with better diagonals
+
+	const float Contrast   = 0.0; // 0..1, Adjusts the range the shader adapts to high contrast (0 is not all the way off).  Higher values = more high contrast sharpening.
+	const float Sharpening = 1.0; // 0..1, Adjusts sharpening intensity by averaging the original pixels to the sharpened result.  1.0 is the unmodified default.
+
+	const float2 u = IN.tex0 + w_h_height.xy*0.5;
+
+	const float3 e = tex2Dlod(texSampler4, float4(u, 0.,0.)).xyz;
+	[branch] if(w_h_height.w == 1.0) // depth buffer available?
+	{
+		const float depth0 = tex2Dlod(texSamplerDepth, float4(u, 0.,0.)).x;
+		[branch] if((depth0 == 1.0) || (depth0 == 0.0)) // early out if depth too large (=BG) or too small (=DMD,etc)
+			return float4(e, 1.0);
+	}
+
+	// fetch a 3x3 neighborhood around the pixel 'e',
+	//  a b c
+	//  d(e)f
+	//  g h i
+	const float2 um1 = u - w_h_height.xy;
+	const float2 up1 = u + w_h_height.xy;
+
+	const float3 a = tex2Dlod(texSampler4, float4(um1,          0.,0.)).xyz;
+	const float3 b = tex2Dlod(texSampler4, float4(u.x,   um1.y, 0.,0.)).xyz;
+	const float3 c = tex2Dlod(texSampler4, float4(up1.x, um1.y, 0.,0.)).xyz;
+	const float3 d = tex2Dlod(texSampler4, float4(um1.x, u.y,   0.,0.)).xyz;
+	const float3 g = tex2Dlod(texSampler4, float4(um1.x, up1.y, 0.,0.)).xyz; 
+	const float3 f = tex2Dlod(texSampler4, float4(up1.x, u.y,   0.,0.)).xyz;
+	const float3 h = tex2Dlod(texSampler4, float4(u.x,   up1.y, 0.,0.)).xyz;
+	const float3 i = tex2Dlod(texSampler4, float4(up1,          0.,0.)).xyz;
+
+	// Soft min and max.
+	//  a b c             b
+	//  d e f * 0.5  +  d e f * 0.5
+	//  g h i             h
+	// These are 2.0x bigger (factored out the extra multiply).
+	float3 mnRGB = min(min(min(d, e), min(f, b)), h);
+	const float3 mnRGB2 = min(mnRGB, min(min(a, c), min(g, i)));
+	mnRGB += mnRGB2;
+
+	float3 mxRGB = max(max(max(d, e), max(f, b)), h);
+	const float3 mxRGB2 = max(mxRGB, max(max(a, c), max(g, i)));
+	mxRGB += mxRGB2;
+
+	// Smooth minimum distance to signal limit divided by smooth max.
+	const float3 rcpMRGB = rcp(mxRGB);
+	float3 ampRGB = saturate(min(mnRGB, 2.0 - mxRGB) * rcpMRGB);
+
+	// Shaping amount of sharpening.
+	ampRGB = rsqrt(ampRGB);
+
+	const float peak = -3.0 * Contrast + 8.0;
+	const float3 wRGB = -rcp(ampRGB * peak);
+
+	const float3 rcpWeightRGB = rcp(4.0 * wRGB + 1.0);
+
+	//                          0 w 0
+	//  Filter shape:           w 1 w
+	//                          0 w 0  
+	const float3 window = (b + d) + (f + h);
+	const float3 outColor = saturate((window * wRGB + e) * rcpWeightRGB);
+
+	return float4(lerp(e, outColor, Sharpening), 1.);
+}
+
+
+
+float normpdf(const float3 v, const float sigma)
+{
+	return exp(dot(v,v)*(-0.5/(sigma*sigma)))*(0.39894228040143/sigma);
+}
+
+float LI(const float3 l)
+{
+	return dot(l, float3(0.25,0.5,0.25)); // experimental, red and blue should not suffer too much
+	//return dot(l, float3(0.2126, 0.7152, 0.0722));
+}
+
+float4 ps_main_BilateralSharp_CAS(const in VS_OUTPUT_2D IN) : COLOR
+{
+	const float sharpness = 0.625*3.1;
+
+	const float2 u = IN.tex0 + w_h_height.xy*0.5;
+
+	const float3 e = tex2Dlod(texSampler4, float4(u, 0.,0.)).xyz;
+	[branch] if(w_h_height.w == 1.0) // depth buffer available?
+	{
+		const float depth0 = tex2Dlod(texSamplerDepth, float4(u, 0.,0.)).x;
+		[branch] if((depth0 == 1.0) || (depth0 == 0.0)) // early out if depth too large (=BG) or too small (=DMD,etc)
+			return float4(e, 1.0);
+	}
+
+	// Bilateral Blur (crippled)
+	float3 final_colour = float3(0.,0.,0.);
+	float Z = 0.0;
+	[unroll] for (int j=-2; j <= 2; ++j) // 2 = kernelradius
+		[unroll] for (int i=-2; i <= 2; ++i)
+		{
+			const float3 cc = tex2Dlod(texSampler4, float4(u.x + i*(w_h_height.x*0.5), u.y + j*(w_h_height.y*0.5), 0.,0.)).xyz; // *0.5 = 1/kernelradius
+			const float factor = normpdf(cc-e, 0.25); // 0.25 = BSIGMA
+			Z += factor;
+			final_colour += factor*cc;
+		}
+
+	// CAS (without Better Diagonals)
+	const float2 um1 = u - w_h_height.xy;
+	const float2 up1 = u + w_h_height.xy;
+
+	const float b = LI(tex2Dlod(texSampler4, float4(u.x, um1.y, 0.,0.)).xyz);
+	const float d = LI(tex2Dlod(texSampler4, float4(um1.x, u.y, 0.,0.)).xyz);
+	const float f = LI(tex2Dlod(texSampler4, float4(up1.x, u.y, 0.,0.)).xyz);
+	const float h = LI(tex2Dlod(texSampler4, float4(u.x, up1.y, 0.,0.)).xyz);
+	const float e1 = LI(e);
+
+	const float mnRGB = min(min(min(d, e1), min(f, b)), h);
+	const float mxRGB = max(max(max(d, e1), max(f, b)), h);
+
+	// Smooth minimum distance to signal limit divided by smooth max.
+	const float rcpMRGB = rcp(mxRGB);
+	const float ampRGB = saturate(min(mnRGB, 1.0 - mxRGB) * rcpMRGB);
+
+	float3 sharpen = (e-final_colour/Z) * sharpness;
+
+	const float gs_sharpen = dot(sharpen, 0.333333333333);
+	sharpen = lerp(gs_sharpen, sharpen, 0.5);
+
+	return float4(lerp(e, sharpen+e, ampRGB*saturate(sharpness)), 1.0);
 }

@@ -5,6 +5,7 @@
 #include <activdbg.h>
 #include <atlcom.h>
 #include "codeviewedit.h"
+#include "ScriptErrorDialog.h"
 #include "inc\scintilla.h"
 #include "inc\scilexer.h"
 
@@ -53,8 +54,8 @@ class DebuggerModule :
    virtual IDispatch *GetDispatch() { return (IDispatch *)this; }
    virtual const IDispatch *GetDispatch() const { return (const IDispatch *)this; }
 
-   virtual ISelect *GetISelect() { return NULL; }
-   virtual const ISelect *GetISelect() const { return NULL; }
+   virtual ISelect *GetISelect() { return nullptr; }
+   virtual const ISelect *GetISelect() const { return nullptr; }
 
    STDMETHOD(get_Name)(BSTR *pVal);
 
@@ -72,10 +73,10 @@ public:
 class CodeViewDispatch
 {
 public:
-   CodeViewDispatch();
-   ~CodeViewDispatch();
+   CodeViewDispatch() {}
+   ~CodeViewDispatch() {}
 
-   WCHAR m_wzName[MAXNAMEBUFFER];
+   std::wstring m_wName;
    IUnknown *m_punk;
    IDispatch *m_pdisp;
    IScriptable *m_piscript;
@@ -83,23 +84,22 @@ public:
 
    // for VectorSortString
    int SortAgainst(const CodeViewDispatch * const pcvd/*void *pvoid*/) const;
-   int SortAgainstValue(const WCHAR* const pv) const;
+   int SortAgainstValue(const std::wstring &pv) const;
 };
 
-
-
 class CodeViewer :
-   public CWnd,
-   public CComObjectRoot,
-   //public IDispatchImpl<IDragPoint, &IID_IDragPoint, &LIBID_VPinballLib>,
-   //public CComCoClass<CodeViewer,&CLSID_DragPoint>,
-   //public CComObjectRootEx<CComSingleThreadModel>,
-   public IActiveScriptSite,
-   public IActiveScriptSiteWindow,
-   public IInternetHostSecurityManager,
-   public IServiceProvider,
-   public UserData,
-   public CVPrefrence
+	public CWnd,
+	public CComObjectRoot,
+	//public IDispatchImpl<IDragPoint, &IID_IDragPoint, &LIBID_VPinballLib>,
+	//public CComCoClass<CodeViewer,&CLSID_DragPoint>,
+	//public CComObjectRootEx<CComSingleThreadModel>,
+	public IActiveScriptSite,
+    public IActiveScriptSiteDebug,
+	public IActiveScriptSiteWindow,
+	public IInternetHostSecurityManager,
+	public IServiceProvider,
+	public UserData,
+	public CVPrefrence
 {
 public:
    CodeViewer();
@@ -118,7 +118,7 @@ public:
 
    HRESULT AddItem(IScriptable * const piscript, const bool global);
    void RemoveItem(IScriptable * const piscript);
-   HRESULT ReplaceName(IScriptable * const piscript, WCHAR * const wzNew);
+   HRESULT ReplaceName(IScriptable * const piscript, const WCHAR * const wzNew);
    void SelectItem(IScriptable * const piscript);
 
    void Compile(const bool message);
@@ -167,6 +167,29 @@ public:
       return S_OK;
    }
 
+   // IActiveScriptSiteDebug interface
+
+   STDMETHOD(GetDocumentContextFromPosition)(
+       DWORD_PTR dwSourceContext,
+       ULONG uCharacterOffset,
+       ULONG uNumChars,
+       IDebugDocumentContext** ppsc
+       );
+
+   STDMETHOD(GetApplication)(
+       IDebugApplication** ppda
+       );
+
+   STDMETHOD(GetRootApplicationNode)(
+       IDebugApplicationNode** ppdanRoot
+       );
+
+   STDMETHOD(OnScriptErrorDebug)(
+       IActiveScriptErrorDebug* pscripterror,
+       BOOL* pfEnterDebugger,
+       BOOL* pfCallOnScriptErrorWhenContinuing
+       );
+
    // Internet Security interface
 
    virtual HRESULT STDMETHODCALLTYPE GetSecurityId(
@@ -191,10 +214,10 @@ public:
       /* [in] */ DWORD cbContext,
       /* [in] */ DWORD dwReserved);
 
-   bool FControlAlreadyOkayed(CONFIRMSAFETY *pcs);
-   void AddControlToOkayedList(CONFIRMSAFETY *pcs);
-   bool FControlMarkedSafe(CONFIRMSAFETY *pcs);
-   bool FUserManuallyOkaysControl(CONFIRMSAFETY *pcs);
+   bool FControlAlreadyOkayed(const CONFIRMSAFETY *pcs);
+   void AddControlToOkayedList(const CONFIRMSAFETY *pcs);
+   bool FControlMarkedSafe(const CONFIRMSAFETY *pcs);
+   bool FUserManuallyOkaysControl(const CONFIRMSAFETY *pcs);
 
    virtual HRESULT STDMETHODCALLTYPE QueryService(
       REFGUID guidService,
@@ -205,6 +228,7 @@ public:
    BEGIN_COM_MAP(CodeViewer)
       //COM_INTERFACE_ENTRY(IDispatch)
       COM_INTERFACE_ENTRY(IActiveScriptSite)
+      COM_INTERFACE_ENTRY(IActiveScriptSiteDebug)
       COM_INTERFACE_ENTRY(IActiveScriptSiteWindow)
       COM_INTERFACE_ENTRY(IInternetHostSecurityManager)
       COM_INTERFACE_ENTRY(IServiceProvider)
@@ -223,7 +247,7 @@ public:
    void LoadFromFile(const string& filename);
    void SetCaption(const string& szCaption);
 
-   bool ShowTooltip(SCNotification *Scn);
+   bool ShowTooltip(const SCNotification *Scn);
    void ShowAutoComplete(SCNotification *pSCN);
 
    void UpdateRegWithPrefs();
@@ -295,13 +319,13 @@ public:
    vector<char> original_table_script; // if yes, then this one stores the original table script
 
 protected:
-   virtual void PreCreate(CREATESTRUCT& cs);
-   virtual void PreRegisterClass(WNDCLASS& wc);
-   virtual int  OnCreate(CREATESTRUCT& cs);
-   virtual LRESULT WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam);
-   virtual BOOL OnCommand(WPARAM wparam, LPARAM lparam);
-   virtual LRESULT OnNotify(WPARAM wparam, LPARAM lparam);
-   virtual void Destroy();
+    virtual void PreCreate(CREATESTRUCT& cs);
+    virtual void PreRegisterClass(WNDCLASS& wc);
+    virtual int  OnCreate(CREATESTRUCT& cs);
+    virtual LRESULT WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam);
+    virtual BOOL OnCommand(WPARAM wparam, LPARAM lparam);
+    virtual LRESULT OnNotify(WPARAM wparam, LPARAM lparam);
+    virtual void Destroy();
 
 private:
    CodeViewer* GetCodeViewerPtr();
@@ -312,9 +336,9 @@ private:
    void ParseDelimtByColon(string &result, string &wholeline);
    void ParseFindConstruct(size_t &Pos, const string &UCLine, WordType &Type, int &ConstructSize);
    bool ParseStructureName(vector<UserData> *ListIn, UserData ud, const string &UCline, const string &line, const int Lineno);
-
+   
    size_t SureFind(const string &LineIn, const string &ToFind);
-   void RemoveByVal(string &line);
+   void RemoveByVal(string &line); 
    void RemoveNonVBSChars(string &line);
    string ExtractWordOperand(const string &line, const size_t StartPos);
 
@@ -322,7 +346,7 @@ private:
    void ColorError(const int line, const int nchar);
 
    void ParseVPCore();
-
+   
    void ReadLineToParseBrain(string wholeline, const int linecount, vector<UserData> *ListIn);
 
    void GetMembers(vector<UserData>* ListIn, const string &StrIn);
@@ -331,8 +355,33 @@ private:
 
    void GetParamsFromEvent(const UINT iEvent, char * const szParams);
 
+   /**
+    * Resizes the Scintilla widget (the text editor) and the last error widget (if it's visible)
+    * 
+    * This is called when the window is resized (when we get a WM_SIZE message)
+    * or when the last error widget is toggled (since that appears below the text editor)
+    */
+   void ResizeScintillaAndLastError();
+
+   /**
+    * Sets the visibility of the last error information, shown below the Scintilla text editor.
+    */
+   void SetLastErrorVisibility(bool show);
+   void SetLastErrorTextW(const LPCWSTR text);
+   void AppendLastErrorTextW(const std::wstring& text);
+
    IActiveScriptParse* m_pScriptParse;
    IActiveScriptDebug* m_pScriptDebug;
+
+   /**
+    * Will be nullptr on systems that don't support debugging.
+    * 
+    * For example, wine 6.9 says ...
+    * > no class object {78a51822-51f4-11d0-8f20-00805f2cd064} could be created for context 0x17
+    * ... if I try to create CLSID_PrrocessDebugManager
+    */
+   IProcessDebugManager* m_pProcessDebugManager = nullptr;
+
    FINDREPLACE m_findreplacestruct;
    char szFindString[MAX_FIND_LENGTH];
    char szReplaceString[MAX_FIND_LENGTH];
@@ -370,6 +419,26 @@ private:
    HWND m_hwndEventList;
    HWND m_hwndEventText;
    HWND m_hwndFunctionText;
+
+   /**
+    * Whether the last error widget is visible
+    */
+   bool m_lastErrorWidgetVisible = false;
+
+   /**
+    * If true, error dialogs will be suppressed for the play session
+    * 
+    * This gets reset to false whenever the script is started
+    */
+   bool m_suppressErrorDialogs = false;
+
+   /**
+    * Handle for the last error widget
+    * 
+    * The last error widget is a read-only text area that appears below the Scintilla text editor, with the contents of
+    * the last reported compile or runtime error.
+    */
+   HWND m_hwndLastErrorTextArea;
 };
 
 class Collection :
@@ -389,8 +458,9 @@ public:
    STDMETHOD(get_Name)(BSTR *pVal);
    virtual IDispatch *GetDispatch() { return (IDispatch *)this; }
    virtual const IDispatch *GetDispatch() const { return (const IDispatch *)this; }
-   virtual ISelect *GetISelect() { return NULL; }
-   virtual const ISelect *GetISelect() const { return NULL; }
+
+   virtual ISelect *GetISelect() { return nullptr; }
+   virtual const ISelect *GetISelect() const { return nullptr; }
 
    //ILoadable
    virtual HRESULT SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupForPlay);
@@ -429,8 +499,8 @@ public:
       COM_INTERFACE_ENTRY(IEnumVARIANT)
    END_COM_MAP()
 
-   OMCollectionEnum();
-   ~OMCollectionEnum();
+   OMCollectionEnum() {}
+   ~OMCollectionEnum() {}
 
    STDMETHOD(Init)(Collection *pcol);
 
@@ -467,59 +537,59 @@ inline string lowerCase(string input)
 
 inline void RemovePadding(string &line)
 {
-   const size_t LL = line.length();
-   size_t Pos = (line.find_first_not_of("\n\r\t ,"));
-   if (Pos == string::npos)
-   {
-      line.clear();
-      return;
-   }
+    const size_t LL = line.length();
+    size_t Pos = (line.find_first_not_of("\n\r\t ,"));
+    if (Pos == string::npos)
+    {
+        line.clear();
+        return;
+    }
 
-   if (Pos > 0)
-   {
-      if ((SSIZE_T)(LL - Pos) < 1) return;
-      line = line.substr(Pos, (LL - Pos));
-   }
+    if (Pos > 0)
+    {
+        if ((SSIZE_T)(LL - Pos) < 1) return;
+        line = line.substr(Pos, (LL - Pos));
+    }
 
-   Pos = (line.find_last_not_of("\n\r\t ,"));
-   if (Pos != string::npos)
-   {
-      if (Pos < 1) return;
-      line = line.erase(Pos + 1);
-   }
+    Pos = (line.find_last_not_of("\n\r\t ,"));
+    if (Pos != string::npos)
+    {
+        if (Pos < 1) return;
+        line = line.erase(Pos + 1);
+    }
 }
 
 inline string ParseRemoveVBSLineComments(string &Line)
 {
-   const size_t commentIdx = Line.find("'");
-   if (commentIdx == string::npos) return "";
-   string RetVal = Line.substr(commentIdx + 1, string::npos);
-   RemovePadding(RetVal);
-   if (commentIdx > 0)
-   {
-      Line = Line.substr(0, commentIdx);
-      return RetVal;
-   }
-   Line.clear();
-   return RetVal;
+    const size_t commentIdx = Line.find("'");
+    if (commentIdx == string::npos) return "";
+    string RetVal = Line.substr(commentIdx + 1, string::npos);
+    RemovePadding(RetVal);
+    if (commentIdx > 0)
+    {
+        Line = Line.substr(0, commentIdx);
+        return RetVal;
+    }
+    Line.clear();
+    return RetVal;
 }
 
 inline void szLower(char * pC)
 {
-   while (*pC)
-   {
-      if (*pC >= 'A' && *pC <= 'Z')
-         *pC += ('a' - 'A');
-      pC++;
-   }
+    while (*pC)
+    {
+        if (*pC >= 'A' && *pC <= 'Z')
+            *pC += ('a' - 'A');
+        pC++;
+    }
 }
 
 inline void szUpper(char * pC)
 {
-   while (*pC)
-   {
-      if (*pC >= 'a' && *pC <= 'z')
-         *pC -= ('a' - 'A');
-      pC++;
-   }
+    while (*pC)
+    {
+        if (*pC >= 'a' && *pC <= 'z')
+            *pC -= ('a' - 'A');
+        pC++;
+    }
 }

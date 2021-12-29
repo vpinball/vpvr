@@ -20,8 +20,7 @@ extern "C" int __cdecl _purecall(void)
 {
    ShowError("Pure Virtual Function Call");
 
-   CONTEXT Context;
-   ZeroMemory(&Context, sizeof(CONTEXT));
+   CONTEXT Context = {};
 #ifdef _WIN64
    RtlCaptureContext(&Context);
 #else
@@ -37,8 +36,7 @@ extern "C" int __cdecl _purecall(void)
    }
 #endif
 
-   char callStack[2048];
-   ZeroMemory(callStack, sizeof(callStack));
+   char callStack[2048] = {};
    rde::StackTrace::GetCallStack(&Context, true, callStack, sizeof(callStack) - 1);
 
    ShowError(callStack);
@@ -71,26 +69,34 @@ typedef enum ORIENTATION_PREFERENCE {
 } ORIENTATION_PREFERENCE;
 typedef BOOL(WINAPI *pSDARP)(ORIENTATION_PREFERENCE orientation);
 
-static pSDARP SetDisplayAutoRotationPreferences = NULL;
+static pSDARP SetDisplayAutoRotationPreferences = nullptr;
 #endif
 
-#if !defined(DEBUG_XXX) && !defined(_CRTDBG_MAP_ALLOC)
+#if !defined(DEBUG_XXX) && !defined(_CRTDBG_MAP_ALLOC) //&& (!defined(__STDCPP_DEFAULT_NEW_ALIGNMENT__) || (__STDCPP_DEFAULT_NEW_ALIGNMENT__ < 16))
+//!! somewhat custom new/delete still needed, otherwise VPX crashes when exiting the player
+// is this due to win32xx's whacky Shared_Ptr implementation?
 void *operator new(const size_t size_req)
 {
-   return _aligned_malloc(size_req, 16);
+   void* const ptr = _aligned_malloc(size_req, 16);
+   if (!ptr)
+       throw std::bad_alloc{};
+   return ptr;
 }
 void operator delete(void *address)
 {
    _aligned_free(address);
 }
-void *operator new[](const size_t size_req)
+/*void *operator new[](const size_t size_req)
 {
-   return _aligned_malloc(size_req, 16);
+   void* const ptr = _aligned_malloc(size_req, 16);
+   if (!ptr)
+       throw std::bad_alloc{};
+   return ptr;
 }
 void operator delete[](void *address)
 {
    _aligned_free(address);
-}
+}*/
 #endif
 
 CComModule _Module;
@@ -173,16 +179,13 @@ PCHAR* CommandLineToArgvA(PCHAR CmdLine, int* _argc)
       i++;
    }
    _argv[j] = '\0';
-   argv[argc] = NULL;
+   argv[argc] = nullptr;
 
    (*_argc) = argc;
    return argv;
 }
 
 std::map<ItemTypeEnum, EditableInfo> EditableRegistry::m_map;
-int disEnableTrueFullscreen = -1;
-bool table_played_via_command_line = false;
-int logicalNumberOfProcessors = -1;
 
 class VPApp : public CWinApp
 {
@@ -199,15 +202,15 @@ private:
 public:
    VPApp(HINSTANCE hInstance)
    {
-      m_vpinball.theInstance = GetInstanceHandle();
-      SetResourceHandle(m_vpinball.theInstance);
+       m_vpinball.theInstance = GetInstanceHandle();
+       SetResourceHandle(m_vpinball.theInstance);
    }
-
-   virtual ~VPApp()
+   
+   virtual ~VPApp() 
    {
       _Module.Term();
       CoUninitialize();
-      g_pvp = NULL;
+      g_pvp = nullptr;
 
 #ifdef _CRTDBG_MAP_ALLOC
 #ifdef DEBUG_XXX  //disable this in perference to DevPartner
@@ -216,8 +219,8 @@ public:
       _CrtDumpMemoryLeaks();
 #endif
    }
-   virtual BOOL InitInstance()
-   {
+   virtual BOOL InitInstance() 
+   { 
 #ifdef CRASH_HANDLER
       rde::CrashHandler::Init();
 #endif
@@ -235,12 +238,16 @@ public:
       //!! max(2u, std::thread::hardware_concurrency()) ??
       SYSTEM_INFO sysinfo;
       GetSystemInfo(&sysinfo);
-      logicalNumberOfProcessors = sysinfo.dwNumberOfProcessors; //!! this ignores processor groups, so if at some point we need extreme multi threading, implement this in addition!
+      m_vpinball.m_logicalNumberOfProcessors = sysinfo.dwNumberOfProcessors; //!! this ignores processor groups, so if at some point we need extreme multi threading, implement this in addition!
+
+      IsOnWine(); // init static variable in there
+
+      InitXMLregistry(m_vpinball.m_szMyPath);
 
 #if _WIN32_WINNT >= 0x0400 & defined(_ATL_FREE_THREADED)
-      const HRESULT hRes = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+      const HRESULT hRes = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
 #else
-      const HRESULT hRes = CoInitialize(NULL);
+      const HRESULT hRes = CoInitialize(nullptr);
 #endif
       _ASSERTE(SUCCEEDED(hRes));
       _Module.Init(ObjectMap, m_vpinball.theInstance, &LIBID_VPinballLib);
@@ -271,11 +278,16 @@ public:
             || lstrcmpi(szArglist[i], _T("-Help")) == 0 || lstrcmpi(szArglist[i], _T("/Help")) == 0
             || lstrcmpi(szArglist[i], _T("-?")) == 0 || lstrcmpi(szArglist[i], _T("/?")) == 0)
          {
-            m_vpinball.MessageBox("-UnregServer  Unregister VP functions\n-RegServer  Register VP functions\n\n-DisableTrueFullscreen  Force-disable True Fullscreen setting\n\n-EnableTrueFullscreen  Force-enable True Fullscreen setting\n\n-Edit [filename]  load file into VP\n-Play [filename]  load and play file\n-Pov [filename]  load, export pov and close\n-ExtractVBS [filename]  load, export table script and close\n-c1 [customparam] .. -c9 [customparam]  custom user parameters that can be accessed in the script via GetCustomParam(X)",
-               "VPinball Usage", MB_OK);
-            run = false;
-            break;
+            m_vpinball.MessageBox("-UnregServer  Unregister VP functions\n-RegServer  Register VP functions\n\n-DisableTrueFullscreen  Force-disable True Fullscreen setting\n-EnableTrueFullscreen  Force-enable True Fullscreen setting\n-Minimized  Start VP in the 'invisible' minimized window mode\n-ExtMinimized  Start VP in the 'invisible' minimized window mode, but with enabled Pause Menu\n-Primary  Force VP to render on the Primary/Pixel(0,0) Monitor\n\n-LessCPUthreads  Limit the amount of parallel execution\n\n-Edit [filename]  Load file into VP\n-Play [filename]  Load and play file\n-PovEdit [filename]  Load and run file in camera mode, then export new pov on exit\n-Pov [filename]  Load, export pov and close\n-ExtractVBS [filename]  Load, export table script and close\n-c1 [customparam] .. -c9 [customparam]  Custom user parameters that can be accessed in the script via GetCustomParam(X)",
+                 "Visual Pinball Usage", MB_OK);
+            //run = false;
+            exit(0);
          }
+
+         //
+
+         if (lstrcmpi(szArglist[i], _T("-LessCPUthreads")) == 0 || lstrcmpi(szArglist[i], _T("/LessCPUthreads")) == 0)
+             m_vpinball.m_logicalNumberOfProcessors = max(min(m_vpinball.m_logicalNumberOfProcessors, 2), m_vpinball.m_logicalNumberOfProcessors/4); // only use 1/4th the threads, but at least 2 (if there are 2)
 
          //
 
@@ -284,7 +296,7 @@ public:
             _Module.UpdateRegistryFromResource(IDR_VPINBALL, FALSE);
             const HRESULT ret = _Module.UnregisterServer(TRUE);
             if (ret != S_OK)
-               ShowError("Unregister VP functions failed");
+                ShowError("Unregister VP functions failed");
             run = false;
             break;
          }
@@ -293,7 +305,7 @@ public:
             _Module.UpdateRegistryFromResource(IDR_VPINBALL, TRUE);
             const HRESULT ret = _Module.RegisterServer(TRUE);
             if (ret != S_OK)
-               ShowError("Register VP functions failed");
+                ShowError("Register VP functions failed");
             run = false;
             break;
          }
@@ -302,13 +314,13 @@ public:
 
          if (lstrcmpi(szArglist[i], _T("-DisableTrueFullscreen")) == 0 || lstrcmpi(szArglist[i], _T("/DisableTrueFullscreen")) == 0)
          {
-            disEnableTrueFullscreen = 0;
-            continue;
+             m_vpinball.m_disEnableTrueFullscreen = 0;
+             continue;
          }
          if (lstrcmpi(szArglist[i], _T("-EnableTrueFullscreen")) == 0 || lstrcmpi(szArglist[i], _T("/EnableTrueFullscreen")) == 0)
          {
-            disEnableTrueFullscreen = 1;
-            continue;
+             m_vpinball.m_disEnableTrueFullscreen = 1;
+             continue;
          }
 
          //
@@ -317,40 +329,59 @@ public:
          int customIdx = 1;
          for (char t = '1'; t <= '9'; t++)
          {
-            const char cmdTemp1[4] = { '-','c',t,0 };
-            const char cmdTemp2[4] = { '/','c',t,0 };
-            if (lstrcmpi(szArglist[i], cmdTemp1) == 0 || lstrcmpi(szArglist[i], cmdTemp2) == 0)
-            {
-               useCustomParams = true;
-               break;
-            }
-            customIdx++;
+             const char cmdTemp1[4] = {'-','c',t,0};
+             const char cmdTemp2[4] = {'/','c',t,0};
+             if (lstrcmpi(szArglist[i], cmdTemp1) == 0 || lstrcmpi(szArglist[i], cmdTemp2) == 0)
+             {
+                 useCustomParams = true;
+                 break;
+             }
+             customIdx++;
          }
 
-         if (useCustomParams && (i + 1 < nArgs))
+         if (useCustomParams && (i+1<nArgs))
          {
-            const size_t len = strlen(szArglist[i + 1]);
-            VPinball::m_customParameters[customIdx - 1] = new WCHAR[len + 1];
+             const size_t len = strlen(szArglist[i + 1]);
+             m_vpinball.m_customParameters[customIdx - 1] = new WCHAR[len + 1];
 
-             MultiByteToWideCharNull(CP_ACP, 0, szArglist[i + 1], -1, VPinball::m_customParameters[customIdx - 1], (int)len + 1);
+             MultiByteToWideCharNull(CP_ACP, 0, szArglist[i + 1], -1, m_vpinball.m_customParameters[customIdx - 1], (int)len + 1);
 
-            ++i; // two params processed
+             ++i; // two params processed
 
-            continue;
+             continue;
          }
 
          //
 
+         const bool minimized = (lstrcmpi(szArglist[i], _T("-Minimized")) == 0 || lstrcmpi(szArglist[i], _T("/Minimized")) == 0);
+         if (minimized)
+         {
+             m_vpinball.m_open_minimized = true;
+             m_vpinball.m_disable_pause_menu = true;
+         }
+
+         const bool ext_minimized = (lstrcmpi(szArglist[i], _T("-ExtMinimized")) == 0 || lstrcmpi(szArglist[i], _T("/ExtMinimized")) == 0);
+         if (ext_minimized)
+             m_vpinball.m_open_minimized = true;
+
          const bool editfile = (lstrcmpi(szArglist[i], _T("-Edit")) == 0 || lstrcmpi(szArglist[i], _T("/Edit")) == 0);
          const bool playfile = (lstrcmpi(szArglist[i], _T("-Play")) == 0 || lstrcmpi(szArglist[i], _T("/Play")) == 0);
+
+         const bool primaryDisplay = (lstrcmpi(szArglist[i], _T("-Primary")) == 0 || lstrcmpi(szArglist[i], _T("/Primary")) == 0);
+         if (primaryDisplay)
+             m_vpinball.m_primaryDisplay = true;
+
+         const bool povEdit  = (lstrcmpi(szArglist[i], _T("-PovEdit")) == 0 || lstrcmpi(szArglist[i], _T("/PovEdit")) == 0);
+         if (povEdit)
+             m_vpinball.m_povEdit = true;
 
          const bool extractpov = (lstrcmpi(szArglist[i], _T("-Pov")) == 0 || lstrcmpi(szArglist[i], _T("/Pov")) == 0);
          const bool extractscript = (lstrcmpi(szArglist[i], _T("-ExtractVBS")) == 0 || lstrcmpi(szArglist[i], _T("/ExtractVBS")) == 0);
 
-         if ((editfile || playfile || extractpov || extractscript) && (i + 1 < nArgs))
+         if ((editfile || playfile || povEdit || extractpov || extractscript) && (i + 1 < nArgs))
          {
             file = true;
-            play = playfile;
+            play = playfile || povEdit;
             extractPov = extractpov;
             extractScript = extractscript;
 
@@ -362,7 +393,7 @@ public:
 
             // Remove " "
             if (szTableFileName[0] == '"')
-               szTableFileName = szTableFileName.substr(1, szTableFileName.size() - 1);
+               szTableFileName = szTableFileName.substr(1, szTableFileName.size()-1);
 
             // Add current path
             if (szTableFileName[1] != ':') {
@@ -372,7 +403,7 @@ public:
             }
             else
                // Or set from table path
-               if (playfile) {
+               if (play) {
                   string dir;
                   PathFromFilename(szTableFileName, dir);
                   SetCurrentDirectory(dir.c_str());
@@ -393,16 +424,16 @@ public:
       char szFileName[MAXSTRING];
       if (GetModuleFileName(m_vpinball.theInstance, szFileName, MAXSTRING))
       {
-         ITypeLib *ptl = NULL;
+         ITypeLib *ptl = nullptr;
          MAKE_WIDEPTR_FROMANSI(wszFileName, szFileName);
          if (SUCCEEDED(LoadTypeLib(wszFileName, &ptl)))
          {
             // first try to register system-wide (if running as admin)
-            HRESULT hr = RegisterTypeLib(ptl, wszFileName, NULL);
+            HRESULT hr = RegisterTypeLib(ptl, wszFileName, nullptr);
             if (!SUCCEEDED(hr))
             {
                // if failed, register only for current user
-               hr = RegisterTypeLibForUser(ptl, wszFileName, NULL);
+               hr = RegisterTypeLibForUser(ptl, wszFileName, nullptr);
                if (!SUCCEEDED(hr))
                   m_vpinball.MessageBox("Could not register type library. Try running Visual Pinball as administrator.", "Error", MB_ICONWARNING);
             }
@@ -420,73 +451,76 @@ public:
    void InitVPX()
    {
 #if _WIN32_WINNT >= 0x0400 & defined(_ATL_FREE_THREADED)
-      const HRESULT hRes = _Module.RegisterClassObjects(CLSCTX_LOCAL_SERVER,
-         REGCLS_MULTIPLEUSE | REGCLS_SUSPENDED);
-      _ASSERTE(SUCCEEDED(hRes));
-      hRes = CoResumeClassObjects();
+       const HRESULT hRes = _Module.RegisterClassObjects(CLSCTX_LOCAL_SERVER,
+           REGCLS_MULTIPLEUSE | REGCLS_SUSPENDED);
+       _ASSERTE(SUCCEEDED(hRes));
+       hRes = CoResumeClassObjects();
 #else
-      const HRESULT hRes = _Module.RegisterClassObjects(CLSCTX_LOCAL_SERVER,
-         REGCLS_MULTIPLEUSE);
+       const HRESULT hRes = _Module.RegisterClassObjects(CLSCTX_LOCAL_SERVER,
+           REGCLS_MULTIPLEUSE);
 #endif
-      _ASSERTE(SUCCEEDED(hRes));
+       _ASSERTE(SUCCEEDED(hRes));
 
-      INITCOMMONCONTROLSEX iccex;
-      iccex.dwSize = sizeof(INITCOMMONCONTROLSEX);
-      iccex.dwICC = ICC_COOL_CLASSES;
-      InitCommonControlsEx(&iccex);
+       INITCOMMONCONTROLSEX iccex;
+       iccex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+       iccex.dwICC = ICC_COOL_CLASSES;
+       InitCommonControlsEx(&iccex);
 
-      {
-         EditableRegistry::RegisterEditable<Bumper>();
-         EditableRegistry::RegisterEditable<Decal>();
-         EditableRegistry::RegisterEditable<DispReel>();
-         EditableRegistry::RegisterEditable<Flasher>();
-         EditableRegistry::RegisterEditable<Flipper>();
-         EditableRegistry::RegisterEditable<Gate>();
-         EditableRegistry::RegisterEditable<Kicker>();
-         EditableRegistry::RegisterEditable<Light>();
-         EditableRegistry::RegisterEditable<LightSeq>();
-         EditableRegistry::RegisterEditable<Plunger>();
-         EditableRegistry::RegisterEditable<Primitive>();
-         EditableRegistry::RegisterEditable<Ramp>();
-         EditableRegistry::RegisterEditable<Rubber>();
-         EditableRegistry::RegisterEditable<Spinner>();
-         EditableRegistry::RegisterEditable<Surface>();
-         EditableRegistry::RegisterEditable<Textbox>();
-         EditableRegistry::RegisterEditable<Timer>();
-         EditableRegistry::RegisterEditable<Trigger>();
-         EditableRegistry::RegisterEditable<HitTarget>();
-      }
+       {
+           EditableRegistry::RegisterEditable<Bumper>();
+           EditableRegistry::RegisterEditable<Decal>();
+           EditableRegistry::RegisterEditable<DispReel>();
+           EditableRegistry::RegisterEditable<Flasher>();
+           EditableRegistry::RegisterEditable<Flipper>();
+           EditableRegistry::RegisterEditable<Gate>();
+           EditableRegistry::RegisterEditable<Kicker>();
+           EditableRegistry::RegisterEditable<Light>();
+           EditableRegistry::RegisterEditable<LightSeq>();
+           EditableRegistry::RegisterEditable<Plunger>();
+           EditableRegistry::RegisterEditable<Primitive>();
+           EditableRegistry::RegisterEditable<Ramp>();
+           EditableRegistry::RegisterEditable<Rubber>();
+           EditableRegistry::RegisterEditable<Spinner>();
+           EditableRegistry::RegisterEditable<Surface>();
+           EditableRegistry::RegisterEditable<Textbox>();
+           EditableRegistry::RegisterEditable<Timer>();
+           EditableRegistry::RegisterEditable<Trigger>();
+           EditableRegistry::RegisterEditable<HitTarget>();
+       }
 
-      m_vpinball.AddRef();
-      g_pvp = &m_vpinball;
-      m_vpinball.Create(NULL);
-      g_haccel = LoadAccelerators(m_vpinball.theInstance, MAKEINTRESOURCE(IDR_VPACCEL));
+       m_vpinball.AddRef();
+       g_pvp = &m_vpinball;
+       m_vpinball.Create(nullptr);
+       g_haccel = LoadAccelerators(m_vpinball.theInstance, MAKEINTRESOURCE(IDR_VPACCEL));
 
-      if (file)
-      {
-         if (!szTableFileName.empty())
-         {
-            m_vpinball.LoadFileName(szTableFileName, !play);
-            table_played_via_command_line = play;
-         }
-         else
-            loadFileResult = m_vpinball.LoadFile(!play);
+       if (file)
+       {
+           if (!szTableFileName.empty())
+           {
+               m_vpinball.LoadFileName(szTableFileName, !play);
+               m_vpinball.m_table_played_via_command_line = play;
+           }
+           else
+           {
+               loadFileResult = m_vpinball.LoadFile(!play);
+               m_vpinball.m_table_played_via_SelectTableOnStart = LoadValueBoolWithDefault("Editor", "SelectTableOnPlayerClose", true) ? loadFileResult : false;
+           }
 
-         if (extractScript && loadFileResult)
-         {
-            string szScriptFilename = szTableFileName;
-            if (ReplaceExtensionFromFilename(szScriptFilename, "vbs"))
-               m_vpinball.m_ptableActive->m_pcv->SaveToFile(szScriptFilename);
-            m_vpinball.Quit();
-         }
-         if (extractPov && loadFileResult)
-         {
-            string szPOVFilename = szTableFileName;
-            if (ReplaceExtensionFromFilename(szPOVFilename, "pov"))
-               m_vpinball.m_ptableActive->ExportBackdropPOV(szPOVFilename);
-            m_vpinball.Quit();
-         }
-      }
+           if (extractScript && loadFileResult)
+           {
+               string szScriptFilename = szTableFileName;
+               if(ReplaceExtensionFromFilename(szScriptFilename, "vbs"))
+                   m_vpinball.m_ptableActive->m_pcv->SaveToFile(szScriptFilename);
+               m_vpinball.Quit();
+           }
+           if (extractPov && loadFileResult)
+           {
+               string szPOVFilename = szTableFileName;
+               if (ReplaceExtensionFromFilename(szPOVFilename, "pov"))
+                   m_vpinball.m_ptableActive->ExportBackdropPOV(szPOVFilename);
+               m_vpinball.Quit();
+           }
+       }
    }
 
    virtual int Run()
@@ -494,7 +528,7 @@ public:
       if (run)
       {
          if (play && loadFileResult)
-            m_vpinball.DoPlay(false);
+           m_vpinball.DoPlay(m_vpinball.m_povEdit);
 
          // VBA APC handles message loop (bastards)
          m_vpinball.MainMsgLoop();
@@ -505,6 +539,9 @@ public:
 
          _Module.RevokeClassObjects();
          Sleep(THREADS_PAUSE); //wait for any threads to finish
+
+         SaveXMLregistry(m_vpinball.m_szMyPath);
+         ClearXMLregistry();
       }
       return 0;
    }
@@ -536,7 +573,7 @@ extern "C" int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, 
    catch (const CException &e)
    {
       // Display the exception and quit
-      MessageBox(NULL, e.GetText(), AtoT(e.what()), MB_ICONERROR);
+      MessageBox(nullptr, e.GetText(), AtoT(e.what()), MB_ICONERROR);
 
       retval = -1;
    }

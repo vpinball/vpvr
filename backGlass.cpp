@@ -278,7 +278,7 @@ void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DM
 #ifdef DMD_UPSCALE
       const vec4 r((float)(m_dmdx * 3), (float)(m_dmdy * 3), 1.f, (float)(g_pplayer->m_overall_frames % 2048));
 #else
-      const vec4 r((float)g_pplayer->m_dmdx, (float)g_pplayer->m_dmdy, 1.f, (float)(g_pplayer->m_overall_frames % 2048));
+      const vec4 r((float)g_pplayer->m_dmd.x, (float)g_pplayer->m_dmd.y, 1.f, (float)(g_pplayer->m_overall_frames % 2048));
 #endif
       m_pd3dDevice->DMDShader->SetVector(SHADER_vRes_Alpha_time, &r);
 

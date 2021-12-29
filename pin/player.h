@@ -2,7 +2,6 @@
 
 #include "kdtree.h"
 #include "quadtree.h"
-#include <unordered_set>
 #include "Debugger.h"
 #include "typeDefs3D.h"
 #include "sdl2/SDL_TTF.h"
@@ -71,7 +70,7 @@ static const char* regkey_string[eCKeys] = {
    "TableDownKey",
    "EscapeKey"
 };
-static const int regkey_defdik[eCKeys] = {
+static constexpr int regkey_defdik[eCKeys] = {
    DIK_LSHIFT,
    DIK_RSHIFT,
    DIK_Z,
@@ -98,7 +97,7 @@ static const int regkey_defdik[eCKeys] = {
    DIK_NUMPAD2,
    DIK_ESCAPE
 };
-static const int regkey_idc[eCKeys] = {
+static constexpr int regkey_idc[eCKeys] = {
    IDC_LEFTFLIPPER,
    IDC_RIGHTFLIPPER,
    IDC_LEFTTILT,
@@ -131,26 +130,26 @@ static const int regkey_idc[eCKeys] = {
 // pre-rendered frame mechanism instead where possible
 // (e.g. all windows versions except for XP and no "EnableLegacyMaximumPreRenderedFrames" set in the registry)
 /*
-* Class to limit the length of the GPU command buffer queue to at most 'numFrames' frames.
-* Excessive buffering of GPU commands creates high latency and can create stuttery overlong
-* frames when the CPU stalls due to a full command buffer ring.
-*
-* Calling Execute() within a BeginScene() / EndScene() pair creates an artificial pipeline
-* stall by locking a vertex buffer which was rendered from (numFrames-1) frames ago. This
-* forces the CPU to wait and let the GPU catch up so that rendering doesn't lag more than
-* numFrames behind the CPU. It does *NOT* limit the framerate itself, only the drawahead.
-* Note that VP is currently usually GPU-bound.
-*
-* This is similar to Flush() in later DX versions, but doesn't flush the entire command
-* buffer, only up to a certain previous frame.
-*
-* Use of this class has been observed to effectively reduce stutter at least on an NVidia/
-* Win7 64 bit setup. The queue limiting effect can be clearly seen in GPUView.
-*
-* The initial cause for the stutter may be that our command buffers are too big (two
-* packets per frame on typical tables, instead of one), so with more optimizations to
-* draw calls/state changes, none of this may be needed anymore.
-*/
+ * Class to limit the length of the GPU command buffer queue to at most 'numFrames' frames.
+ * Excessive buffering of GPU commands creates high latency and can create stuttery overlong
+ * frames when the CPU stalls due to a full command buffer ring.
+ *
+ * Calling Execute() within a BeginScene() / EndScene() pair creates an artificial pipeline
+ * stall by locking a vertex buffer which was rendered from (numFrames-1) frames ago. This
+ * forces the CPU to wait and let the GPU catch up so that rendering doesn't lag more than
+ * numFrames behind the CPU. It does *NOT* limit the framerate itself, only the drawahead.
+ * Note that VP is currently usually GPU-bound.
+ *
+ * This is similar to Flush() in later DX versions, but doesn't flush the entire command
+ * buffer, only up to a certain previous frame.
+ *
+ * Use of this class has been observed to effectively reduce stutter at least on an NVidia/
+ * Win7 64 bit setup. The queue limiting effect can be clearly seen in GPUView.
+ *
+ * The initial cause for the stutter may be that our command buffers are too big (two
+ * packets per frame on typical tables, instead of one), so with more optimizations to
+ * draw calls/state changes, none of this may be needed anymore.
+ */
 class FrameQueueLimiter
 {
 public:
@@ -161,12 +160,12 @@ public:
       // if available, use the official RenderDevice mechanism
       if (!EnableLegacyMaximumPreRenderedFrames && pd3dDevice->SetMaximumPreRenderedFrames(numFrames))
       {
-         m_buffers.resize(0);
-         return;
+          m_buffers.resize(0);
+          return;
       }
 
       // if not, fallback to cheating the driver
-      m_buffers.resize(numFrames, NULL);
+      m_buffers.resize(numFrames, nullptr);
       m_curIdx = 0;
    }
 
@@ -224,16 +223,16 @@ class NudgeFilter
 public:
    NudgeFilter();
 
-   // adjust an acceleration sample (m_NudgeX or m_NudgeY)
+   // adjust an acceleration sample (m_Nudge.x or m_Nudge.y)
    void sample(float &a, const U64 frameTime);
 
 private:
    // debug output
    IF_DEBUG_NUDGE(void dbg(const char *fmt, ...);)
-      IF_DEBUG_NUDGE(virtual const char *axis() const = 0;)
+   IF_DEBUG_NUDGE(virtual const char *axis() const = 0;)
 
-      // running total of samples
-      float m_sum;
+   // running total of samples
+   float m_sum;
 
    // previous sample
    float m_prv;
@@ -277,6 +276,7 @@ public:
    virtual LRESULT WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 private:
+   void RenderStaticMirror(const bool onlyBalls);
    void RenderDynamicMirror(const bool onlyBalls);
    void RenderMirrorOverlay();
    void InitBallShader();
@@ -344,8 +344,8 @@ public:
 #endif
 
    void DMDdraw(const float DMDposx, const float DMDposy, const float DMDwidth, const float DMDheight, const COLORREF DMDcolor, const float intensity);
-   void Spritedraw(const float posx, const float posy, const float width, const float height, const COLORREF color, Texture* const tex, const float intensity, const bool backdrop = false);
-   void Spritedraw(const float posx, const float posy, const float width, const float height, const COLORREF color, D3DTexture* const tex, const float intensity, const bool backdrop = false);
+   void Spritedraw(const float posx, const float posy, const float width, const float height, const COLORREF color, Texture* const tex, const float intensity, const bool backdrop=false);
+   void Spritedraw(const float posx, const float posy, const float width, const float height, const COLORREF color, D3DTexture* const tex, const float intensity, const bool backdrop=false);
 
 #ifdef ENABLE_SDL
    SDL_Window *m_sdl_playfieldHwnd;
@@ -365,10 +365,10 @@ public:
 
    U32 m_time_msec;
 
-   Ball *m_pactiveball;		// ball the script user can get with ActiveBall
-   Ball *m_pactiveballDebug;	// ball the debugger will use as Activeball when firing events
-   Ball *m_pactiveballBC;	   // ball that the ball control UI will use
-   Vertex3Ds *m_pBCTarget;      // If non-null, the target location for the ball to roll towards
+   Ball *m_pactiveball;      // ball the script user can get with ActiveBall
+   Ball *m_pactiveballDebug; // ball the debugger will use as Activeball when firing events
+   Ball *m_pactiveballBC;    // ball that the ball control UI will use
+   Vertex3Ds *m_pBCTarget;   // If non-null, the target location for the ball to roll towards
 
    std::vector<Ball*> m_vball;
    std::vector<HitFlipper*> m_vFlippers;
@@ -382,8 +382,7 @@ public:
 
    PinInput m_pininput;
 
-   float m_NudgeX;
-   float m_NudgeY;
+   Vertex2D m_Nudge;
 
    NudgeFilterX m_NudgeFilterX;
    NudgeFilterY m_NudgeFilterY;
@@ -399,7 +398,7 @@ public:
    // legacy/VP9 style keyboard nudging
    bool m_legacyNudge;
    float m_legacyNudgeStrength;
-   float m_legacyNudgeBackX, m_legacyNudgeBackY;
+   Vertex2D m_legacyNudgeBack;
    int m_legacyNudgeTime;
 
    EnumAssignKeys m_rgKeys[eCKeys]; //Player's key assignments
@@ -415,7 +414,9 @@ public:
 
    int m_VSync; // targeted refresh rate in Hz, if larger refresh rate it will limit FPS by uSleep() //!! currently does not work adaptively as it would require IDirect3DDevice9Ex which is not supported on WinXP
    int m_maxPrerenderedFrames;
-   int m_FXAA;
+   int m_FXAA;    // =FXAASettings
+   int m_sharpen; // 0=off, 1=CAS, 2=bilateral CAS
+   bool m_AA;
    int m_MSAASamples;
    float m_AAfactor;
 
@@ -429,9 +430,12 @@ public:
    bool m_disableDWM;
 
    bool m_stereo3Denabled;
+   bool m_stereo3DY;
    int m_stereo3D; // 0=off, 1=top/down, 2=interlaced/LG, 3=sidebyside, 4=SteamVR
 
    bool m_headTracking;
+   float m_global3DContrast;
+   float m_global3DDesaturation;
 
    int m_BWrendering; // 0=off, 1=Black&White from RedGreen, 2=B&W from Red only
 
@@ -496,7 +500,7 @@ public:
 #endif
 
 #ifdef DEBUG_BALL_SPIN
-   VertexBuffer * m_ballDebugPoints;
+   VertexBuffer *m_ballDebugPoints;
 #endif
    U32 m_movedPlunger;			// has plunger moved, must have moved at least three times
    U32 m_LastPlungerHit;		// The last time the plunger was in contact (at least the vicinity) of the ball.
@@ -518,8 +522,7 @@ public:
    bool m_recordContacts;             // flag for DoHitTest()
    std::vector< CollisionEvent > m_contacts;
 
-   int m_dmdx;
-   int m_dmdy;
+   int2 m_dmd;
    BaseTexture* m_texdmd;
    BaseTexture* m_texPUP = NULL;
 
@@ -566,16 +569,14 @@ private:
    std::vector< Hitable* > m_vHitNonTrans; // non-transparent hitables
    std::vector< Hitable* > m_vHitTrans;    // transparent hitables
 
-   int m_curAccel_x[PININ_JOYMXCNT];
-   int m_curAccel_y[PININ_JOYMXCNT];
+   int2 m_curAccel[PININ_JOYMXCNT];
 
 #ifdef PLAYBACK
    bool m_playback;
    FILE *m_fplaylog;
 #endif
 
-   float m_BallStretchX;
-   float m_BallStretchY;
+   Vertex2D m_BallStretch;
 
    float m_NudgeShake;         // whether to shake the screen during nudges and how much
    Vertex2D m_ScreenOffset;    // for screen shake effect during nudge
@@ -586,7 +587,7 @@ private:
 
    int m_pauseRefCount;
 
-   bool m_pseudoPause;		// Nothing is moving, but we're still redrawing
+   bool m_pseudoPause;      // Nothing is moving, but we're still redrawing
 
    bool m_supportsTouch;    // Display is a touchscreen?
    bool m_showTouchMessage;
@@ -631,28 +632,30 @@ private:
 
    void SetScreenOffset(const float x, const float y);     // set render offset in screen coordinates, e.g., for the nudge shake
 
-   bool RenderStaticOnly();
-   bool RenderAOOnly();
+   bool RenderStaticOnly() const;
+   bool RenderAOOnly() const;
 
    void InitShader();
    void CalcBallAspectRatio();
-   void GetBallAspectRatio(const Ball * const pball, float &stretchX, float &stretchY, const float zHeight);
+   void GetBallAspectRatio(const Ball * const pball, Vertex2D &stretch, const float zHeight);
    //void DrawBallReflection(Ball *pball, const float zheight, const bool lowDetailBall);
-   unsigned int ProfilingMode();
+   unsigned int ProfilingMode() const;
 
 public:
    void StopPlayer();
    void ToggleFPS();
    void InitFPS();
-   bool ShowFPS();
-   void UpdateBasicShaderMatrix(const Matrix3D* objectTrafo = NULL);
+   bool ShowFPSonly() const;
+   bool ShowStats() const;
+
+   void UpdateBasicShaderMatrix(const Matrix3D& objectTrafo = Matrix3D(1.0f));
    void UpdateCameraModeDisplay();
    void UpdateBackdropSettings(const bool up);
    void UpdateBallShaderMatrix();
 
 #ifdef STEPPING
    U32 m_pauseTimeTarget;
-   bool m_pause;
+   volatile bool m_pause;
    bool m_step;
 #endif
 
@@ -668,7 +671,6 @@ public:
 
    bool m_isRenderingStatic;
 
-   bool m_stereo3DY;
    bool m_overwriteBallImages;
    Texture *m_ballImage;
    Texture *m_decalImage;

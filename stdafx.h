@@ -32,8 +32,8 @@
 //#define DEBUG_XXX // helps to detect out-of-bounds access, needs to link dbghelp.lib then
 //#define SLINTF    // enable debug console output
 
-#define EDITOR_BG_WIDTH 1000
-#define EDITOR_BG_HEIGHT 750
+#define EDITOR_BG_WIDTH    1000
+#define EDITOR_BG_HEIGHT   750
 
 #define MAIN_WINDOW_WIDTH  1280
 #define MAIN_WINDOW_HEIGHT (720-50)
@@ -75,7 +75,7 @@
 #define STEPPING                // enable Physics stepping
 
 #if defined(_DEBUG) && defined(STEPPING)
-#define MOUSEPAUSE
+ #define MOUSEPAUSE
 #endif
 
 //#define PLAYBACK              // bitrotted, also how to record the playback to c:\badlog.txt ?? via LOG ??
@@ -119,27 +119,28 @@
 
 #define _WINSOCKAPI_ // workaround some issue where windows.h is included before winsock2.h in some of the various includes
 
-//#define _SECURE_SCL 0
-//#define _HAS_ITERATOR_DEBUGGING 0
+#define _SECURE_SCL 0
+#define _HAS_ITERATOR_DEBUGGING 0
 
 #define STRICT
 
 #ifndef _WIN32_WINNT
 #if defined(_WIN64) && defined(CRASH_HANDLER)
-#define _WIN32_WINNT 0x0501
+ #define _WIN32_WINNT 0x0501
 #else
-#define _WIN32_WINNT 0x0500
+ #define _WIN32_WINNT 0x0500
 #endif
 #endif
 
 #define _ATL_APARTMENT_THREADED
 
+
 //#include <vld.h>
 #ifdef _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
+ #include <crtdbg.h>
 #endif
 
-#if (_WIN32_WINNT < 0x0500) // for Win32++ and old compilers
+#if(_WIN32_WINNT < 0x0500) // for Win32++ and old compilers
  #define WM_MENURBUTTONUP                0x0122
  #define WM_UNINITMENUPOPUP              0x0125
 #endif

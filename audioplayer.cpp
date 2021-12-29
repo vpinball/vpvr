@@ -4,6 +4,13 @@
 int bass_BG_idx = -1;
 int bass_STD_idx = -1;
 
+/*static*/ float convert2decibelvolume(const float volume) // 0..100 -> DSBVOLUME_MIN..DSBVOLUME_MAX (-10000..0) (db/log scale)
+{
+   const float totalvolume = max(min(volume, 100.0f), 0.0f);
+   const float decibelvolume = (totalvolume == 0.0f) ? DSBVOLUME_MIN : max(logf(totalvolume)*(float)(1000.0 / log(10.0)) - 2000.0f, (float)DSBVOLUME_MIN); // VP legacy conversion
+   return decibelvolume;
+}
+
 AudioPlayer::AudioPlayer()
 {
    m_stream = NULL;
@@ -38,7 +45,7 @@ AudioPlayer::AudioPlayer()
           DSAudioDevices DSads;
           if (!FAILED(DirectSoundEnumerate(DSEnumCallBack, &DSads)))
           {
-              if ((size_t)DSidx >= DSads.size() || DSads[DSidx]->guid != NULL) // primary device has guid NULL, so use BASS_idx = -1 in that case
+              if ((size_t)DSidx >= DSads.size() || DSads[DSidx]->guid != nullptr) // primary device has guid nullptr, so use BASS_idx = -1 in that case
               {
                   BASS_DEVICEINFO dinfo;
                   for (int i = 1; BASS_GetDeviceInfo(i, &dinfo); i++) // 0 = no sound/no device
@@ -59,11 +66,16 @@ AudioPlayer::AudioPlayer()
       }
       }
 
-      //BASS_SetConfig(BASS_CONFIG_FLOATDSP, fTrue);
+      //BASS_SetConfig(/*BASS_CONFIG_THREAD |*/ BASS_CONFIG_FLOATDSP, fTrue);
+
+      BASS_SetConfig(/*BASS_CONFIG_THREAD |*/ BASS_CONFIG_CURVE_PAN, fTrue); // logarithmic scale, similar to DSound (although BASS still takes a 0..1 range)
+      //!! BASS_CONFIG_THREAD so far only works on Net stuff, not these ones here..  :/
+      //BASS_SetConfig(/*BASS_CONFIG_THREAD |*/ BASS_CONFIG_CURVE_VOL, fTrue); // dto. // is now converted internally, as otherwise PinMAMEs altsound will also get affected! (note that pan is not used yet in PinMAME!)
+      BASS_SetConfig(/*BASS_CONFIG_THREAD |*/ BASS_CONFIG_VISTA_SPEAKERS, fTrue); // to make BASS_ChannelSetAttribute(.., BASS_ATTRIB_PAN, pan); work, needs Vista or later
 
       for(unsigned int idx = 0; idx < 2; ++idx)
       {
-      if (!BASS_Init((idx == 0) ? bass_STD_idx : bass_BG_idx, 44100, (SoundMode3D != SNDCFG_SND3D2CH) && (idx == 0) ? BASS_DEVICE_3D : 0, g_pvp->GetHwnd(), NULL)) // note that sample rate is usually ignored and set depending on the input/file automatically
+      if (!BASS_Init((idx == 0) ? bass_STD_idx : bass_BG_idx, 44100, (SoundMode3D != SNDCFG_SND3D2CH) && (idx == 0) ? 0 /*| BASS_DEVICE_MONO*/ /*| BASS_DEVICE_DSOUND*/ : 0, g_pvp->GetHwnd(), nullptr)) // note that sample rate is usually ignored and set depending on the input/file automatically
       {
          const int code = BASS_ErrorGetCode();
          string bla2;
@@ -127,16 +139,20 @@ bool AudioPlayer::MusicActive()
    }
 }*/
 
-bool AudioPlayer::MusicInit(const char * const szFileName, const float volume)
+bool AudioPlayer::MusicInit(const string& szFileName, const string& alt_szFileName, const float volume)
 {
    if (bass_BG_idx != -1 && bass_STD_idx != bass_BG_idx) BASS_SetDevice(bass_BG_idx);
-   m_stream = BASS_StreamCreateFile(FALSE, szFileName, 0, 0, /*BASS_SAMPLE_LOOP*/0); //!! ?
+
+   m_stream = BASS_StreamCreateFile(FALSE, szFileName.c_str(), 0, 0, /*BASS_SAMPLE_LOOP*/0); //!! ?
+   if (m_stream == NULL)
+      m_stream = BASS_StreamCreateFile(FALSE, alt_szFileName.c_str(), 0, 0, /*BASS_SAMPLE_LOOP*/0); //!! ?
+
    if (m_stream == NULL)
    {
       const int code = BASS_ErrorGetCode();
       string bla2;
       BASS_ErrorMapCode(code, bla2);
-      const string bla = string("BASS music/sound library cannot load \"") + szFileName + "\" (error " + std::to_string(code) + ": " + bla2 + ")";
+      const string bla = "BASS music/sound library cannot load \"" + szFileName + "\" (error " + std::to_string(code) + ": " + bla2 + ")";
       g_pvp->MessageBox(bla.c_str(), "Error", MB_ICONERROR);
       return false;
    }

@@ -1,12 +1,12 @@
-// Win32++   Version 8.8
-// Release Date: 15th October 2020
+// Win32++   Version 8.9.1
+// Release Date: 10th September 2021
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2020  David Nash
+// Copyright (c) 2005-2021  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -63,6 +63,10 @@
 
 #ifndef GET_WHEEL_DELTA_WPARAM
   #define GET_WHEEL_DELTA_WPARAM(wparam)  ((short)HIWORD(wparam))
+#endif
+
+#ifndef WM_MOUSEWHEEL
+  #define WM_MOUSEWHEEL                   0x020A
 #endif
 
 namespace Win32xx
@@ -143,7 +147,7 @@ namespace Win32xx
     {
         // Get the window size in client area co-ordinates
         CRect windowRect = GetWindowRect();
-        ScreenToClient(windowRect);
+        VERIFY(ScreenToClient(windowRect));
 
         // Fill the right side with the specified brush
         CRect rcRight(m_totalSize.cx, 0, windowRect.right, windowRect.bottom);
@@ -155,10 +159,8 @@ namespace Win32xx
     }
 
     // Called when the background for the window is erased.
-    inline BOOL CScrollView::OnEraseBkgnd(CDC& dc)
+    inline BOOL CScrollView::OnEraseBkgnd(CDC&)
     {
-        UNREFERENCED_PARAMETER(dc);
-
         if (m_totalSize == CSize(0, 0))
             return FALSE;   // Allow background erasure when the scroll bars are disabled
         else
@@ -166,11 +168,8 @@ namespace Win32xx
     }
 
     // Called when an event occurs in the horizontal scroll bar.
-    inline LRESULT CScrollView::OnHScroll(UINT msg, WPARAM wparam, LPARAM lparam)
+    inline LRESULT CScrollView::OnHScroll(UINT, WPARAM wparam, LPARAM)
     {
-        UNREFERENCED_PARAMETER(msg);
-        UNREFERENCED_PARAMETER(lparam);
-
         CPoint newPos = m_currentPos;
         SCROLLINFO si;
         ZeroMemory(&si, sizeof(si));
@@ -210,7 +209,7 @@ namespace Win32xx
 
         // Scroll the window
         int deltaX = newPos.x - m_currentPos.x;
-        ScrollWindowEx(-deltaX, 0, NULL, NULL, NULL, NULL, SW_INVALIDATE);
+        ScrollWindowEx(-deltaX, 0, NULL, NULL, 0, NULL, SW_INVALIDATE);
         SetScrollPosition(newPos);
 
         return 0;
@@ -276,7 +275,7 @@ namespace Win32xx
             // Scroll the window.
             int deltaX = newPos.x - m_currentPos.x;
             int deltaY = newPos.y - m_currentPos.y;
-            ScrollWindowEx(-deltaX, -deltaY, NULL, NULL, NULL, NULL, SW_INVALIDATE);
+            ScrollWindowEx(-deltaX, -deltaY, NULL, NULL, 0, NULL, SW_INVALIDATE);
             SetScrollPosition(newPos);
         }
 
@@ -321,11 +320,8 @@ namespace Win32xx
     }
 
     // Called when the mouse wheel is rotated.
-    inline LRESULT CScrollView::OnMouseWheel(UINT msg, WPARAM wparam, LPARAM lparam)
+    inline LRESULT CScrollView::OnMouseWheel(UINT, WPARAM wparam, LPARAM)
     {
-        UNREFERENCED_PARAMETER(msg);
-        UNREFERENCED_PARAMETER(lparam);
-
         int WheelDelta = GET_WHEEL_DELTA_WPARAM(wparam);
         int cyPos = ::MulDiv(WheelDelta, m_lineSize.cy, WHEEL_DELTA);
         CPoint newPos = GetScrollPosition();
@@ -336,18 +332,15 @@ namespace Win32xx
 
         // Scroll the window.
         int deltaY = newPos.y - m_currentPos.y;
-        ScrollWindowEx(0, -deltaY, NULL, NULL, NULL, NULL, SW_INVALIDATE);
+        ScrollWindowEx(0, -deltaY, NULL, NULL, 0, NULL, SW_INVALIDATE);
         SetScrollPosition(newPos);
 
         return 0;
     }
 
     // Called when an event occurs in the vertical scroll bar.
-    inline LRESULT CScrollView::OnVScroll(UINT msg, WPARAM wparam, LPARAM lparam)
+    inline LRESULT CScrollView::OnVScroll(UINT, WPARAM wparam, LPARAM)
     {
-        UNREFERENCED_PARAMETER(msg);
-        UNREFERENCED_PARAMETER(lparam);
-
         CPoint newPos = m_currentPos;
         SCROLLINFO si;
         ZeroMemory(&si, sizeof(si));
@@ -387,7 +380,7 @@ namespace Win32xx
 
         // Scroll the window.
         int deltaY = newPos.y - m_currentPos.y;
-        ScrollWindowEx(0, -deltaY, NULL, NULL, NULL, NULL, SW_INVALIDATE);
+        ScrollWindowEx(0, -deltaY, NULL, NULL, 0, NULL, SW_INVALIDATE);
         SetScrollPosition(newPos);
 
         return 0;
@@ -396,10 +389,6 @@ namespace Win32xx
     // Called after a window's size has changed.
     inline LRESULT CScrollView::OnWindowPosChanged(UINT msg, WPARAM wparam, LPARAM lparam)
     {
-        UNREFERENCED_PARAMETER(msg);
-        UNREFERENCED_PARAMETER(wparam);
-        UNREFERENCED_PARAMETER(lparam);
-
         UpdateBars();
         Invalidate();
 
@@ -561,7 +550,7 @@ namespace Win32xx
                 int yNewPos = MIN(m_currentPos.y, totalRect.Height() - viewRect.Height() + cyScroll);
                 yNewPos = MAX(yNewPos, 0);
                 int yDelta = yNewPos - m_currentPos.y;
-                ScrollWindowEx(-xDelta, -yDelta, NULL, NULL, NULL, NULL, SW_INVALIDATE);
+                ScrollWindowEx(-xDelta, -yDelta, NULL, NULL, 0, NULL, SW_INVALIDATE);
 
                 m_currentPos.x = xNewPos;
                 m_currentPos.y = yNewPos;

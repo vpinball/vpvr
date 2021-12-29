@@ -8,19 +8,18 @@
 Light::Light() : m_lightcenter(this)
 {
    m_menuid = IDR_SURFACEMENU;
-   m_customMoverVBuffer = NULL;
-   m_customMoverIBuffer = NULL;
-   m_bulbLightIndexBuffer = NULL;
-   m_bulbLightVBuffer = NULL;
-   m_bulbSocketIndexBuffer = NULL;
-   m_bulbSocketVBuffer = NULL;
+   m_customMoverVBuffer = nullptr;
+   m_customMoverIBuffer = nullptr;
+   m_bulbLightIndexBuffer = nullptr;
+   m_bulbLightVBuffer = nullptr;
+   m_bulbSocketIndexBuffer = nullptr;
+   m_bulbSocketVBuffer = nullptr;
    m_d.m_depthBias = 0.0f;
    m_d.m_shape = ShapeCustom;
    m_d.m_visible = true;
    m_roundLight = false;
-   m_propVisual = NULL;
+   m_propVisual = nullptr;
    m_updateBulbLightHeight = false;
-   memset(m_d.m_szSurface, 0, sizeof(m_d.m_szSurface));
 }
 
 Light::~Light()
@@ -72,7 +71,7 @@ HRESULT Light::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
    m_inPlayState = m_d.m_state;
    m_d.m_visible = true;
 
-   return InitVBA(fTrue, 0, NULL);
+   return InitVBA(fTrue, 0, nullptr);
 }
 
 void Light::SetDefaults(bool fromMouseClick)
@@ -91,16 +90,13 @@ void Light::SetDefaults(bool fromMouseClick)
    m_d.m_color = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "Color", RGB(255, 255, 0)) : RGB(255, 255, 0);
    m_d.m_color2 = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "ColorFull", RGB(255, 255, 255)) : RGB(255, 255, 255);
 
-   char buf[MAXTOKEN] = { 0 };
-   HRESULT hr = LoadValueString("DefaultProps\\Light", "OffImage", buf, MAXTOKEN);
+   HRESULT hr = LoadValue("DefaultProps\\Light", "OffImage", m_d.m_szImage);
    if ((hr != S_OK) || !fromMouseClick)
       m_d.m_szImage.clear();
-   else
-      m_d.m_szImage = buf;
 
-   hr = LoadValueString("DefaultProps\\Light", "BlinkPattern", m_rgblinkpattern, NUM_RGB_BLINK_PATTERN);
+   hr = LoadValue("DefaultProps\\Light", "BlinkPattern", m_rgblinkpattern);
    if ((hr != S_OK) || !fromMouseClick)
-      strncpy_s(m_rgblinkpattern, "10", sizeof(m_rgblinkpattern) - 1);
+      m_rgblinkpattern = "10";
 
    m_blinkinterval = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "BlinkInterval", 125) : 125;
    m_d.m_intensity = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Light", "Intensity", 1.0f) : 1.0f;
@@ -110,9 +106,9 @@ void Light::SetDefaults(bool fromMouseClick)
 
    //m_d.m_bordercolor = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "BorderColor", RGB(0,0,0)) : RGB(0,0,0);
 
-   hr = LoadValueString("DefaultProps\\Light", "Surface", m_d.m_szSurface, MAXTOKEN);
+   hr = LoadValue("DefaultProps\\Light", "Surface", m_d.m_szSurface);
    if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_szSurface[0] = 0;
+      m_d.m_szSurface.clear();
 
    m_d.m_fadeSpeedUp = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Light", "FadeSpeedUp", 0.2f) : 0.2f;
    m_d.m_fadeSpeedDown = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Light", "FadeSpeedDown", 0.2f) : 0.2f;
@@ -135,11 +131,11 @@ void Light::WriteRegDefaults()
    SaveValueInt("DefaultProps\\Light", "TimerInterval", m_d.m_tdr.m_TimerInterval);
    SaveValueInt("DefaultProps\\Light", "Color", m_d.m_color);
    SaveValueInt("DefaultProps\\Light", "ColorFull", m_d.m_color2);
-   SaveValueString("DefaultProps\\Light", "OffImage", m_d.m_szImage);
-   SaveValueString("DefaultProps\\Light", "BlinkPattern", m_rgblinkpattern);
+   SaveValue("DefaultProps\\Light", "OffImage", m_d.m_szImage);
+   SaveValue("DefaultProps\\Light", "BlinkPattern", m_rgblinkpattern);
    SaveValueInt("DefaultProps\\Light", "BlinkInterval", m_blinkinterval);
    //SaveValueInt("DefaultProps\\Light","BorderColor", m_d.m_bordercolor);
-   SaveValueString("DefaultProps\\Light", "Surface", m_d.m_szSurface);
+   SaveValue("DefaultProps\\Light", "Surface", m_d.m_szSurface);
    SaveValueFloat("DefaultProps\\Light", "FadeSpeedUp", m_d.m_fadeSpeedUp);
    SaveValueFloat("DefaultProps\\Light", "FadeSpeedDown", m_d.m_fadeSpeedDown);
    SaveValueFloat("DefaultProps\\Light", "Intensity", m_d.m_intensity);
@@ -224,7 +220,7 @@ void Light::RenderOutline(Sur * const psur)
    psur->SetLineColor(RGB(0, 0, 0), false, 0);
    psur->SetFillColor(-1);
    psur->SetObject(this);
-   psur->SetObject(NULL);
+   psur->SetObject(nullptr);
 
    switch (m_d.m_shape)
    {
@@ -427,7 +423,7 @@ void Light::RenderDynamic()
    if (!m_d.m_visible || m_ptable->m_reflectionEnabled)
       return;
 
-   if (m_customMoverVBuffer == NULL) // in case of degenerate light
+   if (m_customMoverVBuffer == nullptr) // in case of degenerate light
       return;
 
    if (m_backglass && !GetPTable()->GetDecalsEnabled())
@@ -442,10 +438,10 @@ void Light::RenderDynamic()
 
    if ((m_duration > 0) && (m_timerDurationEndTime < m_d.m_time_msec))
    {
-      m_inPlayState = (LightState)m_finalState;
-      m_duration = 0;
-      if (m_inPlayState == LightStateBlinking)
-         RestartBlinker(g_pplayer->m_time_msec);
+       m_inPlayState = (LightState)m_finalState;
+       m_duration = 0;
+       if (m_inPlayState == LightStateBlinking)
+           RestartBlinker(g_pplayer->m_time_msec);
    }
    if (m_inPlayState == LightStateBlinking)
       UpdateBlinker(g_pplayer->m_time_msec);
@@ -471,13 +467,13 @@ void Light::RenderDynamic()
       }
    }
 
-   Texture *offTexel = NULL;
+   Texture *offTexel = nullptr;
 
    // early out all lights with no contribution
    const vec4 lightColor2_falloff_power = convertColor(m_d.m_color2, m_d.m_falloff_power);
    vec4 lightColor_intensity = convertColor(m_d.m_color);
    if (m_d.m_BulbLight ||
-      (!m_d.m_BulbLight && (m_surfaceTexture == (offTexel = m_ptable->GetImage(m_d.m_szImage))) && (offTexel != NULL) && !m_backglass && !m_d.m_imageMode)) // assumes/requires that the light in this kind of state is basically -exactly- the same as the static/(un)lit playfield/surface and accompanying image
+      (!m_d.m_BulbLight && (m_surfaceTexture == (offTexel = m_ptable->GetImage(m_d.m_szImage))) && (offTexel != nullptr) && !m_backglass && !m_d.m_imageMode)) // assumes/requires that the light in this kind of state is basically -exactly- the same as the static/(un)lit playfield/surface and accompanying image
    {
       if (m_d.m_currentIntensity == 0.f)
          return;
@@ -523,7 +519,7 @@ void Light::RenderDynamic()
       pd3dDevice->classicLightShader->SetLightImageBackglassMode(m_d.m_imageMode, m_backglass);
       pd3dDevice->classicLightShader->SetMaterial(m_surfaceMaterial);
 
-      if (offTexel != NULL)
+      if (offTexel != nullptr)
       {
          pd3dDevice->classicLightShader->SetBool(SHADER_hdrTexture0, offTexel->IsHDR());
          pd3dDevice->classicLightShader->SetTechnique(SHADER_TECHNIQUE_light_with_texture);
@@ -549,7 +545,7 @@ void Light::RenderDynamic()
 
       pd3dDevice->lightShader->SetTechnique(SHADER_TECHNIQUE_bulb_light);
 
-      Pin3D * const ppin3d = &g_pplayer->m_pin3d;
+      const Pin3D * const ppin3d = &g_pplayer->m_pin3d;
       ppin3d->EnableAlphaBlend(false, false, false);
       //pd3dDevice->SetRenderState(RenderDevice::SRCBLEND,  RenderDevice::SRC_ALPHA);  // add the lightcontribution
       pd3dDevice->SetRenderState(RenderDevice::DESTBLEND, RenderDevice::INVSRC_COLOR); // but also modulate the light first with the underlying elements by (1+lightcontribution, e.g. a very crude approximation of real lighting)
@@ -607,7 +603,7 @@ void Light::RenderDynamic()
    else
       pd3dDevice->lightShader->End();
 
-   if (!m_d.m_BulbLight && offTexel != NULL && !m_backglass) // See above: // TOTAN and Flintstones inserts break if alpha blending is disabled here.
+   if (!m_d.m_BulbLight && offTexel != nullptr /*&& m_ptable->m_reflectElementsOnPlayfield && g_pplayer->m_pf_refl*/ && !m_backglass) // See above: // TOTAN and Flintstones inserts break if alpha blending is disabled here.
    {
       pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
       pd3dDevice->SetRenderState(RenderDevice::SRCBLEND, RenderDevice::SRC_ALPHA);
@@ -628,7 +624,7 @@ void Light::PrepareMoversCustom()
 {
    GetRgVertex(m_vvertex);
 
-   if (m_vvertex.size() == 0)
+   if (m_vvertex.empty())
       return;
 
    float maxdist = 0.f;
@@ -643,7 +639,7 @@ void Light::PrepareMoversCustom()
 
          const float dx = m_vvertex[i].x - m_d.m_vCenter.x;
          const float dy = m_vvertex[i].y - m_d.m_vCenter.y;
-         const float dist = dx * dx + dy * dy;
+         const float dist = dx*dx + dy*dy;
          if (dist > maxdist)
             maxdist = dist;
       }
@@ -664,12 +660,12 @@ void Light::PrepareMoversCustom()
    if (m_customMoverVBuffer)
       m_customMoverVBuffer->release();
 
-   if (vtri.size() == 0)
+   if (vtri.empty())
    {
-      char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
-      WideCharToMultiByteNull(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
+      char name[sizeof(m_wzName)/sizeof(m_wzName[0])];
+      WideCharToMultiByteNull(CP_ACP, 0, m_wzName, -1, name, sizeof(name), nullptr, nullptr);
       char textBuffer[MAX_PATH];
-      _snprintf_s(textBuffer, MAX_PATH - 1, "%s has an invalid shape! It can not be rendered!", name);
+      _snprintf_s(textBuffer, MAX_PATH-1, "%s has an invalid shape! It can not be rendered!", name);
       ShowError(textBuffer);
       return;
    }
@@ -679,7 +675,7 @@ void Light::PrepareMoversCustom()
 
    WORD* bufi;
    m_customMoverIBuffer->lock(0, 0, (void**)&bufi, 0);
-   memcpy(bufi, vtri.data(), vtri.size() * sizeof(WORD));
+   memcpy(bufi, vtri.data(), vtri.size()*sizeof(WORD));
    m_customMoverIBuffer->unlock();
 
    m_customMoverVertexNum = (unsigned int)m_vvertex.size();
@@ -708,7 +704,7 @@ void Light::PrepareMoversCustom()
          buf[t].z = height + 0.1f;
 
          // Check if we are using a custom texture.
-         if (pin != NULL)
+         if (pin != nullptr)
          {
             buf[t].tu = pv0->x * inv_tablewidth;
             buf[t].tv = pv0->y * inv_tableheight;
@@ -827,7 +823,7 @@ void Light::RenderStatic()
 
 void Light::SetObjectPos()
 {
-   m_vpinball->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
+    m_vpinball->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
 }
 
 void Light::MoveOffset(const float dx, const float dy)
@@ -848,7 +844,7 @@ HRESULT Light::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupF
 {
    BiffWriter bw(pstm, hcrypthash);
 
-   bw.WriteStruct(FID(VCEN), &m_d.m_vCenter, sizeof(Vertex2D));
+   bw.WriteVector2(FID(VCEN), m_d.m_vCenter);
    bw.WriteFloat(FID(RADI), m_d.m_falloff);
    bw.WriteFloat(FID(FAPO), m_d.m_falloff_power);
    bw.WriteInt(FID(STAT), m_d.m_state);
@@ -904,7 +900,7 @@ HRESULT Light::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version, 
    m_d.m_color = RGB(255, 255, 0);
    m_d.m_color2 = RGB(255, 255, 255);
 
-   strncpy_s(m_rgblinkpattern, "10", sizeof(m_rgblinkpattern) - 1);
+   m_rgblinkpattern = "10";
    m_blinkinterval = 125;
    //m_d.m_borderwidth = 0;
    //m_d.m_bordercolor = RGB(0,0,0);
@@ -922,43 +918,43 @@ HRESULT Light::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version, 
 
 bool Light::LoadToken(const int id, BiffReader * const pbr)
 {
-   switch (id)
+   switch(id)
    {
    case FID(PIID): pbr->GetInt((int *)pbr->m_pdata); break;
-   case FID(VCEN): pbr->GetStruct(&m_d.m_vCenter, sizeof(Vertex2D)); break;
-   case FID(RADI): pbr->GetFloat(&m_d.m_falloff); break;
-   case FID(FAPO): pbr->GetFloat(&m_d.m_falloff_power); break;
+   case FID(VCEN): pbr->GetVector2(m_d.m_vCenter); break;
+   case FID(RADI): pbr->GetFloat(m_d.m_falloff); break;
+   case FID(FAPO): pbr->GetFloat(m_d.m_falloff_power); break;
    case FID(STAT):
    {
       pbr->GetInt(&m_d.m_state);
       m_inPlayState = m_d.m_state;
       break;
    }
-   case FID(COLR): pbr->GetInt(&m_d.m_color); break;
-   case FID(COL2): pbr->GetInt(&m_d.m_color2); break;
+   case FID(COLR): pbr->GetInt(m_d.m_color); break;
+   case FID(COL2): pbr->GetInt(m_d.m_color2); break;
    case FID(IMG1): pbr->GetString(m_d.m_szImage); break;
-   case FID(TMON): pbr->GetBool(&m_d.m_tdr.m_TimerEnabled); break;
-   case FID(TMIN): pbr->GetInt(&m_d.m_tdr.m_TimerInterval); break;
+   case FID(TMON): pbr->GetBool(m_d.m_tdr.m_TimerEnabled); break;
+   case FID(TMIN): pbr->GetInt(m_d.m_tdr.m_TimerInterval); break;
    case FID(SHAP): m_roundLight = true; break;
    case FID(BPAT): pbr->GetString(m_rgblinkpattern); break;
-   case FID(BINT): pbr->GetInt(&m_blinkinterval); break;
-      //case FID(BCOL): pbr->GetInt(&m_d.m_bordercolor); break;
-   case FID(BWTH): pbr->GetFloat(&m_d.m_intensity); break;
-   case FID(TRMS): pbr->GetFloat(&m_d.m_transmissionScale); break;
+   case FID(BINT): pbr->GetInt(m_blinkinterval); break;
+   //case FID(BCOL): pbr->GetInt(m_d.m_bordercolor); break;
+   case FID(BWTH): pbr->GetFloat(m_d.m_intensity); break;
+   case FID(TRMS): pbr->GetFloat(m_d.m_transmissionScale); break;
    case FID(SURF): pbr->GetString(m_d.m_szSurface); break;
-   case FID(NAME): pbr->GetWideString(m_wzName); break;
-   case FID(BGLS): pbr->GetBool(&m_backglass); break;
-   case FID(LIDB): pbr->GetFloat(&m_d.m_depthBias); break;
-   case FID(FASP): pbr->GetFloat(&m_d.m_fadeSpeedUp); break;
-   case FID(FASD): pbr->GetFloat(&m_d.m_fadeSpeedDown); break;
-   case FID(BULT): pbr->GetBool(&m_d.m_BulbLight); break;
-   case FID(IMMO): pbr->GetBool(&m_d.m_imageMode); break;
-   case FID(SHBM): pbr->GetBool(&m_d.m_showBulbMesh); break;
-   case FID(STBM): pbr->GetBool(&m_d.m_staticBulbMesh); break;
-   case FID(SHRB): pbr->GetBool(&m_d.m_showReflectionOnBall); break;
-   case FID(BMSC): pbr->GetFloat(&m_d.m_meshRadius); break;
-   case FID(BMVA): pbr->GetFloat(&m_d.m_modulate_vs_add); break;
-   case FID(BHHI): pbr->GetFloat(&m_d.m_bulbHaloHeight); break;
+   case FID(NAME): pbr->GetWideString(m_wzName,sizeof(m_wzName)/sizeof(m_wzName[0])); break;
+   case FID(BGLS): pbr->GetBool(m_backglass); break;
+   case FID(LIDB): pbr->GetFloat(m_d.m_depthBias); break;
+   case FID(FASP): pbr->GetFloat(m_d.m_fadeSpeedUp); break;
+   case FID(FASD): pbr->GetFloat(m_d.m_fadeSpeedDown); break;
+   case FID(BULT): pbr->GetBool(m_d.m_BulbLight); break;
+   case FID(IMMO): pbr->GetBool(m_d.m_imageMode); break;
+   case FID(SHBM): pbr->GetBool(m_d.m_showBulbMesh); break;
+   case FID(STBM): pbr->GetBool(m_d.m_staticBulbMesh); break;
+   case FID(SHRB): pbr->GetBool(m_d.m_showReflectionOnBall); break;
+   case FID(BMSC): pbr->GetFloat(m_d.m_meshRadius); break;
+   case FID(BMVA): pbr->GetFloat(m_d.m_modulate_vs_add); break;
+   case FID(BHHI): pbr->GetFloat(m_d.m_bulbHaloHeight); break;
    default:
    {
       LoadPointToken(id, pbr, pbr->m_version);
@@ -986,17 +982,17 @@ void Light::PutPointCenter(const Vertex2D& pv)
 
 void Light::EditMenu(CMenu &menu)
 {
-   menu.EnableMenuItem(ID_WALLMENU_FLIP, MF_BYCOMMAND | ((m_d.m_shape != ShapeCustom) ? MF_GRAYED : MF_ENABLED));
-   menu.EnableMenuItem(ID_WALLMENU_MIRROR, MF_BYCOMMAND | ((m_d.m_shape != ShapeCustom) ? MF_GRAYED : MF_ENABLED));
-   menu.EnableMenuItem(ID_WALLMENU_ROTATE, MF_BYCOMMAND | ((m_d.m_shape != ShapeCustom) ? MF_GRAYED : MF_ENABLED));
-   menu.EnableMenuItem(ID_WALLMENU_SCALE, MF_BYCOMMAND | ((m_d.m_shape != ShapeCustom) ? MF_GRAYED : MF_ENABLED));
-   menu.EnableMenuItem(ID_WALLMENU_ADDPOINT, MF_BYCOMMAND | ((m_d.m_shape != ShapeCustom) ? MF_GRAYED : MF_ENABLED));
+    menu.EnableMenuItem(ID_WALLMENU_FLIP, MF_BYCOMMAND | ((m_d.m_shape != ShapeCustom) ? MF_GRAYED : MF_ENABLED));
+    menu.EnableMenuItem(ID_WALLMENU_MIRROR, MF_BYCOMMAND | ((m_d.m_shape != ShapeCustom) ? MF_GRAYED : MF_ENABLED));
+    menu.EnableMenuItem(ID_WALLMENU_ROTATE, MF_BYCOMMAND | ((m_d.m_shape != ShapeCustom) ? MF_GRAYED : MF_ENABLED));
+    menu.EnableMenuItem(ID_WALLMENU_SCALE, MF_BYCOMMAND | ((m_d.m_shape != ShapeCustom) ? MF_GRAYED : MF_ENABLED));
+    menu.EnableMenuItem(ID_WALLMENU_ADDPOINT, MF_BYCOMMAND | ((m_d.m_shape != ShapeCustom) ? MF_GRAYED : MF_ENABLED));
 }
 
 void Light::AddPoint(int x, int y, const bool smooth)
 {
    STARTUNDO
-      const Vertex2D v = m_ptable->TransformPoint(x, y);
+   const Vertex2D v = m_ptable->TransformPoint(x, y);
 
    std::vector<RenderVertex> vvertex;
    GetRgVertex(vvertex);
@@ -1109,7 +1105,7 @@ STDMETHODIMP Light::get_State(LightState *pVal)
    if (g_pplayer && !m_lockedByLS)
       *pVal = m_inPlayState;
    else
-      *pVal = getLightState(); //the LS needs the old m_d.m_state and not the current one, m_fLockedByLS is true if under the light is under control of the LS
+      *pVal = m_d.m_state; //the LS needs the old m_d.m_state and not the current one, m_fLockedByLS is true if under the light is under control of the LS
    return S_OK;
 }
 
@@ -1215,8 +1211,8 @@ void Light::InitShape()
       for (int i = 8; i > 0; i--)
       {
          const float angle = (float)(M_PI*2.0 / 8.0)*(float)i;
-         float xx = x + sinf(angle)*m_d.m_falloff;
-         float yy = y - cosf(angle)*m_d.m_falloff;
+         const float xx = x + sinf(angle)*m_d.m_falloff;
+         const float yy = y - cosf(angle)*m_d.m_falloff;
          CComObject<DragPoint> *pdp;
          CComObject<DragPoint>::CreateInstance(&pdp);
          if (pdp)
@@ -1232,7 +1228,7 @@ void Light::InitShape()
 STDMETHODIMP Light::get_BlinkPattern(BSTR *pVal)
 {
    WCHAR wz[NUM_RGB_BLINK_PATTERN];
-   MultiByteToWideCharNull(CP_ACP, 0, m_rgblinkpattern, -1, wz, NUM_RGB_BLINK_PATTERN);
+   MultiByteToWideCharNull(CP_ACP, 0, m_rgblinkpattern.c_str(), -1, wz, NUM_RGB_BLINK_PATTERN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1240,13 +1236,12 @@ STDMETHODIMP Light::get_BlinkPattern(BSTR *pVal)
 
 STDMETHODIMP Light::put_BlinkPattern(BSTR newVal)
 {
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, m_rgblinkpattern, NUM_RGB_BLINK_PATTERN, NULL, NULL);
+   char sz[NUM_RGB_BLINK_PATTERN];
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, sz, NUM_RGB_BLINK_PATTERN, nullptr, nullptr);
+   m_rgblinkpattern = sz;
 
-   if (m_rgblinkpattern[0] == '\0')
-   {
-      m_rgblinkpattern[0] = '0';
-      m_rgblinkpattern[1] = '\0';
-   }
+   if (m_rgblinkpattern.empty())
+      m_rgblinkpattern = "0"; // "10" ?
 
    if (g_pplayer)
       RestartBlinker(g_pplayer->m_time_msec);
@@ -1273,20 +1268,20 @@ STDMETHODIMP Light::put_BlinkInterval(long newVal)
 
 STDMETHODIMP Light::Duration(long startState, long newVal, long endState)
 {
-   m_inPlayState = (LightState)startState;
-   m_duration = newVal;
-   m_finalState = endState;
-   if (g_pplayer)
-   {
-      m_timerDurationEndTime = g_pplayer->m_time_msec + m_duration;
-      if (m_inPlayState == LightStateBlinking)
-      {
-         m_iblinkframe = 0;
-         m_timenextblink = g_pplayer->m_time_msec + m_blinkinterval;
-      }
-   }
+    m_inPlayState = (LightState)startState;
+    m_duration = newVal;
+    m_finalState = endState;
+    if (g_pplayer)
+    {
+        m_timerDurationEndTime = g_pplayer->m_time_msec + m_duration;
+        if (m_inPlayState == LightStateBlinking)
+        {
+            m_iblinkframe = 0;
+            m_timenextblink = g_pplayer->m_time_msec + m_blinkinterval;
+        }
+    }
 
-   return S_OK;
+    return S_OK;
 }
 
 
@@ -1341,7 +1336,7 @@ STDMETHODIMP Light::put_IntensityScale(float newVal)
 STDMETHODIMP Light::get_Surface(BSTR *pVal)
 {
    WCHAR wz[MAXTOKEN];
-   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXTOKEN);
+   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szSurface.c_str(), -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1349,7 +1344,9 @@ STDMETHODIMP Light::get_Surface(BSTR *pVal)
 
 STDMETHODIMP Light::put_Surface(BSTR newVal)
 {
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXTOKEN, NULL, NULL);
+   char buf[MAXTOKEN];
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXTOKEN, nullptr, nullptr);
+   m_d.m_szSurface = buf;
 
    return S_OK;
 }
@@ -1367,7 +1364,7 @@ STDMETHODIMP Light::get_Image(BSTR *pVal)
 STDMETHODIMP Light::put_Image(BSTR newVal)
 {
    char szImage[MAXTOKEN];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, nullptr, nullptr);
    m_d.m_szImage = szImage;
 
    return S_OK;
@@ -1522,7 +1519,7 @@ STDMETHODIMP Light::get_BulbHaloHeight(float *pVal)
 
 STDMETHODIMP Light::put_BulbHaloHeight(float newVal)
 {
-   if (m_d.m_bulbHaloHeight != newVal)
+   if(m_d.m_bulbHaloHeight != newVal)
    {
       m_d.m_bulbHaloHeight = newVal;
       m_updateBulbLightHeight = true;
@@ -1550,13 +1547,26 @@ void Light::setInPlayState(const LightState newVal)
    }
 }
 
+STDMETHODIMP Light::GetInPlayState(LightState* pVal)
+{
+    *pVal = m_inPlayState;
+    return S_OK;
+}
+
+STDMETHODIMP Light::GetInPlayStateBool(VARIANT_BOOL* pVal)
+{
+    const bool isOn = (m_inPlayState == LightStateBlinking) ? (m_rgblinkpattern[m_iblinkframe] == '1') : (m_inPlayState != LightStateOff);
+
+    *pVal = FTOVB(isOn);
+    return S_OK;
+}
+
 void Light::setLightState(const LightState newVal)
 {
    if (!m_lockedByLS)
       setInPlayState(newVal);
 
    m_d.m_state = newVal;
-
 }
 
 LightState Light::getLightState() const
@@ -1564,7 +1574,7 @@ LightState Light::getLightState() const
    return m_d.m_state;
 }
 
-STDMETHODIMP Light::get_Visible(VARIANT_BOOL *pVal) //temporary value of object
+STDMETHODIMP Light::get_Visible(VARIANT_BOOL *pVal)
 {
    *pVal = FTOVB(m_d.m_visible);
 

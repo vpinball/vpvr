@@ -17,7 +17,7 @@ ISelect::ISelect()
 
 void ISelect::SetObjectPos()
 {
-   m_vpinball->ClearObjectPosCur();
+    m_vpinball->ClearObjectPosCur();
 }
 
 void ISelect::OnLButtonDown(int x, int y)
@@ -128,15 +128,15 @@ void ISelect::DoCommand(int icmd, int x, int y)
    switch (icmd)
    {
    case ID_EDIT_DRAWINGORDER_HIT:
-      m_vpinball->ShowDrawingOrderDialog(false);
+       m_vpinball->ShowDrawingOrderDialog(false);
       break;
    case ID_EDIT_DRAWINGORDER_SELECT:
-      m_vpinball->ShowDrawingOrderDialog(true);
+       m_vpinball->ShowDrawingOrderDialog(true);
       break;
    case ID_ASSIGN_TO_LAYER:
    {
-      m_vpinball->GetLayersListDialog()->OnAssignButton();
-      break;
+       m_vpinball->GetLayersListDialog()->OnAssignButton();
+       break;
    }
    case ID_DRAWINFRONT:
    {
@@ -159,13 +159,13 @@ void ISelect::DoCommand(int icmd, int x, int y)
       break;
    case ID_LOCK:
       STARTUNDOSELECT
-         m_locked = !m_locked;
+      m_locked = !m_locked;
       STOPUNDOSELECT
-         break;
+      break;
 
    case IDC_COPY:
    {
-      GetPTable()->Copy(x, y);
+      GetPTable()->Copy(x,y);
       break;
    }
    case IDC_PASTE:
@@ -190,7 +190,7 @@ void ISelect::DoCommand(int icmd, int x, int y)
 void ISelect::SetSelectFormat(Sur *psur)
 {
    const DWORD color = m_locked ? m_vpinball->m_elemSelectLockedColor
-      : m_vpinball->m_elemSelectColor;//GetSysColor(COLOR_HIGHLIGHT);
+                                : m_vpinball->m_elemSelectColor;//GetSysColor(COLOR_HIGHLIGHT);
 
    psur->SetBorderColor(color, false, 4);
    psur->SetLineColor(color, false, 4);
@@ -199,8 +199,8 @@ void ISelect::SetSelectFormat(Sur *psur)
 void ISelect::SetMultiSelectFormat(Sur *psur)
 {
    const DWORD color = m_locked ?
-      m_vpinball->m_elemSelectLockedColor :
-      m_vpinball->m_elemSelectColor;//GetSysColor(COLOR_HIGHLIGHT);
+       m_vpinball->m_elemSelectLockedColor :
+       m_vpinball->m_elemSelectColor;//GetSysColor(COLOR_HIGHLIGHT);
 
    psur->SetBorderColor(color, false, 3);
    psur->SetLineColor(color, false, 3);
@@ -244,8 +244,8 @@ void ISelect::Rotate(const float ang, const Vertex2D& pvCenter, const bool useEl
    const float dx = vCenter.x - pvCenter.x;
    const float dy = vCenter.y - pvCenter.y;
 
-   vCenter.x = pvCenter.x + cs * dx - sn * dy;
-   vCenter.y = pvCenter.y + cs * dy + sn * dx;
+   vCenter.x = pvCenter.x + cs*dx - sn*dy;
+   vCenter.y = pvCenter.y + cs*dy + sn*dx;
    PutCenter(vCenter);
 }
 
@@ -258,8 +258,8 @@ void ISelect::Scale(const float scalex, const float scaley, const Vertex2D& pvCe
    const float dx = vCenter.x - pvCenter.x;
    const float dy = vCenter.y - pvCenter.y;
 
-   vCenter.x = pvCenter.x + dx * scalex;
-   vCenter.y = pvCenter.y + dy * scaley;
+   vCenter.x = pvCenter.x + dx*scalex;
+   vCenter.y = pvCenter.y + dy*scaley;
    PutCenter(vCenter);
 }
 
@@ -291,7 +291,7 @@ void ISelect::GetTypeNameForType(const ItemTypeEnum type, WCHAR * const buf) con
    case eItemTable:        strID = IDS_TABLE; break;
    case eItemLightCenter:  strID = IDS_TB_LIGHT; break;
    case eItemDragPoint:    strID = IDS_CONTROLPOINT; break;
-      //case eItemLightSeqCenter: strID = IDS_TB_LIGHTSEQ; break;
+   //case eItemLightSeqCenter: strID = IDS_TB_LIGHTSEQ; break;
    default:
       strID = EditableRegistry::GetTypeNameStringID(type); break;
    }
@@ -301,26 +301,26 @@ void ISelect::GetTypeNameForType(const ItemTypeEnum type, WCHAR * const buf) con
 
 bool ISelect::LoadToken(const int id, BiffReader * const pbr)
 {
-   switch (id)
+   switch(id)
    {
-   case FID(LOCK): pbr->GetBool(&m_locked); break;
-   case FID(LAYR):
-   {
-      int tmp;
-      pbr->GetInt(&tmp);
-      m_oldLayerIndex = (char)tmp;
-      break;
-   }
-   case FID(LANR):
-   {
-      pbr->GetString(m_layerName);
-      break;
-   }
-   case FID(LVIS):
-   {
-      pbr->GetBool(&m_isVisible);
-      break;
-   }
+       case FID(LOCK): pbr->GetBool(m_locked); break;
+       case FID(LAYR):
+       {
+          int tmp;
+          pbr->GetInt(tmp);
+          m_oldLayerIndex = (char)tmp;
+          break;
+       }
+       case FID(LANR):
+       {
+           pbr->GetString(m_layerName);
+           break;
+       }
+       case FID(LVIS):
+       {
+           pbr->GetBool(m_isVisible);
+           break;
+       }
    }
    return true;
 }
@@ -331,7 +331,7 @@ HRESULT ISelect::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
 
    bw.WriteBool(FID(LOCK), m_locked);
    bw.WriteInt(FID(LAYR), m_oldLayerIndex);
-   bw.WriteString(FID(LANR), m_layerName.c_str());
+   bw.WriteString(FID(LANR), m_layerName);
    bw.WriteBool(FID(LVIS), m_isVisible);
 
    return S_OK;
@@ -339,5 +339,5 @@ HRESULT ISelect::SaveData(IStream *pstm, HCRYPTHASH hcrypthash)
 
 void ISelect::UpdateStatusBarInfo()
 {
-   m_vpinball->SetStatusBarUnitInfo("", false);
+    m_vpinball->SetStatusBarUnitInfo("", false);
 }

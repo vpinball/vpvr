@@ -1,28 +1,17 @@
 #pragma once
 
-class FRect
-{
-public:
-   float left, top, right, bottom;
-
-   Vertex2D Center() const
-   {
-      return Vertex2D(0.5f*(left + right), 0.5f*(top + bottom));
-   }
-};
-
 class FRect3D
 {
 public:
    float left, right, top, bottom, zlow, zhigh;
 
-   FRect3D()    { }
+   FRect3D() {}
 
    FRect3D(const float x1, const float x2, const float y1, const float y2, const float z1, const float z2)
       : left(x1), right(x2),
       top(y1), bottom(y2),
       zlow(z1), zhigh(z2)
-   { }
+   {}
 
    void Clear()
    {
@@ -39,6 +28,46 @@ public:
       bottom = max(bottom, other.bottom);
       zlow = min(zlow, other.zlow);
       zhigh = max(zhigh, other.zhigh);
+   }
+};
+
+class FRect
+{
+public:
+   float left, top, right, bottom;
+
+   Vertex2D Center() const
+   {
+      return Vertex2D(0.5f*(left + right), 0.5f*(top + bottom));
+   }
+
+   FRect() {}
+
+   FRect(const float x1, const float x2, const float y1, const float y2)
+      : left(x1), right(x2),
+      top(y1), bottom(y2)
+   {}
+
+   void Clear()
+   {
+      left = FLT_MAX;  right = -FLT_MAX;
+      top = FLT_MAX;   bottom = -FLT_MAX;
+   }
+
+   void Extend(const FRect& other)
+   {
+      left = min(left, other.left);
+      right = max(right, other.right);
+      top = min(top, other.top);
+      bottom = max(bottom, other.bottom);
+   }
+
+   void Extend(const FRect3D& other)
+   {
+      left = min(left, other.left);
+      right = max(right, other.right);
+      top = min(top, other.top);
+      bottom = max(bottom, other.bottom);
    }
 };
 
@@ -71,11 +100,11 @@ inline bool fRectIntersect3D(const FRect3D &rc1, const FRect3D &rc2)
 
 inline bool fRectIntersect3D(const Vertex3Ds &sphere_p, const float sphere_rsqr, const FRect3D &rc) // could also use SSE, but kd and quadtree already have native SSE variants in there
 {
-	float ex = max(rc.left - sphere_p.x, 0.f) + max(sphere_p.x - rc.right, 0.f);
-	float ey = max(rc.top - sphere_p.y, 0.f) + max(sphere_p.y - rc.bottom, 0.f);
-	float ez = max(rc.zlow - sphere_p.z, 0.f) + max(sphere_p.z - rc.zhigh, 0.f);
-	ex *= ex;
-	ey *= ey;
-	ez *= ez;
-	return (ex + ey + ez <= sphere_rsqr);
+   float ex = max(rc.left - sphere_p.x, 0.f) + max(sphere_p.x - rc.right, 0.f);
+   float ey = max(rc.top - sphere_p.y, 0.f) + max(sphere_p.y - rc.bottom, 0.f);
+   float ez = max(rc.zlow - sphere_p.z, 0.f) + max(sphere_p.z - rc.zhigh, 0.f);
+   ex *= ex;
+   ey *= ey;
+   ez *= ez;
+   return (ex + ey + ez <= sphere_rsqr);
 }

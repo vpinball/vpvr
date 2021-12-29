@@ -1,12 +1,12 @@
-// Win32++   Version 8.8
-// Release Date: 15th October 2020
+// Win32++   Version 8.9.1
+// Release Date: 10th September 2021
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2020  David Nash
+// Copyright (c) 2005-2021  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -95,11 +95,11 @@ namespace Win32xx
     // Creates the window. This is the default method of window creation.
     inline HWND CStatusBar::Create(HWND parent)
     {
-        // Acquire the CREATESTRUCT parameters
+        // Acquire the CREATESTRUCT parameters.
         CREATESTRUCT cs;
         ZeroMemory(&cs, sizeof(cs));
 
-        // Add the gripper style if the parent window is resizable
+        // Add the gripper style if the parent window is resizable.
         DWORD dwParentStyle = static_cast<DWORD>(::GetWindowLongPtr(parent, GWL_STYLE));
         if (dwParentStyle & WS_THICKFRAME)
         {
@@ -108,7 +108,7 @@ namespace Win32xx
 
         PreCreate(cs);
 
-        // Create the status bar window
+        // Create the status bar window.
         HWND wnd = CreateEx(cs.dwExStyle, STATUSCLASSNAME, 0, cs.style,
             cs.x, cs.y, cs.cx, cs.cy, parent, 0, cs.lpCreateParams);
 

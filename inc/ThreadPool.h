@@ -44,7 +44,13 @@ public:
         = (std::max)(2u, std::thread::hardware_concurrency()));
     template<class F, class... Args>
     auto enqueue(F&& f, Args&&... args)
-        -> std::future<typename std::result_of<F(Args...)>::type>;
+        -> std::future<
+#if defined(__cpp_lib_is_invocable) && __cpp_lib_is_invocable >= 201703
+            typename std::invoke_result<F&&, Args&&...>::type
+#else
+            typename std::result_of<F&& (Args&&...)>::type
+#endif
+    >;
     void wait_until_empty();
     void wait_until_nothing_in_flight();
     void set_queue_size_limit(std::size_t limit);
@@ -85,7 +91,7 @@ private:
 
         ~handle_in_flight_decrement()
         {
-            std::size_t prev
+            const std::size_t prev
                 = std::atomic_fetch_sub_explicit(&tp.in_flight,
                     std::size_t(1),
                     std::memory_order_acq_rel);
@@ -103,7 +109,7 @@ inline ThreadPool::ThreadPool(std::size_t threads)
     : pool_size(threads)
     , in_flight(0)
 {
-    std::unique_lock<std::mutex> lock(this->queue_mutex);
+    const std::unique_lock<std::mutex> lock(this->queue_mutex);
     for (std::size_t i = 0; i != threads; ++i)
         start_worker(i, lock);
 }
@@ -111,9 +117,20 @@ inline ThreadPool::ThreadPool(std::size_t threads)
 // add new work item to the pool
 template<class F, class... Args>
 auto ThreadPool::enqueue(F&& f, Args&&... args)
-    -> std::future<typename std::result_of<F(Args...)>::type>
+    -> std::future<
+#if defined(__cpp_lib_is_invocable) && __cpp_lib_is_invocable >= 201703
+      typename std::invoke_result<F&&, Args&&...>::type
+#else
+      typename std::result_of<F&& (Args&&...)>::type
+#endif
+      >
 {
-    using return_type = typename std::result_of<F(Args...)>::type;
+#if defined(__cpp_lib_is_invocable) && __cpp_lib_is_invocable >= 201703
+    using return_type = typename std::invoke_result<F&&, Args&&...>::type;
+#else
+    using return_type = typename std::result_of<F&& (Args&&...)>::type;
+#endif
+
 
     auto task = std::make_shared< std::packaged_task<return_type()> >(
             std::bind(std::forward<F>(f), std::forward<Args>(args)...)
@@ -189,7 +206,7 @@ inline void ThreadPool::set_pool_size(std::size_t limit)
     if (limit < 1)
         limit = 1;
 
-    std::unique_lock<std::mutex> lock(this->queue_mutex);
+    const std::unique_lock<std::mutex> lock(this->queue_mutex);
 
     if (stop)
         return;

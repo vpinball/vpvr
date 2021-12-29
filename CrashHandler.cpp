@@ -9,7 +9,7 @@
 #include <windows.h>
 #include <dbghelp.h>
 #include <cassert>
-#include "svn_version.h"
+#include "git_version.h"
 
 namespace
 {
@@ -20,7 +20,7 @@ namespace
    {
       fprintf(f, "Process: ");
       char buffer[MAX_PATH + 1];
-      HMODULE hModule = NULL;
+      const HMODULE hModule = nullptr;
       GetModuleFileName(hModule, buffer, MAX_PATH);
       const char* lastSeparatorPos = strrchr(buffer, '\\');
       if (lastSeparatorPos != 0)
@@ -30,16 +30,16 @@ namespace
    }
 
    typedef HRESULT(STDAPICALLTYPE *pRGV)(LPOSVERSIONINFOEXW osi);
-   static pRGV mRtlGetVersion = NULL;
+   static pRGV mRtlGetVersion = nullptr;
 
    void WriteSystemInfo(FILE* f)
    {
-      if (mRtlGetVersion == NULL)
+      if (mRtlGetVersion == nullptr)
          mRtlGetVersion = (pRGV)GetProcAddress(GetModuleHandle(TEXT("ntdll")), "RtlGetVersion"); // apparently the only really reliable solution to get the OS version (as of Win10 1803)
 
       DWORD major, minor, build;
       BYTE product;
-      if (mRtlGetVersion != NULL) // Windows 10 1803 and above
+      if (mRtlGetVersion != nullptr) // Windows 10 1803 and above
       {
          OSVERSIONINFOEXW osInfo;
          osInfo.dwOSVersionInfoSize = sizeof(osInfo);
@@ -52,8 +52,7 @@ namespace
       }
       else
       {
-         OSVERSIONINFOEX sysInfo;
-         memset(&sysInfo, 0, sizeof(sysInfo));
+         OSVERSIONINFOEX sysInfo = {};
          sysInfo.dwOSVersionInfoSize = sizeof(sysInfo);
          ::GetVersionEx((OSVERSIONINFO*)&sysInfo);
 
@@ -105,8 +104,7 @@ namespace
 
    void WriteProcessorInfo(FILE* f)
    {
-      SYSTEM_INFO sysInfo;
-      memset(&sysInfo, 0, sizeof(sysInfo));
+      SYSTEM_INFO sysInfo = {};
       GetSystemInfo(&sysInfo);
       fprintf(f, "Number of CPUs: %lu\nProcessor type: %lu\n",
          sysInfo.dwNumberOfProcessors, sysInfo.dwProcessorType);
@@ -123,7 +121,7 @@ namespace
 
    void WriteHeader(FILE* f)
    {
-      fprintf(f, "Crash report VPX GL rev%i\n============\n",SVN_REVISION);
+      fprintf(f, "Crash report VPX rev%i (%s)\n============\n", GIT_REVISION, GIT_SHA);
    }
 
    const char* GetExceptionString(DWORD exc)
@@ -159,19 +157,23 @@ namespace
 #undef EXC_CASE
    }
 
-   void WriteExceptionInfo(FILE* f, EXCEPTION_POINTERS* exceptionPtrs)
+   void WriteExceptionInfo(FILE* f, const EXCEPTION_POINTERS* exceptionPtrs)
    {
       WriteProcessName(f);
       fprintf(f, "\n");
 
       fprintf(f, "Reason: 0x%X - %s", exceptionPtrs->ExceptionRecord->ExceptionCode,
          GetExceptionString(exceptionPtrs->ExceptionRecord->ExceptionCode));
+#if defined(_M_ARM64)
+#pragma message ( "Warning: No CPU exception debug output implemented yet" )
+#else
       fprintf(f, " at %04X:%p\n", exceptionPtrs->ContextRecord->SegCs,
          exceptionPtrs->ExceptionRecord->ExceptionAddress);
+#endif
 
       if (exceptionPtrs->ExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION)
       {
-         fprintf(f, "Attempt to %s 0x%08llX\n",
+         fprintf(f, "Attempt to %s 0x%08X\n",
             (exceptionPtrs->ExceptionRecord->ExceptionInformation[0] == 1 ?
             "write to" : "read from"), exceptionPtrs->ExceptionRecord->ExceptionInformation[1]);
       }
@@ -190,7 +192,7 @@ namespace
 
    bool WriteMiniDump(EXCEPTION_POINTERS* exceptionPtrs, const char* fileName)
    {
-      HANDLE hDump = ::CreateFile(fileName, GENERIC_WRITE, FILE_SHARE_READ, 0,
+      const HANDLE hDump = ::CreateFile(fileName, GENERIC_WRITE, FILE_SHARE_READ, 0,
          CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
       if (hDump != INVALID_HANDLE_VALUE)
       {
@@ -199,7 +201,7 @@ namespace
          dumpInfo.ExceptionPointers = exceptionPtrs;
          dumpInfo.ThreadId = ::GetCurrentThreadId();
 
-         MINIDUMP_TYPE dumpType = (MINIDUMP_TYPE)(MiniDumpWithPrivateReadWriteMemory |
+         const MINIDUMP_TYPE dumpType = (MINIDUMP_TYPE)(MiniDumpWithPrivateReadWriteMemory |
             MiniDumpWithThreadInfo | MiniDumpWithUnloadedModules);
 
          const BOOL success = ::MiniDumpWriteDump(
@@ -239,16 +241,19 @@ namespace
          status.largestFree >> 20);
    }
 
-   void WriteRegisters(FILE* f, EXCEPTION_POINTERS* exceptionPtrs)
+   void WriteRegisters(FILE* f, const EXCEPTION_POINTERS* exceptionPtrs)
    {
       if (IsBadReadPtr(exceptionPtrs, sizeof(EXCEPTION_POINTERS)))
          return;
 
       const CONTEXT* ctx = exceptionPtrs->ContextRecord;
       fprintf(f, "Registers\n=========\n");
+#if defined(_M_ARM64)
+#pragma message ( "Warning: No CPU state debug output implemented yet" )
+#else
 #ifdef _WIN64
-      fprintf(f, "RAX=%08llX RBX=%08llX RCX=%08llX RDX=%08llX\n" \
-         "RSI=%08llX RDI=%08llX RBP=%08llX RSP=%08llX RIP=%08llX\n" \
+      fprintf(f, "RAX=%08X RBX=%08X RCX=%08X RDX=%08X\n" \
+         "RSI=%08X RDI=%08X RBP=%08X RSP=%08X RIP=%08X\n" \
          "FLG=%08X CS=%04X DS=%04X SS=%04X ES=%04X FS=%04X GS=%04X\n\n",
          ctx->Rax, ctx->Rbx, ctx->Rcx, ctx->Rdx, ctx->Rsi, ctx->Rdi,
          ctx->Rbp, ctx->Rsp, ctx->Rip, ctx->EFlags, ctx->SegCs,
@@ -261,12 +266,12 @@ namespace
          ctx->Ebp, ctx->Esp, ctx->Eip, ctx->EFlags, ctx->SegCs,
          ctx->SegDs, ctx->SegSs, ctx->SegEs, ctx->SegFs, ctx->SegGs);
 #endif
+#endif
    }
 
    void WriteCallStack(FILE* f, PCONTEXT context)
    {
-      char callStack[2048];
-      memset(callStack, 0, sizeof(callStack));
+      char callStack[2048] = {};
       rde::StackTrace::GetCallStack(context, true, callStack, sizeof(callStack) - 1);
       fprintf(f, "Call stack\n==========\n%s\n", callStack);
    }
@@ -275,7 +280,7 @@ namespace
 
    LONG __stdcall MyExceptionFilter(EXCEPTION_POINTERS* exceptionPtrs)
    {
-      LONG returnCode = EXCEPTION_CONTINUE_SEARCH;
+      const LONG returnCode = EXCEPTION_CONTINUE_SEARCH;
 
       // Ignore multiple calls.
       if (s_inFilter != 0)
@@ -298,7 +303,7 @@ namespace
 		  WriteCallStack(f, exceptionPtrs->ContextRecord);
 
 		  WriteEnvironmentInfo(f);
-		  rde::MemoryStatus memStatus = rde::MemoryStatus::GetCurrent();
+		  const rde::MemoryStatus memStatus = rde::MemoryStatus::GetCurrent();
 		  WriteMemoryStatus(f, memStatus);
 		  WriteRegisters(f, exceptionPtrs);
 		  WriteBlackBoxMessages(f);
@@ -320,11 +325,11 @@ namespace rde
 
    void CrashHandler::SetMiniDumpFileName(const char* name)
    {
-      strncpy_s(s_miniDumpFileName, name, sizeof(s_miniDumpFileName) - 1);
+      strncpy_s(s_miniDumpFileName, name, sizeof(s_miniDumpFileName)-1);
    }
 
    void CrashHandler::SetCrashReportFileName(const char* name)
    {
-      strncpy_s(s_reportFileName, name, sizeof(s_reportFileName) - 1);
+      strncpy_s(s_reportFileName, name, sizeof(s_reportFileName)-1);
    }
 }

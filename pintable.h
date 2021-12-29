@@ -5,7 +5,8 @@
 #if !defined(AFX_PINTABLE_H__D14A2DAB_2984_4FE7_A102_D0283ECE31B4__INCLUDED_)
 #define AFX_PINTABLE_H__D14A2DAB_2984_4FE7_A102_D0283ECE31B4__INCLUDED_
 
-#include <unordered_map>
+#include <inc/robin_hood.h>
+
 #include <atomic>
 #include "hash.h"
 #include "SearchSelectDialog.h"
@@ -13,7 +14,7 @@
 #define VIEW_PLAYFIELD 1
 #define VIEW_BACKGLASS 2
 
-#define MIN_ZOOM 0.0078f // purposely make them offset from powers to 2 to account for roundoff error - use 0.0078f instead of 0.126f for VR for room editing
+#define MIN_ZOOM 0.126f // purposely make them offset from powers to 2 to account for roundoff error
 #define MAX_ZOOM 63.9f
 
 #define DISABLE_SCRIPT_EDITING  0x00000002 // cannot open script windows (stops editing and viewing)
@@ -41,49 +42,49 @@ class ScriptGlobalTable;
 class PinTableMDI : public CMDIChild
 {
 public:
-   PinTableMDI(VPinball *vpinball);
-   virtual ~PinTableMDI();
-   CComObject<PinTable> *GetTable()
-   {
-      return m_table;
-   }
-   bool CanClose() const;
+    PinTableMDI(VPinball *vpinball);
+    virtual ~PinTableMDI();
+    CComObject<PinTable> *GetTable()
+    {
+        return m_table;
+    }
+    bool CanClose() const;
 
 protected:
-   virtual void PreCreate(CREATESTRUCT &cs);
-   virtual int  OnCreate(CREATESTRUCT &cs);
-   virtual void OnClose();
-   virtual LRESULT OnMDIActivate(UINT msg, WPARAM wparam, LPARAM lparam);
+    virtual void PreCreate(CREATESTRUCT &cs);
+    virtual int  OnCreate(CREATESTRUCT &cs);
+    virtual void OnClose();
+    virtual LRESULT OnMDIActivate(UINT msg, WPARAM wparam, LPARAM lparam);
+    virtual BOOL OnEraseBkgnd(CDC& dc);
 
 private:
-   CComObject<PinTable> *m_table;
-   VPinball             *m_vpinball;
-   CMenu                 m_menu;
+    CComObject<PinTable> *m_table;
+    VPinball             *m_vpinball;
 };
 
 class ProgressDialog : public CDialog
 {
 public:
-   ProgressDialog();
-   void SetProgress(const int value)
-   {
-      m_progressBar.SetPos(value);
-   }
+    ProgressDialog();
+    void SetProgress(const int value)
+    {
+        m_progressBar.SetPos(value);
+    }
 
-   void SetName(const std::string& text)
-   {
-      m_progressName.SetWindowText(text.c_str());
-   }
+    void SetName(const std::string& text)
+    {
+        m_progressName.SetWindowText(text.c_str());
+    }
 
 protected:
-   virtual BOOL OnInitDialog();
+    virtual BOOL OnInitDialog();
 
 private:
-   CProgressBar m_progressBar;
-   CStatic      m_progressName;
+    CProgressBar m_progressBar;
+    CStatic      m_progressName;
 };
 
-class PinTable :
+class PinTable:
    public CWnd,
    public CComObjectRootEx<CComSingleThreadModel>,
    public IDispatchImpl<ITable, &IID_ITable, &LIBID_VPinballLib>,
@@ -325,8 +326,9 @@ public:
    PinTable();
    virtual ~PinTable();
 
-   void InitBuiltinTable(const bool useBlankTable);
+   void InitBuiltinTable(const size_t tableId);
    void InitTablePostLoad();
+   void RemoveInvalidReferences();
 
    virtual HRESULT GetTypeName(BSTR *pVal);
 
@@ -371,9 +373,9 @@ public:
    void ListSounds(HWND hwndListView);
    int AddListSound(HWND hwndListView, PinSound * const pps);
    void RemoveSound(PinSound * const pps);
-   HRESULT SaveSoundToStream(PinSound * const pps, IStream *pstm);
+   HRESULT SaveSoundToStream(const PinSound * const pps, IStream *pstm);
    HRESULT LoadSoundFromStream(IStream *pstm, const int LoadFileVersion);
-   bool ExportImage(Texture * const ppi, const char * const filename);
+   bool ExportImage(const Texture * const ppi, const char * const filename);
    void ImportImage(HWND hwndListView, const string& filename);
    void ReImportImage(Texture * const ppi, const string& filename);
    void ListImages(HWND hwndListView);
@@ -381,7 +383,7 @@ public:
    void RemoveImage(Texture * const ppi);
    HRESULT LoadImageFromStream(IStream *pstm, unsigned int idx, int version);
    Texture* GetImage(const std::string &szName) const;
-   bool GetImageLink(Texture * const ppi) const;
+   bool GetImageLink(const Texture * const ppi) const;
    PinBinary *GetImageLinkBinary(const int id);
 
    void ListCustomInfo(HWND hwndListView);
@@ -405,7 +407,7 @@ public:
    virtual void SelectItem(IScriptable *piscript);
    virtual void DoCodeViewCommand(int command);
    virtual void SetDirtyScript(SaveDirtyState sds);
-   virtual void ExportMesh(FILE *f);
+   virtual void ExportMesh(ObjLoader& loader);
 
    // Multi-object manipulation
    virtual Vertex2D GetCenter() const;
@@ -435,7 +437,7 @@ public:
    IEditable *GetElementByName(const char * const name);
    void OnDelete();
 
-   void DoLeftButtonDown(int x, int y, bool zoomIn = true);
+   void DoLeftButtonDown(int x, int y, bool zoomIn);
    void OnLeftButtonUp(int x, int y);
    void OnRightButtonDown(int x, int y);
    void FillCollectionContextMenu(CMenu &mainMenu, CMenu &colSubMenu, ISelect *psel);
@@ -448,7 +450,7 @@ public:
    // Transform editor window coordinates to table coordinates
    Vertex2D TransformPoint(int x, int y) const;
 
-   void ClearMultiSel(ISelect *newSel = NULL);
+   void ClearMultiSel(ISelect *newSel = nullptr);
    bool MultiSelIsEmpty();
    ISelect *GetSelectedItem() const { return m_vmultisel.ElementAt(0); }
    void AddMultiSel(ISelect *psel, const bool add, const bool update, const bool contextClick);
@@ -483,7 +485,7 @@ public:
    virtual IDispatch *GetDispatch() { return (IDispatch *)this; }
    virtual const IDispatch *GetDispatch() const { return (const IDispatch *)this; }
    virtual IFireEvents *GetIFireEvents() { return (IFireEvents *)this; }
-   virtual IDebugCommands *GetDebugCommands() { return NULL; }
+   virtual IDebugCommands *GetDebugCommands() { return nullptr; }
 
    void SetZoom(float zoom);
    void SetMyScrollInfo();
@@ -515,11 +517,11 @@ public:
    void GetViewRect(FRect *pfrect) const;
 
    bool IsNameUnique(const WCHAR * const wzName) const;
-   void GetUniqueName(const ItemTypeEnum type, WCHAR * const wzUniqueName) const;
-   void GetUniqueName(const WCHAR * const prefix, WCHAR * const wzUniqueName) const;
-   void GetUniqueNamePasting(const int type, WCHAR * const wzUniqueName);
+   void GetUniqueName(const ItemTypeEnum type, WCHAR * const wzUniqueName, const DWORD wzUniqueName_maxlength) const;
+   void GetUniqueName(const WCHAR * const prefix, WCHAR * const wzUniqueName, const DWORD wzUniqueName_maxlength) const;
+   void GetUniqueNamePasting(const int type, WCHAR * const wzUniqueName, const DWORD wzUniqueName_maxlength);
 
-   float GetSurfaceHeight(const char * const szName, float x, float y) const;
+   float GetSurfaceHeight(const string& name, float x, float y) const;
 
    void SetLoadDefaults();
 
@@ -551,7 +553,7 @@ public:
 
    bool RenderSolid() const { return m_renderSolid; }
 
-   void InvokeBallBallCollisionCallback(Ball *b1, Ball *b2, float hitVelocity);
+   void InvokeBallBallCollisionCallback(const Ball *b1, const Ball *b2, float hitVelocity);
 
    BEGIN_COM_MAP(PinTable)
       COM_INTERFACE_ENTRY(ITable)
@@ -572,13 +574,13 @@ public:
    void AddDbgLight(Light * const plight);
    void UpdateDbgLight();
    void AddMaterial(Material * const pmat);
-   void AddDbgMaterial(Material * const pmat);
+   void AddDbgMaterial(const Material * const pmat);
    void UpdateDbgMaterial();
 
    bool IsMaterialNameUnique(const std::string &name) const;
-   Material* GetMaterial(const std::string &szName) const;
-   Material* GetSurfaceMaterial(const char * const szName) const;
-   Texture* GetSurfaceImage(const char * const szName) const;
+   Material* GetMaterial(const std::string &name) const;
+   Material* GetSurfaceMaterial(const std::string& name) const;
+   Texture* GetSurfaceImage(const std::string& name) const;
 
    bool GetCollectionIndex(const ISelect * const element, int &collectionIndex, int &elementIndex);
 
@@ -595,7 +597,7 @@ public:
    VectorProtected<ISelect> m_vmultisel;
 
    float m_left; // always zero for now
-   float m_top; // always zero for now
+   float m_top;  // always zero for now
    float m_right;
    float m_bottom;
 
@@ -621,7 +623,7 @@ public:
    float m_BG_xlatex[NUM_BG_SETS];
    float m_BG_xlatey[NUM_BG_SETS];
    float m_BG_xlatez[NUM_BG_SETS];
-   char  m_BG_szImage[NUM_BG_SETS][MAXTOKEN];
+   string m_BG_image[NUM_BG_SETS];
 
    bool  m_BG_enable_FSS;
    int   m_currentBackglassMode;
@@ -653,66 +655,58 @@ public:
    bool  m_tblMirrorEnabled;		// Mirror tables left to right.  This is activated by a cheat during table selection.
 
    bool  m_tblAccelerometer;		// true if electronic accelerometer enabled
-   bool  m_tblAccelNormalMount;	// true is Normal Mounting (Left Hand Coordinates)
+   bool  m_tblAccelNormalMount;		// true is Normal Mounting (Left Hand Coordinates)
    float m_tblAccelAngle;			// 0 degrees rotated counterclockwise (GUI is lefthand coordinates)
-   float m_tblAccelAmpX;			// Accelerometer gain X axis
-   float m_tblAccelAmpY;			// Accelerometer gain Y axis
-   int   m_tblAccelMaxX;           // Accelerometer max value X axis
-   int   m_tblAccelMaxY;			// Accelerometer max value Y axis
+   Vertex2D m_tblAccelAmp;			// Accelerometer gain X/Y axis
+   int2  m_tblAccelMax;				// Accelerometer max value X/Y axis
 
-   float m_tblNudgeReadX;
-   float m_tblNudgeReadY;
+   Vertex2D m_tblNudgeRead;
    float m_tblNudgeReadTilt;
-   float m_tblNudgePlumbX;
-   float m_tblNudgePlumbY;
+   Vertex2D m_tblNudgePlumb;
 
-   U32   m_tblAutoStart;           // msecs before trying an autostart if doing once-only method .. 0 is automethod
-   U32   m_tblAutoStartRetry;      // msecs before retrying to autostart.
-   float m_tblVolmod;              // volume modulation for doing audio balancing
-   U32   m_tblExitConfirm;         // msecs for esc button to be pressed to exit completely
-   float m_globalDifficulty;       // table Difficulty Level
+   U32   m_tblAutoStart;			// msecs before trying an autostart if doing once-only method .. 0 is automethod
+   U32   m_tblAutoStartRetry;		// msecs before retrying to autostart.
+   float m_tblVolmod;				// volume modulation for doing audio balancing
+   U32   m_tblExitConfirm;			// msecs for esc button to be pressed to exit completely
+   float m_globalDifficulty;		// table Difficulty Level
 
-   short m_oldMousePosX;
-   short m_oldMousePosY;
+   short2 m_oldMousePos;
 
    ProtectionData m_protectionData;
 
-   char m_szImage[MAXTOKEN];
-   char m_szPlayfieldMaterial[MAXNAMEBUFFER];
+   string m_image;
+   string m_playfieldMaterial;
    COLORREF m_colorbackdrop;
    bool m_ImageBackdropNightDay;
 
-   char m_szImageColorGrade[MAXTOKEN];
+   string m_imageColorGrade;
 
-   char m_szBallImage[MAXTOKEN];
-   char m_szBallImageDecal[MAXTOKEN];
+   string m_ballImage;
+   string m_ballImageDecal;
    bool m_BallDecalMode;
 
-   char m_szEnvImage[MAXTOKEN];
-
-   //CComObject<Surface> *m_psur;
+   string m_envImage;
 
    vector< IEditable* > m_vedit;
    vector< IEditable* > m_layer[MAX_LAYERS];
    vector< ISelect* >   m_allHitElements;
 
-
-   vector< Texture* > m_vimage;
+   vector< Texture* >   m_vimage;
    const vector<Texture *>& GetImageList() const
    {
-      return m_vimage;
+       return m_vimage;
    }
 
    int m_numMaterials;
    vector< Material* > m_materials;
    const vector<Material *>& GetMaterialList() const
    {
-      return m_materials;
+       return m_materials;
    }
 
    vector< PinSound* > m_vsound;
 
-   vector< PinFont* > m_vfont;
+   vector< PinFont* >  m_vfont;
 
    VectorProtected< CComObject<Collection> > m_vcollection;
 
@@ -807,17 +801,17 @@ public:
 
    struct DebugLightData
    {
-      char name[MAX_PATH];
-      float falloff;
-      float falloffPower;
-      float intensity;
-      float bulbModulateVsAdd;
-      float transmissionScale;
-      float fadeSpeedUp;
-      float fadeSpeedDown;
-      COLORREF color1;
-      COLORREF color2;
-      LightState lightstate;
+       char name[MAX_PATH];
+       float falloff;
+       float falloffPower;
+       float intensity;
+       float bulbModulateVsAdd;
+       float transmissionScale;
+       float fadeSpeedUp;
+       float fadeSpeedDown;
+       COLORREF color1;
+       COLORREF color2;
+       LightState lightstate;
    };
 
    vector<DebugLightData*> m_dbgChangedLights;
@@ -844,6 +838,7 @@ public:
    virtual void OnInitialUpdate();
    virtual LRESULT WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam);
    virtual BOOL OnCommand(WPARAM wparam, LPARAM lparam);
+   virtual BOOL OnEraseBkgnd(CDC& dc);
 
    void SetMouseCursor();
    void OnLeftButtonDown(const short x, const short y);
@@ -864,7 +859,7 @@ public:
    float GetGlobalDifficulty() const;
    void SetGlobalDifficulty(const float value);
    int GetTableSoundVolume() const;
-   void SetTableSoundVolume(const int value);
+   void SetTableSoundVolume( const int value);
    int GetTableMusicVolume() const;
    void SetTableMusicVolume(const int value);
    int GetPlayfieldReflectionStrength() const;
@@ -880,20 +875,20 @@ public:
 
    void SetMDITable(PinTableMDI * const table)
    {
-      m_mdiTable = table;
+       m_mdiTable = table;
    }
    PinTableMDI *GetMDITable() const
    {
-      return m_mdiTable;
+       return m_mdiTable;
    }
 
    WCHAR* GetCollectionNameByElement(const ISelect* const element);
    void RefreshProperties();
 
-   void SetNotesText(const CString& text)
-   {
-      m_notesText = text;
-      SetDirtyDraw();
+   void SetNotesText(const CString& text) 
+   { 
+      m_notesText = text; 
+      SetDirtyDraw(); 
    }
    CString GetNotesText() const
    {
@@ -902,10 +897,10 @@ public:
 
 private:
    PinTableMDI *m_mdiTable;
-   bool m_moving;
    CString m_notesText;
-   std::unordered_map<const char*, Texture *, StringHashFunctor, StringComparator> m_textureMap;  // hash table to speed up texture lookup by name
-   std::unordered_map<const char*, Material*, StringHashFunctor, StringComparator> m_materialMap; // hash table to speed up material lookup by name
+   robin_hood::unordered_map<std::string, Texture *,  StringHashFunctor, StringComparator> m_textureMap;  // hash table to speed up texture lookup by name
+   robin_hood::unordered_map<std::string, Material *, StringHashFunctor, StringComparator> m_materialMap; // hash table to speed up material lookup by name
+   bool m_moving;
 };
 
 class ScriptGlobalTable :
@@ -990,14 +985,22 @@ public:
    STDMETHOD(get_VersionMinor)(/*[out, retval]*/ int *pVal);
    STDMETHOD(get_VersionRevision)(/*[out, retval]*/ int *pVal);
 
+   STDMETHOD(GetSerialDevices)(VARIANT *pVal);
+   STDMETHOD(OpenSerial)(/*[in]*/ BSTR device);
+   STDMETHOD(CloseSerial)();
+   STDMETHOD(FlushSerial)();
+   STDMETHOD(SetupSerial)(int baud, int bits, int parity, int stopbit, VARIANT_BOOL rts, VARIANT_BOOL dtr);
+   STDMETHOD(ReadSerial)(int size, VARIANT *pVal);
+   STDMETHOD(WriteSerial)(VARIANT pVal);
+
    STDMETHOD(UpdateMaterial)(BSTR pVal, float wrapLighting, float roughness, float glossyImageLerp, float thickness, float edge, float edgeAlpha, float opacity,
       OLE_COLOR base, OLE_COLOR glossy, OLE_COLOR clearcoat, VARIANT_BOOL isMetal, VARIANT_BOOL opacityActive,
       float elasticity, float elasticityFalloff, float friction, float scatterAngle);
-   STDMETHOD(GetMaterial)(BSTR pVal, float *wrapLighting, float *roughness, float *glossyImageLerp, float *thickness, float *edge, float *edgeAlpha, float *opacity,
-      OLE_COLOR *base, OLE_COLOR *glossy, OLE_COLOR *clearcoat, VARIANT_BOOL *isMetal, VARIANT_BOOL *opacityActive,
-      float *elasticity, float *elasticityFalloff, float *friction, float *scatterAngle);
+   STDMETHOD(GetMaterial)(BSTR pVal, VARIANT *wrapLighting, VARIANT *roughness, VARIANT *glossyImageLerp, VARIANT *thickness, VARIANT *edge, VARIANT *edgeAlpha, VARIANT *opacity,
+      VARIANT *base, VARIANT *glossy, VARIANT *clearcoat, VARIANT *isMetal, VARIANT *opacityActive,
+      VARIANT *elasticity, VARIANT *elasticityFalloff, VARIANT *friction, VARIANT *scatterAngle);
    STDMETHOD(UpdateMaterialPhysics)(BSTR pVal, float elasticity, float elasticityFalloff, float friction, float scatterAngle);
-   STDMETHOD(GetMaterialPhysics)(BSTR pVal, float *elasticity, float *elasticityFalloff, float *friction, float *scatterAngle);
+   STDMETHOD(GetMaterialPhysics)(BSTR pVal, VARIANT *elasticity, VARIANT *elasticityFalloff, VARIANT *friction, VARIANT *scatterAngle);
    STDMETHOD(MaterialColor)(BSTR pVal, OLE_COLOR newVal);
 
    void Init(VPinball *vpinball, PinTable *pt);
@@ -1005,8 +1008,8 @@ public:
    virtual IDispatch *GetDispatch() { return (IDispatch *)this; }
    virtual const IDispatch *GetDispatch() const { return (const IDispatch *)this; }
 
-   virtual ISelect *GetISelect() { return NULL; }
-   virtual const ISelect *GetISelect() const { return NULL; }
+   virtual ISelect *GetISelect() { return nullptr; }
+   virtual const ISelect *GetISelect() const { return nullptr; }
 
    BEGIN_COM_MAP(ScriptGlobalTable)
       COM_INTERFACE_ENTRY(ITableGlobal)

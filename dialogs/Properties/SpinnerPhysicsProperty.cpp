@@ -10,9 +10,9 @@ SpinnerPhysicsProperty::SpinnerPhysicsProperty(const VectorProtected<ISelect> *p
 
 void SpinnerPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemSpinner))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemSpinner))
             continue;
         Spinner *const spinner = (Spinner *)m_pvsel->ElementAt(i);
 
@@ -27,9 +27,9 @@ void SpinnerPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void SpinnerPhysicsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemSpinner))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemSpinner))
             continue;
         Spinner *const spinner = (Spinner *)m_pvsel->ElementAt(i);
 
@@ -53,5 +53,18 @@ BOOL SpinnerPhysicsProperty::OnInitDialog()
     m_baseElasticityEdit = &m_elasticityEdit;
     m_dampingEdit.AttachItem(IDC_DAMPING_EDIT);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(m_elasticityEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_dampingEdit, topleft, RD_STRETCH_WIDTH);
+
     return TRUE;
+}
+
+INT_PTR SpinnerPhysicsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

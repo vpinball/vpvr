@@ -18,7 +18,7 @@ int CollectionManagerDialog::m_columnSortOrder;
 
 CollectionManagerDialog::CollectionManagerDialog() : CDialog(IDD_COLLECTDIALOG)
 {
-    hListHwnd = NULL;
+    hListHwnd = nullptr;
 }
 
 BOOL CollectionManagerDialog::OnInitDialog()
@@ -75,7 +75,7 @@ void CollectionManagerDialog::EditCollection()
             pt->SetNonUndoableDirty(eSaveDirty);
 
         char szT[sizeof(pcol->m_wzName)/sizeof(pcol->m_wzName[0])];
-        WideCharToMultiByteNull(CP_ACP, 0, pcol->m_wzName, -1, szT, sizeof(szT), NULL, NULL);
+        WideCharToMultiByteNull(CP_ACP, 0, pcol->m_wzName, -1, szT, sizeof(szT), nullptr, nullptr);
         ListView_SetItemText(hListHwnd, sel, 0, szT);
     }
 }
@@ -88,10 +88,10 @@ INT_PTR CollectionManagerDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lPa
     {
         case WM_NOTIFY:
         {
-            LPNMHDR pnmhdr = (LPNMHDR)lParam;
+            const LPNMHDR pnmhdr = (LPNMHDR)lParam;
             if (wParam == IDC_SOUNDLIST)
             {
-                LPNMLISTVIEW lpnmListView = (LPNMLISTVIEW)lParam;
+                const LPNMLISTVIEW lpnmListView = (LPNMLISTVIEW)lParam;
                 if (lpnmListView->hdr.code == LVN_COLUMNCLICK)
                 {
                     const int columnNumber = lpnmListView->iSubItem;
@@ -106,7 +106,7 @@ INT_PTR CollectionManagerDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lPa
                         ListView_SortItems(SortData.hwndList, MyCompProc, &SortData);
                     else
                         ListView_SortItems(SortData.hwndList, MyCompProcIntValues, &SortData);
-                    int count = ListView_GetItemCount(hListHwnd);
+                    const int count = ListView_GetItemCount(hListHwnd);
                     for (int i = 0; i < count; i++)
                     {
                        LVITEM lvitem;
@@ -114,9 +114,9 @@ INT_PTR CollectionManagerDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lPa
                        lvitem.iItem = i;
                        lvitem.iSubItem = 0;
                        ListView_GetItem(hListHwnd, &lvitem);
-                       Collection * const pcol = (Collection *)lvitem.lParam;
+                       const Collection * const pcol = (Collection *)lvitem.lParam;
                        char buf[16] = { 0 };
-                       sprintf_s(buf, "%i", pcol->m_visel.Size());
+                       sprintf_s(buf, "%i", pcol->m_visel.size());
                        ListView_SetItemText(hListHwnd, i, 1, buf);
                     }
                 }
@@ -124,7 +124,7 @@ INT_PTR CollectionManagerDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lPa
             if (pnmhdr->code == LVN_ENDLABELEDIT)
             {
                 NMLVDISPINFO *pinfo = (NMLVDISPINFO *)lParam;
-                if (pinfo->item.pszText == NULL || pinfo->item.pszText[0] == '\0')
+                if (pinfo->item.pszText == nullptr || pinfo->item.pszText[0] == '\0')
                     return FALSE;
                 LVITEM lvitem;
                 lvitem.mask = LVIF_PARAM;
@@ -193,8 +193,7 @@ BOOL CollectionManagerDialog::OnCommand(WPARAM wParam, LPARAM lParam)
             if (idx > 0)
             {
                 ::SetFocus(hListHwnd);
-                LVITEM lvitem1;
-                memset(&lvitem1, 0, sizeof(LVITEM));
+                LVITEM lvitem1 = {};
                 lvitem1.mask = LVCF_TEXT | LVIF_PARAM;
                 lvitem1.iItem = idx;
                 lvitem1.iSubItem = 0;
@@ -206,11 +205,11 @@ BOOL CollectionManagerDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                 lvitem1.iItem = idx - 1;
                 ListView_InsertItem(hListHwnd, &lvitem1);
                 char szT[sizeof(pcol->m_wzName)/sizeof(pcol->m_wzName[0])];
-                WideCharToMultiByteNull(CP_ACP, 0, pcol->m_wzName, -1, szT, sizeof(szT), NULL, NULL);
+                WideCharToMultiByteNull(CP_ACP, 0, pcol->m_wzName, -1, szT, sizeof(szT), nullptr, nullptr);
                 ListView_SetItemText(hListHwnd, idx - 1, 0, szT);
 
                 char buf[16] = { 0 };
-                sprintf_s(buf, "%i", pcol->m_visel.Size());
+                sprintf_s(buf, "%i", pcol->m_visel.size());
                 ListView_SetItemText(hListHwnd, idx - 1, 1, buf);
 
                 ListView_SetItemState(hListHwnd, -1, 0, LVIS_SELECTED);
@@ -222,11 +221,10 @@ BOOL CollectionManagerDialog::OnCommand(WPARAM wParam, LPARAM lParam)
         case IDC_COL_DOWN_BUTTON:
         {
             const int idx = ListView_GetNextItem(hListHwnd, -1, LVNI_SELECTED);
-            if (idx != -1 && (idx < pt->m_vcollection.Size() - 1))
+            if (idx != -1 && (idx < pt->m_vcollection.size() - 1))
             {
                 ::SetFocus(hListHwnd);
-                LVITEM lvitem1;
-                memset(&lvitem1, 0, sizeof(LVITEM));
+                LVITEM lvitem1 = {};
                 lvitem1.mask = LVCF_TEXT | LVIF_PARAM;
                 lvitem1.iItem = idx;
                 lvitem1.iSubItem = 0;
@@ -238,11 +236,11 @@ BOOL CollectionManagerDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                 lvitem1.iItem = idx + 1;
                 ListView_InsertItem(hListHwnd, &lvitem1);
                 char szT[sizeof(pcol->m_wzName)/sizeof(pcol->m_wzName[0])];
-                WideCharToMultiByteNull(CP_ACP, 0, pcol->m_wzName, -1, szT, sizeof(szT), NULL, NULL);
+                WideCharToMultiByteNull(CP_ACP, 0, pcol->m_wzName, -1, szT, sizeof(szT), nullptr, nullptr);
                 ListView_SetItemText(hListHwnd, idx + 1, 0, szT);
 
                 char buf[16] = { 0 };
-                sprintf_s(buf, "%i", pcol->m_visel.Size());
+                sprintf_s(buf, "%i", pcol->m_visel.size());
                 ListView_SetItemText(hListHwnd, idx + 1, 1, buf);
 
                 ListView_SetItemState(hListHwnd, -1, 0, LVIS_SELECTED);
@@ -302,7 +300,7 @@ void CollectionManagerDialog::LoadPosition()
     const int x = LoadValueIntWithDefault("Editor", "CollectionMngPosX", 0);
     const int y = LoadValueIntWithDefault("Editor", "CollectionMngPosY", 0);
 
-    SetWindowPos(NULL, x, y, 0, 0, SWP_NOOWNERZORDER | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+    SetWindowPos(nullptr, x, y, 0, 0, SWP_NOOWNERZORDER | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
 void CollectionManagerDialog::SavePosition()
@@ -322,39 +320,31 @@ BOOL CollectionDialog::OnInitDialog()
 {
     Collection * const pcol = pCurCollection.pcol;
 
-    const HWND hwndName = GetDlgItem(IDC_NAME).GetHwnd();
-
     char szT[sizeof(pcol->m_wzName)/sizeof(pcol->m_wzName[0])];
-    WideCharToMultiByteNull(CP_ACP, 0, pcol->m_wzName, -1, szT, sizeof(szT), NULL, NULL);
+    WideCharToMultiByteNull(CP_ACP, 0, pcol->m_wzName, -1, szT, sizeof(szT), nullptr, nullptr);
 
-    ::SetWindowText(hwndName, szT);
+    ::SetWindowText(GetDlgItem(IDC_NAME).GetHwnd(), szT);
 
-    const HWND hwndFireEvents = GetDlgItem(IDC_FIRE).GetHwnd();
-    ::SendMessage(hwndFireEvents, BM_SETCHECK, pcol->m_fireEvents ? BST_CHECKED : BST_UNCHECKED, 0);
-
-    const HWND hwndStopSingle = GetDlgItem(IDC_SUPPRESS).GetHwnd();
-    ::SendMessage(hwndStopSingle, BM_SETCHECK, pcol->m_stopSingleEvents ? BST_CHECKED : BST_UNCHECKED, 0);
-
-    const HWND hwndGroupElements = GetDlgItem(IDC_GROUP_CHECK).GetHwnd();
-    ::SendMessage(hwndGroupElements, BM_SETCHECK, pcol->m_groupElements ? BST_CHECKED : BST_UNCHECKED, 0);
+    ::SendMessage(GetDlgItem(IDC_FIRE).GetHwnd(), BM_SETCHECK, pcol->m_fireEvents ? BST_CHECKED : BST_UNCHECKED, 0);
+    ::SendMessage(GetDlgItem(IDC_SUPPRESS).GetHwnd(), BM_SETCHECK, pcol->m_stopSingleEvents ? BST_CHECKED : BST_UNCHECKED, 0);
+    ::SendMessage(GetDlgItem(IDC_GROUP_CHECK).GetHwnd(), BM_SETCHECK, pcol->m_groupElements ? BST_CHECKED : BST_UNCHECKED, 0);
 
     const HWND hwndOut = GetDlgItem(IDC_OUTLIST).GetHwnd();
     const HWND hwndIn = GetDlgItem(IDC_INLIST).GetHwnd();
 
-    for (int i = 0; i < pcol->m_visel.Size(); i++)
+    for (int i = 0; i < pcol->m_visel.size(); i++)
     {
-        ISelect * const pisel = pcol->m_visel.ElementAt(i);
-        IEditable * const piedit = pisel->GetIEditable();
+        IEditable * const piedit = pcol->m_visel[i].GetIEditable();
         IScriptable * const piscript = piedit->GetScriptable();
         if (piscript)
         {
-            WideCharToMultiByteNull(CP_ACP, 0, piscript->m_wzName, -1, szT, sizeof(szT), NULL, NULL);
+            WideCharToMultiByteNull(CP_ACP, 0, piscript->m_wzName, -1, szT, sizeof(szT), nullptr, nullptr);
             const size_t index = ::SendMessage(hwndIn, LB_ADDSTRING, 0, (size_t)szT);
             ::SendMessage(hwndIn, LB_SETITEMDATA, index, (size_t)piscript);
         }
     }
 
-    PinTable * const ppt = pCurCollection.ppt;
+    const PinTable * const ppt = pCurCollection.ppt;
 
     for (size_t i = 0; i < ppt->m_vedit.size(); i++)
     {
@@ -364,14 +354,14 @@ BOOL CollectionDialog::OnInitDialog()
 
         // Only process objects not in this collection
         int l;
-        for (l = 0; l < pcol->m_visel.Size(); l++)
+        for (l = 0; l < pcol->m_visel.size(); l++)
             if (pisel == pcol->m_visel.ElementAt(l))
                 break;
 
-        if ((l == pcol->m_visel.Size()) && piscript)
-            //if (!piedit->m_pcollection)
+        if ((l == pcol->m_visel.size()) && piscript)
+        //if (!piedit->m_pcollection)
         {
-            WideCharToMultiByteNull(CP_ACP, 0, piscript->m_wzName, -1, szT, sizeof(szT), NULL, NULL);
+            WideCharToMultiByteNull(CP_ACP, 0, piscript->m_wzName, -1, szT, sizeof(szT), nullptr, nullptr);
             const size_t index = ::SendMessage(hwndOut, LB_ADDSTRING, 0, (size_t)szT);
             ::SendMessage(hwndOut, LB_SETITEMDATA, index, (size_t)piscript);
         }
@@ -390,7 +380,7 @@ BOOL CollectionDialog::OnCommand(WPARAM wParam, LPARAM lParam)
         case IDC_DOWN:
         {
             // Mode items up or down in the collection list
-            HWND hwndList = GetDlgItem(IDC_INLIST).GetHwnd();
+            const HWND hwndList = GetDlgItem(IDC_INLIST).GetHwnd();
             const size_t listsize = ::SendMessage(hwndList, LB_GETCOUNT, 0, 0);
             const size_t count = ::SendMessage(hwndList, LB_GETSELCOUNT, 0, 0);
             int * const rgsel = new int[count]; //!! size_t?
@@ -462,9 +452,9 @@ void CollectionDialog::OnOK()
 {
     Collection * const pcol = pCurCollection.pcol;
 
-    for (int i = 0; i < pcol->m_visel.Size(); i++)
+    for (int i = 0; i < pcol->m_visel.size(); i++)
     {
-        IEditable * const ie = pcol->m_visel.ElementAt(i)->GetIEditable();
+        IEditable * const ie = pcol->m_visel[i].GetIEditable();
         const int index = FindIndexOf(ie->m_vCollection, pcol);
         if (index != -1)
         {
@@ -473,7 +463,7 @@ void CollectionDialog::OnOK()
         }
     }
 
-    pcol->m_visel.RemoveAllElements();
+    pcol->m_visel.clear();
 
     const HWND hwndIn = GetDlgItem(IDC_INLIST).GetHwnd();
 
@@ -485,7 +475,7 @@ void CollectionDialog::OnOK()
         ISelect * const pisel = piscript->GetISelect();
         if (pisel) // Not sure how we could possibly get an iscript here that was never an iselect
         {
-            pcol->m_visel.AddElement(pisel);
+            pcol->m_visel.push_back(pisel);
             pisel->GetIEditable()->m_vCollection.push_back(pcol);
             pisel->GetIEditable()->m_viCollection.push_back((int)i);
         }
@@ -500,7 +490,7 @@ void CollectionDialog::OnOK()
     const size_t groupElements = GetDlgItem(IDC_GROUP_CHECK).SendMessage(BM_GETCHECK, 0, 0);
     pcol->m_groupElements = !!groupElements;
 
-    pCurCollection.ppt->SetCollectionName(pcol, GetDlgItem(IDC_NAME).GetWindowText().c_str(), NULL, 0);
+    pCurCollection.ppt->SetCollectionName(pcol, GetDlgItem(IDC_NAME).GetWindowText().c_str(), nullptr, 0);
 
     CDialog::OnOK();
 }

@@ -1,13 +1,7 @@
 #include "stdafx.h"
 #include "resource.h"
 #include "MaterialDialog.h"
-#include "vpversion.h"
-#include <rapidxml.hpp>
-#include <rapidxml_print.hpp>
 #include <fstream>
-#include <sstream>
-
-using namespace rapidxml;
 
 typedef struct _tagSORTDATA
 {
@@ -53,7 +47,7 @@ void MaterialDialog::setItemText(int id, float value)
 
 MaterialDialog::MaterialDialog() : CDialog(IDD_MATERIALDIALOG)
 {
-    m_hMaterialList = NULL;
+    m_hMaterialList = nullptr;
 }
 
 BOOL MaterialDialog::OnInitDialog()
@@ -63,10 +57,11 @@ BOOL MaterialDialog::OnInitDialog()
 
    m_columnSortOrder = 1;
    m_deletingItem = false;
-   m_resizer.Initialize(*this, CRect(0, 0, 500, 600));
    AttachItem(IDC_COLOR_BUTTON1, m_colorButton1);
    AttachItem(IDC_COLOR_BUTTON2, m_colorButton2);
    AttachItem(IDC_COLOR_BUTTON3, m_colorButton3);
+
+   m_resizer.Initialize(*this, CRect(0, 0, 780, 520));
    m_resizer.AddChild(m_hMaterialList, topleft, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
    m_resizer.AddChild(GetDlgItem(IDC_DIFFUSE_CHECK).GetHwnd(), topright, 0);
    m_resizer.AddChild(GetDlgItem(IDC_STATIC_BASE_COLOR).GetHwnd(), topright, 0);
@@ -310,11 +305,11 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       case IDC_IMPORT:
       {
          std::vector<std::string> szFilename;
-         char szInitialDir[MAXSTRING];
+         string szInitialDir;
 
-         const HRESULT hr = LoadValueString("RecentDir", "MaterialDir", szInitialDir, MAXSTRING);
+         const HRESULT hr = LoadValue("RecentDir", "MaterialDir", szInitialDir);
          if (hr != S_OK)
-            lstrcpy(szInitialDir, "c:\\Visual Pinball\\Tables\\");
+            szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
          if (g_pvp->OpenFileDialog(szInitialDir, szFilename, "Material Files (.mat)\0*.mat\0", "mat", 0))
          {
@@ -352,10 +347,7 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 
             const size_t index = szFilename[0].find_last_of('\\');
             if (index != std::string::npos)
-            {
-               const std::string newInitDir(szFilename[0].substr(0, index));
-               SaveValueString("RecentDir", "MaterialDir", newInitDir);
-            }
+               SaveValue("RecentDir", "MaterialDir", szFilename[0].substr(0, index));
 
             pt->SetNonUndoableDirty(eSaveDirty);
          }
@@ -375,16 +367,14 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       {
          if (ListView_GetSelectedCount(m_hMaterialList))	// if some items are selected???
          {
-            char szFileName[MAXSTRING];
-            char szInitialDir[MAXSTRING];
             int sel = ListView_GetNextItem(m_hMaterialList, -1, LVNI_SELECTED);
             const int selCount = ListView_GetSelectedCount(m_hMaterialList);
             if (sel == -1)
                break;
 
+            char szFileName[MAXSTRING];
             strncpy_s(szFileName, "Materials.mat", sizeof(szFileName)-1);
-            OPENFILENAME ofn;
-            ZeroMemory(&ofn, sizeof(OPENFILENAME));
+            OPENFILENAME ofn = {};
             ofn.lStructSize = sizeof(OPENFILENAME);
             ofn.hInstance = g_pvp->theInstance;
             ofn.hwndOwner = g_pvp->GetHwnd();
@@ -394,11 +384,12 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
             ofn.nMaxFile = sizeof(szFileName);
             ofn.lpstrDefExt = "mat";
 
-            const HRESULT hr = LoadValueString("RecentDir", "MaterialDir", szInitialDir, MAXSTRING);
+            string szInitialDir;
+            const HRESULT hr = LoadValue("RecentDir", "MaterialDir", szInitialDir);
             if (hr != S_OK)
-               lstrcpy(szInitialDir, "c:\\Visual Pinball\\Tables\\");
+               szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
-            ofn.lpstrInitialDir = szInitialDir;
+            ofn.lpstrInitialDir = szInitialDir.c_str();
             ofn.lpstrTitle = "Export materials";
             ofn.Flags = OFN_NOREADONLYRETURN | OFN_CREATEPROMPT | OFN_OVERWRITEPROMPT | OFN_EXPLORER;
 
@@ -406,7 +397,7 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
             {
                FILE *f;
                fopen_s(&f, ofn.lpstrFile, "wb");
-               const int mv = MATERIAL_VERSION;
+               constexpr int mv = MATERIAL_VERSION;
                fwrite(&mv, 4, 1, f);
                fwrite(&selCount, 4, 1, f);
                while (sel != -1)
@@ -447,7 +438,7 @@ BOOL MaterialDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                if (index != std::string::npos)
                {
                    const std::string newInitDir(szFilename.substr(0, index));
-                   SaveValueString("RecentDir", "MaterialDir", newInitDir);
+                   SaveValue("RecentDir", "MaterialDir", newInitDir);
                }
             }
          }
@@ -532,7 +523,7 @@ INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             case LVN_ENDLABELEDIT:
             {
                NMLVDISPINFO * const pinfo = (NMLVDISPINFO *)lParam;
-               if (pinfo->item.pszText == NULL || pinfo->item.pszText[0] == '\0')
+               if (pinfo->item.pszText == nullptr || pinfo->item.pszText[0] == '\0')
                {
                   return FALSE;
                }
@@ -606,10 +597,8 @@ INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                      setItemText(IDC_OPACITY_EDIT, pmat->m_fOpacity);
                      setItemText(IDC_EDGEALPHA_EDIT, pmat->m_fEdgeAlpha);
 
-                     HWND checkboxHwnd = GetDlgItem(IDC_DIFFUSE_CHECK).GetHwnd();
-                     SendMessage(checkboxHwnd, BM_SETCHECK, pmat->m_bIsMetal ? BST_CHECKED : BST_UNCHECKED, 0);
-                     checkboxHwnd = GetDlgItem(IDC_OPACITY_CHECK).GetHwnd();
-                     SendMessage(checkboxHwnd, BM_SETCHECK, pmat->m_bOpacityActive ? BST_CHECKED : BST_UNCHECKED, 0);
+                     SendMessage(GetDlgItem(IDC_DIFFUSE_CHECK).GetHwnd(), BM_SETCHECK, pmat->m_bIsMetal ? BST_CHECKED : BST_UNCHECKED, 0);
+                     SendMessage(GetDlgItem(IDC_OPACITY_CHECK).GetHwnd(), BM_SETCHECK, pmat->m_bOpacityActive ? BST_CHECKED : BST_UNCHECKED, 0);
 
                      setItemText(IDC_MAT_ELASTICITY, pmat->m_fElasticity);
                      setItemText(IDC_MAT_ELASTICITY_FALLOFF, pmat->m_fElasticityFalloff);
@@ -709,11 +698,9 @@ INT_PTR MaterialDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                   setItemText(IDC_SPECULAR_EDIT, pmat->m_fEdge);
                   setItemText(IDC_OPACITY_EDIT, pmat->m_fOpacity);
 
-                  HWND checkboxHwnd = GetDlgItem(IDC_DIFFUSE_CHECK).GetHwnd();
-                  SendMessage(checkboxHwnd, BM_SETCHECK, pmat->m_bIsMetal ? BST_CHECKED : BST_UNCHECKED, 0);
-                  checkboxHwnd = GetDlgItem(IDC_OPACITY_CHECK).GetHwnd();
-                  SendMessage(checkboxHwnd, BM_SETCHECK, pmat->m_bOpacityActive ? BST_CHECKED : BST_UNCHECKED, 0);
-                  
+                  SendMessage(GetDlgItem(IDC_DIFFUSE_CHECK).GetHwnd(), BM_SETCHECK, pmat->m_bIsMetal ? BST_CHECKED : BST_UNCHECKED, 0);
+                  SendMessage(GetDlgItem(IDC_OPACITY_CHECK).GetHwnd(), BM_SETCHECK, pmat->m_bOpacityActive ? BST_CHECKED : BST_UNCHECKED, 0);
+
                   setItemText(IDC_EDGEALPHA_EDIT, pmat->m_fEdgeAlpha);
                   setItemText(IDC_MAT_ELASTICITY, pmat->m_fElasticity);
                   setItemText(IDC_MAT_ELASTICITY_FALLOFF, pmat->m_fElasticityFalloff);
@@ -865,18 +852,17 @@ void MaterialDialog::LoadPosition()
 
     const int w = LoadValueIntWithDefault("Editor", "MaterialMngWidth", 1000);
     const int h = LoadValueIntWithDefault("Editor", "MaterialMngHeight", 800);
-    SetWindowPos(NULL, x, y, w, h, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE);
+    SetWindowPos(nullptr, x, y, w, h, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
 void MaterialDialog::SavePosition()
 {
-    int w, h;
-    CRect rect = GetWindowRect();
+    const CRect rect = GetWindowRect();
 
     SaveValueInt("Editor", "MaterialMngPosX", rect.left);
     SaveValueInt("Editor", "MaterialMngPosY", rect.top);
-    w = rect.right - rect.left;
+    const int w = rect.right - rect.left;
     SaveValueInt("Editor", "MaterialMngWidth", w);
-    h = rect.bottom - rect.top;
+    const int h = rect.bottom - rect.top;
     SaveValueInt("Editor", "MaterialMngHeight", h);
 }

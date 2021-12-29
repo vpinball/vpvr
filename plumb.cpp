@@ -84,14 +84,14 @@ void plumb_update(const U32 curr_time_msec, const float getx, const float gety) 
    // When the table script reads the values, they will reset to 0. 
    if (TiltPerc > g_pplayer->m_ptable->m_tblNudgeReadTilt)
       g_pplayer->m_ptable->m_tblNudgeReadTilt = TiltPerc;
-   if (fabsf(getx) > fabsf(g_pplayer->m_ptable->m_tblNudgeReadX))
-      g_pplayer->m_ptable->m_tblNudgeReadX = getx;
-   if (fabsf(gety) > fabsf(g_pplayer->m_ptable->m_tblNudgeReadY))
-      g_pplayer->m_ptable->m_tblNudgeReadY = gety;
-   if (fabsf(x) > fabsf(g_pplayer->m_ptable->m_tblNudgePlumbX))
-      g_pplayer->m_ptable->m_tblNudgePlumbX = x;
-   if (fabsf(y) > fabsf(g_pplayer->m_ptable->m_tblNudgePlumbY))
-      g_pplayer->m_ptable->m_tblNudgePlumbY = y;
+   if (fabsf(getx) > fabsf(g_pplayer->m_ptable->m_tblNudgeRead.x))
+      g_pplayer->m_ptable->m_tblNudgeRead.x = getx;
+   if (fabsf(gety) > fabsf(g_pplayer->m_ptable->m_tblNudgeRead.y))
+      g_pplayer->m_ptable->m_tblNudgeRead.y = gety;
+   if (fabsf(x) > fabsf(g_pplayer->m_ptable->m_tblNudgePlumb.x))
+      g_pplayer->m_ptable->m_tblNudgePlumb.x = x;
+   if (fabsf(y) > fabsf(g_pplayer->m_ptable->m_tblNudgePlumb.y))
+      g_pplayer->m_ptable->m_tblNudgePlumb.y = y;
 
    // Dampen the velocity.
    vx -= 2.50f * (vx * dt);
@@ -138,12 +138,12 @@ void draw_transparent_box( F32 sx, F32 sy, const F32 x, const F32 y, const U32 c
    const DWORD a = (color & 0x000000ff)      ;
    const DWORD col = (a << 24) | (r << 16) | (g << 8) | b;
 
-   g_pplayer->m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
+   g_pplayer->m_pin3d.DisableAlphaBlend();
 
    g_pplayer->Spritedraw(y, x,
       sy, sx,
       col,
-      (Texture*)NULL,
+      (Texture*)nullptr,
       1.f); //!!
 }
 
@@ -157,18 +157,18 @@ void plumb_draw()
 
    //RenderStateType	RestoreRenderState;
    //TextureStateType	RestoreTextureState;
-   Matrix3D			RestoreWorldMatrix;
+   D3DMATRIX			RestoreWorldMatrix;
    HRESULT				ReturnCode;
 
    // Save the current transformation state.
-   ReturnCode = Shader::GetTransform ( D3DTRANSFORMSTATE_WORLD, &RestoreWorldMatrix ); 
+   ReturnCode = g_pplayer->m_pin3d.m_pd3dPrimaryDevice->GetTransform ( D3DTRANSFORMSTATE_WORLD, &RestoreWorldMatrix ); 
    // Save the current render state.
    //Display_GetRenderState(g_pplayer->m_pin3d.m_pd3dPrimaryDevice, &(RestoreRenderState));
    // Save the current texture state.
    //Display_GetTextureState (g_pplayer->m_pin3d.m_pd3dPrimaryDevice, &(RestoreTextureState));
 
-   static const Matrix3D WorldMatrix(1.0f,0.0f,0.0f,0.0f,0.0f,1.0f,0.0f,0.0f,0.0f,0.0f,1.0f,0.0f,0.0f,0.0f,0.0f,1.0f);
-   Shader::SetTransform ( D3DTRANSFORMSTATE_WORLD, (LPD3DMATRIX)&WorldMatrix, 1); 
+   static const D3DMATRIX WorldMatrix(1.0f,0.0f,0.0f,0.0f,0.0f,1.0f,0.0f,0.0f,0.0f,0.0f,1.0f,0.0f,0.0f,0.0f,0.0f,1.0f);
+   g_pplayer->m_pin3d.m_pd3dPrimaryDevice->SetTransform ( D3DTRANSFORMSTATE_WORLD, (LPD3DMATRIX)&WorldMatrix ); 
 
    F32 x = sPlumbPos[0];
    F32 y = sPlumbPos[1];
@@ -186,6 +186,6 @@ void plumb_draw()
    // Restore the texture state.
    //Display_SetTextureState(g_pplayer->m_pin3d.m_pd3dPrimaryDevice, &(RestoreTextureState));
    // Restore the transformation state.
-   ReturnCode = Shader::SetTransform ( D3DTRANSFORMSTATE_WORLD, &RestoreWorldMatrix, 1 ); 
+   ReturnCode = g_pplayer->m_pin3d.m_pd3dPrimaryDevice->SetTransform ( D3DTRANSFORMSTATE_WORLD, &RestoreWorldMatrix ); 
 #endif
 }

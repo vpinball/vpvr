@@ -1,3 +1,6 @@
+// license:GPLv3+
+// Ported at: VisualPinball.Engine/Common/Constants.cs
+
 #pragma once
 
 
@@ -24,32 +27,32 @@
 //#define PRINT_DEBUG_COLLISION_TREE     // print collision acceleration structure info (will slow down debugging startup time if enabled)
 
 /*
-* NOTE ABOUT VP PHYSICAL UNITS:
-*
-* By convention, one VP length unit (U) corresponds to
-*   1 U = .53975 mm = 5.3975E-4 m,   or   1 m = 1852.71 U
-*
-* For historical reasons, one VP time unit (T) corresponds to
-*   1 T = 10 ms = 0.01 s,            or   1 s = 100 T
-*
-* Therefore, Earth gravity in VP units can be computed as
-*   g  =  9.81 m/s^2  =  1.81751 U/T^2
-*/
+ * NOTE ABOUT VP PHYSICAL UNITS:
+ *
+ * By convention, one VP length unit (U) corresponds to
+ *   1 U = .53975 mm = 5.3975E-4 m,   or   1 m = 1852.71 U
+ *
+ * For historical reasons, one VP time unit (T) corresponds to
+ *   1 T = 10 ms = 0.01 s,            or   1 s = 100 T
+ *
+ * Therefore, Earth gravity in VP units can be computed as
+ *   g  =  9.81 m/s^2  =  1.81751 U/T^2
+ */
 /*
-* nFozzy explanation:
-* The inch conversion is nice because VP units are somewhat based on inches so you can use fractions:
-* VP units = (inches * 17) / 800
-* Inches = (VP units * 800) / 17
-*
-* I have to switch between metric and VP units when modeling / rendering and I do that with these scales:
-* CM to VP units: (50 / 2.69875)
-* VP units to CM: (2.69875 / 50)
-*
-* I’m trying to move to this sort of thing in the future, modeling in pseudo-inches because Maya’s native inch support is for shits
-* Working inches Scale: 1
-* Scale up to CM for rendering: 2.54
-* Scale way up to VPu for export: (1*800)/17
-*/
+ * nFozzy explanation:
+ * The inch conversion is nice because VP units are somewhat based on inches so you can use fractions:
+ * VP units = (inches * 17) / 800
+ * Inches = (VP units * 800) / 17
+ * 
+ * I have to switch between metric and VP units when modeling / rendering and I do that with these scales:
+ * CM to VP units: (50 / 2.69875)
+ * VP units to CM: (2.69875 / 50)
+ * 
+ * Iâ€™m trying to move to this sort of thing in the future, modeling in pseudo-inches because Mayaâ€™s native inch support is for shits
+ * Working inches Scale: 1
+ * Scale up to CM for rendering: 2.54
+ * Scale way up to VPu for export: (1*800)/17
+ */
 
 #define GRAVITYCONST    1.81751f
 
@@ -78,24 +81,24 @@
 
 // low velocity stabilization ... if embedding occurs add some velocity
 #ifdef NEW_PHYSICS
-#define C_EMBEDVELLIMIT 5.f // can be undefd
+ #define C_EMBEDVELLIMIT 5.f // can be undefd
 #endif
 
 // old workarounds, not needed anymore?!
 #ifndef NEW_PHYSICS
-#define C_EMBEDSHOT_PLANE // push pos up if ball embedded in plane
-#define C_EMBEDDED 0.0f // can be undefd
-#define C_EMBEDSHOT 0.05f
-// Contact displacement corrections, hard ridgid contacts i.e. steel on hard plastic or hard wood
-#define C_DISP_GAIN 0.9875f // can be undefd
-#ifdef C_DISP_GAIN
-#define C_DISP_LIMIT 5.0f
-#endif
-// Have special cases for balls that are determined static? (C_DYNAMIC is kind of a counter for detection) -> does not work stable enough anymore nowadays
-//#define C_DYNAMIC 2
-// choose only one of these two heuristics:
-#define C_BALL_SPIN_HACK // original ball spin reduction code, based on automatic detection/heuristic of resting balls
-//#define C_BALL_SPIN_HACK2 0.1 // dampens ball spin on collision contacts and at the same time very slow moving balls (smaller = less damp)
+ #define C_EMBEDSHOT_PLANE // push pos up if ball embedded in plane
+ #define C_EMBEDDED 0.0f // can be undefd
+ #define C_EMBEDSHOT 0.05f
+ // Contact displacement corrections, hard ridgid contacts i.e. steel on hard plastic or hard wood
+ #define C_DISP_GAIN 0.9875f // can be undefd
+ #ifdef C_DISP_GAIN
+  #define C_DISP_LIMIT 5.0f
+ #endif
+ // Have special cases for balls that are determined static? (C_DYNAMIC is kind of a counter for detection) -> does not work stable enough anymore nowadays
+ //#define C_DYNAMIC 2
+ // choose only one of these two heuristics:
+ #define C_BALL_SPIN_HACK // original ball spin reduction code, based on automatic detection/heuristic of resting balls
+ //#define C_BALL_SPIN_HACK2 0.1 // dampens ball spin on collision contacts and at the same time very slow moving balls (smaller = less damp)
 #endif
 
 //trigger/kicker boundary crossing hysterisis, also slow/static ball<->ball and to some extent general ball<->object interactions

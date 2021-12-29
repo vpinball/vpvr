@@ -91,7 +91,7 @@ public:
    TimerData m_d;
 
 private:
-   PinTable * m_ptable;
+   PinTable *m_ptable;
 };
 
 #endif // !defined(AFX_TIMER_H__932D477C_A594_4941_906D_8BF11A68C838__INCLUDED_)

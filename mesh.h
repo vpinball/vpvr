@@ -1,3 +1,6 @@
+// license:GPLv3+
+// Ported at: VisualPinball.Engine/Math/CatmullCurve.cs
+
 #pragma once
 
 #include "Material.h"
@@ -131,13 +134,16 @@ private:
    float cz0, cz1, cz2, cz3;
 };
 
+// Ported at: VisualPinball.Engine/Math/RenderVertex.cs
+//            VisualPinball.Engine/VPT/Mesh.cs
+//            VisualPinball.Engine/Math/DragPoint.cs
 
 class RenderVertex3D : public Vertex3Ds
 {
 public:
    void set(const Vertex3Ds &v) { x = v.x; y = v.y; z = v.z; }
 
-   static const int Dim = 3;
+   static constexpr int Dim = 3;
 
    bool smooth;
    bool slingshot;
@@ -152,7 +158,7 @@ public:
    void set(const RenderVertex &v) { *this = v; }
    void set(const RenderVertex3D &v) { x = v.x; y = v.y; smooth = v.smooth; slingshot = v.slingshot; controlPoint = v.controlPoint; }
 
-   static const int Dim = 2;
+   static constexpr int Dim = 2;
 
    bool smooth;
    bool slingshot;
@@ -188,6 +194,8 @@ inline float GetDot(const Vertex2D * const pvEnd1, const Vertex2D * const pvJoin
 {
    return (pvJoint->x - pvEnd1->x)*(pvJoint->y - pvEnd2->y) - (pvJoint->y - pvEnd1->y)*(pvJoint->x - pvEnd2->x);
 }
+
+// Ported at: VisualPinball.Engine/VPT/Mesh.cs
 
 inline bool FLinesIntersect(const Vertex2D * const Start1, const Vertex2D * const Start2, const Vertex2D * const End1, const Vertex2D * const End2)
 {
@@ -282,6 +290,10 @@ inline float GetCos(const Vertex2D * const pvEnd1, const Vertex2D * const pvJoin
    return dot / sqrtf((vt1.x * vt1.x + vt1.y * vt1.y)*(vt2.x * vt2.x + vt2.y * vt2.y));
 }
 
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
+
 /*
 inline float GetAngle(const Vertex2D * const pvEnd1, const Vertex2D * const pvJoint, const Vertex2D * const pvEnd2)
 {
@@ -298,12 +310,12 @@ return atan2f((slope2-slope1),(1.0f+slope1*slope2));
 // a clockwise polygon in a left-handed coordinate system, or for a counterclockwise polygon in
 // a right-handed coordinate system.
 template <class VtxType, class IdxType>
-void SetNormal(VtxType * const rgv, const IdxType * const rgi, const int count, void * prgvApply = NULL, const IdxType * rgiApply = NULL, int applycount = 0)
+void SetNormal(VtxType * const rgv, const IdxType * const rgi, const int count, void * prgvApply = nullptr, const IdxType * rgiApply = nullptr, int applycount = 0)
 {
    // If apply-to array is null, just apply the resulting normal to incoming array
    VtxType * rgvApply = prgvApply ? (VtxType*)prgvApply : rgv;
 
-   if (rgiApply == NULL)
+   if (rgiApply == nullptr)
       rgiApply = rgi;
 
    if (applycount == 0)
@@ -331,6 +343,9 @@ void SetNormal(VtxType * const rgv, const IdxType * const rgi, const int count, 
       rgvApply[l].nz = vnormal.z;
    }
 }
+
+// Ported at: VisualPinball.Engine/Math/DragPoint.cs
+//            VisualPinball.Engine/VPT/Mesh.cs
 
 // Calculate if two vectors are flat to each other
 // accuracy is a float greater 4 and smaller 4000000 (tested this out)
@@ -410,10 +425,14 @@ inline void ClosestPointOnPolygon(const VtxContType &rgv, const Vertex2D &pvin, 
    }
 }
 
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
+
 enum WindingOrder
 {
-   Clockwise,
-   CounterClockwise
+    Clockwise,
+    CounterClockwise
 };
 
 // Find vertex along one edge of bounding box.
@@ -421,26 +440,26 @@ enum WindingOrder
 template <class RenderVertexCont>
 inline size_t FindCornerVertex(const RenderVertexCont& vertices)
 {
-   size_t minVertex = -1;
-   float minY = FLT_MAX;
-   float minXAtMinY = FLT_MAX;
-   for (size_t i = 0; i < vertices.size(); i++)
-   {
-      const RenderVertex vert = vertices[i];
-      const float y = vert.y;
-      if (y > minY)
-         continue;
-      if (y == minY)
-         if (vert.x >= minXAtMinY)
+    size_t minVertex = -1;
+    float minY = FLT_MAX;
+    float minXAtMinY = FLT_MAX;
+    for (size_t i = 0; i < vertices.size(); i++)
+    {
+        const RenderVertex vert = vertices[i];
+        const float y = vert.y;
+        if (y > minY)
             continue;
+        if (y == minY)
+            if (vert.x >= minXAtMinY)
+                continue;
 
-      // Minimum so far.
-      minVertex = i;
-      minY = y;
-      minXAtMinY = vert.x;
-   }
+        // Minimum so far.
+        minVertex = i;
+        minY = y;
+        minXAtMinY = vert.x;
+    }
 
-   return minVertex;
+    return minVertex;
 }
 
 // Return value in (0..n-1).
@@ -448,8 +467,8 @@ inline size_t FindCornerVertex(const RenderVertexCont& vertices)
 // If need to allow more negative values, need more complex formula.
 __forceinline int WrapAt(const int i, const int n)
 {
-   // "+n": Moves (-n..) up to (0..).
-   return (i + n) % n;
+    // "+n": Moves (-n..) up to (0..).
+    return (i + n) % n;
 }
 
 
@@ -457,27 +476,32 @@ __forceinline int WrapAt(const int i, const int n)
 template <class RenderVertexCont>
 inline WindingOrder DetermineWindingOrder(const RenderVertexCont& vertices)
 {
-   size_t nVerts = vertices.size();
-   // If vertices duplicates first as last to represent closed polygon,
-   // skip last.
-   const RenderVertex lastV = vertices[nVerts - 1];
-   if (lastV.x == vertices[0].x && lastV.y == vertices[0].y)
-      nVerts--;
-   const size_t iMinVertex = FindCornerVertex(vertices);
-   // Orientation matrix:
-   //     [ 1  xa  ya ]
-   // O = | 1  xb  yb |
-   //     [ 1  xc  yc ]
-   const RenderVertex a = vertices[WrapAt((int)iMinVertex - 1, (int)nVerts)];
-   const RenderVertex b = vertices[iMinVertex];
-   const RenderVertex c = vertices[WrapAt((int)iMinVertex + 1, (int)nVerts)];
-   // determinant(O) = (xb*yc + xa*yb + ya*xc) - (ya*xb + yb*xc + xa*yc)
-   const float detOrient = (b.x * c.y + a.x * b.y + a.y * c.x) - (a.y * b.x + b.y * c.x + a.x * c.y);
+    size_t nVerts = vertices.size();
+    // If vertices duplicates first as last to represent closed polygon,
+    // skip last.
+    const RenderVertex lastV = vertices[nVerts - 1];
+    if (lastV.x == vertices[0].x && lastV.y == vertices[0].y)
+        nVerts--;
+    const size_t iMinVertex = FindCornerVertex(vertices);
+    // Orientation matrix:
+    //     [ 1  xa  ya ]
+    // O = | 1  xb  yb |
+    //     [ 1  xc  yc ]
+    const RenderVertex a = vertices[WrapAt((int)iMinVertex - 1, (int)nVerts)];
+    const RenderVertex b = vertices[iMinVertex];
+    const RenderVertex c = vertices[WrapAt((int)iMinVertex + 1, (int)nVerts)];
+    // determinant(O) = (xb*yc + xa*yb + ya*xc) - (ya*xb + yb*xc + xa*yc)
+    const float detOrient = (b.x * c.y + a.x * b.y + a.y * c.x) - (a.y * b.x + b.y * c.x + a.x * c.y);
 
-   // TBD: check for "==0", in which case is not defined?
-   // Can that happen?  Do we need to check other vertices / eliminate duplicate vertices?
-   return detOrient > 0.f ? Clockwise : CounterClockwise;
+    // TBD: check for "==0", in which case is not defined?
+    // Can that happen?  Do we need to check other vertices / eliminate duplicate vertices?
+    return detOrient > 0.f ? Clockwise : CounterClockwise;
 }
+
+//
+// license:GPLv3+
+// Ported at: VisualPinball.Engine/VPT/Mesh.cs
+//
 
 template <class RenderVertexCont, class Idx>
 void PolygonToTriangles(const RenderVertexCont& rgv, std::vector<unsigned int>& pvpoly, std::vector<Idx>& pvtri, const bool support_both_winding_orders)
@@ -489,7 +513,7 @@ void PolygonToTriangles(const RenderVertexCont& rgv, std::vector<unsigned int>& 
    assert(tricount > 0);
 
    // check if the polygon is in right orientation, otherwise flip it over
-   if (support_both_winding_orders && (DetermineWindingOrder(rgv) == Clockwise))
+   if(support_both_winding_orders && (DetermineWindingOrder(rgv) == Clockwise))
       std::reverse(pvpoly.begin(), pvpoly.end());
 
    for (size_t l = 0; l < tricount; ++l)
@@ -546,16 +570,16 @@ void ComputeNormals(Vertex3D_NoTex2* const vertices, const unsigned int numVerti
       const float l = v.nx*v.nx + v.ny*v.ny + v.nz*v.nz;
       if (l <= FLT_MIN) // degenerate?
       {
-         v.nx = 0.f;
-         v.ny = 0.f;
-         v.nz = 0.f; // could also use up vector then, but this way easier to catch visually (1.f here)
+          v.nx = 0.f;
+          v.ny = 0.f;
+          v.nz = 0.f; // could also use up vector then, but this way easier to catch visually (1.f here)
       }
       else
       {
-         const float inv_l = 1.0f / sqrtf(l);
-         v.nx *= inv_l;
-         v.ny *= inv_l;
-         v.nz *= inv_l;
+          const float inv_l = 1.0f/sqrtf(l);
+          v.nx *= inv_l;
+          v.ny *= inv_l;
+          v.nz *= inv_l;
       }
    }
 }

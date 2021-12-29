@@ -14,9 +14,9 @@ RubberPhysicsProperty::RubberPhysicsProperty(const VectorProtected<ISelect> *pvs
 
 void RubberPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemRubber))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemRubber))
             continue;
         Rubber *const rubber = (Rubber *)m_pvsel->ElementAt(i);
 
@@ -40,9 +40,9 @@ void RubberPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void RubberPhysicsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemRubber))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemRubber))
             continue;
         Rubber *const rubber = (Rubber *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -80,5 +80,29 @@ BOOL RubberPhysicsProperty::OnInitDialog()
 
     m_hitHeightEdit.AttachItem(IDC_HIT_HEIGHT_EDIT);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(m_physicsMaterialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hOverwritePhysicsCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hCollidableCheck, topleft, 0);
+    m_resizer.AddChild(m_hHitEventCheck, topleft, 0);
+    m_resizer.AddChild(m_elasticityEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_elasticityFallOffEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_frictionEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_scatterAngleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hitHeightEdit, topleft, RD_STRETCH_WIDTH);
+
     return TRUE;
+}
+
+INT_PTR RubberPhysicsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

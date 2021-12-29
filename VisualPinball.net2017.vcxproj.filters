@@ -295,6 +295,8 @@
     <ClCompile Include="imgui\imgui_tables.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="dialogs\ScriptErrorDialog.cpp" />
+    <ClCompile Include="inc\serial.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="vpinball.rc">
@@ -854,9 +856,6 @@
     <ClInclude Include="vpinball.h">
       <Filter>headers</Filter>
     </ClInclude>
-    <ClInclude Include="vpinball_i.h">
-      <Filter>headers</Filter>
-    </ClInclude>
     <ClInclude Include="vpversion.h">
       <Filter>headers</Filter>
     </ClInclude>
@@ -1262,7 +1261,9 @@
     <ClInclude Include="dialogs\LayersListDialog.h">
       <Filter>dialogs</Filter>
     </ClInclude>
-    <ClInclude Include="Debugger.h" />
+    <ClInclude Include="Debugger.h">
+      <Filter>headers</Filter>
+    </ClInclude>
     <ClInclude Include="imgui\imconfig.h">
       <Filter>imgui</Filter>
     </ClInclude>
@@ -1412,32 +1413,24 @@
     </ClInclude>
     <ClInclude Include="dialogs\NotesDialog.h" />
     <ClInclude Include="inc\ThreadPool.h" />
+    <ClInclude Include="inc\serial.h" />
+    <ClInclude Include="inc\win32xx\include\default_resource.h" />
+    <ClInclude Include="vpinball_i.h" />
+    <ClInclude Include="dialogs\ScriptErrorDialog.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader\BallShader.fx">
       <Filter>shaders</Filter>
     </FxCompile>
-    <FxCompile Include="shader\BasicShader.fx">
-      <Filter>shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="shader\DMDShader.fx">
-      <Filter>shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="shader\FBShader.fx">
-      <Filter>shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="shader\FlasherShader.fx">
-      <Filter>shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="shader\LightShader.fx">
-      <Filter>shaders</Filter>
-    </FxCompile>
-    <FxCompile Include="shader\ClassicLightShader.fx">
-      <Filter>shaders</Filter>
-    </FxCompile>
     <FxCompile Include="shader\StereoShader.fx">
       <Filter>shaders</Filter>
     </FxCompile>
+    <FxCompile Include="shader\BasicShader.hlsl" />
+    <FxCompile Include="shader\DMDShader.hlsl" />
+    <FxCompile Include="shader\FBShader.hlsl" />
+    <FxCompile Include="shader\FlasherShader.hlsl" />
+    <FxCompile Include="shader\LightShader.hlsl" />
+    <FxCompile Include="shader\ClassicLightShader.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <Midl Include="vpinball.idl">

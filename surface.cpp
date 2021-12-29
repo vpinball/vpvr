@@ -16,7 +16,7 @@ Surface::Surface()
    m_slingshotVBuffer = 0;
    m_VBuffer = 0;
    m_IBuffer = 0;
-   m_propPhysics = NULL;
+   m_propPhysics = nullptr;
    m_d.m_overwritePhysics = true;
 }
 
@@ -44,7 +44,7 @@ HRESULT Surface::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
    m_ptable = ptable;
    m_isWall = true;
 
-   const float width = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Wall", "Width", 50.f) : 50.f;
+   const float width  = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Wall", "Width",  50.f) : 50.f;
    const float length = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Wall", "Length", 50.f) : 50.f;
 
    CComObject<DragPoint> *pdp;
@@ -79,7 +79,7 @@ HRESULT Surface::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
 
    SetDefaults(fromMouseClick);
 
-   return InitVBA(fTrue, 0, NULL);
+   return InitVBA(fTrue, 0, nullptr);
 }
 
 void Surface::WriteRegDefaults()
@@ -91,8 +91,8 @@ void Surface::WriteRegDefaults()
    SaveValueBool(strKeyName, "HitEvent", m_d.m_hitEvent);
    SaveValueFloat(strKeyName, "HitThreshold", m_d.m_threshold);
    SaveValueFloat(strKeyName, "SlingshotThreshold", m_d.m_slingshot_threshold);
-   SaveValueString(strKeyName, "TopImage", m_d.m_szImage);
-   SaveValueString(strKeyName, "SideImage", m_d.m_szSideImage);
+   SaveValue(strKeyName, "TopImage", m_d.m_szImage);
+   SaveValue(strKeyName, "SideImage", m_d.m_szSideImage);
    SaveValueBool(strKeyName, "Droppable", m_d.m_droppable);
    SaveValueBool(strKeyName, "Flipbook", m_d.m_flipbook);
    SaveValueBool(strKeyName, "IsBottomSolid", m_d.m_isBottomSolid);
@@ -168,13 +168,13 @@ HRESULT Surface::InitTarget(PinTable * const ptable, const float x, const float 
    m_d.m_slingshot_threshold = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "SlingshotThreshold", 0.0f) : 0.0f;
    m_d.m_inner = true; //!! Deprecated, do not use anymore
 
-   HRESULT hr = LoadValueString(strKeyName, "TopImage", m_d.m_szImage, MAXTOKEN);
+   HRESULT hr = LoadValue(strKeyName, "TopImage", m_d.m_szImage);
    if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_szImage = "";
+      m_d.m_szImage.clear();
 
-   hr = LoadValueString(strKeyName, "SideImage", m_d.m_szSideImage, MAXTOKEN);
+   hr = LoadValue(strKeyName, "SideImage", m_d.m_szSideImage);
    if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_szSideImage = "";
+      m_d.m_szSideImage.clear();
 
    m_d.m_droppable = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "Droppable", false) : false;
    m_d.m_flipbook = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "Flipbook", false) : false;
@@ -195,15 +195,13 @@ HRESULT Surface::InitTarget(PinTable * const ptable, const float x, const float 
    m_d.m_sideVisible = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "SideVisible", true) : true;
    m_d.m_collidable = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "Collidable", true) : true;
 
-   return InitVBA(fTrue, 0, NULL);
+   return InitVBA(fTrue, 0, nullptr);
 }
 #endif
 
 void Surface::SetDefaults(bool fromMouseClick)
 {
-   static const char strKeyName[] = "DefaultProps\\Wall";
-
-   HRESULT hr;
+   static constexpr char strKeyName[] = "DefaultProps\\Wall";
 
    m_d.m_tdr.m_TimerEnabled = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "TimerEnabled", false) : false;
    m_d.m_tdr.m_TimerInterval = fromMouseClick ? LoadValueIntWithDefault(strKeyName, "TimerInterval", 100) : 100;
@@ -212,18 +210,13 @@ void Surface::SetDefaults(bool fromMouseClick)
    m_d.m_slingshot_threshold = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "SlingshotThreshold", 0.0f) : 0.0f;
    m_d.m_inner = true; //!! Deprecated, do not use anymore
 
-   char buf[MAXTOKEN] = { 0 };
-   hr = LoadValueString(strKeyName, "TopImage", buf, MAXTOKEN);
+   HRESULT hr = LoadValue(strKeyName, "TopImage", m_d.m_szImage);
    if ((hr != S_OK) || !fromMouseClick)
       m_d.m_szImage.clear();
-   else
-      m_d.m_szImage = buf;
 
-   hr = LoadValueString(strKeyName, "SideImage", buf, MAXTOKEN);
+   hr = LoadValue(strKeyName, "SideImage", m_d.m_szSideImage);
    if ((hr != S_OK) || !fromMouseClick)
       m_d.m_szSideImage.clear();
-   else
-      m_d.m_szSideImage = buf;
 
    m_d.m_droppable = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "Droppable", false) : false;
    m_d.m_flipbook = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "Flipbook", false) : false;
@@ -277,7 +270,7 @@ void Surface::UIRenderPass2(Sur * const psur)
    psur->SetFillColor(-1);
    psur->SetBorderColor(RGB(0, 0, 0), false, 0);
    psur->SetObject(this); // For selected formatting
-   psur->SetObject(NULL);
+   psur->SetObject(nullptr);
 
    {
       std::vector<RenderVertex> vvertex; //!! check/reuse from prerender
@@ -318,7 +311,7 @@ void Surface::UIRenderPass2(Sur * const psur)
 
       if (pdp->m_slingshot)
       {
-         psur->SetObject(NULL);
+         psur->SetObject(nullptr);
          const CComObject<DragPoint> * const pdp2 = m_vdpoint[(i < m_vdpoint.size() - 1) ? (i + 1) : 0];
          psur->SetLineColor(RGB(0, 0, 0), false, 3);
 
@@ -336,7 +329,7 @@ void Surface::RenderBlueprint(Sur *psur, const bool solid)
       psur->SetFillColor(-1);
    psur->SetBorderColor(RGB(0, 0, 0), false, 0);
    psur->SetObject(this); // For selected formatting
-   psur->SetObject(NULL);
+   psur->SetObject(nullptr);
 
    std::vector<RenderVertex> vvertex;
    GetRgVertex(vvertex);
@@ -371,6 +364,11 @@ void Surface::GetHitShapesDebug(vector<HitObject*> &pvho)
 {
 }
 
+//
+// license:GPLv3+
+// Ported at: VisualPinball.Engine/VPT/Surface/SurfaceHitGenerator.cs
+//
+
 void Surface::CurvesToShapes(vector<HitObject*> &pvho)
 {
    std::vector<RenderVertex> vvertex;
@@ -378,7 +376,7 @@ void Surface::CurvesToShapes(vector<HitObject*> &pvho)
 
    const int count = (int)vvertex.size();
    Vertex3Ds * const rgv3Dt = new Vertex3Ds[count];
-   Vertex3Ds * const rgv3Db = m_d.m_isBottomSolid ? new Vertex3Ds[count] : NULL;
+   Vertex3Ds * const rgv3Db = m_d.m_isBottomSolid ? new Vertex3Ds[count] : nullptr;
 
    const float bottom = m_d.m_heightbottom + m_ptable->m_tableheight;
    const float top = m_d.m_heighttop + m_ptable->m_tableheight;
@@ -414,9 +412,13 @@ void Surface::CurvesToShapes(vector<HitObject*> &pvho)
    }
 }
 
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
+
 void Surface::SetupHitObject(vector<HitObject*> &pvho, HitObject * const obj)
 {
-   Material * const mat = m_ptable->GetMaterial(m_d.m_szPhysicsMaterial);
+   const Material * const mat = m_ptable->GetMaterial(m_d.m_szPhysicsMaterial);
    if (!m_d.m_overwritePhysics)
    {
       obj->m_elasticity = mat->m_fElasticity;
@@ -446,6 +448,11 @@ void Surface::SetupHitObject(vector<HitObject*> &pvho, HitObject * const obj)
    if (m_d.m_droppable)
       m_vhoDrop.push_back(obj);
 }
+
+//
+// license:GPLv3+
+// Ported at: VisualPinball.Engine/VPT/Surface/SurfaceHitGenerator.cs
+//
 
 void Surface::AddLine(vector<HitObject*> &pvho, const RenderVertex &pv1, const RenderVertex &pv2)
 {
@@ -493,18 +500,22 @@ void Surface::AddLine(vector<HitObject*> &pvho, const RenderVertex &pv1, const R
    SetupHitObject(pvho, new HitPoint(Vertex3Ds(pv1.x, pv1.y, top)));
 }
 
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
+
 void Surface::GetBoundingVertices(std::vector<Vertex3Ds>& pvvertex3D)
 {
    // hardwired to table dimensions, but with bottom/top of surface, returns all 8 corners as this will be used for further transformations later-on
-   for (int i = 0; i < 8; i++)
-   {
-      const Vertex3Ds pv(
-         (i & 1) ? m_ptable->m_right : m_ptable->m_left,
-         (i & 2) ? m_ptable->m_bottom : m_ptable->m_top,
-         (i & 4) ? m_d.m_heighttop : m_d.m_heightbottom);
+	for (int i = 0; i < 8; i++)
+	{
+		const Vertex3Ds pv(
+			(i & 1) ? m_ptable->m_right : m_ptable->m_left,
+			(i & 2) ? m_ptable->m_bottom : m_ptable->m_top,
+			(i & 4) ? m_d.m_heighttop : m_d.m_heightbottom);
 
-      pvvertex3D.push_back(pv);
-   }
+		pvvertex3D.push_back(pv);
+	}
 }
 
 void Surface::EndPlay()
@@ -557,11 +568,16 @@ void Surface::RenderDynamic()
    }
 }
 
+//
+// license:GPLv3+
+// Ported at: VisualPinball.Engine/VPT/Surface/SurfaceMeshGenerator.cs
+//
+
 void Surface::GenerateMesh(std::vector<Vertex3D_NoTex2> &topBuf, std::vector<Vertex3D_NoTex2> &sideBuf, std::vector<WORD> &topBottomIndices, std::vector<WORD> &sideIndices)
 {
    std::vector<RenderVertex> vvertex;
    GetRgVertex(vvertex);
-   float *rgtexcoord = NULL;
+   float *rgtexcoord = nullptr;
 
    Texture * const pinSide = m_ptable->GetImage(m_d.m_szSideImage);
    if (pinSide)
@@ -577,10 +593,10 @@ void Surface::GenerateMesh(std::vector<Vertex3D_NoTex2> &topBuf, std::vector<Ver
       const float dx = pv1->x - pv2->x;
       const float dy = pv1->y - pv2->y;
 
-      const float inv_len = 1.0f / sqrtf(dx*dx + dy * dy);
+      const float inv_len = 1.0f / sqrtf(dx*dx + dy*dy);
 
-      rgnormal[i].x = dy * inv_len;
-      rgnormal[i].y = dx * inv_len;
+      rgnormal[i].x = dy*inv_len;
+      rgnormal[i].y = dx*inv_len;
    }
 
    sideBuf.resize(m_numVertices * 4);
@@ -627,7 +643,7 @@ void Surface::GenerateMesh(std::vector<Vertex3D_NoTex2> &topBuf, std::vector<Ver
       vnormal[1].Normalize();
 
       {
-         verts[offset].x = pv1->x;   verts[offset].y = pv1->y;   verts[offset].z = bottom;
+         verts[offset    ].x = pv1->x;   verts[offset    ].y = pv1->y;   verts[offset    ].z = bottom;
          verts[offset + 1].x = pv1->x;   verts[offset + 1].y = pv1->y;   verts[offset + 1].z = top;
          verts[offset + 2].x = pv2->x;   verts[offset + 2].y = pv2->y;   verts[offset + 2].z = top;
          verts[offset + 3].x = pv2->x;   verts[offset + 3].y = pv2->y;   verts[offset + 3].z = bottom;
@@ -671,7 +687,7 @@ void Surface::GenerateMesh(std::vector<Vertex3D_NoTex2> &topBuf, std::vector<Ver
       int offset2 = 0;
       for (unsigned int i = 0; i < m_numVertices; i++, offset2 += 4)
       {
-         sideIndices[i * 6] = offset2;
+         sideIndices[i * 6    ] = offset2;
          sideIndices[i * 6 + 1] = offset2 + 1;
          sideIndices[i * 6 + 2] = offset2 + 2;
          sideIndices[i * 6 + 3] = offset2;
@@ -680,8 +696,8 @@ void Surface::GenerateMesh(std::vector<Vertex3D_NoTex2> &topBuf, std::vector<Ver
       }
 
       // not necessary to reorder
-      /*WORD* const tmp = reorderForsyth(sideIndices, sideIndices.size() / 3, m_numVertices * 4);
-      if (tmp != NULL)
+      /*WORD* const tmp = reorderForsyth(sideIndices, numVertices * 4);
+      if (tmp != nullptr)
       {
       memcpy(sideIndices.data(), tmp, sideIndices.size()*sizeof(WORD));
       delete[] tmp;
@@ -695,11 +711,11 @@ void Surface::GenerateMesh(std::vector<Vertex3D_NoTex2> &topBuf, std::vector<Ver
       topBottomIndices.clear();
 
       {
-         std::vector<unsigned int> vpoly(m_numVertices);
-         for (unsigned int i = 0; i < m_numVertices; i++)
-            vpoly[i] = i;
+      std::vector<unsigned int> vpoly(m_numVertices);
+      for (unsigned int i = 0; i < m_numVertices; i++)
+         vpoly[i] = i;
 
-         PolygonToTriangles(vvertex, vpoly, topBottomIndices, false);
+      PolygonToTriangles(vvertex, vpoly, topBottomIndices, false);
       }
 
       m_numPolys = (unsigned int)(topBottomIndices.size() / 3);
@@ -716,7 +732,7 @@ void Surface::GenerateMesh(std::vector<Vertex3D_NoTex2> &topBuf, std::vector<Ver
       const float inv_tableheight = 1.0f / (m_ptable->m_bottom - m_ptable->m_top);
 
       topBuf.resize(m_numVertices * 3);
-      Vertex3D_NoTex2 * const vertsTop[3] = { &topBuf[0], &topBuf[m_numVertices], &topBuf[m_numVertices * 2] };
+      Vertex3D_NoTex2 * const vertsTop[3] = { &topBuf[0], &topBuf[m_numVertices], &topBuf[m_numVertices*2] };
 
       for (unsigned int i = 0; i < m_numVertices; i++)
       {
@@ -752,7 +768,11 @@ void Surface::GenerateMesh(std::vector<Vertex3D_NoTex2> &topBuf, std::vector<Ver
    }
 }
 
-void Surface::ExportMesh(FILE *f)
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
+
+void Surface::ExportMesh(ObjLoader& loader)
 {
    const float oldBottomHeight = m_d.m_heightbottom;
    const float oldTopHeight = m_d.m_heighttop;
@@ -769,56 +789,56 @@ void Surface::ExportMesh(FILE *f)
    m_d.m_heightbottom = oldBottomHeight;
    m_d.m_heighttop = oldTopHeight;
 
-   char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
-   WideCharToMultiByteNull(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
-   if (topBuf.size() > 0 && m_d.m_topBottomVisible && !m_d.m_sideVisible)
+   char name[sizeof(m_wzName)/sizeof(m_wzName[0])];
+   WideCharToMultiByteNull(CP_ACP, 0, m_wzName, -1, name, sizeof(name), nullptr, nullptr);
+   if (!topBuf.empty() && m_d.m_topBottomVisible && !m_d.m_sideVisible)
    {
-      WaveFrontObj_WriteObjectName(f, name);
-      WaveFrontObj_WriteVertexInfo(f, topBuf.data(), m_numVertices);
+      loader.WriteObjectName(name);
+      loader.WriteVertexInfo(topBuf.data(), m_numVertices);
       const Texture * const tex = m_ptable->GetImage(m_d.m_szImage);
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szTopMaterial);
       if (tex)
       {
-         WaveFrontObj_WriteMaterial(m_d.m_szImage, tex->m_szPath, mat);
-         WaveFrontObj_UseTexture(f, m_d.m_szImage);
+         loader.WriteMaterial(m_d.m_szImage, tex->m_szPath, mat);
+         loader.UseTexture(m_d.m_szImage);
       }
       else
       {
-         WaveFrontObj_WriteMaterial("none", string(), mat);
-         WaveFrontObj_UseTexture(f, "none");
+         loader.WriteMaterial("none", string(), mat);
+         loader.UseTexture("none");
       }
-      WaveFrontObj_WriteFaceInfo(f, topBottomIndices);
-      WaveFrontObj_UpdateFaceOffset(m_numVertices);
+      loader.WriteFaceInfo(topBottomIndices);
+      loader.UpdateFaceOffset(m_numVertices);
    }
-   else if (topBuf.size() > 0 && m_d.m_topBottomVisible && m_d.m_sideVisible)
+   else if (!topBuf.empty() && m_d.m_topBottomVisible && m_d.m_sideVisible)
    {
       Vertex3D_NoTex2 * const tmp = new Vertex3D_NoTex2[m_numVertices * 5];
       memcpy(tmp, sideBuf.data(), sizeof(Vertex3D_NoTex2) * m_numVertices * 4);
       memcpy(&tmp[m_numVertices * 4], topBuf.data(), sizeof(Vertex3D_NoTex2)*m_numVertices);
-      WaveFrontObj_WriteObjectName(f, name);
-      WaveFrontObj_WriteVertexInfo(f, tmp, m_numVertices * 5);
+      loader.WriteObjectName(name);
+      loader.WriteVertexInfo(tmp, m_numVertices * 5);
       delete[] tmp;
 
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szTopMaterial);
-      WaveFrontObj_WriteMaterial(m_d.m_szTopMaterial, string(), mat);
-      WaveFrontObj_UseTexture(f, m_d.m_szTopMaterial);
+      loader.WriteMaterial(m_d.m_szTopMaterial, string(), mat);
+      loader.UseTexture(m_d.m_szTopMaterial);
       WORD * const idx = new WORD[topBottomIndices.size() + sideIndices.size()];
-      memcpy(idx, sideIndices.data(), sideIndices.size() * sizeof(WORD));
+      memcpy(idx, sideIndices.data(), sideIndices.size()*sizeof(WORD));
       for (size_t i = 0; i < topBottomIndices.size(); i++)
          idx[sideIndices.size() + i] = topBottomIndices[i] + m_numVertices * 4;
-      WaveFrontObj_WriteFaceInfoList(f, idx, (unsigned int)(topBottomIndices.size() + sideIndices.size()));
-      WaveFrontObj_UpdateFaceOffset(m_numVertices * 5);
+      loader.WriteFaceInfoList(idx, (unsigned int)(topBottomIndices.size() + sideIndices.size()));
+      loader.UpdateFaceOffset(m_numVertices * 5);
       delete[] idx;
    }
    else if (!m_d.m_topBottomVisible && m_d.m_sideVisible)
    {
-      WaveFrontObj_WriteObjectName(f, name);
-      WaveFrontObj_WriteVertexInfo(f, sideBuf.data(), m_numVertices * 4);
+      loader.WriteObjectName(name);
+      loader.WriteVertexInfo(sideBuf.data(), m_numVertices * 4);
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szSideMaterial);
-      WaveFrontObj_WriteMaterial(m_d.m_szSideMaterial, string(), mat);
-      WaveFrontObj_UseTexture(f, m_d.m_szSideMaterial);
-      WaveFrontObj_WriteFaceInfo(f, sideIndices);
-      WaveFrontObj_UpdateFaceOffset(m_numVertices * 4);
+      loader.WriteMaterial(m_d.m_szSideMaterial, string(), mat);
+      loader.UseTexture(m_d.m_szSideMaterial);
+      loader.WriteFaceInfo(sideIndices);
+      loader.UpdateFaceOffset(m_numVertices * 4);
    }
 }
 
@@ -841,11 +861,11 @@ void Surface::PrepareWallsAtHeight()
    m_VBuffer->lock(0, 0, (void**)&verts, VertexBuffer::WRITEONLY);
    memcpy(verts, sideBuf.data(), sizeof(Vertex3D_NoTex2)*m_numVertices * 4);
 
-   if (topBottomBuf.size() > 0)
+   if (!topBottomBuf.empty())
       //if (m_d.m_visible) // Visible could still be set later if rendered dynamically
-   {
-      memcpy(verts + m_numVertices * 4, topBottomBuf.data(), sizeof(Vertex3D_NoTex2)*m_numVertices * 3);
-   }
+      {
+         memcpy(verts+m_numVertices * 4, topBottomBuf.data(), sizeof(Vertex3D_NoTex2)*m_numVertices * 3);
+      }
 
    m_VBuffer->unlock();
 
@@ -856,14 +876,14 @@ void Surface::PrepareWallsAtHeight()
    WORD* buf;
    m_IBuffer->lock(0, 0, (void**)&buf, 0);
    memcpy(buf, sideIndices.data(), sideIndices.size() * sizeof(WORD));
-   if (topBottomIndices.size() > 0)
+   if (!topBottomIndices.empty())
       memcpy(buf + sideIndices.size(), topBottomIndices.data(), topBottomIndices.size() * sizeof(WORD));
    m_IBuffer->unlock();
 }
 
-static const WORD rgiSlingshot[24] = { 0, 4, 3, 0, 1, 4, 1, 2, 5, 1, 5, 4, 4, 8, 5, 4, 7, 8, 3, 7, 4, 3, 6, 7 };
+static constexpr WORD rgiSlingshot[24] = { 0, 4, 3, 0, 1, 4, 1, 2, 5, 1, 5, 4, 4, 8, 5, 4, 7, 8, 3, 7, 4, 3, 6, 7 };
 
-static IndexBuffer* slingIBuffer = NULL;        // this is constant so we only have one global instance
+static IndexBuffer* slingIBuffer = nullptr;        // this is constant so we only have one global instance
 
 void Surface::PrepareSlingshots()
 {
@@ -876,7 +896,7 @@ void Surface::PrepareSlingshots()
    for (size_t i = 0; i < m_vlinesling.size(); i++, offset += 9)
    {
       LineSegSlingshot * const plinesling = m_vlinesling[i];
-      plinesling->m_slingshotanim.m_animations = (m_d.m_slingshotAnimation != 0);
+      plinesling->m_slingshotanim.m_animations = m_d.m_slingshotAnimation;
 
       rgv3D[offset].x = plinesling->v1.x;
       rgv3D[offset].y = plinesling->v1.y;
@@ -986,13 +1006,13 @@ void Surface::RenderStatic()
 
 void Surface::RenderSlingshots()
 {
-   if (!m_d.m_sideVisible || (m_vlinesling.size() == 0))
+   if (!m_d.m_sideVisible || m_vlinesling.empty())
       return;
 
    bool nothing_to_draw = true;
    for (size_t i = 0; i < m_vlinesling.size(); i++)
    {
-      LineSegSlingshot * const plinesling = m_vlinesling[i];
+      const LineSegSlingshot * const plinesling = m_vlinesling[i];
       if (plinesling->m_slingshotanim.m_iframe || plinesling->m_doHitEvent)
       {
          nothing_to_draw = false;
@@ -1022,20 +1042,20 @@ void Surface::RenderSlingshots()
          continue;
       else if (plinesling->m_doHitEvent)
       {
-         if (plinesling->m_EventTimeReset == 0)
-            plinesling->m_EventTimeReset = g_pplayer->m_time_msec + 100;
-         else if (plinesling->m_EventTimeReset < g_pplayer->m_time_msec)
-         {
-            plinesling->m_doHitEvent = false;
-            plinesling->m_EventTimeReset = 0;
-         }
+          if (plinesling->m_EventTimeReset == 0)
+             plinesling->m_EventTimeReset = g_pplayer->m_time_msec+100;
+          else if (plinesling->m_EventTimeReset < g_pplayer->m_time_msec)
+          {
+              plinesling->m_doHitEvent = false;
+              plinesling->m_EventTimeReset = 0;
+          }
       }
 
       pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, m_slingshotVBuffer, (DWORD)i * 9, 9, slingIBuffer, 0, 24);
    }
    pd3dDevice->basicShader->End();
 
-   //pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
+   //pd3dDevice->SetRenderState(RenderDevice::CULLMODE, RenderDevice::CULL_CCW);
 }
 
 void Surface::RenderWallsAtHeight(const bool drop)
@@ -1134,8 +1154,8 @@ void Surface::RenderWallsAtHeight(const bool drop)
    }
 
    // reset render states
-   //pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE); //!!  not necessary anymore
-   //pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
+   //g_pplayer->m_pin3d.DisableAlphaBlend(); //!!  not necessary anymore
+   //pd3dDevice->SetRenderState(RenderDevice::CULLMODE, RenderDevice::CULL_CCW);
    if ((m_d.m_disableLightingTop != 0.f || m_d.m_disableLightingBelow != 0.f) && (m_d.m_sideVisible || m_d.m_topBottomVisible))
       pd3dDevice->basicShader->SetDisableLighting(vec4(0.f, 0.f, 0.f, 0.f));
 }
@@ -1319,7 +1339,7 @@ HRESULT Surface::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version
       m_vdpoint[minyindex]->get_X(&tmpx);
       const float tmpy = miny /*- 1.0f*/; // put tiny gap in to avoid errors
 
-                                          // swap list around
+      // swap list around
       std::reverse(m_vdpoint.begin(), m_vdpoint.end());
 
       CComObject<DragPoint> *pdp;
@@ -1374,47 +1394,47 @@ HRESULT Surface::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version
 
 bool Surface::LoadToken(const int id, BiffReader * const pbr)
 {
-   switch (id)
+   switch(id)
    {
    case FID(PIID): pbr->GetInt((int *)pbr->m_pdata); break;
-   case FID(HTEV): pbr->GetBool(&m_d.m_hitEvent); break;
-   case FID(DROP): pbr->GetBool(&m_d.m_droppable); break;
-   case FID(FLIP): pbr->GetBool(&m_d.m_flipbook); break;
-   case FID(ISBS): pbr->GetBool(&m_d.m_isBottomSolid); break;
-   case FID(CLDW): pbr->GetBool(&m_d.m_collidable); break;
-   case FID(TMON): pbr->GetBool(&m_d.m_tdr.m_TimerEnabled); break;
-   case FID(TMIN): pbr->GetInt(&m_d.m_tdr.m_TimerInterval); break;
-   case FID(THRS): pbr->GetFloat(&m_d.m_threshold); break;
+   case FID(HTEV): pbr->GetBool(m_d.m_hitEvent); break;
+   case FID(DROP): pbr->GetBool(m_d.m_droppable); break;
+   case FID(FLIP): pbr->GetBool(m_d.m_flipbook); break;
+   case FID(ISBS): pbr->GetBool(m_d.m_isBottomSolid); break;
+   case FID(CLDW): pbr->GetBool(m_d.m_collidable); break;
+   case FID(TMON): pbr->GetBool(m_d.m_tdr.m_TimerEnabled); break;
+   case FID(TMIN): pbr->GetInt(m_d.m_tdr.m_TimerInterval); break;
+   case FID(THRS): pbr->GetFloat(m_d.m_threshold); break;
    case FID(IMAG): pbr->GetString(m_d.m_szImage); break;
    case FID(SIMG): pbr->GetString(m_d.m_szSideImage); break;
    case FID(SIMA): pbr->GetString(m_d.m_szSideMaterial); break;
    case FID(TOMA): pbr->GetString(m_d.m_szTopMaterial); break;
    case FID(MAPH): pbr->GetString(m_d.m_szPhysicsMaterial); break;
    case FID(SLMA): pbr->GetString(m_d.m_szSlingShotMaterial); break;
-   case FID(HTBT): pbr->GetFloat(&m_d.m_heightbottom); break;
-   case FID(HTTP): pbr->GetFloat(&m_d.m_heighttop); break;
-   case FID(INNR): pbr->GetBool(&m_d.m_inner); break; //!! Deprecated, do not use anymore
-   case FID(NAME): pbr->GetWideString(m_wzName); break;
-   case FID(DSPT): pbr->GetBool(&m_d.m_displayTexture); break;
-   case FID(SLGF): pbr->GetFloat(&m_d.m_slingshotforce); break;
-   case FID(SLTH): pbr->GetFloat(&m_d.m_slingshot_threshold); break;
-   case FID(ELAS): pbr->GetFloat(&m_d.m_elasticity); break;
-   case FID(ELFO): pbr->GetFloat(&m_d.m_elasticityFalloff); break;
-   case FID(WFCT): pbr->GetFloat(&m_d.m_friction); break;
-   case FID(WSCT): pbr->GetFloat(&m_d.m_scatter); break;
-   case FID(VSBL): pbr->GetBool(&m_d.m_topBottomVisible); break;
-   case FID(OVPH): pbr->GetBool(&m_d.m_overwritePhysics); break;
-   case FID(SLGA): pbr->GetBool(&m_d.m_slingshotAnimation); break;
+   case FID(HTBT): pbr->GetFloat(m_d.m_heightbottom); break;
+   case FID(HTTP): pbr->GetFloat(m_d.m_heighttop); break;
+   case FID(INNR): pbr->GetBool(m_d.m_inner); break; //!! Deprecated, do not use anymore
+   case FID(NAME): pbr->GetWideString(m_wzName,sizeof(m_wzName)/sizeof(m_wzName[0])); break;
+   case FID(DSPT): pbr->GetBool(m_d.m_displayTexture); break;
+   case FID(SLGF): pbr->GetFloat(m_d.m_slingshotforce); break;
+   case FID(SLTH): pbr->GetFloat(m_d.m_slingshot_threshold); break;
+   case FID(ELAS): pbr->GetFloat(m_d.m_elasticity); break;
+   case FID(ELFO): pbr->GetFloat(m_d.m_elasticityFalloff); break;
+   case FID(WFCT): pbr->GetFloat(m_d.m_friction); break;
+   case FID(WSCT): pbr->GetFloat(m_d.m_scatter); break;
+   case FID(VSBL): pbr->GetBool(m_d.m_topBottomVisible); break;
+   case FID(OVPH): pbr->GetBool(m_d.m_overwritePhysics); break;
+   case FID(SLGA): pbr->GetBool(m_d.m_slingshotAnimation); break;
    case FID(DILI):
    {
       int tmp;
-      pbr->GetInt(&tmp);
+      pbr->GetInt(tmp);
       m_d.m_disableLightingTop = (tmp == 1) ? 1.f : dequantizeUnsigned<8>(tmp); // backwards compatible hacky loading!
       break;
    }
-   case FID(DILB): pbr->GetFloat(&m_d.m_disableLightingBelow); break;
-   case FID(SVBL): pbr->GetBool(&m_d.m_sideVisible); break;
-   case FID(REEN): pbr->GetBool(&m_d.m_reflectionEnabled); break;
+   case FID(DILB): pbr->GetFloat(m_d.m_disableLightingBelow); break;
+   case FID(SVBL): pbr->GetBool(m_d.m_sideVisible); break;
+   case FID(REEN): pbr->GetBool(m_d.m_reflectionEnabled); break;
    default:
    {
       LoadPointToken(id, pbr, pbr->m_version);
@@ -1477,12 +1497,12 @@ STDMETHODIMP Surface::get_Image(BSTR *pVal)
 STDMETHODIMP Surface::put_Image(BSTR newVal)
 {
    char szImage[MAXTOKEN];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, nullptr, nullptr);
    const Texture * const tex = m_ptable->GetImage(szImage);
    if (tex && tex->IsHDR())
    {
-      ShowError("Cannot use a HDR image (.exr/.hdr) here");
-      return E_FAIL;
+       ShowError("Cannot use a HDR image (.exr/.hdr) here");
+       return E_FAIL;
    }
    m_d.m_szImage = szImage;
 
@@ -1501,7 +1521,7 @@ STDMETHODIMP Surface::get_SideMaterial(BSTR *pVal)
 STDMETHODIMP Surface::put_SideMaterial(BSTR newVal)
 {
    char buf[MAXNAMEBUFFER];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, nullptr, nullptr);
    m_d.m_szSideMaterial = buf;
 
    return S_OK;
@@ -1519,7 +1539,7 @@ STDMETHODIMP Surface::get_SlingshotMaterial(BSTR *pVal)
 STDMETHODIMP Surface::put_SlingshotMaterial(BSTR newVal)
 {
    char buf[MAXNAMEBUFFER];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, nullptr, nullptr);
    m_d.m_szSlingShotMaterial = buf;
 
    return S_OK;
@@ -1549,6 +1569,7 @@ STDMETHODIMP Surface::get_HeightBottom(float *pVal)
 STDMETHODIMP Surface::put_HeightBottom(float newVal)
 {
    m_d.m_heightbottom = newVal;
+
    return S_OK;
 }
 
@@ -1562,6 +1583,7 @@ STDMETHODIMP Surface::get_HeightTop(float *pVal)
 STDMETHODIMP Surface::put_HeightTop(float newVal)
 {
    m_d.m_heighttop = newVal;
+
    return S_OK;
 }
 
@@ -1577,7 +1599,7 @@ STDMETHODIMP Surface::get_TopMaterial(BSTR *pVal)
 STDMETHODIMP Surface::put_TopMaterial(BSTR newVal)
 {
    char buf[MAXNAMEBUFFER];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, nullptr, nullptr);
    m_d.m_szTopMaterial = buf;
 
    return S_OK;
@@ -1595,7 +1617,7 @@ STDMETHODIMP Surface::get_PhysicsMaterial(BSTR *pVal)
 STDMETHODIMP Surface::put_PhysicsMaterial(BSTR newVal)
 {
    char buf[MAXNAMEBUFFER];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, nullptr, nullptr);
    m_d.m_szPhysicsMaterial = buf;
 
    return S_OK;
@@ -1679,9 +1701,9 @@ STDMETHODIMP Surface::put_IsDropped(VARIANT_BOOL newVal)
       m_isDropped = val;
 
       const bool b = !m_isDropped && m_d.m_collidable;
-      if (m_vhoDrop.size() > 0 && m_vhoDrop[0]->m_enabled != b)
-         for (size_t i = 0; i < m_vhoDrop.size(); i++) //!! costly
-            m_vhoDrop[i]->m_enabled = b; //disable hit on entities composing the object 
+      if (!m_vhoDrop.empty() && m_vhoDrop[0]->m_enabled != b)
+        for (size_t i = 0; i < m_vhoDrop.size(); i++) //!! costly
+          m_vhoDrop[i]->m_enabled = b; //disable hit on entities composing the object 
    }
 
    return S_OK;
@@ -1711,7 +1733,7 @@ STDMETHODIMP Surface::get_SlingshotStrength(float *pVal)
 
 STDMETHODIMP Surface::put_SlingshotStrength(float newVal)
 {
-   m_d.m_slingshotforce = newVal * 10.0f;
+   m_d.m_slingshotforce = newVal*10.0f;
 
    return S_OK;
 }
@@ -1798,12 +1820,12 @@ STDMETHODIMP Surface::get_SideImage(BSTR *pVal)
 STDMETHODIMP Surface::put_SideImage(BSTR newVal)
 {
    char szSideImage[MAXTOKEN];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szSideImage, MAXTOKEN, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szSideImage, MAXTOKEN, nullptr, nullptr);
    const Texture * const tex = m_ptable->GetImage(szSideImage);
    if (tex && tex->IsHDR())
    {
-      ShowError("Cannot use a HDR image (.exr/.hdr) here");
-      return E_FAIL;
+       ShowError("Cannot use a HDR image (.exr/.hdr) here");
+       return E_FAIL;
    }
    m_d.m_szSideImage = szSideImage;
 
@@ -1850,13 +1872,13 @@ STDMETHODIMP Surface::put_Collidable(VARIANT_BOOL newVal)
    const bool fNewVal = VBTOb(newVal);
 
    if (!g_pplayer)
-      m_d.m_collidable = fNewVal;
+       m_d.m_collidable = fNewVal;
    else
    {
-      const bool b = m_d.m_droppable ? (fNewVal && !m_isDropped) : fNewVal;
-      if (m_vhoCollidable.size() > 0 && m_vhoCollidable[0]->m_enabled != b)
-         for (size_t i = 0; i < m_vhoCollidable.size(); i++) //!! costly
-            m_vhoCollidable[i]->m_enabled = b; //copy to hit checking on entities composing the object 
+       const bool b = m_d.m_droppable ? (fNewVal && !m_isDropped) : fNewVal;
+       if (!m_vhoCollidable.empty() && m_vhoCollidable[0]->m_enabled != b)
+           for (size_t i = 0; i < m_vhoCollidable.size(); i++) //!! costly
+              m_vhoCollidable[i]->m_enabled = b; //copy to hit checking on entities composing the object 
    }
 
    return S_OK;
@@ -1951,18 +1973,18 @@ STDMETHODIMP Surface::put_ReflectionEnabled(VARIANT_BOOL newVal)
 
 STDMETHODIMP Surface::PlaySlingshotHit()
 {
-   for (size_t i = 0; i < m_vlinesling.size(); i++)
-   {
-      LineSegSlingshot * const plinesling = m_vlinesling[i];
-      if (plinesling)
-         plinesling->m_doHitEvent = true;
-   }
-   return S_OK;
+    for (size_t i = 0; i < m_vlinesling.size(); i++)
+    {
+        LineSegSlingshot * const plinesling = m_vlinesling[i];
+        if (plinesling)
+            plinesling->m_doHitEvent = true;
+    }
+    return S_OK;
 }
 
 void Surface::SetDefaultPhysics(bool fromMouseClick)
 {
-   static const char strKeyName[] = "DefaultProps\\Wall";
+   static constexpr char strKeyName[] = "DefaultProps\\Wall";
    m_d.m_elasticity = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "Elasticity", 0.3f) : 0.3f;
    m_d.m_elasticityFalloff = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "ElasticityFallOff", 0.0f) : 0.0f;
    m_d.m_friction = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "Friction", 0.3f) : 0.3f;

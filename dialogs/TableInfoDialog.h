@@ -15,7 +15,7 @@ protected:
    virtual void OnCancel();
 
 private:
-   void VPGetDialogItemText(CEdit &edit, string &psztext);
+   void VPGetDialogItemText(const CEdit &edit, string &psztext);
 
    CEdit m_tableNameEdit;
    CEdit m_authorEdit;
@@ -30,6 +30,8 @@ private:
    CEdit m_customNameEdit;
    CEdit m_customValueEdit;
    CListView m_customListView;
+   CComboBox m_screenshotCombo;
+   CResizer m_resizer;
 };
 
 #endif // !H_TABLE_INFO_DIALOG

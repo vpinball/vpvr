@@ -21,7 +21,7 @@
 #include <atlbase.h>
 //#include <atlhost.h>
 #include <atlctl.h>
-//#include <assert.h>
+//#include <cassert>
 
 //#include <commctrl.h>
 
@@ -101,7 +101,7 @@ using std::vector;
 #include "variant.h"
 #include "vector.h"
 #include "vectorsort.h"
-#include "vpinball_i.h"
+#include "vpinball.h"
 #include "regutil.h"
 
 #include "idebug.h"
@@ -128,7 +128,7 @@ using std::vector;
 
 #include "extern.h"
 
-#include "vpinball.h"
+#include "vpinball_h.h"
 #include "pintable.h"
 
 #include "mesh.h"
@@ -185,18 +185,18 @@ using std::vector;
 
 inline void ShowError(const char * const sz)
 {
-   if (g_pvp)
+   if(g_pvp)
       g_pvp->MessageBox(sz, "Visual Pinball Error", MB_OK | MB_ICONEXCLAMATION);
    else
-      MessageBox(NULL, sz, "Visual Pinball Error", MB_OK | MB_ICONEXCLAMATION);
+      MessageBox(nullptr, sz, "Visual Pinball Error", MB_OK | MB_ICONEXCLAMATION);
 }
 
 inline void ShowError(const string& sz)
 {
-   if (g_pvp)
+   if(g_pvp)
       g_pvp->MessageBox(sz.c_str(), "Visual Pinball Error", MB_OK | MB_ICONEXCLAMATION);
    else
-      MessageBox(NULL, sz.c_str(), "Visual Pinball Error", MB_OK | MB_ICONEXCLAMATION);
+      MessageBox(nullptr, sz.c_str(), "Visual Pinball Error", MB_OK | MB_ICONEXCLAMATION);
 }
 
 #include "editablereg.h"

@@ -12,27 +12,24 @@ extern "C" {
 HANDLE connectToIthUSBHIDDevice(DWORD deviceIndex)
 {
    GUID hidGUID;
-   HDEVINFO hardwareDeviceInfoSet;
    SP_DEVICE_INTERFACE_DATA deviceInterfaceData;
-   PSP_INTERFACE_DEVICE_DETAIL_DATA deviceDetail;
    ULONG requiredSize;
-   DWORD result;
 
    //Get the HID GUID value - used as mask to get list of devices
    HidD_GetHidGuid(&hidGUID);
 
    //Get a list of devices matching the criteria (hid interface, present)
-   hardwareDeviceInfoSet = SetupDiGetClassDevs(&hidGUID,
-      NULL, // Define no enumerator (global)
-      NULL, // Define no
+   HDEVINFO hardwareDeviceInfoSet = SetupDiGetClassDevs(&hidGUID,
+      nullptr, // Define no enumerator (global)
+      nullptr, // Define no
       (DIGCF_PRESENT | // Only Devices present
       DIGCF_DEVICEINTERFACE)); // Function class devices.
 
    deviceInterfaceData.cbSize = sizeof(SP_DEVICE_INTERFACE_DATA);
 
    //Go through the list and get the interface data
-   result = SetupDiEnumDeviceInterfaces(hardwareDeviceInfoSet,
-      NULL, //infoData,
+   DWORD result = SetupDiEnumDeviceInterfaces(hardwareDeviceInfoSet,
+      nullptr,  //infoData,
       &hidGUID, //interfaceClassGuid,
       deviceIndex,
       &deviceInterfaceData);
@@ -47,13 +44,13 @@ HANDLE connectToIthUSBHIDDevice(DWORD deviceIndex)
    //Get the details with null values to get the required size of the buffer
    SetupDiGetDeviceInterfaceDetail(hardwareDeviceInfoSet,
       &deviceInterfaceData,
-      NULL, //interfaceDetail,
+      nullptr, //interfaceDetail,
       0, //interfaceDetailSize,
       &requiredSize,
       0); //infoData))
 
    //Allocate the buffer
-   deviceDetail = (PSP_INTERFACE_DEVICE_DETAIL_DATA)calloc(requiredSize, 1);
+   PSP_INTERFACE_DEVICE_DETAIL_DATA deviceDetail = (PSP_INTERFACE_DEVICE_DETAIL_DATA)calloc(requiredSize, 1);
    deviceDetail->cbSize = sizeof(SP_INTERFACE_DEVICE_DETAIL_DATA);
 
    DWORD newRequiredSize;
@@ -64,7 +61,7 @@ HANDLE connectToIthUSBHIDDevice(DWORD deviceIndex)
       deviceDetail,
       requiredSize,
       &newRequiredSize,
-      NULL))
+      nullptr))
    {
       SetupDiDestroyDeviceInfoList(hardwareDeviceInfoSet);
       free(deviceDetail);
@@ -75,17 +72,17 @@ HANDLE connectToIthUSBHIDDevice(DWORD deviceIndex)
    const HANDLE deviceHandle = CreateFile(deviceDetail->DevicePath,
       GENERIC_READ | GENERIC_WRITE,
       FILE_SHARE_READ | FILE_SHARE_WRITE,
-      NULL,        // no SECURITY_ATTRIBUTES structure
+      nullptr,       // no SECURITY_ATTRIBUTES structure
       OPEN_EXISTING, // No special create flags
       FILE_FLAG_OVERLAPPED,
-      NULL);       // No template file
+      nullptr);      // No template file
 
    SetupDiDestroyDeviceInfoList(hardwareDeviceInfoSet);
    free(deviceDetail);
    return deviceHandle;
 }
 
-static HANDLE hid_connect(U32 vendorID, U32 productID, U32 *versionNumber = NULL)
+static HANDLE hid_connect(U32 vendorID, U32 productID, U32 *versionNumber = nullptr)
 {
    DWORD index = 0;
    HIDD_ATTRIBUTES deviceAttributes;
@@ -133,7 +130,6 @@ void hid_init()
       printf("Connected to PBW controller\n");
       unsigned char buffer[1024] = { 0 };
       unsigned char inbuffer[1024] = { 0 };
-      HANDLE sReportEvent;
 
       HidD_GetPreparsedData(hnd, &HidParsedData);
 
@@ -147,7 +143,7 @@ void hid_init()
 
       if (HidParsedData) HidD_FreePreparsedData(HidParsedData); //make sure not null, otherwise crash		
 
-      sReportEvent = CreateEvent(NULL, 1, 0, NULL);
+      HANDLE sReportEvent = CreateEvent(nullptr, 1, 0, nullptr);
 
       ol.hEvent = sReportEvent;
       ol.Offset = 0;
@@ -266,8 +262,7 @@ void hid_update(const U32 cur_time_msec)
       {
          unsigned char buffer[1024] = { 0 };
 
-         HANDLE sReportEvent;
-         sReportEvent = CreateEvent(NULL, 1, 0, NULL);
+         HANDLE sReportEvent = CreateEvent(nullptr, 1, 0, nullptr);
 
          ol.hEvent = sReportEvent;
          ol.Offset = 0;

@@ -74,7 +74,7 @@ public:
       // Remove the comment from the line above if you don't want your object to
       // support aggregation.
 
-      DECLARE_REGISTRY_RESOURCEID(IDR_RAMP)
+   DECLARE_REGISTRY_RESOURCEID(IDR_RAMP)
 
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
@@ -110,7 +110,7 @@ public:
    virtual unsigned long long GetImageID() const { return (unsigned long long)(m_ptable->GetImage(m_d.m_szImage)); }
    virtual ItemTypeEnum HitableGetItemType() const { return eItemRamp; }
    virtual void SetDefaultPhysics(bool fromMouseClick);
-   virtual void ExportMesh(FILE *f);
+   virtual void ExportMesh(ObjLoader& loader);
    virtual void AddPoint(int x, int y, const bool smooth);
    virtual void UpdateStatusBarInfo();
 
@@ -138,6 +138,7 @@ private:
 
    VertexBuffer *m_dynamicVertexBuffer;
    IndexBuffer *m_dynamicIndexBuffer;
+   VertexBuffer *m_dynamicVertexBuffer2;
    bool m_dynamicVertexBufferRegenerate;
 
    PropertyPane *m_propPhysics;
