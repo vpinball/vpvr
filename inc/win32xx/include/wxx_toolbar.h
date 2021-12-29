@@ -1,12 +1,12 @@
-// Win32++   Version 8.8
-// Release Date: 15th October 2020
+// Win32++   Version 8.9.1
+// Release Date: 10th September 2021
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2020  David Nash
+// Copyright (c) 2005-2021  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -167,7 +167,7 @@ namespace Win32xx
     }
 
     // Adds one or more images to the list of button images available for a ToolBar.
-    // Note: AddBitmap supports a maximum colour depth of 8 bits (256 colours)
+    // Note: AddBitmap supports a maximum color depth of 8 bits (256 colors)
     //       This is an obsolete functioned retained for Win95 support.
     //       Unless Win95 support is required, use SetImageList instead.
     // Refer to TB_ADDBITMAP in the Windows API documentation for more information.
@@ -175,9 +175,9 @@ namespace Win32xx
     {
         assert(IsWindow());
 
-        CBitmap Bitmap(bitmapID);
-        assert (Bitmap.GetHandle());
-        BITMAP data = Bitmap.GetBitmapData();
+        CBitmap bitmap(bitmapID);
+        assert (bitmap.GetHandle());
+        BITMAP data = bitmap.GetBitmapData();
         int imageWidth  = MAX(data.bmHeight, 16);
         int images = data.bmWidth / imageWidth;
 
@@ -247,7 +247,7 @@ namespace Win32xx
     }
 
     // Adds images to the toolbar, or replaces the existing ones.
-    // Note: AddReplaceBitmap supports a maximum colour depth of 8 bits (256 colours)
+    // Note: AddReplaceBitmap supports a maximum color depth of 8 bits (256 colors)
     //       This is an obsolete functioned retained for Win95 support.
     //       Unless Win95 support is required, use SetImageList instead.
     // Refer to AddBitmap and ReplaceBitmap for more information.
@@ -616,7 +616,7 @@ namespace Win32xx
 
         assert(IsWindow());
         CPoint pos = GetCursorPos();
-        ScreenToClient(pos);
+        VERIFY(ScreenToClient(pos));
 
         int buttons = (int)SendMessage(TB_BUTTONCOUNT, 0, 0);
         int button = -1;
@@ -761,7 +761,7 @@ namespace Win32xx
     }
 
     // Replaces an existing bitmap with a new bitmap.
-    // Note: ReplaceBitmap supports a maximum colour depth of 8 bits (256 colours)
+    // Note: ReplaceBitmap supports a maximum color depth of 8 bits (256 colors)
     //       This is an obsolete functioned retained for Win95 support.
     //       Unless Win95 support is required, use SetImageList instead.
     // Refer to TB_REPLACEBITMAP in the Windows API documentation for more information.

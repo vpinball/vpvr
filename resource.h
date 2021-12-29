@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Von Microsoft Visual C++ generierte Includedatei.
-// Verwendet durch vpinball_eng.rc
+// Microsoft Visual C++ generated include file.
+// Used by vpinball_eng.rc
 //
 #define DISPID_Textbox_BackColor        1
 #define DISPID_Textbox_FontColor        2
@@ -380,6 +380,8 @@
 #define IDR_CODEVIEWACCEL               271
 #define IDD_COLLECTDIALOG               271
 #define IDD_COLLECTION                  272
+#define IDR_VPACCEL1                    272
+#define IDR_VPSIMPELACCEL               272
 #define IDC_LEFTFLIPPER                 273
 #define IDD_PROPDISPREEL                273
 #define IDC_RIGHTFLIPPER                274
@@ -440,7 +442,6 @@
 #define IDD_PROP_NAME                   287
 #define IDC_JOYCUSTOM3                  287
 #define IDC_SOUND_SLIDER                288
-#define IDD_PROP_TIMER                  288
 #define IDC_JOYCUSTOM4                  288
 #define IDC_STATIC_MUSIC                289
 #define IDD_PROPLIGHT_VISUALS           289
@@ -609,8 +610,6 @@
 #define IDR_EXAMPLE_TABLE               383
 #define IDI_TIMER                       383
 #define IDC_ARASlider                   384
-#define IDR_TABLE1                      384
-#define IDR_EXAMPLETABLE                384
 #define IDI_LIGHT                       384
 #define IDC_PRIMITIVE                   385
 #define IDI_TARGET                      385
@@ -817,6 +816,7 @@
 #define IDC_DISABLE_DWM                 492
 #define IDC_START_VP_FILE_DIALOG        493
 #define IDC_BLEND_DISABLE_LIGHTING      494
+#define IDC_START_VP_FILE_DIALOG2       494
 #define IDC_ENABLE_LEGACY_NUDGE         495
 #define IDC_BLEND_DISABLE_LIGHTING_FROM_BELOW 496
 #define IDC_BALLDECALMODE               497
@@ -924,6 +924,8 @@
 #define IDC_DMD_SOURCE                  593
 #define IDC_IMPORT_NO_FORSYTH           593
 #define IDC_BG_SOURCE                   594
+#define IDC_SHARPENCB                   594
+#define IDC_GET_INPLAYSTATE             595
 #define IDD_PROPRUBBER_PHYSICS          602
 #define IDC_RUBBER                      602
 #define IDD_PROPRUBBER_VISUALS          604
@@ -948,6 +950,8 @@
 #define IDR_BLANK_TABLE                 630
 #define IDD_TOOLBAR                     630
 #define IDD_VR_OPTIONS                  631
+#define IDR_STRIPPED_TABLE              631
+#define IDR_LIGHTSEQ_TABLE              632
 #define IDB_KICKER_WILLIAMS             640
 #define IDB_KICKER_GOTTLIEB             645
 #define IDB_KICKER_T1                   646
@@ -1058,6 +1062,7 @@
 #define IDC_COLOR_BUTTON1               765
 #define IDC_DELETE_LAYER_BUTTON         765
 #define IDC_RESET_WINDOW                765
+#define IDC_LAYER_FILTER_CASE_BUTTON    766
 #define IDC_DBG_BULB_MODULATE_VS_ADD    766
 #define IDC_COLOR_BUTTON2               766
 #define IDC_DBG_TRANSMISSION_SCALE      767
@@ -1122,6 +1127,7 @@
 #define IDC_EDIT_BALANCE                813
 #define IDC_RADIO_SND3D6CH              814
 #define IDC_EDIT_FADER                  814
+#define IDC_RADIO_SND3DSSF              815
 #define IDC_EDIT5                       815
 #define IDC_EDIT_VOL                    815
 #define IDC_DBG_MATERIAL_THICKNESS_EDIT 816
@@ -1175,6 +1181,42 @@
 #define IDC_COMBO_INPUT_API             845
 #define IDC_COMBO_RUMBLE                846
 #define IDC_LABEL_RUMBLE                847
+#define IDC_STATIC7                     842
+#define IDC_STATIC6                     843
+#define IDC_STATIC11                    844
+#define IDC_STATIC1                     845
+#define IDC_STATIC2                     846
+#define IDC_STATIC3                     847
+#define IDC_STATIC4                     848
+#define IDC_STATIC5                     849
+#define IDC_STATIC8                     850
+#define IDC_STATIC9                     851
+#define IDC_STATIC10                    852
+#define IDC_STATIC12                    853
+#define IDC_STATIC13                    854
+#define IDC_STATIC14                    855
+#define IDC_STATIC15                    856
+#define IDC_STATIC16                    857
+#define IDC_STATIC17                    858
+#define IDC_STATIC18                    859
+#define IDC_STATIC19                    860
+#define IDC_STATIC20                    861
+#define IDC_STATIC21                    862
+#define IDC_STATIC22                    863
+#define IDC_STATIC23                    864
+#define IDC_STATIC24                    865
+#define IDC_STATIC25                    866
+#define IDC_STATIC26                    867
+#define IDD_SCRIPT_ERROR                868
+#define IDC_STATIC_INSTALL_DEBUGGER     868
+#define IDC_ERROR_EDIT                  869
+#define IDC_SCRIPT_CONTINUE             870
+#define IDC_SCRIPT_STOP                 871
+#define IDC_SUPPRESS_ERRORS_CHECK       872
+#define ID_SCRIPT_TOGGLE_LAST_ERROR_VISIBILITY 873
+#define IDC_RESET_WINDOW_POS            878
+#define IDC_3D_STEREO_CONTRAST          879
+#define IDC_3D_STEREO_DESATURATION      880
 #define IDC_LAYBACK_EDIT                1040
 #define IDC_3D_STEREO_SEPARATION_EDIT   1041
 #define IDC_3D_STEREO_ZPD_EDIT          1042
@@ -1185,7 +1227,7 @@
 #define IDC_DEFAULT_SCATTER_EDIT        1102
 #define IDC_NUDGE_TIME_EDIT             1103
 #define IDC_MECH_PLUNGER_ADJ_EDIT       1104
-#define IDC_PHYSICS_MAC_LOOPS_EDIT      1105
+#define IDC_PHYSICS_MAX_LOOPS_EDIT      1105
 #define IDC_FILTER_MECH_PLUNGER_CHECK   1107
 #define DISPID_Gate_Height1             1142
 #define DISPID_Image                    1500
@@ -1229,6 +1271,7 @@
 #define IDC_BALLPLAYFIELD_REFLECTION2   1713
 #define IDC_BULBINTENSITYSCALE          1713
 #define IDC_BG_COMBOBOX                 1714
+#define IDB_INPLAYMODE                  1715
 #define ID_SHOWTOOLTIP                  4001
 #define ID_SHOWAUTOCOMPLETE             4001
 #define ID_SCRIPT_PREFERENCES           4002
@@ -1248,6 +1291,8 @@
 #define ID_EDIT_SHOWTOOLBAR             4023
 #define ID_EDIT_VROPTIONS               4023
 #define ID_TABLE_NOTES                  4024
+#define ID_NEW_STRIPPEDTABLE            4025
+#define ID_NEW_LIGHTSEQTABLE            4026
 #define IDC_ENABLE_EMREEL_CHECK         13432
 #define IDC_ENABLE_DECAL_CHECK          13433
 #define IDC_BG_TEST_DESKTOP_CHECK       13434
@@ -1300,17 +1345,6 @@
 #define ID_TABLE_TABLEINFO              32838
 #define ID_PREFERENCES_SECURITYOPTIONS  32839
 #define ID_INSERT_PRIMITIVE             32842
-#define ID_LAYER_LAYER1                 32849
-#define ID_LAYER_LAYER2                 32850
-#define ID_LAYER_LAYER3                 32851
-#define ID_LAYER_LAYER4                 32852
-#define ID_LAYER_LAYER5                 32853
-#define ID_LAYER_LAYER6                 32854
-#define ID_LAYER_LAYER7                 32855
-#define ID_LAYER_LAYER8                 32856
-#define ID_LAYER_LAYER9                 32857
-#define ID_LAYER_LAYER10                32858
-#define ID_LAYER_LAYER11                32859
 #define ID_LAYER_TOGGLEALL              32860
 #define ID_LAYER_MERGEALL               32861
 #define ID_WALLMENU_ASSIGNTO            32862
@@ -1366,8 +1400,8 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        669
-#define _APS_NEXT_COMMAND_VALUE         4025
-#define _APS_NEXT_CONTROL_VALUE         847
+#define _APS_NEXT_COMMAND_VALUE         4027
+#define _APS_NEXT_CONTROL_VALUE         881
 #define _APS_NEXT_SYMED_VALUE           188
 #endif
 #endif

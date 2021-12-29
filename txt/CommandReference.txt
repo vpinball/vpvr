@@ -5,10 +5,13 @@ This is a quick overview of all commands/variables VP knows. A lot of them do no
 Variables starting with a (*) can't be changed by the script (most can be read though) or don't have an effect.
 
 Also see https://docs.orbitalpin.com/welcome for some more detailed help
-
+As for coding light sequences for original tables, please check this helper app: https://github.com/horseyhorsey/VpLightSequencing
 
 Changelog:
 10.7:
+- add GetSerialDevices,OpenSerial,CloseSerial,FlushSerial,SetupSerial,ReadSerial,WriteSerial to the globals
+- add GetInPlayState,GetInPlayStateBool to the light element
+- add VideoCapWidth,VideoCapHeight,VideoCapUpdate to the flasher element
 - document missing x,y,z to the target element
 - add GetMaterial to the globals (counterpart to UpdateMaterial)
 - add UpdateMaterialPhysics and GetMaterialPhysics to the globals
@@ -171,6 +174,14 @@ GetMaterial(string, float wrapLighting, float roughness, float glossyImageLerp, 
 UpdateMaterialPhysics(string, float elasticity, float elasticityFalloff, float friction, float scatterAngle) - update only the physics parameters of a material (same input ranges as used in the material editor)
 GetMaterialPhysics(string, float elasticity, float elasticityFalloff, float friction, float scatterAngle) - get only the physics parameters of a material
 MaterialColor(string,OLE_COLOR) - change only the base color of a material
+
+GetSerialDevices(strings) - returns all serial communication port names
+OpenSerial(string) - open serial communication for port 'name'
+CloseSerial - close serial communication
+FlushSerial - flush
+SetupSerial(int baud, int bits, int parity, int stopbit, VARIANT_BOOL rts, VARIANT_BOOL dtr) - setup the parameters of the serial communication
+ReadSerial(int size, VARIANT pVal) - read size bytes
+WriteSerial(VARIANT pVal) - write bytes
 
 LoadValue(string,string,VARIANT) - load a value for tablename,valuename,value
 SaveValue(string,string,VARIANT) - save a value for tablename,valuename,value
@@ -536,9 +547,11 @@ Variables
 *Shape(Shape) - 0=Circle, 1=Custom
 Falloff(float)
 FalloffPower(float)
-State(LightState) - 0=Off, 1=On, 2=Blinking
-*Color(OLE_COLOR) - 'normal' color
-*ColorFull(OLE_COLOR) - full brightness color
+State(LightState) - 0=Off, 1=On, 2=Blinking. Note that if Light Sequencer is running, still returns the 'normal' state
+*GetInPlayState(LightState) - 0=Off, 1=On, 2=Blinking. Note that if Light Sequencer is running, returns the current state set by the Light Sequencer, otherwise the 'normal' state
+*GetInPlayStateBool(bool) - 0=Off, 1=On. Note that if Light Sequencer is running, returns the current state set by the Light Sequencer, otherwise the 'normal' state. 2=Blinking is mapped to the current state the light is actually in (0 or 1)
+Color(OLE_COLOR) - 'normal' color
+ColorFull(OLE_COLOR) - full brightness color
 Intensity(float) - sets the lights brightness/emission
 IntensityScale(float) - sets the lights brightness/emission scale, so that one can fade in/out all affected lights with the same scaling factor
 TransmissionScale(float) - sets the light scale for transmission, f.e. through playfield plastics or transparent ramps that are placed above the bulb light
@@ -834,6 +847,9 @@ AddBlend(bool) - use additive alpha blending instead of classical alpha blending
 ImageAlignment
 ModulateVsAdd(float) - blends between modulating and additive when bulb is enabled (0..1)
 DMD(bool) - enable DMD image via script connection
+VideoCapWidth(int) - width of the window content to capture
+VideoCapHeight(int) - height of the window content to capture
+VideoCapUpdate(string) - uses the window title of the window content to capture, which is then copied into the flasher texture each time this function is called
 UserValue(any) - can store any user defined value for re-use later-on
 
 

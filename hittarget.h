@@ -65,24 +65,24 @@ public:
    virtual ~HitTarget();
 
    BEGIN_COM_MAP(HitTarget)
-      COM_INTERFACE_ENTRY(IDispatch)
-      COM_INTERFACE_ENTRY(IHitTarget)
+       COM_INTERFACE_ENTRY(IDispatch)
+       COM_INTERFACE_ENTRY(IHitTarget)
 
-      COM_INTERFACE_ENTRY_IMPL(IConnectionPointContainer)
+       COM_INTERFACE_ENTRY_IMPL(IConnectionPointContainer)
 
-      COM_INTERFACE_ENTRY(IPerPropertyBrowsing)
+       COM_INTERFACE_ENTRY(IPerPropertyBrowsing)
 
-      COM_INTERFACE_ENTRY(IProvideClassInfo)
-      COM_INTERFACE_ENTRY(IProvideClassInfo2)
+       COM_INTERFACE_ENTRY(IProvideClassInfo)
+       COM_INTERFACE_ENTRY(IProvideClassInfo2)
    END_COM_MAP()
 
    BEGIN_CONNECTION_POINT_MAP(HitTarget)
-      CONNECTION_POINT_ENTRY(DIID_IHitTargetEvents)
+       CONNECTION_POINT_ENTRY(DIID_IHitTargetEvents)
    END_CONNECTION_POINT_MAP()
 
    STANDARD_EDITABLE_DECLARES(HitTarget, eItemHitTarget, TARGET, 1)
 
-      DECLARE_REGISTRY_RESOURCEID(IDR_HITTARGET)
+   DECLARE_REGISTRY_RESOURCEID(IDR_HITTARGET)
 
    STDMETHOD(get_Material)(/*[out, retval]*/ BSTR *pVal);
    STDMETHOD(put_Material)(/*[in]*/ BSTR newVal);
@@ -160,6 +160,7 @@ public:
 
    //virtual HRESULT InitVBA(BOOL fNew, int id, WCHAR * const wzName);
    virtual void WriteRegDefaults();
+
    virtual bool IsTransparent() const;
    virtual float GetDepth(const Vertex3Ds& viewDir) const;
    virtual unsigned long long GetMaterialID() const { return m_ptable->GetMaterial(m_d.m_szMaterial)->hash(); }
@@ -167,7 +168,7 @@ public:
    virtual ItemTypeEnum HitableGetItemType() const { return eItemHitTarget; }
 
    virtual void SetDefaultPhysics(bool fromMouseClick);
-   virtual void ExportMesh(FILE *f);
+   virtual void ExportMesh(ObjLoader& loader);
 
    void GenerateMesh(std::vector<Vertex3D_NoTex2> &buf);
    void TransformVertices();

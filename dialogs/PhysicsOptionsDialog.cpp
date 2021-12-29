@@ -8,8 +8,8 @@
 
 using namespace rapidxml;
 
-const unsigned int num_physicsoptions = 8;
-static char * physicsoptions[num_physicsoptions] ={ NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+constexpr unsigned int num_physicsoptions = 8;
+static char * physicsoptions[num_physicsoptions] ={ nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 static unsigned int physicsselection = 0;
 
 
@@ -27,9 +27,9 @@ BOOL PhysicsOptionsDialog::OnInitDialog()
         if (physicsoptions[i])
         {
             delete[] physicsoptions[i];
-            physicsoptions[i] = NULL;
+            physicsoptions[i] = nullptr;
         }
-        int* sd = (int *)SendMessage(hwndList, LB_GETITEMDATA, i, 0);
+        const int* sd = (int *)SendMessage(hwndList, LB_GETITEMDATA, i, 0);
         delete sd;
     }
     SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
@@ -39,7 +39,7 @@ BOOL PhysicsOptionsDialog::OnInitDialog()
         physicsoptions[i] = new char[256];
         char tmp[256];
         sprintf_s(tmp, 256, "PhysicsSetName%u", i);
-        if (LoadValueString("Player", tmp, physicsoptions[i], 256) != S_OK)
+        if (LoadValue("Player", tmp, physicsoptions[i], 256) != S_OK)
             sprintf_s(physicsoptions[i], 256, "Set %u", i + 1);
         sprintf_s(tmp, 256, "%u: %s", i + 1, physicsoptions[i]);
         const size_t index = SendMessage(hwndList, LB_ADDSTRING, 0, (size_t)tmp);
@@ -225,26 +225,35 @@ BOOL PhysicsOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
         case 1112:
         {
             char szFileName[MAXSTRING];
-            char szInitialDir[MAXSTRING];
-            szFileName[0] = '\0';
+            /*CComObject<PinTable>* const pt = g_pvp->GetActiveTable();
+            if (pt)
+            {
+               strncpy_s(szFileName, pt->m_szFileName.c_str(), sizeof(szFileName)-1);
+               const size_t idx = pt->m_szFileName.find_last_of('.');
+               if (idx != string::npos && idx < MAXSTRING)
+                  szFileName[idx] = '\0';
+            }
+            else
+               szFileName[0] = '\0';*/
+            strncpy_s(szFileName, "Physics.vpp", sizeof(szFileName)-1);
 
-            OPENFILENAME ofn;
-            ZeroMemory(&ofn, sizeof(OPENFILENAME));
+            OPENFILENAME ofn = {};
             ofn.lStructSize = sizeof(OPENFILENAME);
             ofn.hInstance = g_pvp->theInstance;
             ofn.hwndOwner = g_pvp->GetHwnd();
             // TEXT
             ofn.lpstrFilter = "Visual Pinball Physics (*.vpp)\0*.vpp\0";
             ofn.lpstrFile = szFileName;
-            ofn.nMaxFile = MAXSTRING;
+            ofn.nMaxFile = sizeof(szFileName);
             ofn.lpstrDefExt = "vpp";
             ofn.Flags = OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY;
 
-            const HRESULT hr = LoadValueString("RecentDir", "PhysicsDir", szInitialDir, MAXSTRING);
+            string szInitialDir;
+            const HRESULT hr = LoadValue("RecentDir", "PhysicsDir", szInitialDir);
             if (hr != S_OK)
-               lstrcpy(szInitialDir, "c:\\Visual Pinball\\Tables\\");
+               szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
-            ofn.lpstrInitialDir = szInitialDir;
+            ofn.lpstrInitialDir = szInitialDir.c_str();
 
             const int ret = GetSaveFileName(&ofn);
             if (ret == 0)
@@ -255,7 +264,7 @@ BOOL PhysicsOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
             if (index != std::string::npos)
             {
                 const std::string newInitDir(szFilename.substr(0, index));
-                SaveValueString("RecentDir", "PhysicsDir", newInitDir);
+                SaveValue("RecentDir", "PhysicsDir", newInitDir);
             }
 
             xml_document<> xmlDoc;
@@ -344,6 +353,7 @@ BOOL PhysicsOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
             const string sn(GetItemText(1110));
             xml_node<>*settingName = xmlDoc.allocate_node(node_element, "name", sn.c_str());
             root->append_node(settingName);
+
             root->append_node(table);
             root->append_node(flipper);
             xmlDoc.append_node(root);
@@ -371,16 +381,16 @@ void PhysicsOptionsDialog::OnOK()
 
 void PhysicsOptionsDialog::OnDestroy()
 {
-    HWND hwndList = GetDlgItem(IDC_PhysicsList).GetHwnd();
+    const HWND hwndList = GetDlgItem(IDC_PhysicsList).GetHwnd();
     const size_t size = ::SendMessage(hwndList, LB_GETCOUNT, 0, 0);
     for (size_t i = 0; i < size; i++)
     {
         if (physicsoptions[i])
         {
             delete[] physicsoptions[i];
-            physicsoptions[i] = NULL;
+            physicsoptions[i] = nullptr;
         }
-        int* sd = (int *)::SendMessage(hwndList, LB_GETITEMDATA, i, 0);
+        const int* sd = (int *)::SendMessage(hwndList, LB_GETITEMDATA, i, 0);
         delete sd;
     }
     ::SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
@@ -389,21 +399,18 @@ void PhysicsOptionsDialog::OnDestroy()
 bool PhysicsOptionsDialog::LoadSetting()
 {
     std::vector<std::string> szFileName;
-    char szInitialDir[MAXSTRING];
+    string szInitialDir;
 
-    HRESULT hr = LoadValueString("RecentDir", "PhysicsDir", szInitialDir, MAXSTRING);
+    HRESULT hr = LoadValue("RecentDir", "PhysicsDir", szInitialDir);
     if (hr != S_OK)
-        lstrcpy(szInitialDir, "c:\\Visual Pinball\\Tables\\");
+        szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
     if (!g_pvp->OpenFileDialog(szInitialDir, szFileName, "Visual Pinball Physics (*.vpp)\0*.vpp\0", "vpp", 0))
         return false;
 
     const size_t index = szFileName[0].find_last_of('\\');
     if (index != std::string::npos)
-    {
-        const std::string newInitDir(szFileName[0].substr(0, index));
-        hr = SaveValueString("RecentDir", "PhysicsDir", newInitDir);
-    }
+        hr = SaveValue("RecentDir", "PhysicsDir", szFileName[0].substr(0, index));
 
     xml_document<> xmlDoc;
     try
@@ -415,9 +422,9 @@ bool PhysicsOptionsDialog::LoadSetting()
 
         std::string content(buffer.str());
         xmlDoc.parse<0>(&content[0]);
-        xml_node<> *root = xmlDoc.first_node("physics");
-        xml_node<> *table = root->first_node("table");
-        xml_node<> *flipper = root->first_node("flipper");
+        const xml_node<> *root = xmlDoc.first_node("physics");
+        const xml_node<> *table = root->first_node("table");
+        const xml_node<> *flipper = root->first_node("flipper");
 
         strncpy_s(loadValues.gravityConstant, table->first_node("gravityConstant")->value(), sizeof(loadValues.gravityConstant)-1);
         strncpy_s(loadValues.contactFriction, table->first_node("contactFriction")->value(), sizeof(loadValues.contactFriction)-1);
@@ -425,17 +432,16 @@ bool PhysicsOptionsDialog::LoadSetting()
         strncpy_s(loadValues.tableElasticityFalloff, table->first_node("elasticityFalloff")->value(), sizeof(loadValues.tableElasticityFalloff)-1);
         strncpy_s(loadValues.playfieldScatter, table->first_node("playfieldScatter")->value(), sizeof(loadValues.playfieldScatter)-1);
         strncpy_s(loadValues.defaultElementScatter, table->first_node("defaultElementScatter")->value(), sizeof(loadValues.defaultElementScatter)-1);
-        try
-        {
-            strncpy_s(loadValues.minSlope, table->first_node("playfieldminslope")->value(), sizeof(loadValues.minSlope)-1);
-            strncpy_s(loadValues.maxSlope, table->first_node("playfieldmaxslope")->value(), sizeof(loadValues.maxSlope)-1);
-        } 
-        catch(...)
-        {
-            sprintf_s(loadValues.minSlope, "%f", DEFAULT_TABLE_MIN_SLOPE);
-            sprintf_s(loadValues.maxSlope, "%f", DEFAULT_TABLE_MAX_SLOPE);
-        }
-
+        const xml_node<char> *tmp = table->first_node("playfieldminslope");
+        if(tmp)
+           strncpy_s(loadValues.minSlope, tmp->value(), sizeof(loadValues.minSlope)-1);
+        else
+           sprintf_s(loadValues.minSlope, "%f", DEFAULT_TABLE_MIN_SLOPE);
+        tmp = table->first_node("playfieldmaxslope");
+        if(tmp)
+           strncpy_s(loadValues.maxSlope, tmp->value(), sizeof(loadValues.maxSlope)-1);
+        else
+           sprintf_s(loadValues.maxSlope, "%f", DEFAULT_TABLE_MAX_SLOPE);
         strncpy_s(loadValues.speed, flipper->first_node("speed")->value(), sizeof(loadValues.speed)-1);
         strncpy_s(loadValues.strength, flipper->first_node("strength")->value(), sizeof(loadValues.strength)-1);
         strncpy_s(loadValues.elasticity, flipper->first_node("elasticity")->value(), sizeof(loadValues.elasticity)-1);
@@ -480,77 +486,77 @@ void PhysicsOptionsDialog::SaveCurrentPhysicsSetting()
 
     str = GetItemText(DISPID_Flipper_Speed);
     sprintf_s(tmp, 256, "FlipperPhysicsMass%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(19);
     sprintf_s(tmp, 256, "FlipperPhysicsStrength%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(21);
     sprintf_s(tmp, 256, "FlipperPhysicsElasticity%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str=GetItemText(112);
     sprintf_s(tmp, 256, "FlipperPhysicsScatter%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(113);
     sprintf_s(tmp, 256, "FlipperPhysicsEOSTorque%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(189);
     sprintf_s(tmp, 256, "FlipperPhysicsEOSTorqueAngle%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(23);
     sprintf_s(tmp, 256, "FlipperPhysicsReturnStrength%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(22);
     sprintf_s(tmp, 256, "FlipperPhysicsElasticityFalloff%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(109);
     sprintf_s(tmp, 256, "FlipperPhysicsFriction%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(110);
     sprintf_s(tmp, 256, "FlipperPhysicsCoilRampUp%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(1100);
     sprintf_s(tmp, 256, "TablePhysicsGravityConstant%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(1101);
     sprintf_s(tmp, 256, "TablePhysicsContactFriction%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(1708);
     sprintf_s(tmp, 256, "TablePhysicsElasticity%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(1709);
     sprintf_s(tmp, 256, "TablePhysicsElasticityFalloff%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(1710);
     sprintf_s(tmp, 256, "TablePhysicsScatterAngle%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(1102);
     sprintf_s(tmp, 256, "TablePhysicsContactScatterAngle%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(1103);
     sprintf_s(tmp, 256, "TablePhysicsMinSlope%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(1104);
     sprintf_s(tmp, 256, "TablePhysicsMaxSlope%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 
     str = GetItemText(1110);
     sprintf_s(tmp, 256, "PhysicsSetName%u", physicsselection);
-    SaveValueString("Player", tmp, str);
+    SaveValue("Player", tmp, str);
 }

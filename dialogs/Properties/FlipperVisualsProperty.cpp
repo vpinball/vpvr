@@ -24,9 +24,9 @@ FlipperVisualsProperty::FlipperVisualsProperty(const VectorProtected<ISelect> *p
 
 void FlipperVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemFlipper))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemFlipper))
             continue;
         Flipper * const flipper = (Flipper *)m_pvsel->ElementAt(i);
         if (dispid == IDC_MATERIAL_COMBO2 || dispid == -1)
@@ -67,9 +67,9 @@ void FlipperVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void FlipperVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemFlipper))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemFlipper))
             continue;
         Flipper * const flipper = (Flipper *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -111,7 +111,7 @@ void FlipperVisualsProperty::UpdateProperties(const int dispid)
                 CHECK_UPDATE_VALUE_SETTER(flipper->SetFlipperRadiusMin, flipper->GetFlipperRadiusMin, PropertyDialog::GetFloatTextbox, m_maxDifficultLengthEdit, flipper);
                 break;
             case 1502:
-                CHECK_UPDATE_COMBO_TEXT(flipper->m_d.m_szSurface, m_surfaceCombo, flipper);
+                CHECK_UPDATE_COMBO_TEXT_STRING(flipper->m_d.m_szSurface, m_surfaceCombo, flipper);
                 break;
             case IDC_FLIPPER_ENABLED:
                 CHECK_UPDATE_ITEM(flipper->m_d.m_enabled, PropertyDialog::GetCheckboxState(::GetDlgItem(GetHwnd(), dispid)), flipper);
@@ -153,6 +153,48 @@ BOOL FlipperVisualsProperty::OnInitDialog()
     m_hVisibleCheck = ::GetDlgItem(GetHwnd(), IDC_VISIBLE_CHECK);
     m_hReflectionEnabledCheck = ::GetDlgItem(GetHwnd(), IDC_REFLECT_ENABLED_CHECK);
     UpdateVisuals();
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC12), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC13), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC14), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC15), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC16), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC17), topleft, 0);
+    m_resizer.AddChild(m_imageCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_materialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rubberMaterialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rubberThicknessEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rubberOffsetHeightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rubberWidthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posXEdit, topleft, 0);
+    m_resizer.AddChild(m_posYEdit, topright, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_baseRadiusEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_endRadiusEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_lengthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_startAngleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_endAngleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_heightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_maxDifficultLengthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_surfaceCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hVisibleCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hReflectionEnabledCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_FLIPPER_ENABLED), topleft, 0);
     return TRUE;
 }
 
+INT_PTR FlipperVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
+}

@@ -13,19 +13,19 @@ LZWWriter::~LZWWriter()
 {
 }
 
-HRESULT LZWWriter::WriteSz(char *sz, int cbytes)
+HRESULT LZWWriter::WriteSz(const char *sz, int cbytes)
 {
-   return m_pistream->Write(sz, cbytes, NULL);
+   return m_pistream->Write(sz, cbytes, nullptr);
 }
 
 HRESULT LZWWriter::WriteByte(char ch)
 {
-   return m_pistream->Write(&ch, 1, NULL);
+   return m_pistream->Write(&ch, 1, nullptr);
 }
 
 HRESULT LZWWriter::WriteWord(short word)
 {
-   return m_pistream->Write(&word, 2, NULL);
+   return m_pistream->Write(&word, 2, nullptr);
 }
 
 int LZWWriter::bNextPixel()
@@ -105,7 +105,7 @@ HRESULT LZWWriter::CompressBits(int init_bits)
             disp = 1;
          else
             disp = HSIZE - i;
-         while (1)
+         while (true)
          {
             i -= disp;
             if (i < 0)

@@ -25,9 +25,9 @@ TextboxVisualsProperty::~TextboxVisualsProperty()
 
 void TextboxVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemTextbox))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemTextbox))
             continue;
         Textbox* const text = (Textbox *)m_pvsel->ElementAt(i);
 
@@ -69,9 +69,9 @@ void TextboxVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void TextboxVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemTextbox))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemTextbox))
             continue;
         Textbox* const text = (Textbox *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -182,16 +182,17 @@ void TextboxVisualsProperty::UpdateProperties(const int dispid)
 
                     fd.cbSizeofstruct = sizeof(FONTDESC);
 
-                    const int len = lstrlen(m_font->GetLogFont().lfFaceName) + 1;
+                    const LOGFONT font = m_font->GetLogFont();
+                    const int len = lstrlen(font.lfFaceName) + 1;
                     fd.lpstrName = (LPOLESTR)malloc(len * sizeof(WCHAR));
                     memset(fd.lpstrName, 0, len * sizeof(WCHAR));
-                    MultiByteToWideCharNull(CP_ACP, 0, m_font->GetLogFont().lfFaceName, -1, fd.lpstrName, len);
+                    MultiByteToWideCharNull(CP_ACP, 0, font.lfFaceName, -1, fd.lpstrName, len);
 
-                    fd.sWeight = (SHORT)m_font->GetLogFont().lfWidth;
-                    fd.sCharset = m_font->GetLogFont().lfCharSet;
-                    fd.fItalic = m_font->GetLogFont().lfItalic;
-                    fd.fUnderline = m_font->GetLogFont().lfUnderline;
-                    fd.fStrikethrough = m_font->GetLogFont().lfStrikeOut;
+                    fd.sWeight = (SHORT)font.lfWidth;
+                    fd.sCharset = font.lfCharSet;
+                    fd.fItalic = font.lfItalic;
+                    fd.fUnderline = font.lfUnderline;
+                    fd.fStrikethrough = font.lfStrikeOut;
 
                     // free old font first
                     text->m_pIFont->Release();
@@ -225,17 +226,43 @@ BOOL TextboxVisualsProperty::OnInitDialog()
     m_hUseScriptDMDCheck = ::GetDlgItem(GetHwnd(), IDC_USE_SCRIPT_DMD_CHECK);
     m_textEdit.AttachItem(IDC_TEXTBOX_TEXT_EDIT);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, 0);
+    m_resizer.AddChild(m_hTransparentCheck, topleft, 0);
+    m_resizer.AddChild(m_backgroundColorButton, topleft, 0);
+    m_resizer.AddChild(m_textColorButton, topleft, 0);
+    m_resizer.AddChild(m_fontDialogButton, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_alignmentCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posXEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posYEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_widthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_heightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_textIntensityEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hUseScriptDMDCheck, topleft, 0);
+    m_resizer.AddChild(m_textEdit, topleft, RD_STRETCH_WIDTH);
     return TRUE;
 }
 
 INT_PTR TextboxVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    switch (uMsg)
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   switch (uMsg)
     {
         case WM_DRAWITEM:
         {
-            LPDRAWITEMSTRUCT lpDrawItemStruct = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
-            UINT nID = static_cast<UINT>(wParam);
+            const LPDRAWITEMSTRUCT lpDrawItemStruct = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
+            const UINT nID = static_cast<UINT>(wParam);
             if (nID == IDC_COLOR_BUTTON1)
             {
                 m_backgroundColorButton.DrawItem(lpDrawItemStruct);

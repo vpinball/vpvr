@@ -1,12 +1,12 @@
-// Win32++   Version 8.8
-// Release Date: 15th October 2020
+// Win32++   Version 8.9.1
+// Release Date: 10th September 2021
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2020  David Nash
+// Copyright (c) 2005-2021  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -174,7 +174,7 @@ namespace Win32xx
 #ifdef SHELL_AYGSHELL
         SHMENUBARINFO mbi;
 
-        memset(&mbi, 0, sizeof(mbi));
+        ZeroMemory(&mbi, sizeof(mbi));
         mbi.cbSize     = sizeof(mbi);
         mbi.hwndParent = parent;
         mbi.nToolBarId = IDW_MAIN;
@@ -234,7 +234,7 @@ namespace Win32xx
     {
 #ifdef SHELL_AYGSHELL
         // Initialize the shell activate info structure
-        memset (&m_sai, 0, sizeof (m_sai));
+        ZeroMemory (&m_sai, sizeof (m_sai));
         m_sai.cbSize = sizeof (m_sai);
 #endif
     }

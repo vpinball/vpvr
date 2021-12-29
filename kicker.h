@@ -13,7 +13,7 @@ public:
    Vertex2D m_vCenter;
    float m_radius;
    TimerDataRoot m_tdr;
-   char m_szSurface[MAXTOKEN];
+   std::string m_szSurface;
    KickerType m_kickertype;
    float m_hitAccuracy; //kicker hit grabbing object height ... default ballsize*0.7
    float m_orientation;
@@ -78,7 +78,7 @@ public:
 
    virtual void PreRenderStatic(RenderDevice* pd3dDevice);
    virtual void SetDefaultPhysics(bool fromMouseClick);
-   virtual void ExportMesh(FILE *f);
+   virtual void ExportMesh(ObjLoader& loader);
 
    virtual unsigned long long GetMaterialID() const { return m_ptable->GetMaterial(m_d.m_szMaterial)->hash(); }
    virtual ItemTypeEnum HitableGetItemType() const { return eItemKicker; }
@@ -93,7 +93,7 @@ public:
 private:
    void GenerateMesh(Vertex3D_NoTex2 *const buf);
 
-   PinTable * m_ptable;
+   PinTable *m_ptable;
 
    KickerHitCircle *m_phitkickercircle;
 
@@ -156,14 +156,14 @@ public:
    KickerHitCircle(const Vertex2D& c, const float r, const float zlow, const float zhigh)
       : HitCircle(c,r,zlow,zhigh)
    {
-      m_pball = NULL;
-      m_lastCapturedBall = NULL;
-      m_pkicker = NULL;
+      m_pball = nullptr;
+      m_lastCapturedBall = nullptr;
+      m_pkicker = nullptr;
    }
 
    virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const;
    virtual int GetType() const { return eTrigger; }
-   virtual void Collide(const CollisionEvent& coll) { DoCollide(coll.m_ball, coll.m_hitnormal, coll.m_hitflag, false); }
+   virtual void Collide(const CollisionEvent& coll)  { DoCollide(coll.m_ball, coll.m_hitnormal, coll.m_hitflag, false); }
 
    void DoChangeBallVelocity(Ball * const pball, const Vertex3Ds& hitnormal) const;
    void DoCollide(Ball * const pball, const Vertex3Ds& hitnormal, const bool hitflag, const bool newBall);

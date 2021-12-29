@@ -12,7 +12,7 @@ typedef struct _tagSORTDATA
 
 extern SORTDATA SortData;
 extern int CALLBACK MyCompProc( LPARAM lSortParam1, LPARAM lSortParam2, LPARAM lSortOption );
-extern int CALLBACK MyCompProcIntValues(LPARAM lSortParam1, LPARAM lSortParam2, LPARAM lSortOption);
+extern int CALLBACK MyCompProcMemValues(LPARAM lSortParam1, LPARAM lSortParam2, LPARAM lSortOption);
 int ImageDialog::m_columnSortOrder;
 bool ImageDialog::m_doNotChange;
 
@@ -52,9 +52,8 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
    {
       case WM_INITDIALOG:
       {
-         LVCOLUMN lvcol;
-         HWND hListView = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-         m_resizer.Initialize(*this, CRect(0, 0, 500, 600));
+         const HWND hListView = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
+         m_resizer.Initialize(*this, CRect(0, 0, 720, 450));
          m_resizer.AddChild(hListView, topleft, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
          m_resizer.AddChild(GetDlgItem(IDC_PICTUREPREVIEW).GetHwnd(), topright, 0);
          m_resizer.AddChild(GetDlgItem(IDC_IMPORT).GetHwnd(), topright, 0);
@@ -73,6 +72,7 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
          ListView_SetExtendedListViewStyle(hListView, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
+         LVCOLUMN lvcol;
          lvcol.mask = LVCF_TEXT | LVCF_WIDTH;
          const LocalString ls(IDS_NAME);
          lvcol.pszText = (LPSTR)ls.m_szbuffer; // = "Name";
@@ -127,7 +127,7 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                SortData.subItemIndex = columnNumber;
                SortData.sortUpDown = m_columnSortOrder;
                if (columnNumber==4)
-                   ListView_SortItems(SortData.hwndList, MyCompProcIntValues, &SortData);
+                   ListView_SortItems(SortData.hwndList, MyCompProcMemValues, &SortData);
                else
                    ListView_SortItems(SortData.hwndList, MyCompProc, &SortData);
             }
@@ -139,7 +139,7 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             {
                NMLVDISPINFO * const pinfo = (NMLVDISPINFO *)lParam;
                const HWND hSoundlist = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
-               if (pinfo->item.pszText == NULL || pinfo->item.pszText[0] == '\0')
+               if (pinfo->item.pszText == nullptr || pinfo->item.pszText[0] == '\0')
                {
                   return FALSE;
                }
@@ -150,7 +150,7 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                lvitem.iSubItem = 0;
                ListView_GetItem(hSoundlist, &lvitem);
                Texture * const ppi = (Texture *)lvitem.lParam;
-               if (ppi != NULL)
+               if (ppi != nullptr)
                {
                   ppi->m_szName = pinfo->item.pszText;
                   CCO(PinTable) * const pt = g_pvp->GetActiveTable();
@@ -177,14 +177,14 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                   lvitem.iSubItem = 0;
                   ListView_GetItem(GetDlgItem(IDC_SOUNDLIST).GetHwnd(), &lvitem);
                   Texture * const ppi = (Texture *)lvitem.lParam;
-                  if (ppi != NULL)
+                  if (ppi != nullptr)
                   {
                      char textBuf[256];
                      sprintf_s(textBuf, "%i", (int)ppi->m_alphaTestValue);
                      SetDlgItemText(IDC_ALPHA_MASK_EDIT, textBuf);
                   }
                }
-               ::InvalidateRect(GetDlgItem(IDC_PICTUREPREVIEW).GetHwnd(), NULL, fTrue);
+               ::InvalidateRect(GetDlgItem(IDC_PICTUREPREVIEW).GetHwnd(), nullptr, fTrue);
             }
          }
          break;
@@ -201,7 +201,7 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             lvitem.iSubItem = 0;
             ListView_GetItem(GetDlgItem(IDC_SOUNDLIST).GetHwnd(), &lvitem);
             Texture * const ppi = (Texture *)lvitem.lParam;
-            if (ppi != NULL)
+            if (ppi != nullptr)
             {
                const float v = sz2f(GetDlgItemText(IDC_ALPHA_MASK_EDIT).c_str());
                if (ppi->m_alphaTestValue != v)
@@ -237,7 +237,7 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             lvitem.iSubItem = 0;
             ListView_GetItem(hSoundList, &lvitem);
             Texture * const ppi = (Texture *)lvitem.lParam;
-            if (ppi != NULL)
+            if (ppi != nullptr)
             {
                RECT rcClient;
                ::GetWindowRect(pdis->hwndItem, &rcClient);
@@ -283,7 +283,7 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
             RECT rcText = rcClient;
 
-            //ExtTextOut(pdis->hDC, 0, 20, 0, NULL, "Image\nPreview", 13, NULL);
+            //ExtTextOut(pdis->hDC, 0, 20, 0, nullptr, "Image\nPreview", 13, nullptr);
             const LocalString ls(IDS_IMAGE_PREVIEW);
             const int len = lstrlen(ls.m_szbuffer);
             DrawText(pdis->hDC, ls.m_szbuffer/*"Image\n\nPreview"*/, len, &rcText, DT_CALCRECT);
@@ -308,7 +308,7 @@ INT_PTR ImageDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void ImageDialog::UpdateImages()
 {
-    HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
+    const HWND hSoundList = GetDlgItem(IDC_SOUNDLIST).GetHwnd();
     const int count = ListView_GetSelectedCount(hSoundList);
 
     if (count > 0)
@@ -322,7 +322,7 @@ void ImageDialog::UpdateImages()
             lvitem.iSubItem = 0;
             ListView_GetItem(hSoundList, &lvitem);
             Texture * const ppi = (Texture *)lvitem.lParam;
-            if (ppi != NULL)
+            if (ppi != nullptr)
             {
                 const float v = sz2f(GetDlgItemText(IDC_ALPHA_MASK_EDIT).c_str());
                 if (ppi->m_alphaTestValue != v)
@@ -396,11 +396,11 @@ void ImageDialog::OnCancel()
 void ImageDialog::Import()
 {
    std::vector<std::string> szFileName;
-   char szInitialDir[MAXSTRING];
+   string szInitialDir;
 
-   HRESULT hr = LoadValueString("RecentDir", "ImageDir", szInitialDir, MAXSTRING);
+   HRESULT hr = LoadValue("RecentDir", "ImageDir", szInitialDir);
    if (hr != S_OK)
-      lstrcpy(szInitialDir, "c:\\Visual Pinball\\Tables\\");
+      szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
    if (g_pvp->OpenFileDialog(szInitialDir, szFileName, "Bitmap, JPEG, PNG, TGA, WEBP, EXR, HDR Files (.bmp/.jpg/.png/.tga/.webp/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.tga;*.webp;*.exr;*.hdr\0", "png", OFN_EXPLORER | OFN_ALLOWMULTISELECT))
    {
@@ -412,10 +412,7 @@ void ImageDialog::Import()
 
       const size_t index = szFileName[0].find_last_of('\\');
       if (index != std::string::npos)
-      {
-          const std::string newInitDir(szFileName[0].substr(0, index));
-          hr = SaveValueString("RecentDir", "ImageDir", newInitDir);
-      }
+         hr = SaveValue("RecentDir", "ImageDir", szFileName[0].substr(0, index));
 
       pt->SetNonUndoableDirty(eSaveDirty);
       SetFocus();
@@ -438,14 +435,12 @@ void ImageDialog::Export()
          lvitem.iSubItem = 0;
          ListView_GetItem(hSoundList, &lvitem);
          Texture * ppi = (Texture*)lvitem.lParam;
-         if (ppi != NULL)
+         if (ppi != nullptr)
          {
-            OPENFILENAME ofn;
-            ZeroMemory(&ofn, sizeof(OPENFILENAME));
+            OPENFILENAME ofn = {};
             ofn.lStructSize = sizeof(OPENFILENAME);
             ofn.hInstance = g_pvp->theInstance;
             ofn.hwndOwner = g_pvp->GetHwnd();
-            const int len0 = (int)ppi->m_szPath.length();
             char g_filename[MAXSTRING];
             g_filename[0] = '\0';
 
@@ -453,6 +448,7 @@ void ImageDialog::Export()
 
             if (!renameOnExport)
             {
+               const int len0 = (int)ppi->m_szPath.length();
                int begin; //select only file name from pathfilename
                for (begin = len0; begin >= 0; begin--)
                {
@@ -507,13 +503,12 @@ void ImageDialog::Export()
             else if (!_stricmp(ofn.lpstrDefExt, "hdr"))
                ofn.nFilterIndex = 12;
 
-            char g_initDir[MAXSTRING];
-            memset(g_initDir, 0, sizeof(g_initDir));
-            const HRESULT hr = LoadValueString("RecentDir", "ImageDir", g_initDir, MAXSTRING);
+            string g_initDir;
+            const HRESULT hr = LoadValue("RecentDir", "ImageDir", g_initDir);
             if (hr != S_OK)
-               lstrcpy(g_initDir, "c:\\Visual Pinball\\Tables\\");
+               g_initDir = "c:\\Visual Pinball\\Tables\\";
 
-            ofn.lpstrInitialDir = (hr == S_OK) ? g_initDir : NULL;
+            ofn.lpstrInitialDir = (hr == S_OK) ? g_initDir.c_str() : nullptr;
             //ofn.lpstrTitle = "SAVE AS";
             ofn.Flags = OFN_NOREADONLYRETURN | OFN_CREATEPROMPT | OFN_OVERWRITEPROMPT | OFN_EXPLORER;
 
@@ -521,9 +516,8 @@ void ImageDialog::Export()
 
             if (GetSaveFileName(&ofn))	//Get filename from user
             {
-               const int len1 = lstrlen(ofn.lpstrFile);
                int begin; //select only file name from pathfilename
-               for (begin = len1; begin >= 0; begin--)
+               for (begin = lstrlen(ofn.lpstrFile); begin >= 0; begin--)
                {
                   if (ofn.lpstrFile[begin] == '\\')
                   {
@@ -540,22 +534,23 @@ void ImageDialog::Export()
                   memcpy(pathName, ofn.lpstrFile, begin);
                pathName[begin] = 0;
 
-               const int len2 = (int)ppi->m_szPath.length();
-               while (sel != -1 && ppi != NULL)
+               while (sel != -1 && ppi != nullptr)
                {
-                  for (begin = len2; begin >= 0; begin--)
-                  {
-                     if (ppi->m_szPath[begin] == '\\')
-                     {
-                        begin++;
-                        break;
-                     }
-                  }
                   if (selectedItemsCount>1)
                   {
                      strncpy_s(g_filename, pathName, sizeof(g_filename)-1);
                      if (!renameOnExport)
+                     {
+                        for (begin = (int)ppi->m_szPath.length(); begin >= 0; begin--)
+                        {
+                           if (ppi->m_szPath[begin] == '\\')
+                           {
+                              begin++;
+                              break;
+                           }
+                        }
                         strncat_s(g_filename, ppi->m_szPath.c_str()+begin, sizeof(g_filename)-strnlen_s(g_filename, sizeof(g_filename))-1);
+                     }
                      else
                      {
                         strncat_s(g_filename, ppi->m_szName.c_str(), sizeof(g_filename)-strnlen_s(g_filename, sizeof(g_filename))-1);
@@ -574,7 +569,7 @@ void ImageDialog::Export()
                   ppi = (Texture*)lvitem.lParam;
                }
 
-               SaveValueString("RecentDir", "ImageDir", pathName);
+               SaveValue("RecentDir", "ImageDir", pathName);
             } // finished all selected items
          }
       }
@@ -605,7 +600,7 @@ void ImageDialog::DeleteImage()
             lvitem.iSubItem = 0;
             ListView_GetItem(hSoundList, &lvitem);
             Texture * const ppi = (Texture*)lvitem.lParam;
-            if (ppi != NULL)
+            if (ppi != nullptr)
             {
                m_doNotChange = true; // do not trigger LVN_ITEMCHANGING or LVN_ITEMCHANGED code!
                ListView_DeleteItem(hSoundList, sel);
@@ -646,10 +641,10 @@ void ImageDialog::Reimport()
             lvitem.iSubItem = 0;
             ListView_GetItem(hSoundList, &lvitem);
             Texture * const ppi = (Texture*)lvitem.lParam;
-            if (ppi != NULL)
+            if (ppi != nullptr)
             {
                const HANDLE hFile = CreateFile(ppi->m_szPath.c_str(), GENERIC_READ, FILE_SHARE_READ,
-                                               NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+                                               nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 
                if (hFile != INVALID_HANDLE_VALUE)
                {
@@ -666,7 +661,7 @@ void ImageDialog::Reimport()
          }
       }
       // Display new image
-      ::InvalidateRect(GetDlgItem(IDC_PICTUREPREVIEW).GetHwnd(), NULL, fTrue);
+      ::InvalidateRect(GetDlgItem(IDC_PICTUREPREVIEW).GetHwnd(), nullptr, fTrue);
    }
    SetFocus();
 }
@@ -685,9 +680,9 @@ void ImageDialog::UpdateAll()
       lvitem.iSubItem = 0;
       ListView_GetItem(hSoundList, &lvitem);
       Texture * const ppi = (Texture*)lvitem.lParam;
-      if (ppi != NULL)
+      if (ppi != nullptr)
       {
-         HANDLE hFile = CreateFile(ppi->m_szPath.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+         const HANDLE hFile = CreateFile(ppi->m_szPath.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
          if (hFile != INVALID_HANDLE_VALUE)
          {
             CloseHandle(hFile);
@@ -699,7 +694,7 @@ void ImageDialog::UpdateAll()
             errorOccurred = true;
       }
       // Display new image
-      ::InvalidateRect(GetDlgItem(IDC_PICTUREPREVIEW).GetHwnd(), NULL, fTrue);
+      ::InvalidateRect(GetDlgItem(IDC_PICTUREPREVIEW).GetHwnd(), nullptr, fTrue);
    }
 
    if (errorOccurred)
@@ -718,11 +713,11 @@ void ImageDialog::ReimportFrom()
       if (ans == IDYES)
       {
          std::vector<std::string> szFileName;
-         char szInitialDir[MAXSTRING];
+         string szInitialDir;
 
-         HRESULT hr = LoadValueString("RecentDir", "ImageDir", szInitialDir, MAXSTRING);
+         const HRESULT hr = LoadValue("RecentDir", "ImageDir", szInitialDir);
          if (hr != S_OK)
-            lstrcpy(szInitialDir, "c:\\Visual Pinball\\Tables\\");
+            szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
          if (g_pvp->OpenFileDialog(szInitialDir, szFileName, "Bitmap, JPEG, PNG, TGA, WEBP, EXR, HDR Files (.bmp/.jpg/.png/.tga/.webp/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.tga;*.webp;*.exr;*.hdr\0","png",0))
          {
@@ -732,14 +727,11 @@ void ImageDialog::ReimportFrom()
             lvitem.iSubItem = 0;
             ListView_GetItem(hSoundList, &lvitem);
             Texture * const ppi = (Texture*)lvitem.lParam;
-            if (ppi != NULL)
+            if (ppi != nullptr)
             {
                const size_t index = szFileName[0].find_last_of('\\');
                if (index != std::string::npos)
-               {
-                  const std::string newInitDir(szFileName[0].substr(0, index));
-                  SaveValueString("RecentDir", "ImageDir", newInitDir);
-               }
+                  SaveValue("RecentDir", "ImageDir", szFileName[0].substr(0, index));
 
                CCO(PinTable) * const pt = g_pvp->GetActiveTable();
                pt->ReImportImage(ppi, szFileName[0]);
@@ -747,7 +739,7 @@ void ImageDialog::ReimportFrom()
                pt->SetNonUndoableDirty(eSaveDirty);
 
                // Display new image
-               ::InvalidateRect(GetDlgItem(IDC_PICTUREPREVIEW).GetHwnd(), NULL, fTrue);
+               ::InvalidateRect(GetDlgItem(IDC_PICTUREPREVIEW).GetHwnd(), nullptr, fTrue);
             }
          }
       }
@@ -763,18 +755,17 @@ void ImageDialog::LoadPosition()
 
     const int w = LoadValueIntWithDefault("Editor", "ImageMngWidth", 1000);
     const int h = LoadValueIntWithDefault("Editor", "ImageMngHeight", 800);
-    SetWindowPos(NULL, x, y, w, h, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE);
+    SetWindowPos(nullptr, x, y, w, h, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
 void ImageDialog::SavePosition()
 {
-    int w, h;
-    CRect rect = GetWindowRect();
+    const CRect rect = GetWindowRect();
 
     SaveValueInt("Editor", "ImageMngPosX", rect.left);
     SaveValueInt("Editor", "ImageMngPosY", rect.top);
-    w = rect.right - rect.left;
+    const int w = rect.right - rect.left;
     SaveValueInt("Editor", "ImageMngWidth", w);
-    h = rect.bottom - rect.top;
+    const int h = rect.bottom - rect.top;
     SaveValueInt("Editor", "ImageMngHeight", h);
 }

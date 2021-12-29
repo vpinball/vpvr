@@ -84,115 +84,114 @@ BOOL ToolbarDialog::OnInitDialog()
     m_tooltip.AddTool(m_flasherButton, _T("Insert Flasher"));
     m_tooltip.AddTool(m_rubberButton, _T("Insert Rubber"));
 
-    const int iconSize = 24;
-    HANDLE hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_MAGNIFY), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    constexpr int iconSize = 24;
+    HANDLE hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_MAGNIFY), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_magnifyButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_SELECT), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_SELECT), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_selectButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_SCRIPT), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_SCRIPT), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_scriptButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_BACKGLASS), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_BACKGLASS), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_backglassButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PLAY), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_PLAY), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_playButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_CAMERA), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_CAMERA), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_playCameraButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_WALL), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_WALL), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_wallButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_GATE), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_GATE), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_gateButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_RAMP), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_RAMP), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_rampButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_FLIPPER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_FLIPPER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_flipperButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PLUNGER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_PLUNGER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_plungerButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_BUMPER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_BUMPER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_bumperButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_SPINNER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_SPINNER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_spinnerButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_TIMER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_TIMER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_timerButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_TRIGGER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_TRIGGER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_triggerButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_LIGHT), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_LIGHT), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_lightButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_KICKER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_KICKER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_kickerButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_TARGET), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_TARGET), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_targetButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_DECAL), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_DECAL), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_decalButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_TEXTBOX), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_TEXTBOX), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_textboxButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_REEL), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_REEL), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_reelButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_LIGHTSEQ), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_LIGHTSEQ), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_lightseqButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_PRIMITIVE), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_PRIMITIVE), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_primitiveButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_FLASHER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_FLASHER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_flasherButton.SetIcon((HICON)hIcon);
 
-    hIcon = ::LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_RUBBER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
+    hIcon = ::LoadImage(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_RUBBER), IMAGE_ICON, iconSize, iconSize, LR_DEFAULTCOLOR);
     m_rubberButton.SetIcon((HICON)hIcon);
 
-/*
-    m_resizer.Initialize(*this, CRect(0, 0, 61, 422));
 
-    m_resizer.AddChild(m_magnifyButton, topleft, 0);
-    m_resizer.AddChild(m_selectButton, topright, 0);
-    m_resizer.AddChild(m_scriptButton, rightcenter, 0);
-    m_resizer.AddChild(m_backglassButton, leftcenter, 0);
-    m_resizer.AddChild(m_playButton, rightcenter, 0);
-    m_resizer.AddChild(m_playCameraButton, rightcenter, 0);
-    m_resizer.AddChild(GetDlgItem(IDC_STATIC_ELEMENTS), bottomright, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.Initialize(*this, CRect(0, 0, 90, 600));
+    m_resizer.AddChild(m_magnifyButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_selectButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_scriptButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_backglassButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_playButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_playCameraButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC_ELEMENTS), center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
 
-    m_resizer.AddChild(m_wallButton, leftcenter, 0);
-    m_resizer.AddChild(m_gateButton, rightcenter, 0);
-    m_resizer.AddChild(m_rampButton, leftcenter, 0);
-    m_resizer.AddChild(m_flipperButton, rightcenter, 0);
-    m_resizer.AddChild(m_plungerButton, leftcenter, 0);
-    m_resizer.AddChild(m_bumperButton, rightcenter, 0);
-    m_resizer.AddChild(m_spinnerButton, leftcenter, 0);
-    m_resizer.AddChild(m_timerButton, rightcenter, 0);
-    m_resizer.AddChild(m_triggerButton, leftcenter, 0);
-    m_resizer.AddChild(m_lightButton, rightcenter, 0);
-    m_resizer.AddChild(m_kickerButton, leftcenter, 0);
-    m_resizer.AddChild(m_targetButton, rightcenter, 0);
-    m_resizer.AddChild(m_decalButton, leftcenter, 0);
-    m_resizer.AddChild(m_textboxButton, rightcenter, 0);
-    m_resizer.AddChild(m_reelButton, leftcenter, 0);
-    m_resizer.AddChild(m_lightseqButton, rightcenter, 0);
-    m_resizer.AddChild(m_primitiveButton, leftcenter, 0);
-    m_resizer.AddChild(m_flasherButton, rightcenter, 0);
-    m_resizer.AddChild(m_rubberButton, leftcenter, 0);
+    m_resizer.AddChild(m_wallButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_gateButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_rampButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_flipperButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_plungerButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_bumperButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_spinnerButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_timerButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_triggerButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_lightButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_kickerButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_targetButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_decalButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_textboxButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_reelButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_lightseqButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_primitiveButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_flasherButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(m_rubberButton, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
 
     m_resizer.RecalcLayout();
-*/
+
     EnableButtons();
     return TRUE;
 }
@@ -200,7 +199,7 @@ BOOL ToolbarDialog::OnInitDialog()
 INT_PTR ToolbarDialog::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
 {
     // Pass resizing messages on to the resizer
-//    m_resizer.HandleMessage(msg, wparam, lparam);
+    m_resizer.HandleMessage(msg, wparam, lparam);
 
     switch (msg)
     {
@@ -216,7 +215,7 @@ void ToolbarDialog::EnableButtons()
     if (!IsWindow())
         return;
     CComObject<PinTable> * const ptCur = g_pvp->GetActiveTable();
-    if (ptCur == NULL && !g_pplayer)
+    if (ptCur == nullptr && !g_pplayer)
     {
         m_magnifyButton.EnableWindow(FALSE);
         m_selectButton.EnableWindow(FALSE);
@@ -351,7 +350,7 @@ BOOL ToolbarDialog::OnCommand(WPARAM wParam, LPARAM lParam)
         case ID_INSERT_FLASHER:
         case ID_INSERT_RUBBER:
         {
-            ItemTypeEnum type = EditableRegistry::TypeFromToolID((int)id);
+            const ItemTypeEnum type = EditableRegistry::TypeFromToolID((int)id);
             if (type != eItemInvalid)
             {
                 g_pvp->m_ToolCur = (int)id;

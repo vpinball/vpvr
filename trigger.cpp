@@ -9,7 +9,7 @@
 
 Trigger::Trigger()
 {
-   m_ptriggerhitcircle = NULL;
+   m_ptriggerhitcircle = nullptr;
 
    m_hitEvent = false;
    m_unhitEvent = false;
@@ -19,11 +19,11 @@ Trigger::Trigger()
    m_vertexBuffer_animHeightOffset = -FLT_MAX;
 
    m_hitEnabled = true;
-   m_vertexBuffer = NULL;
-   m_triggerIndexBuffer = NULL;
-   m_triggerVertices = NULL;
+   m_vertexBuffer = nullptr;
+   m_triggerIndexBuffer = nullptr;
+   m_triggerVertices = nullptr;
    m_menuid = IDR_SURFACEMENU;
-   m_propVisual = NULL;
+   m_propVisual = nullptr;
 }
 
 Trigger::~Trigger()
@@ -48,13 +48,13 @@ Trigger::~Trigger()
 
 void Trigger::UpdateStatusBarInfo()
 {
-   if (g_pplayer)
-      return;
+   if(g_pplayer)
+       return;
 
    if (m_d.m_shape != TriggerNone)
    {
       const Vertex3D_NoTex2 *meshVertices;
-      switch (m_d.m_shape)
+      switch(m_d.m_shape)
       {
       case TriggerWireA:
       case TriggerWireB:
@@ -125,8 +125,8 @@ void Trigger::UpdateStatusBarInfo()
 
 void Trigger::InitShape(float x, float y)
 {
-   float lengthX = 30.0f;
-   float lengthY = 30.0f;
+   constexpr float lengthX = 30.0f;
+   constexpr float lengthY = 30.0f;
    UpdateStatusBarInfo();
    for (size_t i = 0; i < m_vdpoint.size(); i++)
       m_vdpoint[i]->Release();
@@ -175,7 +175,7 @@ HRESULT Trigger::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
    if (m_vdpoint.empty())
       InitShape(x, y);
 
-   return InitVBA(fTrue, 0, NULL);
+   return InitVBA(fTrue, 0, nullptr);
 }
 
 void Trigger::SetDefaults(bool fromMouseClick)
@@ -192,9 +192,9 @@ void Trigger::SetDefaults(bool fromMouseClick)
    m_d.m_hit_height = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Trigger", "HitHeight", 50.f) : 50.f;
    m_d.m_shape = fromMouseClick ? (TriggerShape)LoadValueIntWithDefault("DefaultProps\\Trigger", "Shape", TriggerWireA) : TriggerWireA;
 
-   HRESULT hr = LoadValueString("DefaultProps\\Trigger", "Surface", m_d.m_szSurface, MAXTOKEN);
+   const HRESULT hr = LoadValue("DefaultProps\\Trigger", "Surface", m_d.m_szSurface);
    if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_szSurface[0] = 0;
+      m_d.m_szSurface.clear();
 
    m_d.m_animSpeed = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\trigger", "AnimSpeed", 1.f) : 1.f;
    m_d.m_reflectionEnabled = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Trigger", "ReflectionEnabled", true) : true;
@@ -235,7 +235,7 @@ void Trigger::UIRenderPass2(Sur * const psur)
       std::vector<RenderVertex> vvertex;
       GetRgVertex(vvertex);
 
-      psur->SetObject(NULL);
+      psur->SetObject(nullptr);
       psur->SetBorderColor(RGB(0, 180, 0), false, 1);
 
       psur->Polygon(vvertex);
@@ -247,7 +247,7 @@ void Trigger::UIRenderPass2(Sur * const psur)
          // if any of the dragpoints of this object are selected then draw all the dragpoints
          for (size_t i = 0; i < m_vdpoint.size(); i++)
          {
-            CComObject<DragPoint> * const pdp = m_vdpoint[i];
+            const CComObject<DragPoint> * const pdp = m_vdpoint[i];
             if (pdp->m_selectstate != eNotSelected)
             {
                drawDragpoints = true;
@@ -271,7 +271,7 @@ void Trigger::UIRenderPass2(Sur * const psur)
    }
    else
    {
-      psur->SetObject(NULL);
+      psur->SetObject(nullptr);
       psur->SetBorderColor(RGB(0, 180, 0), false, 1);
 
       psur->Line(m_d.m_vCenter.x - m_d.m_radius, m_d.m_vCenter.y, m_d.m_vCenter.x + m_d.m_radius, m_d.m_vCenter.y);
@@ -332,6 +332,11 @@ void Trigger::GetTimers(vector<HitTimer*> &pvht)
       pvht.push_back(pht);
 }
 
+//
+// license:GPLv3+
+// Ported at: VisualPinball.Engine/VPT/Trigger/TriggerHitGenerator.cs
+//
+
 void Trigger::GetHitShapes(vector<HitObject*> &pvho)
 {
    m_hitEnabled = m_d.m_enabled;
@@ -353,6 +358,10 @@ void Trigger::GetHitShapes(vector<HitObject*> &pvho)
    else
       CurvesToShapes(pvho);
 }
+
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
 
 void Trigger::GetHitShapesDebug(vector<HitObject*> &pvho)
 {
@@ -402,6 +411,11 @@ void Trigger::GetHitShapesDebug(vector<HitObject*> &pvho)
    }
 }
 
+//
+// license:GPLv3+
+// Ported at: VisualPinball.Engine/VPT/Trigger/TriggerHitGenerator.cs
+//
+
 void Trigger::CurvesToShapes(vector<HitObject*> &pvho)
 {
    const float height = m_ptable->GetSurfaceHeight(m_d.m_szSurface, m_d.m_vCenter.x, m_d.m_vCenter.y);
@@ -450,7 +464,7 @@ void Trigger::AddLine(vector<HitObject*> &pvho, const RenderVertex &pv1, const R
    plineseg->m_ObjType = eTrigger;
    plineseg->m_obj = (IFireEvents*)this;
 
-   plineseg->m_hitBBox.zlow = height;
+   plineseg->m_hitBBox.zlow  = height;
    plineseg->m_hitBBox.zhigh = height + max(m_d.m_hit_height - 8.0f, 0.f); //adjust for same hit height as circular
 
    plineseg->v1.x = pv1.x;
@@ -462,6 +476,10 @@ void Trigger::AddLine(vector<HitObject*> &pvho, const RenderVertex &pv1, const R
 
    plineseg->CalcNormal();
 }
+
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
 
 void Trigger::EndPlay()
 {
@@ -482,7 +500,7 @@ void Trigger::EndPlay()
       delete[] m_triggerVertices;
       m_triggerVertices = 0;
    }
-   m_ptriggerhitcircle = NULL;
+   m_ptriggerhitcircle = nullptr;
 }
 
 void Trigger::TriggerAnimationHit()
@@ -495,28 +513,28 @@ void Trigger::TriggerAnimationUnhit()
    m_unhitEvent = true;
 }
 
+//
+// license:GPLv3+
+// Ported at: VisualPinball.Unity/VisualPinball.Unity/VPT/Trigger/TriggerAnimationSystem.cs
+//
+
 void Trigger::UpdateAnimation()
 {
    const U32 old_time_msec = (m_d.m_time_msec < g_pplayer->m_time_msec) ? m_d.m_time_msec : g_pplayer->m_time_msec;
    m_d.m_time_msec = g_pplayer->m_time_msec;
    const float diff_time_msec = (float)(g_pplayer->m_time_msec - old_time_msec);
 
-   float animLimit = (m_d.m_shape == TriggerStar) ? m_d.m_radius * (float)(1.0 / 5.0) : 32.0f;
-   switch (m_d.m_shape) {
-   case TriggerButton:
-      animLimit = m_d.m_radius * (float)(1.0 / 10.0);
-      break;
-   case TriggerWireC:
+   float animLimit = (m_d.m_shape == TriggerStar) ? m_d.m_radius * (float)(1.0/5.0) : 32.0f;
+   if (m_d.m_shape == TriggerButton)
+      animLimit = m_d.m_radius * (float)(1.0/10.0);
+   else if (m_d.m_shape == TriggerWireC)
       animLimit = 60.0f;
-      break;
-   case TriggerWireD:
-   case TriggerInder:
-      animLimit = 25.0f;
-      break;
-   }
+   else if (m_d.m_shape == TriggerWireD)
+       animLimit = 25.0f;
+   else if (m_d.m_shape == TriggerInder)
+       animLimit = 25.0f;
 
-   const float limit = animLimit * m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
-
+   const float limit = animLimit*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
 
    if (m_hitEvent)
    {
@@ -537,7 +555,7 @@ void Trigger::UpdateAnimation()
 
    if (m_doAnimation)
    {
-      float step = diff_time_msec * m_d.m_animSpeed*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
+      float step = diff_time_msec*m_d.m_animSpeed*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
       if (m_moveDown)
          step = -step;
       m_animHeightOffset += step;
@@ -563,25 +581,29 @@ void Trigger::UpdateAnimation()
 
       if (m_animHeightOffset != m_vertexBuffer_animHeightOffset)
       {
-         m_vertexBuffer_animHeightOffset = m_animHeightOffset;
+          m_vertexBuffer_animHeightOffset = m_animHeightOffset;
 
-         Vertex3D_NoTex2 *buf;
-         m_vertexBuffer->lock(0, 0, (void**)&buf, VertexBuffer::DISCARDCONTENTS);
-         for (int i = 0; i < m_numVertices; i++)
-         {
-            buf[i].x = m_triggerVertices[i].x;
-            buf[i].y = m_triggerVertices[i].y;
-            buf[i].z = m_triggerVertices[i].z + m_animHeightOffset;
-            buf[i].nx = m_triggerVertices[i].nx;
-            buf[i].ny = m_triggerVertices[i].ny;
-            buf[i].nz = m_triggerVertices[i].nz;
-            buf[i].tu = m_triggerVertices[i].tu;
-            buf[i].tv = m_triggerVertices[i].tv;
-         }
-         m_vertexBuffer->unlock();
+          Vertex3D_NoTex2 *buf;
+          m_vertexBuffer->lock(0, 0, (void**)&buf, VertexBuffer::DISCARDCONTENTS);
+          for (int i = 0; i < m_numVertices; i++)
+          {
+              buf[i].x  = m_triggerVertices[i].x;
+              buf[i].y  = m_triggerVertices[i].y;
+              buf[i].z  = m_triggerVertices[i].z + m_animHeightOffset;
+              buf[i].nx = m_triggerVertices[i].nx;
+              buf[i].ny = m_triggerVertices[i].ny;
+              buf[i].nz = m_triggerVertices[i].nz;
+              buf[i].tu = m_triggerVertices[i].tu;
+              buf[i].tv = m_triggerVertices[i].tv;
+          }
+          m_vertexBuffer->unlock();
       }
    }
 }
+
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
 
 void Trigger::RenderDynamic()
 {
@@ -609,22 +631,22 @@ void Trigger::RenderDynamic()
    pd3dDevice->basicShader->End();
 }
 
-void Trigger::ExportMesh(FILE *f)
+void Trigger::ExportMesh(ObjLoader& loader)
 {
    if (!m_d.m_visible || m_d.m_shape == TriggerNone)
       return;
 
-   char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
-   WideCharToMultiByteNull(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
+   char name[sizeof(m_wzName)/sizeof(m_wzName[0])];
+   WideCharToMultiByteNull(CP_ACP, 0, m_wzName, -1, name, sizeof(name), nullptr, nullptr);
    GenerateMesh();
-   WaveFrontObj_WriteObjectName(f, name);
-   WaveFrontObj_WriteVertexInfo(f, m_triggerVertices, m_numVertices);
+   loader.WriteObjectName(name);
+   loader.WriteVertexInfo(m_triggerVertices, m_numVertices);
    const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
-   WaveFrontObj_WriteMaterial(m_d.m_szMaterial, string(), mat);
-   WaveFrontObj_UseTexture(f, m_d.m_szMaterial);
+   loader.WriteMaterial(m_d.m_szMaterial, string(), mat);
+   loader.UseTexture(m_d.m_szMaterial);
 
    const WORD* indices;
-   switch (m_d.m_shape)
+   switch(m_d.m_shape)
    {
    case TriggerWireA:
    case TriggerWireB:
@@ -660,23 +682,28 @@ void Trigger::ExportMesh(FILE *f)
    }
    }
 
-   WaveFrontObj_WriteFaceInfoList(f, indices, m_numIndices);
-   WaveFrontObj_UpdateFaceOffset(m_numVertices);
+   loader.WriteFaceInfoList(indices, m_numIndices);
+   loader.UpdateFaceOffset(m_numVertices);
 }
+
+//
+// license:GPLv3+
+// Ported at: VisualPinball.Engine/VPT/Trigger/TriggerMeshGenerator.cs
+//
 
 void Trigger::GenerateMesh()
 {
    const float baseHeight = m_ptable->GetSurfaceHeight(m_d.m_szSurface, m_d.m_vCenter.x, m_d.m_vCenter.y)*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
    const Vertex3D_NoTex2 *verts;
    float zoffset = (m_d.m_shape == TriggerButton) ? 5.0f : 0.0f;
+   if (m_d.m_shape == TriggerWireC) zoffset = -19.0f;
 
-   switch (m_d.m_shape)
+   switch(m_d.m_shape)
    {
    case TriggerWireA:
    case TriggerWireB:
    case TriggerWireC:
    {
-      if (m_d.m_shape == TriggerWireC) zoffset = -19.0f;
       m_numVertices = triggerSimpleNumVertices;
       m_numIndices = triggerSimpleNumIndices;
       verts = triggerSimple;
@@ -748,13 +775,13 @@ void Trigger::GenerateMesh()
       {
          m_triggerVertices[i].x = (vert.x*m_d.m_radius) + m_d.m_vCenter.x;
          m_triggerVertices[i].y = (vert.y*m_d.m_radius) + m_d.m_vCenter.y;
-         m_triggerVertices[i].z = (vert.z*m_d.m_radius*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set]) + baseHeight + zoffset;
+         m_triggerVertices[i].z = (vert.z*m_d.m_radius*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set]) + baseHeight+zoffset;
       }
-      else
+      else 
       {
          m_triggerVertices[i].x = (vert.x*m_d.m_scaleX) + m_d.m_vCenter.x;
          m_triggerVertices[i].y = (vert.y*m_d.m_scaleY) + m_d.m_vCenter.y;
-         m_triggerVertices[i].z = (vert.z*1.0f*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set]) + baseHeight + zoffset;
+         m_triggerVertices[i].z = (vert.z*1.0f*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set]) + baseHeight+zoffset;
       }
 
       vert = Vertex3Ds(verts[i].nx, verts[i].ny, verts[i].nz);
@@ -774,6 +801,10 @@ void Trigger::GenerateMesh()
    }
 }
 
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
+
 void Trigger::RenderSetup()
 {
    m_d.m_time_msec = g_pplayer->m_time_msec;
@@ -788,9 +819,9 @@ void Trigger::RenderSetup()
    if (!m_d.m_visible || m_d.m_shape == TriggerNone)
       return;
 
-   Pin3D * const ppin3d = &g_pplayer->m_pin3d;
+   const Pin3D * const ppin3d = &g_pplayer->m_pin3d;
    const WORD* indices;
-   switch (m_d.m_shape)
+   switch(m_d.m_shape)
    {
    case TriggerWireA:
    case TriggerWireB:
@@ -852,7 +883,7 @@ void Trigger::RenderStatic()
 
 void Trigger::SetObjectPos()
 {
-   m_vpinball->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
+    m_vpinball->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
 }
 
 void Trigger::MoveOffset(const float dx, const float dy)
@@ -920,7 +951,7 @@ void Trigger::DoCommand(int icmd, int x, int y)
    {
       STARTUNDO
 
-         const Vertex2D v = m_ptable->TransformPoint(x, y);
+      const Vertex2D v = m_ptable->TransformPoint(x, y);
 
       std::vector<RenderVertex> vvertex;
       GetRgVertex(vvertex);
@@ -1008,7 +1039,7 @@ HRESULT Trigger::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backu
 {
    BiffWriter bw(pstm, hcrypthash);
 
-   bw.WriteStruct(FID(VCEN), &m_d.m_vCenter, sizeof(Vertex2D));
+   bw.WriteVector2(FID(VCEN), m_d.m_vCenter);
    bw.WriteFloat(FID(RADI), m_d.m_radius);
    bw.WriteFloat(FID(ROTA), m_d.m_rotation);
    bw.WriteFloat(FID(WITI), m_d.m_wireThickness);
@@ -1055,7 +1086,7 @@ void Trigger::WriteRegDefaults()
    SaveValueFloat("DefaultProps\\Trigger", "ScaleX", m_d.m_scaleX);
    SaveValueFloat("DefaultProps\\Trigger", "ScaleY", m_d.m_scaleY);
    SaveValueInt("DefaultProps\\Trigger", "Shape", m_d.m_shape);
-   SaveValueString("DefaultProps\\Trigger", "Surface", m_d.m_szSurface);
+   SaveValue("DefaultProps\\Trigger", "Surface", m_d.m_szSurface);
    SaveValueFloat("DefaultProps\\Trigger", "AnimSpeed", m_d.m_animSpeed);
    SaveValueBool("DefaultProps\\Trigger", "ReflectionEnabled", m_d.m_reflectionEnabled);
 }
@@ -1075,26 +1106,26 @@ HRESULT Trigger::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version
 
 bool Trigger::LoadToken(const int id, BiffReader * const pbr)
 {
-   switch (id)
+   switch(id)
    {
    case FID(PIID): pbr->GetInt((int *)pbr->m_pdata); break;
-   case FID(VCEN): pbr->GetStruct(&m_d.m_vCenter, sizeof(Vertex2D)); break;
-   case FID(RADI): pbr->GetFloat(&m_d.m_radius); break;
-   case FID(ROTA): pbr->GetFloat(&m_d.m_rotation); break;
-   case FID(WITI): pbr->GetFloat(&m_d.m_wireThickness); break;
-   case FID(SCAX): pbr->GetFloat(&m_d.m_scaleX); break;
-   case FID(SCAY): pbr->GetFloat(&m_d.m_scaleY); break;
+   case FID(VCEN): pbr->GetVector2(m_d.m_vCenter); break;
+   case FID(RADI): pbr->GetFloat(m_d.m_radius); break;
+   case FID(ROTA): pbr->GetFloat(m_d.m_rotation); break;
+   case FID(WITI): pbr->GetFloat(m_d.m_wireThickness); break;
+   case FID(SCAX): pbr->GetFloat(m_d.m_scaleX); break;
+   case FID(SCAY): pbr->GetFloat(m_d.m_scaleY); break;
    case FID(MATR): pbr->GetString(m_d.m_szMaterial); break;
-   case FID(TMON): pbr->GetBool(&m_d.m_tdr.m_TimerEnabled); break;
-   case FID(TMIN): pbr->GetInt(&m_d.m_tdr.m_TimerInterval); break;
+   case FID(TMON): pbr->GetBool(m_d.m_tdr.m_TimerEnabled); break;
+   case FID(TMIN): pbr->GetInt(m_d.m_tdr.m_TimerInterval); break;
    case FID(SURF): pbr->GetString(m_d.m_szSurface); break;
-   case FID(EBLD): pbr->GetBool(&m_d.m_enabled); break;
-   case FID(THOT): pbr->GetFloat(&m_d.m_hit_height); break;
-   case FID(VSBL): pbr->GetBool(&m_d.m_visible); break;
-   case FID(REEN): pbr->GetBool(&m_d.m_reflectionEnabled); break;
+   case FID(EBLD): pbr->GetBool(m_d.m_enabled); break;
+   case FID(THOT): pbr->GetFloat(m_d.m_hit_height); break;
+   case FID(VSBL): pbr->GetBool(m_d.m_visible); break;
+   case FID(REEN): pbr->GetBool(m_d.m_reflectionEnabled); break;
    case FID(SHAP): pbr->GetInt(&m_d.m_shape); break;
-   case FID(ANSP): pbr->GetFloat(&m_d.m_animSpeed); break;
-   case FID(NAME): pbr->GetWideString(m_wzName); break;
+   case FID(ANSP): pbr->GetFloat(m_d.m_animSpeed); break;
+   case FID(NAME): pbr->GetWideString(m_wzName,sizeof(m_wzName)/sizeof(m_wzName[0])); break;
    default:
    {
       LoadPointToken(id, pbr, pbr->m_version);
@@ -1172,7 +1203,7 @@ STDMETHODIMP Trigger::put_Y(float newVal)
 STDMETHODIMP Trigger::get_Surface(BSTR *pVal)
 {
    WCHAR wz[MAXTOKEN];
-   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXTOKEN);
+   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szSurface.c_str(), -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1180,7 +1211,9 @@ STDMETHODIMP Trigger::get_Surface(BSTR *pVal)
 
 STDMETHODIMP Trigger::put_Surface(BSTR newVal)
 {
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXTOKEN, NULL, NULL);
+   char buf[MAXTOKEN];
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXTOKEN, nullptr, nullptr);
+   m_d.m_szSurface = buf;
 
    return S_OK;
 }
@@ -1340,7 +1373,7 @@ STDMETHODIMP Trigger::get_Material(BSTR *pVal)
 STDMETHODIMP Trigger::put_Material(BSTR newVal)
 {
    char buf[MAXNAMEBUFFER];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, nullptr, nullptr);
    m_d.m_szMaterial = buf;
 
    return S_OK;

@@ -20,7 +20,7 @@ public:
       // Note that this value will be one based
       const unsigned int s = (unsigned int)vector<T>::size();
       unsigned int i = 1u << 31;
-      while ((!(i & s)) && (i > 1))
+      while (!(i & s) && (i > 1))
       {
          i >>= 1;
       }
@@ -32,7 +32,7 @@ public:
       int currentnode = m_searchstart - 1;  // Zero based
       int jumpnode = m_searchstart >> 1;
 
-      while (1)
+      while (true)
       {
          //assert(currentnode >= 0);
 
@@ -67,7 +67,7 @@ public:
       int currentnode = m_searchstart - 1;  // Zero based
       int jumpnode = m_searchstart >> 1;
 
-      while (1)
+      while (true)
       {
          //assert(currentnode >= 0);
          int strcmp;
@@ -103,7 +103,7 @@ public:
       return -1;
    }
 
-   inline T GetSortedElement(void * const pvoid) const
+   inline T GetSortedElement(const void * const pvoid) const
    {
       const int i = GetSortedIndex(pvoid);
       if (i != -1)
@@ -111,12 +111,12 @@ public:
          return vector<T>::data()[i];
       }
 
-      return NULL;
+      return nullptr;
    }
 
    inline void RemoveElementAt(const int iItem)
    {
-      vector<T>::erase(vector<T>::begin() + iItem);
+      vector<T>::erase(vector<T>::begin()+iItem);
       RecomputeSearchStart();
    }
 };

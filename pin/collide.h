@@ -20,10 +20,10 @@ enum eObjType : unsigned char
    eTextbox,
    eDispReel,
    eLightSeq,
-   ePrimitive,  // also (ab)used for Rubbers and Ramps (as both are made out of triangles, too)
+   ePrimitive,	// also (ab)used for Rubbers and Ramps (as both are made out of triangles, too)
    eHitTarget,
    eTrigger,	// this value and greater are volume set tested, add rigid or non-volume set above
-   eKicker,		// this is done to limit to one test
+   eKicker		// this is done to limit to one test
 };
 
 extern float c_hardScatter;
@@ -48,12 +48,16 @@ public:
    virtual void Animate() = 0;
 };
 
+//
+// license:GPLv3+
+// Ported at: VisualPinball.Engine/Math/Functions.cs
+//
 
 /*
-* Rubber has a coefficient of restitution which decreases with the impact velocity.
-* We use a heuristic model which decreases the COR according to a falloff parameter:
-* 0 = no falloff, 1 = half the COR at 1 m/s (18.53 speed units)
-*/
+ * Rubber has a coefficient of restitution which decreases with the impact velocity.
+ * We use a heuristic model which decreases the COR according to a falloff parameter:
+ * 0 = no falloff, 1 = half the COR at 1 m/s (18.53 speed units)
+ */
 inline float ElasticityWithFalloff(const float elasticity, const float falloff, const float vel)
 {
    if (falloff > 0.f)
@@ -62,6 +66,7 @@ inline float ElasticityWithFalloff(const float elasticity, const float falloff, 
       return elasticity;
 }
 
+// Ported at: VisualPinball.Engine/Physics/CollisionEvent.cs
 
 struct CollisionEvent
 {
@@ -73,30 +78,33 @@ struct CollisionEvent
    float m_hittime;      // when the collision happens (relative to current physics state)
    float m_hitdistance;  // hit distance 
 
-                         // additional collision information
+   // additional collision information
    Vertex3Ds m_hitnormal;
    Vertex2D  m_hitvel; // only "correctly" used by plunger and flipper
    float m_hit_org_normalvelocity; // only set if isContact is true
 
-                                   //float m_hitangularrate; //!! angular rate is only assigned but never used
+   //float m_hitangularrate; //!! angular rate is only assigned but never used
 
-                                   //float m_hitmoment; //!! currently only one bit is used (hitmoment == 0 or not)
+   //float m_hitmoment; //!! currently only one bit is used (hitmoment == 0 or not)
    bool m_hitmoment_bit;
 
    bool m_hitflag; // UnHit signal/direction of hit/side of hit (spinner/gate)
 
-                   //bool m_hitRigid; // rigid body collision? //!! this is almost never ever triggered (as 99.999999% true when actually handled), and if then only once while rolling over a trigger, etc, with a very minimalistic special handling afterwards (if false), so for now removed
+   //bool m_hitRigid; // rigid body collision? //!! this is almost never ever triggered (as 99.999999% true when actually handled), and if then only once while rolling over a trigger, etc, with a very minimalistic special handling afterwards (if false), so for now removed
 
    bool m_isContact; // set to true if impact velocity is ~0
 };
 
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
 
 class HitObject
 {
 public:
-   HitObject() : m_pfedebug(NULL), m_obj(NULL), m_threshold(0.f),
+   HitObject() : m_pfedebug(nullptr), m_obj(nullptr), m_threshold(0.f),
       m_elasticity(0.3f), m_elasticityFalloff(0.0f), m_friction(0.3f), m_scatter(0.0f),
-      m_ObjType(eNull), m_enabled(true), m_fe(false), m_e(false) {}
+      m_ObjType(eNull), m_enabled(true), m_fe(false), m_e(0) {}
    virtual ~HitObject() {}
 
    virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const { return -1.f; } //!! shouldn't need to do this, but for whatever reason there is a pure virtual function call triggered otherwise that refuses to be debugged (all derived classes DO implement this one!)
@@ -105,9 +113,9 @@ public:
    virtual void Contact(CollisionEvent& coll, const float dtime); // apply contact forces for the given time interval. Ball, Spinner and Gate do nothing here, Flipper has a specialized handling
    virtual void CalcHitBBox() = 0;
 
-   virtual MoverObject *GetMoverObject() { return NULL; }
+   virtual MoverObject *GetMoverObject() { return nullptr; }
 
-   void SetFriction(const float friction) { m_friction = friction; }
+   void SetFriction(const float friction)  { m_friction = friction; }
    void FireHitEvent(Ball * const pball);
 
    IFireEvents *m_pfedebug;
@@ -128,7 +136,7 @@ public:
    bool  m_enabled;
 
    bool  m_fe;  // FireEvents for m_obj?
-   bool  m_e;   // currently only used to determine which HitTriangles/HitLines/HitPoints are being part of the same Primitive element m_obj, to be able to early out intersection traversal if primitive is flagged as not collidable
+   unsigned char m_e;   // currently only used to determine which HitTriangles/HitLines/HitPoints are being part of the same Primitive(1)/HitTarget(2) element m_obj, to be able to early out intersection traversal if primitive is flagged as not collidable, its 0 if no unique element
 };
 
 //
@@ -139,7 +147,7 @@ class LineSeg : public HitObject
 public:
    LineSeg() { }
    LineSeg(const Vertex2D& p1, const Vertex2D& p2, const float zlow, const float zhigh)
-      : v1(p1), v2(p2)
+       : v1(p1), v2(p2)
    {
       m_hitBBox.zlow = zlow; //!! abuses the hit bbox to store zlow and zhigh
       m_hitBBox.zhigh = zhigh;
@@ -203,7 +211,7 @@ class HitPoint : public HitObject
 {
 public:
    HitPoint(const Vertex3Ds& p) : m_p(p) {}
-   HitPoint(const float x, const float y, const float z) : m_p(Vertex3Ds(x, y, z)) {}
+   HitPoint(const float x, const float y, const float z) : m_p(Vertex3Ds(x,y,z)) {}
 
    virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const;
    virtual int GetType() const { return ePoint; }

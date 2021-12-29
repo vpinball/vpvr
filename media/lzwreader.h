@@ -35,9 +35,9 @@ private:
    int top_slot;                  /* Highest code for current size */
    int slot;                      /* Last read code */
 
-                                  /* The following static variables are used
-                                  * for seperating out codes
-                                  */
+   /* The following static variables are used
+    * for seperating out codes
+    */
    int navail_bytes;              /* # bytes left in block */
    int nbits_left;                /* # bits left in current byte */
    BYTE b1;                       /* Current byte */

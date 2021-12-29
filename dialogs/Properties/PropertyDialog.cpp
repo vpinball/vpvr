@@ -56,6 +56,8 @@ LRESULT EditBox::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
                     m_basePropertyDialog->UpdateProperties(m_id);
                 return 0;
             }
+            if (wparam == VK_ESCAPE)
+               return 1;
         }
     }
     return WndProcDefault(msg, wparam, lparam);
@@ -79,15 +81,16 @@ LRESULT ComboBox::WndProc(UINT msg, WPARAM wparam, LPARAM lparam)
     return WndProcDefault(msg, wparam, lparam);
 }
 
-PropertyDialog::PropertyDialog() : CDialog(IDD_PROPERTY_DIALOG), m_curTabIndex(0), m_previousType((ItemTypeEnum)0), m_backglassView(false)
+PropertyDialog::PropertyDialog() : CDialog(IDD_PROPERTY_DIALOG), m_previousType((ItemTypeEnum)0), m_backglassView(false), m_curTabIndex(0)
 {
     memset(m_tabs, 0, sizeof(m_tabs));
+    m_accel = LoadAccelerators(g_pvp->theInstance, MAKEINTRESOURCE(IDR_VPSIMPELACCEL));
 }
 
 void PropertyDialog::CreateTabs(VectorProtected<ISelect> &pvsel)
 {
     ISelect* const psel = pvsel.ElementAt(0);
-    if (psel == NULL)
+    if (psel == nullptr)
         return;
 
     int activePage = m_tab.m_activePage;
@@ -103,6 +106,8 @@ void PropertyDialog::CreateTabs(VectorProtected<ISelect> &pvsel)
             m_tabs[1] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new BackglassCameraProperty(&pvsel), _T("Camera")));
             if (m_tab.m_activeTabText == CString("Visuals"))
                 activePage = 0;
+            else if (m_tab.m_activeTabText == CString("Camera"))
+                activePage = 1;
         }
         else
         {
@@ -119,7 +124,6 @@ void PropertyDialog::CreateTabs(VectorProtected<ISelect> &pvsel)
                 activePage = 2;
             else if (m_tab.m_activeTabText == CString("Lights"))
                 activePage = 3;
-
         }
         break;
     }
@@ -382,7 +386,7 @@ void PropertyDialog::CreateTabs(VectorProtected<ISelect> &pvsel)
             m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new DragpointVisualsProperty(IDD_PROPPOINT_VISUALS, &pvsel), _T("Visuals")));
         else
             m_tabs[0] = static_cast<BasePropertyDialog*>(m_tab.AddTabPage(new DragpointVisualsProperty(IDD_PROPPOINT_VISUALSWTEX, &pvsel), _T("Visuals")));
-
+        activePage = 0;
         break;
     }
     default:
@@ -396,19 +400,19 @@ void PropertyDialog::DeleteAllTabs()
 {
     BasePropertyDialog::m_disableEvents = true;
     for (int i = 0; i < PROPERTY_TABS; i++)
-        if (m_tabs[i] != NULL)
+        if (m_tabs[i] != nullptr)
         {
             m_tab.RemoveTabPage(m_tab.GetTabIndex(m_tabs[i]));
-            m_tabs[i] = NULL;
+            m_tabs[i] = nullptr;
         }
     m_previousType = (ItemTypeEnum)0;
     m_backglassView = false;
 }
 
-void PropertyDialog::UpdateTextureComboBox(const vector<Texture *>& contentList, CComboBox &combo, const std::string &selectName)
+void PropertyDialog::UpdateTextureComboBox(const vector<Texture *>& contentList, const CComboBox &combo, const std::string &selectName)
 {
     bool texelFound = false;
-    for (auto texel : contentList)
+    for (const auto texel : contentList)
     {
         if (strncmp(texel->m_szName.c_str(), selectName.c_str(), MAXTOKEN) == 0) //!! _stricmp?
             texelFound = true;
@@ -423,10 +427,10 @@ void PropertyDialog::UpdateTextureComboBox(const vector<Texture *>& contentList,
     combo.SetCurSel(combo.FindStringExact(1, selectName.c_str()));
 }
 
-void PropertyDialog::UpdateMaterialComboBox(const vector<Material *>& contentList, CComboBox &combo, const std::string &selectName)
+void PropertyDialog::UpdateMaterialComboBox(const vector<Material *>& contentList, const CComboBox &combo, const std::string &selectName)
 {
     bool matFound = false;
-    for (auto mat : contentList)
+    for (const auto mat : contentList)
     {
         if (mat->m_szName==selectName)
             matFound = true;
@@ -441,11 +445,11 @@ void PropertyDialog::UpdateMaterialComboBox(const vector<Material *>& contentLis
     combo.SetCurSel(combo.FindStringExact(1, selectName.c_str()));
 }
 
-void PropertyDialog::UpdateSurfaceComboBox(const PinTable * const ptable, CComboBox &combo, const char *selectName)
+void PropertyDialog::UpdateSurfaceComboBox(const PinTable * const ptable, const CComboBox &combo, const string& selectName)
 {
     vector<string> contentList;
 
-    if(combo.FindStringExact(1, selectName) == CB_ERR)
+    if(combo.FindStringExact(1, selectName.c_str()) == CB_ERR)
     {
         for (size_t i = 0; i < ptable->m_vedit.size(); i++)
         {
@@ -463,10 +467,10 @@ void PropertyDialog::UpdateSurfaceComboBox(const PinTable * const ptable, CCombo
         for (size_t i = 0; i < contentList.size(); i++)
             combo.AddString(contentList[i].c_str());
     }
-    combo.SetCurSel(combo.FindStringExact(1, selectName));
+    combo.SetCurSel(combo.FindStringExact(1, selectName.c_str()));
 }
 
-void PropertyDialog::UpdateSoundComboBox(const PinTable *const ptable, CComboBox &combo, const string& selectName)
+void PropertyDialog::UpdateSoundComboBox(const PinTable *const ptable, const CComboBox &combo, const string& selectName)
 {
     if(combo.FindStringExact(1, selectName.c_str())==CB_ERR)
     {
@@ -478,23 +482,23 @@ void PropertyDialog::UpdateSoundComboBox(const PinTable *const ptable, CComboBox
     combo.SetCurSel(combo.FindStringExact(1, selectName.c_str()));
 }
 
-void PropertyDialog::UpdateCollectionComboBox(const PinTable *const ptable, CComboBox &combo, const char *selectName)
+void PropertyDialog::UpdateCollectionComboBox(const PinTable *const ptable, const CComboBox &combo, const char *selectName)
 {
     if(combo.FindStringExact(1, selectName)==CB_ERR)
     {
         combo.ResetContent();
         combo.AddString(_T("<None>"));
-        for (int i = 0; i < ptable->m_vcollection.Size(); i++)
+        for (int i = 0; i < ptable->m_vcollection.size(); i++)
         {
             char szT[sizeof(ptable->m_vcollection[i].m_wzName)/sizeof(ptable->m_vcollection[i].m_wzName[0])];
-            WideCharToMultiByteNull(CP_ACP, 0, ptable->m_vcollection[i].m_wzName, -1, szT, sizeof(szT), NULL, NULL);
+            WideCharToMultiByteNull(CP_ACP, 0, ptable->m_vcollection[i].m_wzName, -1, szT, sizeof(szT), nullptr, nullptr);
             combo.AddString(szT);
         }
     }
     combo.SetCurSel(combo.FindStringExact(1, selectName));
 }
 
-void PropertyDialog::UpdateComboBox(const vector<string>& contentList, CComboBox &combo, const string& selectName)
+void PropertyDialog::UpdateComboBox(const vector<string>& contentList, const CComboBox &combo, const string& selectName)
 {
     bool strFound = false;
     for (auto str : contentList)
@@ -514,7 +518,6 @@ void PropertyDialog::UpdateComboBox(const vector<string>& contentList, CComboBox
 void PropertyDialog::UpdateTabs(VectorProtected<ISelect> &pvsel)
 {
     ISelect * const psel = pvsel.ElementAt(0);
-
     if (psel == nullptr)
         return;
 
@@ -524,13 +527,13 @@ void PropertyDialog::UpdateTabs(VectorProtected<ISelect> &pvsel)
         BasePropertyDialog::m_disableEvents = true;
         m_curTabIndex = m_tab.GetCurSel();
         for (int i = 0; i < PROPERTY_TABS; i++)
-            if (m_tabs[i] != NULL)
+            if (m_tabs[i] != nullptr)
             {
                 m_tab.RemoveTabPage(m_tab.GetTabIndex(m_tabs[i]));
-                m_tabs[i] = NULL;
+                m_tabs[i] = nullptr;
             }
 
-        for (int i = 0; i < pvsel.Size(); i++)
+        for (int i = 0; i < pvsel.size(); i++)
         {
             // check for multiple selection
             if (psel->GetItemType() != pvsel.ElementAt(i)->GetItemType())
@@ -556,26 +559,26 @@ void PropertyDialog::UpdateTabs(VectorProtected<ISelect> &pvsel)
         m_tab.ShowWindow(SW_SHOW);
     }
 
-    if (pvsel.Size() > 1)
+    if (pvsel.size() > 1)
     {
         char header[64];
         char collection[64] = {0};
         char name[64];
         const WCHAR * const wzName = psel->GetPTable()->GetCollectionNameByElement(psel);
-        if (wzName != NULL)
+        if (wzName != nullptr)
         {
-            WideCharToMultiByteNull(CP_ACP, 0, wzName, -1, collection, 64, NULL, NULL);
+            WideCharToMultiByteNull(CP_ACP, 0, wzName, -1, collection, 64, nullptr, nullptr);
         }
         
         CComBSTR bstr;
         psel->GetTypeName(&bstr);
-        WideCharToMultiByteNull(CP_ACP, 0, bstr, -1, name, 64, NULL, NULL);
-        sprintf_s(header, "%s(%d)", name, pvsel.Size());
+        WideCharToMultiByteNull(CP_ACP, 0, bstr, -1, name, 64, nullptr, nullptr);
+        sprintf_s(header, "%s(%d)", name, pvsel.size());
 
         if (collection[0] != 0)
-            sprintf_s(header, "%s [%s](%d)", collection, name, pvsel.Size());
+            sprintf_s(header, "%s [%s](%d)", collection, name, pvsel.size());
         else
-            sprintf_s(header, "%s(%d)", name, pvsel.Size());
+            sprintf_s(header, "%s(%d)", name, pvsel.size());
 
         m_nameEdit.SetWindowText(header);
         m_nameEdit.SetReadOnly();
@@ -605,7 +608,8 @@ bool PropertyDialog::PreTranslateMessage(MSG* msg)
    {
       const int keyPressed = LOWORD(msg->wParam);
       // only pass F1-F12 to the main VPinball class to open subdialogs from everywhere
-      if(keyPressed>=VK_F1 && keyPressed<=VK_F12 && TranslateAccelerator(g_pvp->GetHwnd(), g_haccel, msg))
+      //!! also grab VK_ESCAPE here to avoid weird results when pressing ESC in textboxes (property gets stuck then)
+      if((keyPressed>=VK_F1 && keyPressed<=VK_F12) && TranslateAccelerator(g_pvp->GetHwnd(), m_accel, msg))
          return true;
    }
 
@@ -620,7 +624,8 @@ BOOL PropertyDialog::OnInitDialog()
     AttachItem(IDC_STATIC_ELEMENT_TYPE, m_elementTypeName);
     m_multipleElementsStatic.ShowWindow(SW_HIDE);
 
-    m_resizer.Initialize(*this, CRect(0, 0, 243, 308));
+    //set minimize size of the resizer at which scrollbars are shown when going under width=200 and height=610
+    m_resizer.Initialize(*this, CRect(0, 0, 200, 610)); 
     m_resizer.AddChild(m_elementTypeName, topcenter, RD_STRETCH_WIDTH);
     m_resizer.AddChild(m_nameEdit, topleft, RD_STRETCH_WIDTH);
     m_resizer.AddChild(m_multipleElementsStatic, topleft, RD_STRETCH_WIDTH);
@@ -661,6 +666,13 @@ BOOL PropertyDialog::IsSubDialogMessage(MSG &msg) const
                     return TRUE;
                 }
             }
+            if (msg.message == WM_KEYDOWN && msg.wParam == VK_ESCAPE)
+            {
+               const CString className = GetFocus().GetClassName();
+               // filter ESC-key otherwise the VPX will enter an endless event loop!?
+               if (className == "Edit" || className == "msctls_trackbar32" || className=="Button")
+                  return TRUE;
+            }
             else
             {
                 const BOOL ret = m_tabs[i]->IsDialogMessage(msg);
@@ -686,7 +698,7 @@ LRESULT PropertyDialog::OnMouseActivate(UINT msg, WPARAM wparam, LPARAM lparam)
 BOOL PropertyDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
-    const int dispID = LOWORD(wParam);
+    //const int dispID = LOWORD(wParam);
 
     switch (HIWORD(wParam))
     {
@@ -695,8 +707,11 @@ BOOL PropertyDialog::OnCommand(WPARAM wParam, LPARAM lParam)
         case CBN_SELCHANGE:
         case BN_CLICKED:
         {
-            if (m_tabs[0] && m_tabs[0]->m_pvsel->ElementAt(0) != NULL)
+            if (m_tabs[0] && m_tabs[0]->m_pvsel->ElementAt(0) != nullptr)
+            {
                 m_tabs[0]->m_pvsel->ElementAt(0)->GetIEditable()->SetName(string(m_nameEdit.GetWindowText()));
+                m_nameEdit.SetWindowText(m_tabs[0]->m_pvsel->ElementAt(0)->GetIEditable()->GetName()); // set it again in case it was truncated
+            }
             return TRUE;
         }
     }
@@ -715,9 +730,9 @@ TimerProperty::TimerProperty(const VectorProtected<ISelect> *pvsel) : BaseProper
 
 void TimerProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if (m_pvsel->ElementAt(i) == NULL)
+        if (m_pvsel->ElementAt(i) == nullptr)
             continue;
         switch (m_pvsel->ElementAt(i)->GetItemType())
         {
@@ -900,9 +915,9 @@ void TimerProperty::UpdateProperties(const int dispid)
 
 void TimerProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if(m_pvsel->ElementAt(i)==NULL)
+        if (m_pvsel->ElementAt(i) == nullptr)
             continue;
         switch (m_pvsel->ElementAt(i)->GetItemType())
         {
@@ -1070,6 +1085,12 @@ BOOL TimerProperty::OnInitDialog()
     m_timerIntervalEdit.AttachItem(901);
     m_userValueEdit.AttachItem(1504);
     UpdateVisuals();
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(m_timerIntervalEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_userValueEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(900), topleft, 0);
     return TRUE;
 }
 
@@ -1092,13 +1113,19 @@ BOOL TimerProperty::OnCommand(WPARAM wParam, LPARAM lParam)
     return FALSE;
 }
 
+INT_PTR TimerProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
+}
+
 #pragma endregion
 
 #pragma region BasePropertyDialog
 
 void BasePropertyDialog::UpdateBaseProperties(ISelect *psel, BaseProperty *property, const int dispid)
 {
-    if (!property || psel==NULL)
+    if (!property || psel==nullptr)
         return;
 
     switch (dispid)

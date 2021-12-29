@@ -12,11 +12,11 @@ static U32 gMixerVolumeStamp = 0;
 bool gMixerKeyDown;
 bool gMixerKeyUp;
 
-const F32 volume_adjustment_bar_pos[2] = { (float)(15.0 / 1000.0), (float)(500.0 / 1000.0) };
-const F32 volume_adjustment_bar_big_size[2] = { (float)(20.0 / 1000.0), (float)(4.0 / 1000.0) };
-const F32 volume_adjustment_bar_small_size[2] = { (float)(10.0 / 1000.0), (float)(2.0 / 1000.0) };
-const F32 volume_adjustment_bar_ysize = (float)(720.0 / 1000.0);
-const U32 volume_adjustment_color[3] = { 0x00ff00, 0xffff, 0xff };
+constexpr F32 volume_adjustment_bar_pos[2] = { (float)(15.0 / 1000.0), (float)(500.0 / 1000.0) };
+constexpr F32 volume_adjustment_bar_big_size[2] = { (float)(20.0 / 1000.0), (float)(4.0 / 1000.0) };
+constexpr F32 volume_adjustment_bar_small_size[2] = { (float)(10.0 / 1000.0), (float)(2.0 / 1000.0) };
+constexpr F32 volume_adjustment_bar_ysize = (float)(720.0 / 1000.0);
+constexpr U32 volume_adjustment_color[3] = { 0x00ff00, 0xffff, 0xff };
 
 bool mixer_init(const HWND wnd)
 {
@@ -26,7 +26,7 @@ bool mixer_init(const HWND wnd)
    if (!nmixers)
       return false;
 
-   m_hMixer = NULL;
+   m_hMixer = nullptr;
    //ZeroMemory(&sMxCaps, sizeof(MIXERCAPS));
 
    m_dwMinimum = 0;
@@ -35,22 +35,22 @@ bool mixer_init(const HWND wnd)
 
    // open the first mixer
    // A "mapper" for audio mixer devices does not currently exist.
-   if (::mixerOpen(&m_hMixer,
-      0,
-      reinterpret_cast<size_t>(wnd),
-      NULL,
-      MIXER_OBJECTF_MIXER | CALLBACK_WINDOW)
-      != MMSYSERR_NOERROR)
-   {
-      return false;
-   }
+      if (::mixerOpen(&m_hMixer,
+         0,
+         reinterpret_cast<size_t>(wnd),
+         NULL,
+         MIXER_OBJECTF_MIXER | CALLBACK_WINDOW)
+         != MMSYSERR_NOERROR)
+      {
+         return false;
+      }
 
-   /*if (::mixerGetDevCaps(reinterpret_cast<UINT>(m_hMixer),
-   &sMxCaps, sizeof(MIXERCAPS))
-   != MMSYSERR_NOERROR)
-   {
-   return false;
-   }*/
+      /*if (::mixerGetDevCaps(reinterpret_cast<UINT>(m_hMixer),
+                       &sMxCaps, sizeof(MIXERCAPS))
+                       != MMSYSERR_NOERROR)
+                       {
+                       return false;
+                       }*/
 
    MIXERLINE mxl;
    mxl.cbStruct = sizeof(MIXERLINE);
@@ -133,15 +133,15 @@ void mixer_update()
    if (!nmixers || !m_hMixer)
       return;
 
-   const F32 delta = (F32)(1.0 / 500.0);
+   constexpr F32 delta = (F32)(1.0 / 500.0);
 
    float vol;
    if (gMixerKeyDown)
-      vol = gMixerVolume - delta;
+       vol = gMixerVolume - delta;
    else if (gMixerKeyUp)
-      vol = gMixerVolume + delta;
+       vol = gMixerVolume + delta;
    else
-      return;
+       return;
 
    if (vol < 0.01f) vol = 0.01f; //hardcap minimum
    if (vol > 1.0f) vol = 1.0f;   //hardcap maximum
@@ -149,7 +149,7 @@ void mixer_update()
    gMixerVolumeStamp = g_pplayer->m_time_msec;
 
    if (vol == gMixerVolume)
-      return;
+       return;
 
    gMixerVolume = vol;
 
@@ -160,7 +160,7 @@ void mixer_update()
    if (modded_volume > 1.0f)
       modded_volume = 1.0f;  //hardcap maximum
 
-   DWORD dwVal = (DWORD)((F32)m_dwMinimum + (modded_volume * modded_volume) * (F32)(m_dwMaximum - m_dwMinimum));
+   const DWORD dwVal = (DWORD)((F32)m_dwMinimum + (modded_volume * modded_volume) * (F32)(m_dwMaximum - m_dwMinimum));
 
    MIXERCONTROLDETAILS_UNSIGNED mxcdVolume = { dwVal };
    MIXERCONTROLDETAILS mxcd;
@@ -197,13 +197,13 @@ void mixer_draw()
    const bool cabMode = fmodf(g_pplayer->m_ptable->m_BG_rotation[g_pplayer->m_ptable->m_BG_current_set], 360.f) != 0.f;
 
    if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_reflectionEnabled)
-      g_pplayer->m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
+      g_pplayer->m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::CULLMODE, RenderDevice::CULL_NONE);
 
    g_pplayer->m_pin3d.EnableAlphaBlend(true);
 
    fade *= (float)(222.2 / 255.0);
 
-   const F32 yoff = volume_adjustment_bar_big_size[1] * 2.0f;
+   constexpr F32 yoff = volume_adjustment_bar_big_size[1] * 2.0f;
 
    for (F32 vol = 0.f, y = -volume_adjustment_bar_ysize * 0.5f;
       vol < 1.0f;
@@ -237,21 +237,21 @@ void mixer_draw()
 
       // Set the color.
       /*		// Draw the tick mark.  (Reversed x and y to match coordinate system of front end.)
-      g_pplayer->Spritedraw( (cabMode ? fX : fY) - (float)(1.0/1000.0), (cabMode ? fY : fX) - (float)(1.0/1000.0),
-      (cabMode ? size[0] : size[1]) + (float)(2.0/1000.0), (cabMode ? size[1] : size[0]) + (float)(2.0/1000.0),
-      drop_color,
-      (Texture*)NULL,
-      fade);
-      */
+            g_pplayer->Spritedraw( (cabMode ? fX : fY) - (float)(1.0/1000.0), (cabMode ? fY : fX) - (float)(1.0/1000.0),
+            (cabMode ? size[0] : size[1]) + (float)(2.0/1000.0), (cabMode ? size[1] : size[0]) + (float)(2.0/1000.0),
+            drop_color,
+            (Texture*)nullptr,
+            fade);
+            */
       // Set the color.
       // Draw the tick mark.  (Reversed x and y to match coordinate system of front end.)
       g_pplayer->Spritedraw(cabMode ? fX : fY, cabMode ? fY : fX,
          cabMode ? size[0] : size[1], cabMode ? size[1] : size[0],
          color,
-         (Texture*)NULL,
+         (Texture*)nullptr,
          fade);
    }
 
    if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_reflectionEnabled)
-      g_pplayer->m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
+      g_pplayer->m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::CULLMODE, RenderDevice::CULL_CCW);
 }

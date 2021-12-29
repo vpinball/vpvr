@@ -1,6 +1,11 @@
 #include "stdafx.h"
 #include "kdtree.h"
 
+//
+// license:GPLv3+
+// Ported at: VisualPinball.Engine/Physics/HitKd.cs
+//
+
 HitKD::HitKD()
 {
    m_num_items = 0;
@@ -8,7 +13,7 @@ HitKD::HitKD()
    m_num_nodes = 0;
    m_rootNode.m_hitoct = this;
 #ifdef KDTREE_SSE_LEAFTEST
-   l_r_t_b_zl_zh = NULL;
+   l_r_t_b_zl_zh = nullptr;
 #endif
 }
 
@@ -65,7 +70,7 @@ void HitKD::Finalize()
 HitKDNode* HitKD::AllocTwoNodes()
 {
    if ((m_num_nodes + 1) >= m_nodes.size())        // space for two more nodes?
-      return NULL;
+      return nullptr;
    else
    {
       m_num_nodes += 2;
@@ -85,8 +90,8 @@ void HitKD::InitSseArrays()
    for (unsigned int j = 0; j < m_num_items; ++j)
    {
       const FRect3D& r = GetItemAt(j)->m_hitBBox;
-      l_r_t_b_zl_zh[j] = r.left;
-      l_r_t_b_zl_zh[j + padded] = r.right;
+      l_r_t_b_zl_zh[j             ] = r.left;
+      l_r_t_b_zl_zh[j + padded    ] = r.right;
       l_r_t_b_zl_zh[j + padded * 2] = r.top;
       l_r_t_b_zl_zh[j + padded * 3] = r.bottom;
       l_r_t_b_zl_zh[j + padded * 4] = r.zlow;
@@ -95,11 +100,11 @@ void HitKD::InitSseArrays()
 
    for (unsigned int j = m_num_items; j < padded; ++j)
    {
-      l_r_t_b_zl_zh[j] = FLT_MAX;
-      l_r_t_b_zl_zh[j + padded] = -FLT_MAX;
-      l_r_t_b_zl_zh[j + padded * 2] = FLT_MAX;
+      l_r_t_b_zl_zh[j             ] =  FLT_MAX;
+      l_r_t_b_zl_zh[j + padded    ] = -FLT_MAX;
+      l_r_t_b_zl_zh[j + padded * 2] =  FLT_MAX;
       l_r_t_b_zl_zh[j + padded * 3] = -FLT_MAX;
-      l_r_t_b_zl_zh[j + padded * 4] = FLT_MAX;
+      l_r_t_b_zl_zh[j + padded * 4] =  FLT_MAX;
       l_r_t_b_zl_zh[j + padded * 5] = -FLT_MAX;
    }
 #endif
@@ -175,6 +180,7 @@ void HitKD::Update()
    FillFromVector(*m_org_vho);
 }
 
+// Ported at: VisualPinball.Unity/VisualPinball.Unity/Physics/Collision/KdNode.cs
 
 void HitKDNode::CreateNextLevel(const unsigned int level, unsigned int level_empty)
 {
@@ -241,10 +247,10 @@ void HitKDNode::CreateNextLevel(const unsigned int level, unsigned int level_emp
 
    m_children[0].m_hitoct = m_hitoct; //!! meh
    m_children[0].m_items = 0;
-   m_children[0].m_children = NULL;
+   m_children[0].m_children = nullptr;
    m_children[1].m_hitoct = m_hitoct; //!! meh
    m_children[1].m_items = 0;
-   m_children[1].m_children = NULL;
+   m_children[1].m_children = nullptr;
 
    // determine amount of items that cross splitplane, or are passed on to the children
    if (axis == 0)
@@ -295,7 +301,7 @@ void HitKDNode::CreateNextLevel(const unsigned int level, unsigned int level_emp
    if (level_empty > 8) // If 8 levels were all just subdividing the same objects without luck, exit & Free the nodes again (but at least empty space was cut off)
    {
       m_hitoct->m_num_nodes -= 2;
-      m_children = NULL;
+      m_children = nullptr;
       return;
    }
 
@@ -358,8 +364,8 @@ void HitKDNode::CreateNextLevel(const unsigned int level, unsigned int level_emp
    m_items = items | (axis << 30);
 
    // copy temporary back //!! could omit this by doing everything inplace
-   memcpy(&m_hitoct->m_org_idx[m_children[0].m_start], &m_hitoct->tmp[m_children[0].m_start], m_children[0].m_items * sizeof(unsigned int));
-   memcpy(&m_hitoct->m_org_idx[m_children[1].m_start], &m_hitoct->tmp[m_children[1].m_start], m_children[1].m_items * sizeof(unsigned int));
+   memcpy(&m_hitoct->m_org_idx[m_children[0].m_start], &m_hitoct->tmp[m_children[0].m_start], m_children[0].m_items*sizeof(unsigned int));
+   memcpy(&m_hitoct->m_org_idx[m_children[1].m_start], &m_hitoct->tmp[m_children[1].m_start], m_children[1].m_items*sizeof(unsigned int));
 
    m_children[0].CreateNextLevel(level + 1, level_empty);
    m_children[1].CreateNextLevel(level + 1, level_empty);
@@ -396,20 +402,20 @@ void HitKDNode::HitTestBall(const Ball * const pball, CollisionEvent& coll) cons
 #else
    /// without SSE optimization /////////////////////
 
-   const unsigned int org_items = (m_items & 0x3FFFFFFF);
-   const unsigned int axis = (m_items >> 30);
+   const unsigned int org_items = (m_items&0x3FFFFFFF);
+   const unsigned int axis = (m_items>>30);
 
    const float rcHitRadiusSqr = pball->HitRadiusSqr();
 
-   for (unsigned i = m_start; i<m_start + org_items; i++)
+   for (unsigned i=m_start; i<m_start+org_items; i++)
    {
 #ifdef DEBUGPHYSICS
       g_pplayer->c_tested++;
 #endif
       HitObject * const pho = m_hitoct->GetItemAt(i);
       if ((pball != pho) // ball can not hit itself
-                         /*&& fRectIntersect3D(pball->m_hitBBox, pho->m_hitBBox)*/ //!! do bbox test before to save alu-instructions? or not to save registers? -> currently not, as just sphere vs sphere
-         && fRectIntersect3D(pball->m_d.m_pos, rcHitRadiusSqr, pho->m_hitBBox))
+		  /*&& fRectIntersect3D(pball->m_hitBBox, pho->m_hitBBox)*/ //!! do bbox test before to save alu-instructions? or not to save registers? -> currently not, as just sphere vs sphere
+		 && fRectIntersect3D(pball->m_d.m_pos, rcHitRadiusSqr, pho->m_hitBBox))
       {
          DoHitTest(pball, pho, coll);
       }
@@ -422,7 +428,7 @@ void HitKDNode::HitTestBall(const Ball * const pball, CollisionEvent& coll) cons
 #endif
       if (axis == 0)
       {
-         const float vcenter = (m_rectbounds.left + m_rectbounds.right)*0.5f;
+         const float vcenter = (m_rectbounds.left+m_rectbounds.right)*0.5f;
          if (pball->m_hitBBox.left <= vcenter)
             m_children[0].HitTestBall(pball, coll);
          if (pball->m_hitBBox.right >= vcenter)
@@ -431,7 +437,7 @@ void HitKDNode::HitTestBall(const Ball * const pball, CollisionEvent& coll) cons
       else
          if (axis == 1)
          {
-            const float vcenter = (m_rectbounds.top + m_rectbounds.bottom)*0.5f;
+            const float vcenter = (m_rectbounds.top+m_rectbounds.bottom)*0.5f;
             if (pball->m_hitBBox.top <= vcenter)
                m_children[0].HitTestBall(pball, coll);
             if (pball->m_hitBBox.bottom >= vcenter)
@@ -439,7 +445,7 @@ void HitKDNode::HitTestBall(const Ball * const pball, CollisionEvent& coll) cons
          }
          else
          {
-            const float vcenter = (m_rectbounds.zlow + m_rectbounds.zhigh)*0.5f;
+            const float vcenter = (m_rectbounds.zlow+m_rectbounds.zhigh)*0.5f;
 
             if (pball->m_hitBBox.zlow <= vcenter)
                m_children[0].HitTestBall(pball, coll);
@@ -450,12 +456,16 @@ void HitKDNode::HitTestBall(const Ball * const pball, CollisionEvent& coll) cons
 #endif
 }
 
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
+
 #ifdef KDTREE_SSE_LEAFTEST
 void HitKDNode::HitTestBallSse(const Ball * const pball, CollisionEvent& coll) const
 {
    const HitKDNode* stack[128]; //!! should be enough, but better implement test in construction to not exceed this
    unsigned int stackpos = 0;
-   stack[0] = NULL; // sentinel
+   stack[0] = nullptr; // sentinel
 
    const HitKDNode* __restrict current = this;
 
@@ -499,46 +509,46 @@ void HitKDNode::HitTestBallSse(const Ball * const pball, CollisionEvent& coll) c
 #ifdef DEBUGPHYSICS
          g_pplayer->c_tested++; //!! +=4? or is this more fair?
 #endif
-                                // comparisons set bits if bounds miss. if all bits are set, there is no collision. otherwise continue comparisons
-                                // bits set, there is a bounding box collision
-                                /*__m128 cmp = _mm_cmpge_ps(bright, pL[i]);
-                                int mask = _mm_movemask_ps(cmp);
-                                if (mask == 0) continue;
+         // comparisons set bits if bounds miss. if all bits are set, there is no collision. otherwise continue comparisons
+         // bits set, there is a bounding box collision
+         /*__m128 cmp = _mm_cmpge_ps(bright, pL[i]);
+         int mask = _mm_movemask_ps(cmp);
+         if (mask == 0) continue;
 
-                                cmp = _mm_cmple_ps(bleft, pR[i]);
-                                mask &= _mm_movemask_ps(cmp);
-                                if (mask == 0) continue;
+         cmp = _mm_cmple_ps(bleft, pR[i]);
+         mask &= _mm_movemask_ps(cmp);
+         if (mask == 0) continue;
 
-                                cmp = _mm_cmpge_ps(bbottom, pT[i]);
-                                mask &= _mm_movemask_ps(cmp);
-                                if (mask == 0) continue;
+         cmp = _mm_cmpge_ps(bbottom, pT[i]);
+         mask &= _mm_movemask_ps(cmp);
+         if (mask == 0) continue;
 
-                                cmp = _mm_cmple_ps(btop, pB[i]);
-                                mask &= _mm_movemask_ps(cmp);
-                                if (mask == 0) continue;
+         cmp = _mm_cmple_ps(btop, pB[i]);
+         mask &= _mm_movemask_ps(cmp);
+         if (mask == 0) continue;
 
-                                cmp = _mm_cmpge_ps(bzhigh, pZl[i]);
-                                mask &= _mm_movemask_ps(cmp);
-                                if (mask == 0) continue;
+         cmp = _mm_cmpge_ps(bzhigh, pZl[i]);
+         mask &= _mm_movemask_ps(cmp);
+         if (mask == 0) continue;
 
-                                cmp = _mm_cmple_ps(bzlow, pZh[i]);
-                                mask &= _mm_movemask_ps(cmp);
-                                if (mask == 0) continue;*/ //!! do bbox test before to save alu-instructions? or not to save registers? -> currently not, as just sphere vs sphere
+         cmp = _mm_cmple_ps(bzlow, pZh[i]);
+         mask &= _mm_movemask_ps(cmp);
+         if (mask == 0) continue;*/ //!! do bbox test before to save alu-instructions? or not to save registers? -> currently not, as just sphere vs sphere
 
-                                // test actual sphere against box(es)
-         const __m128 zero = _mm_setzero_ps();
-         __m128 ex = _mm_add_ps(_mm_max_ps(_mm_sub_ps(pL[i], posx), zero), _mm_max_ps(_mm_sub_ps(posx, pR[i]), zero));
-         __m128 ey = _mm_add_ps(_mm_max_ps(_mm_sub_ps(pT[i], posy), zero), _mm_max_ps(_mm_sub_ps(posy, pB[i]), zero));
-         __m128 ez = _mm_add_ps(_mm_max_ps(_mm_sub_ps(pZl[i], posz), zero), _mm_max_ps(_mm_sub_ps(posz, pZh[i]), zero));
-         ex = _mm_mul_ps(ex, ex);
-         ey = _mm_mul_ps(ey, ey);
-         ez = _mm_mul_ps(ez, ez);
-         const __m128 d = _mm_add_ps(_mm_add_ps(ex, ey), ez);
-         const __m128 cmp2 = _mm_cmple_ps(d, rsqr);
-         const int mask2 = _mm_movemask_ps(cmp2);
-         if (mask2 == 0) continue;
-
-         // now there is at least one bbox collision
+		 // test actual sphere against box(es)
+		 const __m128 zero = _mm_setzero_ps();
+		 __m128 ex = _mm_add_ps(_mm_max_ps(_mm_sub_ps(pL[i],  posx), zero), _mm_max_ps(_mm_sub_ps(posx, pR[i] ), zero));
+		 __m128 ey = _mm_add_ps(_mm_max_ps(_mm_sub_ps(pT[i],  posy), zero), _mm_max_ps(_mm_sub_ps(posy, pB[i] ), zero));
+		 __m128 ez = _mm_add_ps(_mm_max_ps(_mm_sub_ps(pZl[i], posz), zero), _mm_max_ps(_mm_sub_ps(posz, pZh[i]), zero));
+		 ex = _mm_mul_ps(ex, ex);
+		 ey = _mm_mul_ps(ey, ey);
+		 ez = _mm_mul_ps(ez, ez);
+		 const __m128 d = _mm_add_ps(_mm_add_ps(ex, ey), ez);
+		 const __m128 cmp2 = _mm_cmple_ps(d, rsqr);
+		 const int mask2 = _mm_movemask_ps(cmp2);
+		 if (mask2 == 0) continue;
+		 
+		 // now there is at least one bbox collision
          if ((mask2 & 1) != 0)
          {
             HitObject * const pho = m_hitoct->GetItemAt(i * 4);
@@ -598,7 +608,7 @@ void HitKDNode::HitTestBallSse(const Ball * const pball, CollisionEvent& coll) c
       //current = stack[stackpos];
       //if (stackpos > 0)
       //    stackpos--;
-      current = stack[stackpos--]; // above test not needed due to sentinel in stack[0]=NULL
+      current = stack[stackpos--]; // above test not needed due to sentinel in stack[0]=nullptr
 
    } while (current);
 }
@@ -618,7 +628,7 @@ void HitKDNode::HitTestXRay(const Ball * const pball, vector<HitObject*> &pvhoHi
 #endif
       HitObject * const pho = m_hitoct->GetItemAt(i);
       if ((pball != pho) && // ball cannot hit itself
-                            /*fRectIntersect3D(pball->m_hitBBox, pho->m_hitBBox) &&*/ //!! do bbox test before to save alu-instructions? or not to save registers? -> currently not, as just sphere vs sphere
+         /*fRectIntersect3D(pball->m_hitBBox, pho->m_hitBBox) &&*/ //!! do bbox test before to save alu-instructions? or not to save registers? -> currently not, as just sphere vs sphere
          fRectIntersect3D(pball->m_d.m_pos, rcHitRadiusSqr, pho->m_hitBBox))
       {
 #ifdef DEBUGPHYSICS

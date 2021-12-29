@@ -18,6 +18,9 @@ void WallPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
     //only show the first element on multi-select
     Surface * const wall = (Surface*)m_pvsel->ElementAt(0);
+    if (wall == nullptr)
+        return;
+
     if (dispid == 14 || dispid == -1)
         PropertyDialog::SetFloatTextbox(m_slingshotForceEdit, wall->GetSlingshotStrength());
     if (dispid == 427 || dispid == -1)
@@ -27,7 +30,7 @@ void WallPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
     if (dispid == 116 || dispid == -1)
         PropertyDialog::SetCheckboxState(::GetDlgItem(GetHwnd(), 116), wall->m_d.m_isBottomSolid);
     if (dispid == 120 || dispid == -1)
-       PropertyDialog::SetFloatTextbox(m_elasticityFallOffEdit, wall->m_d.m_elasticityFalloff);
+        PropertyDialog::SetFloatTextbox(m_elasticityFallOffEdit, wall->m_d.m_elasticityFalloff);
 
     if (dispid == IDC_COLLIDABLE_CHECK || dispid == -1)
     {
@@ -49,9 +52,9 @@ void WallPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void WallPhysicsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemSurface))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemSurface))
             continue;
         Surface * const wall = (Surface*)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -102,8 +105,37 @@ BOOL WallPhysicsProperty::OnInitDialog()
     m_hHitEventCheck = ::GetDlgItem(GetHwnd(), IDC_HAS_HITEVENT_CHECK);
     m_hCollidableCheck= ::GetDlgItem(GetHwnd(), IDC_COLLIDABLE_CHECK);
     m_hOverwritePhysicsCheck = ::GetDlgItem(GetHwnd(), IDC_OVERWRITE_MATERIAL_SETTINGS);
+    m_hCanDrop = ::GetDlgItem(GetHwnd(), 11);
+    m_hIsBottomCollidable = ::GetDlgItem(GetHwnd(), 116);
 
     UpdateVisuals();
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(m_hitThresholdEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_slingshotForceEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_slingshotThresholdEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_physicsMaterialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_elasticityEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_frictionEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_scatterAngleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_elasticityFallOffEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hHitEventCheck, topleft, 0);
+    m_resizer.AddChild(m_hCollidableCheck, topleft, 0);
+    m_resizer.AddChild(m_hOverwritePhysicsCheck, topleft, 0);
+    m_resizer.AddChild(m_hCanDrop, topleft, 0);
+    m_resizer.AddChild(m_hIsBottomCollidable, topleft, 0);
+
     return TRUE;
 }
 
+INT_PTR WallPhysicsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
+}

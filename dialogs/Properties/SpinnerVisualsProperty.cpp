@@ -19,9 +19,9 @@ SpinnerVisualsProperty::SpinnerVisualsProperty(const VectorProtected<ISelect> *p
 
 void SpinnerVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemSpinner))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemSpinner))
             continue;
         Spinner *const spinner = (Spinner *)m_pvsel->ElementAt(i);
 
@@ -52,9 +52,9 @@ void SpinnerVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void SpinnerVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemSpinner))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemSpinner))
             continue;
         Spinner *const spinner = (Spinner *)m_pvsel->ElementAt(i);
 
@@ -64,7 +64,7 @@ void SpinnerVisualsProperty::UpdateProperties(const int dispid)
                 CHECK_UPDATE_ITEM(spinner->m_d.m_showBracket, PropertyDialog::GetCheckboxState(m_hShowBracketCheck), spinner);
                 break;
             case IDC_SURFACE_COMBO:
-                CHECK_UPDATE_COMBO_TEXT(spinner->m_d.m_szSurface, m_surfaceCombo, spinner);
+                CHECK_UPDATE_COMBO_TEXT_STRING(spinner->m_d.m_szSurface, m_surfaceCombo, spinner);
                 break;
             case 11:
                 CHECK_UPDATE_ITEM(spinner->m_d.m_vCenter.x, PropertyDialog::GetFloatTextbox(m_posXEdit), spinner);
@@ -114,5 +114,38 @@ BOOL SpinnerVisualsProperty::OnInitDialog()
     m_angleMaxEdit.AttachItem(13);
     m_angleMinEdit.AttachItem(14);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, 0);
+    m_resizer.AddChild(m_hVisibleCheck, topleft, 0);
+    m_resizer.AddChild(m_hReflectionEnabledCheck, topleft, 0);
+    m_resizer.AddChild(m_hShowBracketCheck, topleft, 0);
+    m_resizer.AddChild(m_imageCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_materialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_surfaceCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posXEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posYEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_lengthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_heightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rotationEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_angleMaxEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_angleMinEdit, topleft, RD_STRETCH_WIDTH);
+
     return TRUE;
+}
+
+INT_PTR SpinnerVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

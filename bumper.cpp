@@ -10,18 +10,17 @@
 
 Bumper::Bumper()
 {
-   m_pbumperhitcircle = NULL;
-   m_baseVertexBuffer = NULL;
-   m_baseIndexBuffer = NULL;
-   m_ringVertexBuffer = NULL;
-   m_ringIndexBuffer = NULL;
-   m_capVertexBuffer = NULL;
-   m_capIndexBuffer = NULL;
-   m_socketIndexBuffer = NULL;
-   m_socketVertexBuffer = NULL;
+   m_pbumperhitcircle = nullptr;
+   m_baseVertexBuffer = nullptr;
+   m_baseIndexBuffer = nullptr;
+   m_ringVertexBuffer = nullptr;
+   m_ringIndexBuffer = nullptr;
+   m_capVertexBuffer = nullptr;
+   m_capIndexBuffer = nullptr;
+   m_socketIndexBuffer = nullptr;
+   m_socketVertexBuffer = nullptr;
    m_ringAnimate = false;
-   m_propVisual = NULL;
-   memset(m_d.m_szSurface, 0, sizeof(m_d.m_szSurface));
+   m_propVisual = nullptr;
    m_d.m_ringDropOffset = 0.0f;
    m_ringDown = false;
    m_updateSkirt = false;
@@ -87,7 +86,7 @@ HRESULT Bumper::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
    m_d.m_vCenter.x = x;
    m_d.m_vCenter.y = y;
 
-   return InitVBA(fTrue, 0, NULL);
+   return InitVBA(fTrue, 0, nullptr);
 }
 
 void Bumper::SetDefaults(bool fromMouseClick)
@@ -101,9 +100,9 @@ void Bumper::SetDefaults(bool fromMouseClick)
    m_d.m_orientation = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Bumper", "Orientation", 0.0f) : 0.0f;
    m_d.m_threshold = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Bumper", "Threshold", 1.f) : 1.f;
 
-   const HRESULT hr = LoadValueString("DefaultProps\\Bumper", "Surface", m_d.m_szSurface, MAXTOKEN);
+   const HRESULT hr = LoadValue("DefaultProps\\Bumper", "Surface", m_d.m_szSurface);
    if (hr != S_OK || !fromMouseClick)
-      m_d.m_szSurface[0] = 0;
+      m_d.m_szSurface.clear();
 
    m_d.m_tdr.m_TimerEnabled = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Bumper", "TimerEnabled", false) : false;
    m_d.m_tdr.m_TimerInterval = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Bumper", "TimerInterval", 100) : 100;
@@ -135,7 +134,7 @@ void Bumper::WriteRegDefaults()
    SaveValueBool("DefaultProps\\Bumper", "HasHitEvent", m_d.m_hitEvent);
    SaveValueBool("DefaultProps\\Bumper", "Collidable", m_d.m_collidable);
    SaveValueBool("DefaultProps\\Bumper", "ReflectionEnabled", m_d.m_reflectionEnabled);
-   SaveValueString("DefaultProps\\Bumper", "Surface", m_d.m_szSurface);
+   SaveValue("DefaultProps\\Bumper", "Surface", m_d.m_szSurface);
 }
 
 STDMETHODIMP Bumper::InterfaceSupportsErrorInfo(REFIID riid)
@@ -194,7 +193,7 @@ void Bumper::UIRenderPass2(Sur * const psur)
    psur->SetBorderColor(RGB(0, 0, 0), false, 0);
    psur->SetFillColor(-1);
    psur->SetObject(this);
-   psur->SetObject(NULL);
+   psur->SetObject(nullptr);
    const float radangle = ANGTORAD(m_d.m_orientation - 90.f);
    const float sn = sinf(radangle);
    const float cs = cosf(radangle);
@@ -220,7 +219,7 @@ void Bumper::RenderBlueprint(Sur *psur, const bool solid)
    psur->SetFillColor(solid ? BLUEPRINT_SOLID_COLOR : -1);
    psur->SetBorderColor(RGB(0, 0, 0), false, 0);
    psur->SetObject(this);
-   psur->SetObject(NULL);
+   psur->SetObject(nullptr);
    const float radangle = ANGTORAD(m_d.m_orientation - 90.f);
    const float sn = sinf(radangle);
    const float cs = cosf(radangle);
@@ -279,7 +278,7 @@ void Bumper::EndPlay()
 {
    IEditable::EndPlay();
 
-   m_pbumperhitcircle = NULL;
+   m_pbumperhitcircle = nullptr;
 
    if (m_baseVertexBuffer)
    {
@@ -390,7 +389,7 @@ void Bumper::RenderCap(const Material * const capMaterial)
 
 void Bumper::UpdateSkirt(const bool doCalculation)
 {
-   const float SKIRT_TILT = 5.0f;
+   constexpr float SKIRT_TILT = 5.0f;
 
    const float scalexy = m_d.m_radius;
    float rotx = 0.0f, roty = 0.0f;
@@ -431,7 +430,7 @@ void Bumper::UpdateSkirt(const bool doCalculation)
       vert = rMatrix.MultiplyVector(vert);
       buf[i].x = vert.x*scalexy + m_d.m_vCenter.x;
       buf[i].y = vert.y*scalexy + m_d.m_vCenter.y;
-      buf[i].z = vert.z*(m_d.m_heightScale*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set]) + (m_baseHeight + 5.0f);
+      buf[i].z = vert.z*(m_d.m_heightScale*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set]) + (m_baseHeight+5.0f);
 
       vert = Vertex3Ds(bumperSocket[i].nx, bumperSocket[i].ny, bumperSocket[i].nz);
       vert = rMatrix.MultiplyVectorNoTranslate(vert);
@@ -460,10 +459,8 @@ void Bumper::RenderDynamic()
    pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
    pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 
-   //This is for testing haptic/Rumble. Not final code.
-   if (m_pbumperhitcircle->m_bumperanim_hitEvent) {
-      g_pplayer->m_pininput.playRumble(65535, 65535, 300);
-   }
+   if (m_pbumperhitcircle->m_bumperanim_hitEvent)
+      g_pplayer->m_pininput.PlayRumble(0.1f, 0.05f, 100);
 
    const int state = m_pbumperhitcircle->m_bumperanim_hitEvent ? 1 : 0;    // 0 = not hit, 1 = hit
    m_pbumperhitcircle->m_bumperanim_hitEvent = false;
@@ -484,7 +481,7 @@ void Bumper::RenderDynamic()
          if (m_ringDown)
             step = -step;
          const float old_bumperanim_ringAnimOffset = m_pbumperhitcircle->m_bumperanim_ringAnimOffset;
-         m_pbumperhitcircle->m_bumperanim_ringAnimOffset += step * diff_time_msec;
+         m_pbumperhitcircle->m_bumperanim_ringAnimOffset += step*diff_time_msec;
          if (m_ringDown)
          {
             if (m_pbumperhitcircle->m_bumperanim_ringAnimOffset <= -limit)
@@ -532,21 +529,21 @@ void Bumper::RenderDynamic()
    {
       if (m_enableSkirtAnimation)
       {
-         if (state == 1)
-         {
-            m_doSkirtAnimation = true;
-            UpdateSkirt(true);
-            m_skirtCounter = 0.0f;
-         }
-         if (m_doSkirtAnimation)
-         {
-            m_skirtCounter += /*1.0f**/diff_time_msec;
-            if (m_skirtCounter > 160.0f)
-            {
-               m_doSkirtAnimation = false;
-               UpdateSkirt(false);
-            }
-         }
+          if (state == 1)
+          {
+              m_doSkirtAnimation = true;
+              UpdateSkirt(true);
+              m_skirtCounter = 0.0f;
+          }
+          if (m_doSkirtAnimation)
+          {
+              m_skirtCounter += /*1.0f**/diff_time_msec;
+              if (m_skirtCounter > 160.0f)
+              {
+                  m_doSkirtAnimation = false;
+                  UpdateSkirt(false);
+              }
+          }
       }
       else if(m_updateSkirt) // do a single update if the animation was turned off via script
       {
@@ -587,10 +584,10 @@ void Bumper::RenderDynamic()
    }
 }
 
-void Bumper::ExportMesh(FILE *f)
+void Bumper::ExportMesh(ObjLoader& loader)
 {
-   char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
-   WideCharToMultiByteNull(CP_ACP, 0, m_wzName, -1, name, sizeof(name), NULL, NULL);
+   char name[sizeof(m_wzName)/sizeof(m_wzName[0])];
+   WideCharToMultiByteNull(CP_ACP, 0, m_wzName, -1, name, sizeof(name), nullptr, nullptr);
 
    m_baseHeight = m_ptable->GetSurfaceHeight(m_d.m_szSurface, m_d.m_vCenter.x, m_d.m_vCenter.y) * m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
    m_fullMatrix.RotateZMatrix(ANGTORAD(m_d.m_orientation));
@@ -598,61 +595,66 @@ void Bumper::ExportMesh(FILE *f)
    if (m_d.m_baseVisible)
    {
       const string subObjName = name + string("Base");
-      WaveFrontObj_WriteObjectName(f, subObjName);
+      loader.WriteObjectName(subObjName);
 
       Vertex3D_NoTex2* base = new Vertex3D_NoTex2[bumperBaseNumVertices];
       GenerateBaseMesh(base);
-      WaveFrontObj_WriteVertexInfo(f, base, bumperBaseNumVertices);
+      loader.WriteVertexInfo(base, bumperBaseNumVertices);
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szBaseMaterial);
-      WaveFrontObj_WriteMaterial(m_d.m_szBaseMaterial, string(), mat);
-      WaveFrontObj_UseTexture(f, m_d.m_szBaseMaterial);
-      WaveFrontObj_WriteFaceInfoList(f, bumperBaseIndices, bumperBaseNumIndices);
-      WaveFrontObj_UpdateFaceOffset(bumperBaseNumVertices);
+      loader.WriteMaterial(m_d.m_szBaseMaterial, string(), mat);
+      loader.UseTexture(m_d.m_szBaseMaterial);
+      loader.WriteFaceInfoList(bumperBaseIndices, bumperBaseNumIndices);
+      loader.UpdateFaceOffset(bumperBaseNumVertices);
       delete[] base;
    }
    if (m_d.m_ringVisible)
    {
       const string subObjName = name + string("Ring");
-      WaveFrontObj_WriteObjectName(f, subObjName);
+      loader.WriteObjectName(subObjName);
 
       Vertex3D_NoTex2* const ring = new Vertex3D_NoTex2[bumperRingNumVertices];
       GenerateRingMesh(ring);
-      WaveFrontObj_WriteVertexInfo(f, ring, bumperRingNumVertices);
-      WaveFrontObj_WriteFaceInfoList(f, bumperRingIndices, bumperRingNumIndices);
-      WaveFrontObj_UpdateFaceOffset(bumperRingNumVertices);
+      loader.WriteVertexInfo(ring, bumperRingNumVertices);
+      loader.WriteFaceInfoList(bumperRingIndices, bumperRingNumIndices);
+      loader.UpdateFaceOffset(bumperRingNumVertices);
       delete[] ring;
    }
    if (m_d.m_skirtVisible)
    {
       const string subObjName = name + string("Skirt");
-      WaveFrontObj_WriteObjectName(f, subObjName);
+      loader.WriteObjectName(subObjName);
 
       Vertex3D_NoTex2* const socket = new Vertex3D_NoTex2[bumperSocketNumVertices];
       GenerateSocketMesh(socket);
-      WaveFrontObj_WriteVertexInfo(f, socket, bumperSocketNumVertices);
+      loader.WriteVertexInfo(socket, bumperSocketNumVertices);
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szSkirtMaterial);
-      WaveFrontObj_WriteMaterial(m_d.m_szSkirtMaterial, string(), mat);
-      WaveFrontObj_UseTexture(f, m_d.m_szSkirtMaterial);
-      WaveFrontObj_WriteFaceInfoList(f, bumperSocketIndices, bumperSocketNumIndices);
-      WaveFrontObj_UpdateFaceOffset(bumperSocketNumVertices);
+      loader.WriteMaterial(m_d.m_szSkirtMaterial, string(), mat);
+      loader.UseTexture(m_d.m_szSkirtMaterial);
+      loader.WriteFaceInfoList(bumperSocketIndices, bumperSocketNumIndices);
+      loader.UpdateFaceOffset(bumperSocketNumVertices);
       delete[] socket;
    }
    if (m_d.m_capVisible)
    {
       const string subObjName = name + string("Cap");
-      WaveFrontObj_WriteObjectName(f, subObjName);
+      loader.WriteObjectName(subObjName);
 
       Vertex3D_NoTex2* const cap = new Vertex3D_NoTex2[bumperCapNumVertices];
       GenerateCapMesh(cap);
-      WaveFrontObj_WriteVertexInfo(f, cap, bumperCapNumVertices);
+      loader.WriteVertexInfo(cap, bumperCapNumVertices);
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szCapMaterial);
-      WaveFrontObj_WriteMaterial(m_d.m_szCapMaterial, string(), mat);
-      WaveFrontObj_UseTexture(f, m_d.m_szCapMaterial);
-      WaveFrontObj_WriteFaceInfoList(f, bumperCapIndices, bumperCapNumIndices);
-      WaveFrontObj_UpdateFaceOffset(bumperCapNumVertices);
+      loader.WriteMaterial(m_d.m_szCapMaterial, string(), mat);
+      loader.UseTexture(m_d.m_szCapMaterial);
+      loader.WriteFaceInfoList(bumperCapIndices, bumperCapNumIndices);
+      loader.UpdateFaceOffset(bumperCapNumVertices);
       delete[] cap;
    }
 }
+
+//
+// license:GPLv3+
+// Ported at: VisualPinball.Engine/VPT/Bumper/BumperMeshGenerator.cs
+//
 
 void Bumper::GenerateBaseMesh(Vertex3D_NoTex2 *buf)
 {
@@ -685,7 +687,7 @@ void Bumper::GenerateSocketMesh(Vertex3D_NoTex2 *buf)
       vert = m_fullMatrix.MultiplyVector(vert);
       buf[i].x = vert.x*scalexy + m_d.m_vCenter.x;
       buf[i].y = vert.y*scalexy + m_d.m_vCenter.y;
-      buf[i].z = vert.z*(m_d.m_heightScale*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set]) + (m_baseHeight + 5.0f);
+      buf[i].z = vert.z*(m_d.m_heightScale*m_ptable->m_BG_scalez[m_ptable->m_BG_current_set]) + (m_baseHeight+5.0f);
 
       vert = Vertex3Ds(bumperSocket[i].nx, bumperSocket[i].ny, bumperSocket[i].nz);
       vert = m_fullMatrix.MultiplyVectorNoTranslate(vert);
@@ -740,6 +742,10 @@ void Bumper::GenerateCapMesh(Vertex3D_NoTex2 *buf)
       buf[i].tv = bumperCap[i].tv;
    }
 }
+
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
 
 void Bumper::RenderSetup()
 {
@@ -828,7 +834,8 @@ void Bumper::RenderSetup()
 
 void Bumper::RenderStatic()
 {
-   RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+   const RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+
    if (m_ptable->m_reflectionEnabled && !m_d.m_reflectionEnabled)
       return;
 
@@ -857,7 +864,7 @@ void Bumper::RenderStatic()
 
 void Bumper::SetObjectPos()
 {
-   m_vpinball->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
+    m_vpinball->SetObjectPosCur(m_d.m_vCenter.x, m_d.m_vCenter.y);
 }
 
 void Bumper::MoveOffset(const float dx, const float dy)
@@ -880,7 +887,7 @@ HRESULT Bumper::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backup
 {
    BiffWriter bw(pstm, hcrypthash);
 
-   bw.WriteStruct(FID(VCEN), &m_d.m_vCenter, sizeof(Vertex2D));
+   bw.WriteVector2(FID(VCEN), m_d.m_vCenter);
    bw.WriteFloat(FID(RADI), m_d.m_radius);
    bw.WriteBool(FID(TMON), m_d.m_tdr.m_TimerEnabled);
    bw.WriteInt(FID(TMIN), m_d.m_tdr.m_TimerInterval);
@@ -928,51 +935,51 @@ HRESULT Bumper::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version,
 
 bool Bumper::LoadToken(const int id, BiffReader * const pbr)
 {
-   switch (id)
+   switch(id)
    {
    case FID(PIID): pbr->GetInt((int *)pbr->m_pdata); break;
-   case FID(VCEN): pbr->GetStruct(&m_d.m_vCenter, sizeof(Vertex2D)); break;
-   case FID(RADI): pbr->GetFloat(&m_d.m_radius); break;
+   case FID(VCEN): pbr->GetVector2(m_d.m_vCenter); break;
+   case FID(RADI): pbr->GetFloat(m_d.m_radius); break;
    case FID(MATR): pbr->GetString(m_d.m_szCapMaterial); break;
    case FID(RIMA): pbr->GetString(m_d.m_szRingMaterial); break;
    case FID(BAMA): pbr->GetString(m_d.m_szBaseMaterial); break;
    case FID(SKMA): pbr->GetString(m_d.m_szSkirtMaterial); break;
-   case FID(TMON): pbr->GetBool(&m_d.m_tdr.m_TimerEnabled); break;
-   case FID(TMIN): pbr->GetInt(&m_d.m_tdr.m_TimerInterval); break;
-   case FID(THRS): pbr->GetFloat(&m_d.m_threshold); break;
-   case FID(FORC): pbr->GetFloat(&m_d.m_force); break;
-   case FID(BSCT): pbr->GetFloat(&m_d.m_scatter); break;
-   case FID(HISC): pbr->GetFloat(&m_d.m_heightScale); break;
-   case FID(RISP): pbr->GetFloat(&m_d.m_ringSpeed); break;
-   case FID(ORIN): pbr->GetFloat(&m_d.m_orientation); break;
-   case FID(RDLI): pbr->GetFloat(&m_d.m_ringDropOffset); break;
+   case FID(TMON): pbr->GetBool(m_d.m_tdr.m_TimerEnabled); break;
+   case FID(TMIN): pbr->GetInt(m_d.m_tdr.m_TimerInterval); break;
+   case FID(THRS): pbr->GetFloat(m_d.m_threshold); break;
+   case FID(FORC): pbr->GetFloat(m_d.m_force); break;
+   case FID(BSCT): pbr->GetFloat(m_d.m_scatter); break;
+   case FID(HISC): pbr->GetFloat(m_d.m_heightScale); break;
+   case FID(RISP): pbr->GetFloat(m_d.m_ringSpeed); break;
+   case FID(ORIN): pbr->GetFloat(m_d.m_orientation); break;
+   case FID(RDLI): pbr->GetFloat(m_d.m_ringDropOffset); break;
    case FID(SURF): pbr->GetString(m_d.m_szSurface); break;
-   case FID(NAME): pbr->GetWideString(m_wzName); break;
+   case FID(NAME): pbr->GetWideString(m_wzName,sizeof(m_wzName)/sizeof(m_wzName[0])); break;
    case FID(BVIS):
    {
       // backwards compatibility when loading old VP9 tables
       bool value;
-      pbr->GetBool(&value);
+      pbr->GetBool(value);
       m_d.m_capVisible = value;
       m_d.m_baseVisible = value;
       m_d.m_ringVisible = value;
       m_d.m_skirtVisible = value;
       break;
    }
-   case FID(CAVI): pbr->GetBool(&m_d.m_capVisible); break;
-   case FID(HAHE): pbr->GetBool(&m_d.m_hitEvent); break;
-   case FID(COLI): pbr->GetBool(&m_d.m_collidable); break;
+   case FID(CAVI): pbr->GetBool(m_d.m_capVisible); break;
+   case FID(HAHE): pbr->GetBool(m_d.m_hitEvent); break;
+   case FID(COLI): pbr->GetBool(m_d.m_collidable); break;
    case FID(BSVS):
    {
-      pbr->GetBool(&m_d.m_baseVisible);
+      pbr->GetBool(m_d.m_baseVisible);
       // backwards compatibilty with pre 10.2 tables
       m_d.m_ringVisible = m_d.m_baseVisible;
       m_d.m_skirtVisible = m_d.m_baseVisible;
       break;
    }
-   case FID(RIVS): pbr->GetBool(&m_d.m_ringVisible); break;
-   case FID(SKVS): pbr->GetBool(&m_d.m_skirtVisible); break;
-   case FID(REEN): pbr->GetBool(&m_d.m_reflectionEnabled); break;
+   case FID(RIVS): pbr->GetBool(m_d.m_ringVisible); break;
+   case FID(SKVS): pbr->GetBool(m_d.m_skirtVisible); break;
+   case FID(REEN): pbr->GetBool(m_d.m_reflectionEnabled); break;
    default: ISelect::LoadToken(id, pbr); break;
    }
    return true;
@@ -1022,9 +1029,7 @@ STDMETHODIMP Bumper::put_Scatter(float newVal)
    /*if (m_pbumperhitcircle)
      m_pbumperhitcircle->m_scatter = ANGTORAD(m_d.m_scatter);
    else*/
-   {
      m_d.m_scatter = newVal;
-   }
 
    return S_OK;
 }
@@ -1111,7 +1116,7 @@ STDMETHODIMP Bumper::get_CapMaterial(BSTR *pVal)
 STDMETHODIMP Bumper::put_CapMaterial(BSTR newVal)
 {
    char buf[MAXNAMEBUFFER];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, nullptr, nullptr);
    m_d.m_szCapMaterial = buf;
 
    return S_OK;
@@ -1129,7 +1134,7 @@ STDMETHODIMP Bumper::get_RingMaterial(BSTR *pVal)
 STDMETHODIMP Bumper::put_RingMaterial(BSTR newVal)
 {
    char buf[MAXNAMEBUFFER];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, nullptr, nullptr);
    m_d.m_szRingMaterial = buf;
 
    return S_OK;
@@ -1147,7 +1152,7 @@ STDMETHODIMP Bumper::get_BaseMaterial(BSTR *pVal)
 STDMETHODIMP Bumper::put_BaseMaterial(BSTR newVal)
 {
    char buf[MAXNAMEBUFFER];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, nullptr, nullptr);
    m_d.m_szBaseMaterial = buf;
 
    return S_OK;
@@ -1165,7 +1170,7 @@ STDMETHODIMP Bumper::get_SkirtMaterial(BSTR *pVal)
 STDMETHODIMP Bumper::put_SkirtMaterial(BSTR newVal)
 {
    char buf[MAXNAMEBUFFER];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, nullptr, nullptr);
    m_d.m_szSkirtMaterial = buf;
 
    return S_OK;
@@ -1203,7 +1208,7 @@ STDMETHODIMP Bumper::put_Y(float newVal)
 STDMETHODIMP Bumper::get_Surface(BSTR *pVal)
 {
    WCHAR wz[MAXTOKEN];
-   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXTOKEN);
+   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szSurface.c_str(), -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1211,10 +1216,13 @@ STDMETHODIMP Bumper::get_Surface(BSTR *pVal)
 
 STDMETHODIMP Bumper::put_Surface(BSTR newVal)
 {
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXTOKEN, NULL, NULL);
+   char buf[MAXTOKEN];
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXTOKEN, nullptr, nullptr);
+   m_d.m_szSurface = buf;
 
    return S_OK;
 }
+
 
 STDMETHODIMP Bumper::get_HasHitEvent(VARIANT_BOOL *pVal)
 {
@@ -1327,7 +1335,7 @@ STDMETHODIMP Bumper::get_EnableSkirtAnimation(VARIANT_BOOL *pVal)
 STDMETHODIMP Bumper::put_EnableSkirtAnimation(VARIANT_BOOL newVal)
 {
    const bool val = VBTOb(newVal);
-   if (m_enableSkirtAnimation != val)
+   if(m_enableSkirtAnimation != val)
    {
       if (!val)
          m_updateSkirt = true;
@@ -1339,7 +1347,7 @@ STDMETHODIMP Bumper::put_EnableSkirtAnimation(VARIANT_BOOL newVal)
 
 STDMETHODIMP Bumper::PlayHit()
 {
-   if (m_pbumperhitcircle)
+   if ( m_pbumperhitcircle )
       m_pbumperhitcircle->m_bumperanim_hitEvent = true;
 
    return S_OK;

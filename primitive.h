@@ -32,8 +32,8 @@ public:
    void SaveWavefrontObj(const string& fname, const string& description);
    bool LoadAnimation(const char *fname, const bool flipTV, const bool convertToLeftHanded);
 
-   size_t NumVertices() const { return m_vertices.size(); }
-   size_t NumIndices() const { return m_indices.size(); }
+   size_t NumVertices() const    { return m_vertices.size(); }
+   size_t NumIndices() const     { return m_indices.size(); }
    void UploadToVB(VertexBuffer * vb, const float frame);
 };
 
@@ -55,7 +55,7 @@ public:
    Vertex3Ds m_vPosition;
    Vertex3Ds m_vSize;
    float m_aRotAndTra[9];
-   char m_szNormalMap[MAXTOKEN];
+   string m_szNormalMap;
    string m_meshFileName;
 
    COLORREF m_SideColor;
@@ -102,7 +102,7 @@ class Primitive :
    public IPerPropertyBrowsing // Ability to fill in dropdown in property browser
 {
 public:
-   static const int Max_Primitive_Sides = 100; //!! 100 works for sleepy, 99 doesn't
+   static constexpr int Max_Primitive_Sides = 100; //!! 100 works for sleepy, 99 doesn't
 
    STDMETHOD(get_Sides)(/*[out, retval]*/ int *pVal);
    STDMETHOD(put_Sides)(/*[in]*/ int newVal);
@@ -246,7 +246,7 @@ public:
 
    STANDARD_EDITABLE_DECLARES(Primitive, eItemPrimitive, PRIMITIVE, 1)
 
-      DECLARE_REGISTRY_RESOURCEID(IDR_PRIMITIVE)
+   DECLARE_REGISTRY_RESOURCEID(IDR_PRIMITIVE)
 
    virtual void MoveOffset(const float dx, const float dy);
    virtual void SetObjectPos();
@@ -269,7 +269,7 @@ public:
    virtual ItemTypeEnum HitableGetItemType() const { return eItemPrimitive; }
 
    virtual void SetDefaultPhysics(bool fromMouseClick);
-   virtual void ExportMesh(FILE *f);
+   virtual void ExportMesh(ObjLoader& loader);
    virtual void RenderBlueprint(Sur *psur, const bool solid);
    virtual void UpdateStatusBarInfo();
 
@@ -278,14 +278,19 @@ public:
    void TransformVertices();
    void RenderObject();
 
+   void setInPlayState(const bool newVal);
+
    static INT_PTR CALLBACK ObjImportProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
    Mesh m_mesh;
 
    PrimitiveData m_d;
 
+   bool m_lockedByLS;
+   bool m_inPlayState;
+
 private:
-   PinTable * m_ptable;
+   PinTable *m_ptable;
 
    Matrix3D m_fullMatrix;
    int m_numGroupVertices;
@@ -316,48 +321,48 @@ private:
 
    std::vector<HitObject*> m_vhoCollidable; // Objects to that may be collide selectable
 
-                                            //!! outdated(?) information (along with the variable decls) for the old builtin primitive code, kept for reference:
+   //!! outdated(?) information (along with the variable decls) for the old builtin primitive code, kept for reference:
 
-                                            // Vertices for 3d Display
-                                            //	Vertex3D_NoTex2 rgv3DTopOriginal[Max_Primitive_Sides+1]; // without transformation at index=0 is the middle point
-                                            //	Vertex3D_NoTex2 rgv3DBottomOriginal[Max_Primitive_Sides+1];
+   // Vertices for 3d Display
+   //	Vertex3D_NoTex2 rgv3DTopOriginal[Max_Primitive_Sides+1]; // without transformation at index=0 is the middle point
+   //	Vertex3D_NoTex2 rgv3DBottomOriginal[Max_Primitive_Sides+1];
 
-                                            // these will be deleted:
-                                            //	Vertex3D_NoTex2 rgv3DTop[Max_Primitive_Sides]; // with transformation
-                                            //	WORD wTopIndices[Max_Primitive_Sides*6]; // *6 because of each point could be a triangle (*3) and for both sides because of culling (*2)
-                                            //	Vertex3D_NoTex2 rgv3DBottom[Max_Primitive_Sides];
-                                            //	WORD wBottomIndices[Max_Primitive_Sides*6];
+   // these will be deleted:
+   //	Vertex3D_NoTex2 rgv3DTop[Max_Primitive_Sides]; // with transformation
+   //	WORD wTopIndices[Max_Primitive_Sides*6]; // *6 because of each point could be a triangle (*3) and for both sides because of culling (*2)
+   //	Vertex3D_NoTex2 rgv3DBottom[Max_Primitive_Sides];
+   //	WORD wBottomIndices[Max_Primitive_Sides*6];
 
-                                            // OK here are our vertices that should be drawn:
-                                            // Index				: Length		: Description
-                                            // 0					: 1				: Middle Point Top
-                                            // 1					: m_sides		: Top Vertices (no special order, will be sorted via Indices)
-                                            // m_sides+1			: 1				: Middle Point Bottom
-                                            // m_sides+2			: m_sides		: Bottom Vertices
-                                            // m_sides*2 + 2		: m_sides+1		: Top Sides (with normals to the side) the first/last pioint is doubled, for textures
-                                            // m_sides*3 + 3		: m_sides+1		: bottom Sides (With Normals to the side)
-                                            //Example: 4 sides
-                                            // Index				: Length		: Description
-                                            // 0					: 1				: Middle Point Top
-                                            // 1 to 4				: 4				: Top Vertices (no special order, will be sorted via Indices)
-                                            // 5					: 1				: Middle Point Bottom
-                                            // 6 to 9				: 4				: Bottom Vertices
-                                            // 10 to 13		 		: 4				: Top Sides (with normals to the side)
-                                            // 14 to 17				: 4				: bottom Sides (With Normals to the side)
-                                            // These Vertices will always be complete. even if the user does not want to draw them (sides disabled or top/bottom disabled).
-                                            // maybe they are not updated anymore, but they will be there.
+   // OK here are our vertices that should be drawn:
+   // Index				: Length		: Description
+   // 0					: 1				: Middle Point Top
+   // 1					: m_sides		: Top Vertices (no special order, will be sorted via Indices)
+   // m_sides+1			: 1				: Middle Point Bottom
+   // m_sides+2			: m_sides		: Bottom Vertices
+   // m_sides*2 + 2		: m_sides+1		: Top Sides (with normals to the side) the first/last pioint is doubled, for textures
+   // m_sides*3 + 3		: m_sides+1		: bottom Sides (With Normals to the side)
+   //Example: 4 sides
+   // Index				: Length		: Description
+   // 0					: 1				: Middle Point Top
+   // 1 to 4				: 4				: Top Vertices (no special order, will be sorted via Indices)
+   // 5					: 1				: Middle Point Bottom
+   // 6 to 9				: 4				: Bottom Vertices
+   // 10 to 13		 		: 4				: Top Sides (with normals to the side)
+   // 14 to 17				: 4				: bottom Sides (With Normals to the side)
+   // These Vertices will always be complete. even if the user does not want to draw them (sides disabled or top/bottom disabled).
+   // maybe they are not updated anymore, but they will be there.
 
-                                            // per side i will use the following mem:
-                                            // 13 * float * sides * 3 (vertices) = 13 * 4 * sides * 3 = 156 * sides bytes
-                                            // word * 24 (indices) * sides = 4 * 24 * sides = 104 * sides bytes
-                                            // float * 4 * sides = 16 * sidesm
-                                            // so we will have: 276 bytes per side.
-                                            // at 100 sides: 27.6 kb... per primitive That's OK
-                                            // additional mem:
-                                            // 13 * float * 2 (additional middle points at top and bottom)
-                                            // = nothing...
+   // per side i will use the following mem:
+   // 13 * float * sides * 3 (vertices) = 13 * 4 * sides * 3 = 156 * sides bytes
+   // word * 24 (indices) * sides = 4 * 24 * sides = 104 * sides bytes
+   // float * 4 * sides = 16 * sidesm
+   // so we will have: 276 bytes per side.
+   // at 100 sides: 27.6 kb... per primitive That's OK
+   // additional mem:
+   // 13 * float * 2 (additional middle points at top and bottom)
+   // = nothing...
 
-                                            // Vertices for editor display & hit shape
+   // Vertices for editor display & hit shape
    std::vector<Vertex3Ds> m_vertices;
    std::vector<float> m_normals; // only z component actually
 

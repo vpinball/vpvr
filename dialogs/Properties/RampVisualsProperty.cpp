@@ -33,9 +33,9 @@ RampVisualsProperty::RampVisualsProperty(const VectorProtected<ISelect> *pvsel) 
 
 void RampVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemRamp))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemRamp))
             continue;
         Ramp * const ramp = (Ramp *)m_pvsel->ElementAt(i);
         if (dispid == 6 || dispid == -1)
@@ -73,9 +73,9 @@ void RampVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void RampVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemRamp))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemRamp))
             continue;
         Ramp * const ramp = (Ramp *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -155,8 +155,51 @@ BOOL RampVisualsProperty::OnInitDialog()
     m_baseMaterialCombo = &m_materialCombo;
     m_hReflectionEnabledCheck = ::GetDlgItem(GetHwnd(), IDC_REFLECT_ENABLED_CHECK);
     m_hVisibleCheck = ::GetDlgItem(GetHwnd(), IDC_VISIBLE_CHECK);
+    m_hApplyImageToWallCheck = ::GetDlgItem(GetHwnd(), 9);
 
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC12), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC13), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC14), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC15), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC16), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC17), topleft, 0);
+    m_resizer.AddChild(m_typeCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_imageCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_materialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_modeCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_depthBiasEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_topHeightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_bottomHeightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_topWidthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_bottomWidthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_leftWallEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rightWallEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_diameterEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_distanceXEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_distanceYEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hReflectionEnabledCheck, topleft, 0);
+    m_resizer.AddChild(m_hVisibleCheck, topleft, 0);
+    m_resizer.AddChild(m_hApplyImageToWallCheck, topleft, 0);
+
     return TRUE;
 }
 
+INT_PTR RampVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
+}

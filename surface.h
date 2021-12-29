@@ -46,7 +46,7 @@ class Surface :
    public IScriptable,
    public IFireEvents,
    public IPerPropertyBrowsing // Ability to fill in dropdown in property browser
-                               //public EditableImpl<Surface>
+   //public EditableImpl<Surface>
 {
 public:
    Surface();
@@ -108,7 +108,7 @@ public:
    }
    virtual unsigned long long GetImageID() const
    {
-      Texture* tex = NULL;
+      Texture* tex = nullptr;
       if (m_d.m_sideVisible)
          tex = m_ptable->GetImage(m_d.m_szSideImage);
       if (m_d.m_topBottomVisible)
@@ -118,15 +118,15 @@ public:
    virtual ItemTypeEnum HitableGetItemType() const { return eItemSurface; }
    virtual bool IsTransparent() const;
    virtual void SetDefaultPhysics(bool fromMouseClick);
-   virtual void ExportMesh(FILE *f);
+   virtual void ExportMesh(ObjLoader& loader);
    virtual void AddPoint(int x, int y, const bool smooth);
    virtual void UpdateStatusBarInfo();
 
 
-   float    GetSlingshotStrength() const { return m_d.m_slingshotforce * (float)(1.0 / 10.0); }
+   float    GetSlingshotStrength() const { return m_d.m_slingshotforce * (float)(1.0/10.0); }
    void     SetSlingshotStrength(const float value)
    {
-      m_d.m_slingshotforce = value * 10.0f;
+       m_d.m_slingshotforce = value * 10.0f;
    }
 
    SurfaceData m_d;
@@ -165,7 +165,7 @@ private:
    bool m_isDynamic;
    bool m_isDropped;
 
-   // ISurface
+// ISurface
 public:
    STDMETHOD(get_SideVisible)(/*[out, retval]*/ VARIANT_BOOL *pVal);
    STDMETHOD(put_SideVisible)(/*[in]*/ VARIANT_BOOL newVal);

@@ -16,9 +16,9 @@ PrimitiveVisualsProperty::PrimitiveVisualsProperty(const VectorProtected<ISelect
 
 void PrimitiveVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPrimitive))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPrimitive))
             continue;
         Primitive *const prim = (Primitive*)m_pvsel->ElementAt(i);
 
@@ -53,9 +53,9 @@ void PrimitiveVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void PrimitiveVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPrimitive))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPrimitive))
             continue;
         Primitive *const prim = (Primitive *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -101,7 +101,7 @@ void PrimitiveVisualsProperty::UpdateProperties(const int dispid)
                 CHECK_UPDATE_ITEM(prim->m_d.m_edgeFactorUI, PropertyDialog::GetFloatTextbox(m_edgeFactorUIEdit), prim);
                 break;
             case DISPID_Image2:
-                CHECK_UPDATE_COMBO_TEXT(prim->m_d.m_szNormalMap, m_normalMapCombo, prim);
+                CHECK_UPDATE_COMBO_TEXT_STRING(prim->m_d.m_szNormalMap, m_normalMapCombo, prim);
                 break;
             default:
                 UpdateBaseProperties(prim, &prim->m_d, dispid);
@@ -134,5 +134,39 @@ BOOL PrimitiveVisualsProperty::OnInitDialog()
     m_legacySidesEdit.AttachItem(IDC_PRIMITIVE_LEGACY_SIDES_EDIT);
     m_edgeFactorUIEdit.AttachItem(IDC_EDGE_FACTOR_UI);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
+    m_resizer.AddChild(m_hDisplayImageCheck, topleft, 0);
+    m_resizer.AddChild(m_hObjectSpaceCheck, topleft, 0);
+    m_resizer.AddChild(m_hVisibleCheck, topleft, 0);
+    m_resizer.AddChild(m_hReflectionEnabledCheck, topleft, 0);
+    m_resizer.AddChild(m_hRenderBackfacingCheck, topleft, 0);
+    m_resizer.AddChild(m_hStaticRenderingCheck, topleft, 0);
+    m_resizer.AddChild(m_hDrawTexturesInsideCheck, topleft, 0);
+    m_resizer.AddChild(m_imageCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_normalMapCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_materialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_depthBiasEdit, topright, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_disableLightingEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_disableLightFromBelowEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_legacySidesEdit, topleft, 0);
+    m_resizer.AddChild(m_edgeFactorUIEdit, topright, RD_STRETCH_WIDTH);
+
     return TRUE;
+}
+
+INT_PTR PrimitiveVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

@@ -1,12 +1,12 @@
-// Win32++   Version 8.8
-// Release Date: 15th October 2020
+// Win32++   Version 8.9.1
+// Release Date: 10th September 2021
 //
 //      David Nash
 //      email: dnash@bigpond.net.au
 //      url: https://sourceforge.net/projects/win32-framework
 //
 //
-// Copyright (c) 2005-2020  David Nash
+// Copyright (c) 2005-2021  David Nash
 //
 // Permission is hereby granted, free of charge, to
 // any person obtaining a copy of this software and
@@ -86,7 +86,7 @@ namespace Win32xx
     class CCommonDialog : public CDialog
     {
     public:
-        CCommonDialog(UINT resID = 0) : CDialog(resID) {}
+        CCommonDialog() : CDialog(UINT(0)) {}
         virtual ~CCommonDialog(){}
 
     protected:
@@ -238,6 +238,7 @@ namespace Win32xx
 
     protected:
         virtual INT_PTR DialogProc(UINT, WPARAM, LPARAM);
+        virtual void    OnDestroy()    { Destroy(); }
 
         // Not intended to be overridden
         INT_PTR DialogProcDefault(UINT msg, WPARAM wparam, LPARAM lparam);
@@ -296,7 +297,7 @@ namespace Win32xx
         // private data
         LOGFONT     m_logFont;          // Font characteristics
         CHOOSEFONT  m_cf;               // ChooseFont parameters
-        CString     m_styleName;     // Style name on the dialog
+        CString     m_styleName;        // Style name on the dialog
     };
 
 }
@@ -342,11 +343,21 @@ namespace Win32xx
 
             // Retrieve pointer to CWnd object from Thread Local Storage TLS
             pCommonDlg = static_cast<CCommonDialog*>(pTLSData->pWnd);
-            assert(pCommonDlg);
-            pTLSData->pWnd = NULL;
+            if (pCommonDlg)
+            {
+                pTLSData->pWnd = NULL;
 
-            // Attach the HWND to the CommonDialog object
-            pCommonDlg->Attach(wnd);
+                // Attach the HWND to the CommonDialog object
+                pCommonDlg->Attach(wnd);
+            }
+        }
+
+        if (pCommonDlg == 0)
+        {
+            // Got a message for a window that's not in the map.
+            // We should never get here.
+            TRACE("*** Warning in CCommonDialog::CDHookProc: HWND not in window map ***\n");
+            return 0;
         }
 
         return pCommonDlg->DialogProc(msg, wparam, lparam);
@@ -380,7 +391,7 @@ namespace Win32xx
     }
 
     // Dialog procedure for the Color dialog. Override this function to
-    // customise the message handling.
+    // customize the message handling.
     inline INT_PTR CColorDialog::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
     {
         //  Message intercepted by the hook procedure are passed here.
@@ -407,10 +418,8 @@ namespace Win32xx
     // The Default message handling for CColorDialog. Don't override this
     // function, override DialogProc instead.
     // Note: OnCancel and OnOK are called by DoModal.
-    inline INT_PTR CColorDialog::DialogProcDefault(UINT msg, WPARAM wparam, LPARAM lparam)
+    inline INT_PTR CColorDialog::DialogProcDefault(UINT msg, WPARAM wparam, LPARAM)
     {
-        UNREFERENCED_PARAMETER(lparam);
-
         switch (msg)
         {
         case WM_INITDIALOG:     return OnInitDialog();
@@ -425,7 +434,6 @@ namespace Win32xx
     // An exception is thrown if the dialog box isn't created.
     inline INT_PTR CColorDialog::DoModal(HWND owner /* = 0 */)
     {
-        assert( GetApp() );    // Test if Win32++ has been started
         assert(!IsWindow());    // Only one window per CWnd instance allowed
 
         // Ensure this thread has the TLS index set
@@ -446,13 +454,17 @@ namespace Win32xx
             DWORD error = CommDlgExtendedError();
             if ((error != 0) && (error != CDERR_DIALOGFAILURE))
                 // ignore the exception caused by closing the dialog
-                throw CWinException(g_msgWndDoModal, error);
+                throw CWinException(GetApp()->MsgWndDialog(), error);
 
             OnCancel();
             return IDCANCEL;
         }
 
         OnOK();
+
+        // Prepare the CWnd for reuse.
+        Destroy();
+
         return IDOK;
     }
 
@@ -523,7 +535,7 @@ namespace Win32xx
     }
 
     // Dialog procedure for the FileOpen and FileSave dialogs. Override
-    // this function to customise the message handling.
+    // this function to customize the message handling.
     inline INT_PTR CFileDialog::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
     {
         //  Message intercepted by the hook procedure are passed here.
@@ -621,7 +633,6 @@ namespace Win32xx
     // Use SetParamaters to set a larger size if required.
     inline INT_PTR CFileDialog::DoModal(HWND owner /* = 0 */)
     {
-        assert( GetApp() );    // Test if Win32++ has been started
         assert(!IsWindow());    // Only one window per CWnd instance allowed
 
         // Ensure this thread has the TLS index set
@@ -645,7 +656,7 @@ namespace Win32xx
             {
                 // ignore the exception caused by closing the dialog
                 if (error != CDERR_DIALOGFAILURE || (m_ofn.Flags & OFN_EXPLORER))
-                    throw CWinException(g_msgWndDoModal, error);
+                    throw CWinException(GetApp()->MsgWndDialog(), error);
             }
 
             OnCancel();
@@ -653,6 +664,10 @@ namespace Win32xx
         }
 
         OnOK();
+
+        // Prepare the CWnd for reuse.
+        Destroy();
+
         return IDOK;
     }
 
@@ -839,20 +854,14 @@ namespace Win32xx
     // selection changes in the list box. The ID of the list or combo box in
     // which the selection occurred is boxID. The index of the current
     // selection is curSel. The control notification code is code.
-    inline void CFileDialog::OnLBSelChangedNotify(UINT boxID, UINT curSel, UINT code)
+    inline void CFileDialog::OnLBSelChangedNotify(UINT, UINT, UINT)
     {
-        UNREFERENCED_PARAMETER(boxID);
-        UNREFERENCED_PARAMETER(curSel);
-        UNREFERENCED_PARAMETER(code);
-
     }
 
     // This method handles the WM_NOTIFY message loop functions of the hook
     // procedure.
-    inline LRESULT CFileDialog::OnNotify(WPARAM wparam, LPARAM lparam)
+    inline LRESULT CFileDialog::OnNotify(WPARAM, LPARAM lparam)
     {
-        UNREFERENCED_PARAMETER(wparam);
-
         OFNOTIFY* pNotify = reinterpret_cast<OFNOTIFY*>(lparam);
         assert(pNotify);
         if (!pNotify) return 0;
@@ -886,7 +895,8 @@ namespace Win32xx
                 return TRUE;
         }
 
-        // The framework will call SetWindowLongPtr(DWLP_MSGRESULT, result) for non-zero returns
+        // The framework will call SetWindowLongPtr(DWLP_MSGRESULT, result)
+        // for non-zero returns.
         return FALSE;   // not handled
     }
 
@@ -905,10 +915,8 @@ namespace Win32xx
     //                    The application is responsible for displaying a warning message.
     // OFN_SHAREWARN    - Reject the file name and displays a warning message
     //                    (the same result as if there were no hook procedure).
-    inline LRESULT CFileDialog::OnShareViolation(LPCTSTR pPathName )
+    inline LRESULT CFileDialog::OnShareViolation(LPCTSTR)
     {
-        UNREFERENCED_PARAMETER(pPathName);
-
         return OFN_SHAREWARN; // default:
     }
 
@@ -1079,7 +1087,6 @@ namespace Win32xx
     inline BOOL CFindReplaceDialog::Create(BOOL isFindDialogOnly, LPCTSTR pFindWhat,
             LPCTSTR pReplaceWith, DWORD flags, HWND parent /* = 0*/)
     {
-        assert( GetApp() );    // Test if Win32++ has been started
         assert(!IsWindow());    // Only one window per CWnd instance allowed
 
         m_isFindDialogOnly = isFindDialogOnly;
@@ -1111,7 +1118,7 @@ namespace Win32xx
         if (wnd == 0)
         {
             // Throw an exception when window creation fails
-            throw CWinException(g_msgWndDoModal);
+            throw CWinException(GetApp()->MsgWndDialog());
         }
 
         m_findWhat.ReleaseBuffer();
@@ -1123,7 +1130,7 @@ namespace Win32xx
     }
 
     // Dialog procedure for the Find and Replace dialogs. Override this function
-    // to customise the message handling.
+    // to customize the message handling.
     inline INT_PTR CFindReplaceDialog::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
     {
         //  Message intercepted by the hook procedure are passed here.
@@ -1147,10 +1154,8 @@ namespace Win32xx
     // The Default message handling for CFindReplaceDialog. Don't override this function,
     // override DialogProc instead.
     // Note: OnCancel and OnOK are called by DoModal.
-    inline INT_PTR CFindReplaceDialog::DialogProcDefault(UINT message, WPARAM wparam, LPARAM lparam)
+    inline INT_PTR CFindReplaceDialog::DialogProcDefault(UINT message, WPARAM wparam, LPARAM)
     {
-        UNREFERENCED_PARAMETER(lparam);
-
         switch (message)
         {
         case WM_INITDIALOG:
@@ -1278,7 +1283,7 @@ namespace Win32xx
         m_fr.lpfnHook           = reinterpret_cast<LPCCHOOKPROC>(CDHookProc);
         m_fr.lpTemplateName     = fr.lpTemplateName;
 
-        // Enable the hook proc for the help button
+        // Enable the hook procedure for the help button
         if (m_fr.Flags & FR_SHOWHELP)
             m_fr.Flags |= FR_ENABLEHOOK;
     }
@@ -1380,7 +1385,7 @@ namespace Win32xx
     }
 
     // Dialog procedure for the Font dialog. Override this function
-    // to customise the message handling.
+    // to customize the message handling.
     inline INT_PTR CFontDialog::DialogProc(UINT msg, WPARAM wparam, LPARAM lparam)
     {
         //  Message intercepted by the hook procedure are passed here.
@@ -1407,9 +1412,8 @@ namespace Win32xx
     // The Default message handling for CFontDialog.
     // Don't override this function, override DialogProc instead.
     // Note: OnCancel and OnOK are called by DoModal.
-    inline INT_PTR CFontDialog::DialogProcDefault(UINT message, WPARAM wparam, LPARAM lparam)
+    inline INT_PTR CFontDialog::DialogProcDefault(UINT message, WPARAM wparam, LPARAM)
     {
-        UNREFERENCED_PARAMETER(lparam);
         if (message == WM_INITDIALOG)
         {
             OnInitDialog();
@@ -1426,7 +1430,6 @@ namespace Win32xx
     // Display the FontDialog. hOwner specifies dialog's owner window.
     inline INT_PTR CFontDialog::DoModal(HWND owner /* = 0 */)
     {
-        assert( GetApp() );    // Test if Win32++ has been started
         assert(!IsWindow());    // Only one window per CWnd instance allowed
 
         // Ensure this thread has the TLS index set
@@ -1451,13 +1454,15 @@ namespace Win32xx
             DWORD error = CommDlgExtendedError();
             if ((error != 0) && (error != CDERR_DIALOGFAILURE))
                 // ignore the exception caused by closing the dialog
-                throw CWinException(g_msgWndDoModal, error);
+                throw CWinException(GetApp()->MsgWndDialog(), error);
 
             OnCancel();
             return IDCANCEL;
         }
 
         OnOK();
+        Destroy();
+
         return IDOK;
     }
 
@@ -1511,14 +1516,13 @@ namespace Win32xx
     // Return the current font size, in 1/10th points (1 pt = 1/72 inch).
     inline int CFontDialog::GetSize() const
     {
-        HDC dc = ::GetDC(NULL); // the device context for the entire screen
+        CClientDC dc = GetDesktopWindow().GetDC(); // the device context for the entire screen
 
         // number of pixels per inch along the screen height.
-        int pxpi = GetDeviceCaps(dc, LOGPIXELSY);
+        int pxpi = dc.GetDeviceCaps(LOGPIXELSY);
 
         // point size is (pixel height) * 72 / pxpi, so in 1/10ths size is
         int charsize = -MulDiv(m_logFont.lfHeight, 720, pxpi);
-        ::ReleaseDC(NULL, dc);
         return charsize;
     }
 

@@ -15,9 +15,9 @@ RubberVisualsProperty::RubberVisualsProperty(const VectorProtected<ISelect> *pvs
 
 void RubberVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemRubber))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemRubber))
             continue;
         Rubber *const rubber = (Rubber *)m_pvsel->ElementAt(i);
 
@@ -44,9 +44,9 @@ void RubberVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void RubberVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemRubber))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemRubber))
             continue;
         Rubber *const rubber = (Rubber *)m_pvsel->ElementAt(i);
 
@@ -98,5 +98,34 @@ BOOL RubberVisualsProperty::OnInitDialog()
     m_rotZEdit.AttachItem(IDC_RUBBER_ROTZ_EDIT);
     m_hShowInEditorCheck = ::GetDlgItem(GetHwnd(), IDC_SHOW_IN_EDITOR_CHECK);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_imageCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_materialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hStaticRenderingCheck, topleft, 0);
+    m_resizer.AddChild(m_hVisibleCheck, topleft, 0);
+    m_resizer.AddChild(m_hReflectionEnabledCheck, topleft, 0);
+    m_resizer.AddChild(m_heightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_thicknessEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rotXEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rotYEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rotZEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hShowInEditorCheck, topleft, 0);
+
     return TRUE;
+}
+
+INT_PTR RubberVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

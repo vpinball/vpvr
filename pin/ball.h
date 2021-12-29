@@ -50,14 +50,14 @@ public:
 
    Vertex3Ds SurfaceVelocity(const Vertex3Ds& surfP) const;
    Vertex3Ds SurfaceAcceleration(const Vertex3Ds& surfP) const;
-   float Inertia() const { return (float)(2.0 / 5.0) * m_d.m_radius*m_d.m_radius * m_d.m_mass; }
+   float Inertia() const { return (float)(2.0/5.0) * m_d.m_radius*m_d.m_radius * m_d.m_mass; }
 
    void ApplySurfaceImpulse(const Vertex3Ds& rotI, const Vertex3Ds& impulse);
 
    void EnsureOMObject();
 
    // Per frame info
-   CCO(BallEx) *m_pballex; // Object model version of the ball
+   CCO(BallEx) *m_pballex;   // Object model version of the ball
 
    CollisionEvent m_coll;    // collision information, may not be a actual hit if something else happens first
 
@@ -78,7 +78,7 @@ public:
 
    unsigned int m_id;        // unique ID for each ball
 
-                      // rendering only:
+   // rendering only:
    bool m_reflectionEnabled;
    bool m_forceReflection;
    bool m_visible;
@@ -86,8 +86,8 @@ public:
 
    Matrix3 m_orientation;
 
-   char m_szImage[MAXTOKEN];
-   char m_szImageDecal[MAXTOKEN];
+   string m_image;
+   string m_imageDecal;
 
    float m_bulb_intensity_scale; // to dampen/increase contribution of the bulb lights (locally/by script)
 

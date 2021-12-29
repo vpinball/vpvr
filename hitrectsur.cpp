@@ -2,7 +2,7 @@
 
 #define PTINRECT(x,y) ((x) >= m_rcRect.left && (x) <= m_rcRect.right && (y) > m_rcRect.top && (y) < m_rcRect.bottom)
 
-HitRectSur::HitRectSur(const HDC hdc, const float zoom, const float offx, const float offy, const int width, const int height, FRect * const prcRect, vector<ISelect*> * const pvsel) : Sur(hdc, zoom, offx, offy, width, height)
+HitRectSur::HitRectSur(const HDC hdc, const float zoom, const float offx, const float offy, const int width, const int height, const FRect * const prcRect, vector<ISelect*> * const pvsel) : Sur(hdc, zoom, offx, offy, width, height)
 {
    m_rcRect = *prcRect;
    m_pvsel = pvsel;
@@ -21,7 +21,7 @@ HitRectSur::HitRectSur(const HDC hdc, const float zoom, const float offx, const 
       m_rcRect.top = temp;
    }
 
-   SetObject(NULL);
+   SetObject(nullptr);
 }
 
 HitRectSur::~HitRectSur()

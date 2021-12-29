@@ -2,7 +2,7 @@
 #include "Properties/DecalVisualsProperty.h"
 #include <WindowsX.h>
 
-DecalVisualsProperty::DecalVisualsProperty(const VectorProtected<ISelect> *pvsel) : BasePropertyDialog(IDD_PROPDECAL_VISUALS, pvsel), m_font(NULL)
+DecalVisualsProperty::DecalVisualsProperty(const VectorProtected<ISelect> *pvsel) : BasePropertyDialog(IDD_PROPDECAL_VISUALS, pvsel), m_font(nullptr)
 {
     m_typeList.push_back("Text");
     m_typeList.push_back("Image");
@@ -31,9 +31,9 @@ DecalVisualsProperty::~DecalVisualsProperty()
 
 void DecalVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDecal))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDecal))
             continue;
         Decal * const decal = (Decal *)m_pvsel->ElementAt(i);
 
@@ -75,9 +75,9 @@ void DecalVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void DecalVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDecal))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDecal))
             continue;
         Decal * const decal = (Decal *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -133,16 +133,17 @@ void DecalVisualsProperty::UpdateProperties(const int dispid)
 
                     fd.cbSizeofstruct = sizeof(FONTDESC);
 
-                    const int len = lstrlen(m_font->GetLogFont().lfFaceName) + 1;
+                    const LOGFONT font = m_font->GetLogFont();
+                    const int len = lstrlen(font.lfFaceName) + 1;
                     fd.lpstrName = (LPOLESTR)malloc(len * sizeof(WCHAR));
                     memset(fd.lpstrName, 0, len * sizeof(WCHAR));
-                    MultiByteToWideCharNull(CP_ACP, 0, m_font->GetLogFont().lfFaceName, -1, fd.lpstrName, len);
+                    MultiByteToWideCharNull(CP_ACP, 0, font.lfFaceName, -1, fd.lpstrName, len);
 
-                    fd.sWeight = (SHORT)m_font->GetLogFont().lfWidth;
-                    fd.sCharset = m_font->GetLogFont().lfCharSet;
-                    fd.fItalic = m_font->GetLogFont().lfItalic;
-                    fd.fUnderline = m_font->GetLogFont().lfUnderline;
-                    fd.fStrikethrough = m_font->GetLogFont().lfStrikeOut;
+                    fd.sWeight = (SHORT)font.lfWidth;
+                    fd.sCharset = font.lfCharSet;
+                    fd.fItalic = font.lfItalic;
+                    fd.fUnderline = font.lfUnderline;
+                    fd.fStrikethrough = font.lfStrikeOut;
 
                     // free old font first
                     decal->m_pIFont->Release();
@@ -172,7 +173,7 @@ void DecalVisualsProperty::UpdateProperties(const int dispid)
                 CHECK_UPDATE_ITEM(decal->m_d.m_rotation, PropertyDialog::GetFloatTextbox(m_rotationEdit), decal);
                 break;
             case IDC_SURFACE_COMBO:
-                CHECK_UPDATE_COMBO_TEXT(decal->m_d.m_szSurface, m_surfaceCombo, decal);
+                CHECK_UPDATE_COMBO_TEXT_STRING(decal->m_d.m_szSurface, m_surfaceCombo, decal);
                 break;
             default:
                 UpdateBaseProperties(decal, &decal->m_d, dispid);
@@ -203,12 +204,42 @@ BOOL DecalVisualsProperty::OnInitDialog()
     m_rotationEdit.AttachItem(1);
     m_surfaceCombo.AttachItem(IDC_SURFACE_COMBO);
     UpdateVisuals();
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC12), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC13), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC14), topleft, 0);
+    m_resizer.AddChild(m_materialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_typeCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hVerticalTextCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_fontColorButton, topleft, 0);
+    m_resizer.AddChild(m_fontDialogButton, topleft, 0);
+    m_resizer.AddChild(m_imageCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_sizingCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_textEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posXEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posYEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_widthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_heigthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rotationEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_surfaceCombo, topleft, RD_STRETCH_WIDTH);
     return TRUE;
 }
 
 INT_PTR DecalVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    switch (uMsg)
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   switch (uMsg)
     {
         case WM_DRAWITEM:
         {

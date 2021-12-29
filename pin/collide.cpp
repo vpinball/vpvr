@@ -20,7 +20,7 @@ void HitObject::FireHitEvent(Ball * const pball)
       pball->m_lastEventPos = pball->m_d.m_pos;    // remember last collision position
 
       const float normalDist = (m_ObjType == eHitTarget) ? 0.0f   // hit targets when used with a captured ball have always a too small distance
-         : 0.25f; //!! magic distance
+                                                         : 0.25f; //!! magic distance
 
       if (dist_ls > normalDist) // must be a new place if only by a little
          ((IFireEvents *)m_obj)->FireGroupEvent(DISPID_HitEvents_Hit);
@@ -39,6 +39,11 @@ void LineSeg::CalcHitBBox()
    // zlow and zhigh were already set in ctor
 }
 
+//
+// license:GPLv3+
+// Ported at: VisualPinball.Unity/VisualPinball.Unity/Physics/Collider/LineCollider.cs
+//
+
 float LineSeg::HitTestBasic(const BallS& ball, const float dtime, CollisionEvent& coll, const bool direction, const bool lateral, const bool rigid) const
 {
    if (!m_enabled || ball.m_frozen) return -1.0f;
@@ -46,7 +51,7 @@ float LineSeg::HitTestBasic(const BallS& ball, const float dtime, CollisionEvent
    const float ballvx = ball.m_vel.x;						// ball velocity
    const float ballvy = ball.m_vel.y;
 
-   const float bnv = ballvx * normal.x + ballvy * normal.y;		// ball velocity normal to segment, positive if receding, zero=parallel
+   const float bnv = ballvx*normal.x + ballvy*normal.y;		// ball velocity normal to segment, positive if receding, zero=parallel
    bool bUnHit = (bnv > C_LOWNORMVEL);
 
    if (direction && bUnHit)					// direction true and clearly receding from normal face
@@ -63,7 +68,7 @@ float LineSeg::HitTestBasic(const BallS& ball, const float dtime, CollisionEvent
 
    // for a spinner add the ball radius otherwise the ball goes half through the spinner until it moves
    if (m_ObjType == eSpinner || m_ObjType == eGate)
-      bnd = bcpd + rollingRadius;
+       bnd = bcpd + rollingRadius;
 
    const bool inside = (bnd <= 0.f);						// in ball inside object volume
 
@@ -76,15 +81,15 @@ float LineSeg::HitTestBasic(const BallS& ball, const float dtime, CollisionEvent
       if (lateral && (bnd <= (float)PHYS_TOUCH))
       {
          if (inside || (fabsf(bnv) > C_CONTACTVEL)			// fast velocity, return zero time
-                                                         // zero time for rigid fast bodies
+            // zero time for rigid fast bodies
             || (bnd <= (float)(-PHYS_TOUCH)))
             hittime = 0;									// slow moving but embedded
          else
             hittime = bnd
 #ifdef NEW_PHYSICS
-            / -bnv;
+             / -bnv;
 #else
-            *(float)(1.0 / (2.0*PHYS_TOUCH)) + 0.5f;	        // don't compete for fast zero time events
+             *(float)(1.0/(2.0*PHYS_TOUCH)) + 0.5f;	        // don't compete for fast zero time events
 #endif
       }
       else if (fabsf(bnv) > C_LOWNORMVEL)                   // not velocity low ????
@@ -97,12 +102,12 @@ float LineSeg::HitTestBasic(const BallS& ball, const float dtime, CollisionEvent
       if (bnv * bnd >= 0.f)                                 // outside-receding || inside-approaching
       {
          if ((m_ObjType != eTrigger) ||                     // not a trigger
-            (!ball.m_vpVolObjs) ||
-            // is a trigger, so test:
-            (fabsf(bnd) >= ball.m_radius*0.5f) ||          // not too close ... nor too far away
-            (inside != (FindIndexOf(*(ball.m_vpVolObjs), m_obj) < 0))) // ...ball outside and hit set or ball inside and no hit set
+             (!ball.m_vpVolObjs) ||
+             // is a trigger, so test:
+             (fabsf(bnd) >= ball.m_radius*0.5f) ||          // not too close ... nor too far away
+             (inside != (FindIndexOf(*(ball.m_vpVolObjs), m_obj) < 0))) // ...ball outside and hit set or ball inside and no hit set
          {
-            return -1.0f;
+              return -1.0f;
          }
          hittime = 0;
          bUnHit = !inside;	// ball on outside is UnHit, otherwise it's a Hit
@@ -113,15 +118,15 @@ float LineSeg::HitTestBasic(const BallS& ball, const float dtime, CollisionEvent
 
    if (infNaN(hittime) || hittime < 0.f || hittime > dtime)
    {
-      return -1.0f; // time is outside this frame ... no collision
+       return -1.0f; // time is outside this frame ... no collision
    }
-   const float btv = ballvx * normal.y - ballvy * normal.x;      // ball velocity tangent to segment with respect to direction from V1 to V2
+   const float btv = ballvx*normal.y - ballvy*normal.x;      // ball velocity tangent to segment with respect to direction from V1 to V2
    const float btd = (ballx - v1.x)*normal.y - (bally - v1.y)*normal.x // ball tangent distance
       + btv * hittime;                                       // ball tangent distance (projection) (initial position + velocity * hitime)
 
    if (btd < -C_TOL_ENDPNTS || btd > length + C_TOL_ENDPNTS) // is the contact off the line segment??? 
    {
-      return -1.0f;
+       return -1.0f;
    }
    if (!rigid)                                               // non rigid body collision? return direction
       coll.m_hitflag = bUnHit;                               // UnHit signal is receding from outside target
@@ -129,20 +134,20 @@ float LineSeg::HitTestBasic(const BallS& ball, const float dtime, CollisionEvent
    const float hitz = ball.m_pos.z + ball.m_vel.z*hittime;   // check too high or low relative to ball rolling point at hittime
 
    if (hitz + ball.m_radius*0.5f < m_hitBBox.zlow            // check limits of object's height and depth  
-      || hitz - ball.m_radius*0.5f > m_hitBBox.zhigh)
+    || hitz - ball.m_radius*0.5f > m_hitBBox.zhigh)
    {
-      return -1.0f;
+       return -1.0f;
    }
    coll.m_hitnormal.x = normal.x; // hit normal is same as line segment normal
    coll.m_hitnormal.y = normal.y;
    coll.m_hitnormal.z = 0.0f;
 
    coll.m_hitdistance = bnd;      // actual contact distance ...
-                                  //coll.m_hitRigid = rigid;     // collision type
+   //coll.m_hitRigid = rigid;     // collision type
 
-                                  // check for contact
+   // check for contact
    coll.m_isContact = (fabsf(bnv) <= C_CONTACTVEL && fabsf(bnd) <= (float)PHYS_TOUCH);
-   if (coll.m_isContact)
+   if(coll.m_isContact)
       coll.m_hit_org_normalvelocity = bnv;
 
    return hittime;
@@ -174,9 +179,10 @@ void LineSeg::CalcNormal()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Ported at: VisualPinball.Unity/VisualPinball.Unity/Physics/Collider/CircleCollider.cs
 
 float HitCircle::HitTestBasicRadius(const BallS& ball, const float dtime, CollisionEvent& coll,
-   const bool direction, const bool lateral, const bool rigid) const // all of these true = bumper/flipperbase/gate/spinner, all false = kicker/trigger
+                                    const bool direction, const bool lateral, const bool rigid) const // all of these true = bumper/flipperbase/gate/spinner, all false = kicker/trigger
 {
    if (!m_enabled || ball.m_frozen) return -1.0f;
 
@@ -192,9 +198,9 @@ float HitCircle::HitTestBasicRadius(const BallS& ball, const float dtime, Collis
       // handle ball over target?
       //const float hcap = radius*(float)(1.0/5.0);           // cap height to hit-circle radius ratio
       //targetRadius = radius*radius/(hcap*2.0f) + hcap*0.5f; // c = (r^2+h^2)/(2*h)
-      targetRadius = radius * (float)(13.0 / 5.0);              // optimized version of above code
-                                                                //c.z = m_hitBBox.zhigh - (targetRadius - hcap);        // b = c - h
-      c.z = m_hitBBox.zhigh - radius * (float)(12.0 / 5.0);     // optimized version of above code
+      targetRadius = radius*(float)(13.0 / 5.0);              // optimized version of above code
+      //c.z = m_hitBBox.zhigh - (targetRadius - hcap);        // b = c - h
+      c.z = m_hitBBox.zhigh - radius*(float)(12.0 / 5.0);     // optimized version of above code
       dist.z = ball.m_pos.z - c.z;                            // ball rolling point - capsule center height 			
    }
    else
@@ -263,7 +269,7 @@ float HitCircle::HitTestBasicRadius(const BallS& ball, const float dtime, Collis
          (a < 1.0e-8f)) return -1.0f; // no hit ... ball not moving relative to object
 
       float time1, time2;
-      if (!SolveQuadraticEq(a, 2.0f*b, bcddsq - targetRadius * targetRadius, time1, time2))
+      if (!SolveQuadraticEq(a, 2.0f*b, bcddsq - targetRadius*targetRadius, time1, time2))
          return -1.0f;
 
       bUnhit = (time1*time2 < 0.f);
@@ -306,7 +312,7 @@ float HitCircle::HitTestBasicRadius(const BallS& ball, const float dtime, Collis
       coll.m_hit_org_normalvelocity = bnv;
 
    coll.m_hitdistance = bnd;   //actual contact distance ... 
-                               //coll.m_hitRigid = rigid;  // collision type
+   //coll.m_hitRigid = rigid;  // collision type
 
    return hittime;
 }
@@ -333,9 +339,8 @@ void HitCircle::Collide(const CollisionEvent& coll)
    coll.m_ball->Collide3DWall(coll.m_hitnormal, m_elasticity, m_elasticityFalloff, m_friction, m_scatter);
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
-
+// Ported at: VisualPinball.Unity/VisualPinball.Unity/Physics/Collider/LineZCollider.cs
 
 float HitLineZ::HitTest(const BallS &ball, const float dtime, CollisionEvent& coll) const
 {
@@ -406,7 +411,7 @@ float HitLineZ::HitTest(const BallS &ball, const float dtime, CollisionEvent& co
       coll.m_hit_org_normalvelocity = bnv;
 
    coll.m_hitdistance = bnd; // actual contact distance
-                             //coll.m_hitRigid = true;
+   //coll.m_hitRigid = true;
 
    return hittime;
 }
@@ -430,9 +435,8 @@ void HitLineZ::Collide(const CollisionEvent& coll)
       FireHitEvent(coll.m_ball);
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
-
+// Ported at: VisualPinball.Unity/VisualPinball.Unity/Physics/Collider/PointCollider.cs
 
 float HitPoint::HitTest(const BallS &ball, const float dtime, CollisionEvent& coll) const
 {
@@ -497,7 +501,7 @@ float HitPoint::HitTest(const BallS &ball, const float dtime, CollisionEvent& co
       coll.m_hit_org_normalvelocity = bnv;
 
    coll.m_hitdistance = bnd;                    // actual contact distance
-                                                //coll.m_hitRigid = true;
+   //coll.m_hitRigid = true;
 
    return hittime;
 }
@@ -515,6 +519,10 @@ void HitPoint::Collide(const CollisionEvent& coll)
    if (dot <= -m_threshold)
       FireHitEvent(coll.m_ball);
 }
+
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
 
 void DoHitTest(const Ball *const pball, const HitObject *const pho, CollisionEvent& coll)
 {

@@ -201,7 +201,6 @@ public:
    {
       return x*pv.x + y*pv.y + z*pv.z;
    }
-
    float Dot(const Vertex3D_NoTex2 &pv) const
    {
       return x*pv.x + y*pv.y + z*pv.z;
@@ -231,11 +230,15 @@ public:
 inline Vertex3Ds CrossProduct(const Vertex3Ds &pv1, const Vertex3Ds &pv2)
 {
    return Vertex3Ds(pv1.y * pv2.z - pv1.z * pv2.y,
-      pv1.z * pv2.x - pv1.x * pv2.z,
-      pv1.x * pv2.y - pv1.y * pv2.x);
+                    pv1.z * pv2.x - pv1.x * pv2.z,
+                    pv1.x * pv2.y - pv1.y * pv2.x);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//
+// license:GPLv3+
+// Ported at: VisualPinball.Engine/Math/Vertex3D.cs
+//
 
 inline Vertex3Ds GetRotatedAxis(const float angle, const Vertex3Ds &axis, const Vertex3Ds &temp)
 {
@@ -262,6 +265,10 @@ inline Vertex3Ds GetRotatedAxis(const float angle, const Vertex3Ds &axis, const 
 
    return Vertex3Ds(temp.Dot(rotMatrixRow0), temp.Dot(rotMatrixRow1), temp.Dot(rotMatrixRow2));
 }
+
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
 
 void RotateAround(const Vertex3Ds &pvAxis, Vertex3D_NoTex2 * const pvPoint, int count, float angle);
 void RotateAround(const Vertex3Ds &pvAxis, Vertex3Ds * const pvPoint, int count, float angle);
@@ -299,7 +306,7 @@ inline Vertex3Ds cos_hemisphere_sample(const float u, const float v) // u,v in [
 inline Vertex3Ds rotate_to_vector_upper(const Vertex3Ds &vec, const Vertex3Ds &normal)
 {
    /*const float c = Vertex3Ds(0,1,0).Dot(normal);
-   if (fabsf(c) < 0.999f)
+   if(fabsf(c) < 0.999f)
    {
    const Vertex3Ds v = CrossProduct(Vertex3Ds(0,1,0),normal);
    const float h = (1.0f-c)/(v.Dot(v));
@@ -328,7 +335,7 @@ inline Vertex3Ds rotate_to_vector_upper(const Vertex3Ds &vec, const Vertex3Ds &n
 inline Vertex3Ds rotate_to_vector_full(const Vertex3Ds &vec, const Vertex3Ds &normal)
 {
    /*const float c = Vertex3Ds(0,1,0).Dot(normal);
-   if (fabsf(c) < 0.999f)
+   if(fabsf(c) < 0.999f)
    {
    const Vertex3Ds v = CrossProduct(Vertex3Ds(0,1,0),normal);
    const float h = (1.0f-c)/(v.Dot(v));
@@ -384,4 +391,22 @@ public:
 
     bool2() {}
     bool2(const bool _x, const bool _y) : x(_x), y(_y) {}
+};
+
+class int2
+{
+public:
+    int x, y;
+
+    int2() {}
+    int2(const int _x, const int _y) : x(_x), y(_y) {}
+};
+
+class short2
+{
+public:
+    short x, y;
+
+    short2() {}
+    short2(const short _x, const short _y) : x(_x), y(_y) {}
 };

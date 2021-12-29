@@ -1,37 +1,32 @@
 #pragma once
 
 // this is the djb2 string hash algorithm, str is converted to lower case
-inline unsigned long StringHash(const unsigned char *str)
+inline size_t StringHash(const std::string& str)
 {
    //MessageBox(0, str, 0, 0);
-   unsigned long hash = 5381;
-   int c;
+   unsigned int hash = 5381;
 
-   while ((c = *str++))
-      hash = ((hash << 5) + hash) + tolower(c); /* hash * 33 + c */
+   for (size_t i = 0; i < str.length(); ++i)
+      hash = ((hash << 5) + hash) + tolower(str[i]); /* hash * 33 + str[i] */
 
    return hash;
 }
 
 // very simple hash, but good enough so far for the obj loader (i.e. hash gen speed matters!)
 template <size_t T>
-unsigned int FloatHash(const float a[T])
+size_t FloatHash(const float a[T])
 {
    const unsigned char *in = reinterpret_cast<const unsigned char*>(a);
    unsigned int ret = 2654435761u;
    for (size_t i = 0; i < (T * sizeof(float)); ++i)
       ret = (ret * 2654435761u) ^ *in++;
-
+   
    return ret;
 }
 
-
-// case-insensitive hash
-inline unsigned long StringHash(const char *str) { return StringHash((const unsigned char*)str); }
-
 struct StringHashFunctor
 {
-   unsigned long operator()(const char* str) const
+   size_t operator()(const std::string& str) const
    {
       // use case-insensitive hash because user can enter the names in lower case from the script
       return StringHash(str);
@@ -40,10 +35,10 @@ struct StringHashFunctor
 
 struct StringComparator
 {
-   bool operator()(const char* str1, const char* str2) const
+   bool operator()(const std::string& str1, const std::string& str2) const
    {
       // use case-insensitive compare because user can enter the names in lower case from the script
-      return lstrcmpi(str1, str2) == 0;
+      return lstrcmpi(str1.c_str(), str2.c_str()) == 0;
    }
 };
 
@@ -52,16 +47,16 @@ struct StringComparator
 // ignores Idx-int completely!
 struct Vertex3D_NoTex2IdxHashFunctor
 {
-   unsigned long operator()(const std::pair<const Vertex3D_NoTex2*, const unsigned int>& a) const
+   size_t operator()(const std::pair<const Vertex3D_NoTex2*,const unsigned int>& a) const
    {
-      return FloatHash<sizeof(Vertex3D_NoTex2) / sizeof(float)>((const float*)a.first);
+      return FloatHash<sizeof(Vertex3D_NoTex2)/sizeof(float)>((const float*)a.first);
    }
 };
 
 // ignores Idx-int completely!
 struct Vertex3D_NoTex2IdxComparator
 {
-   bool operator()(const std::pair<const Vertex3D_NoTex2*, const unsigned int>& a, const std::pair<const Vertex3D_NoTex2*, const unsigned int>& b) const
+   bool operator()(const std::pair<const Vertex3D_NoTex2*,const unsigned int>& a, const std::pair<const Vertex3D_NoTex2*,const unsigned int>& b) const
    {
       return memcmp(a.first, b.first, sizeof(Vertex3D_NoTex2)) == 0;
    }

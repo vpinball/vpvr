@@ -20,7 +20,7 @@ HRESULT DispReel::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
    m_d.m_v2.x = x + getBoxWidth();
    m_d.m_v2.y = y + getBoxHeight();
 
-   return InitVBA(fTrue, 0, NULL);
+   return InitVBA(fTrue, 0, nullptr);
 }
 
 // set the defaults for the objects persistent data (m_d.*) in case this
@@ -34,18 +34,13 @@ void DispReel::SetDefaults(bool fromMouseClick)
 
    // set all the Data defaults
    HRESULT hr;
-   char buf[MAXTOKEN] = { 0 };
-   hr = LoadValueString("DefaultProps\\Ramp", "Image", buf, MAXTOKEN);
+   hr = LoadValue("DefaultProps\\Ramp", "Image", m_d.m_szImage);
    if ((hr != S_OK) || !fromMouseClick)
       m_d.m_szImage.clear();
-   else
-      m_d.m_szImage = buf;
 
-   hr = LoadValueString("DefaultProps\\Ramp", "Sound", buf, MAXTOKEN);
+   hr = LoadValue("DefaultProps\\Ramp", "Sound", m_d.m_szSound);
    if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_szSound = "";
-   else
-      m_d.m_szSound = buf;
+      m_d.m_szSound.clear();
 
    m_d.m_useImageGrid = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\EMReel", "UseImageGrid", false) : false;
    m_d.m_visible = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\EMReel", "Visible", true) : true;
@@ -65,8 +60,8 @@ void DispReel::SetDefaults(bool fromMouseClick)
 
 void DispReel::WriteRegDefaults()
 {
-   SaveValueString("DefaultProps\\EMReel", "Image", m_d.m_szImage);
-   SaveValueString("DefaultProps\\EMReel", "Sound", m_d.m_szSound);
+   SaveValue("DefaultProps\\EMReel", "Image", m_d.m_szImage);
+   SaveValue("DefaultProps\\EMReel", "Sound", m_d.m_szSound);
    SaveValueBool("DefaultProps\\Decal", "UseImageGrid", m_d.m_useImageGrid);
    SaveValueBool("DefaultProps\\Decal", "Visible", m_d.m_visible);
    SaveValueInt("DefaultProps\\Decal", "ImagesPerRow", m_d.m_imagesPerGridRow);
@@ -142,7 +137,7 @@ void DispReel::UIRenderPass2(Sur * const psur)
    psur->SetBorderColor(RGB(0, 0, 0), false, 0);
    psur->SetFillColor(-1);
    psur->SetObject(this);
-   psur->SetObject(NULL);
+   psur->SetObject(nullptr);
 
    // draw background box
    psur->Rectangle(m_d.m_v1.x, m_d.m_v1.y, m_d.m_v2.x, m_d.m_v2.y);
@@ -387,7 +382,7 @@ void DispReel::Animate()
             {
                WCHAR mySound[MAXTOKEN];
                MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szSound.c_str(), -1, mySound, MAXTOKEN);
-               BSTR mySoundBSTR = SysAllocString(mySound);
+               const BSTR mySoundBSTR = SysAllocString(mySound);
                m_ptable->PlaySound(mySoundBSTR, 0, 1.0f, 0.f, 0.f, 0, VARIANT_FALSE, VARIANT_TRUE, 0.f);
                SysFreeString(mySoundBSTR);
             }
@@ -468,8 +463,8 @@ HRESULT DispReel::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool back
 {
    BiffWriter bw(pstm, hcrypthash);
 
-   bw.WriteStruct(FID(VER1), &m_d.m_v1, sizeof(Vertex2D));
-   bw.WriteStruct(FID(VER2), &m_d.m_v2, sizeof(Vertex2D));
+   bw.WriteVector2(FID(VER1), m_d.m_v1);
+   bw.WriteVector2(FID(VER2), m_d.m_v2);
    bw.WriteInt(FID(CLRB), m_d.m_backcolor);
    bw.WriteBool(FID(TMON), m_d.m_tdr.m_TimerEnabled);
    bw.WriteInt(FID(TMIN), m_d.m_tdr.m_TimerInterval);
@@ -512,43 +507,43 @@ bool DispReel::LoadToken(const int id, BiffReader * const pbr)
    switch (id)
    {
    case FID(PIID): pbr->GetInt((int *)pbr->m_pdata); break;
-   case FID(VER1): pbr->GetStruct(&m_d.m_v1, sizeof(Vertex2D)); break;
-   case FID(VER2): pbr->GetStruct(&m_d.m_v2, sizeof(Vertex2D)); break;
-   case FID(WDTH): pbr->GetFloat(&m_d.m_width); break;
-   case FID(HIGH): pbr->GetFloat(&m_d.m_height); break;
-   case FID(CLRB): pbr->GetInt(&m_d.m_backcolor); break;
-   case FID(TMON): pbr->GetBool(&m_d.m_tdr.m_TimerEnabled); break;
-   case FID(TMIN): pbr->GetInt(&m_d.m_tdr.m_TimerInterval); break;
-   case FID(NAME): pbr->GetWideString(m_wzName); break;
-   case FID(TRNS): pbr->GetBool(&m_d.m_transparent); break;
+   case FID(VER1): pbr->GetVector2(m_d.m_v1); break;
+   case FID(VER2): pbr->GetVector2(m_d.m_v2); break;
+   case FID(WDTH): pbr->GetFloat(m_d.m_width); break;
+   case FID(HIGH): pbr->GetFloat(m_d.m_height); break;
+   case FID(CLRB): pbr->GetInt(m_d.m_backcolor); break;
+   case FID(TMON): pbr->GetBool(m_d.m_tdr.m_TimerEnabled); break;
+   case FID(TMIN): pbr->GetInt(m_d.m_tdr.m_TimerInterval); break;
+   case FID(NAME): pbr->GetWideString(m_wzName,sizeof(m_wzName)/sizeof(m_wzName[0])); break;
+   case FID(TRNS): pbr->GetBool(m_d.m_transparent); break;
    case FID(IMAG): pbr->GetString(m_d.m_szImage); break;
    case FID(RCNT):
    {
       float reel;
-      pbr->GetFloat(&reel);
+      pbr->GetFloat(reel);
       m_d.m_reelcount = (int)reel;
       break;
    }
-   case FID(RSPC): pbr->GetFloat(&m_d.m_reelspacing); break;
+   case FID(RSPC): pbr->GetFloat(m_d.m_reelspacing); break;
    case FID(MSTP):
    {
       float motorsteps;
-      pbr->GetFloat(&motorsteps);
+      pbr->GetFloat(motorsteps);
       m_d.m_motorsteps = (int)motorsteps;
       break;
    }
    case FID(SOUN): pbr->GetString(m_d.m_szSound); break;
-   case FID(UGRD): pbr->GetBool(&m_d.m_useImageGrid); break;
-   case FID(VISI): pbr->GetBool(&m_d.m_visible); break;
-   case FID(GIPR): pbr->GetInt(&m_d.m_imagesPerGridRow); break;
+   case FID(UGRD): pbr->GetBool(m_d.m_useImageGrid); break;
+   case FID(VISI): pbr->GetBool(m_d.m_visible); break;
+   case FID(GIPR): pbr->GetInt(m_d.m_imagesPerGridRow); break;
    case FID(RANG):
    {
       float dig;
-      pbr->GetFloat(&dig);
+      pbr->GetFloat(dig);
       m_d.m_digitrange = (int)dig;
       break;
    }
-   case FID(UPTM): pbr->GetInt(&m_d.m_updateinterval); break;
+   case FID(UPTM): pbr->GetInt(m_d.m_updateinterval); break;
    case FID(FONT): //!! deprecated, only here to support loading of old tables
    {
       IFont *pIFont;
@@ -697,7 +692,7 @@ STDMETHODIMP DispReel::get_Image(BSTR *pVal)
 STDMETHODIMP DispReel::put_Image(BSTR newVal)
 {
    char szImage[MAXTOKEN];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, nullptr, nullptr);
    const Texture * const tex = m_ptable->GetImage(szImage);
    if (tex && tex->IsHDR())
    {
@@ -734,7 +729,7 @@ STDMETHODIMP DispReel::get_Sound(BSTR *pVal)
 STDMETHODIMP DispReel::put_Sound(BSTR newVal)
 {
    char buf[MAXTOKEN];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXTOKEN, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXTOKEN, nullptr, nullptr);
    m_d.m_szSound = buf;
 
    return S_OK;

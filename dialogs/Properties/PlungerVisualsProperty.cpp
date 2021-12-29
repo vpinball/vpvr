@@ -31,9 +31,9 @@ PlungerVisualsProperty::PlungerVisualsProperty(const VectorProtected<ISelect> *p
 
 void PlungerVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPlunger))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPlunger))
             continue;
         Plunger * const plunger = (Plunger *)m_pvsel->ElementAt(i);
         if (dispid == IDC_PLUNGER_TYPE_COMBO || dispid == -1)
@@ -76,9 +76,9 @@ void PlungerVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void PlungerVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPlunger))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPlunger))
             continue;
         Plunger * const plunger = (Plunger *)m_pvsel->ElementAt(i);
 
@@ -132,7 +132,7 @@ void PlungerVisualsProperty::UpdateProperties(const int dispid)
                 CHECK_UPDATE_ITEM(plunger->m_d.m_v.y, PropertyDialog::GetFloatTextbox(m_posYEdit), plunger);
                 break;
             case 1502:
-                CHECK_UPDATE_COMBO_TEXT(plunger->m_d.m_szSurface, m_surfaceCombo, plunger);
+                CHECK_UPDATE_COMBO_TEXT_STRING(plunger->m_d.m_szSurface, m_surfaceCombo, plunger);
                 break;
             default:
                 UpdateBaseProperties(plunger, &plunger->m_d, dispid);
@@ -166,5 +166,53 @@ BOOL PlungerVisualsProperty::OnInitDialog()
     m_surfaceCombo.AttachItem(1502);
     m_hReflectionEnabledCheck = ::GetDlgItem(GetHwnd(), IDC_REFLECT_ENABLED_CHECK);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC12), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC13), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC14), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC15), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC16), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC17), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC18), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC19), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC20), topleft, 0);
+    m_resizer.AddChild(m_typeCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_materialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_imageCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_flatFramesEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_widthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_zAdjustmentEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rodDiameterEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_tipShapeEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_ringGapEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_ringDiamEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_ringWidthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_springDiamEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_springGaugeEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_springLoopsEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_endLoopsEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posXEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posYEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_surfaceCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hReflectionEnabledCheck, topleft, 0);
+
     return TRUE;
+}
+
+INT_PTR PlungerVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

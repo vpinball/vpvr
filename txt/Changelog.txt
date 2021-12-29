@@ -1,149 +1,3 @@
-SDL2 / VR Changelog
-------------------------
-
-- Updated to VPX 10.7 commit R4407
-
-- Shader Uniform lookup improved (performance)
-
-- Various updates from Rawnei and DJRobX (improving Render Quality)
-
-- Updated to VPX 10.7 commit R3991
-
-- Updated OpenVR to SDK 1.9.16
-
-- Splitted the Video settings to the old Video settings menu and a VR settings menu. Also different registry entries are used for
-  various entries like Stereo mode, display, resolution, postprocessing etc. Ball rendering and Day/Night cycle is used for both.
-
-- Auto detect if SteamVR drivers are installed. If not desktop mode is started up. If VR drivers are installed and the HMD is turned
-  on, VPVR starts in VR mode. Otherwise a prompt shows up to choose between VR mode and desktop mode (can be disabled).
-
-- Supersampling can now be adjusted with a slider from 0.5 (downsampling) up to 2.0. The factor describes the scaling in X and Y direction
-  so 2.0 increases the pixelcount by factor 4.
-
-- Scaling of the table is now possible in VR settings. You can either set a factor (e.g. 1.1 increases the table by 10%) or you can
-  scale all tables to a fixed width (in centimeters) to match your PinSim Controller. The scaling factor has no lower/upper limit so yes
-  you can scale up the table to play soccer. Or be attacked by a giant rolling Indy-Trap. Or scale it down to matchbox size. If it gets
-  weird I warned you. If you have issues locating the table or getting nightmares, it is NOT my fault. Default values are the box unchecked
-  and 1 (ONE).
-
-- The near/far plane can be adjusted now (in centimeters). Both planes are like walls in front of you. Everything between you and the near
-  plane, and everything behind the farplane is invisible. Might be helpful if you have a room around your table or changed the scaling too
-  much. Depending on the GPU having too small values for the near plane or too large values for the far plane, Z-fighting might occur.
-
-- Some bug fixes.
-
-- More fixes and performance improvements by Rawnei
-
-- Added support for BAM Headtracking (Thanks to Rafal from ravarcade.pl). Usage:
-	All works almost same way as with Arcade Pinball, but you don't have control over table location.
-	1. Player need working Future Pinball with head tracking. (FP is used to setup head tracking, FP is closed).
-	2. Start BAM-Tracker.exe, select head tracking method, left it running.
-	3. Run VPinballX_GL.exe.
-	https://www.youtube.com/watch?v=g-EpTp_3wKo
-
-- Shader and rendering fixes by Rawnei
-
-- Fixed x64 support. If it fails check if the architecture from VPVR matches the architecture from VPinMame.
-
-- Big render engine update that increases the frame rate. This update is based on an article by Krzysztof Kondrak which can be
-  found at http://kondrak.info/blog/programming/rendering-in-vr-using-opengl-instancing/ Benchmarking with Nvidia NSight on the IJ table
-  shows that this update reduces the rendering time on my i5-4590 with 970GTX from 32ms (CPU) to 15ms per frame. The GPU time is increased 
-  from 3ms to 7ms. Due to additional overhead in VPVR this increases the framerate from 25fps to 45fps. That is still not satisfying, but
-  a lot better than the initial commit.
-
-- Fixed a bug for habitrail ramps. Also slightly increased performance with this fix.
-
-- Improved performance with Uniform caching and reduced number of shader program switches.
-
-NOTE: Several changes in this version increases CPU and GPU load, even if you don't use VR or stereo support. Also this is just an early
-	TechDemo / AlphaVersion / Proof of Concept that contain many bugs, the code quality is rather low and chaotic, and not everything is
-	working yet. Main reasons for the problems are the change of the rendering API from DX9 to OpenGL/SDL2 (since OpenVR does not support 
-	DX9), changing the rendering pipeline from static camera and semi-static rendering to fully dynamic rendering. Also some code for the
-	DX9 build was reworked. Also this project was forked from VPX 10.4.0, but I've tried to apply all commits until R3590. If I've messed
-	up somewhere, feel free to report a bug.
-
-How to compile: At the moment only the VS2017 project is up to date, so either get Visual Studio 2017 or update the older project files.
-	Select either Debug_SDL (for debugging) or Release_SDL (for playing) and x86. The normal Debug and Release projects are still using 
-	the DX9 API. This is very helpful for debugging, but there is no VR support. Do not forget to set the correct folders in the project.
-	
-How to run: Get the normal version of VPX to work properly first. There are several good tutorials available. If your setup
-	is running fine, just copy the VisualPinballX_GL.exe, the .dll files and the glshader folder to your Visual Pinball folder and run 
-	Steam VR before executing VisualPinballX_SDL2.exe. In VPX go to the Prefences->Video Options Menu and select on the bottom left
-	in the 3D Stereo Output Menu Steam VR. If you have performance issues, disable stuff like Ambient Occlusion, Anti-Aliasing and Bloom.
-	You can still select a normal Display Window that shows the VR rendering on the screen as Side-By-Side.
-	
-	Set the VR slope to the visual slope (e.g. 6.5 degrees). This does not affect physics, only visual apperance.
-	Set the VR Table orientation to rotate the table in the room. 0 is the default heading of the OpenVR Chaperone, the table is rotated
-	clockwise. The rotation center is the far left corner of the playfield.
-	Set the VR Table X/Y values. Positive X values moves the table to the right when looking in the default heading direction of the Chaperone.
-	Positive Y values moves the table forward. Negative X to the left, Negative Y backward. Always aligned to the default orientation, not
-	the table orientation. Maybe later I make this more intuitive and also configurable while playing.
-	The VR table height is the playfield height on the far left edge above the ground. 
-	Note: All units are in degree or centimeters. (one inch is 2.54 centimeters).
-	
-- Added SDL2 and OpenGL as new Render Pipeline. Switching between DX9 and OpenGL is only possible at compile time.
-
-- Several changes to the DX9 rendering pipeline. I've also added SDL2, SDL2_ttf, glew and glad to the project. Licenses should all be
-	added to the license.txt
-	
-- added support for SteamVR (OpenGL only). To use VR you need a SteamVR compatible HMD, a Steam account, the Steam client with SteamVR 
-	client installed. More information on OpenVR and SteamVR can be found on http://steamvr.com Documentation for the API is available on 
-	https://github.com/ValveSoftware/openvr/wiki/API-Documentation Also check if your VR setup is working. There are some nice free games
-	available: https://store.steampowered.com/search/?vrsupport=402
-
-- removed all static rendering for all rendering modes. At the moment this increases CPU and GPU load for all render modes, but only VR 
-  support benefits from this.
-
-- stereo is no longer computed from depth buffer. If any stereo mode is enabled it is always rendered to two independent buffers. This 
-  increases CPU and GPU load for all stereo modes, but this can increase the image quality for stereo rendering. Also AA can be enabled for 
-  all stereo modes.
-  
-- Known Bugs:
-	- Mirroring of the playfield is broken. (I will fix it as soon as the performance problem is solved...)
-	- Memory leak when closing and restarting a table (DX9 and SDL)
-	- Severe Memory leak (not freeing any textures) when opening another table
-	- Enviromental mapping on metal and balls looks ugly.
-	- Performance sucks. Best thing is to disable all image enhancements. I'm working on this issue.
-	- The room is black and the cabinet does not exist. Will be added later. If you have some nice meshes with textures as a cabinet or
-	  a room feel free to share (please only stuff with a free to share license).
-	- DMD might be missing or missplaced. Initial support for directB2S, but only for backglass image and DMDs. No reels or 7-seg.
-	- At the moment this is only tested with my HTC Vive and a Nvidia GPU. If you have problems with an AMD card or another HMD (Oculus 
-	  Rift, Microsoft Mixed VR), I'm trying to do my best, but it's always hard to debug without the hardware. The SDL2 port was shortly
-	  tested on a Intel UHD 620. Yes it "runs", but it's unplayable slow.
-	- Some issues with Rendering of Quads (sprites or whatever they are called). Most of them should be fixed in the lates commit.
-	- DX9 The SRGB change from r3590 is disabled since it produces some strange issues with insert lights
-	- Sometimes there themes to be a ball below the floor.
-	
-- If you find new Bugs:
-	- Short checklist before you submit a bug:
-		- Is your normal VPX version working properly?
-		- Is OpenVR working? There are several free games available on steam to test.
-		- Is the table working properly in your normal VPX version?
-		- If you have compiled/changed the code yourself, check if the problem also exists with the DX9 build and send me your 
-		  changes, if possible.
-	- Long checklist when you submit a bug:
-		- How can the bug be reproduced?
-		- Try to describe what is going wrong. Does the game crash, does the rendering look wrong, your mother-in-law became an alien...
-		- When does it happen? Only in VR, always on stereo rendering, only if you enable/disable specific settings
-		- Is it table specific or does it happen on all tables?
-		- Check the glshader/log folder. If there are any (recent) files in this folder, please add them to your bug report.
-		- What Hardware and Software (GPU, GPU drivers, CPU, Windows version, SteamVR Version, gamepad, what goggles...) are you using?
-		- If it is table specific: what table, what ROM, which VPinMAME version
-		- Add a screenshot or a video if it makes sense. Also add one from the normal VPX version, if it shows how it should look like.
-		- If you are working on the source code: Any debug information can help. Also if you find a way to fix it: Just add it to the bug report.
-		- Altough it is a good idea to add a lot of data, keep the size of the mail as small as possible.
-		
-You can still send me any other VPX related bug or feature requests, but I will try to focus on OpenGL and VR specific issues. Also I'm not 
-sure if my code will ever be backported to the main VPX branch.
-		
-Next steps:
-	1. Fix bugs
-	2. Optimize performance
-	3. Clean up code
-	4. Add new features
-	5. Go back to step 1 because of step 2,3 and 4
-		
-  
 VP 10.7.0 Changelog
 ------------------------
 
@@ -157,55 +11,91 @@ FEATURES:
    o with a slow double-click on a layer or element let you rename it
    o toolbar, properties and layers are now dockable windows without the need to restart VP
    o add context menu item to assign selected elements to the current selected layer.
+- to reset the position of the dockable windows in the editor, open Preference -> "Editor/UI Options..." and click on "Reset Window Possitons"
 
 - when exporting/importing a POV file, the custom user settings per table are now also exported/imported
 - when importing a primitive mesh, there is now a new option that prevents internal reordering/optimization of the data
 
-- add support for loading VPP/physics settings automatically: One can define an extra VPP(.vpp) file for each table, named like the VPX file.
+- add support for loading VPP/physics settings automatically: One can define an extra VPP(.vpp) file for each table, named like the VPX file
   Example: you have some custom VPP settings for the table "QBerts Quest (Gottlieb 1983).vpx". Save the VPP settings into the file
            "QBerts Quest (Gottlieb 1983).vpp" and place it in the same directory as the VPX file. VPX will then also load the VPP settings
            automatically when loading the "QBerts Quest (Gottlieb 1983).vpx" (in the editor/player).
-  Or if you like to have default VPP settings that are used for any other tables, save it as "autovpp.vpp".
+  Or if you like to have default VPP settings that are used for any other tables, save it as "autovpp.vpp"
 
 - add MP3 and OGG support (via the BASS library) to the sound manager and the 'standard' sound commands
   these new file types are now also saved directly into the VPX file, unlike the music commands (which still use the 'music' folder for legacy reasons)
-  Going forward, tables should only use the sound commands and not the music commands anymore
+  Going forward, tables should only use the sound commands and not the music commands anymore (unless one needs to ship a music pack separately)
+
+- add XInput (and for now disabled SDL) input APIs, selectable in the 'Keys, Nudge and DOF' preferences dialog
+  -> this means for example better support for XBOX controllers and (via additional driver software) PS controllers
+- added (optional) Rumble effects when XInput or SDL input APIs are selected, can be disabled in the 'Keys, Nudge and DOF' preferences dialog
+
+- add another 7.1 SurroundSound mode tuned for SSF cabinet configurations (7.1 Surround Sound Feedback (enhanced))
+  this exaggerates the positional feel of the playfield sound effects when
+  played in a cabinet with exciter pairs positioned at each end of the cabinet
 
 - add WEBP to list of supported image formats
 
+- add various anaglyph (e.g. red/cyan) 3D stereo glasses modes to the video preferences, also an additional left<->right flipped interlaced mode
+  - as with all 3D stereo modes, please note that turning off "Reflect Elements on Playfield", Ball motion trails and Ball shadows (if the table implements these) can help the perceived image quality
+  - also the same/known 'F10' key to turn on/off the 3D stereo rendering during gameplay works
+
 - optimize table loading/pre-processing time
+  to reduce the amount of parallel CPU threads running, use the new command line parameter "-LessCPUthreads"
 - optimize loading of JPG images in the table
-- reduce temporary memory needed for images
+- reduce temporary memory needed for images and automatically downscale textures if CPU memory is running out
 
 - add table save date and revision to table info and also show this in the pause info/menu
 
 - add new plunger option: Enable 1s retract
   The plunger will move forth and back between the maximum and minimum position, allowing for a retry, if the desired firing position has been missed.
-  Useful for button/key plunging and is now the new default.
+  Useful for button/key plunging and should become your new default.
+  Note that some few tables may (ab)use a manual plunger for e.g. kickbacks and these can then be fixed by enabling the autoplunger checkbox for that element.
 
 - add Inder/Playmatic trigger mesh
 
 - make debug text/FPS output adapt to resolution and rotation
+- first press of 'F11' will now show a minimalistic FPS-only text, then pressing it the next time will continue with the already known detailed statistics/profiling displays (as the latter had too much impact on the FPS itself)
 
 - the script editor now works in UTF-8 mode and also saves it like that (note though that VBS itself may not digest all of UTF-8!)
 
+- add post-processed sharpening filters to the video preferences: CAS (less aggressive, rather subtle) and Bilateral CAS (can effectively counter the general blur coming in from FXAA or SMAA, etc, while keeping the AA alone)
 - improve quality and performance of internal DMD shader (especially visible on FSS tables)
 
 - support to add custom notes to a table. To open a dockable notes dialog use the menu View -> Notes. Any text that was entered there is saved with the current active table.
 
 - add ElasticityFalloff to the wall physics properties
 
+- add Flashers and Primitives to Light sequencer collections
+
 - ability to do a rough profiling of the table loading
   if a file 'Profile.txt' exists in the same directory as VPX, then statistics for the loaded tables will be appended
 
 - add a button to the video preferences that resets the (windowed mode) player window position
 
+- add new command line parameter "-PovEdit [filename]" which loads and runs a table in camera mode, then exports a new pov on exit
+- add new command line parameter "-ExtMinimized" to start VP in the 'invisible' minimized window mode, but with enabled Pause Menu
+- add new command line parameter "-Primary" to force VP to render on the Primary/Pixel(0,0) Monitor
+
+- add support for capturing any window content into a flasher texture (intended to be used with PUP content)
+
+- be able to 'loop' the automatic loading/select-file dialog if this new setting is enabled in the editor preferences
+  (i.e. after having played a table and one exits, the table is unloaded and one can directly select the next one to play)
+
+- retweak default saving filenames for Blueprint-images, .obj, .pov and .vpp: It's now copied from the table filename
+
+- add 2 new tables to the 'File->New' menu: A completely empty table and a light sequencer demo table
+
 FIXES:
+
+- fix issues with 3D Audio setups and backglass sounds (like music)
+- the Play Button in the Sound dialog now respects the volume/pan/fade values
 
 - deleting an image will not copy the old alpha value over to the next image in the list anymore
 
-- fix wrong bounceback direction of gate
+- fix problems when exporting multiple sounds or images
 
+- fix wrong bounceback direction of gate
 - fix problem with gate animations introduced in 10.1 when the open/close script functions were used before
 
 - fix issue where saving a table can cost up to 4x (8x on 64bit) the temporary memory
@@ -221,17 +111,20 @@ FIXES:
 - do not mark table as dirty if just starting to play it (i.e. due to backup phase)
 
 - replace dithering code with blue noise, fixes flickering patterns (especially in darker table areas)
-
 - disable dithering code when running in 10bit output mode
-
 - tweak AO (Ambient Occlusion) and SSR (Screen Space Reflections) to be a bit less noisy
-
-- fix a small error in the original SMAA shader code, and also increase quality parameters slightly (to match reshade)
+- slightly tweak light transmission filter to capture a larger radius (for very bright lights)
+- revamp bloom filter to capture a larger radius and to be more robust in general, incl. fixing slightly wrong offsets when downsampling
+- fix a small error in the original SMAA filter code, and also increase quality parameters slightly (to match reshade)
+- retweak Standard FXAA and Quality FXAA filters to be a bit sharper
 
 - tweak minimum physics cycle time, which mainly influences kickers
   also update default kicker physics (Hit height 0.35 and Hit accuracy 0.5)
+- slightly optimize collision code, especially for dropped targets
 
 - fix slightly wrong flipper mesh (visible for very short flippers)
+
+- extend light blinking patterns from size 32 to 'unlimited'
 
 - fix some broken insert lights if playfield reflections are disabled
 
@@ -241,22 +134,45 @@ FIXES:
 - fix crash on (at least) one pre-forsyth-mesh-reorder table
 
 - fix crash on loading older tables with too long collection names
+- fix crash on loading older tables with too long item names (now its also prevented to create these)
 
 - fix hangs on loading/playing older tables due to invalid shapes
 
-- add many more different windowed mode resolutions
+- in general be more robust against invalid/'too long' names
 
+- add many more different windowed mode resolutions
 - more robustly handle display resolutions that are greater FullHD(1920x1080)
+- fix various issues (wrong resolution selected, etc) in the resolution selection list
 
 - also search for table-script replacements (i.e. external .vbs with the same/table name) in the "Scripts" folder to match the core script behavior
 - when modifying the table-script, check if it was loaded from an external .vbs, and if yes, then save the modifications to that file (and only optionally to the .vpx table itself)
 
 - delete duplicate images and sounds (same filename/path in the Sound/Image Manager) and remove dead image/material/surface links from items (i.e. if that thingie's name does not exist anymore)
 
+- when using save-as for table saving, go to the same folder and prefill dialog using the same name as the current table
+
+- fix crash when importing older .vpp files in the physics import
+- import min & max slope, too, when importing a .vpp file directly in a table
+
+- when setting up the defaults for low- or high-end PCs in the video preferences via the respective buttons, ignore settings that do not influence performance like display, FS mode, etc
+
+- make debug dialog (and its text edit) resizable
+
+- improved script error messages and handling
+   o there is a new dialog when you get a script error, showing a stack trace of where the error came from, as well as local variables and function arguments at each point in the stack
+   o a script debugger needs to be installed to get this more detailed error information
+   o installing Visual Studio 2010 Isolated Shell seems to work
+   o this information is saved when you quit gameplay, and can be shown from "Script > Toggle error log" in the script editor
+   o compile errors are now also shown in this log, instead of popping up a dialog box
+   o further, runtime errors can be suppressed from showing a dialog box for the current play session, which can be useful if you keep getting errors on a timer
+
+- fix an issue where the light sequencer could become stuck
+- any light sequencer TailLength value higher than 0 will now 'Reverse', i.e. the lights will turn 'off/on' instead of default 'on/off'
+
 - tweak flipper shadows (via script) implementation in the example/blank table
 
-- update BASS library to latest 2.4.15
-- script editor updated to use latest scintilla library 4.4.4 (custom build)
+- update BASS library to 2.4.16
+- script editor updated to use scintilla library 4.4.4 (custom build)
 
 - see Changelog_Scripts.txt for the respective core script changes (version 3.58)
 - see CommandReference.txt for the changelog of all the scripting properties/interface changes
@@ -266,6 +182,26 @@ FIXES:
 
 - update FreeImage library to latest 3.18.0 (custom build) (currently disabled)
 - DirectX 8 port for input handling (currently disabled)
+
+VP 10.6.2 Changelog
+------------------------
+
+- add another 7.1 SurroundSound mode tuned for SSF cabinet configurations (7.1 Surround Sound Feedback (enhanced))
+  this exaggerates the positional feel of the playfield sound effects when
+  played in a cabinet with exciter pairs positioned at each end of the cabinet
+
+- improve quality and performance of internal DMD shader (especially visible on FSS tables)
+
+- replace dithering code with blue noise, fixes flickering patterns (especially in darker table areas)
+- disable dithering code when running in 10bit output mode
+- tweak AO (Ambient Occlusion) and SSR (Screen Space Reflections) to be a bit less noisy
+- fix a small error in the original SMAA filter code, and also increase quality parameters slightly (to match reshade)
+- retweak Standard FXAA and Quality FXAA filters to be a bit sharper
+
+VP 10.6.1 Changelog
+------------------------
+
+- fix hang on player exit on some setups
 
 VP 10.6.0 Changelog
 ------------------------
@@ -558,8 +494,6 @@ VP 10.4.0 Changelog
 
 - see core scripts (header of core.vbs) for the respective changelog (versions 3.54 and 3.55)
 - see CommandReference.txt for the changelog of all the scripting properties/interface changes
-
-- DirectX 8 port for input handling (currently disabled)
 
 VP 10.3.1 Changelog
 ------------------------
@@ -1091,6 +1025,10 @@ VP 10.0.0 Changelog
 
 - technical compile note: make sure to install Microsoft SDK 5.0,7.0A,7.1 or 7.1A, if you compile VP and get missing header errors (optionally set the include path inc\winsdk)
 
+VP 9.9.X PM5 Plunger/Accel/Surround MOD b Changelog
+----------------------------------------
+- fix "all sounds to rear channels" bug
+
 VP 9.9.X PM5 Plunger/Accel/Surround MOD Changelog
 ----------------------------------------
 - add surround sound options/configurations:
@@ -1120,6 +1058,10 @@ VP 9.9.X PM5 Plunger/Accel MOD Changelog
    and remove implicit dead zone handling (if you have the dead zone setting at 0% and now experience problems, set it to at least 1%)
  - native support for the Pinscape Controller
  - CPU affinity setting
+
+VP 9.9.5b Changelog
+------------------------
+- fix "all sounds to rear channels" bug
 
 VP 9.9.5 Changelog
 ------------------------

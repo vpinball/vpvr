@@ -33,7 +33,7 @@ void __cdecl MemLeakAlert(void * pUserData, size_t nBytes)
       break;
    case IDCANCEL:
       // Cancel our callback - do not bring up an alert for other mem leaks
-      _CrtSetDumpClient(NULL);
+      _CrtSetDumpClient(nullptr);
       break;
    }
 }
@@ -72,8 +72,7 @@ void * operator new( unsigned int cb )
 
    GetThreadContext(hThread, &stCtx);
 
-   STACKFRAME stFrame;
-   ZeroMemory(&stFrame, sizeof(STACKFRAME));
+   STACKFRAME stFrame = {};
    stFrame.AddrPC.Offset = stCtx.Eip;
    stFrame.AddrPC.Mode = AddrModeFlat; 
    stFrame.AddrStack.Offset = stCtx.Esp; 
@@ -85,7 +84,7 @@ void * operator new( unsigned int cb )
    {
       StackWalk(IMAGE_FILE_MACHINE_I386,
          hProcess, hThread, &stFrame, &stCtx,
-         DoMemoryRead, SwFunctionTableAccess, SwGetModuleBase, NULL);
+         DoMemoryRead, SwFunctionTableAccess, SwGetModuleBase, nullptr);
 
       const DWORD address = stFrame.AddrReturn.Offset;
       ((int *)res)[i] = address;
@@ -104,7 +103,7 @@ void *operator new[](std::size_t s)
 
 void operator delete(void * p)
 {
-   if (p == NULL)
+   if (p == nullptr)
    {
       return;
    }

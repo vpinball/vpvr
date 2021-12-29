@@ -24,9 +24,9 @@ void PinUndo::SetCleanPoint(const SaveDirtyState sds)
 }
 
 void PinUndo::BeginUndo()
-{
-   if (g_pplayer)
-      return;
+{ 
+   if(g_pplayer)
+       return;
 
    m_cUndoLayer++;
 
@@ -50,7 +50,7 @@ void PinUndo::MarkForUndo(IEditable * const pie, const bool backupForPlay)
    if (g_pplayer)
       return;
 
-   if (m_vur.size() == 0)
+   if (m_vur.empty())
    {
       _ASSERTE(fFalse);
       return;
@@ -69,7 +69,7 @@ void PinUndo::MarkForUndo(IEditable * const pie, const bool backupForPlay)
 
 void PinUndo::MarkForCreate(IEditable * const pie)
 {
-   if (m_vur.size() == 0)
+   if (m_vur.empty())
    {
       _ASSERTE(fFalse);
       return;
@@ -88,7 +88,7 @@ void PinUndo::MarkForCreate(IEditable * const pie)
 
 void PinUndo::MarkForDelete(IEditable * const pie)
 {
-   if (m_vur.size() == 0)
+   if (m_vur.empty())
    {
       _ASSERTE(fFalse);
       return;
@@ -107,7 +107,7 @@ void PinUndo::MarkForDelete(IEditable * const pie)
 
 void PinUndo::Undo()
 {
-   if (m_vur.size() == 0)
+   if (m_vur.empty())
    {
       //_ASSERTE(fFalse);
       return;
@@ -141,7 +141,7 @@ void PinUndo::Undo()
       // Go back to beginning of stream to load
       LARGE_INTEGER foo;
       foo.QuadPart = 0;
-      pstm->Seek(foo, STREAM_SEEK_SET, NULL);
+      pstm->Seek(foo, STREAM_SEEK_SET, nullptr);
 
       DWORD read;
       IEditable *pie;
@@ -156,7 +156,7 @@ void PinUndo::Undo()
       //pstm->Release();
    }
 
-   for (size_t i = 0; i < pur->m_vieCreate.size(); i++)
+   for (size_t i = 0; i<pur->m_vieCreate.size(); i++)
       m_ptable->Uncreate(pur->m_vieCreate[i]);
 
    RemoveFromVectorSingle(m_vur, pur);
@@ -181,7 +181,7 @@ void PinUndo::Undo()
 
 void PinUndo::EndUndo()
 {
-   if (g_pplayer)
+   if(g_pplayer)
       return;
 
    _ASSERTE(m_cUndoLayer > 0);
@@ -193,7 +193,7 @@ void PinUndo::EndUndo()
    if (m_cUndoLayer == 0 && (m_sdsDirty < eSaveDirty))
    {
       m_sdsDirty = eSaveDirty;
-      if (!m_startToPlay) // undo history only due to backup? -> do not flag table as dirty
+      if(!m_startToPlay) // undo history only due to backup? -> do not flag table as dirty
          m_ptable->SetDirty(eSaveDirty);
    }
 }

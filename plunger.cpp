@@ -3,10 +3,9 @@
 
 Plunger::Plunger()
 {
-   m_phitplunger = NULL;
-   m_vertexBuffer = NULL;
-   m_indexBuffer = NULL;
-   memset(m_d.m_szSurface, 0, sizeof(m_d.m_szSurface));
+   m_phitplunger = nullptr;
+   m_vertexBuffer = nullptr;
+   m_indexBuffer = nullptr;
 }
 
 Plunger::~Plunger()
@@ -14,12 +13,12 @@ Plunger::~Plunger()
    if (m_vertexBuffer)
    {
       m_vertexBuffer->release();
-      m_vertexBuffer = NULL;
+      m_vertexBuffer = nullptr;
    }
    if (m_indexBuffer)
    {
       m_indexBuffer->release();
-      m_indexBuffer = NULL;
+      m_indexBuffer = nullptr;
    }
 }
 
@@ -31,7 +30,7 @@ HRESULT Plunger::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
    m_d.m_v.y = y;
 
    SetDefaults(fromMouseClick);
-   return InitVBA(fTrue, 0, NULL);
+   return InitVBA(fTrue, 0, nullptr);
 }
 
 void Plunger::SetDefaults(bool fromMouseClick)
@@ -41,34 +40,31 @@ void Plunger::SetDefaults(bool fromMouseClick)
    m_d.m_height = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Plunger", "Height", 20.f) : 20.f;
    m_d.m_width = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Plunger", "Width", 25.f) : 25.f;
    m_d.m_zAdjust = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Plunger", "ZAdjust", 0) : 0;
-   m_d.m_stroke = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Plunger", "Stroke", m_d.m_height * 4) : (m_d.m_height * 4);
+   m_d.m_stroke = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Plunger", "Stroke", m_d.m_height*4) : (m_d.m_height*4);
    m_d.m_speedPull = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Plunger", "PullSpeed", 5.f) : 5.f;
    m_d.m_type = fromMouseClick ? (PlungerType)LoadValueIntWithDefault("DefaultProps\\Plunger", "PlungerType", PlungerTypeModern) : PlungerTypeModern;
-   m_d.m_color = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Plunger", "Color", RGB(76, 76, 76)) : RGB(76, 76, 76);
+   m_d.m_color = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Plunger", "Color", RGB(76,76,76)) : RGB(76,76,76);
 
-   char buf[MAXTOKEN] = { 0 };
-   HRESULT hr = LoadValueString("DefaultProps\\Plunger", "Image", buf, MAXTOKEN);
+   HRESULT hr = LoadValue("DefaultProps\\Plunger", "Image", m_d.m_szImage);
    if ((hr != S_OK) || !fromMouseClick)
       m_d.m_szImage.clear();
-   else
-      m_d.m_szImage = buf;
 
    m_d.m_animFrames = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Plunger", "AnimFrames", 1) : 1;
    m_d.m_tdr.m_TimerEnabled = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Plunger", "TimerEnabled", false) : false;
    m_d.m_tdr.m_TimerInterval = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Plunger", "TimerInterval", 100) : 100;
 
-   hr = LoadValueString("DefaultProps\\Plunger", "Surface", m_d.m_szSurface, MAXTOKEN);
+   hr = LoadValue("DefaultProps\\Plunger", "Surface", m_d.m_szSurface);
    if ((hr != S_OK) || !fromMouseClick)
-      m_d.m_szSurface[0] = 0;
+      m_d.m_szSurface.clear();
 
    m_d.m_mechPlunger = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Plunger", "MechPlunger", false) : false; // plungers require selection for mechanical input
    m_d.m_autoPlunger = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Plunger", "AutoPlunger", false) : false;
    m_d.m_visible = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Plunger", "Visible", true) : true;
 
-   hr = LoadValueString("DefaultProps\\Plunger", "CustomTipShape", m_d.m_szTipShape, MAXTIPSHAPE);
+   hr = LoadValue("DefaultProps\\Plunger", "CustomTipShape", m_d.m_szTipShape, MAXTIPSHAPE);
    if ((hr != S_OK) || !fromMouseClick)
       strncpy_s(m_d.m_szTipShape,
-         "0 .34; 2 .6; 3 .64; 5 .7; 7 .84; 8 .88; 9 .9; 11 .92; 14 .92; 39 .84", sizeof(m_d.m_szTipShape) - 1);
+      "0 .34; 2 .6; 3 .64; 5 .7; 7 .84; 8 .88; 9 .9; 11 .92; 14 .92; 39 .84", sizeof(m_d.m_szTipShape)-1);
 
    m_d.m_rodDiam = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Plunger", "CustomRodDiam", 0.60f) : 0.60f;
    m_d.m_ringGap = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Plunger", "CustomRingGap", 2.0f) : 2.0f;
@@ -92,10 +88,10 @@ void Plunger::WriteRegDefaults()
    SaveValueInt("DefaultProps\\Plunger", "PlungerType", m_d.m_type);
    SaveValueInt("DefaultProps\\Plunger", "AnimFrames", m_d.m_animFrames);
    SaveValueInt("DefaultProps\\Plunger", "Color", m_d.m_color);
-   SaveValueString("DefaultProps\\Plunger", "Image", m_d.m_szImage);
+   SaveValue("DefaultProps\\Plunger", "Image", m_d.m_szImage);
    SaveValueBool("DefaultProps\\Plunger", "TimerEnabled", m_d.m_tdr.m_TimerEnabled);
    SaveValueInt("DefaultProps\\Plunger", "TimerInterval", m_d.m_tdr.m_TimerInterval);
-   SaveValueString("DefaultProps\\Plunger", "Surface", m_d.m_szSurface);
+   SaveValue("DefaultProps\\Plunger", "Surface", m_d.m_szSurface);
    SaveValueBool("DefaultProps\\Plunger", "MechPlunger", m_d.m_mechPlunger);
    SaveValueBool("DefaultProps\\Plunger", "AutoPlunger", m_d.m_autoPlunger);
    SaveValueFloat("DefaultProps\\Plunger", "MechStrength", m_d.m_mechStrength);
@@ -103,7 +99,7 @@ void Plunger::WriteRegDefaults()
    SaveValueBool("DefaultProps\\Plunger", "Visible", m_d.m_visible);
    SaveValueFloat("DefaultProps\\Plunger", "ScatterVelocity", m_d.m_scatterVelocity);
    SaveValueFloat("DefaultProps\\Plunger", "MomentumXfer", m_d.m_momentumXfer);
-   SaveValueString("DefaultProps\\Plunger", "CustomTipShape", m_d.m_szTipShape);
+   SaveValue("DefaultProps\\Plunger", "CustomTipShape", m_d.m_szTipShape);
    SaveValueFloat("DefaultProps\\Plunger", "CustomRodDiam", m_d.m_rodDiam);
    SaveValueFloat("DefaultProps\\Plunger", "CustomRingGap", m_d.m_ringGap);
    SaveValueFloat("DefaultProps\\Plunger", "CustomRingDiam", m_d.m_ringDiam);
@@ -173,24 +169,24 @@ void Plunger::GetTimers(vector<HitTimer*> &pvht)
 
 void Plunger::EndPlay()
 {
-   m_phitplunger = NULL;       // possible memory leak here?
+   m_phitplunger = nullptr;       // possible memory leak here?
 
    IEditable::EndPlay();
    if (m_vertexBuffer)
    {
       m_vertexBuffer->release();
-      m_vertexBuffer = NULL;
+      m_vertexBuffer = nullptr;
    }
    if (m_indexBuffer)
    {
       m_indexBuffer->release();
-      m_indexBuffer = NULL;
+      m_indexBuffer = nullptr;
    }
 }
 
 void Plunger::SetObjectPos()
 {
-   m_vpinball->SetObjectPosCur(m_d.m_v.x, m_d.m_v.y);
+    m_vpinball->SetObjectPosCur(m_d.m_v.x, m_d.m_v.y);
 }
 
 void Plunger::MoveOffset(const float dx, const float dy)
@@ -213,7 +209,7 @@ void Plunger::SetDefaultPhysics(bool fromMouseClick)
 {
    m_d.m_speedFire = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Plunger", "ReleaseSpeed", 80.f) : 80.f;
    m_d.m_mechStrength = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Plunger", "MechStrength", 85.f) : 85.f;
-   m_d.m_parkPosition = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Plunger", "ParkPosition", (float)(0.5 / 3.0)) : (float)(0.5 / 3.0); // typical mechanical plunger has 3 inch stroke and 0.5 inch rest position //!! 0.01f better for some HW-plungers, but this seems to be rather a firmware/config issue
+   m_d.m_parkPosition = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Plunger", "ParkPosition", (float)(0.5/3.0)) : (float)(0.5/3.0); // typical mechanical plunger has 3 inch stroke and 0.5 inch rest position //!! 0.01f better for some HW-plungers, but this seems to be rather a firmware/config issue
    m_d.m_scatterVelocity = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Plunger", "ScatterVelocity", 0.f) : 0.f;
    m_d.m_momentumXfer = fromMouseClick ? LoadValueFloatWithDefault("DefaultProps\\Plunger", "MomentumXfer", 1.f) : 1.f;
 }
@@ -264,27 +260,36 @@ void Plunger::RenderDynamic()
    pd3dDevice->basicShader->End();
 }
 
+//
+// license:GPLv3+
+// Ported at: VisualPinball.Engine/VPT/Plunger/PlungerCoord.cs
+//
+
 // Modern Plunger - added by rascal
-const static PlungerCoord modernCoords[] =
+constexpr static PlungerCoord modernCoords[] =
 {
    { 0.20f, 0.0f, 0.00f, 1.0f, 0.0f },  // tip
    { 0.30f, 3.0f, 0.11f, 1.0f, 0.0f },  // tip
    { 0.35f, 5.0f, 0.14f, 1.0f, 0.0f },  // tip
-   { 0.35f, 23.0f, 0.19f, 1.0f, 0.0f },  // tip
-   { 0.45f, 23.0f, 0.21f, 0.8f, 0.0f },  // ring
-   { 0.25f, 24.0f, 0.25f, 0.3f, 0.0f },  // shaft
-   { 0.25f, 100.0f, 1.00f, 0.3f, 0.0f }   // shaft
+   { 0.35f, 23.0f, 0.19f, 1.0f, 0.0f }, // tip
+   { 0.45f, 23.0f, 0.21f, 0.8f, 0.0f }, // ring
+   { 0.25f, 24.0f, 0.25f, 0.3f, 0.0f }, // shaft
+   { 0.25f, 100.0f, 1.00f, 0.3f, 0.0f } // shaft
 };
 const static PlungerDesc modernDesc = {
    sizeof(modernCoords) / sizeof(modernCoords[0]), (PlungerCoord*)modernCoords
 };
+
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
 
 // Flat Plunger.  This is a special case with no "lathe" entries;
 // instead we define a simple rectangle covering the stroke length
 // by 2x the nominal width (1x the width on each side of the centerline).
 // The pre-render code knows to set up the flat rendering when there are
 // no lathe coordinates.
-const static PlungerDesc flatDesc = { 0, 0 };
+constexpr static PlungerDesc flatDesc = { 0, 0 };
 
 
 // Find and skip the next token in a TipShape string.  Finds the
@@ -311,6 +316,13 @@ static const char *nextTipToken(const char* &p)
 }
 
 #define PLUNGER_FRAME_COUNT 25   //frame per 80 units distance
+
+
+//
+// license:GPLv3+
+// Ported at: VisualPinball.Engine/VPT/Plunger/PlungerDesc.cs
+//            VisualPinball.Engine/VPT/Plunger/PlungerMeshGenerator.cs
+//
 
 void Plunger::RenderSetup()
 {
@@ -407,7 +419,7 @@ void Plunger::RenderSetup()
 
       // Figure the normals and the texture coordinates
       c = customDesc->c;
-      const PlungerCoord c0 = { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+      constexpr PlungerCoord c0 = { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
       const PlungerCoord *cprv = &c0;
       for (int i = 0; i < nTip; ++i, cprv = c++)
       {
@@ -422,11 +434,11 @@ void Plunger::RenderSetup()
          const float x0 = cprv->r, y0 = cprv->y;
          const float x1 = cnxt->r, y1 = cnxt->y;
          const float yd = y1 - y0;
-         const float xd = (x1 - x0) * m_d.m_width;
+         const float xd = (x1 - x0) * m_d.m_width;	 
          //const float th = atan2f(yd, xd);
          //c->nx = sinf(th);
          //c->ny = -cosf(th);
-         const float r = sqrtf(xd*xd + yd * yd);
+         const float r = sqrtf(xd*xd + yd*yd);
          c->nx = yd / r;
          c->ny = -xd / r;
       }
@@ -544,63 +556,63 @@ void Plunger::RenderSetup()
    // is the maximum forward position.
    for (int i = 0; i < m_cframes; i++, ptr += m_vtsPerFrame)
    {
-      const float ytip = beginy + dyPerFrame * (float)i;
+      const float ytip = beginy + dyPerFrame*(float)i;
 
       if (m_d.m_type != PlungerTypeFlat)
       {
-         // Go around in a circle starting at the top, stepping through
-         // 'circlePoints' angles along the circle.  Start the texture
-         // mapping in the middle, so that the centerline of the texture
-         // maps to the centerline of the top of the cylinder surface.
-         // Work outwards on the texture to wrap it around the cylinder.
-         float tu = 0.51f;
+      // Go around in a circle starting at the top, stepping through
+      // 'circlePoints' angles along the circle.  Start the texture
+      // mapping in the middle, so that the centerline of the texture
+      // maps to the centerline of the top of the cylinder surface.
+      // Work outwards on the texture to wrap it around the cylinder.
+      float tu = 0.51f;
 
-         const float stepU = 1.0f / (float)circlePoints;
-         for (int l = 0, offset = 0; l < circlePoints; l++, offset += lathePoints, tu += stepU)
+      const float stepU = 1.0f / (float)circlePoints;
+      for (int l = 0, offset = 0; l < circlePoints; l++, offset += lathePoints, tu += stepU)
+      {
+         // Go down the long axis, adding a vertex for each point
+         // in the descriptor list at the current lathe angle.
+         if (tu > 1.0f) tu -= 1.0f;
+         const float angle = ((float)(M_PI*2.0) / (float)circlePoints)*(float)l;
+         const float sn = sinf(angle);
+         const float cs = cosf(angle);
+         const PlungerCoord *c = desc->c;
+         Vertex3D_NoTex2 *pm = &ptr[offset];
+         for (int m = 0; m < lathePoints; m++, ++c, ++pm)
          {
-            // Go down the long axis, adding a vertex for each point
-            // in the descriptor list at the current lathe angle.
-            if (tu > 1.0f) tu -= 1.0f;
-            const float angle = ((float)(M_PI*2.0) / (float)circlePoints)*(float)l;
-            const float sn = sinf(angle);
-            const float cs = cosf(angle);
-            const PlungerCoord *c = desc->c;
-            Vertex3D_NoTex2 *pm = &ptr[offset];
-            for (int m = 0; m < lathePoints; m++, ++c, ++pm)
+            // get the current point's coordinates
+            float y = c->y + ytip;
+            const float r = c->r;
+            float tv = c->tv;
+
+            // the last coordinate is always the bottom of the rod
+            if (m + 1 == lathePoints)
             {
-               // get the current point's coordinates
-               float y = c->y + ytip;
-               const float r = c->r;
-               float tv = c->tv;
+               // set the end point
+               y = rody;
 
-               // the last coordinate is always the bottom of the rod
-               if (m + 1 == lathePoints)
-               {
-                  // set the end point
-                  y = rody;
-
-                  // Figure the texture mapping for the rod position.  This is
-                  // important because we draw the rod with varying length -
-                  // the part that's pulled back beyond the 'rody' point is
-                  // hidden.  We want the texture to maintain the same apparent
-                  // position and scale in each frame, so we need to figure the
-                  // proportional point of the texture at our cut-off point on
-                  // the object surface.
-                  const float ratio = float(i) * inv_scale;
-                  tv = (pm - 1)->tv + (tv - (pm - 1)->tv)*ratio;
-               }
-
-               // figure the point coordinates
-               pm->x = r * (sn * m_d.m_width) + m_d.m_v.x;
-               pm->y = y;
-               pm->z = (r * (cs * m_d.m_width) + m_d.m_width + zheight) * zScale;
-               pm->nx = c->nx * sn;
-               pm->ny = c->ny;
-               pm->nz = -c->nx * cs;
-               pm->tu = tu;
-               pm->tv = tv;
+               // Figure the texture mapping for the rod position.  This is
+               // important because we draw the rod with varying length -
+               // the part that's pulled back beyond the 'rody' point is
+               // hidden.  We want the texture to maintain the same apparent
+               // position and scale in each frame, so we need to figure the
+               // proportional point of the texture at our cut-off point on
+               // the object surface.
+               const float ratio = float(i) * inv_scale;
+               tv = (pm - 1)->tv + (tv - (pm - 1)->tv)*ratio;
             }
+
+            // figure the point coordinates
+            pm->x = r * (sn * m_d.m_width) + m_d.m_v.x;
+            pm->y = y;
+            pm->z = (r * (cs * m_d.m_width) + m_d.m_width + zheight) * zScale;
+            pm->nx = c->nx * sn;
+            pm->ny = c->ny;
+            pm->nz = -c->nx * cs;
+            pm->tu = tu;
+            pm->tv = tv;
          }
+      }
       }
 
       // Build the flat plunger rectangle, if desired
@@ -850,6 +862,10 @@ void Plunger::RenderSetup()
    }
 }
 
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
+
 void Plunger::RenderStatic()
 {
 }
@@ -873,7 +889,7 @@ HRESULT Plunger::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backu
 {
    BiffWriter bw(pstm, hcrypthash);
 
-   bw.WriteStruct(FID(VCEN), &m_d.m_v, sizeof(Vertex2D));
+   bw.WriteVector2(FID(VCEN), m_d.m_v);
    bw.WriteFloat(FID(WDTH), m_d.m_width);
    bw.WriteFloat(FID(HIGH), m_d.m_height);
    bw.WriteFloat(FID(ZADJ), m_d.m_zAdjust);
@@ -932,41 +948,41 @@ HRESULT Plunger::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version
 
 bool Plunger::LoadToken(const int id, BiffReader * const pbr)
 {
-   switch (id)
+   switch(id)
    {
    case FID(PIID): pbr->GetInt((int *)pbr->m_pdata); break;
-   case FID(VCEN): pbr->GetStruct(&m_d.m_v, sizeof(Vertex2D)); break;
-   case FID(WDTH): pbr->GetFloat(&m_d.m_width); break;
-   case FID(ZADJ): pbr->GetFloat(&m_d.m_zAdjust); break;
-   case FID(HIGH): pbr->GetFloat(&m_d.m_height); break;
-   case FID(HPSL): pbr->GetFloat(&m_d.m_stroke); break;
-   case FID(SPDP): pbr->GetFloat(&m_d.m_speedPull); break;
-   case FID(SPDF): pbr->GetFloat(&m_d.m_speedFire); break;
-   case FID(MEST): pbr->GetFloat(&m_d.m_mechStrength); break;
-   case FID(MPRK): pbr->GetFloat(&m_d.m_parkPosition); break;
-   case FID(PSCV): pbr->GetFloat(&m_d.m_scatterVelocity); break;
-   case FID(MOMX): pbr->GetFloat(&m_d.m_momentumXfer); break;
-   case FID(TMON): pbr->GetBool(&m_d.m_tdr.m_TimerEnabled); break;
-   case FID(MECH): pbr->GetBool(&m_d.m_mechPlunger); break;
-   case FID(APLG): pbr->GetBool(&m_d.m_autoPlunger); break;
-   case FID(TMIN): pbr->GetInt(&m_d.m_tdr.m_TimerInterval); break;
-   case FID(NAME): pbr->GetWideString(m_wzName); break;
+   case FID(VCEN): pbr->GetVector2(m_d.m_v); break;
+   case FID(WDTH): pbr->GetFloat(m_d.m_width); break;
+   case FID(ZADJ): pbr->GetFloat(m_d.m_zAdjust); break;
+   case FID(HIGH): pbr->GetFloat(m_d.m_height); break;
+   case FID(HPSL): pbr->GetFloat(m_d.m_stroke); break;
+   case FID(SPDP): pbr->GetFloat(m_d.m_speedPull); break;
+   case FID(SPDF): pbr->GetFloat(m_d.m_speedFire); break;
+   case FID(MEST): pbr->GetFloat(m_d.m_mechStrength); break;
+   case FID(MPRK): pbr->GetFloat(m_d.m_parkPosition); break;
+   case FID(PSCV): pbr->GetFloat(m_d.m_scatterVelocity); break;
+   case FID(MOMX): pbr->GetFloat(m_d.m_momentumXfer); break;
+   case FID(TMON): pbr->GetBool(m_d.m_tdr.m_TimerEnabled); break;
+   case FID(MECH): pbr->GetBool(m_d.m_mechPlunger); break;
+   case FID(APLG): pbr->GetBool(m_d.m_autoPlunger); break;
+   case FID(TMIN): pbr->GetInt(m_d.m_tdr.m_TimerInterval); break;
+   case FID(NAME): pbr->GetWideString(m_wzName,sizeof(m_wzName)/sizeof(m_wzName[0])); break;
    case FID(TYPE): pbr->GetInt(&m_d.m_type); break;
-   case FID(ANFR): pbr->GetInt(&m_d.m_animFrames); break;
+   case FID(ANFR): pbr->GetInt(m_d.m_animFrames); break;
    case FID(MATR): pbr->GetString(m_d.m_szMaterial); break;
    case FID(IMAG): pbr->GetString(m_d.m_szImage); break;
-   case FID(VSBL): pbr->GetBool(&m_d.m_visible); break;
-   case FID(REEN): pbr->GetBool(&m_d.m_reflectionEnabled); break;
+   case FID(VSBL): pbr->GetBool(m_d.m_visible); break;
+   case FID(REEN): pbr->GetBool(m_d.m_reflectionEnabled); break;
    case FID(SURF): pbr->GetString(m_d.m_szSurface); break;
-   case FID(TIPS): pbr->GetString(m_d.m_szTipShape); break;
-   case FID(RODD): pbr->GetFloat(&m_d.m_rodDiam); break;
-   case FID(RNGG): pbr->GetFloat(&m_d.m_ringGap); break;
-   case FID(RNGD): pbr->GetFloat(&m_d.m_ringDiam); break;
-   case FID(RNGW): pbr->GetFloat(&m_d.m_ringWidth); break;
-   case FID(SPRD): pbr->GetFloat(&m_d.m_springDiam); break;
-   case FID(SPRG): pbr->GetFloat(&m_d.m_springGauge); break;
-   case FID(SPRL): pbr->GetFloat(&m_d.m_springLoops); break;
-   case FID(SPRE): pbr->GetFloat(&m_d.m_springEndLoops); break;
+   case FID(TIPS): pbr->GetString(m_d.m_szTipShape, sizeof(m_d.m_szTipShape)); break;
+   case FID(RODD): pbr->GetFloat(m_d.m_rodDiam); break;
+   case FID(RNGG): pbr->GetFloat(m_d.m_ringGap); break;
+   case FID(RNGD): pbr->GetFloat(m_d.m_ringDiam); break;
+   case FID(RNGW): pbr->GetFloat(m_d.m_ringWidth); break;
+   case FID(SPRD): pbr->GetFloat(m_d.m_springDiam); break;
+   case FID(SPRG): pbr->GetFloat(m_d.m_springGauge); break;
+   case FID(SPRL): pbr->GetFloat(m_d.m_springLoops); break;
+   case FID(SPRE): pbr->GetFloat(m_d.m_springEndLoops); break;
    default: ISelect::LoadToken(id, pbr); break;
    }
    return true;
@@ -982,10 +998,10 @@ STDMETHODIMP Plunger::PullBack()
    // initiate a pull; the speed is set by our pull speed property
    if (m_phitplunger)
    {
-      if (g_pplayer->m_pininput.m_plunger_retract)
-         m_phitplunger->m_plungerMover.PullBackandRetract(m_d.m_speedPull);
+     if(g_pplayer->m_pininput.m_plunger_retract)
+        m_phitplunger->m_plungerMover.PullBackandRetract(m_d.m_speedPull);
       else
-         m_phitplunger->m_plungerMover.PullBack(m_d.m_speedPull);
+        m_phitplunger->m_plungerMover.PullBack(m_d.m_speedPull);
    }
 
    return S_OK;
@@ -1007,19 +1023,23 @@ STDMETHODIMP Plunger::MotionDevice(int *pVal)
    return S_OK;
 }
 
+//
+// license:GPLv3+
+// Not yet ported to VPE, but probably will have to
+//
+
 STDMETHODIMP Plunger::Position(float *pVal) // 0..25
 {
    if (g_pplayer->m_pininput.uShockType == USHOCKTYPE_PBWIZARD ||
-      g_pplayer->m_pininput.uShockType == USHOCKTYPE_ULTRACADE ||
-      g_pplayer->m_pininput.uShockType == USHOCKTYPE_SIDEWINDER ||
-      g_pplayer->m_pininput.uShockType == USHOCKTYPE_VIRTUAPIN)
+       g_pplayer->m_pininput.uShockType == USHOCKTYPE_ULTRACADE ||
+       g_pplayer->m_pininput.uShockType == USHOCKTYPE_SIDEWINDER ||
+       g_pplayer->m_pininput.uShockType == USHOCKTYPE_VIRTUAPIN)
    {
       const float range = (float)JOYRANGEMX * (1.0f - m_d.m_parkPosition) - (float)JOYRANGEMN *m_d.m_parkPosition; // final range limit
       float tmp = (g_pplayer->m_curMechPlungerPos < 0.f) ? g_pplayer->m_curMechPlungerPos*m_d.m_parkPosition : (g_pplayer->m_curMechPlungerPos*(1.0f - m_d.m_parkPosition));
       tmp = tmp / range + m_d.m_parkPosition;           //scale and offset
-      *pVal = tmp * 25.f;
+      *pVal = tmp*25.f;
    }
-
    else if (g_pplayer->m_pininput.uShockType == USHOCKTYPE_GENERIC)
    {
       float tmp;
@@ -1036,7 +1056,7 @@ STDMETHODIMP Plunger::Position(float *pVal) // 0..25
          const float m = (1.0f - m_d.m_parkPosition)*(float)(1.0 / JOYRANGEMX), b = m_d.m_parkPosition;
 
          // calculate the rescaled value
-         tmp = m * g_pplayer->m_curMechPlungerPos + b;
+         tmp = m*g_pplayer->m_curMechPlungerPos + b;
 
          // Because we don't have a calibration constraint on the negative side of the
          // axis, the physical plunger could report a negative value that goes beyond
@@ -1050,9 +1070,8 @@ STDMETHODIMP Plunger::Position(float *pVal) // 0..25
          const float range = (float)JOYRANGEMX * (1.0f - m_d.m_parkPosition) - (float)JOYRANGEMN *m_d.m_parkPosition; // final range limit
          tmp = tmp / range + m_d.m_parkPosition;           //scale and offset
       }
-      *pVal = tmp * 25.f;
+      *pVal = tmp*25.f;
    }
-
    else // non-mechanical
    {
       const PlungerMoverObject& pa = m_phitplunger->m_plungerMover;
@@ -1068,6 +1087,8 @@ STDMETHODIMP Plunger::Position(float *pVal) // 0..25
 
    return S_OK;
 }
+
+// Ported at: VisualPinball.Unity/VisualPinball.Unity/VPT/Plunger/PlungerApi.cs
 
 STDMETHODIMP Plunger::Fire()
 {
@@ -1100,6 +1121,10 @@ STDMETHODIMP Plunger::Fire()
 
    return S_OK;
 }
+
+//
+// end of license:GPLv3+, back to 'old MAME'-like
+//
 
 STDMETHODIMP Plunger::get_PullSpeed(float *pVal)
 {
@@ -1155,7 +1180,7 @@ STDMETHODIMP Plunger::get_Material(BSTR *pVal)
 STDMETHODIMP Plunger::put_Material(BSTR newVal)
 {
    char buf[MAXNAMEBUFFER];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXNAMEBUFFER, nullptr, nullptr);
    m_d.m_szMaterial = buf;
 
    return S_OK;
@@ -1173,12 +1198,12 @@ STDMETHODIMP Plunger::get_Image(BSTR *pVal)
 STDMETHODIMP Plunger::put_Image(BSTR newVal)
 {
    char szImage[MAXTOKEN];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, nullptr, nullptr);
    const Texture * const tex = m_ptable->GetImage(szImage);
    if (tex && tex->IsHDR())
    {
-      ShowError("Cannot use a HDR image (.exr/.hdr) here");
-      return E_FAIL;
+       ShowError("Cannot use a HDR image (.exr/.hdr) here");
+       return E_FAIL;
    }
    m_d.m_szImage = szImage;
 
@@ -1210,7 +1235,7 @@ STDMETHODIMP Plunger::get_TipShape(BSTR *pVal)
 
 STDMETHODIMP Plunger::put_TipShape(BSTR newVal)
 {
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, m_d.m_szTipShape, MAXTIPSHAPE, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, m_d.m_szTipShape, MAXTIPSHAPE, nullptr, nullptr);
 
    return S_OK;
 }
@@ -1405,7 +1430,7 @@ STDMETHODIMP Plunger::put_ZAdjust(float newVal)
 STDMETHODIMP Plunger::get_Surface(BSTR *pVal)
 {
    WCHAR wz[MAXTOKEN];
-   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szSurface, -1, wz, MAXTOKEN);
+   MultiByteToWideCharNull(CP_ACP, 0, m_d.m_szSurface.c_str(), -1, wz, MAXTOKEN);
    *pVal = SysAllocString(wz);
 
    return S_OK;
@@ -1413,7 +1438,9 @@ STDMETHODIMP Plunger::get_Surface(BSTR *pVal)
 
 STDMETHODIMP Plunger::put_Surface(BSTR newVal)
 {
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, m_d.m_szSurface, MAXTOKEN, NULL, NULL);
+   char buf[MAXTOKEN];
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXTOKEN, nullptr, nullptr);
+   m_d.m_szSurface = buf;
 
    return S_OK;
 }

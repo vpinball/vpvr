@@ -34,9 +34,9 @@ FlasherVisualsProperty::FlasherVisualsProperty(const VectorProtected<ISelect> *p
 
 void FlasherVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemFlasher))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemFlasher))
             continue;
         Flasher * const flash = (Flasher *)m_pvsel->ElementAt(i);
 
@@ -85,9 +85,9 @@ void FlasherVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void FlasherVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemFlasher))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemFlasher))
             continue;
         Flasher * const flash = (Flasher *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -105,10 +105,10 @@ void FlasherVisualsProperty::UpdateProperties(const int dispid)
                 CHECK_UPDATE_ITEM(flash->m_d.m_isDMD, PropertyDialog::GetCheckboxState(m_hUseDMDCheck), flash);
                 break;
             case DISPID_Image:
-                CHECK_UPDATE_COMBO_TEXT(flash->m_d.m_szImageA, m_imageACombo, flash);
+                CHECK_UPDATE_COMBO_TEXT_STRING(flash->m_d.m_szImageA, m_imageACombo, flash);
                 break;
             case DISPID_Image2:
-                CHECK_UPDATE_COMBO_TEXT(flash->m_d.m_szImageB, m_imageBCombo, flash);
+                CHECK_UPDATE_COMBO_TEXT_STRING(flash->m_d.m_szImageB, m_imageBCombo, flash);
                 break;
             case IDC_FLASHER_MODE_COMBO:
                 CHECK_UPDATE_ITEM(flash->m_d.m_imagealignment, (RampImageAlignment)(PropertyDialog::GetComboBoxIndex(m_modeCombo, m_imageAlignList)), flash);
@@ -130,7 +130,7 @@ void FlasherVisualsProperty::UpdateProperties(const int dispid)
                 break;
             case 5:
             {
-               float oldX = flash->m_d.m_vCenter.x;
+               const float oldX = flash->m_d.m_vCenter.x;
                const float newX = PropertyDialog::GetFloatTextbox(m_posXEdit);
                if (oldX != newX)
                {
@@ -143,7 +143,7 @@ void FlasherVisualsProperty::UpdateProperties(const int dispid)
             }
             case 6:
             {
-               float oldY = flash->m_d.m_vCenter.y;
+               const float oldY = flash->m_d.m_vCenter.y;
                const float newY = PropertyDialog::GetFloatTextbox(m_posYEdit);
                if (oldY != newY)
                {
@@ -214,16 +214,57 @@ BOOL FlasherVisualsProperty::OnInitDialog()
     m_rotZEdit.AttachItem(1);
     AttachItem(IDC_COLOR_BUTTON1, m_colorButton);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topright, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topright, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC12), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC13), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC14), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC15), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC16), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC17), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC18), topleft, 0);
+    m_resizer.AddChild(m_hVisibleCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_imageACombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hDisplayInEditorCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_imageBCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_modeCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_filterCombo, topleft, 0);
+    m_resizer.AddChild(m_hAdditiveBlendCheck, topleft, 0);
+    m_resizer.AddChild(m_hUseDMDCheck, topleft, 0);
+    m_resizer.AddChild(m_filterAmountEdit, topright, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_opacityAmountEdit, topright, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_depthBiasEdit, topright, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_modulateEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posXEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posYEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_heightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rotXEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rotYEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rotZEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_colorButton, topleft, 0);
+
     return TRUE;
 }
 
 INT_PTR FlasherVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    switch (uMsg)
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   switch (uMsg)
     {
         case WM_DRAWITEM:
         {
-            LPDRAWITEMSTRUCT lpDrawItemStruct = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
+            const LPDRAWITEMSTRUCT lpDrawItemStruct = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
             const UINT nID = static_cast<UINT>(wParam);
             if (nID == IDC_COLOR_BUTTON1)
             {

@@ -15,9 +15,9 @@ RampPhysicsProperty::RampPhysicsProperty(const VectorProtected<ISelect> *pvsel) 
 
 void RampPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemRamp))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemRamp))
             continue;
         Ramp * const ramp = (Ramp *)m_pvsel->ElementAt(i);
 
@@ -47,9 +47,9 @@ void RampPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void RampPhysicsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemRamp))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemRamp))
             continue;
         Ramp * const ramp = (Ramp *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -87,6 +87,32 @@ BOOL RampPhysicsProperty::OnInitDialog()
     m_hOverwritePhysicsCheck = ::GetDlgItem(GetHwnd(), IDC_OVERWRITE_MATERIAL_SETTINGS);
     m_hHitEventCheck = ::GetDlgItem(GetHwnd(), IDC_HAS_HITEVENT_CHECK);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(m_hitThresholdEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_leftWallEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rightWallEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_physicsMaterialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_elasticityEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_frictionEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_scatterAngleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hCollidableCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hOverwritePhysicsCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hHitEventCheck, topleft, RD_STRETCH_WIDTH);
+
     return TRUE;
 }
 
+INT_PTR RampPhysicsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
+}

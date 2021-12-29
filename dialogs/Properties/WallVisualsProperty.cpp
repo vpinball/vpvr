@@ -19,6 +19,8 @@ void WallVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
     //only show the first element on multi-select
     Surface* const wall = (Surface*)m_pvsel->ElementAt(0);
+    if (wall == nullptr)
+        return;
 
     if (dispid == DISPID_Image2 || dispid == -1)
         PropertyDialog::UpdateTextureComboBox(wall->GetPTable()->GetImageList(), m_sideImageCombo, wall->m_d.m_szSideImage);
@@ -52,9 +54,9 @@ void WallVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void WallVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemSurface))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemSurface))
             continue;
         Surface * const wall = (Surface*)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -118,10 +120,46 @@ BOOL WallVisualsProperty::OnInitDialog()
     m_disableLightFromBelowEdit.AttachItem(IDC_BLEND_DISABLE_LIGHTING_FROM_BELOW);
     m_topHeightEdit.AttachItem(9);
     m_bottomHeightEdit.AttachItem(8);
-
+    m_hDisplayInEditor = ::GetDlgItem(GetHwnd(), 13);
+    m_hTopImageVisible = ::GetDlgItem(GetHwnd(), 16);
+    m_hSideImageVisible = ::GetDlgItem(GetHwnd(), 109);
+    m_hAnimateSlingshot= ::GetDlgItem(GetHwnd(), 112);
+    m_hFlipbook = ::GetDlgItem(GetHwnd(), 113);
     m_baseImageCombo = &m_topImageCombo;
     m_hReflectionEnabledCheck = ::GetDlgItem(GetHwnd(), IDC_REFLECT_ENABLED_CHECK);
 
     UpdateVisuals();
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(m_topImageCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_sideImageCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_topMaterialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_sideMaterialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_slingshotMaterialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_disableLightingEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_disableLightFromBelowEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_topHeightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_bottomHeightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hReflectionEnabledCheck, topleft, 0);
+    m_resizer.AddChild(m_hDisplayInEditor, topleft, 0);
+    m_resizer.AddChild(m_hTopImageVisible, topleft, 0);
+    m_resizer.AddChild(m_hSideImageVisible, topleft, 0);
+    m_resizer.AddChild(m_hAnimateSlingshot, topleft, 0);
+    m_resizer.AddChild(m_hFlipbook, topleft, 0);
+    m_resizer.AddChild(m_bottomHeightEdit, topleft, RD_STRETCH_WIDTH);
     return TRUE;
+}
+
+INT_PTR WallVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

@@ -23,11 +23,11 @@ PrimitivePositionProperty::PrimitivePositionProperty(const VectorProtected<ISele
 
 void PrimitivePositionProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPrimitive))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPrimitive))
             continue;
-        Primitive *const prim = (Primitive*)m_pvsel->ElementAt(i);
+        const Primitive *const prim = (Primitive*)m_pvsel->ElementAt(i);
 
         if (dispid == DISPID_POSITION_X || dispid == -1)
             PropertyDialog::SetFloatTextbox(m_posXEdit, prim->m_d.m_vPosition.x);
@@ -71,9 +71,9 @@ void PrimitivePositionProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void PrimitivePositionProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPrimitive))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPrimitive))
             continue;
         Primitive *const prim = (Primitive*)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -149,5 +149,55 @@ BOOL PrimitivePositionProperty::OnInitDialog()
     m_objRotYEdit.AttachItem(DISPID_ROTRA8);
     m_objRotZEdit.AttachItem(DISPID_ROTRA9);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC12), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC13), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC14), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC15), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC16), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC17), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC18), topright, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC19), topright, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC20), topright, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC21), topright, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC22), topright, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC23), topright, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC24), topright, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC25), topright, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC26), topright, 0);
+    m_resizer.AddChild(m_posXEdit, topleft, 0);
+    m_resizer.AddChild(m_posYEdit, topleft, 0);
+    m_resizer.AddChild(m_posZEdit, topleft, 0);
+    m_resizer.AddChild(m_scaleXEdit, topright, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_scaleYEdit, topright, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_scaleZEdit, topright, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rotXEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rotYEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rotZEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_transXEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_transYEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_transZEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_objRotXEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_objRotYEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_objRotZEdit, topleft, RD_STRETCH_WIDTH);
+
     return TRUE;
+}
+
+INT_PTR PrimitivePositionProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

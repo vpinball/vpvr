@@ -3,7 +3,7 @@
 #include <WindowsX.h>
 
 
-DragpointVisualsProperty::DragpointVisualsProperty(int id, VectorProtected<ISelect> *pvsel) :BasePropertyDialog(id, pvsel), m_id(id)
+DragpointVisualsProperty::DragpointVisualsProperty(int id, const VectorProtected<ISelect> *pvsel) : BasePropertyDialog(id, pvsel), m_id(id)
 {
     m_posXEdit.SetDialog(this);
     m_posYEdit.SetDialog(this);
@@ -14,21 +14,21 @@ DragpointVisualsProperty::DragpointVisualsProperty(int id, VectorProtected<ISele
 
 void DragpointVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    const DragPoint *prev = NULL;
+    const DragPoint *prev = nullptr;
 
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDragPoint))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDragPoint))
             continue;
         const DragPoint * const dpoint = (DragPoint *)m_pvsel->ElementAt(i);
 
         PropertyDialog::SetCheckboxState(::GetDlgItem(GetHwnd(), 3), dpoint->m_smooth);
-        if (prev!=NULL)
+        if (prev!=nullptr)
         {
             if(prev->m_v.x!=dpoint->m_v.x && (dispid==1 || dispid==-1))
-                m_posXEdit.SetWindowText(NULL);
+                m_posXEdit.SetWindowText(nullptr);
             if (prev->m_v.y != dpoint->m_v.y && (dispid == 2 || dispid == -1))
-                m_posYEdit.SetWindowText(NULL);
+                m_posYEdit.SetWindowText(nullptr);
         }
         else
         {
@@ -50,8 +50,8 @@ void DragpointVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
                 PropertyDialog::SetCheckboxState(::GetDlgItem(GetHwnd(), 4), dpoint->m_autoTexture);
             if (dispid == 5 || dispid == -1)
             {
-                if (prev != NULL && prev->m_texturecoord != dpoint->m_texturecoord)
-                    m_textureCoordEdit.SetWindowText(NULL);
+                if (prev != nullptr && prev->m_texturecoord != dpoint->m_texturecoord)
+                    m_textureCoordEdit.SetWindowText(nullptr);
                 else
                     PropertyDialog::SetFloatTextbox(m_textureCoordEdit, dpoint->m_texturecoord);
             }
@@ -63,9 +63,9 @@ void DragpointVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void DragpointVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDragPoint))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDragPoint))
             continue;
         DragPoint * const dpoint = (DragPoint *)m_pvsel->ElementAt(i);
 
@@ -111,6 +111,41 @@ BOOL DragpointVisualsProperty::OnInitDialog()
     AttachItem(IDC_POINT_COPY_BUTTON, m_copyButton);
     AttachItem(IDC_POINT_PASTE_BUTTON, m_pasteButton);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    if (m_id == IDD_PROPPOINT_VISUALSWTEX)
+    {
+       m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, RD_STRETCH_WIDTH);
+       m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+       m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+       m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+       m_resizer.AddChild(m_textureCoordEdit, topleft, RD_STRETCH_WIDTH);
+       m_resizer.AddChild(GetDlgItem(4), topleft, 0);
+    }
+    else if(m_id==IDD_PROPPOINT_VISUALSWHEIGHT)
+    {
+       m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, RD_STRETCH_WIDTH);
+       m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+       m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+       m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+       m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+       m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+       m_resizer.AddChild(m_heightOffsetEdit, topleft, RD_STRETCH_WIDTH);
+       m_resizer.AddChild(m_realHeightEdit, topleft, RD_STRETCH_WIDTH);
+       m_resizer.AddChild(GetDlgItem(4), topleft, 0);
+    }
+    else
+    {
+       m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, RD_STRETCH_WIDTH);
+       m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+       m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    }
+    m_resizer.AddChild(GetDlgItem(3), topleft, 0);
+    m_resizer.AddChild(m_posXEdit, topleft, 0);
+    m_resizer.AddChild(m_posYEdit, topleft, 0);
+    m_resizer.AddChild(m_copyButton, topleft, 0);
+    m_resizer.AddChild(m_pasteButton, topleft, 0);
+
     return TRUE;
 }
 
@@ -124,7 +159,7 @@ BOOL DragpointVisualsProperty::OnCommand(WPARAM wParam, LPARAM lParam)
         case IDC_POINT_COPY_BUTTON:
         {
             ISelect *const pItem = m_pvsel->ElementAt(0);
-            if ((m_pvsel->Size() == 1) && (pItem->GetItemType() == eItemDragPoint))
+            if ((m_pvsel->size() == 1) && (pItem->GetItemType() == eItemDragPoint))
             {
                 DragPoint * const pPoint = (DragPoint *)pItem;
                 pPoint->Copy();
@@ -134,7 +169,7 @@ BOOL DragpointVisualsProperty::OnCommand(WPARAM wParam, LPARAM lParam)
         case IDC_POINT_PASTE_BUTTON:
         {
             ISelect *const pItem = m_pvsel->ElementAt(0);
-            if ((m_pvsel->Size() == 1) && (pItem->GetItemType() == eItemDragPoint))
+            if ((m_pvsel->size() == 1) && (pItem->GetItemType() == eItemDragPoint))
             {
                 DragPoint * const pPoint = (DragPoint *)pItem;
                 pPoint->Paste();
@@ -156,9 +191,9 @@ BOOL DragpointVisualsProperty::OnCommand(WPARAM wParam, LPARAM lParam)
         {
             if (dispID == 3)
             {
-                for (int i = 0; i < m_pvsel->Size(); i++)
+                for (int i = 0; i < m_pvsel->size(); i++)
                 {
-                    if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDragPoint))
+                    if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDragPoint))
                         continue;
                     DragPoint * const dpoint = (DragPoint *)m_pvsel->ElementAt(i);
                     dpoint->DoCommand(ID_POINTMENU_SMOOTH, 0, 0);
@@ -169,4 +204,10 @@ BOOL DragpointVisualsProperty::OnCommand(WPARAM wParam, LPARAM lParam)
         }
     }
     return FALSE;
+}
+
+INT_PTR DragpointVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

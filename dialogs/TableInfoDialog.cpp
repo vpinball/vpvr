@@ -22,7 +22,7 @@ BOOL TableInfoDialog::OnInitDialog()
    ::GetWindowRect(hwndParent, &rcMain);
    rcDlg = GetWindowRect();
 
-   SetWindowPos( NULL,
+   SetWindowPos( nullptr,
       (rcMain.right + rcMain.left) / 2 - (rcDlg.right - rcDlg.left) / 2,
       (rcMain.bottom + rcMain.top) / 2 - (rcDlg.bottom - rcDlg.top) / 2,
       0, 0, SWP_NOOWNERZORDER | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE/ * | SWP_NOMOVE* /);
@@ -40,6 +40,7 @@ BOOL TableInfoDialog::OnInitDialog()
    AttachItem(IDC_CUSTOMNAME, m_customNameEdit);
    AttachItem(IDC_CUSTOMVALUE, m_customValueEdit);
    AttachItem(IDC_CUSTOMLIST, m_customListView);
+   AttachItem(IDC_SCREENSHOT, m_screenshotCombo);
 
    m_blurbEdit.LimitText(100);
    m_tableNameEdit.SetWindowText(pt->m_szTableName.c_str());
@@ -57,22 +58,18 @@ BOOL TableInfoDialog::OnInitDialog()
    m_dateSavedEdit.SetWindowText(buffer);
 
    // Init list of images
-
-   const HWND hwndList = GetDlgItem(IDC_SCREENSHOT).GetHwnd();
-
    const LocalString ls(IDS_NONE);
-   ::SendMessage(hwndList, CB_ADDSTRING, 0, (LPARAM)ls.m_szbuffer);
+   m_screenshotCombo.AddString(ls.m_szbuffer);
 
    for (size_t i = 0; i < pt->m_vimage.size(); ++i)
    {
-      Texture * const pin = pt->m_vimage[i];
+      const Texture * const pin = pt->m_vimage[i];
       if (pin->m_ppb)
-         ::SendMessage(hwndList, CB_ADDSTRING, 0, (LPARAM)pin->m_szName.c_str());
+         m_screenshotCombo.AddString(pin->m_szName.c_str());
    }
 
-   ::SendMessage(hwndList, CB_SELECTSTRING, ~0u, (LPARAM)pt->m_szScreenShot.c_str());
+   m_screenshotCombo.SelectString(0, pt->m_szScreenShot.c_str());
 
-   //ListView_SetExtendedListViewStyle(GetDlgItem(IDC_CUSTOMLIST).GetHwnd(), LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
    m_customListView.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
    // Set up custom info list
@@ -92,16 +89,52 @@ BOOL TableInfoDialog::OnInitDialog()
       pt->ListCustomInfo(m_customListView.GetHwnd());
    }
 
+   m_resizer.Initialize(*this, CRect(0, 0, 650, 500));
+   m_resizer.AddChild(GetDlgItem(IDC_STATIC2), center, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_STATIC3), center, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_STATIC4), center, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_STATIC5), center, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_STATIC6), center, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_STATIC7), center, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_STATIC8), center, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_STATIC9), center, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_STATIC10), center, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_STATIC11), center, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_STATIC12), center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+   m_resizer.AddChild(GetDlgItem(IDC_STATIC13), center, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_STATIC14), center, 0);
+   m_resizer.AddChild(m_tableNameEdit, center, RD_STRETCH_WIDTH);
+   m_resizer.AddChild(m_authorEdit, center, RD_STRETCH_WIDTH);
+   m_resizer.AddChild(m_versionEdit, center, RD_STRETCH_WIDTH);
+   m_resizer.AddChild(m_releaseEdit, center, RD_STRETCH_WIDTH);
+   m_resizer.AddChild(m_emailEdit, center, RD_STRETCH_WIDTH);
+   m_resizer.AddChild(m_websiteEdit, center, RD_STRETCH_WIDTH);
+   m_resizer.AddChild(m_blurbEdit, center, RD_STRETCH_WIDTH);
+   m_resizer.AddChild(m_descriptionEdit, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+   m_resizer.AddChild(m_rulesEdits, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+   m_resizer.AddChild(m_dateSavedEdit, center, RD_STRETCH_WIDTH);
+   m_resizer.AddChild(m_customNameEdit, center, RD_STRETCH_WIDTH);
+   m_resizer.AddChild(m_customValueEdit, center, RD_STRETCH_WIDTH);
+   m_resizer.AddChild(m_customListView, center, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+   m_resizer.AddChild(m_screenshotCombo, center, RD_STRETCH_WIDTH);
+   m_resizer.AddChild(GetDlgItem(IDC_ADD), center, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_DELETE), center, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_SENDMAIL), center, 0);
+   m_resizer.AddChild(GetDlgItem(IDC_GOWEBSITE), center, 0);
+   m_resizer.AddChild(GetDlgItem(IDOK), bottomright, 0);
+   m_resizer.AddChild(GetDlgItem(IDCANCEL), bottomright, 0);
+
    return TRUE;
 }
 
 INT_PTR TableInfoDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
    switch (uMsg)
    {
       case WM_NOTIFY:
       {
-         LPNMHDR pnmhdr = (LPNMHDR)lParam;
+         const LPNMHDR pnmhdr = (LPNMHDR)lParam;
          switch (pnmhdr->code)
          {
             case LVN_ITEMCHANGING:
@@ -113,10 +146,10 @@ INT_PTR TableInfoDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                   {
                      const int sel = plistview->iItem;
 
-                     CString name = m_customListView.GetItemText(sel, 0, MAXSTRING);
+                     const CString name = m_customListView.GetItemText(sel, 0, MAXSTRING);
                      m_customNameEdit.SetWindowText(name.c_str());
 
-                     CString value = m_customListView.GetItemText(sel, 1, MAXSTRING);
+                     const CString value = m_customListView.GetItemText(sel, 1, MAXSTRING);
                      m_customValueEdit.SetWindowText(value.c_str());
                   }
                }
@@ -129,7 +162,7 @@ INT_PTR TableInfoDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
    return DialogProcDefault(uMsg, wParam, lParam);
 }
 
-void TableInfoDialog::VPGetDialogItemText(CEdit &edit, string &psztext)
+void TableInfoDialog::VPGetDialogItemText(const CEdit &edit, string &psztext)
 {
    psztext = edit.GetWindowText();
 }
@@ -193,7 +226,7 @@ void TableInfoDialog::OnOK()
    pt->m_szAuthor = m_authorEdit.GetWindowText();
    pt->m_szVersion = m_versionEdit.GetWindowText();
    pt->m_szReleaseDate = m_releaseEdit.GetWindowText();
-   pt->m_szAuthorEMail = m_authorEdit.GetWindowText();
+   pt->m_szAuthorEMail = m_emailEdit.GetWindowText();
    pt->m_szWebSite = m_websiteEdit.GetWindowText();
    pt->m_szBlurb = m_blurbEdit.GetWindowText();
    pt->m_szDescription = m_descriptionEdit.GetWindowText();

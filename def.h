@@ -126,17 +126,18 @@ typedef _int64          S64;
 
 #define CCO(x) CComObject<x>
 
-#define SAFE_VECTOR_DELETE(p)   { if (p) { delete [] (p);  (p)=NULL; } }
-#define SAFE_DELETE(p)			{ if (p) { delete (p);     (p)=NULL; } }
+#define SAFE_VECTOR_DELETE(p)   { if(p) { delete [] (p);  (p)=nullptr; } }
+#define SAFE_DELETE(p)          { if(p) { delete (p);     (p)=nullptr; } }
 
 inline void ref_count_trigger(const ULONG r, const char *file, const int line) // helper for debugging
 {
 #ifdef DEBUG_REFCOUNT_TRIGGER
    char msg[128];
    sprintf_s(msg, 128, "Ref Count: %u at %s:%d", r, file, line);
-   /*g_pvp->*/MessageBox(NULL, msg, "Error", MB_OK | MB_ICONEXCLAMATION);
+   /*g_pvp->*/MessageBox(nullptr, msg, "Error", MB_OK | MB_ICONEXCLAMATION);
 #endif
 }
+
 #ifdef ENABLE_SDL
 //TODO
 #define SAFE_RELEASE(p)			{}
@@ -144,12 +145,12 @@ inline void ref_count_trigger(const ULONG r, const char *file, const int line) /
 #define SAFE_RELEASE_NO_CHECK_NO_SET(p)	{}
 #define SAFE_RELEASE_NO_RCC(p)	{}
 #else
-#define SAFE_RELEASE(p)			{ if (p) { const ULONG rcc = (p)->Release(); if (rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); (p)=NULL; } }
-#define SAFE_RELEASE_NO_SET(p)	{ if (p) { const ULONG rcc = (p)->Release(); if (rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); } }
-#define SAFE_RELEASE_NO_CHECK_NO_SET(p)	{ const ULONG rcc = (p)->Release(); if (rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); }
-#define SAFE_RELEASE_NO_RCC(p)	{ if (p) { (p)->Release(); (p)=NULL; } } // use for releasing things like surfaces gotten from GetSurfaceLevel (that seem to "share" the refcount with the underlying texture)
+#define SAFE_RELEASE(p)			{ if(p) { const ULONG rcc = (p)->Release(); if(rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); (p)=nullptr; } }
+#define SAFE_RELEASE_NO_SET(p)	{ if(p) { const ULONG rcc = (p)->Release(); if(rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); } }
+#define SAFE_RELEASE_NO_CHECK_NO_SET(p)	{ const ULONG rcc = (p)->Release(); if(rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); }
+#define SAFE_RELEASE_NO_RCC(p)	{ if(p) { (p)->Release(); (p)=nullptr; } } // use for releasing things like surfaces gotten from GetSurfaceLevel (that seem to "share" the refcount with the underlying texture)
 #endif
-#define FORCE_RELEASE(p)		{ if(p) { ULONG rcc = 1; while(rcc!=0) {rcc = (p)->Release();} (p)=NULL; } } // release all references until it is 0
+#define FORCE_RELEASE(p)		{ if(p) { ULONG rcc = 1; while(rcc!=0) {rcc = (p)->Release();} (p)=nullptr; } } // release all references until it is 0
 
 #define hrNotImplemented ResultFromScode(E_NOTIMPL)
 
@@ -160,7 +161,7 @@ enum SaveDirtyState
    eSaveDirty
 };
 
-#define MY_D3DFVF_TEX					0
+#define MY_D3DFVF_TEX                   0
 #define MY_D3DFVF_NOTEX2_VERTEX         1
 #define MY_D3DTRANSFORMED_NOTEX2_VERTEX 2 //!! delete
 
@@ -351,17 +352,17 @@ __forceinline float radical_inverse(unsigned int v)
 
 template <unsigned int base>
 float radical_inverse(unsigned int a) {
-   const float invBase = (float)(1. / (double)base);
-   unsigned int reversedDigits = 0;
-   float invBaseN = 1.f;
-   while (a) {
-      const unsigned int next = a / base;
-      const unsigned int digit = a - next * base;
-      reversedDigits = reversedDigits * base + digit;
-      invBaseN *= invBase;
-      a = next;
-   }
-   return (float)((double)reversedDigits * invBaseN);
+    const float invBase = (float)(1. / (double)base);
+    unsigned int reversedDigits = 0;
+    float invBaseN = 1.f;
+    while (a) {
+        const unsigned int next  = a / base;
+        const unsigned int digit = a - next * base;
+        reversedDigits = reversedDigits * base + digit;
+        invBaseN *= invBase;
+        a = next;
+    }
+    return (float)((double)reversedDigits * invBaseN);
 }
 
 __forceinline float sobol(unsigned int i, unsigned int scramble = 0)
@@ -394,7 +395,7 @@ __forceinline float vpUnitsToInches(const float value)
 
 __forceinline float inchesToVPUnits(const float value)
 {
-   return value * (float)(1.0 / 0.0212765);
+   return value * (float)(1.0/0.0212765);
 }
 
 __forceinline float vpUnitsToMillimeters(const float value)
@@ -404,18 +405,17 @@ __forceinline float vpUnitsToMillimeters(const float value)
 
 __forceinline float millimetersToVPUnits(const float value)
 {
-   return value * (float)(1.0 / 0.540425);
+   return value * (float)(1.0/0.540425);
 }
 
 float sz2f(const string& sz);
 void f2sz(const float f, string& sz);
 
-void WideStrCopy(const WCHAR *wzin, WCHAR *wzout);
 void WideStrNCopy(const WCHAR *wzin, WCHAR *wzout, const DWORD wzoutMaxLen);
 int WideStrCmp(const WCHAR *wz1, const WCHAR *wz2);
+void WideStrCat(const WCHAR *wzin, WCHAR *wzout, const DWORD wzoutMaxLen);
 int WzSzStrCmp(const WCHAR *wz1, const char *sz2);
-void WideStrCat(const WCHAR *wzin, WCHAR *wzout);
-int WzSzStrnCmp(const WCHAR *wz1, const char *sz2, const int count);
+int WzSzStrNCmp(const WCHAR *wz1, const char *sz2, const DWORD maxComparisonLen);
 
 HRESULT OpenURL(const string& szURL);
 
@@ -425,36 +425,42 @@ char *MakeChar(const WCHAR * const wz);
 // in case the incoming string length is >= the maximum char length of the outgoing one, WideCharToMultiByte will not produce a zero terminated string
 // this variant always makes sure that the outgoing string is zero terminated
 inline int WideCharToMultiByteNull(
-   const UINT     CodePage,
-   const DWORD    dwFlags,
-   LPCWSTR        lpWideCharStr,
-   const int      cchWideChar,
-   LPSTR          lpMultiByteStr,
-   const int      cbMultiByte,
-   LPCSTR         lpDefaultChar,
-   LPBOOL         lpUsedDefaultChar)
+    const UINT     CodePage,
+    const DWORD    dwFlags,
+    LPCWSTR        lpWideCharStr,
+    const int      cchWideChar,
+    LPSTR          lpMultiByteStr,
+    const int      cbMultiByte,
+    LPCSTR         lpDefaultChar,
+    LPBOOL         lpUsedDefaultChar)
 {
-   const int res = WideCharToMultiByte(CodePage, dwFlags, lpWideCharStr, cchWideChar, lpMultiByteStr, cbMultiByte, lpDefaultChar, lpUsedDefaultChar);
-   if (cbMultiByte > 0 && lpMultiByteStr)
-      lpMultiByteStr[cbMultiByte - 1] = '\0';
-   return res;
+    const int res = WideCharToMultiByte(CodePage,dwFlags,lpWideCharStr,cchWideChar,lpMultiByteStr,cbMultiByte,lpDefaultChar,lpUsedDefaultChar);
+    if(cbMultiByte > 0 && lpMultiByteStr)
+        lpMultiByteStr[cbMultiByte-1] = '\0';
+    return res;
 }
 
 
 // in case the incoming string length is >= the maximum wchar length of the outgoing one, MultiByteToWideChar will not produce a zero terminated string
 // this variant always makes sure that the outgoing string is zero terminated
 inline int MultiByteToWideCharNull(
-   const UINT     CodePage,
-   const DWORD    dwFlags,
-   LPCSTR         lpMultiByteStr,
-   const int      cbMultiByte,
-   LPWSTR         lpWideCharStr,
-   const int      cchWideChar)
+    const UINT     CodePage,
+    const DWORD    dwFlags,
+    LPCSTR         lpMultiByteStr,
+    const int      cbMultiByte,
+    LPWSTR         lpWideCharStr,
+    const int      cchWideChar)
 {
-   const int res = MultiByteToWideChar(CodePage, dwFlags, lpMultiByteStr, cbMultiByte, lpWideCharStr, cchWideChar);
-   if (cchWideChar > 0 && lpWideCharStr)
-      lpWideCharStr[cchWideChar - 1] = L'\0';
-   return res;
+    const int res = MultiByteToWideChar(CodePage,dwFlags,lpMultiByteStr,cbMultiByte,lpWideCharStr,cchWideChar);
+    if(cchWideChar > 0 && lpWideCharStr)
+        lpWideCharStr[cchWideChar-1] = L'\0';
+    return res;
 }
 
+
 char* replace(const char* const original, const char* const pattern, const char* const replacement);
+
+/**
+ * @brief Detect whether the program is running on the Wine compatibility layer
+ */
+bool IsOnWine();

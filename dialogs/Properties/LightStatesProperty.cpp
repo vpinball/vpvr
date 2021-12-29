@@ -14,15 +14,15 @@ LightStatesProperty::LightStatesProperty(const VectorProtected<ISelect> *pvsel) 
 
 void LightStatesProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemLight))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemLight))
             continue;
-        Light * const light = (Light *)m_pvsel->ElementAt(i);
+        const Light * const light = (Light *)m_pvsel->ElementAt(i);
         if (dispid == DISPID_Light_State || dispid == -1)
             PropertyDialog::UpdateComboBox(m_stateList, m_stateCombo, m_stateList[(int)light->getLightState()]);
         if (dispid == IDC_BLINK_PATTERN_EDIT || dispid == -1)
-            m_blinkPatternEdit.SetWindowText(light->m_rgblinkpattern);
+            m_blinkPatternEdit.SetWindowText(light->m_rgblinkpattern.c_str());
         if (dispid == DISPID_Light_BlinkInterval || dispid == -1)
             PropertyDialog::SetIntTextbox(m_blinkIntervalEdit, light->m_blinkinterval);
         //only show the first element on multi-select
@@ -32,9 +32,9 @@ void LightStatesProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void LightStatesProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemLight))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemLight))
             continue;
         Light * const light = (Light *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -44,11 +44,11 @@ void LightStatesProperty::UpdateProperties(const int dispid)
                 break;
             case IDC_BLINK_PATTERN_EDIT:
             {
-                const CString pattern = m_blinkPatternEdit.GetWindowText();
-                if (pattern != CString(light->m_rgblinkpattern))
+                const string pattern = m_blinkPatternEdit.GetWindowText();
+                if (pattern != light->m_rgblinkpattern)
                 {
                     PropertyDialog::StartUndo(light);
-                    strncpy_s(light->m_rgblinkpattern, pattern.c_str(), sizeof(light->m_rgblinkpattern)-1);
+                    light->m_rgblinkpattern = pattern;
                     PropertyDialog::EndUndo(light);
                 }
                 break;
@@ -69,5 +69,21 @@ BOOL LightStatesProperty::OnInitDialog()
     m_blinkPatternEdit.AttachItem(IDC_BLINK_PATTERN_EDIT);
     m_blinkIntervalEdit.AttachItem(DISPID_Light_BlinkInterval);
     UpdateVisuals();
+    m_stateCombo.SetDroppedWidth(20);
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(m_stateCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_blinkPatternEdit, topleft, RD_STRETCH_WIDTH );
+    m_resizer.AddChild(m_blinkIntervalEdit, topleft, RD_STRETCH_WIDTH);
+
     return TRUE;
+}
+
+INT_PTR LightStatesProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

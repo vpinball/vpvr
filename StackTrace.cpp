@@ -21,6 +21,9 @@ namespace
 
 	void InitStackFrameFromContext(PCONTEXT context, STACKFRAME64& stackFrame)
 	{
+#if defined(_M_ARM64)
+#pragma message ( "Warning: No CPU stack debug implemented yet" )
+#else
 #ifdef _WIN64
 		stackFrame.AddrPC.Offset	= context->Rip;
 		stackFrame.AddrFrame.Offset = context->Rbp;
@@ -29,6 +32,7 @@ namespace
 		stackFrame.AddrPC.Offset	= context->Eip;
 		stackFrame.AddrFrame.Offset = context->Ebp;
 		stackFrame.AddrStack.Offset = context->Esp;
+#endif
 #endif
 	}
 
@@ -59,7 +63,7 @@ bool StackTrace::InitSymbols()
 						SYMOPT_LOAD_LINES |
 						SYMOPT_UNDNAME;
 		SymSetOptions(options);
-		const char* dir = NULL;
+		const char* dir = nullptr;
 		if (!SymInitialize(GetCurrentProcess(), dir, options & SYMOPT_DEFERRED_LOADS))
 		{
 			OutputDebugString("Cannot initialize symbol engine");
@@ -74,17 +78,17 @@ bool StackTrace::InitSymbols()
 int StackTrace::GetCallStack(Address* callStack, int maxDepth, int entriesToSkip)
 {
 	PCONTEXT pContext(0);
-	HMODULE hKernel32Dll = GetModuleHandle("kernel32.dll");
-   typedef void(WINAPI* pRtlCaptureContext)(PCONTEXT);
-   static pRtlCaptureContext RtlCaptureContext = NULL;
-   if (RtlCaptureContext == NULL)
-      RtlCaptureContext = (pRtlCaptureContext)GetProcAddress(hKernel32Dll, "RtlCaptureContext");
-   CONTEXT context;
-   if (RtlCaptureContext)
-   {
-      memset(&context, 0, sizeof(context));
-      context.ContextFlags = CONTEXT_FULL;
-      RtlCaptureContext(&context);
+	const HMODULE hKernel32Dll = GetModuleHandle("kernel32.dll");
+	typedef void(WINAPI* pRtlCaptureContext)(PCONTEXT);
+	static pRtlCaptureContext RtlCaptureContext = nullptr;
+	if(RtlCaptureContext == nullptr)
+		RtlCaptureContext = (pRtlCaptureContext)GetProcAddress(hKernel32Dll, "RtlCaptureContext");
+	CONTEXT context;
+	if (RtlCaptureContext)
+	{
+		memset(&context, 0, sizeof(context));
+		context.ContextFlags = CONTEXT_FULL;
+		RtlCaptureContext(&context);
 		pContext = &context;
 	}
 	// +1 -> skip over "us"
@@ -94,6 +98,11 @@ int StackTrace::GetCallStack(Address* callStack, int maxDepth, int entriesToSkip
 int StackTrace::GetCallStack(void* vcontext, Address* callStack, int maxDepth, 
 							 int entriesToSkip)
 {
+#if defined(_M_ARM64)
+#pragma message ( "Warning: No CPU stack debug implemented yet" )
+	uintptr_t ebpReg[2];
+	uintptr_t espReg;
+#else
 #ifndef _WIN64
 	uintptr_t* ebpReg;
 	uintptr_t espReg;
@@ -102,17 +111,17 @@ int StackTrace::GetCallStack(void* vcontext, Address* callStack, int maxDepth,
 #else
 	uintptr_t ebpReg[2];
 	uintptr_t espReg;
-    CONTEXT Context;
+	CONTEXT Context;
 	RtlCaptureContext(&Context);
 	ebpReg[1] = Context.Rip;
 	ebpReg[0] = Context.Rbp;
 	espReg = Context.Rsp;
 #endif
+#endif
 
 	InitSymbols();
 
-	STACKFRAME64 stackFrame;
-	memset(&stackFrame, 0, sizeof(stackFrame));
+	STACKFRAME64 stackFrame = {};
 
 	PCONTEXT context = (PCONTEXT)vcontext;
 	if (context == 0)
@@ -134,7 +143,7 @@ int StackTrace::GetCallStack(void* vcontext, Address* callStack, int maxDepth,
 
 	int numEntries(0);
 	while (::StackWalk64(IMAGE_FILE_MACHINE_I386, process, thread, 
-		&stackFrame, context, 0, SymFunctionTableAccess64, SymGetModuleBase64, NULL) &&
+		&stackFrame, context, 0, SymFunctionTableAccess64, SymGetModuleBase64, nullptr) &&
 		stackFrame.AddrFrame.Offset != 0 && numEntries < maxDepth)
 	{
 		if (entriesToSkip > 0)
@@ -148,12 +157,16 @@ int StackTrace::GetCallStack(void* vcontext, Address* callStack, int maxDepth,
 int StackTrace::GetCallStack_Fast(Address* callStack, int maxDepth, int entriesToSkip)
 {
 	uintptr_t ebpReg;
+#if defined(_M_ARM64)
+#pragma message ( "Warning: No CPU stack debug implemented yet" )
+#else
 #ifndef _WIN64
 	__asm mov [ebpReg], ebp
 #else
-    CONTEXT Context;
+	CONTEXT Context;
 	RtlCaptureContext(&Context);
 	ebpReg = Context.Rbp;
+#endif
 #endif
 
 	void** sp = (void**)ebpReg;
@@ -185,17 +198,16 @@ int StackTrace::GetSymbolInfo(Address address, char* symbol, int maxSymbolLen)
 
 	const DWORD64 address64 = (DWORD64)address;
 	// Module name
-	IMAGEHLP_MODULE64 moduleInfo;
-	ZeroMemory(&moduleInfo, sizeof(moduleInfo));
+	IMAGEHLP_MODULE64 moduleInfo = {};
 	moduleInfo.SizeOfStruct = sizeof(moduleInfo);
 	const HANDLE hCurrentProcess = GetCurrentProcess();
 	if (SymGetModuleInfo64(hCurrentProcess, address64, &moduleInfo))
 	{
-      char moduleName[MAXSTRING + 1];
-      GetFileFromPath(moduleInfo.ImageName, moduleName, MAXSTRING);
-      const int moduleLen = (int)strnlen_s(moduleName, sizeof(moduleName));
-      strncpy_s(symbol, maxSymbolLen, moduleName, maxSymbolLen - 1);
-      symbol += moduleLen;
+		char moduleName[MAXSTRING + 1];
+		GetFileFromPath(moduleInfo.ImageName, moduleName, MAXSTRING);
+		const int moduleLen = (int)strnlen_s(moduleName,sizeof(moduleName));
+		strncpy_s(symbol, maxSymbolLen, moduleName, maxSymbolLen-1);
+		symbol += moduleLen;
 		charsAdded += moduleLen;
 		maxSymbolLen -= moduleLen;
 	}
@@ -222,14 +234,13 @@ int StackTrace::GetSymbolInfo(Address address, char* symbol, int maxSymbolLen)
 
 	// File + line
 	DWORD displacementLine;
-	IMAGEHLP_LINE64 lineInfo;
-	ZeroMemory(&lineInfo, sizeof(lineInfo));
+	IMAGEHLP_LINE64 lineInfo = {};
 	lineInfo.SizeOfStruct = sizeof(lineInfo);
 	if (SymGetLineFromAddr64(hCurrentProcess, address64, &displacementLine, &lineInfo))
 	{
-      char fileName[MAXSTRING + 1];
-      GetFileFromPath(lineInfo.FileName, fileName, MAXSTRING);
-      int fileLineChars(0);
+		char fileName[MAXSTRING + 1];
+		GetFileFromPath(lineInfo.FileName, fileName, MAXSTRING);
+		int fileLineChars;
 		if (displacementLine > 0)
 		{
 			fileLineChars = _snprintf_s(symbol, maxSymbolLen, _TRUNCATE, 
@@ -250,14 +261,13 @@ int StackTrace::GetSymbolInfo(Address address, char* symbol, int maxSymbolLen)
 void StackTrace::GetCallStack(void* vcontext, bool includeArguments, 
 							  char* symbol, int maxSymbolLen)
 {
-	PCONTEXT context = (PCONTEXT)vcontext;
+	const PCONTEXT context = (PCONTEXT)vcontext;
 	if (context == 0)
 		return;
 
 	InitSymbols();
 
-	STACKFRAME64 stackFrame;
-	memset(&stackFrame, 0, sizeof(stackFrame));
+	STACKFRAME64 stackFrame = {};
 
 	InitStackFrameFromContext(context, stackFrame);
 	stackFrame.AddrPC.Mode		= AddrModeFlat;
@@ -267,11 +277,11 @@ void StackTrace::GetCallStack(void* vcontext, bool includeArguments,
 	while (maxSymbolLen > 0 &&
 		::StackWalk64(IMAGE_FILE_MACHINE_I386,
 			::GetCurrentProcess(), ::GetCurrentThread(), &stackFrame,
-			context, NULL, /*Internal_ReadProcessMemory,*/
-			SymFunctionTableAccess64, SymGetModuleBase64, NULL) != FALSE &&
+			context, nullptr, /*Internal_ReadProcessMemory,*/
+			SymFunctionTableAccess64, SymGetModuleBase64, nullptr) != FALSE &&
 		stackFrame.AddrFrame.Offset != 0)
 	{
-		Address addr = reinterpret_cast<Address>(stackFrame.AddrPC.Offset);
+		const Address addr = reinterpret_cast<Address>(stackFrame.AddrPC.Offset);
 		int charsAdded = GetSymbolInfo(addr, symbol, maxSymbolLen);
 		maxSymbolLen -= charsAdded;
 		symbol += charsAdded;

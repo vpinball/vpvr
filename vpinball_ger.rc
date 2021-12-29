@@ -1538,7 +1538,7 @@ BEGIN
     IDS_UNSECURECONTROL1    "Dieser Tisch möche ein '"
     IDS_UNSECURECONTROL2    "' Objekt erstellen. Dieses Objekt stellt möglicherweise ein Sicherheitsrisiko dar.  Soll es wirklich erstellt werden?"
     IDS_COLLECTION          "Collection"
-	IDS_DEFAULTPHYSICS      "Sollen die Physikeinstellungen wirklich zurückgesetzt werden?"
+    IDS_DEFAULTPHYSICS      "Sollen die Physikeinstellungen wirklich zurückgesetzt werden?"
 END
 
 STRINGTABLE 

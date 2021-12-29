@@ -111,7 +111,7 @@ public:
 
    // multiply vector with matrix transpose
    template <class VecType>
-   Vertex3Ds MultiplyVectorT(const VecType& v) const
+   Vertex3Ds MulVectorT(const VecType& v) const
    {
       return Vertex3Ds(
          m_d[0][0] * v.x + m_d[1][0] * v.y + m_d[2][0] * v.z,

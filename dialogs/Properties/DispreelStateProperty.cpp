@@ -11,9 +11,9 @@ DispreelStateProperty::DispreelStateProperty(const VectorProtected<ISelect> *pvs
 
 void DispreelStateProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDispReel))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDispReel))
             continue;
         DispReel * const reel = (DispReel *)m_pvsel->ElementAt(i);
         if (dispid == IDC_MOTOR_STEPS_EDIT || dispid == -1)
@@ -29,9 +29,9 @@ void DispreelStateProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void DispreelStateProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDispReel))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDispReel))
             continue;
         DispReel * const reel = (DispReel *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -58,5 +58,20 @@ BOOL DispreelStateProperty::OnInitDialog()
     m_updateIntervalEdit.AttachItem(IDC_UPDATE_INTERVAL_EDIT);
     m_soundCombo.AttachItem(DISPID_Sound);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(m_motorStepsEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_updateIntervalEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_soundCombo, topleft, RD_STRETCH_WIDTH);
+
     return TRUE;
+}
+
+INT_PTR DispreelStateProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

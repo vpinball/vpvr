@@ -55,8 +55,8 @@ public:
 		if (fNew && !wzName) \
 			{ \
 				{ \
-				GetPTable()->GetUniqueName(ItemType, wzUniqueName); \
-				WideStrCopy(wzUniqueName, (WCHAR *)m_wzName);/*lstrcpyW((WCHAR *)m_wzName, wzUniqueName);*/ \
+				GetPTable()->GetUniqueName(ItemType, wzUniqueName, 128); \
+				WideStrNCopy(wzUniqueName, (WCHAR *)m_wzName, sizeof(m_wzName)/sizeof(m_wzName[0]));/*lstrcpyW((WCHAR *)m_wzName, wzUniqueName);*/ \
 				} \
 			} \
 		InitScript(); \
@@ -78,15 +78,15 @@ public:
 #define STANDARD_NOSCRIPT_EDITABLE_DECLARES(T, ItemType, ResName, AllowedViews) \
 	_STANDARD_EDITABLE_CONSTANTS(ItemType, ResName, AllowedViews) \
 	_STANDARD_DISPATCH_INDEPENDANT_EDITABLE_DECLARES(T, ItemType) \
-	virtual EventProxyBase *GetEventProxyBase() {return NULL;} \
-	inline IFireEvents *GetIFireEvents() {return NULL;} \
-	inline IDebugCommands *GetDebugCommands() {return NULL;} \
-	virtual IScriptable *GetScriptable() {return NULL;}
+	virtual EventProxyBase *GetEventProxyBase() {return nullptr;} \
+	inline IFireEvents *GetIFireEvents() {return nullptr;} \
+	inline IDebugCommands *GetDebugCommands() {return nullptr;} \
+	virtual IScriptable *GetScriptable() {return nullptr;}
 
 // used above, do not invoke directly
 #define _STANDARD_DISPATCH_EDITABLE_DECLARES(itemType) \
 	inline IFireEvents *GetIFireEvents() {return (IFireEvents *)this;} \
-	inline IDebugCommands *GetDebugCommands() {return NULL;} \
+	inline IDebugCommands *GetDebugCommands() {return nullptr;} \
 	virtual EventProxyBase *GetEventProxyBase() {return (EventProxyBase *)this;} \
 	STDMETHOD(get_Name)(/*[out, retval]*/ BSTR *pVal) \
 		{ \
@@ -102,7 +102,7 @@ public:
 			} \
 		if (GetPTable()->m_pcv->ReplaceName(this, newVal) == S_OK) \
 			{ \
-			WideStrCopy(newVal, (WCHAR *)m_wzName);/*lstrcpyW((WCHAR *)m_wzName, newVal);*/ \
+			WideStrNCopy(newVal, (WCHAR *)m_wzName, sizeof(m_wzName)/sizeof(m_wzName[0]));/*lstrcpyW((WCHAR *)m_wzName, newVal);*/ \
 			return S_OK; \
 			} \
 		return E_FAIL; \
@@ -120,7 +120,7 @@ public:
 #define _STANDARD_DISPATCH_INDEPENDANT_EDITABLE_DECLARES(T, ItemType) \
     static T* COMCreate() \
     { \
-        CComObject<T> *obj = NULL; \
+        CComObject<T> *obj = nullptr; \
         if (FAILED(CComObject<T>::CreateInstance(&obj))) \
                 { \
             MessageBox(0, "Failed to create COM object.", "Visual Pinball", MB_ICONEXCLAMATION); \
@@ -178,7 +178,7 @@ public:
 
 
 class EventProxyBase;
-
+class ObjLoader;
 // IEditable is the subclass for anything class which is a self-contained table element.
 // It knows how to draw itself, interact with event and properties,
 // And talk to the player
@@ -204,7 +204,7 @@ public:
 
    virtual void RenderBlueprint(Sur *psur, const bool solid);
 
-   virtual void ExportMesh(FILE *f) {}
+   virtual void ExportMesh(ObjLoader& loader) {}
 
    virtual ULONG STDMETHODCALLTYPE AddRef() = 0;
    virtual ULONG STDMETHODCALLTYPE Release() = 0;
@@ -214,8 +214,8 @@ public:
 
    void SetDirtyDraw();
 
-   virtual Hitable *GetIHitable() { return NULL; }
-   virtual const Hitable *GetIHitable() const { return NULL; }
+   virtual Hitable *GetIHitable() { return nullptr; }
+   virtual const Hitable *GetIHitable() const { return nullptr; }
 
    virtual HRESULT SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupForPlay) = 0;
    virtual void ClearForOverwrite();

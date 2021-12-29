@@ -54,18 +54,18 @@ INT_PTR CALLBACK TranslateProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lP
 class BaseProperty // not everything in here is used in all of the derived classes, but it simplifies the UI code!
 {
 public:
-   std::string m_szImage;
-   std::string m_szMaterial;
-   std::string m_szPhysicsMaterial;
-   float m_elasticity;
-   float m_friction;
-   float m_scatter;
-   float m_threshold;
-   bool  m_collidable;
-   bool  m_hitEvent;
-   bool  m_overwritePhysics;
-   bool  m_reflectionEnabled;
-   bool  m_visible;
+    std::string m_szImage;
+    std::string m_szMaterial;
+    std::string m_szPhysicsMaterial;
+    float m_elasticity;
+    float m_friction;
+    float m_scatter;
+    float m_threshold;
+    bool  m_collidable;
+    bool  m_hitEvent;
+    bool  m_overwritePhysics;
+    bool  m_reflectionEnabled;
+    bool  m_visible;
 };
 
 // ISelect is the subclass for anything that can be manipulated with the mouse.

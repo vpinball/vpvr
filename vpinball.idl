@@ -521,7 +521,7 @@ typedef [uuid(D09B9F0E-C1AE-40dd-84D6-B1F74053AA8E)]
                 [propget, id(103), helpstring("property Xlatey")] HRESULT Xlatey([out, retval] float *pVal);
                 [propput, id(103), helpstring("property Xlatey")] HRESULT Xlatey([in] float newVal);
                 [propget, id(110), helpstring("property Xlatez")] HRESULT Xlatez([out, retval] float *pVal);
-                [propput, id(110), helpstring("property Xlatez")] HRESULT Xlatez([in] float newVal);              
+                [propput, id(110), helpstring("property Xlatez")] HRESULT Xlatez([in] float newVal);
                 
                 [propget, id(1100), helpstring("property Gravity")] HRESULT Gravity([out, retval] float *pVal);
                 [propput, id(1100), helpstring("property Gravity")] HRESULT Gravity([in] float newVal);
@@ -762,16 +762,24 @@ typedef [uuid(D09B9F0E-C1AE-40dd-84D6-B1F74053AA8E)]
                 [propget, id(40), helpstring("property VersionRevision")] HRESULT VersionRevision([out, retval] int *pVal);
                 [propget, id(24), helpstring("property VPBuildVersion")] HRESULT VPBuildVersion([out, retval] int *pVal);
 
+                [id(249), helpstring("method GetSerialDevices")] HRESULT GetSerialDevices([out, retval] VARIANT *pVal);
+                [id(250), helpstring("method OpenSerial")] HRESULT OpenSerial([in] BSTR device);
+                [id(251), helpstring("method CloseSerial")] HRESULT CloseSerial();
+                [id(252), helpstring("method FlushSerial")] HRESULT FlushSerial();
+                [id(253), helpstring("method SetupSerial")] HRESULT SetupSerial([in] int baud, [in] int bits, [in] int parity, [in] int stopbit, [in] VARIANT_BOOL rts, [in] VARIANT_BOOL dtr);
+                [id(254), helpstring("method ReadSerial")] HRESULT ReadSerial([in] int size, [out] VARIANT *pVal);
+                [id(255), helpstring("method WriteSerial")] HRESULT WriteSerial([in] VARIANT pVal);
+
                 [id(230), helpstring("method UpdateMaterial")] HRESULT UpdateMaterial([in] BSTR pVal, [in] float wrapLighting, [in] float roughness, [in] float glossyImageLerp, [in] float thickness, [in] float edge, [in] float edgeAlpha, [in] float opacity,
                     [in] OLE_COLOR base, [in] OLE_COLOR glossy, [in] OLE_COLOR clearcoat, [in] VARIANT_BOOL isMetal, [in] VARIANT_BOOL opacityActive,
                     [in] float elasticity, [in] float elasticityFalloff, [in] float friction, [in] float scatterAngle);
-                [id(231), helpstring("method GetMaterial")] HRESULT GetMaterial([in] BSTR pVal, [out] float *wrapLighting, [out] float *roughness, [out] float *glossyImageLerp, [out] float *thickness, [out] float *edge, [out] float *edgeAlpha, [out] float *opacity,
-                    [out] OLE_COLOR *base, [out] OLE_COLOR *glossy, [out] OLE_COLOR *clearcoat, [out] VARIANT_BOOL *isMetal, [out] VARIANT_BOOL *opacityActive,
-                    [out] float *elasticity, [out] float *elasticityFalloff, [out] float *friction, [out] float *scatterAngle);
+                [id(231), helpstring("method GetMaterial")] HRESULT GetMaterial([in] BSTR pVal, [out] VARIANT *wrapLighting, [out] VARIANT *roughness, [out] VARIANT *glossyImageLerp, [out] VARIANT *thickness, [out] VARIANT *edge, [out] VARIANT *edgeAlpha, [out] VARIANT *opacity,
+                    [out] VARIANT *base, [out] VARIANT *glossy, [out] VARIANT *clearcoat, [out] VARIANT *isMetal, [out] VARIANT *opacityActive,
+                    [out] VARIANT *elasticity, [out] VARIANT *elasticityFalloff, [out] VARIANT *friction, [out] VARIANT *scatterAngle);
                 [id(247), helpstring("method UpdateMaterialPhysics")] HRESULT UpdateMaterialPhysics([in] BSTR pVal,
                     [in] float elasticity, [in] float elasticityFalloff, [in] float friction, [in] float scatterAngle);
                 [id(248), helpstring("method GetMaterialPhysics")] HRESULT GetMaterialPhysics([in] BSTR pVal,
-                    [out] float *elasticity, [out] float *elasticityFalloff, [out] float *friction, [out] float *scatterAngle);
+                    [out] VARIANT *elasticity, [out] VARIANT *elasticityFalloff, [out] VARIANT *friction, [out] VARIANT *scatterAngle);
                 [id(224), helpstring("method MaterialColor")] HRESULT MaterialColor([in] BSTR name, [in] OLE_COLOR newVal);
 
                 [propget, id(226), helpstring("property WindowWidth")] HRESULT WindowWidth([out, retval] int *pVal);
@@ -1040,7 +1048,7 @@ typedef [uuid(D09B9F0E-C1AE-40dd-84D6-B1F74053AA8E)]
                 [id(DISPID_TimerEvents_Timer)]  void Timer();
                 [id(DISPID_LimitEvents_EOS)]  void LimitEOS( [in] float parm);
                 [id(DISPID_LimitEvents_BOS)]  void LimitBOS( [in] float parm);
-                [id(DISPID_FlipperEvents_Collide)]  void Collide( [in] float parm);             
+                [id(DISPID_FlipperEvents_Collide)]  void Collide( [in] float parm);
         }
 
 
@@ -1403,6 +1411,8 @@ typedef [uuid(D09B9F0E-C1AE-40dd-84D6-B1F74053AA8E)]
                 [propput, id(432), helpstring("property FalloffPower")] HRESULT FalloffPower([in] float newVal);
                 [propget, id(DISPID_Light_State), helpstring("property State")] HRESULT State([out, retval] LightState *pVal);
                 [propput, id(DISPID_Light_State), helpstring("property State")] HRESULT State([in] LightState newVal);
+                [id(595), helpstring("method GetInPlayState")] HRESULT GetInPlayState([out, retval] LightState* pVal);
+                [id(596), helpstring("method GetInPlayStateBool")] HRESULT GetInPlayStateBool([out, retval] VARIANT_BOOL* pVal);
                 [propget, id(3), helpstring("property Color")] HRESULT Color([out, retval] OLE_COLOR *pVal);
                 [propput, id(3), helpstring("property Color")] HRESULT Color([in] OLE_COLOR newVal);
                 [propget, id(457), helpstring("property ColorFull")] HRESULT ColorFull([out, retval] OLE_COLOR *pVal);
@@ -2075,16 +2085,16 @@ typedef [uuid(D09B9F0E-C1AE-40dd-84D6-B1F74053AA8E)]
                 [propput, id(115), helpstring("property Scatter")] HRESULT Scatter([in] float newVal);
 
                 [propget, id(397), helpstring("property DepthBias")] HRESULT DepthBias([out, retval] float *pVal);
-                [propput, id(397), helpstring("property DepthBias")] HRESULT DepthBias([in] float newVal);      
+                [propput, id(397), helpstring("property DepthBias")] HRESULT DepthBias([in] float newVal);
 
                 [propget, id(377), helpstring("property WireDiameter")] HRESULT WireDiameter([out, retval] float *pVal);
-                [propput, id(377), helpstring("property WireDiameter")] HRESULT WireDiameter([in] float newVal);        
+                [propput, id(377), helpstring("property WireDiameter")] HRESULT WireDiameter([in] float newVal);
 
                 [propget, id(398), helpstring("property WireDistanceX")] HRESULT WireDistanceX([out, retval] float *pVal);
-                [propput, id(398), helpstring("property WireDistanceX")] HRESULT WireDistanceX([in] float newVal);      
+                [propput, id(398), helpstring("property WireDistanceX")] HRESULT WireDistanceX([in] float newVal);
 
                 [propget, id(425), helpstring("property WireDistanceY")] HRESULT WireDistanceY([out, retval] float *pVal);
-                [propput, id(425), helpstring("property WireDistanceY")] HRESULT WireDistanceY([in] float newVal);                      
+                [propput, id(425), helpstring("property WireDistanceY")] HRESULT WireDistanceY([in] float newVal);
 
                 [propget, id(431), helpstring("property ReflectionEnabled")] HRESULT ReflectionEnabled([out, retval] VARIANT_BOOL *pVal);
                 [propput, id(431), helpstring("property ReflectionEnabled")] HRESULT ReflectionEnabled([in] VARIANT_BOOL newVal);
@@ -2147,6 +2157,10 @@ typedef [uuid(D09B9F0E-C1AE-40dd-84D6-B1F74053AA8E)]
                 [propput, id(556), helpstring("property AddBlend")] HRESULT AddBlend([in] VARIANT_BOOL newVal);
                 [propget, id(557), helpstring("property DMD")] HRESULT DMD([out, retval] VARIANT_BOOL *pVal);
                 [propput, id(557), helpstring("property DMD")] HRESULT DMD([in] VARIANT_BOOL newVal);
+
+                [propput, id(560), helpstring("property VideoCapWidth")] HRESULT VideoCapWidth([in] long cWidth);
+                [propput, id(561), helpstring("property VideoCapHeight")] HRESULT VideoCapHeight([in] long cHeight);
+                [propput, id(562), helpstring("property VideoCapUpdate")] HRESULT VideoCapUpdate([in] BSTR cWinTitle);
 
                 [propget, id(397), helpstring("property DepthBias")] HRESULT DepthBias([out, retval] float *pVal);
                 [propput, id(397), helpstring("property DepthBias")] HRESULT DepthBias([in] float newVal);
@@ -2262,7 +2276,7 @@ typedef [uuid(D09B9F0E-C1AE-40dd-84D6-B1F74053AA8E)]
                 [propget, id(15), helpstring("property AngVelY")] HRESULT AngVelY([out, retval] float* pVal);
                 [propput, id(15), helpstring("property AngVelY")] HRESULT AngVelY([in] float newVal);
                 [propget, id(16), helpstring("property AngVelZ")] HRESULT AngVelZ([out, retval] float* pVal);
-                [propput, id(16), helpstring("property AngVelZ")] HRESULT AngVelZ([in] float newVal); 
+                [propput, id(16), helpstring("property AngVelZ")] HRESULT AngVelZ([in] float newVal);
                 [propget, id(17), helpstring("property AngMomX")] HRESULT AngMomX([out, retval] float* pVal);
                 [propput, id(17), helpstring("property AngMomX")] HRESULT AngMomX([in] float newVal);
                 [propget, id(18), helpstring("property AngMomY")] HRESULT AngMomY([out, retval] float *pVal);

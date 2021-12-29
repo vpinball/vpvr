@@ -3,7 +3,6 @@
 class PaintSur : public Sur
 {
 public:
-
    PaintSur(const HDC hdc, const float zoom, const float offx, const float offy, const int width, const int height, ISelect * const psel);
    virtual ~PaintSur();
 

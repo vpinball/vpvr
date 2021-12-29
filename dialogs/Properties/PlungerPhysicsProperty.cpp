@@ -15,9 +15,9 @@ PlungerPhysicsProperty::PlungerPhysicsProperty(const VectorProtected<ISelect> *p
 
 void PlungerPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPlunger))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPlunger))
             continue;
         Plunger * const plunger = (Plunger *)m_pvsel->ElementAt(i);
         if (dispid == IDC_PULL_SPEED_EDIT || dispid == -1)
@@ -47,9 +47,9 @@ void PlungerPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void PlungerPhysicsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPlunger))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPlunger))
             continue;
         Plunger * const plunger = (Plunger *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -102,5 +102,30 @@ BOOL PlungerPhysicsProperty::OnInitDialog()
     m_momentumXferEdit.AttachItem(IDC_MOMENTUM_XFER_EDIT);
     m_parkPositionEdit.AttachItem(IDC_PARK_POSITION_EDIT);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(m_pullSpeedEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_releaseSpeedEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_strokeLengthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_scatterVelocityEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hAutoPlungerCheck, topleft, 0);
+    m_resizer.AddChild(m_hEnableMechPlungerCheck, topleft, 0);
+    m_resizer.AddChild(m_hVisibleCheck, topleft, 0);
+    m_resizer.AddChild(m_mechStrengthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_momentumXferEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_parkPositionEdit, topleft, RD_STRETCH_WIDTH);
     return TRUE;
+}
+
+INT_PTR PlungerPhysicsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

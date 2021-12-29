@@ -22,9 +22,9 @@ LightVisualsProperty::LightVisualsProperty(const VectorProtected<ISelect> *pvsel
 
 void LightVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemLight))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemLight))
             continue;
         Light * const light = (Light *)m_pvsel->ElementAt(i);
 
@@ -77,9 +77,9 @@ void LightVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void LightVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemLight))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemLight))
             continue;
         Light * const light = (Light *)m_pvsel->ElementAt(i);
 
@@ -137,7 +137,7 @@ void LightVisualsProperty::UpdateProperties(const int dispid)
                 CHECK_UPDATE_ITEM(light->m_d.m_vCenter.y, PropertyDialog::GetFloatTextbox(m_posYEdit), light);
                 break;
             case IDC_SURFACE_COMBO:
-                CHECK_UPDATE_COMBO_TEXT(light->m_d.m_szSurface, m_surfaceCombo, light);
+                CHECK_UPDATE_COMBO_TEXT_STRING(light->m_d.m_szSurface, m_surfaceCombo, light);
                 break;
             case IDC_COLOR_BUTTON1:
             {
@@ -160,7 +160,7 @@ void LightVisualsProperty::UpdateProperties(const int dispid)
                 }
                 else
                 {
-                   Light* const firstLight = (Light*)m_pvsel->ElementAt(0);
+                   const Light* const firstLight = (Light*)m_pvsel->ElementAt(0);
                    light->m_d.m_color = firstLight->m_d.m_color;
                    m_colorButton1.SetColor(light->m_d.m_color);
                    ptable->SetDirtyDraw();
@@ -188,7 +188,7 @@ void LightVisualsProperty::UpdateProperties(const int dispid)
                 }
                 else
                 {
-                   Light* const firstLight = (Light*)m_pvsel->ElementAt(0);
+                   const Light* const firstLight = (Light*)m_pvsel->ElementAt(0);
                    light->m_d.m_color2 = firstLight->m_d.m_color2;
                    m_colorButton2.SetColor(light->m_d.m_color2);
                 }
@@ -227,17 +227,60 @@ BOOL LightVisualsProperty::OnInitDialog()
     AttachItem(IDC_COLOR_BUTTON1, m_colorButton1);
     AttachItem(IDC_COLOR_BUTTON2, m_colorButton2);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC12), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC13), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC14), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC15), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC16), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC17), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC18), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC19), topleft, 0);
+    m_resizer.AddChild(m_falloffEdit, topleft, RD_STRETCH_WIDTH );
+    m_resizer.AddChild(m_falloffPowerEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_intensityEdit, topleft, RD_STRETCH_WIDTH );
+    m_resizer.AddChild(m_fadeSpeedUpEdit, topleft, 0);
+    m_resizer.AddChild(m_fadeSpeedDownEdit, topright, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hPassThroughCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_imageCombo, topleft, RD_STRETCH_WIDTH );
+    m_resizer.AddChild(m_depthBiasEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hEnableCheck, topleft, 0);
+    m_resizer.AddChild(m_hShowMeshCheck, topleft, 0);
+    m_resizer.AddChild(m_hStaticMeshCheck, topleft, 0);
+    m_resizer.AddChild(m_haloHeightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_scaleMeshEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_modulateEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_transmitEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hRelectOnBalls, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posXEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posYEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_surfaceCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_colorButton1, topleft, 0);
+    m_resizer.AddChild(m_colorButton2, topleft, 0);
     return TRUE;
 }
 
 INT_PTR LightVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    switch (uMsg)
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   switch (uMsg)
     {
         case WM_DRAWITEM:
         {
-            LPDRAWITEMSTRUCT lpDrawItemStruct = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
-            UINT nID = static_cast<UINT>(wParam);
+            const LPDRAWITEMSTRUCT lpDrawItemStruct = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
+            const UINT nID = static_cast<UINT>(wParam);
             if (nID == IDC_COLOR_BUTTON1)
             {
                 m_colorButton1.DrawItem(lpDrawItemStruct);

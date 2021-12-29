@@ -45,7 +45,6 @@ TableCustomProperty::TableCustomProperty(const VectorProtected<ISelect> *pvsel) 
 void TableCustomProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
     CComObject<PinTable> * const table = g_pvp->GetActiveTable();
-
     if (table == nullptr)
         return;
 
@@ -93,8 +92,7 @@ void TableCustomProperty::UpdateVisuals(const int dispid/*=-1*/)
 void TableCustomProperty::UpdateProperties(const int dispid)
 {
     CComObject<PinTable> * const table = g_pvp->GetActiveTable();
-
-    if (table == NULL)
+    if (table == nullptr)
         return;
     
     switch (dispid)
@@ -197,12 +195,46 @@ BOOL TableCustomProperty::OnInitDialog()
     m_nightDaySlider.SendMessage(TBM_SETTHUMBLENGTH, 5, 0);
     UpdateVisuals();
 
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC12), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC13), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC14), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC15), topleft, 0);
+    m_resizer.AddChild(m_SSAACombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_postProcAACombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_inGameAOCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_ScreenReflectionCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_fpsLimiterEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_detailLevelSlider, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hOverwriteDetailsCheck, topleft, 0);
+    m_resizer.AddChild(m_ballReflectionCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_ballTrailCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_ballTrailStrengthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_nightDaySlider, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hOverwriteNightDayCheck, topleft, 0);
+    m_resizer.AddChild(m_gameplayDifficultEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_overwritePhysicsSetCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hOverwriteFlipperCheck, topleft, 0);
+    m_resizer.AddChild(m_soundEffectVolEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_musicVolEdit, topleft, RD_STRETCH_WIDTH);
     return TRUE;
 }
 
 INT_PTR TableCustomProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    switch (uMsg)
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   switch (uMsg)
     {
         case WM_HSCROLL:
         {

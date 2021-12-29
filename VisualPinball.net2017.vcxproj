@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug_SDL|Win32">
@@ -193,8 +193,8 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Midl>
-      <TypeLibraryName>.\Debug/vpinball.tlb</TypeLibraryName>
-      <HeaderFileName />
+      <TypeLibraryName>vpinball.tlb</TypeLibraryName>
+      <HeaderFileName>vpinball.h</HeaderFileName>
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
@@ -257,9 +257,8 @@ copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"</Command>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">
     <Midl>
-      <TypeLibraryName>.\Debug/vpinball.tlb</TypeLibraryName>
-      <HeaderFileName>
-      </HeaderFileName>
+      <TypeLibraryName>vpinball.tlb</TypeLibraryName>
+      <HeaderFileName>vpinball.h</HeaderFileName>
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
@@ -325,9 +324,8 @@ copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"</Command>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Midl>
-      <TypeLibraryName>.\Debug/vpinball.tlb</TypeLibraryName>
-      <HeaderFileName>
-      </HeaderFileName>
+      <TypeLibraryName>vpinball.tlb</TypeLibraryName>
+      <HeaderFileName>vpinball.h</HeaderFileName>
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
@@ -382,9 +380,8 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">
     <Midl>
-      <TypeLibraryName>.\Debug/vpinball.tlb</TypeLibraryName>
-      <HeaderFileName>
-      </HeaderFileName>
+      <TypeLibraryName>vpinball.tlb</TypeLibraryName>
+      <HeaderFileName>vpinball.h</HeaderFileName>
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
@@ -401,6 +398,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
+      <ShowIncludes>true</ShowIncludes>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -440,8 +438,8 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
-      <TypeLibraryName>.\ReleaseMinDependency/vpinball.tlb</TypeLibraryName>
-      <HeaderFileName />
+      <TypeLibraryName>vpinball.tlb</TypeLibraryName>
+      <HeaderFileName>vpinball.h</HeaderFileName>
     </Midl>
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
@@ -528,7 +526,6 @@ copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"</Command>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -777,6 +774,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <ClCompile Include="dialogs\Properties\TriggerVisualsProperty.cpp" />
     <ClCompile Include="dialogs\Properties\WallPhysicsProperty.cpp" />
     <ClCompile Include="dialogs\Properties\WallVisualsProperty.cpp" />
+    <ClCompile Include="dialogs\ScriptErrorDialog.cpp" />
     <ClCompile Include="dialogs\SearchSelectDialog.cpp" />
     <ClCompile Include="dialogs\SoundDialog.cpp" />
     <ClCompile Include="dialogs\TableInfoDialog.cpp" />
@@ -859,6 +857,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="inc\progmesh.cpp" />
+    <ClCompile Include="inc\serial.cpp" />
     <ClCompile Include="IndexBuffer.cpp" />
     <ClCompile Include="math\math.cpp" />
     <ClCompile Include="MemoryStatus.cpp" />
@@ -1101,7 +1100,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MinSpace</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release_SDL|x64'">MinSpace</Optimization>
     </ClCompile>
-    <ClCompile Include="Media\fileio.cpp">
+    <ClCompile Include="media\fileio.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">Disabled</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
@@ -1318,7 +1317,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MinSpace</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release_SDL|x64'">MinSpace</Optimization>
     </ClCompile>
-    <ClCompile Include="Media\lzwreader.cpp">
+    <ClCompile Include="media\lzwreader.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">Disabled</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
@@ -1336,7 +1335,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MinSpace</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release_SDL|x64'">MinSpace</Optimization>
     </ClCompile>
-    <ClCompile Include="Media\lzwwriter.cpp">
+    <ClCompile Include="media\lzwwriter.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">Disabled</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
@@ -1781,7 +1780,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MinSpace</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release_SDL|x64'">MinSpace</Optimization>
     </ClCompile>
-    <ClCompile Include="Media\wavread.cpp">
+    <ClCompile Include="media\wavread.cpp">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">Disabled</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
@@ -1829,14 +1828,18 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <TypeLibraryName Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">.\vpinball.tlb</TypeLibraryName>
       <TypeLibraryName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.\vpinball.tlb</TypeLibraryName>
       <TypeLibraryName Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">.\vpinball.tlb</TypeLibraryName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">vpinball_i.h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">vpinball_i.h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vpinball_i.h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">vpinball_i.h</HeaderFileName>
-      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">vpinball_i.c</InterfaceIdentifierFileName>
-      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">vpinball_i.c</InterfaceIdentifierFileName>
-      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vpinball_i.c</InterfaceIdentifierFileName>
-      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">vpinball_i.c</InterfaceIdentifierFileName>
+      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">vpinball.h</HeaderFileName>
+      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">vpinball.h</HeaderFileName>
+      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">vpinball.h</HeaderFileName>
+      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">vpinball.h</HeaderFileName>
+      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </InterfaceIdentifierFileName>
+      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">
+      </InterfaceIdentifierFileName>
+      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </InterfaceIdentifierFileName>
+      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">
+      </InterfaceIdentifierFileName>
       <GenerateStublessProxies Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</GenerateStublessProxies>
       <GenerateStublessProxies Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">true</GenerateStublessProxies>
       <GenerateStublessProxies Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateStublessProxies>
@@ -1845,14 +1848,18 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <TypeLibraryName Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">.\vpinball.tlb</TypeLibraryName>
       <TypeLibraryName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.\vpinball.tlb</TypeLibraryName>
       <TypeLibraryName Condition="'$(Configuration)|$(Platform)'=='Release_SDL|x64'">.\vpinball.tlb</TypeLibraryName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">vpinball_i.h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">vpinball_i.h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vpinball_i.h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release_SDL|x64'">vpinball_i.h</HeaderFileName>
-      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">vpinball_i.c</InterfaceIdentifierFileName>
-      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">vpinball_i.c</InterfaceIdentifierFileName>
-      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vpinball_i.c</InterfaceIdentifierFileName>
-      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Release_SDL|x64'">vpinball_i.c</InterfaceIdentifierFileName>
+      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">vpinball.h</HeaderFileName>
+      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">vpinball.h</HeaderFileName>
+      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">vpinball.h</HeaderFileName>
+      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release_SDL|x64'">vpinball.h</HeaderFileName>
+      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </InterfaceIdentifierFileName>
+      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">
+      </InterfaceIdentifierFileName>
+      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </InterfaceIdentifierFileName>
+      <InterfaceIdentifierFileName Condition="'$(Configuration)|$(Platform)'=='Release_SDL|x64'">
+      </InterfaceIdentifierFileName>
     </Midl>
   </ItemGroup>
   <ItemGroup>
@@ -2047,6 +2054,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <ClInclude Include="dialogs\Properties\TriggerVisualsProperty.h" />
     <ClInclude Include="dialogs\Properties\WallPhysicsProperty.h" />
     <ClInclude Include="dialogs\Properties\WallVisualsProperty.h" />
+    <ClInclude Include="dialogs\ScriptErrorDialog.h" />
     <ClInclude Include="dialogs\SearchSelectDialog.h" />
     <ClInclude Include="dialogs\SoundDialog.h" />
     <ClInclude Include="dialogs\TableInfoDialog.h" />
@@ -2139,8 +2147,10 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <ClInclude Include="inc\scilexer.h" />
     <ClInclude Include="inc\scintilla.h" />
     <ClInclude Include="inc\Sci_Position.h" />
+    <ClInclude Include="inc\serial.h" />
     <ClInclude Include="inc\stb_image.h" />
     <ClInclude Include="inc\ThreadPool.h" />
+    <ClInclude Include="inc\win32xx\include\default_resource.h" />
     <ClInclude Include="inc\win32xx\include\wxx_appcore.h" />
     <ClInclude Include="inc\win32xx\include\wxx_appcore0.h" />
     <ClInclude Include="inc\win32xx\include\wxx_archive.h" />
@@ -2357,7 +2367,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="shader\BasicShader.fx">
+    <FxCompile Include="shader\BasicShader.hlsl">
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -2411,7 +2421,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="shader\DMDShader.fx">
+    <FxCompile Include="shader\DMDShader.hlsl">
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -2465,7 +2475,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="shader\FBShader.fx">
+    <FxCompile Include="shader\FBShader.hlsl">
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -2519,7 +2529,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="shader\FlasherShader.fx">
+    <FxCompile Include="shader\FlasherShader.hlsl">
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -2573,7 +2583,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="shader\LightShader.fx">
+    <FxCompile Include="shader\LightShader.hlsl">
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -2627,7 +2637,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="shader\ClassicLightShader.fx">
+    <FxCompile Include="shader\ClassicLightShader.hlsl">
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

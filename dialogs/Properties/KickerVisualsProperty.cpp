@@ -24,9 +24,9 @@ KickerVisualsProperty::KickerVisualsProperty(const VectorProtected<ISelect> *pvs
 
 void KickerVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemKicker))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemKicker))
             continue;
         Kicker * const kicker = (Kicker *)m_pvsel->ElementAt(i);
 
@@ -50,9 +50,9 @@ void KickerVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void KickerVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemKicker))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemKicker))
             continue;
         Kicker * const kicker = (Kicker *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -76,7 +76,7 @@ void KickerVisualsProperty::UpdateProperties(const int dispid)
                 CHECK_UPDATE_ITEM(kicker->m_d.m_vCenter.y, PropertyDialog::GetFloatTextbox(m_posYEdit), kicker);
                 break;
             case IDC_SURFACE_COMBO:
-                CHECK_UPDATE_COMBO_TEXT(kicker->m_d.m_szSurface, m_surfaceCombo, kicker);
+                CHECK_UPDATE_COMBO_TEXT_STRING(kicker->m_d.m_szSurface, m_surfaceCombo, kicker);
                 break;
             default:
                 UpdateBaseProperties(kicker, &kicker->m_d, dispid);
@@ -98,5 +98,28 @@ BOOL KickerVisualsProperty::OnInitDialog()
     m_posYEdit.AttachItem(903);
     m_surfaceCombo.AttachItem(IDC_SURFACE_COMBO);
     UpdateVisuals();
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(m_materialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_displayCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_radiusEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_orientationEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posXEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posYEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_surfaceCombo, topleft, RD_STRETCH_WIDTH);
+
     return TRUE;
+}
+
+INT_PTR KickerVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

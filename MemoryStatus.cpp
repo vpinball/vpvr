@@ -7,43 +7,43 @@
 
 namespace rde
 {
-   MemoryStatus::MemoryStatus()
-      : totalFree(0),
-      largestFree(0),
-      totalReserved(0),
-      totalCommited(0)
-   {
-   }
+MemoryStatus::MemoryStatus()
+:	totalFree(0),
+	largestFree(0),
+	totalReserved(0),
+	totalCommited(0)
+{
+}
 
-   MemoryStatus MemoryStatus::GetCurrent()
-   {
-      MemoryStatus status;
-      memset(&status, 0, sizeof(MemoryStatus));
+MemoryStatus MemoryStatus::GetCurrent()
+{
+	MemoryStatus status;
+	memset(&status, 0, sizeof(MemoryStatus));
 
-      MEMORY_BASIC_INFORMATION info;
-      unsigned char* address(0);
-      SIZE_T bytesInfo = ::VirtualQuery(address, &info, sizeof(info));
-      while (bytesInfo != 0)
-      {
-         if (info.State & MEM_FREE)
-         {
-            status.totalFree += info.RegionSize;
-            if (info.RegionSize > status.largestFree)
-               status.largestFree = info.RegionSize;
-         }
-         else
-         {
-            if (info.State & MEM_RESERVE)
-               status.totalReserved += info.RegionSize;
-            if (info.State & MEM_COMMIT)
-               status.totalCommited += info.RegionSize;
-         }
-         address += info.RegionSize;
-         memset(&info, 0, sizeof(info));
-         bytesInfo = ::VirtualQuery(address, &info, sizeof(info));
-      }
+	MEMORY_BASIC_INFORMATION info;
+	unsigned char* address(0);
+	SIZE_T bytesInfo = ::VirtualQuery(address, &info, sizeof(info));
+	while (bytesInfo != 0)
+	{
+		if (info.State & MEM_FREE)
+		{
+			status.totalFree += info.RegionSize;
+			if (info.RegionSize > status.largestFree)
+				status.largestFree = info.RegionSize;
+		}
+		else
+		{
+			if (info.State & MEM_RESERVE)
+				status.totalReserved += info.RegionSize;
+			if (info.State & MEM_COMMIT)
+				status.totalCommited += info.RegionSize;
+		}
+		address += info.RegionSize;
+		memset(&info, 0, sizeof(info));
+		bytesInfo = ::VirtualQuery(address, &info, sizeof(info));
+	}
 
-      return status;
-   }
+	return status;
+}
 
 }

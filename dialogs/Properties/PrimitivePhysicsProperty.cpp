@@ -15,14 +15,27 @@ PrimitivePhysicsProperty::PrimitivePhysicsProperty(const VectorProtected<ISelect
 
 void PrimitivePhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPrimitive))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPrimitive))
             continue;
         Primitive *const prim = (Primitive *)m_pvsel->ElementAt(i);
 
         if (dispid == IDC_PRIMITIVE_IS_TOY || dispid == -1)
-            PropertyDialog::SetCheckboxState(m_hToyCheck, prim->m_d.m_toy);
+        {
+           PropertyDialog::SetCheckboxState(m_hToyCheck, prim->m_d.m_toy);
+           if(prim->m_d.m_toy)
+           {
+              prim->m_d.m_collidable=false;
+              PropertyDialog::SetCheckboxState(m_hCollidableCheck, false);
+              m_elasticityFalloffEdit.EnableWindow(false);
+           }
+           ::EnableWindow(m_hCollidableCheck, !prim->m_d.m_toy);
+        }
+        if (dispid == IDC_COLLIDABLE_CHECK || dispid == -1)
+        {
+           m_elasticityFalloffEdit.EnableWindow(prim->m_d.m_collidable);
+        }
         if (dispid == IDC_ELASTICITY_FALLOFF_EDIT || dispid == -1)
             PropertyDialog::SetFloatTextbox(m_elasticityFalloffEdit, prim->m_d.m_elasticityFalloff);
         if (dispid == IDC_COLLISION_REDUCTION_FACTOR || dispid == -1)
@@ -36,9 +49,9 @@ void PrimitivePhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void PrimitivePhysicsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPrimitive))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemPrimitive))
             continue;
         Primitive *const prim = (Primitive *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -81,5 +94,32 @@ BOOL PrimitivePhysicsProperty::OnInitDialog()
     m_hOverwritePhysicsCheck = ::GetDlgItem(GetHwnd(), IDC_OVERWRITE_MATERIAL_SETTINGS);
     m_reducePolyEdit.AttachItem(IDC_COLLISION_REDUCTION_FACTOR);
     UpdateVisuals();
+
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(m_hitThresholdEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_elasticityEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_frictionEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_elasticityFalloffEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_physicsMaterialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_scatterAngleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hToyCheck, topleft, 0);
+    m_resizer.AddChild(m_hHitEventCheck, topleft, 0);
+    m_resizer.AddChild(m_hCollidableCheck, topleft, 0);
+    m_resizer.AddChild(m_hOverwritePhysicsCheck, topleft, 0);
+    m_resizer.AddChild(m_reducePolyEdit, topleft, RD_STRETCH_WIDTH);
+
     return TRUE;
+}
+
+INT_PTR PrimitivePhysicsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

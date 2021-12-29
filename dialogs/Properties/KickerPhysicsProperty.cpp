@@ -11,9 +11,9 @@ KickerPhysicsProperty::KickerPhysicsProperty(const VectorProtected<ISelect> *pvs
 
 void KickerPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemKicker))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemKicker))
             continue;
         Kicker * const kicker = (Kicker *)m_pvsel->ElementAt(i);
 
@@ -35,9 +35,9 @@ void KickerPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void KickerPhysicsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemKicker))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemKicker))
             continue;
         Kicker * const kicker = (Kicker *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -76,5 +76,21 @@ BOOL KickerPhysicsProperty::OnInitDialog()
     m_hitAccuracyEdit.AttachItem(IDC_HIT_ACC_EDIT);
     m_hitHeightEdit.AttachItem(IDC_KICKER_HIT_HEIGHT_EDIT);
     UpdateVisuals();
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(m_hEnableCheck, topleft, 0);
+    m_resizer.AddChild(m_hFallThroughCheck, topleft, 0);
+    m_resizer.AddChild(m_hLegacyCheck, topleft, 0);
+    m_resizer.AddChild(m_scatterAngleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hitAccuracyEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hitHeightEdit, topleft, RD_STRETCH_WIDTH);
     return TRUE;
+}
+
+INT_PTR KickerPhysicsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

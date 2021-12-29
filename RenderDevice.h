@@ -1,11 +1,12 @@
 #pragma once
 
+#include "stdafx.h"
+
 #include <map>
 #include "typedefs3D.h"
 
 #include "Material.h"
 #include "Texture.h"
-#include "stdafx.h"
 #include "IndexBuffer.h"
 #include "VertexBuffer.h"
 #include "TextureManager.h"
@@ -409,6 +410,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    int          m_stereo3D;
    bool         m_ssRefl;
    bool         m_disableDwm;
+   bool         m_sharpen;
    unsigned int m_FXAA;
    int          m_BWrendering;
    UINT         m_adapter;
@@ -448,9 +450,9 @@ private:
    D3DTexture* m_pMirrorTmpBufferTexture;
    D3DTexture* m_pReflectionBufferTexture;
 
-   static const DWORD TEXTURE_SAMPLERS = 8;
-   static const DWORD TEXTURE_STATE_CACHE_SIZE = 256;
-   static const DWORD TEXTURE_SAMPLER_CACHE_SIZE = 14;
+   static constexpr DWORD TEXTURE_SAMPLERS = 8;
+   static constexpr DWORD TEXTURE_STATE_CACHE_SIZE = 256;
+   static constexpr DWORD TEXTURE_SAMPLER_CACHE_SIZE = 14;
 
    DWORD renderStateCache[RENDERSTATE_COUNT];          // for caching
    DWORD textureStateCache[TEXTURE_SAMPLERS][TEXTURE_STATE_CACHE_SIZE];     // dto.

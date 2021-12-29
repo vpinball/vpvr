@@ -24,7 +24,6 @@ TablePhysicsProperty::TablePhysicsProperty(const VectorProtected<ISelect> *pvsel
 void TablePhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
     CComObject<PinTable> * const table = g_pvp->GetActiveTable();
-    
     if (table == nullptr)
         return;
 
@@ -42,7 +41,7 @@ void TablePhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
         PropertyDialog::SetFloatTextbox(m_defaultScatterEdit, table->m_defaultScatter);
     if (dispid == IDC_NUDGE_TIME_EDIT || dispid == -1)
         PropertyDialog::SetFloatTextbox(m_nudgeTimeEdit, table->m_nudgeTime);
-    if (dispid == IDC_PHYSICS_MAC_LOOPS_EDIT || dispid == -1)
+    if (dispid == IDC_PHYSICS_MAX_LOOPS_EDIT || dispid == -1)
         PropertyDialog::SetIntTextbox(m_physicsLoopEdit, table->m_PhysicsMaxLoops);
     if (dispid == IDC_MECH_PLUNGER_ADJ_EDIT || dispid == -1)
         PropertyDialog::SetIntTextbox(m_mechPlungerAdjEdit, table->m_plungerNormalize);
@@ -65,7 +64,6 @@ void TablePhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 void TablePhysicsProperty::UpdateProperties(const int dispid)
 {
     CComObject<PinTable> * const table = g_pvp->GetActiveTable();
-
     if (table == nullptr)
         return;
 
@@ -87,12 +85,12 @@ void TablePhysicsProperty::UpdateProperties(const int dispid)
             CHECK_UPDATE_ITEM(table->m_scatter, PropertyDialog::GetFloatTextbox(m_playfieldScatterEdit), table);
             break;
         case IDC_DEFAULT_SCATTER_EDIT:
-            CHECK_UPDATE_ITEM(table->m_scatter, PropertyDialog::GetFloatTextbox(m_defaultScatterEdit), table);
+            CHECK_UPDATE_ITEM(table->m_defaultScatter, PropertyDialog::GetFloatTextbox(m_defaultScatterEdit), table);
             break;
         case IDC_NUDGE_TIME_EDIT:
             CHECK_UPDATE_ITEM(table->m_nudgeTime, PropertyDialog::GetFloatTextbox(m_nudgeTimeEdit), table);
             break;
-        case IDC_PHYSICS_MAC_LOOPS_EDIT:
+        case IDC_PHYSICS_MAX_LOOPS_EDIT:
             CHECK_UPDATE_ITEM(table->m_PhysicsMaxLoops, PropertyDialog::GetIntTextbox(m_physicsLoopEdit), table);
             break;
         case IDC_MECH_PLUNGER_ADJ_EDIT:
@@ -138,7 +136,7 @@ BOOL TablePhysicsProperty::OnInitDialog()
     m_playfieldScatterEdit.AttachItem(IDC_PLAYFIELD_SCATTER_EDIT);
     m_defaultScatterEdit.AttachItem(IDC_DEFAULT_SCATTER_EDIT);
     m_nudgeTimeEdit.AttachItem(IDC_NUDGE_TIME_EDIT);
-    m_physicsLoopEdit.AttachItem(IDC_PHYSICS_MAC_LOOPS_EDIT);
+    m_physicsLoopEdit.AttachItem(IDC_PHYSICS_MAX_LOOPS_EDIT);
     m_mechPlungerAdjEdit.AttachItem(IDC_MECH_PLUNGER_ADJ_EDIT);
     m_tableWidthEdit.AttachItem(IDC_TABLE_WIDTH_EDIT);
     m_tableHeightEdit.AttachItem(IDC_TABLE_HEIGHT_EDIT);
@@ -149,6 +147,40 @@ BOOL TablePhysicsProperty::OnInitDialog()
 
     UpdateVisuals();
 
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC12), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC13), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC14), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC15), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC16), topleft, 0);
+    m_resizer.AddChild(m_hFilterMechanicalPlungerCheck, topleft, 0);
+    m_resizer.AddChild(m_importSetButton, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_exportSetButton, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_gravityConstantEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_playfieldFrictionEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_playfieldElasticityFalloffEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_playfieldScatterEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_defaultScatterEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_nudgeTimeEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_physicsLoopEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_mechPlungerAdjEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_tableWidthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_tableHeightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_topGlassHeightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_tableFieldHeightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_minSlopeEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_maxSlopeEdit, topleft, RD_STRETCH_WIDTH);
     return TRUE;
 }
 
@@ -174,5 +206,11 @@ BOOL TablePhysicsProperty::OnCommand(WPARAM wParam, LPARAM lParam)
         default:
             break;
     }
-    return FALSE;
+    return BasePropertyDialog::OnCommand(wParam,lParam);
+}
+
+INT_PTR TablePhysicsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

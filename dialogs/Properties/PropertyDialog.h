@@ -10,13 +10,13 @@ class BasePropertyDialog: public CDialog
 public:
     BasePropertyDialog(const int id, const VectorProtected<ISelect> *pvsel) : CDialog(id), m_pvsel(pvsel)
     {
-        m_baseHitThresholdEdit = NULL;
-        m_baseElasticityEdit = NULL;
-        m_baseFrictionEdit = NULL;
-        m_baseScatterAngleEdit = NULL;
-        m_basePhysicsMaterialCombo = NULL;
-        m_baseMaterialCombo = NULL;
-        m_baseImageCombo = NULL;
+        m_baseHitThresholdEdit = nullptr;
+        m_baseElasticityEdit = nullptr;
+        m_baseFrictionEdit = nullptr;
+        m_baseScatterAngleEdit = nullptr;
+        m_basePhysicsMaterialCombo = nullptr;
+        m_baseMaterialCombo = nullptr;
+        m_baseImageCombo = nullptr;
         m_hCollidableCheck = 0;
         m_hHitEventCheck = 0;
         m_hOverwritePhysicsCheck = 0;
@@ -34,18 +34,25 @@ public:
         {
             switch (HIWORD(wParam))
             {
-            //case CBN_KILLFOCUS:
-            case EN_KILLFOCUS:
-            {
-               if(m_pvsel->Size()>1)
-                  break;   //early out here for multi-selected elements, otherwise the value of the last element in the list is assigned to all other elements as well
-            }
-            case CBN_SELCHANGE:
-            case BN_CLICKED:
-            {
-                UpdateProperties(dispID);
-                return TRUE;
-            }
+               case EN_CHANGE:
+               {
+                  m_lastChangedEdit = (HWND)lParam;
+                  break;
+               }
+               //case CBN_KILLFOCUS:
+               case EN_KILLFOCUS:
+               {
+                  //EN_KILLFOCUS is called multiple times with different HWND handles. 
+                  //Early out if the handle for this event isn't matching the handle of the last changed edit box
+                  if(m_lastChangedEdit!=(HWND)lParam)
+                     break;
+               }
+               case CBN_SELCHANGE:
+               case BN_CLICKED:
+               {
+                   UpdateProperties(dispID);
+                   return TRUE;
+               }
             }
         }
         return FALSE;
@@ -70,6 +77,9 @@ protected:
     HWND      m_hOverwritePhysicsCheck;
     HWND      m_hReflectionEnabledCheck;
     HWND      m_hVisibleCheck;
+    HWND      m_lastChangedEdit=0;
+
+    CResizer  m_resizer;
 };
 
 class EditBox : public CEdit
@@ -122,6 +132,7 @@ public:
 protected:
     virtual BOOL OnInitDialog();
     virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
+    virtual INT_PTR DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam);
 private:
     EditBox m_timerIntervalEdit;
     EditBox m_userValueEdit;
@@ -164,7 +175,7 @@ public:
         // button rectangle when the button has the focus.
         if (lpDrawItemStruct->itemAction & ODA_FOCUS)
         {
-            const int iChange = 3;
+            constexpr int iChange = 3;
             rect.top += iChange;
             rect.left += iChange;
             rect.right -= iChange;
@@ -235,12 +246,12 @@ public:
     void UpdateTabs(VectorProtected<ISelect> &pvsel);
     bool PreTranslateMessage(MSG* msg);
 
-    static void UpdateTextureComboBox(const vector<Texture*>& contentList, CComboBox &combo, const string &selectName);
-    static void UpdateComboBox(const vector<string>& contentList, CComboBox &combo, const string &selectName);
-    static void UpdateMaterialComboBox(const vector<Material *>& contentList, CComboBox &combo, const string &selectName);
-    static void UpdateSurfaceComboBox(const PinTable *const ptable, CComboBox &combo, const char *selectName);
-    static void UpdateSoundComboBox(const PinTable *const ptable, CComboBox &combo, const string &selectName);
-    static void UpdateCollectionComboBox(const PinTable *const ptable, CComboBox &combo, const char *selectName);
+    static void UpdateTextureComboBox(const vector<Texture*>& contentList, const CComboBox &combo, const string &selectName);
+    static void UpdateComboBox(const vector<string>& contentList, const CComboBox &combo, const string &selectName);
+    static void UpdateMaterialComboBox(const vector<Material *>& contentList, const CComboBox &combo, const string &selectName);
+    static void UpdateSurfaceComboBox(const PinTable *const ptable, const CComboBox &combo, const string &selectName);
+    static void UpdateSoundComboBox(const PinTable *const ptable, const CComboBox &combo, const string &selectName);
+    static void UpdateCollectionComboBox(const PinTable *const ptable, const CComboBox &combo, const char *selectName);
 
     static void StartUndo(ISelect *const psel)
     {
@@ -265,39 +276,39 @@ public:
         ::SendMessage(checkBoxHwnd, BM_SETCHECK, checked ? BST_CHECKED : BST_UNCHECKED, 0);
     }
     
-    static float GetFloatTextbox(CEdit &textbox)
+    static float GetFloatTextbox(const CEdit &textbox)
     {
         const float fv = sz2f(string(textbox.GetWindowText()));
         return fv;
     }
 
-    static int GetIntTextbox(CEdit &textbox)
+    static int GetIntTextbox(const CEdit &textbox)
     {
         int value = 0;
         sscanf_s(textbox.GetWindowText().c_str(), "%i", &value);
         return value;
     }
 
-    static void SetFloatTextbox(CEdit &textbox, const float value)
+    static void SetFloatTextbox(const CEdit &textbox, const float value)
     {
         string strValue;
         f2sz(value, strValue);
         textbox.SetWindowText(strValue.c_str());
     }
 
-    static void SetIntTextbox(CEdit &textbox, const int value)
+    static void SetIntTextbox(const CEdit &textbox, const int value)
     {
         textbox.SetWindowText(std::to_string(value).c_str());
     }
 
-    static void GetComboBoxText(CComboBox &combo, char * const strbuf, const size_t maxlength)
+    static void GetComboBoxText(const CComboBox &combo, char * const strbuf, const size_t maxlength)
     {
         char buf[MAXSTRING];
         combo.GetLBText(combo.GetCurSel(), buf);
         strncpy_s(strbuf, maxlength, buf, maxlength-1);
     }
 
-    static int GetComboBoxIndex(CComboBox &combo, const vector<string>& contentList)
+    static int GetComboBoxIndex(const CComboBox &combo, const vector<string>& contentList)
     {
         char buf[MAXSTRING];
         combo.GetLBText(combo.GetCurSel(), buf);
@@ -328,6 +339,8 @@ private:
     CResizer m_resizer;
     CStatic  m_multipleElementsStatic;
     CStatic  m_elementTypeName;
+    HACCEL   m_accel;
+
 };
 #pragma endregion
 

@@ -52,10 +52,9 @@ public:
    {
       const float inv_zoom = 1.0f / m_zoom;
       return Vertex2D(
-         (float)screenx*inv_zoom + m_offx,
-         (float)screeny*inv_zoom + m_offy);
+       (float)screenx*inv_zoom + m_offx,
+       (float)screeny*inv_zoom + m_offy);
    }
-
 
    HDC m_hdc;
    float m_zoom;

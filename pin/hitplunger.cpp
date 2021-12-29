@@ -2,7 +2,7 @@
 
 #define PLUNGERHEIGHT 50.0f
 
-const float PlungerMoverObject::m_mass = 30.0f;
+constexpr float PlungerMoverObject::m_mass = 30.0f;
 
 HitPlunger::HitPlunger(const float x, const float y, const float x2, const float zheight,
    const float frameTop, const float frameBottom,
@@ -30,30 +30,30 @@ HitPlunger::HitPlunger(const float x, const float y, const float x2, const float
 
    const float restPos = pPlunger->m_d.m_parkPosition; // The rest position is taken from the "park position" property
 
-                                                       // start at the rest position
+   // start at the rest position
    m_plungerMover.m_restPos = restPos;
    m_plungerMover.m_pos = frameTop + (restPos * frameLen);
 
-   m_hitBBox.zlow = zheight;
+   m_hitBBox.zlow  = zheight;
    m_hitBBox.zhigh = zheight + PLUNGERHEIGHT;
 
-   m_plungerMover.m_linesegBase.m_hitBBox.zlow = zheight;
+   m_plungerMover.m_linesegBase.m_hitBBox.zlow  = zheight;
    m_plungerMover.m_linesegBase.m_hitBBox.zhigh = zheight + PLUNGERHEIGHT;
-   m_plungerMover.m_linesegSide[0].m_hitBBox.zlow = zheight;
+   m_plungerMover.m_linesegSide[0].m_hitBBox.zlow  = zheight;
    m_plungerMover.m_linesegSide[0].m_hitBBox.zhigh = zheight + PLUNGERHEIGHT;
-   m_plungerMover.m_linesegSide[1].m_hitBBox.zlow = zheight;
+   m_plungerMover.m_linesegSide[1].m_hitBBox.zlow  = zheight;
    m_plungerMover.m_linesegSide[1].m_hitBBox.zhigh = zheight + PLUNGERHEIGHT;
-   m_plungerMover.m_linesegEnd.m_hitBBox.zlow = zheight;
-   m_plungerMover.m_linesegEnd.m_hitBBox.zhigh = zheight + PLUNGERHEIGHT;
+   m_plungerMover.m_linesegEnd.m_hitBBox.zlow    = zheight;
+   m_plungerMover.m_linesegEnd.m_hitBBox.zhigh   = zheight + PLUNGERHEIGHT;
 
-   m_plungerMover.m_jointBase[0].m_zlow = zheight;
+   m_plungerMover.m_jointBase[0].m_zlow  = zheight;
    m_plungerMover.m_jointBase[0].m_zhigh = zheight + PLUNGERHEIGHT;
-   m_plungerMover.m_jointBase[1].m_zlow = zheight;
+   m_plungerMover.m_jointBase[1].m_zlow  = zheight;
    m_plungerMover.m_jointBase[1].m_zhigh = zheight + PLUNGERHEIGHT;
-   m_plungerMover.m_jointEnd[0].m_zlow = zheight;
-   m_plungerMover.m_jointEnd[0].m_zhigh = zheight + PLUNGERHEIGHT;
-   m_plungerMover.m_jointEnd[1].m_zlow = zheight;
-   m_plungerMover.m_jointEnd[1].m_zhigh = zheight + PLUNGERHEIGHT;
+   m_plungerMover.m_jointEnd[0].m_zlow   = zheight;
+   m_plungerMover.m_jointEnd[0].m_zhigh  = zheight + PLUNGERHEIGHT;
+   m_plungerMover.m_jointEnd[1].m_zlow   = zheight;
+   m_plungerMover.m_jointEnd[1].m_zhigh  = zheight + PLUNGERHEIGHT;
 
    m_plungerMover.SetObjects(m_plungerMover.m_pos);
 }
@@ -61,13 +61,18 @@ HitPlunger::HitPlunger(const float x, const float y, const float x2, const float
 void HitPlunger::CalcHitBBox()
 {
    // Allow roundoff
-   m_hitBBox.left = m_plungerMover.m_x - 0.1f;
-   m_hitBBox.right = m_plungerMover.m_x2 + 0.1f;
-   m_hitBBox.top = m_plungerMover.m_frameEnd - 0.1f;
+   m_hitBBox.left   = m_plungerMover.m_x - 0.1f;
+   m_hitBBox.right  = m_plungerMover.m_x2 + 0.1f;
+   m_hitBBox.top    = m_plungerMover.m_frameEnd - 0.1f;
    m_hitBBox.bottom = m_plungerMover.m_y + 0.1f;
 
    // zlow & zhigh gets set in constructor
 }
+
+//
+// license:GPLv3+
+// Ported at: VisualPinball.Engine/VPT/Plunger/PlungerHit.cs
+//
 
 void PlungerMoverObject::SetObjects(const float len)
 {
@@ -108,6 +113,8 @@ void PlungerMoverObject::SetObjects(const float len)
    m_linesegSide[1].CalcNormal();
 }
 
+// Ported at: VisualPinball.Unity/VisualPinball.Unity/VPT/Plunger/PlungerDisplacementSystem.cs
+
 void PlungerMoverObject::UpdateDisplacements(const float dtime)
 {
    // figure the travel distance
@@ -126,8 +133,10 @@ void PlungerMoverObject::UpdateDisplacements(const float dtime)
    if (m_fireTimer != 0 && dtime != 0.0f
       && ((m_fireSpeed < 0.0f ? relPos <= bouncePos : relPos >= bouncePos)))
    {
+      g_pplayer->m_pininput.PlayRumble(m_fireSpeed * 0.05f, m_fireSpeed * 0.05f, 50);
+
       // stop at the bounce position
-      m_pos = m_frameEnd + bouncePos * m_frameLen;
+      m_pos = m_frameEnd + bouncePos*m_frameLen;
 
       // reverse course at reduced speed
       m_fireSpeed = -m_fireSpeed * 0.4f;
@@ -164,7 +173,7 @@ void PlungerMoverObject::UpdateDisplacements(const float dtime)
 
    // fire an Start/End of Stroke events, as appropriate
    const float strokeEventLimit = m_frameLen / 50.0f;
-   const float strokeEventHysteresis = strokeEventLimit * 2.0f;
+   const float strokeEventHysteresis = strokeEventLimit*2.0f;
    if (m_strokeEventsArmed && m_pos + dx > m_frameStart - strokeEventLimit)
    {
       m_plunger->FireVoidEventParm(DISPID_LimitEvents_BOS, fabsf(m_speed));
@@ -240,7 +249,7 @@ void PlungerMoverObject::Fire(float startPos)
    // out (i.e., go all the way to the forward travel
    // limit, position 0.0) if the pull position is
    // more than about halfway.
-   const float maxPull = .5f;
+   constexpr float maxPull = .5f;
    const float bounceDist = (dx < maxPull ? dx / maxPull : 1.0f);
 
    // the initial bounce will be negative, since we're moving upwards,
@@ -285,7 +294,7 @@ void PlungerMoverObject::UpdateVelocities()
    // manual movements for releases.  In practice, it seems safe to
    // lower it to about 0.2 - this doesn't seem to cause false
    // positives and seems reliable at identifying actual releases.
-   const float ReleaseThreshold = 0.2f;
+   constexpr float ReleaseThreshold = 0.2f;
 
    // note if we're acting as an auto plunger
    const bool autoPlunger = m_plunger->m_d.m_autoPlunger;
@@ -386,54 +395,54 @@ void PlungerMoverObject::UpdateVelocities()
 
       if (!m_addRetractMotion)
       {
-         // this is the normal PullBack branch
+          // this is the normal PullBack branch
 
-         // if we're already at the maximum retracted position, stop
-         if (m_pos > m_frameStart)
-         {
-            m_speed = 0.0f;
-            m_pos = m_frameStart;
-         }
-         // if we're already at the minimum retracted position, stop
-         if (m_pos < (m_frameEnd + (m_restPos * m_frameLen)))
-         {
-            m_speed = 0.0f;
-            m_pos = m_frameEnd + (m_restPos * m_frameLen);
-         }
+          // if we're already at the maximum retracted position, stop
+          if (m_pos > m_frameStart)
+          {
+              m_speed = 0.0f;
+              m_pos = m_frameStart;
+          }
+          // if we're already at the minimum retracted position, stop
+          if (m_pos < (m_frameEnd + (m_restPos * m_frameLen)))
+          {
+              m_speed = 0.0f;
+              m_pos = m_frameEnd + (m_restPos * m_frameLen);
+          }
       }
       else
       {
-         // this is the PullBackandRetract branch
+          // this is the PullBackandRetract branch
 
-         // after reaching the max. position the plunger should retract until it reaches the min. position and then start again
-         // if we're already at the maximum retracted position, reverse
-         if ((m_pos >= m_frameStart) && (m_pullForce > 0))
-         {
-            m_speed = 0.0f;
-            m_pos = m_frameStart;
-            m_retractWaitLoop++;
-            if (m_retractWaitLoop > 1000) // 1 sec, related to PHYSICS_STEPTIME
-            {
-               m_pullForce = -m_initialSpeed;
-               m_pos = m_frameStart;
-               m_retractMotion = true;
-               m_retractWaitLoop = 0;
-            }
-         }
-         // if we're already at the minimum retracted position, start again
-         if ((m_pos <= (m_frameEnd + (m_restPos * m_frameLen))) && (m_pullForce <= 0))
-         {
-            m_speed = 0.0f;
-            m_pullForce = m_initialSpeed;
-            m_pos = m_frameEnd + (m_restPos * m_frameLen);
-         }
-         // reset retract motion indicator only after the rest position has been left, to avoid ball interactions
-         // use a linear pullback motion
-         if ((m_pos > (1.0f + m_frameEnd + (m_restPos * m_frameLen))) && (m_pullForce > 0))
-         {
-            m_retractMotion = false;
-            m_speed = 3.0f * m_pullForce; // 3 = magic
-         }
+          // after reaching the max. position the plunger should retract until it reaches the min. position and then start again
+          // if we're already at the maximum retracted position, reverse
+          if ((m_pos >= m_frameStart) && (m_pullForce > 0))
+          {
+              m_speed = 0.0f;
+              m_pos = m_frameStart;
+              m_retractWaitLoop++;
+              if (m_retractWaitLoop > 1000) // 1 sec, related to PHYSICS_STEPTIME
+              {
+                  m_pullForce = -m_initialSpeed;
+                  m_pos = m_frameStart;
+                  m_retractMotion = true;
+                  m_retractWaitLoop = 0;
+              }
+          }
+          // if we're already at the minimum retracted position, start again
+          if ((m_pos <= (m_frameEnd + (m_restPos * m_frameLen))) && (m_pullForce <= 0))
+          {
+              m_speed = 0.0f;
+              m_pullForce = m_initialSpeed;
+              m_pos = m_frameEnd + (m_restPos * m_frameLen);
+          }
+          // reset retract motion indicator only after the rest position has been left, to avoid ball interactions
+          // use a linear pullback motion
+          if ((m_pos > (1.0f + m_frameEnd + (m_restPos * m_frameLen))) && (m_pullForce > 0))
+          {
+              m_retractMotion = false;
+              m_speed = 3.0f * m_pullForce; // 3 = magic
+          }
       }
 
    }
@@ -552,9 +561,9 @@ void PlungerMoverObject::UpdateVelocities()
       // timing, so we need to adjust for the new VP 10 time base.  VP 10
       // runs physics frames at roughly 10x the rate of VP 9, so the time
       // per frame is about 1/10 the VP 9 time.
-      const float plungerFriction = 0.95f;
+      constexpr float plungerFriction = 0.95f;
       const float normalize = g_pplayer->m_ptable->m_plungerNormalize / 13.0f / 100.0f;
-      const float dt = 0.1f;
+      constexpr float dt = 0.1f;
       m_speed *= plungerFriction;
       m_speed += error * m_frameLen
          * m_plunger->m_d.m_mechStrength / m_mass
@@ -731,9 +740,9 @@ float HitPlunger::HitTest(const BallS& ball, const float dtime, CollisionEvent& 
       if (m_plungerMover.m_travelLimit < m_plungerMover.m_pos)
          (const_cast<HitPlunger*>(this))->m_plungerMover.m_travelLimit = m_plungerMover.m_pos; // HACK
 
-                                                                                               // If the distance is negative, it means the objects are
-                                                                                               // overlapping.  Make certain that we give the ball enough
-                                                                                               // of an impulse to get it not to overlap.
+      // If the distance is negative, it means the objects are
+      // overlapping.  Make certain that we give the ball enough
+      // of an impulse to get it not to overlap.
       if (coll.m_hitdistance <= 0.0f
          && coll.m_hitvel.y == deltay
          && fabsf(deltay) < fabsf(coll.m_hitdistance))
@@ -768,7 +777,7 @@ void HitPlunger::Collide(const CollisionEvent& coll)
    g_pplayer->m_pactiveballBC = pball; // Ball control most recently collided with plunger
 
 #ifdef C_DISP_GAIN 
-                                       // correct displacements, mostly from low velocity blidness, an alternative to true acceleration processing     
+   // correct displacements, mostly from low velocity blidness, an alternative to true acceleration processing     
    float hdist = -C_DISP_GAIN * coll.m_hitdistance;         // distance found in hit detection
    if (hdist > 1.0e-4f)
    {                                                                                               // magnitude of jump
@@ -809,7 +818,7 @@ void HitPlunger::Collide(const CollisionEvent& coll)
       // apply a fudge factor to make it look more real.  The fudge factor
       // isn't entirely unreasonable physically - you could look at it as
       // accounting for the spring tension and friction.
-      const float reverseImpulseFudgeFactor = .22f;
+      constexpr float reverseImpulseFudgeFactor = .22f;
       m_plungerMover.m_reverseImpulse = pball->m_d.m_vel.y * impulse
          * (pball->m_d.m_mass / m_plungerMover.m_mass)
          * reverseImpulseFudgeFactor;
@@ -825,7 +834,7 @@ void HitPlunger::Collide(const CollisionEvent& coll)
    if (scatter_vel > 0.f && fabsf(pball->m_d.m_vel.y) > scatter_vel) //skip if low velocity 
    {
       float scatter = rand_mt_m11();                                                          // -1.0f..1.0f
-      scatter *= (1.0f - scatter * scatter)*2.59808f * scatter_vel;     // shape quadratic distribution and scale
+      scatter *= (1.0f - scatter*scatter)*2.59808f * scatter_vel;     // shape quadratic distribution and scale
       pball->m_d.m_vel.y += scatter;
    }
 

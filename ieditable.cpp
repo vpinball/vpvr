@@ -3,7 +3,7 @@
 
 IEditable::IEditable()
 {
-   m_phittimer = NULL;
+   m_phittimer = nullptr;
 
    m_backglass = false;
    VariantInit(&m_uservalue);
@@ -34,7 +34,7 @@ void IEditable::Delete()
    for (size_t i = 0; i < m_vCollection.size(); i++)
    {
       Collection * const pcollection = m_vCollection[i];
-      pcollection->m_visel.RemoveElement(GetISelect());
+      pcollection->m_visel.find_erase(GetISelect());
    }
 }
 
@@ -49,46 +49,46 @@ HRESULT IEditable::put_TimerEnabled(VARIANT_BOOL newVal, BOOL *pte)
 {
    STARTUNDO
 
-      const BOOL val = VBTOF(newVal);
+   const BOOL val = VBTOF(newVal);
 
    if (val != *pte && m_phittimer)
    {
-      // to avoid problems with timers dis/enabling themselves, store all the changes in a list
-      bool found = false;
-      for (size_t i = 0; i < g_pplayer->m_changed_vht.size(); ++i)
-         if (g_pplayer->m_changed_vht[i].m_timer == m_phittimer)
-         {
-            g_pplayer->m_changed_vht[i].m_enabled = !!val;
-            found = true;
-            break;
-         }
+       // to avoid problems with timers dis/enabling themselves, store all the changes in a list
+       bool found = false;
+       for (size_t i = 0; i < g_pplayer->m_changed_vht.size(); ++i)
+           if (g_pplayer->m_changed_vht[i].m_timer == m_phittimer)
+           {
+               g_pplayer->m_changed_vht[i].m_enabled = !!val;
+               found = true;
+               break;
+           }
 
-      if (!found)
-      {
+       if (!found)
+       {
          TimerOnOff too;
          too.m_enabled = !!val;
          too.m_timer = m_phittimer;
          g_pplayer->m_changed_vht.push_back(too);
-      }
+       }
 
-      if (val)
-         m_phittimer->m_nextfire = g_pplayer->m_time_msec + m_phittimer->m_interval;
-      else
-         m_phittimer->m_nextfire = 0xFFFFFFFF; // fakes the disabling of the timer, until it will be catched by the cleanup via m_changed_vht
+       if (val)
+           m_phittimer->m_nextfire = g_pplayer->m_time_msec + m_phittimer->m_interval;
+       else
+           m_phittimer->m_nextfire = 0xFFFFFFFF; // fakes the disabling of the timer, until it will be catched by the cleanup via m_changed_vht
    }
 
    *pte = val;
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 HRESULT IEditable::put_TimerInterval(long newVal, int *pti)
 {
    STARTUNDO
 
-      *pti = newVal;
+   *pti = newVal;
 
    if (m_phittimer)
    {
@@ -98,7 +98,7 @@ HRESULT IEditable::put_TimerInterval(long newVal, int *pti)
 
    STOPUNDO
 
-      return S_OK;
+   return S_OK;
 }
 
 HRESULT IEditable::get_UserValue(VARIANT *pVal)
@@ -111,13 +111,13 @@ HRESULT IEditable::put_UserValue(VARIANT *newVal)
 {
    STARTUNDO
 
-      VariantInit(&m_uservalue);
+   VariantInit(&m_uservalue);
    VariantClear(&m_uservalue);
    const HRESULT hr = VariantCopy(&m_uservalue, newVal);
 
    STOPUNDO
 
-      return hr;
+   return hr;
 }
 
 void IEditable::BeginPlay()
@@ -144,7 +144,7 @@ void IEditable::EndPlay()
    if (m_phittimer)
    {
       delete m_phittimer;
-      m_phittimer = NULL;
+      m_phittimer = nullptr;
    }
 }
 
@@ -182,56 +182,56 @@ void IEditable::Undelete()
    for (size_t i = 0; i < m_vCollection.size(); i++)
    {
       Collection * const pcollection = m_vCollection[i];
-      pcollection->m_visel.AddElement(GetISelect());
+      pcollection->m_visel.push_back(GetISelect());
    }
 }
 
 char *IEditable::GetName()
 {
-   WCHAR *elemName = NULL;
-   if (GetItemType() == eItemDecal)
-      return "Decal";
+    WCHAR *elemName = nullptr;
+    if (GetItemType() == eItemDecal)
+        return "Decal";
 
-   IScriptable *const pscript = GetScriptable();
-   if (pscript)
-      elemName = pscript->m_wzName;
+    IScriptable *const pscript = GetScriptable();
+    if (pscript)
+        elemName = pscript->m_wzName;
 
-   if (elemName)
-   {
-      static char elementName[256];
-      WideCharToMultiByteNull(CP_ACP, 0, elemName, -1, elementName, 256, NULL, NULL);
-      return elementName;
-   }
-   return NULL;
+    if (elemName)
+    {
+        static char elementName[256];
+        WideCharToMultiByteNull(CP_ACP, 0, elemName, -1, elementName, 256, nullptr, nullptr);
+        return elementName;
+    }
+    return nullptr;
 }
 
 void IEditable::SetName(const std::string& name)
 {
-   if (name.empty())
-      return;
-   if (GetItemType() == eItemDecal)
-      return;
-   PinTable* const pt = GetPTable();
-   if (pt == nullptr)
-      return;
+    if (name.empty())
+        return;
+    if (GetItemType() == eItemDecal)
+        return;
+    PinTable* const pt = GetPTable();
+    if (pt == nullptr)
+        return;
 
-   WCHAR newName[sizeof(GetScriptable()->m_wzName)];
-   WCHAR uniqueName[sizeof(GetScriptable()->m_wzName)];
-   WCHAR* namePtr = newName;
-   MultiByteToWideCharNull(CP_ACP, 0, name.c_str(), -1, newName, sizeof(GetScriptable()->m_wzName));
-   const bool isEqual = (wcscmp(newName, GetScriptable()->m_wzName) == 0);
-   if (!isEqual && !pt->IsNameUnique(newName))
-   {
-      pt->GetUniqueName(newName, uniqueName);
-      namePtr = uniqueName;
-   }
-   STARTUNDO
-      // first update name in the codeview before updating it in the element itself
-      pt->m_pcv->ReplaceName(GetScriptable(), namePtr);
-   lstrcpynW(GetScriptable()->m_wzName, namePtr, sizeof(GetScriptable()->m_wzName));
-   g_pvp->GetLayersListDialog()->UpdateElement(this);
-   g_pvp->SetPropSel(GetPTable()->m_vmultisel);
-   STOPUNDO
+    WCHAR newName[sizeof(GetScriptable()->m_wzName)/sizeof(GetScriptable()->m_wzName[0])];
+    const WCHAR* namePtr = newName;
+    MultiByteToWideCharNull(CP_ACP, 0, name.c_str(), -1, newName, sizeof(GetScriptable()->m_wzName)/sizeof(GetScriptable()->m_wzName[0]));
+    const bool isEqual = (wcscmp(newName, GetScriptable()->m_wzName) == 0);
+    WCHAR uniqueName[sizeof(GetScriptable()->m_wzName)/sizeof(GetScriptable()->m_wzName[0])];
+    if(!isEqual && !pt->IsNameUnique(newName))
+    {
+       pt->GetUniqueName(newName, uniqueName, sizeof(uniqueName) / sizeof(uniqueName[0]));
+       namePtr = uniqueName;
+    }
+    STARTUNDO
+    // first update name in the codeview before updating it in the element itself
+    pt->m_pcv->ReplaceName(GetScriptable(), namePtr);
+    lstrcpynW(GetScriptable()->m_wzName, namePtr, sizeof(GetScriptable()->m_wzName)/sizeof(GetScriptable()->m_wzName[0]));
+    g_pvp->GetLayersListDialog()->UpdateElement(this);
+    g_pvp->SetPropSel(GetPTable()->m_vmultisel);
+    STOPUNDO
 }
 
 void IEditable::InitScript()

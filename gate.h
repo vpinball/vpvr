@@ -20,7 +20,7 @@ public:
    TimerDataRoot m_tdr;
    float m_damping;
    float m_gravityfactor;
-   char m_szSurface[MAXTOKEN];
+   std::string m_szSurface;
    float m_angleMin;
    float m_angleMax;
    GateType m_type;
@@ -67,11 +67,11 @@ public:
 
    STANDARD_EDITABLE_DECLARES(Gate, eItemGate, GATE, 1)
 
-      //DECLARE_NOT_AGGREGATABLE(Gate)
-      // Remove the comment from the line above if you don't want your object to
-      // support aggregation.
+   //DECLARE_NOT_AGGREGATABLE(Gate)
+   // Remove the comment from the line above if you don't want your object to
+   // support aggregation.
 
-      DECLARE_REGISTRY_RESOURCEID(IDR_GATE)
+   DECLARE_REGISTRY_RESOURCEID(IDR_GATE)
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
 
@@ -83,7 +83,7 @@ public:
    virtual void SetDefaultPhysics(bool fromMouseClick);
 
    virtual void RenderBlueprint(Sur *psur, const bool solid);
-   virtual void ExportMesh(FILE *f);
+   virtual void ExportMesh(ObjLoader& loader);
 
    virtual unsigned long long GetMaterialID() const { return m_ptable->GetMaterial(m_d.m_szMaterial)->hash(); }
    virtual ItemTypeEnum HitableGetItemType() const { return eItemGate; }
@@ -104,7 +104,7 @@ private:
    void GenerateBracketMesh(Vertex3D_NoTex2 *buf);
    void GenerateWireMesh(Vertex3D_NoTex2 *buf);
 
-   PinTable * m_ptable;
+   PinTable *m_ptable;
 
    LineSeg *m_plineseg;
    HitGate *m_phitgate;

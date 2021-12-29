@@ -24,9 +24,9 @@ GateVisualsProperty::GateVisualsProperty(const VectorProtected<ISelect> *pvsel) 
 
 void GateVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType()!=eItemGate))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType()!=eItemGate))
             continue;
         Gate * const gate = (Gate *)m_pvsel->ElementAt(i);
         if (dispid == 9 || dispid == -1)
@@ -57,9 +57,9 @@ void GateVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void GateVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemGate))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemGate))
             continue;
         Gate * const gate = (Gate *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -68,7 +68,7 @@ void GateVisualsProperty::UpdateProperties(const int dispid)
                 CHECK_UPDATE_ITEM(gate->m_d.m_type, (GateType)(PropertyDialog::GetComboBoxIndex(m_typeCombo, m_typeList) + 1), gate);
                 break;
             case IDC_SURFACE_COMBO:
-                CHECK_UPDATE_COMBO_TEXT(gate->m_d.m_szSurface, m_surfaceCombo, gate);
+                CHECK_UPDATE_COMBO_TEXT_STRING(gate->m_d.m_szSurface, m_surfaceCombo, gate);
                 break;
             case 5:
                 CHECK_UPDATE_ITEM(gate->m_d.m_vCenter.x, PropertyDialog::GetFloatTextbox(m_xposEdit), gate);
@@ -121,6 +121,36 @@ BOOL GateVisualsProperty::OnInitDialog()
     m_hReflectionEnabledCheck = ::GetDlgItem(GetHwnd(), IDC_REFLECT_ENABLED_CHECK);
 
     UpdateVisuals();
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC12), topleft, 0);
+    m_resizer.AddChild(m_typeCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_surfaceCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_xposEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_yposEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_materialCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_lengthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_heightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_rotationEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_openAngleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_closeAngleEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hVisibleCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hReflectionEnabledCheck, topleft, RD_STRETCH_WIDTH);
     return TRUE;
 }
 
+INT_PTR GateVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
+}

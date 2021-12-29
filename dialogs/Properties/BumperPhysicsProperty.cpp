@@ -11,9 +11,9 @@ BumperPhysicsProperty::BumperPhysicsProperty(const VectorProtected<ISelect> *pvs
 
 void BumperPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemBumper))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemBumper))
             continue;
         Bumper *const bumper = (Bumper *)m_pvsel->ElementAt(i);
         if( dispid == IDC_FORCE_EDIT || dispid==-1)
@@ -28,9 +28,9 @@ void BumperPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
 
 void BumperPhysicsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemBumper))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemBumper))
             continue;
         Bumper *const bumper = (Bumper *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -57,5 +57,21 @@ BOOL BumperPhysicsProperty::OnInitDialog()
     m_baseScatterAngleEdit = &m_scatterAngleEdit;
 
     UpdateVisuals();
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(m_hHitEventCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hCollidableCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hitThresholdEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_forceEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_scatterAngleEdit, topleft, RD_STRETCH_WIDTH);
+
     return TRUE;
+}
+
+INT_PTR BumperPhysicsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   return DialogProcDefault(uMsg, wParam, lParam);
 }

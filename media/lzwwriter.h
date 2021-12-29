@@ -19,7 +19,7 @@ public:
    HRESULT CompressBits(int init_bits);
 
 private:
-   HRESULT WriteSz(char *sz, int cbytes);
+   HRESULT WriteSz(const char *sz, int cbytes);
    HRESULT WriteByte(char ch);
    HRESULT WriteWord(short word);
    int bNextPixel();
@@ -32,7 +32,7 @@ private:
 
    inline int Maxcode(const int n_bits) const
    {
-      return (1 << n_bits) - 1;
+       return (1 << n_bits) - 1;
    }
 
    CComPtr<IStream> m_pistream;

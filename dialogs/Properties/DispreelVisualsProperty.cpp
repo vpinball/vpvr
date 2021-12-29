@@ -17,9 +17,9 @@ DispreelVisualsProperty::DispreelVisualsProperty(const VectorProtected<ISelect> 
 
 void DispreelVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDispReel))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDispReel))
             continue;
         DispReel * const reel = (DispReel *)m_pvsel->ElementAt(i);
 
@@ -48,15 +48,14 @@ void DispreelVisualsProperty::UpdateVisuals(const int dispid/*=-1*/)
         UpdateBaseVisuals(reel, &reel->m_d);
         //only show the first element on multi-select
         break;
-
     }
 }
 
 void DispreelVisualsProperty::UpdateProperties(const int dispid)
 {
-    for (int i = 0; i < m_pvsel->Size(); i++)
+    for (int i = 0; i < m_pvsel->size(); i++)
     {
-        if ((m_pvsel->ElementAt(i) == NULL) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDispReel))
+        if ((m_pvsel->ElementAt(i) == nullptr) || (m_pvsel->ElementAt(i)->GetItemType() != eItemDispReel))
             continue;
         DispReel * const reel = (DispReel *)m_pvsel->ElementAt(i);
         switch (dispid)
@@ -135,16 +134,43 @@ BOOL DispreelVisualsProperty::OnInitDialog()
     m_reelHeightEdit.AttachItem(IDC_REEL_HEIGHT_EDIT);
     m_reelSpacingEdit.AttachItem(IDC_REEL_SPACING_EDIT);
     UpdateVisuals();
+    m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC12), topleft, 0);
+    m_resizer.AddChild(m_hVisibleCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hBackgroundTransparentCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_hUseImageGridCheck, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_colorButton, topleft, 0);
+    m_resizer.AddChild(m_imageCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_singleDigitRangeEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_imagePerRowEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posXEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_posYEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_reelsEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_reelWidthEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_reelHeightEdit, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_reelSpacingEdit, topleft, RD_STRETCH_WIDTH);
     return TRUE;
 }
 
 INT_PTR DispreelVisualsProperty::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    switch (uMsg)
+   m_resizer.HandleMessage(uMsg, wParam, lParam);
+   switch (uMsg)
     {
         case WM_DRAWITEM:
         {
-            LPDRAWITEMSTRUCT lpDrawItemStruct = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
+            const LPDRAWITEMSTRUCT lpDrawItemStruct = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
             const UINT nID = static_cast<UINT>(wParam);
             if (nID == IDC_COLOR_BUTTON1)
             {

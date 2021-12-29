@@ -23,7 +23,7 @@ public:
    std::string m_szBaseMaterial;
    std::string m_szSkirtMaterial;
    std::string m_szRingMaterial;
-   char m_szSurface[MAXTOKEN];
+   std::string m_szSurface;
    bool m_capVisible;
    bool m_baseVisible;
    bool m_ringVisible;
@@ -72,21 +72,21 @@ public:
    BEGIN_CONNECTION_POINT_MAP(Bumper)
       CONNECTION_POINT_ENTRY(DIID_IBumperEvents)
    END_CONNECTION_POINT_MAP()
-
+   
    DECLARE_REGISTRY_RESOURCEID(IDR_BUMPER)
-
+   
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
-
+   
    virtual void MoveOffset(const float dx, const float dy);
    virtual void SetObjectPos();
-
+   
    // Multi-object manipulation
    virtual Vertex2D GetCenter() const;
    virtual void PutCenter(const Vertex2D& pv);
 
    virtual void SetDefaultPhysics(bool fromMouseClick);
-   virtual void ExportMesh(FILE *f);
+   virtual void ExportMesh(ObjLoader& loader);
    virtual void RenderBlueprint(Sur *psur, const bool solid);
 
    virtual unsigned long long GetMaterialID() const
@@ -94,22 +94,22 @@ public:
       if (!m_d.m_baseVisible && m_d.m_capVisible)
          return m_ptable->GetMaterial(m_d.m_szCapMaterial)->hash();
       else
-         return 64 - 3; //!! some constant number
+         return 64-3; //!! some constant number
    }
    virtual unsigned long long GetImageID() const
    {
       if (!m_d.m_baseVisible && m_d.m_capVisible)
          return (unsigned long long)&m_capTexture; //!! meh
       else
-         return NULL;
+         return 0;
    }
-
+   
    virtual ItemTypeEnum HitableGetItemType() const { return eItemBumper; }
-
+   
    virtual void WriteRegDefaults();
-
+   
    BumperData m_d;
-
+   
    BumperHitCircle *m_pbumperhitcircle;
 
 private:

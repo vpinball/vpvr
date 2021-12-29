@@ -18,20 +18,19 @@ int SearchSelectDialog::m_lastSortColumn;
 
 SearchSelectDialog::SearchSelectDialog() : CDialog(IDD_SEARCH_SELECT_ELEMENT)
 {
-    m_hElementList = NULL;
+    m_hElementList = nullptr;
 
     m_switchSortOrder = false;
     m_columnSortOrder = 1;
     m_lastSortColumn = 0;
-    m_curTable = NULL;
+    m_curTable = nullptr;
 }
 
 void SearchSelectDialog::Update()
 {
    ListView_SetExtendedListViewStyle(m_hElementList, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
-   LVCOLUMN lvc;
-   memset(&lvc, 0, sizeof(LVCOLUMN));
+   LVCOLUMN lvc = {};
    lvc.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_FMT;
    lvc.cx = 200;
    lvc.pszText = TEXT("Name");
@@ -50,15 +49,15 @@ void SearchSelectDialog::Update()
    lvc.pszText = TEXT("Material");
    index = ListView_InsertColumn(m_hElementList, 4, &lvc);
 
-   if (m_hElementList != NULL)
+   if (m_hElementList != nullptr)
       ListView_DeleteAllItems(m_hElementList);
 
    int idx = 0;
-   for (int i = 0; i < m_curTable->m_vcollection.Size(); i++)
+   for (int i = 0; i < m_curTable->m_vcollection.size(); i++)
    {
       CComObject<Collection> *const pcol = m_curTable->m_vcollection.ElementAt(i);
       char szT[sizeof(pcol->m_wzName)/sizeof(pcol->m_wzName[0])];
-      WideCharToMultiByteNull(CP_ACP, 0, pcol->m_wzName, -1, szT, sizeof(szT), NULL, NULL);
+      WideCharToMultiByteNull(CP_ACP, 0, pcol->m_wzName, -1, szT, sizeof(szT), nullptr, nullptr);
       LVITEM lv;
       lv.mask = LVIF_TEXT | LVIF_PARAM;
       lv.iItem = idx;
@@ -136,7 +135,7 @@ void SearchSelectDialog::SelectElement()
            if (strcmp(szType, "Collection") == 0)
            {
               CComObject<Collection> *const pcol = (CComObject<Collection>*)lv.lParam;
-              if (pcol->m_visel.Size()>0)
+              if (!pcol->m_visel.empty())
               {
                  ISelect *const pisel = pcol->m_visel.ElementAt(0);
                  if (pisel)
@@ -186,7 +185,7 @@ INT_PTR SearchSelectDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
          }
          else if (wParam == IDC_ELEMENT_LIST)
          {
-            LPNMLISTVIEW lpnmListView = (LPNMLISTVIEW)lParam;
+            const LPNMLISTVIEW lpnmListView = (LPNMLISTVIEW)lParam;
             if (lpnmListView->hdr.code == LVN_COLUMNCLICK)
             {
                const int columnNumber = lpnmListView->iSubItem;
@@ -197,24 +196,20 @@ INT_PTR SearchSelectDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
       }
       case WM_SIZE:
       {
-         RECT buttonRc;
-
          const CRect rc = GetWindowRect();
          const int windowHeight = rc.bottom - rc.top;
          const int windowWidth = rc.right - rc.left;
 
-         const CRect crc = GetClientRect();
-
          const HWND hOkButton = GetDlgItem(IDOK).GetHwnd();
-         const HWND hCancelButton = GetDlgItem(IDCANCEL).GetHwnd();
+         const int buttonY = (windowHeight - 85) + 5;
+         RECT buttonRc;
          ::GetClientRect(hOkButton, &buttonRc);
          const int buttonWidth = buttonRc.right - buttonRc.left;
          const int buttonHeight = buttonRc.bottom - buttonRc.top;
-         const int buttonY = (crc.bottom - buttonHeight) - 5;
-
-         ::SetWindowPos(m_hElementList, NULL, 6, 5, windowWidth - 28, buttonY - 10, 0);
-         ::SetWindowPos(hOkButton, NULL, 6, buttonY, buttonWidth, buttonHeight, 0);
-         ::SetWindowPos(hCancelButton, NULL, 6 + buttonWidth + 50, buttonY, buttonWidth, buttonHeight, 0);
+         
+         ::SetWindowPos(m_hElementList, nullptr, 6, 5, windowWidth - 28, windowHeight - 90, 0);
+         ::SetWindowPos(hOkButton, nullptr, 6, buttonY, buttonWidth, buttonHeight, 0);
+         ::SetWindowPos(GetDlgItem(IDCANCEL).GetHwnd(), nullptr, 6 + buttonWidth + 50, buttonY, buttonWidth, buttonHeight, 0);
          break;
       }
 
@@ -562,6 +557,18 @@ void SearchSelectDialog::AddSearchItemToList(IEditable * const piedit, int idx)
 
       break;
    }
+   case eItemLightSeq:
+   {
+       const LightSeq* const lightSeq = (LightSeq*)piedit;
+       ListView_SetItemText(m_hElementList, idx, 1, "LightSeq");
+       ListView_SetItemText(m_hElementList, idx, 3, (LPSTR)textBuf.c_str());
+       ListView_SetItemText(m_hElementList, idx, 4, (LPSTR)textBuf.c_str());
+
+       break;
+   }
+   default:
+      assert(!"AddSearchItemToList unhandled case");
+      break;
    }
 }
 
@@ -572,7 +579,7 @@ void SearchSelectDialog::LoadPosition()
    const int w = LoadValueIntWithDefault("Editor", "SearchSelectWidth", 650);
    const int h = LoadValueIntWithDefault("Editor", "SearchSelectHeight", 400);
 
-   SetWindowPos(NULL, x, y, w, h, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE);
+   SetWindowPos(nullptr, x, y, w, h, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
 void SearchSelectDialog::SavePosition()

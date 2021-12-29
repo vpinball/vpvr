@@ -6,7 +6,7 @@
 
 EditorOptionsDialog::EditorOptionsDialog() : CDialog(IDD_EDITOR_OPTIONS)
 {
-    m_toolTip = NULL;
+    m_toolTip = nullptr;
 }
 
 void EditorOptionsDialog::OnClose()
@@ -29,14 +29,12 @@ BOOL EditorOptionsDialog::OnInitDialog()
 {
     m_toolTip = new CToolTip();
 
-    const HWND toolTipHwnd = ::CreateWindowEx(NULL, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_ALWAYSTIP | TTS_BALLOON, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, GetHwnd(), NULL, g_pvp->theInstance, NULL);
+    const HWND toolTipHwnd = ::CreateWindowEx(NULL, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_ALWAYSTIP | TTS_BALLOON, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, GetHwnd(), NULL, g_pvp->theInstance, nullptr);
     if (toolTipHwnd)
     {
         SendMessage(toolTipHwnd, TTM_SETMAXTIPWIDTH, 0, 180);
-        HWND controlHwnd = GetDlgItem(IDC_THROW_BALLS_ALWAYS_ON_CHECK);
-        AddToolTip("If checked, the 'Throw Balls in Player' option is always active. You don't need to activate it in the debug menu again.", GetHwnd(), toolTipHwnd, controlHwnd);
-        controlHwnd = GetDlgItem(IDC_THROW_BALLS_SIZE_EDIT);
-        AddToolTip("Defines the default size of the ball when dropped onto the table.", GetHwnd(), toolTipHwnd, controlHwnd);
+        AddToolTip("If checked, the 'Throw Balls in Player' option is always active. You don't need to activate it in the debug menu again.", GetHwnd(), toolTipHwnd, GetDlgItem(IDC_THROW_BALLS_ALWAYS_ON_CHECK));
+        AddToolTip("Defines the default size of the ball when dropped onto the table.", GetHwnd(), toolTipHwnd, GetDlgItem(IDC_THROW_BALLS_SIZE_EDIT));
     }
 
     AttachItem(IDC_COLOR_BUTTON2, m_colorButton2);
@@ -85,16 +83,20 @@ BOOL EditorOptionsDialog::OnInitDialog()
     const bool startVPfileDialog = LoadValueBoolWithDefault("Editor", "SelectTableOnStart", true);
     SendDlgItemMessage(IDC_START_VP_FILE_DIALOG, BM_SETCHECK, startVPfileDialog ? BST_CHECKED : BST_UNCHECKED, 0);
 
+    const bool startVPfileDialogPlayerClose = LoadValueBoolWithDefault("Editor", "SelectTableOnPlayerClose", true);
+    SendDlgItemMessage(IDC_START_VP_FILE_DIALOG2, BM_SETCHECK, startVPfileDialogPlayerClose ? BST_CHECKED : BST_UNCHECKED, 0);
+
     const float throwBallMass = LoadValueFloatWithDefault("Editor", "ThrowBallMass", 1.0f);
     string textBuf;
     f2sz(throwBallMass, textBuf);
     SetDlgItemText(IDC_THROW_BALLS_MASS_EDIT, textBuf.c_str());
 
     const int units = LoadValueIntWithDefault("Editor", "Units", 0);
-    SendMessage(GetDlgItem(IDC_UNIT_LIST_COMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"VPUnits");
-    SendMessage(GetDlgItem(IDC_UNIT_LIST_COMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Inches");
-    SendMessage(GetDlgItem(IDC_UNIT_LIST_COMBO).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Millimeters");
-    SendMessage(GetDlgItem(IDC_UNIT_LIST_COMBO).GetHwnd(), CB_SETCURSEL, units, 0);
+    const HWND hwnd = GetDlgItem(IDC_UNIT_LIST_COMBO).GetHwnd();
+    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"VPUnits");
+    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Inches");
+    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Millimeters");
+    SendMessage(hwnd, CB_SETCURSEL, units, 0);
 
     return TRUE;
 }
@@ -190,11 +192,8 @@ BOOL EditorOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
        }
        case IDC_SET_DEFAULTS_BUTTON:
        {
-          HWND hwndControl;
-          hwndControl = GetDlgItem(IDC_DRAW_DRAGPOINTS).GetHwnd();
-          SendMessage(hwndControl, BM_SETCHECK, BST_UNCHECKED, 0);
-          hwndControl = GetDlgItem(IDC_DRAW_LIGHTCENTERS).GetHwnd();
-          SendMessage(hwndControl, BM_SETCHECK, BST_UNCHECKED, 0);
+          SendMessage(GetDlgItem(IDC_DRAW_DRAGPOINTS).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
+          SendMessage(GetDlgItem(IDC_DRAW_LIGHTCENTERS).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
           SendDlgItemMessage(IDC_AUTOSAVE, BM_SETCHECK, BST_CHECKED, 0);
           SetDlgItemInt(IDC_AUTOSAVE_MINUTES, AUTOSAVE_DEFAULT_TIME, FALSE);
           SetDlgItemInt(IDC_GRID_SIZE, 50, FALSE);
@@ -204,17 +203,23 @@ BOOL EditorOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
           SendDlgItemMessage(IDC_ALWAYSVIEWSCRIPT, BM_SETCHECK, BST_CHECKED, 0);
           SetDlgItemInt(IDC_THROW_BALLS_SIZE_EDIT, 50, FALSE);
           SendDlgItemMessage(IDC_START_VP_FILE_DIALOG, BM_SETCHECK, BST_CHECKED, 0);
+          SendDlgItemMessage(IDC_START_VP_FILE_DIALOG2, BM_SETCHECK, BST_CHECKED, 0);
           SendMessage(GetDlgItem(IDC_UNIT_LIST_COMBO).GetHwnd(), CB_SETCURSEL, 0, 0);
           SetDlgItemText(IDC_THROW_BALLS_MASS_EDIT, "1.0");
-          const int x = 0;
-          const int y = 0;
+          constexpr int x = 0;
+          constexpr int y = 0;
           SaveValueInt("Editor", "CodeViewPosX", x);
           SaveValueInt("Editor", "CodeViewPosY", y);
-          const int width = 640;
-          const int height = 490;
+          constexpr int width = 640;
+          constexpr int height = 490;
           SaveValueInt("Editor", "CodeViewPosWidth", width);
           SaveValueInt("Editor", "CodeViewPosHeight", height);
 
+          return TRUE;
+       }
+       case IDC_RESET_WINDOW_POS:
+       {
+          g_pvp->ResetAllDockers();
           return TRUE;
        }
     }
@@ -228,7 +233,7 @@ INT_PTR EditorOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         case WM_DRAWITEM:
         {
-            LPDRAWITEMSTRUCT lpDrawItemStruct = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
+            const LPDRAWITEMSTRUCT lpDrawItemStruct = reinterpret_cast<LPDRAWITEMSTRUCT>(lParam);
             const UINT nID = static_cast<UINT>(wParam);
             if (nID == IDC_COLOR_BUTTON2)
             {
@@ -317,8 +322,10 @@ void EditorOptionsDialog::OnOK()
     checked = (SendDlgItemMessage(IDC_START_VP_FILE_DIALOG, BM_GETCHECK, 0, 0) == BST_CHECKED);
     SaveValueBool("Editor", "SelectTableOnStart", checked);
 
-    const HWND hwndUnits = GetDlgItem(IDC_UNIT_LIST_COMBO).GetHwnd();
-    size_t units = SendMessage(hwndUnits, CB_GETCURSEL, 0, 0);
+    checked = (SendDlgItemMessage(IDC_START_VP_FILE_DIALOG2, BM_GETCHECK, 0, 0) == BST_CHECKED);
+    SaveValueBool("Editor", "SelectTableOnPlayerClose", checked);
+
+    size_t units = SendMessage(GetDlgItem(IDC_UNIT_LIST_COMBO).GetHwnd(), CB_GETCURSEL, 0, 0);
     if (units == LB_ERR)
         units = 0;
     SaveValueInt("Editor", "Units", (int)units);

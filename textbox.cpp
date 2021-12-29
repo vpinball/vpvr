@@ -3,8 +3,8 @@
 
 Textbox::Textbox()
 {
-   m_pIFont = NULL;
-   m_texture = NULL;
+   m_pIFont = nullptr;
+   m_texture = nullptr;
 }
 
 Textbox::~Textbox()
@@ -26,7 +26,7 @@ HRESULT Textbox::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
 
    SetDefaults(fromMouseClick);
 
-   return InitVBA(fTrue, 0, NULL);//ApcProjectItem.Define(ptable->ApcProject, GetDispatch(), axTypeHostProjectItem/*axTypeHostClass*/, L"Textbox", NULL);
+   return InitVBA(fTrue, 0, nullptr);//ApcProjectItem.Define(ptable->ApcProject, GetDispatch(), axTypeHostProjectItem/*axTypeHostClass*/, L"Textbox", nullptr);
 }
 
 void Textbox::SetDefaults(bool fromMouseClick)
@@ -73,31 +73,30 @@ void Textbox::SetDefaults(bool fromMouseClick)
       const float fontSize = LoadValueFloatWithDefault("DefaultProps\\TextBox", "FontSize", 14.25f);
       fd.cySize.int64 = (LONGLONG)(fontSize * 10000.0f);
 
-      char tmp[MAXSTRING];
+      string tmp;
       HRESULT hr;
-      hr = LoadValueString("DefaultProps\\TextBox", "FontName", tmp, MAXSTRING);
+      hr = LoadValue("DefaultProps\\TextBox", "FontName", tmp);
       if (hr != S_OK)
          fd.lpstrName = L"Arial";
       else
       {
-         const int len = lstrlen(tmp) + 1;
-         fd.lpstrName = (LPOLESTR)malloc(len * sizeof(WCHAR));
-         memset(fd.lpstrName, 0, len * sizeof(WCHAR));
-         MultiByteToWideCharNull(CP_ACP, 0, tmp, -1, fd.lpstrName, len);
+         const int len = (int)tmp.length() + 1;
+         fd.lpstrName = (LPOLESTR)malloc(len*sizeof(WCHAR));
+         memset(fd.lpstrName, 0, len*sizeof(WCHAR));
+         MultiByteToWideCharNull(CP_ACP, 0, tmp.c_str(), -1, fd.lpstrName, len);
+
          free_lpstrName = true;
       }
 
-      fd.sWeight = (SHORT)LoadValueIntWithDefault("DefaultProps\\TextBox", "FontWeight", FW_NORMAL);
-      fd.sCharset = (SHORT)LoadValueIntWithDefault("DefaultProps\\TextBox", "FontCharSet", 0);
+      fd.sWeight = LoadValueIntWithDefault("DefaultProps\\TextBox", "FontWeight", FW_NORMAL);
+      fd.sCharset = LoadValueIntWithDefault("DefaultProps\\TextBox", "FontCharSet", 0);
       fd.fItalic = LoadValueIntWithDefault("DefaultProps\\TextBox", "FontItalic", 0);
       fd.fUnderline = LoadValueIntWithDefault("DefaultProps\\TextBox", "FontUnderline", 0);
       fd.fStrikethrough = LoadValueIntWithDefault("DefaultProps\\TextBox", "FontStrikeThrough", 0);
 
-      hr = LoadValueString("DefaultProps\\TextBox", "Text", tmp, MAXSTRING);
+      hr = LoadValue("DefaultProps\\TextBox", "Text", m_d.m_sztext);
       if (hr != S_OK)
-         m_d.m_sztext = "";
-      else
-         m_d.m_sztext = tmp;
+         m_d.m_sztext.clear();
    }
 
    OleCreateFontIndirect(&fd, IID_IFont, (void **)&m_pIFont);
@@ -126,62 +125,59 @@ void Textbox::WriteRegDefaults()
 
    const float fTmp = (float)(fd.cySize.int64 / 10000.0);
    SaveValueFloat("DefaultProps\\TextBox", "FontSize", fTmp);
-   size_t charCnt = wcslen(fd.lpstrName) + 1;
+   const size_t charCnt = wcslen(fd.lpstrName) + 1;
    char * const strTmp = new char[2 * charCnt];
-   WideCharToMultiByteNull(CP_ACP, 0, fd.lpstrName, -1, strTmp, (int)(2 * charCnt), NULL, NULL);
-   SaveValueString("DefaultProps\\TextBox", "FontName", strTmp);
+   WideCharToMultiByteNull(CP_ACP, 0, fd.lpstrName, -1, strTmp, (int)(2 * charCnt), nullptr, nullptr);
+   SaveValue("DefaultProps\\TextBox", "FontName", strTmp);
    delete[] strTmp;
-   int weight = fd.sWeight;
-   int charset = fd.sCharset;
+   const int weight = fd.sWeight;
+   const int charset = fd.sCharset;
    SaveValueInt("DefaultProps\\TextBox", "FontWeight", weight);
    SaveValueInt("DefaultProps\\TextBox", "FontCharSet", charset);
    SaveValueInt("DefaultProps\\TextBox", "FontItalic", fd.fItalic);
    SaveValueInt("DefaultProps\\TextBox", "FontUnderline", fd.fUnderline);
    SaveValueInt("DefaultProps\\TextBox", "FontStrikeThrough", fd.fStrikethrough);
 
-   SaveValueString("DefaultProps\\TextBox", "Text", m_d.m_sztext);
+   SaveValue("DefaultProps\\TextBox", "Text", m_d.m_sztext);
 }
 
 char * Textbox::GetFontName()
 {
-   if (m_pIFont)
-   {
-      CComBSTR bstr;
-      /*HRESULT hr =*/ m_pIFont->get_Name(&bstr);
+    if (m_pIFont)
+    {
+        CComBSTR bstr;
+        /*HRESULT hr =*/ m_pIFont->get_Name(&bstr);
 
-      static char fontName[LF_FACESIZE];
-      WideCharToMultiByteNull(CP_ACP, 0, bstr, -1, fontName, LF_FACESIZE, NULL, NULL);
-      return fontName;
-   }
-   return NULL;
+        static char fontName[LF_FACESIZE];
+        WideCharToMultiByteNull(CP_ACP, 0, bstr, -1, fontName, LF_FACESIZE, nullptr, nullptr);
+        return fontName;
+    }
+    return nullptr;
 }
 
 HFONT Textbox::GetFont()
 {
-   LOGFONT lf;
-   ZeroMemory(&lf, sizeof(lf));
+    LOGFONT lf = {};
+    lf.lfHeight = -72;
+    lf.lfCharSet = DEFAULT_CHARSET;
+    lf.lfQuality = NONANTIALIASED_QUALITY;
 
-   lf.lfHeight = -72;
-   lf.lfCharSet = DEFAULT_CHARSET;
-   lf.lfQuality = NONANTIALIASED_QUALITY;
+    CComBSTR bstr;
+    HRESULT hr = m_pIFont->get_Name(&bstr);
 
-   CComBSTR bstr;
-   HRESULT hr = m_pIFont->get_Name(&bstr);
+    WideCharToMultiByteNull(CP_ACP, 0, bstr, -1, lf.lfFaceName, LF_FACESIZE, nullptr, nullptr);
 
-   WideCharToMultiByteNull(CP_ACP, 0, bstr, -1, lf.lfFaceName, LF_FACESIZE, NULL, NULL);
+    BOOL bl;
+    hr = m_pIFont->get_Bold(&bl);
 
-   BOOL bl;
-   hr = m_pIFont->get_Bold(&bl);
+    lf.lfWeight = bl ? FW_BOLD : FW_NORMAL;
 
-   lf.lfWeight = bl ? FW_BOLD : FW_NORMAL;
+    hr = m_pIFont->get_Italic(&bl);
 
-   hr = m_pIFont->get_Italic(&bl);
+    lf.lfItalic = (BYTE)bl;
 
-   lf.lfItalic = (BYTE)bl;
-
-   HFONT hFont = CreateFontIndirect(&lf);
-
-   return hFont;
+    const HFONT hFont = CreateFontIndirect(&lf);
+    return hFont;
 }
 
 STDMETHODIMP Textbox::InterfaceSupportsErrorInfo(REFIID riid)
@@ -213,7 +209,7 @@ void Textbox::UIRenderPass2(Sur * const psur)
    psur->SetBorderColor(RGB(0, 0, 0), false, 0);
    psur->SetFillColor(-1);
    psur->SetObject(this);
-   psur->SetObject(NULL);
+   psur->SetObject(nullptr);
 
    psur->Rectangle(m_d.m_v1.x, m_d.m_v1.y, m_d.m_v2.x, m_d.m_v2.y);
 }
@@ -246,7 +242,7 @@ void Textbox::EndPlay()
    if (m_texture)
    {
       delete m_texture;
-      m_texture = NULL;
+      m_texture = nullptr;
 
       m_pIFontPlay->Release();
    }
@@ -258,7 +254,7 @@ void Textbox::RenderDynamic()
 {
    TRACE_FUNCTION();
 
-   const bool dmd = (m_d.m_isDMD || StrStrI(m_d.m_sztext.c_str(), "DMD") != NULL); //!! second part is VP10.0 legacy
+   const bool dmd = (m_d.m_isDMD || StrStrI(m_d.m_sztext.c_str(), "DMD") != nullptr); //!! second part is VP10.0 legacy
 
    if (!m_d.m_visible || (dmd && !(g_pplayer->m_texdmd || captureExternalDMD())))
       return;
@@ -300,12 +296,12 @@ void Textbox::RenderDynamic()
 
          g_pplayer->Spritedraw(x, y, width, height, 0xFFFFFFFF, pd3dDevice->m_texMan.LoadTexture(m_texture, false), m_d.m_intensity_scale);
 
-         //pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE); //!! not necessary anymore
+         //g_pplayer->m_pin3d.DisableAlphaBlend(); //!! not necessary anymore
          pd3dDevice->SetRenderState(RenderDevice::ALPHATESTENABLE, RenderDevice::RS_FALSE);
       }
 
-   //if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_reflectionEnabled)
-   //	pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
+   //if (m_ptable->m_tblMirrorEnabled^m_ptable->m_reflectionEnabled)
+   //	pd3dDevice->SetRenderState(RenderDevice::CULLMODE, RenderDevice::CULL_CCW);
 }
 
 void Textbox::RenderSetup()
@@ -335,8 +331,7 @@ void Textbox::PreRenderText()
    const int width = rect.right - rect.left;
    const int height = rect.bottom - rect.top;
 
-   BITMAPINFO bmi;
-   ZeroMemory(&bmi, sizeof(bmi));
+   BITMAPINFO bmi = {};
    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
    bmi.bmiHeader.biWidth = width;
    bmi.bmiHeader.biHeight = -height;
@@ -346,10 +341,10 @@ void Textbox::PreRenderText()
    bmi.bmiHeader.biSizeImage = 0;
 
    void *bits;
-   const HBITMAP hbm = CreateDIBSection(0, &bmi, DIB_RGB_COLORS, &bits, NULL, 0);
+   const HBITMAP hbm = CreateDIBSection(0, &bmi, DIB_RGB_COLORS, &bits, nullptr, 0);
    assert(hbm);
 
-   const HDC hdc = CreateCompatibleDC(NULL);
+   const HDC hdc = CreateCompatibleDC(nullptr);
    const HBITMAP oldBmp = (HBITMAP)SelectObject(hdc, hbm);
 
    const HBRUSH hbrush = CreateSolidBrush(m_d.m_backcolor);
@@ -360,7 +355,7 @@ void Textbox::PreRenderText()
 
    HFONT hFont;
    m_pIFontPlay->get_hFont(&hFont);
-   HFONT oldFont = (HFONT)SelectObject(hdc, hFont);
+   const HFONT oldFont = (HFONT)SelectObject(hdc, hFont);
    SetTextColor(hdc, m_d.m_fontcolor);
    SetBkMode(hdc, TRANSPARENT);
    SetTextAlign(hdc, TA_LEFT | TA_TOP | TA_NOUPDATECP);
@@ -409,7 +404,7 @@ void Textbox::PreRenderText()
          else
             *dest = src | 0xFF000000u;
       }
-      dest += m_texture->pitch() / 4 - m_texture->width();
+      dest += m_texture->pitch()/4 - m_texture->width();
    }
 
    g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.SetDirty(m_texture);
@@ -422,7 +417,7 @@ void Textbox::PreRenderText()
 
 void Textbox::SetObjectPos()
 {
-   m_vpinball->SetObjectPosCur(m_d.m_v1.x, m_d.m_v1.y);
+    m_vpinball->SetObjectPosCur(m_d.m_v1.x, m_d.m_v1.y);
 }
 
 void Textbox::MoveOffset(const float dx, const float dy)
@@ -482,7 +477,7 @@ STDMETHODIMP Textbox::get_Text(BSTR *pVal)
 STDMETHODIMP Textbox::put_Text(BSTR newVal)
 {
    char buf[MAXSTRING];
-   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXSTRING, NULL, NULL);
+   WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, buf, MAXSTRING, nullptr, nullptr);
    m_d.m_sztext = buf;
    if (g_pplayer)
       PreRenderText();
@@ -494,8 +489,8 @@ HRESULT Textbox::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backu
 {
    BiffWriter bw(pstm, hcrypthash);
 
-   bw.WriteStruct(FID(VER1), &m_d.m_v1, sizeof(Vertex2D));
-   bw.WriteStruct(FID(VER2), &m_d.m_v2, sizeof(Vertex2D));
+   bw.WriteVector2(FID(VER1), m_d.m_v1);
+   bw.WriteVector2(FID(VER2), m_d.m_v2);
    bw.WriteInt(FID(CLRB), m_d.m_backcolor);
    bw.WriteInt(FID(CLRF), m_d.m_fontcolor);
    bw.WriteFloat(FID(INSC), m_d.m_intensity_scale);
@@ -534,21 +529,21 @@ HRESULT Textbox::InitLoad(IStream *pstm, PinTable *ptable, int *pid, int version
 
 bool Textbox::LoadToken(const int id, BiffReader * const pbr)
 {
-   switch (id)
+   switch(id)
    {
    case FID(PIID): pbr->GetInt((int *)pbr->m_pdata); break;
-   case FID(VER1): pbr->GetStruct(&m_d.m_v1, sizeof(Vertex2D)); break;
-   case FID(VER2): pbr->GetStruct(&m_d.m_v2, sizeof(Vertex2D)); break;
-   case FID(CLRB): pbr->GetInt(&m_d.m_backcolor); break;
-   case FID(CLRF): pbr->GetInt(&m_d.m_fontcolor); break;
-   case FID(INSC): pbr->GetFloat(&m_d.m_intensity_scale); break;
-   case FID(TMON): pbr->GetBool(&m_d.m_tdr.m_TimerEnabled); break;
-   case FID(TMIN): pbr->GetInt(&m_d.m_tdr.m_TimerInterval); break;
+   case FID(VER1): pbr->GetVector2(m_d.m_v1); break;
+   case FID(VER2): pbr->GetVector2(m_d.m_v2); break;
+   case FID(CLRB): pbr->GetInt(m_d.m_backcolor); break;
+   case FID(CLRF): pbr->GetInt(m_d.m_fontcolor); break;
+   case FID(INSC): pbr->GetFloat(m_d.m_intensity_scale); break;
+   case FID(TMON): pbr->GetBool(m_d.m_tdr.m_TimerEnabled); break;
+   case FID(TMIN): pbr->GetInt(m_d.m_tdr.m_TimerInterval); break;
    case FID(TEXT): pbr->GetString(m_d.m_sztext); break;
-   case FID(NAME): pbr->GetWideString(m_wzName); break;
+   case FID(NAME): pbr->GetWideString(m_wzName,sizeof(m_wzName)/sizeof(m_wzName[0])); break;
    case FID(ALGN): pbr->GetInt(&m_d.m_talign); break;
-   case FID(TRNS): pbr->GetBool(&m_d.m_transparent); break;
-   case FID(IDMD): pbr->GetBool(&m_d.m_isDMD); break;
+   case FID(TRNS): pbr->GetBool(m_d.m_transparent); break;
+   case FID(IDMD): pbr->GetBool(m_d.m_isDMD); break;
    case FID(FONT):
    {
       if (!m_pIFont)
@@ -579,7 +574,7 @@ bool Textbox::LoadToken(const int id, BiffReader * const pbr)
 
 HRESULT Textbox::InitPostLoad()
 {
-   m_texture = NULL;
+   m_texture = nullptr;
 
    return S_OK;
 }
@@ -605,6 +600,7 @@ STDMETHODIMP Textbox::putref_Font(IFontDisp* pFont)
    //pFont->QueryInterface(IID_IFont, (void **)&m_pIFont);
 
    SetDirtyDraw();
+
    return S_OK;
 }
 
