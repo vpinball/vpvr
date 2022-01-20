@@ -27,7 +27,7 @@ void captureCheckTextures()
          delete g_pplayer->m_texdmd;
       }
       // Sleaze alert! - ec creates a HBitmap, but we hijack ec's data pointer to dump its data directly into VP's texture
-      g_pplayer->m_texdmd = g_pplayer->m_texdmd->CreateFromHBitmap(ecDMD.m_HBitmap);
+      g_pplayer->m_texdmd = BaseTexture::CreateFromHBitmap(ecDMD.m_HBitmap);
       ecDMD.m_pData = g_pplayer->m_texdmd->data();
       ecDMD.ecStage = ecCapturing;
    }
@@ -38,7 +38,7 @@ void captureCheckTextures()
          g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.UnloadTexture(g_pplayer->m_texPUP);
          delete g_pplayer->m_texPUP;
       }
-      g_pplayer->m_texPUP = g_pplayer->m_texPUP->CreateFromHBitmap(ecPUP.m_HBitmap);
+      g_pplayer->m_texPUP = BaseTexture::CreateFromHBitmap(ecPUP.m_HBitmap);
       ecPUP.m_pData = g_pplayer->m_texPUP->data();
       ecPUP.ecStage = ecCapturing;
    }
@@ -177,7 +177,7 @@ void ExtCapture::SearchWindow()
    }
 }
 
-void ExtCapture::Setup(std::list<string> windowlist)
+void ExtCapture::Setup(const std::list<string>& windowlist)
 {
    ecStage = ecUninitialized;
    m_delay = 0;
@@ -206,7 +206,6 @@ bool ExtCapture::SetupCapture(RECT inputRect)
 
    /* Enumerate the adapters.*/
    UINT i = 0, dx = 0;
-   std::vector<IDXGIAdapter1*> adapters; /* Needs to be Released(). */
 
    POINT pt;
    pt.x = m_Rect.left;
@@ -411,6 +410,7 @@ void ExtCaptureOutput::AcquireFrame()
    {
       delete m_MetaDataBuffer;
       m_MetaDataBuffer = new char[BufSize];
+      m_MetaDataBufferSize = BufSize;
    }
 
    // Get move rectangles

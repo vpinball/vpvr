@@ -78,7 +78,7 @@ shaderUniforms Shader::getUniformByName(const string& name) {
 }
 
 shaderAttributes Shader::getAttributeByName(const string& name) {
-   for (int i = 0;i < SHADER_UNIFORM_COUNT; ++i) {
+   for (int i = 0;i < SHADER_ATTRIBUTE_COUNT; ++i) {
       if (name.compare(shaderAttributeNames[i]) == 0) {
          return shaderAttributes(i);
       }
@@ -88,7 +88,7 @@ shaderAttributes Shader::getAttributeByName(const string& name) {
 }
 
 shaderTechniques Shader::getTechniqueByName(const string& name) {
-   for (int i = 0;i < SHADER_UNIFORM_COUNT; ++i) {
+   for (int i = 0;i < SHADER_TECHNIQUE_COUNT; ++i) {
       if (name.compare(shaderTechniqueNames[i]) == 0) {
          return shaderTechniques(i);
       }
@@ -123,13 +123,20 @@ void Shader::LOG(int level, const char* fileNameRoot, const string& message) {
          string name = Shader::shaderPath;
          name.append("log\\").append(fileNameRoot).append(".log");
          logFile = new std::ofstream();
+bla:
          logFile->open(name);
          if (!logFile->is_open()) {
-            char msg[512];
-            TCHAR full_path[MAX_PATH];
-            GetFullPathName(_T(name.c_str()), MAX_PATH, full_path, nullptr);
-            sprintf_s(msg, 512, "could not create logfile %s", full_path);
-            ShowError(msg);
+            const std::wstring wzMkPath = g_pvp->m_wzMyPath + L"glshader";
+            if (_wmkdir(wzMkPath.c_str()) != 0 || _wmkdir((wzMkPath + L"\\log").c_str()) != 0)
+            {
+                char msg[512];
+                TCHAR full_path[MAX_PATH];
+                GetFullPathName(_T(name.c_str()), MAX_PATH, full_path, nullptr);
+                sprintf_s(msg, 512, "could not create logfile %s", full_path);
+                ShowError(msg);
+            }
+            else
+                goto bla;
          }
       }
       switch (level) {
@@ -459,11 +466,11 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
 }
 
 //Check if technique is valid and replace %PARAMi% with the values in the function header
-string Shader::analyzeFunction(const char* shaderCodeName, const string& technique, const string& functionName, const std::map<string, string> &values) {
+string Shader::analyzeFunction(const char* shaderCodeName, const string& _technique, const string& functionName, const std::map<string, string> &values) {
    const size_t start = functionName.find('(');
    const size_t end = functionName.find(')');
    if ((start == string::npos) || (end == string::npos) || (start > end)) {
-      LOG(2, (const char*)shaderCodeName, string("Invalid technique: ").append(technique));
+      LOG(2, (const char*)shaderCodeName, string("Invalid technique: ").append(_technique));
       return "";
    }
    const std::map<string, string>::const_iterator it = values.find(functionName.substr(0, start));
@@ -516,14 +523,14 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
 
    it = values.find("TECHNIQUES");
    std::stringstream techniques((it != values.end()) ? it->second : "");
-   std::string technique;
+   std::string _technique;
    if (techniques)
    {
       int tecCount = 0;
-      while (std::getline(techniques, technique, '\n')) {//Parse Technique e.g. basic_with_texture:P0:vs_main():gs_optional_main():ps_main_texture()
-         if ((technique.length() > 0) && (technique.compare(0, 2, "//") != 0))//Skip empty lines and comments
+      while (std::getline(techniques, _technique, '\n')) {//Parse Technique e.g. basic_with_texture:P0:vs_main():gs_optional_main():ps_main_texture()
+         if ((_technique.length() > 0) && (_technique.compare(0, 2, "//") != 0))//Skip empty lines and comments
          {
-            std::stringstream elements(technique);
+            std::stringstream elements(_technique);
             int elem = 0;
             std::string element[5];
             //Split :
@@ -534,18 +541,18 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
                continue;
             }
             string vertexShaderCode = vertex;
-               vertexShaderCode.append("\n//").append(technique).append("\n//").append(element[2]).append("\n");
-               vertexShaderCode.append(analyzeFunction(shaderCodeName, technique, element[2], values)).append("\0");
+               vertexShaderCode.append("\n//").append(_technique).append("\n//").append(element[2]).append("\n");
+               vertexShaderCode.append(analyzeFunction(shaderCodeName, _technique, element[2], values)).append("\0");
                string geometryShaderCode;
             if (elem == 5 && element[3].length() > 0) {
                geometryShaderCode = geometry;
-               geometryShaderCode.append("\n//").append(technique).append("\n//").append(element[3]).append("\n");
-               geometryShaderCode.append(analyzeFunction(shaderCodeName, technique, element[3], values)).append("\0");
+               geometryShaderCode.append("\n//").append(_technique).append("\n//").append(element[3]).append("\n");
+               geometryShaderCode.append(analyzeFunction(shaderCodeName, _technique, element[3], values)).append("\0");
             }
             else geometryShaderCode = "";
             string fragmentShaderCode = fragment;
-               fragmentShaderCode.append("\n//").append(technique).append("\n//").append(element[elem-1]).append("\n");
-               fragmentShaderCode.append(analyzeFunction(shaderCodeName, technique, element[elem-1], values)).append("\0");
+               fragmentShaderCode.append("\n//").append(_technique).append("\n//").append(element[elem-1]).append("\n");
+               fragmentShaderCode.append(analyzeFunction(shaderCodeName, _technique, element[elem-1], values)).append("\0");
             int build = compileGLShader(shaderCodeName, element[0]/*.append("_").append(element[1])*/, vertexShaderCode, geometryShaderCode, fragmentShaderCode);
             if (build) tecCount++;
             success = success && build;
@@ -918,7 +925,7 @@ void Shader::Begin(const unsigned int pass)
          CHECKD3D(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, TextureID));
          CHECKD3D(glUniform1i(currentUniform.location, nextTextureSlot));
 
-         nextTextureSlot = (++nextTextureSlot) % maxSlots;
+         nextTextureSlot = (nextTextureSlot+1) % maxSlots;
       }
       break;
       case GL_SAMPLER_2D:
@@ -964,7 +971,7 @@ void Shader::Begin(const unsigned int pass)
          CHECKD3D(glActiveTexture(GL_TEXTURE0 + nextTextureSlot));
          CHECKD3D(glBindTexture(GL_TEXTURE_2D, TextureID));//TODO implement a cache for textures
          CHECKD3D(glUniform1i(currentUniform.location, nextTextureSlot));
-         nextTextureSlot = (++nextTextureSlot) % maxSlots;
+         nextTextureSlot = (nextTextureSlot+1) % maxSlots;
       }
       break;
       default:
@@ -1019,7 +1026,7 @@ void Shader::SetTextureDepth(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *
          CHECKD3D(glBindTexture(GL_TEXTURE_2D, texel->zTexture));
       }
       CHECKD3D(glUniform1i(location.location, nextTextureSlot));
-      nextTextureSlot = (++nextTextureSlot) % maxSlots;//TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
+      nextTextureSlot = (nextTextureSlot+1) % maxSlots;//TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
    }
 }
 
@@ -1037,10 +1044,9 @@ void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, c
 void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel, const bool linearRGB)
 {
    if (!texel || (uniformTex[texelName] == texel->texture)) return;
-   if (texel)
-      uniformTex[texelName] = texel->texture;
-   else
-      uniformTex[texelName] = 0;
+
+   uniformTex[texelName] = texel->texture;
+
    if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
 #ifdef TWEAK_GL_SHADER
       const auto location = m_currentTechnique->uniformLocation[texelName];
@@ -1060,7 +1066,7 @@ void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel
          CHECKD3D(glBindTexture(GL_TEXTURE_2D, texel->texture));
       }
       CHECKD3D(glUniform1i(location.location, nextTextureSlot));
-      nextTextureSlot = (++nextTextureSlot) % maxSlots;//TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
+      nextTextureSlot = (nextTextureSlot+1) % maxSlots;//TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
    }
 }
 
@@ -1069,12 +1075,12 @@ void Shader::SetTextureNull(const SHADER_UNIFORM_HANDLE texelName)
    //Using an unset texture leads to undefined behavior, so keeping the texture is absolutely fine.
 }
 
-void Shader::SetTechnique(const SHADER_TECHNIQUE_HANDLE technique)
+void Shader::SetTechnique(const SHADER_TECHNIQUE_HANDLE _technique)
 {
 #ifdef TWEAK_GL_SHADER
-   this->technique = technique;
+   technique = _technique;
 #else
-   strcpy_s(this->technique, technique);
+   strcpy_s(technique, _technique);
 #endif
    m_renderDevice->m_curTechniqueChanges++;
 }

@@ -27,7 +27,7 @@ public:
    ID3D11DeviceContext* d3d_context = nullptr;
    unsigned char* srcdata;
    int m_pitch = 0;
-   void* m_MetaDataBuffer = nullptr;
+   char* m_MetaDataBuffer = nullptr;
    UINT m_MetaDataBufferSize = 0;
    ID3D11Texture2D* staging_tex = nullptr;
    ID3D11Texture2D* gdi_tex = nullptr;
@@ -70,7 +70,7 @@ public:
 
    ecStage ecStage = ecUninitialized;
 
-   void Setup(std::list<string> windowlist);
+   void Setup(const std::list<string>& windowlist);
    void SearchWindow();
    bool GetFrame();
    HBITMAP m_HBitmap;

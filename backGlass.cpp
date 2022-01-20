@@ -74,7 +74,7 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice,Texture * backgroundFallback
 #ifdef ENABLE_VR
    //Check for a directb2s and try to use its backglass data
    std::string b2sFileName = string(g_pplayer->m_ptable->m_szFileName);
-   b2sFileName = b2sFileName.substr(0, b2sFileName.find_last_of("."));
+   b2sFileName = b2sFileName.substr(0, b2sFileName.find_last_of('.'));
    b2sFileName.append(".directb2s");
    void* data = nullptr;
    backglass_dmd_x = 0;

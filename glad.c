@@ -192,7 +192,7 @@ static int get_exts(void) {
 
         for(index = 0; index < (unsigned)num_exts_i; index++) {
             const char *gl_str_tmp = (const char*)glGetStringi(GL_EXTENSIONS, index);
-            size_t len = strlen(gl_str_tmp);
+            const size_t len = strlen(gl_str_tmp);
 
             char *local_str = (char*)malloc((len+1) * sizeof(char));
             if(local_str != NULL) {
@@ -220,21 +220,18 @@ static int has_ext(const char *ext) {
 #ifdef _GLAD_IS_SOME_NEW_VERSION
     if(max_loaded_major < 3) {
 #endif
-        const char *extensions;
-        const char *loc;
-        const char *terminator;
-        extensions = exts;
+        const char* extensions = exts;
         if(extensions == NULL || ext == NULL) {
             return 0;
         }
 
         while(1) {
-            loc = strstr(extensions, ext);
+            const char* loc = strstr(extensions, ext);
             if(loc == NULL) {
                 return 0;
             }
 
-            terminator = loc + strlen(ext);
+            const char* terminator = loc + strlen(ext);
             if((loc == extensions || *(loc - 1) == ' ') &&
                 (*terminator == ' ' || *terminator == '\0')) {
                 return 1;
