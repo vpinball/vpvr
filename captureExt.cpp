@@ -422,7 +422,7 @@ void ExtCaptureOutput::AcquireFrame()
    if (SUCCEEDED(hr))
    {
       DXGI_OUTDUPL_MOVE_RECT* pmr = (DXGI_OUTDUPL_MOVE_RECT*)m_MetaDataBuffer;
-      for (int i = 0;i < BufSize / sizeof(DXGI_OUTDUPL_MOVE_RECT);i++, pmr++)
+      for (size_t i = 0;i < BufSize / sizeof(DXGI_OUTDUPL_MOVE_RECT);i++, pmr++)
       {
          for (auto it = ExtCapture::m_allCaptures.begin(); it != ExtCapture::m_allCaptures.end(); it++)
          {
@@ -445,14 +445,14 @@ void ExtCaptureOutput::AcquireFrame()
    if (SUCCEEDED(hr))
    {
       RECT* r = (RECT*)m_MetaDataBuffer;
-      for (int i = 0;i < BufSize / sizeof(RECT);i++, r++)
+      for (size_t i = 0;i < BufSize / sizeof(RECT);i++, r++)
       {
-         for (auto it = ExtCapture::m_allCaptures.begin(); it != ExtCapture::m_allCaptures.end(); it++)
+         for (auto it = ExtCapture::m_allCaptures.begin(); it != ExtCapture::m_allCaptures.end(); ++it)
          {
-            int capleft = (*it)->m_DispLeft;
-            int captop = (*it)->m_DispTop;
-            int capright = (*it)->m_DispLeft + (*it)->m_Width;
-            int capbottom = (*it)->m_DispTop + (*it)->m_Height;
+            const int capleft = (*it)->m_DispLeft;
+            const int captop = (*it)->m_DispTop;
+            const int capright = (*it)->m_DispLeft + (*it)->m_Width;
+            const int capbottom = (*it)->m_DispTop + (*it)->m_Height;
 
             if (r->left < capright && r->right > capleft &&
                r->top < capbottom && r->bottom > captop)
@@ -489,10 +489,10 @@ bool ExtCapture::GetFrame()
 
    m_bDirty = false;
 
-   uint8_t* sptr = reinterpret_cast<uint8_t*>(m_pCapOut->srcdata) + m_pCapOut->m_pitch * m_DispTop;
+   const uint8_t* sptr = reinterpret_cast<uint8_t*>(m_pCapOut->srcdata) + m_pCapOut->m_pitch * m_DispTop;
    uint8_t* ddptr = (uint8_t*)m_pData;
 
-   for (size_t h = 0; h < m_Height; ++h)
+   for (int h = 0; h < m_Height; ++h)
    {
       memcpy_s(ddptr, m_Width * 4, sptr + (m_DispLeft * 4), m_Width * 4);
       sptr += m_pCapOut->m_pitch;

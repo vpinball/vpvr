@@ -174,7 +174,7 @@ bool Shader::parseFile(const char* fileNameRoot, const char* fileName, int level
          if (line.compare(0, 4, "////") == 0) {
             string newMode = line.substr(4, line.length() - 4);
             if (newMode.compare("DEFINES") == 0) {
-               currentElement.append(Shader::Defines).append('\n');
+               currentElement.append(Shader::Defines).append("\n");
             } else if (newMode.compare(currentMode) != 0) {
                values[currentMode] = currentElement;
                currentElemIt = values.find(newMode);
@@ -192,7 +192,7 @@ bool Shader::parseFile(const char* fileNameRoot, const char* fileName, int level
             currentElement = values[currentMode];
          }
          else {
-            currentElement.append(line).append('\n');
+            currentElement.append(line).append("\n");
          }
       }
       values[currentMode] = currentElement;
@@ -460,14 +460,13 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
 
 //Check if technique is valid and replace %PARAMi% with the values in the function header
 string Shader::analyzeFunction(const char* shaderCodeName, const string& technique, const string& functionName, const std::map<string, string> &values) {
-   size_t start, end;
-   start = functionName.find("(");
-   end = functionName.find(")");
+   const size_t start = functionName.find("(");
+   const size_t end = functionName.find(")");
    if ((start == string::npos) || (end == string::npos) || (start > end)) {
       LOG(2, (const char*)shaderCodeName, string("Invalid technique: ").append(technique));
       return "";
    }
-   std::map<string, string>::iterator it = values.find(functionName.substr(0, start));
+   std::map<string, string>::const_iterator it = values.find(functionName.substr(0, start));
    string functionCode = (it != values.end()) ? it->second : "";
    if (end > start + 1) {
       std::stringstream params(functionName.substr(start + 1, end - start - 1));
