@@ -269,16 +269,16 @@ void Textbox::RenderDynamic()
    pd3dDevice->SetRenderStateDepthBias(0.0f);
    pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
 
-   const float mult = (float)(1.0 / EDITOR_BG_WIDTH);
-   const float ymult = (float)(1.0 / EDITOR_BG_HEIGHT);
+   constexpr float mult  = (float)(1.0 / EDITOR_BG_WIDTH);
+   constexpr float ymult = (float)(1.0 / EDITOR_BG_HEIGHT);
 
    const float rect_left = min(m_d.m_v1.x, m_d.m_v2.x);
    const float rect_top = min(m_d.m_v1.y, m_d.m_v2.y);
    const float rect_right = max(m_d.m_v1.x, m_d.m_v2.x);
    const float rect_bottom = max(m_d.m_v1.y, m_d.m_v2.y);
 
-   const float x = rect_left * mult;
-   const float y = rect_top * ymult;
+   const float x = rect_left*mult;
+   const float y = rect_top*ymult;
    const float width = (rect_right - rect_left)*mult;
    const float height = (rect_bottom - rect_top)*ymult;
 
@@ -286,7 +286,7 @@ void Textbox::RenderDynamic()
    {
       pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
       g_pplayer->m_pin3d.m_backGlass->DMDdraw(x, y, width, height,
-         m_d.m_fontcolor, m_d.m_intensity_scale); //!! replace??!
+                                              m_d.m_fontcolor, m_d.m_intensity_scale); //!! replace??!
    }
    else
       if (m_texture)
@@ -296,12 +296,12 @@ void Textbox::RenderDynamic()
 
          g_pplayer->Spritedraw(x, y, width, height, 0xFFFFFFFF, pd3dDevice->m_texMan.LoadTexture(m_texture, false), m_d.m_intensity_scale);
 
-         //g_pplayer->m_pin3d.DisableAlphaBlend(); //!! not necessary anymore
+         //pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE); //!! not necessary anymore
          pd3dDevice->SetRenderState(RenderDevice::ALPHATESTENABLE, RenderDevice::RS_FALSE);
       }
 
    //if (m_ptable->m_tblMirrorEnabled^m_ptable->m_reflectionEnabled)
-   //	pd3dDevice->SetRenderState(RenderDevice::CULLMODE, RenderDevice::CULL_CCW);
+   //	pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 }
 
 void Textbox::RenderSetup()

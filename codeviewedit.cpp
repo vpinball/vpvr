@@ -15,16 +15,14 @@ UserData::UserData(const int LineNo, const string &Desc, const string &Name, con
 	eTyping = TypeIn;
 }
 
-UserData::~UserData()
-{
-}
+int FindUDbyKey(vector<UserData>* const ListIn, const string& strIn, vector<UserData>::iterator& UDiterOut, int& PosOut);
 
 /*	FindUD - Now a human Search!
-0  =Found & UDiterOut set to point at UD in list.
+ 0 =Found & UDiterOut set to point at UD in list.
 -1 =Not Found 
-1  =Not Found
+ 1 =Not Found
 -2 =Zero Length string or error*/
-int UserData::FindUD(vector<UserData>* ListIn, string &strIn, vector<UserData>::iterator& UDiterOut, int &Pos)
+int FindUD(vector<UserData>* const ListIn, string &strIn, vector<UserData>::iterator& UDiterOut, int &Pos)
 {
 	RemovePadding(strIn);
 	if (strIn.empty() || (!ListIn) || ListIn->empty()) return -2;
@@ -35,191 +33,130 @@ int UserData::FindUD(vector<UserData>* ListIn, string &strIn, vector<UserData>::
 	if (KeyResult == 0) return 0;
 
 	//Now see if it's in the Name list
-	//Jumpdelta should be intalised to the maximum count of an individual key name
-	//But for the momment the biggest is 64 x's in AMH
-	int iNewPos = Pos + KeyResult; //Start Very close to the result of key search
-	if (iNewPos < 0) iNewPos = 0;
+	//Jumpdelta should be initialized to the maximum count of an individual key name
+	//But for the moment the biggest is 64 x's in AMH
+	Pos += KeyResult; //Start Very close to the result of key search
+	if (Pos < 0) Pos = 0;
 	//Find the start of other instances of strIn by crawling up list
 	//Usually (but not always) FindUDbyKey returns top of the list so its fast
 	const string strSearchData = lowerCase(strIn);
 	const size_t SearchWidth = strSearchData.size();
-	while (true)
+	do
 	{
-		iNewPos--;
-		if (iNewPos < 0) break;
-		const string strTableData = lowerCase(ListIn->at(iNewPos).m_uniqueKey).substr(0, SearchWidth);
-		if (strSearchData.compare(strTableData) != 0) break;
-	}
-	++iNewPos;
+		--Pos;
+	} while (Pos >= 0 && strSearchData.compare(lowerCase(ListIn->at(Pos).m_uniqueKey).substr(0, SearchWidth)) == 0);
+	++Pos;
 	// now walk down list of Keynames looking for what we want.
 	int result;
-	while (true)
+	do 
 	{
-		string strTableData = lowerCase(ListIn->at(iNewPos).m_keyName);
-		result = strSearchData.compare(strTableData); 
+		result = strSearchData.compare(lowerCase(ListIn->at(Pos).m_keyName)); 
 		if (result == 0) break; //Found
-		++iNewPos;
-		if (iNewPos == ListIn->size()) break;
-		strTableData = lowerCase(ListIn->at(iNewPos).m_keyName).substr(0, SearchWidth);
-		result = strSearchData.compare(strTableData);
-		if (result != 0) break;	//EO SubList
-	}
-	UDiterOut = ListIn->begin() + iNewPos;
-	Pos = iNewPos;
+		++Pos;
+		if (Pos == (int)ListIn->size()) break;
+
+		result = strSearchData.compare(lowerCase(ListIn->at(Pos).m_keyName).substr(0, SearchWidth));
+	} while (result == 0); //EO SubList
+	UDiterOut = ListIn->begin() + Pos;
 	return result;
 }
 
 //Finds the closest UD from CurrentLine in ListIn
 //On entry CurrentIdx must be set to the UD in the line
-int UserData::FindClosestUD(const vector<UserData>* ListIn, const int CurrentLine, const int CurrentIdx)
+int FindClosestUD(const vector<UserData>* const ListIn, const int CurrentLine, const int CurrentIdx)
 {
 	const string strSearchData = lowerCase(ListIn->at(CurrentIdx).m_keyName);
 	const size_t SearchWidth = strSearchData.size();
 	//Find the start of other instances of strIn by crawling up list
 	int iNewPos = CurrentIdx;
-	while (true)
+	do
 	{
-		iNewPos--;
-		if (iNewPos < 0) break;
-		const string strTableData = lowerCase(ListIn->at(iNewPos).m_uniqueKey).substr(0, SearchWidth);
-		if (strSearchData.compare(strTableData) != 0) break;
-	}
+		--iNewPos;
+	} while (iNewPos >= 0 && strSearchData.compare(lowerCase(ListIn->at(iNewPos).m_uniqueKey).substr(0, SearchWidth)) == 0);
 	++iNewPos;
 	//Now at top of list
 	//find nearest definition above current line
 	//int ClosestLineNum = 0;
 	int ClosestPos = CurrentIdx;
 	int Delta = -(INT_MAX - 1);
-	while (true)
+	do
 	{
 		const int NewLineNum = ListIn->at(iNewPos).m_lineNum;
 		const int NewDelta = NewLineNum - CurrentLine;
-		if (NewDelta >= Delta && NewLineNum <= CurrentLine)
+		if (NewDelta >= Delta && NewLineNum <= CurrentLine && lowerCase(ListIn->at(iNewPos).m_keyName).compare(strSearchData) == 0)
 		{
-			if (lowerCase(ListIn->at(iNewPos).m_keyName).compare(strSearchData) == 0)
-			{
-				Delta = NewDelta;
-				//ClosestLineNum = NewLineNum;
-				ClosestPos = iNewPos;
-			}
+			Delta = NewDelta;
+			//ClosestLineNum = NewLineNum;
+			ClosestPos = iNewPos;
 		}
 		++iNewPos;
-		if (iNewPos == ListIn->size()) break;
-		const string strTableData = lowerCase(ListIn->at(iNewPos).m_keyName).substr(0, SearchWidth);
-		if (strSearchData.compare(strTableData) != 0) break;
-	}
-	--iNewPos;
+	} while (iNewPos != (int)ListIn->size() && strSearchData.compare(lowerCase(ListIn->at(iNewPos).m_keyName).substr(0, SearchWidth)) == 0);
+	//--iNewPos;
 	return ClosestPos;
 }
 
-int UserData::FindUDbyKey(vector<UserData>* ListIn, const string &strIn, vector<UserData>::iterator &UDiterOut, int &PosOut)
+template<bool uniqueKey> // otherwise keyName
+static int UDKeyIndexHelper(const vector<UserData>* const ListIn, const string &strIn, int& curPosOut)
 {
-	int result = -2;
-	if (ListIn && !ListIn->empty() && !strIn.empty())// Sanity chq.
+	const int ListSize = (int)ListIn->size();
+	curPosOut = 1u << 30;
+	while (!(curPosOut & ListSize) && (curPosOut > 1))
+		curPosOut >>= 1;
+	int iJumpDelta = curPosOut >> 1;
+	--curPosOut; //Zero Base
+	const string strSearchData = lowerCase(strIn);
+	int result;
+	while (true)
 	{
-		const unsigned int ListSize = (int)ListIn->size();
-		int iNewPos = 1u << 30;
-		while ((!(iNewPos & ListSize)) && (iNewPos > 1))
-		{
-			iNewPos >>= 1;
-		}
-		int iJumpDelta = ((iNewPos) >> 1);
-		--iNewPos;//Zero Base
-		const string strSearchData = lowerCase(strIn);
-		UINT32 iCurPos;
-		while (true)
-		{
-			iCurPos = iNewPos;
-			if (iCurPos >= ListSize) { result = -1; }
-			else
-			{
-				const string strTableData = lowerCase(ListIn->at(iCurPos).m_uniqueKey);
-				result = strSearchData.compare(strTableData);
-			}
-			if (iJumpDelta == 0 || result == 0) break;
-			if (result < 0) { iNewPos = iCurPos - iJumpDelta; }
-			else  { iNewPos = iCurPos + iJumpDelta; }
-			iJumpDelta >>= 1;
-		} 
-		UDiterOut = ListIn->begin() + iCurPos;
-		PosOut = iCurPos;
+		if (curPosOut >= ListSize)
+			result = -1;
+		else
+			result = strSearchData.compare(lowerCase(uniqueKey ? ListIn->at(curPosOut).m_uniqueKey : ListIn->at(curPosOut).m_keyName));
+		if (iJumpDelta == 0 || result == 0) break;
+		curPosOut = (result < 0) ? (curPosOut - iJumpDelta) : (curPosOut + iJumpDelta);
+		iJumpDelta >>= 1;
 	}
 	return result;
 }
 
-//Returns current Index of strIn in ListIn based on m_uniqueKey, or -1 if not found
-int UserData::UDKeyIndex(vector<UserData>* ListIn, const string &strIn)
+static int FindUDbyKey(vector<UserData>* const ListIn, const string &strIn, vector<UserData>::iterator &UDiterOut, int &PosOut)
 {
-	if ((!ListIn) || ListIn->empty() || strIn.empty()) return -1;
-	const unsigned int ListSize = (int)ListIn->size();
-	UINT32 iNewPos = 1u << 30;
-	while ((!(iNewPos & ListSize)) && (iNewPos > 1))
+	if (ListIn && !ListIn->empty() && !strIn.empty()) // Sanity check
 	{
-		iNewPos >>= 1;
+		const int result = UDKeyIndexHelper<true>(ListIn, strIn, PosOut);
+		UDiterOut = ListIn->begin() + PosOut;
+		return result;
 	}
-	int iJumpDelta = ((iNewPos) >> 1);
-	--iNewPos;//Zero Base
-	const string strSearchData = lowerCase(strIn);
-	UINT32 iCurPos;
-	int result;
-	while (true)
-	{
-		iCurPos = iNewPos;
-		if (iCurPos >= ListSize) { result = -1; }
-		else
-		{
-			const string strTableData = lowerCase(ListIn->at(iCurPos).m_uniqueKey);
-			result = strSearchData.compare(strTableData);
-		}
-		if (iJumpDelta == 0 || result == 0) break;
-		if (result < 0) { iNewPos = iCurPos - iJumpDelta; }
-		else  { iNewPos = iCurPos + iJumpDelta; }
-		iJumpDelta >>= 1;
-	} 
-	///TODO: neads to consider children?
-	if (result == 0)
-		return iCurPos;
 	else
-		return -1;
+		return -2;
+}
+
+//Returns current Index of strIn in ListIn based on m_uniqueKey, or -1 if not found
+int UDKeyIndex(const vector<UserData>* const ListIn, const string &strIn)
+{
+	if (!ListIn || ListIn->empty() || strIn.empty()) return -1;
+
+	int iCurPos;
+	const int result = UDKeyIndexHelper<true>(ListIn, strIn, iCurPos);
+
+	///TODO: needs to consider children?
+	return (result == 0) ? iCurPos : -1;
 }
 
 //Returns current Index of strIn in ListIn based on m_keyName, or -1 if not found
-int UserData::UDIndex(vector<UserData>* ListIn, const string &strIn)
+int UDIndex(const vector<UserData>* const ListIn, const string &strIn)
 {
 	if ((!ListIn) || ListIn->empty() || strIn.empty()) return -1;
-	const unsigned int ListSize = (int)ListIn->size();
-	UINT32 iNewPos = 1u << 30;
-	while ((!(iNewPos & ListSize)) && (iNewPos > 1))
-	{
-		iNewPos >>= 1;
-	}
-	int iJumpDelta = ((iNewPos) >> 1);
-	--iNewPos;//Zero Base
-	const string strSearchData = lowerCase(strIn);
-	UINT32 iCurPos;
-	int result;
-	while (true)
-	{
-		iCurPos = iNewPos;
-		if (iCurPos >= ListSize) { result = -1; }
-		else
-		{
-			const string strTableData = lowerCase(ListIn->at(iCurPos).m_keyName);
-			result = strSearchData.compare(strTableData);
-		}
-		if (iJumpDelta == 0 || result == 0) break;
-		if (result < 0) { iNewPos = iCurPos - iJumpDelta; }
-		else  { iNewPos = iCurPos + iJumpDelta; }
-		iJumpDelta >>= 1;
-	} 
-	///TODO: neads to consider children?
-	if (result == 0)
-		return iCurPos;
-	else
-		return -1;
+
+	int iCurPos;
+	const int result = UDKeyIndexHelper<false>(ListIn, strIn, iCurPos);
+
+	///TODO: needs to consider children?
+	return (result == 0) ? iCurPos : -1;
 }
+
 //Needs speeding up.
-UserData UserData::GetUDfromUniqueKey(const vector<UserData>* ListIn, const string &UniKey)
+UserData GetUDfromUniqueKey(const vector<UserData>* const ListIn, const string &UniKey)
 {
 	UserData RetVal;
 	RetVal.eTyping = eUnknown;
@@ -228,24 +165,21 @@ UserData UserData::GetUDfromUniqueKey(const vector<UserData>* ListIn, const stri
 	while ((RetVal.eTyping == eUnknown) && (i < ListSize))
 	{
 		if (UniKey == ListIn->at(i).m_uniqueKey)
-		{
 			RetVal = ListIn->at(i);
-		}
 		++i;
 	}
 	return RetVal;
 }
+
 //TODO: Needs speeding up.
-size_t UserData::GetUDPointerfromUniqueKey(const vector<UserData>* ListIn, const string &UniKey)
+size_t GetUDPointerfromUniqueKey(const vector<UserData>* const ListIn, const string &UniKey)
 {
 	size_t i = 0;
 	const size_t ListSize = ListIn->size();
 	while (i < ListSize)
 	{
 		if (UniKey == ListIn->at(i).m_uniqueKey)
-		{
 			return i;
-		}
 		++i;
 	}
 	return -1;
@@ -253,14 +187,14 @@ size_t UserData::GetUDPointerfromUniqueKey(const vector<UserData>* ListIn, const
 
 //Assumes case insensitive sorted list
 //Returns index or insertion point (-1 == error)
-size_t UserData::FindOrInsertUD(vector<UserData>* ListIn, const UserData &udIn)
+size_t FindOrInsertUD(vector<UserData>* const ListIn, const UserData &udIn)
 {
 	if (ListIn->empty())	//First in
 	{
 		ListIn->push_back(udIn);
 		return 0;
 	}
-	vector<UserData>::iterator iterFound  = ListIn->begin();
+	vector<UserData>::iterator iterFound = ListIn->begin();
 	int Pos = 0;
 	const int KeyFound = FindUDbyKey(ListIn, udIn.m_uniqueKey, iterFound, Pos);
 	if (KeyFound == 0)
@@ -268,9 +202,7 @@ size_t UserData::FindOrInsertUD(vector<UserData>* ListIn, const UserData &udIn)
 		//Same name, different parents.
 		const int ParentResult = udIn.m_uniqueParent.compare(iterFound->m_uniqueParent);
 		if (ParentResult == -1)
-		{
 			ListIn->insert(iterFound, udIn);
-		}
 		else if (ParentResult == 1)
 		{
 			++iterFound;
@@ -286,24 +218,21 @@ size_t UserData::FindOrInsertUD(vector<UserData>* ListIn, const UserData &udIn)
 		return Pos;
 	}
 	else
-	{
-		if (KeyFound == 1)//insert Above last element - Special case 
+		if (KeyFound == 1) //insert above last element - Special case 
 		{
 			++iterFound;
 			ListIn->insert(iterFound, udIn);
 			return ++Pos;
 		}
-		else
-		if (iterFound == (ListIn->end() - 1))
+		else if (iterFound == (ListIn->end() - 1))
 		{//insert at end
 			ListIn->push_back(udIn);
 			return ListIn->size() - 1;//Zero Base
 		}
-	}
 	return -1;
 }
 
-bool UserData::FindOrInsertStringIntoAutolist(vector<string>* ListIn, const string &strIn)
+bool FindOrInsertStringIntoAutolist(vector<string>* const ListIn, const string &strIn)
 {
 	//First in the list
 	if (ListIn->empty())
@@ -313,11 +242,9 @@ bool UserData::FindOrInsertStringIntoAutolist(vector<string>* ListIn, const stri
 	}
 	const unsigned int ListSize = (unsigned int)ListIn->size();
 	UINT32 iNewPos = 1u << 31;
-	while ((!(iNewPos & ListSize)) && (iNewPos > 1))
-	{
+	while (!(iNewPos & ListSize) && (iNewPos > 1))
 		iNewPos >>= 1;
-	}
-	int iJumpDelta = ((iNewPos) >> 1);
+	int iJumpDelta = iNewPos >> 1;
 	--iNewPos;//Zero Base
 	const string strSearchData = lowerCase(strIn);
 	UINT32 iCurPos;
@@ -325,20 +252,17 @@ bool UserData::FindOrInsertStringIntoAutolist(vector<string>* ListIn, const stri
 	while (true)
 	{
 		iCurPos = iNewPos;
-		if (iCurPos >= ListSize) { result = -1; }
+		if (iCurPos >= ListSize)
+			result = -1;
 		else
-		{
-			const string strTableData = lowerCase(ListIn->at(iCurPos));
-			result = strSearchData.compare(strTableData);
-		}
+			result = strSearchData.compare(lowerCase(ListIn->at(iCurPos)));
 		if (iJumpDelta == 0 || result == 0) break;
-		if (result < 0) { iNewPos = iCurPos - iJumpDelta; }
-		else  { iNewPos = iCurPos + iJumpDelta; }
+		iNewPos = (result < 0) ? (iCurPos - iJumpDelta) : (iCurPos + iJumpDelta);
 		iJumpDelta >>= 1;
-	} 
+	}
 	vector<string>::iterator i = ListIn->begin() + iCurPos;
 
-	if (result == 0) return false; // Already in list.
+	if (result == 0) return false; // Already in list
 
 	if (result == -1) //insert before, somewhere in the middle
 	{
@@ -346,22 +270,16 @@ bool UserData::FindOrInsertStringIntoAutolist(vector<string>* ListIn, const stri
 		return true;
 	}
 
-	if (i == (ListIn->end() - 1))//insert Above last element - Special case
+	if (i == (ListIn->end() - 1)) //insert above last element - Special case
 	{
 		ListIn->push_back(strIn);
 		return true;
 	}
 
-	if (result == 1) 
+	if (result == 1)
 	{
 		++i;
 		ListIn->insert(i, strIn);
-		return true;
-	}
-
-	if (i == (ListIn->end() - 1))//insert Above last element - Special case
-	{//insert at end
-		ListIn->push_back(strIn);
 		return true;
 	}
 
@@ -369,42 +287,33 @@ bool UserData::FindOrInsertStringIntoAutolist(vector<string>* ListIn, const stri
 }
 
 ////////////////Preferences
-CVPrefrence::CVPrefrence()
-{
-   m_rgb = 0;
-   m_highlight = false;
-   m_sciKeywordID = 0;
-   memset(&m_logFont, 0, sizeof(LOGFONT));
-}
-
-CVPrefrence* CVPrefrence::FillCVPreference(
-		const string& szCtrlNameIn, const COLORREF crTextColor,
+CVPreference::CVPreference(
+		const COLORREF crTextColor,
 		const bool bDisplay, const string& szRegistryName,
 		const int szScintillaKeyword, const int IDC_ChkBox,
 		const int IDC_ColorBut, const int IDC_Font)
 {
-   szControlName = szCtrlNameIn;
-   m_rgb = crTextColor;
-   m_highlight = bDisplay;
-   szRegName = szRegistryName;
-   m_sciKeywordID = szScintillaKeyword;
-   IDC_ChkBox_code = IDC_ChkBox;
-   IDC_ColorBut_code = IDC_ColorBut;
-   IDC_Font_code = IDC_Font;
-   return (CVPrefrence *)this;
+	memset(&m_logFont, 0, sizeof(LOGFONT));
+	m_rgb = crTextColor;
+	m_highlight = bDisplay;
+	szRegName = szRegistryName;
+	m_sciKeywordID = szScintillaKeyword;
+	IDC_ChkBox_code = IDC_ChkBox;
+	IDC_ColorBut_code = IDC_ColorBut;
+	IDC_Font_code = IDC_Font;
 }
 
-void CVPrefrence::SetCheckBox(const HWND hwndDlg)
+void CVPreference::SetCheckBox(const HWND hwndDlg)
 {
 	SNDMSG(GetDlgItem(hwndDlg, IDC_ChkBox_code), BM_SETCHECK, m_highlight ? BST_CHECKED : BST_UNCHECKED, 0L);
 }
 
-void CVPrefrence::ReadCheckBox(const HWND hwndDlg)
+void CVPreference::ReadCheckBox(const HWND hwndDlg)
 {
 	m_highlight = !!IsDlgButtonChecked(hwndDlg, IDC_ChkBox_code);
 }
 
-void CVPrefrence::GetPrefsFromReg()
+void CVPreference::GetPrefsFromReg()
 {
 	m_highlight = LoadValueBoolWithDefault("CVEdit", szRegName, m_highlight);
 	m_rgb = LoadValueIntWithDefault("CVEdit", szRegName+"_color", m_rgb);
@@ -421,7 +330,7 @@ void CVPrefrence::GetPrefsFromReg()
 	m_logFont.lfStrikeOut = LoadValueIntWithDefault("CVEdit", szRegName+"_FontStrike", m_logFont.lfStrikeOut);
 }
 
-void CVPrefrence::SetPrefsToReg()
+void CVPreference::SetPrefsToReg()
 {
 	SaveValueBool("CVEdit", szRegName, m_highlight);
 	SaveValueInt("CVEdit", szRegName+"_color", m_rgb);
@@ -433,7 +342,7 @@ void CVPrefrence::SetPrefsToReg()
 	SaveValueInt("CVEdit", szRegName+"_FontStrike", m_logFont.lfStrikeOut);
 }
 
-void CVPrefrence::SetDefaultFont(const HWND hwndDlg)
+void CVPreference::SetDefaultFont(const HWND hwndDlg)
 {
 	LOGFONT* const plfont = &m_logFont;
 	memset(plfont, 0, sizeof(LOGFONT));
@@ -445,27 +354,22 @@ void CVPrefrence::SetDefaultFont(const HWND hwndDlg)
 	GetHeightFromPointSize(hwndDlg);
 }
 
-int CVPrefrence::GetHeightFromPointSize(const HWND hwndDlg)
+int CVPreference::GetHeightFromPointSize(const HWND hwndDlg)
 {
 	const CClientDC clientDC(hwndDlg);
 	const int Height = -MulDiv(m_pointSize, clientDC.GetDeviceCaps(LOGPIXELSY), 72);
 	return Height;
 }
 
-void CVPrefrence::ApplyPreferences(const HWND hwndScin, const CVPrefrence* DefaultPref)
+void CVPreference::ApplyPreferences(const HWND hwndScin, const CVPreference* DefaultPref)
 {
 	const int id = m_sciKeywordID;
 	const bool HL = m_highlight;
-	SendMessage(hwndScin, SCI_STYLESETFORE, id, HL ? (LPARAM)m_rgb : (LPARAM)DefaultPref->m_rgb);
-	SendMessage(hwndScin, SCI_STYLESETFONT, id, HL ? (LPARAM)m_logFont.lfFaceName : (LPARAM)DefaultPref->m_logFont.lfFaceName);
-	SendMessage(hwndScin, SCI_STYLESETSIZE, id, HL ? (LPARAM)m_pointSize : (LPARAM)DefaultPref->m_pointSize);
-	SendMessage(hwndScin, SCI_STYLESETWEIGHT, id, HL ? (LPARAM)m_logFont.lfWeight : (LPARAM)DefaultPref->m_logFont.lfWeight);
-	SendMessage(hwndScin, SCI_STYLESETITALIC, id, HL ? (LPARAM)m_logFont.lfItalic : (LPARAM)DefaultPref->m_logFont.lfItalic);
+	SendMessage(hwndScin, SCI_STYLESETFORE,      id, HL ? (LPARAM)m_rgb : (LPARAM)DefaultPref->m_rgb);
+	SendMessage(hwndScin, SCI_STYLESETFONT,      id, HL ? (LPARAM)m_logFont.lfFaceName : (LPARAM)DefaultPref->m_logFont.lfFaceName);
+	SendMessage(hwndScin, SCI_STYLESETSIZE,      id, HL ? (LPARAM)m_pointSize : (LPARAM)DefaultPref->m_pointSize);
+	SendMessage(hwndScin, SCI_STYLESETWEIGHT,    id, HL ? (LPARAM)m_logFont.lfWeight : (LPARAM)DefaultPref->m_logFont.lfWeight);
+	SendMessage(hwndScin, SCI_STYLESETITALIC,    id, HL ? (LPARAM)m_logFont.lfItalic : (LPARAM)DefaultPref->m_logFont.lfItalic);
 	SendMessage(hwndScin, SCI_STYLESETUNDERLINE, id, HL ? (LPARAM)m_logFont.lfUnderline : (LPARAM)DefaultPref->m_logFont.lfUnderline);
 	// There is no strike through in Scintilla (yet!)
-}
-
-CVPrefrence::~CVPrefrence()
-{
-	//everything should be automatically destroyed.
 }

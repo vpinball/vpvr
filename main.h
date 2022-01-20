@@ -34,7 +34,7 @@
 
 #include <intrin.h>
 #if defined(_M_IX86) || defined(_M_X64)
-#include <xmmintrin.h>
+ #include <xmmintrin.h>
 #endif
 
 #include <vector>

@@ -1231,9 +1231,9 @@ void Primitive::RenderObject()
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
       pd3dDevice->basicShader->SetMaterial(mat);
 
-      pd3dDevice->SetRenderState(RenderDevice::DEPTHBIAS, 0);
+      pd3dDevice->SetRenderStateDepthBias(0.f);
       pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
-      pd3dDevice->SetRenderState(RenderDevice::CULLMODE, m_d.m_backfacesEnabled && mat->m_bOpacityActive ? RenderDevice::CULL_CW : RenderDevice::CULL_CCW);
+      pd3dDevice->SetRenderStateCulling(m_d.m_backfacesEnabled && mat->m_bOpacityActive ? RenderDevice::CULL_CW : RenderDevice::CULL_CCW);
 
       pd3dDevice->basicShader->SetDisableLighting(vec4(m_d.m_disableLightingTop, m_d.m_disableLightingBelow, 0.f, 0.f));
 
@@ -1305,7 +1305,7 @@ void Primitive::RenderObject()
       g_pplayer->UpdateBasicShaderMatrix();
 
       pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_CLAMP);
-      //g_pplayer->m_pin3d.DisableAlphaBlend(); //!! not necessary anymore
+      //pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE); //!! not necessary anymore
       if (m_d.m_disableLightingTop != 0.f || m_d.m_disableLightingBelow != 0.f)
          pd3dDevice->basicShader->SetDisableLighting(vec4(0.f, 0.f, 0.f, 0.f));
    }
@@ -1315,7 +1315,7 @@ void Primitive::RenderObject()
 
       pd3dDevice->basicShader->SetDisableLighting(vec4(0.f, 1.f, 0.f, 0.f));;
 
-      //pd3dDevice->SetRenderState(RenderDevice::CULLMODE, D3DCULL_CCW); // don't mess with the render states when doing playfield rendering
+      //pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW); // don't mess with the render states when doing playfield rendering
       // set transform
       g_pplayer->UpdateBasicShaderMatrix(m_fullMatrix);
       pd3dDevice->basicShader->Begin(0);

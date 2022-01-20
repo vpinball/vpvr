@@ -94,13 +94,13 @@ public:
 	~CGpuProfiler();
 
 #ifdef ENABLE_SDL
-   bool Init(void* const pDevice); // optional init, otherwise (first) BeginFrame will do it lazily
-   void BeginFrame(void* const pDevice);
+	bool Init(void* const pDevice); // optional init, otherwise (first) BeginFrame will do it lazily
+	void BeginFrame(void* const pDevice);
 #else
-   bool Init(IDirect3DDevice9 * const pDevice); // optional init, otherwise (first) BeginFrame will do it lazily
-   void BeginFrame(IDirect3DDevice9 * const pDevice);
-#endif   
-   void Shutdown();
+	bool Init(IDirect3DDevice9 * const pDevice); // optional init, otherwise (first) BeginFrame will do it lazily
+	void BeginFrame(IDirect3DDevice9 * const pDevice);
+#endif
+	void Shutdown();
 
 	void Timestamp(const GTS gts);
 	void EndFrame();

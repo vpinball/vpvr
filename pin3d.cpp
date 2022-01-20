@@ -13,16 +13,16 @@ int NumVideoBytes = 0;
 
 Pin3D::Pin3D()
 {
-   m_pddsBackBuffer = NULL;
-   m_pddsAOBackBuffer = NULL;
-   m_pddsAOBackTmpBuffer = NULL;
-   m_pddsZBuffer = NULL;
-   m_pdds3DZBuffer = NULL;
-   m_pd3dPrimaryDevice = NULL;
-   m_pd3dSecondaryDevice = NULL;
-   m_envRadianceTexture = NULL;
-   m_tableVBuffer = NULL;
-   m_backGlass = NULL;
+   m_pddsBackBuffer = nullptr;
+   m_pddsAOBackBuffer = nullptr;
+   m_pddsAOBackTmpBuffer = nullptr;
+   m_pddsZBuffer = nullptr;
+   m_pdds3DZBuffer = nullptr;
+   m_pd3dPrimaryDevice = nullptr;
+   m_pd3dSecondaryDevice = nullptr;
+   m_envRadianceTexture = nullptr;
+   m_tableVBuffer = nullptr;
+   m_backGlass = nullptr;
 
    m_cam.x = 0.f;
    m_cam.y = 0.f;
@@ -63,7 +63,7 @@ Pin3D::~Pin3D()
    {
       SAFE_RELEASE_NO_SET((RenderTarget*)m_pddsZBuffer);
    }
-   m_pddsZBuffer = NULL;
+   m_pddsZBuffer = nullptr;
    SAFE_RELEASE(m_pdds3DZBuffer);
 
    SAFE_RELEASE_NO_RCC(m_pddsBackBuffer);
@@ -72,12 +72,12 @@ Pin3D::~Pin3D()
       delete m_pd3dSecondaryDevice;
    delete m_pd3dPrimaryDevice;
 
-   m_pd3dPrimaryDevice = NULL;
-   m_pd3dSecondaryDevice = NULL;
+   m_pd3dPrimaryDevice = nullptr;
+   m_pd3dSecondaryDevice = nullptr;
 
    if (m_backGlass) {
       delete m_backGlass;
-      m_backGlass = NULL;
+      m_backGlass = nullptr;
    }
 }
 
@@ -227,7 +227,7 @@ void EnvmapPrecalc(const void* /*const*/ __restrict envmap, const DWORD env_xres
 #define USE_ENVMAP_PRECALC_COSINE
 #ifndef USE_ENVMAP_PRECALC_COSINE
                   //!! as we do not use importance sampling on the environment, just not being smart -could- be better for high frequency environments
-                  Vertex3Ds l = sphere_sample((float)s*(float)(1.0 / num_samples), radical_inverse(s)); // QMC hammersley point set
+                  Vertex3Ds l = sphere_sample((float)s*(float)(1.0/num_samples), radical_inverse(s)); // QMC hammersley point set
                   float NdotL = l.Dot(n);
                   if (NdotL < 0.0f) // flip if on backside of hemisphere
                   {
@@ -238,8 +238,8 @@ void EnvmapPrecalc(const void* /*const*/ __restrict envmap, const DWORD env_xres
                   //Vertex3Ds cos_hemisphere_sample(const Vertex3Ds &normal, Vertex2D uv) { float theta = (float)(2.*M_PI) * uv.x; uv.y = 2.f * uv.y - 1.f; Vertex3Ds spherePoint(sqrt(1.f - uv.y * uv.y) * Vertex2D(cosf(theta), sinf(theta)), uv.y); return normalize(normal + spherePoint); }
                   const Vertex3Ds l = rotate_to_vector_upper(cos_hemisphere_sample((float)s*(float)(1.0 / num_samples), radical_inverse(s)), n); // QMC hammersley point set
 #endif
-                                                                                                                                                 // trafo from light direction to envmap
-                                                                                                                                                 // approximations seem to be good enough!
+                  // trafo from light direction to envmap
+                  // approximations seem to be good enough!
                   const float u = atan2_approx_div2PI(l.y, l.x) + 0.5f; //atan2f(l.y, l.x) * (float)(0.5 / M_PI) + 0.5f;
                   const float v = acos_approx_divPI(l.z); //acosf(l.z) * (float)(1.0 / M_PI);
 
@@ -249,9 +249,9 @@ void EnvmapPrecalc(const void* /*const*/ __restrict envmap, const DWORD env_xres
                      unsigned int offs = ((int)(u*(float)env_xres) + (int)(v*(float)env_yres)*env_xres) * 3;
                      if (offs >= env_yres * env_xres * 3)
                         offs = 0;
-                     r = ((float*)envmap)[offs];
-                     g = ((float*)envmap)[offs + 1];
-                     b = ((float*)envmap)[offs + 2];
+                     r = ((float*)envmap)[offs  ];
+                     g = ((float*)envmap)[offs+1];
+                     b = ((float*)envmap)[offs+2];
                   }
                   else
                   {
@@ -288,9 +288,9 @@ void EnvmapPrecalc(const void* /*const*/ __restrict envmap, const DWORD env_xres
                if (isHDR)
                {
                   const unsigned int offs = (y*rad_env_xres + x) * 3;
-                  ((float*)rad_envmap)[offs] = sum[0];
-                  ((float*)rad_envmap)[offs + 1] = sum[1];
-                  ((float*)rad_envmap)[offs + 2] = sum[2];
+                  ((float*)rad_envmap)[offs  ] = sum[0];
+                  ((float*)rad_envmap)[offs+1] = sum[1];
+                  ((float*)rad_envmap)[offs+2] = sum[2];
                }
                else
                {
@@ -307,103 +307,103 @@ void EnvmapPrecalc(const void* /*const*/ __restrict envmap, const DWORD env_xres
    /* ///!!! QA-test above multithreading implementation.
    //!! this is exactly the same code as above, so can be deleted at some point, as it only checks the multithreaded results with a singlethreaded implementation!
    for (unsigned int y = 0; y < rad_env_yres; ++y)
-   for (unsigned int x = 0; x < rad_env_xres; ++x)
-   {
-   // trafo from envmap to normal direction
-   const float phi = (float)x / (float)rad_env_xres * (float)(2.0*M_PI) + (float)M_PI;
-   const float theta = (float)y / (float)rad_env_yres * (float)M_PI;
-   const Vertex3Ds n(sinf(theta) * cosf(phi), sinf(theta) * sinf(phi), cosf(theta));
+      for (unsigned int x = 0; x < rad_env_xres; ++x)
+      {
+         // trafo from envmap to normal direction
+         const float phi = (float)x / (float)rad_env_xres * (float)(2.0*M_PI) + (float)M_PI;
+         const float theta = (float)y / (float)rad_env_yres * (float)M_PI;
+         const Vertex3Ds n(sinf(theta) * cosf(phi), sinf(theta) * sinf(phi), cosf(theta));
 
-   // draw x samples over hemisphere and collect cosine weighted environment map samples
-   float sum[3];
-   sum[0] = sum[1] = sum[2] = 0.0f;
+         // draw x samples over hemisphere and collect cosine weighted environment map samples
+         float sum[3];
+         sum[0] = sum[1] = sum[2] = 0.0f;
 
-   const unsigned int num_samples = 4096;
-   for (unsigned int s = 0; s < num_samples; ++s)
-   {
-   //!! discard directions pointing below the playfield?? or give them another "average playfield" color??
-   #define USE_ENVMAP_PRECALC_COSINE
-   #ifndef USE_ENVMAP_PRECALC_COSINE
-   //!! as we do not use importance sampling on the environment, just not being smart -could- be better for high frequency environments
-   Vertex3Ds l = sphere_sample((float)s*(float)(1.0 / num_samples), radical_inverse(s)); // QMC hammersley point set
-   float NdotL = l.Dot(n);
-   if (NdotL < 0.0f) // flip if on backside of hemisphere
-   {
-   NdotL = -NdotL;
-   l = -l;
-   }
-   #else
-   //Vertex3Ds cos_hemisphere_sample(const Vertex3Ds &normal, Vertex2D uv) { float theta = (float)(2.*M_PI) * uv.x; uv.y = 2.f * uv.y - 1.f; Vertex3Ds spherePoint(sqrt(1.f - uv.y * uv.y) * Vertex2D(cosf(theta), sinf(theta)), uv.y); return normalize(normal + spherePoint); }
-   const Vertex3Ds l = rotate_to_vector_upper(cos_hemisphere_sample((float)s*(float)(1.0 / num_samples), radical_inverse(s)), n); // QMC hammersley point set
-   #endif
-   // trafo from light direction to envmap
-   // approximations seem to be good enough!
-   const float u = atan2_approx_div2PI(l.y, l.x) + 0.5f; //atan2f(l.y, l.x) * (float)(0.5 / M_PI) + 0.5f;
-   const float v = acos_approx_divPI(l.z); //acosf(l.z) * (float)(1.0 / M_PI);
+         const unsigned int num_samples = 4096;
+         for (unsigned int s = 0; s < num_samples; ++s)
+         {
+            //!! discard directions pointing below the playfield?? or give them another "average playfield" color??
+#define USE_ENVMAP_PRECALC_COSINE
+#ifndef USE_ENVMAP_PRECALC_COSINE
+            //!! as we do not use importance sampling on the environment, just not being smart -could- be better for high frequency environments
+            Vertex3Ds l = sphere_sample((float)s*(float)(1.0 / num_samples), radical_inverse(s)); // QMC hammersley point set
+            float NdotL = l.Dot(n);
+            if (NdotL < 0.0f) // flip if on backside of hemisphere
+            {
+               NdotL = -NdotL;
+               l = -l;
+            }
+#else
+            //Vertex3Ds cos_hemisphere_sample(const Vertex3Ds &normal, Vertex2D uv) { float theta = (float)(2.*M_PI) * uv.x; uv.y = 2.f * uv.y - 1.f; Vertex3Ds spherePoint(sqrt(1.f - uv.y * uv.y) * Vertex2D(cosf(theta), sinf(theta)), uv.y); return normalize(normal + spherePoint); }
+            const Vertex3Ds l = rotate_to_vector_upper(cos_hemisphere_sample((float)s*(float)(1.0 / num_samples), radical_inverse(s)), n); // QMC hammersley point set
+#endif
+            // trafo from light direction to envmap
+            // approximations seem to be good enough!
+            const float u = atan2_approx_div2PI(l.y, l.x) + 0.5f; //atan2f(l.y, l.x) * (float)(0.5 / M_PI) + 0.5f;
+            const float v = acos_approx_divPI(l.z); //acosf(l.z) * (float)(1.0 / M_PI);
 
-   float r, g, b;
-   if (isHDR)
-   {
-   unsigned int offs = ((int)(u*(float)env_xres) + (int)(v*(float)env_yres)*env_xres) * 3;
-   if (offs >= env_yres * env_xres * 3)
-   offs = 0;
-   r = ((float*)envmap)[offs];
-   g = ((float*)envmap)[offs + 1];
-   b = ((float*)envmap)[offs + 2];
-   }
-   else
-   {
-   unsigned int offs = (int)(u*(float)env_xres) + (int)(v*(float)env_yres)*env_xres;
-   if (offs >= env_yres * env_xres)
-   offs = 0;
-   const DWORD rgb = ((DWORD*)envmap)[offs];
-   r = invGammaApprox((float)(rgb & 255) * (float)(1.0 / 255.0));
-   g = invGammaApprox((float)(rgb & 65280) * (float)(1.0 / 65280.0));
-   b = invGammaApprox((float)(rgb & 16711680) * (float)(1.0 / 16711680.0));
-   }
-   #ifndef USE_ENVMAP_PRECALC_COSINE
-   sum[0] += r * NdotL;
-   sum[1] += g * NdotL;
-   sum[2] += b * NdotL;
-   #else
-   sum[0] += r;
-   sum[1] += g;
-   sum[2] += b;
-   #endif
-   }
+            float r, g, b;
+            if (isHDR)
+            {
+               unsigned int offs = ((int)(u*(float)env_xres) + (int)(v*(float)env_yres)*env_xres) * 3;
+               if (offs >= env_yres * env_xres * 3)
+                  offs = 0;
+               r = ((float*)envmap)[offs];
+               g = ((float*)envmap)[offs + 1];
+               b = ((float*)envmap)[offs + 2];
+            }
+            else
+            {
+               unsigned int offs = (int)(u*(float)env_xres) + (int)(v*(float)env_yres)*env_xres;
+               if (offs >= env_yres * env_xres)
+                  offs = 0;
+               const DWORD rgb = ((DWORD*)envmap)[offs];
+               r = invGammaApprox((float)(rgb & 255) * (float)(1.0 / 255.0));
+               g = invGammaApprox((float)(rgb & 65280) * (float)(1.0 / 65280.0));
+               b = invGammaApprox((float)(rgb & 16711680) * (float)(1.0 / 16711680.0));
+            }
+#ifndef USE_ENVMAP_PRECALC_COSINE
+            sum[0] += r * NdotL;
+            sum[1] += g * NdotL;
+            sum[2] += b * NdotL;
+#else
+            sum[0] += r;
+            sum[1] += g;
+            sum[2] += b;
+#endif
+         }
 
-   // average all samples
-   #ifndef USE_ENVMAP_PRECALC_COSINE
-   sum[0] *= (float)(2.0 / num_samples); // pre-divides by PI for final radiance/color lookup in shader
-   sum[1] *= (float)(2.0 / num_samples);
-   sum[2] *= (float)(2.0 / num_samples);
-   #else
-   sum[0] *= (float)(1.0 / num_samples); // pre-divides by PI for final radiance/color lookup in shader
-   sum[1] *= (float)(1.0 / num_samples);
-   sum[2] *= (float)(1.0 / num_samples);
-   #endif
-   if (isHDR)
-   {
-   const unsigned int offs = (y*rad_env_xres + x) * 3;
-   if (((float*)rad_envmap)[offs] != sum[0] ||
-   ((float*)rad_envmap)[offs + 1] != sum[1] ||
-   ((float*)rad_envmap)[offs + 2] != sum[2])
-   {
-   char tmp[911];
-   sprintf(tmp, "%d %d %f=%f %f=%f %f=%f ", x, y, ((float*)rad_envmap)[offs], sum[0], ((float*)rad_envmap)[offs + 1], sum[1], ((float*)rad_envmap)[offs + 2], sum[2]);
-   ::OutputDebugString(tmp);
-   }
-   }
-   else
-   {
-   sum[0] = gammaApprox(sum[0]);
-   sum[1] = gammaApprox(sum[1]);
-   sum[2] = gammaApprox(sum[2]);
-   if (
-   ((DWORD*)rad_envmap)[y*rad_env_xres + x] != ((int)(sum[0] * 255.0f)) | (((int)(sum[1] * 255.0f)) << 8) | (((int)(sum[2] * 255.0f)) << 16))
-   g_pvp->MessageBox("Not OK", "Not OK", MB_OK);
-   }
-   }
+         // average all samples
+#ifndef USE_ENVMAP_PRECALC_COSINE
+         sum[0] *= (float)(2.0 / num_samples); // pre-divides by PI for final radiance/color lookup in shader
+         sum[1] *= (float)(2.0 / num_samples);
+         sum[2] *= (float)(2.0 / num_samples);
+#else
+         sum[0] *= (float)(1.0 / num_samples); // pre-divides by PI for final radiance/color lookup in shader
+         sum[1] *= (float)(1.0 / num_samples);
+         sum[2] *= (float)(1.0 / num_samples);
+#endif
+         if (isHDR)
+         {
+            const unsigned int offs = (y*rad_env_xres + x) * 3;
+            if (((float*)rad_envmap)[offs] != sum[0] ||
+                ((float*)rad_envmap)[offs + 1] != sum[1] ||
+                ((float*)rad_envmap)[offs + 2] != sum[2])
+            {
+               char tmp[911];
+               sprintf(tmp, "%d %d %f=%f %f=%f %f=%f ", x, y, ((float*)rad_envmap)[offs], sum[0], ((float*)rad_envmap)[offs + 1], sum[1], ((float*)rad_envmap)[offs + 2], sum[2]);
+               ::OutputDebugString(tmp);
+            }
+         }
+         else
+         {
+            sum[0] = gammaApprox(sum[0]);
+            sum[1] = gammaApprox(sum[1]);
+            sum[2] = gammaApprox(sum[2]);
+            if (
+                ((DWORD*)rad_envmap)[y*rad_env_xres + x] != ((int)(sum[0] * 255.0f)) | (((int)(sum[1] * 255.0f)) << 8) | (((int)(sum[2] * 255.0f)) << 16))
+                g_pvp->MessageBox("Not OK", "Not OK", MB_OK);
+         }
+      }
 
    ///!!! */
 
@@ -423,7 +423,9 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
    getDisplayList(displays);
    int adapter = 0;
    for (std::vector<DisplayConfig>::iterator dispConf = displays.begin(); dispConf != displays.end(); ++dispConf)
-      if (display == dispConf->display) adapter = dispConf->adapter;
+      if (display == dispConf->display)
+         adapter = dispConf->adapter;
+
    m_pd3dPrimaryDevice = new RenderDevice(m_viewPort.Width, m_viewPort.Height, fullScreen, colordepth, VSync, AAfactor, stereo3D, FXAA, ss_refl, g_pplayer->m_useNvidiaApi, g_pplayer->m_disableDWM, g_pplayer->m_BWrendering);
    try {
       m_pd3dPrimaryDevice->CreateDevice(refreshrate, adapter);
@@ -514,7 +516,6 @@ HRESULT Pin3D::InitPin3D()
       ? g_pplayer->m_ptable->GetImage(g_pplayer->m_ptable->m_BG_image[g_pplayer->m_ptable->m_BG_current_set].c_str()) : NULL);
 
    m_pinballEnvTexture.CreateFromResource(IDB_BALL);
-
    m_aoDitherTexture.CreateFromResource(IDB_AO_DITHER);
 
    m_envTexture = g_pplayer->m_ptable->GetImage(g_pplayer->m_ptable->m_envImage);
@@ -522,15 +523,17 @@ HRESULT Pin3D::InitPin3D()
 
    const Texture * const envTex = m_envTexture ? m_envTexture : &m_builtinEnvTexture;
 
-   const unsigned int envTexHeight = min(envTex->m_pdsBuffer->height(), 256) / 8;
-   const unsigned int envTexWidth = envTexHeight * 2;
+   const unsigned int envTexHeight = min(envTex->m_pdsBuffer->height(),256) / 8;
+   const unsigned int envTexWidth = envTexHeight*2;
 
    m_envRadianceTexture = new BaseTexture(envTexWidth, envTexHeight, envTex->m_pdsBuffer->m_format, false);
 
    EnvmapPrecalc(envTex->m_pdsBuffer->data(), envTex->m_pdsBuffer->width(), envTex->m_pdsBuffer->height(),
-      m_envRadianceTexture->data(), envTexWidth, envTexHeight, envTex->IsHDR());
+                 m_envRadianceTexture->data(), envTexWidth, envTexHeight, envTex->IsHDR());
 
    m_pd3dPrimaryDevice->m_texMan.SetDirty(m_envRadianceTexture);
+
+   //
 
    InitPrimaryRenderState();
 
@@ -570,6 +573,7 @@ void Pin3D::SetSecondaryRenderTarget(RenderTarget* pddsSurface, void* unused) co
 {
    SetRenderTarget(m_pd3dSecondaryDevice, pddsSurface, unused);
 }
+
 #else
 
 void Pin3D::SetRenderTarget(RenderDevice * const pd3dDevice, RenderTarget* pddsSurface, void* pddsZ) const
@@ -647,14 +651,14 @@ void Pin3D::InitRenderState(RenderDevice * const pd3dDevice)
 {
    pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
 
-   pd3dDevice->SetRenderState(RenderDevice::LIGHTING, FALSE);
+   pd3dDevice->SetRenderState(RenderDevice::LIGHTING, RenderDevice::RS_FALSE);
 
-   pd3dDevice->SetRenderState(RenderDevice::ZENABLE, TRUE);
+   pd3dDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_TRUE);
    pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
    pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 
-   pd3dDevice->SetRenderState(RenderDevice::CLIPPING, FALSE);
-   pd3dDevice->SetRenderState(RenderDevice::CLIPPLANEENABLE, 0);
+   pd3dDevice->SetRenderState(RenderDevice::CLIPPING, RenderDevice::RS_FALSE);
+   pd3dDevice->SetRenderStateClipPlane0(false);
 
    // initialize first texture stage
    pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_CLAMP/*WRAP*/);
@@ -667,6 +671,7 @@ void Pin3D::InitRenderState(RenderDevice * const pd3dDevice)
    pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR); // default tfactor: 1,1,1,1
 #endif
    SetTextureFilter(pd3dDevice, 0, TEXTURE_MODE_TRILINEAR);
+
    pd3dDevice->SetTextureAddressMode(4, RenderDevice::TEX_CLAMP/*WRAP*/); // normal maps
    SetTextureFilter(pd3dDevice, 4, TEXTURE_MODE_TRILINEAR);
 }
@@ -685,16 +690,16 @@ void Pin3D::DrawBackground()
 {
    SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
 
-   PinTable * const ptable = g_pplayer->m_ptable;
+   const PinTable * const ptable = g_pplayer->m_ptable;
    Texture * const pin = ptable->GetDecalsEnabled()
-      ? ptable->GetImage(ptable->m_BG_image[ptable->m_BG_current_set].c_str())
-      : NULL;
+      ? ptable->GetImage(ptable->m_BG_image[ptable->m_BG_current_set])
+      : nullptr;
    if (pin)
    {
       m_pd3dPrimaryDevice->Clear(ZBUFFER, 0, 1.0f, 0L);
 
       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
-      m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, FALSE);
+      m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_FALSE);
 
       if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_reflectionEnabled)
          m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
@@ -706,7 +711,7 @@ void Pin3D::DrawBackground()
       if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_reflectionEnabled)
          m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 
-      m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, TRUE);
+      m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_TRUE);
       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
    }
    else
@@ -751,7 +756,7 @@ void Pin3D::InitLights()
    amb_lr.z *= g_pplayer->m_globalEmissionScale;
    m_pd3dPrimaryDevice->basicShader->SetVector(SHADER_cAmbient_LightRange, &amb_lr);
 #ifdef SEPARATE_CLASSICLIGHTSHADER
-   m_pd3dPrimaryDevice->classicLightShader->SetVector(SHADER_cAmbient_LightRange", &amb_lr);
+   m_pd3dPrimaryDevice->classicLightShader->SetVector(SHADER_cAmbient_LightRange, &amb_lr);
 #endif
 
 }
@@ -826,7 +831,7 @@ void Pin3D::InitLayoutFS()
    m_proj.m_matWorld.SetIdentity();
    vec3 eye(camx, camy, camz);
    vec3 at(0.0f, yof, 1.0f);
-   vec3 up(0.0f, -1.0f, 0.0f);
+   const vec3 up(0.0f, -1.0f, 0.0f);
 
    Matrix3D rotationMat = Matrix3D::MatrixRotationYawPitchRoll(inclination, 0.0f, rotation);
 #ifdef ENABLE_SDL
@@ -854,7 +859,7 @@ void Pin3D::InitLayoutFS()
    // in-pixel offset for manual oversampling
 
    proj.SetIdentity();
-   const float monitorPixel = 1.0f;// 25.4f * 23.3f / sqrt(1920.0f*1920.0f + 1080.0f*1080.0f);
+   constexpr float monitorPixel = 1.0f;// 25.4f * 23.3f / sqrt(1920.0f*1920.0f + 1080.0f*1080.0f);
    const float viewRight = monitorPixel*(float)m_viewPort.Width *0.5f;
    const float viewTop = monitorPixel*(float)m_viewPort.Height *0.5f;
    //eye.x = g_pplayer->m_ptable->m_bottom*0.4f;
@@ -1056,13 +1061,13 @@ void Pin3D::InitLayout(const bool FSS_mode, const float xpixoff, const float ypi
 void Pin3D::InitPlayfieldGraphics()
 {
    const IEditable * const piEdit = g_pplayer->m_ptable->GetElementByName("playfield_mesh");
-   if (piEdit == NULL)
+   if (piEdit == nullptr)
    {
-      assert(m_tableVBuffer == NULL);
+      assert(m_tableVBuffer == nullptr);
       VertexBuffer::CreateVertexBuffer(4, 0, MY_D3DFVF_NOTEX2_VERTEX, &m_tableVBuffer);
 
       Vertex3D_NoTex2 *buffer;
-      m_tableVBuffer->lock(0, 0, (void**)&buffer, USAGE_STATIC);
+      m_tableVBuffer->lock(0, 0, (void**)&buffer, VertexBuffer::WRITEONLY);
 
       unsigned int offs = 0;
       for (unsigned int y = 0; y <= 1; ++y)
@@ -1090,22 +1095,22 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
 {
    TRACE_FUNCTION();
 
-   const Material * const mat = g_pplayer->m_ptable->GetMaterial(g_pplayer->m_ptable->m_playfieldMaterial.c_str());
-   Texture * const pin = (depth_only && !mat->m_bOpacityActive) ? NULL : g_pplayer->m_ptable->GetImage(g_pplayer->m_ptable->m_image.c_str());
+   const Material * const mat = g_pplayer->m_ptable->GetMaterial(g_pplayer->m_ptable->m_playfieldMaterial);
+   Texture * const pin = (depth_only && !mat->m_bOpacityActive) ? nullptr : g_pplayer->m_ptable->GetImage(g_pplayer->m_ptable->m_image);
 
    if (depth_only)
    {
-       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::COLORWRITEENABLE, 0); //m_pin3d.m_pd3dPrimaryDevice->SetPrimaryRenderTarget(NULL); // disable color writes
-	   // even with depth-only rendering we have to take care of alpha textures (stencil playfield to see underlying objects)
-	   if (pin)
-	   {
-		   SetPrimaryTextureFilter(0, TEXTURE_MODE_ANISOTROPIC);
-		   m_pd3dPrimaryDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_depth_only_with_texture);
-		   m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture0, pin, false);
-		   m_pd3dPrimaryDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
-	   }
-	   else // No image by that name
-		   m_pd3dPrimaryDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_depth_only_without_texture);
+       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::COLORWRITEENABLE, 0); //m_pin3d.m_pd3dPrimaryDevice->SetPrimaryRenderTarget(nullptr); // disable color writes
+       // even with depth-only rendering we have to take care of alpha textures (stencil playfield to see underlying objects)
+       if (pin)
+       {
+           SetPrimaryTextureFilter(0, TEXTURE_MODE_ANISOTROPIC);
+           m_pd3dPrimaryDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_depth_only_with_texture);
+           m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture0, pin, false);
+           m_pd3dPrimaryDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
+       }
+       else // No image by that name
+           m_pd3dPrimaryDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_depth_only_without_texture);
    }
    else
    {
@@ -1127,7 +1132,7 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
 
    if (!g_pplayer->m_meshAsPlayfield)
    {
-      assert(m_tableVBuffer != NULL);
+      assert(m_tableVBuffer != nullptr);
       m_pd3dPrimaryDevice->basicShader->Begin(0);
       m_pd3dPrimaryDevice->DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_NOTEX2_VERTEX, m_tableVBuffer, 0, 4, true);
       m_pd3dPrimaryDevice->basicShader->End();
@@ -1157,7 +1162,7 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
 
 void Pin3D::EnableAlphaTestReference(const DWORD alphaRefValue) const
 {
-   m_pd3dPrimaryDevice->SetRenderStateAlphaTestFunction(RenderDevice::ALPHAFUNC, RenderDevice::Z_GREATEREQUAL, true);
+   m_pd3dPrimaryDevice->SetRenderStateAlphaTestFunction(alphaRefValue, RenderDevice::Z_GREATEREQUAL, true);
 }
 
 void Pin3D::EnableAlphaBlend(const bool additiveBlending, const bool set_dest_blend, const bool set_blend_op) const
@@ -1423,7 +1428,6 @@ void PinProjection::TransformVertices(const Vertex3Ds * const rgv, const WORD * 
    }
 }
 
-
 #ifdef ENABLE_BAM
 // #ravarcade: All code below will add BAM view and BAM head tracking.
 // Most of it is copy of
@@ -1508,7 +1512,7 @@ void CreateProjectionAndViewMatrix(float * const __restrict P, float * const __r
    AboveScreen = 200.0; // 0.2m
    InsideScreen = 2000.0; // 2.0m
 
-                          // Data build projection matrix
+   // Data build projection matrix
    BuildProjectionMatrix(P,
       DisplaySize,
       DisplayNativeWidth, DisplayNativeHeight,

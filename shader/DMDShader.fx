@@ -42,7 +42,7 @@ struct VS_OUTPUT
 
 VS_OUTPUT vs_main (in float4 vPosition : POSITION0,
                    in float2 tc        : TEXCOORD0)
-{ 
+{
    VS_OUTPUT Out;
 
    Out.pos = float4(vPosition.xy, 0.0,1.0);
@@ -177,7 +177,7 @@ float4 ps_main_noDMD_notex(in VS_OUTPUT IN) : COLOR
 
 
 technique basic_DMD
-{ 
+{
    pass P0
    {
       VertexShader = compile vs_3_0 vs_main();
@@ -196,7 +196,7 @@ technique basic_DMD_world
 
 
 technique basic_noDMD
-{ 
+{
    pass P0
    {
       VertexShader = compile vs_3_0 vs_main();
@@ -205,7 +205,7 @@ technique basic_noDMD
 }
 
 technique basic_noDMD_world
-{ 
+{
    pass P0
    {
       VertexShader = compile vs_3_0 vs_simple_world();
@@ -214,7 +214,7 @@ technique basic_noDMD_world
 }
 
 technique basic_noDMD_notex
-{ 
+{
    pass P0
    {
       VertexShader = compile vs_3_0 vs_main();

@@ -6,12 +6,19 @@
 #define COMBINE_BUFFERS 0
 
 IndexBuffer* IndexBuffer::m_curIndexBuffer = nullptr;
+
+#ifndef ENABLE_SDL
+IDirect3DDevice9* IndexBuffer::m_pD3DDevice = nullptr;
+#endif
+
+#ifdef ENABLE_SDL
 std::vector<IndexBuffer*> IndexBuffer::notUploadedBuffers;
+#endif
 
 void IndexBuffer::CreateIndexBuffer(const unsigned int numIndices, const DWORD usage, const IndexBuffer::Format format, IndexBuffer **idxBuffer)
 {
 #ifdef ENABLE_SDL
-   IndexBuffer* ib = new IndexBuffer();
+   IndexBuffer* const ib = new IndexBuffer();
    ib->count = numIndices;
    ib->indexFormat = format;
    ib->size = numIndices * (ib->indexFormat == FMT_INDEX16 ? 2 : 4);
@@ -22,10 +29,9 @@ void IndexBuffer::CreateIndexBuffer(const unsigned int numIndices, const DWORD u
 #else
    // NB: We always specify WRITEONLY since MSDN states,
    // "Buffers created with D3DPOOL_DEFAULT that do not specify D3DUSAGE_WRITEONLY may suffer a severe performance penalty."
-   HRESULT hr;
    const unsigned idxSize = (format == IndexBuffer::FMT_INDEX16) ? 2 : 4;
-   hr = m_pD3DDevice->CreateIndexBuffer(idxSize * numIndices, usage | D3DUSAGE_WRITEONLY, (D3DFORMAT)format,
-      (D3DPOOL)memoryPool::DEFAULT, (IDirect3DIndexBuffer9**)idxBuffer, NULL);
+   const HRESULT hr = m_pD3DDevice->CreateIndexBuffer(idxSize * numIndices, usage | D3DUSAGE_WRITEONLY, (D3DFORMAT)format,
+      (D3DPOOL)memoryPool::DEFAULT, (IDirect3DIndexBuffer9**)idxBuffer, nullptr);
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create index buffer!", hr, __FILE__, __LINE__);
 #endif
@@ -34,7 +40,7 @@ void IndexBuffer::CreateIndexBuffer(const unsigned int numIndices, const DWORD u
 IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const unsigned int numIndices, const WORD * indices)
 {
 #ifdef ENABLE_SDL
-   IndexBuffer* ib = new IndexBuffer();
+   IndexBuffer* const ib = new IndexBuffer();
    ib->count = numIndices;
    ib->indexFormat = IndexBuffer::FMT_INDEX16;
    ib->usage = GL_STATIC_DRAW;
@@ -60,12 +66,12 @@ IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const unsigned int numIndices
    ib->unlock();
 #endif
    return ib;
-   }
+}
 
 IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const unsigned int numIndices, const unsigned int * indices)
 {
 #ifdef ENABLE_SDL
-   IndexBuffer* ib = new IndexBuffer();
+   IndexBuffer* const ib = new IndexBuffer();
    ib->count = numIndices;
    ib->indexFormat = IndexBuffer::FMT_INDEX32;
    ib->usage = GL_STATIC_DRAW;
@@ -91,7 +97,7 @@ IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const unsigned int numIndices
    ib->unlock();
 #endif
    return ib;
-   }
+}
 
 IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const std::vector<WORD>& indices)
 {
@@ -105,13 +111,13 @@ IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const std::vector<unsigned in
 
 void IndexBuffer::lock(const unsigned int offsetToLock, const unsigned int sizeToLock, void **dataBuffer, const DWORD flags)
 {
+   m_curLockCalls++;
 #ifdef ENABLE_SDL
-   if (sizeToLock == 0) {
+   if (sizeToLock == 0)
       this->sizeToLock = size;
-   }
-   else {
+   else
       this->sizeToLock = sizeToLock;
-   }
+
    if (offsetToLock < size) {
       *dataBuffer = malloc(this->sizeToLock);
       this->dataBuffer = *dataBuffer;
@@ -130,12 +136,10 @@ void IndexBuffer::lock(const unsigned int offsetToLock, const unsigned int sizeT
 void IndexBuffer::unlock()
 {
 #ifdef ENABLE_SDL
-   if (COMBINE_BUFFERS == 0 || usage != GL_STATIC_DRAW || Buffer>0) {
+   if (COMBINE_BUFFERS == 0 || usage != GL_STATIC_DRAW || Buffer>0)
       UploadData(true);
-   }
-   else {
+   else
       addToNotUploadedBuffers();
-   }
 #else
    CHECKD3D(this->Unlock());
 #endif
@@ -152,14 +156,6 @@ void IndexBuffer::release(void)
 #endif
 }
 
-#ifndef ENABLE_SDL
-IDirect3DDevice9* IndexBuffer::m_pD3DDevice = NULL;
-
-void IndexBuffer::setD3DDevice(IDirect3DDevice9* pD3DDevice) {
-   m_pD3DDevice = pD3DDevice;
-}
-#endif
-
 void IndexBuffer::bind()
 {
 #ifdef ENABLE_SDL
@@ -171,17 +167,19 @@ void IndexBuffer::bind()
       m_curIndexBuffer = this;
    }
 #else
-   if (m_curIndexBuffer != ib)
+   if (m_curIndexBuffer == nullptr || m_curIndexBuffer != this)
    {
-      CHECKD3D(m_pD3DDevice->SetIndices(ib));
-      m_curIndexBuffer = ib;
+      CHECKD3D(m_pD3DDevice->SetIndices(this));
+      m_curIndexBuffer = this;
    }
 #endif
 }
 
+#ifdef ENABLE_SDL
 void IndexBuffer::UploadData(bool freeData)
 {
    if (isUploaded || !dataBuffer) return;
+
    if (Buffer == 0) {
       sharedBuffer = false;
       sizeToLock = size;
@@ -190,14 +188,12 @@ void IndexBuffer::UploadData(bool freeData)
       CHECKD3D(glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, nullptr, usage));
       offset = 0;
    }
-   else {
+   else
       CHECKD3D(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Buffer));
-   }
    CHECKD3D(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset + offsetToLock, min(sizeToLock, size - offsetToLock), dataBuffer));
    CHECKD3D(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
-   if (freeData) {
+   if (freeData)
       free(dataBuffer);
-   }
    dataBuffer = nullptr;
    isUploaded = true;
 }
@@ -211,9 +207,8 @@ void IndexBuffer::addToNotUploadedBuffers(const void* indices)
    }
    offsetToLock = 0;
    if (indices && indices != dataBuffer) {
-      if (dataBuffer) {
+      if (dataBuffer)
          free(dataBuffer);
-      }
       dataBuffer = malloc(size);
       memcpy(dataBuffer, indices, size);
    }
@@ -224,6 +219,7 @@ void IndexBuffer::addToNotUploadedBuffers(const void* indices)
 void IndexBuffer::UploadBuffers()
 {
    if (notUploadedBuffers.size() == 0) return;
+
    int size16 = 0;
    int size32 = 0;
    GLuint Buffer16;
@@ -260,9 +256,9 @@ void IndexBuffer::UploadBuffers()
       CHECKD3D(glBufferData(GL_ELEMENT_ARRAY_BUFFER, size32, nullptr, GL_STATIC_DRAW));
    }
    //Upload all Buffers
-   for (auto it = notUploadedBuffers.begin(); it != notUploadedBuffers.end(); it++) {
+   for (auto it = notUploadedBuffers.begin(); it != notUploadedBuffers.end(); it++)
       (*it)->UploadData(true);
-   }
    CHECKD3D(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
    notUploadedBuffers.clear();
 }
+#endif

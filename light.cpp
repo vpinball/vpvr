@@ -87,8 +87,8 @@ void Light::SetDefaults(bool fromMouseClick)
 
    m_d.m_tdr.m_TimerEnabled = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Light", "TimerEnabled", false) : false;
    m_d.m_tdr.m_TimerInterval = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "TimerInterval", 100) : 100;
-   m_d.m_color = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "Color", RGB(255, 255, 0)) : RGB(255, 255, 0);
-   m_d.m_color2 = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "ColorFull", RGB(255, 255, 255)) : RGB(255, 255, 255);
+   m_d.m_color = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "Color", RGB(255,255,0)) : RGB(255,255,0);
+   m_d.m_color2 = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Light", "ColorFull", RGB(255,255,255)) : RGB(255,255,255);
 
    HRESULT hr = LoadValue("DefaultProps\\Light", "OffImage", m_d.m_szImage);
    if ((hr != S_OK) || !fromMouseClick)
@@ -485,18 +485,19 @@ void Light::RenderDynamic()
    if (!m_backglass)
    {
       pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
-      pd3dDevice->SetRenderStateDepthBias(-1.0f);
+      constexpr float depthbias = -1.0f;
+      pd3dDevice->SetRenderStateDepthBias(depthbias);
    }
    else
    {
-      pd3dDevice->SetRenderStateDepthBias(-0.0f);
+      pd3dDevice->SetRenderStateDepthBias(0.0f);
       pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
    }
 
    if (m_backglass && (m_ptable->m_tblMirrorEnabled^m_ptable->m_reflectionEnabled))
-      pd3dDevice->SetRenderState(RenderDevice::CULLMODE, RenderDevice::CULL_NONE);
+      pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
    else
-      pd3dDevice->SetRenderState(RenderDevice::CULLMODE, RenderDevice::CULL_CCW);
+      pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 
    Vertex2D centerHUD;
    centerHUD.x = m_d.m_vCenter.x;

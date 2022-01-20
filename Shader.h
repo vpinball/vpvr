@@ -7,7 +7,6 @@
 // Attempt to speed up STL which is very CPU costly, maybe we should look into using EASTL instead? http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2271.html https://github.com/electronicarts/EASTL
 #define _SECURE_SCL 0
 #define _HAS_ITERATOR_DEBUGGING 0
-
 #endif
 
 #ifdef TWEAK_GL_SHADER
@@ -51,6 +50,7 @@ typedef shaderTechniques SHADER_TECHNIQUE_HANDLE;
 typedef void ID3DXEffect;
 
 #else
+
 //Float
 #define SHADER_blend_modulate_vs_add "blend_modulate_vs_add"
 #define SHADER_alphaTestValue "alphaTestValue"
@@ -66,7 +66,7 @@ typedef void ID3DXEffect;
 #define SHADER_lightColor_intensity "lightColor_intensity"
 #define SHADER_matrixBlock "matrixBlock"
 #define SHADER_fenvEmissionScale_TexWidth "fenvEmissionScale_TexWidth"
-#define SHADER_invTableRes_playfield_height_reflection "invTableRes_playfield_height_reflection"
+#define SHADER_invTableRes_playfield_height_reflection "invTableRes__playfield_height_reflection"
 #define SHADER_lightEmission "lightEmission"
 #define SHADER_lightPos "lightPos"
 #define SHADER_orientation "orientation"
@@ -183,9 +183,11 @@ typedef void ID3DXEffect;
 #define SHADER_TECHNIQUE_stereo_Int "stereo_Int"
 #define SHADER_TECHNIQUE_stereo_AMD_DEBUG "stereo_AMD_DEBUG"
 
+#ifdef ENABLE_SDL
 typedef char* SHADER_UNIFORM_HANDLE;
 typedef char* SHADER_TECHNIQUE_HANDLE;
 typedef void ID3DXEffect;
+#endif
 #endif
 
 #ifndef ENABLE_SDL
@@ -236,26 +238,27 @@ public:
    void SetBool(const SHADER_UNIFORM_HANDLE hParameter, const bool b);
    void SetFloatArray(const SHADER_UNIFORM_HANDLE hParameter, const float* pData, const unsigned int count);
 
-   static void SetTransform(const TransformStateType p1, const Matrix3D * p2, const int count);
+   static void SetTransform(const TransformStateType p1, const Matrix3D* p2, const int count);
    static void GetTransform(const TransformStateType p1, Matrix3D* p2, const int count);
    static Shader* getCurrentShader();
+
 private:
    static Shader* m_currentShader;
    static RenderDevice *m_renderDevice;
+   static int shaderCount;
 
    // caches:
-
    Material currentMaterial;
 
    vec4 currentDisableLighting; // x and y: top and below, z and w unused
 
-   static const DWORD TEXTURESET_STATE_CACHE_SIZE = 5; // current convention: SetTexture gets "TextureX", where X 0..4
+   static constexpr DWORD TEXTURESET_STATE_CACHE_SIZE = 5; // current convention: SetTexture gets "TextureX", where X 0..4
    BaseTexture *currentTexture[TEXTURESET_STATE_CACHE_SIZE];
-   float   currentAlphaTestValue;
-   char    currentTechnique[64];
+   float currentAlphaTestValue;
+   char  currentTechnique[64];
 
-   vec4 currentFlasherColor; // flasher only-data
-   vec4 currentFlasherData;
+   vec4  currentFlasherColor; // flasher only-data
+   vec4  currentFlasherData;
    float currentFlasherMode;
 
    vec4 currentLightColor; // all light only-data
@@ -263,16 +266,16 @@ private:
    vec4 currentLightData;
    unsigned int currentLightImageMode;
    unsigned int currentLightBackglassMode;
-   static int shaderCount;
    int shaderID;
    int currentShader;
 
 #ifdef ENABLE_SDL
-   const char* m_shaderCodeName = nullptr;//Only valid while loading
-   void LOG(int level, const char* fileNameRoot, string message);
-   bool parseFile(const char* fileNameRoot, const char* fileName, int level, std::map<string, string> &values, string parentMode);
-   string analyzeFunction(const char* shaderCodeName, string technique, string functionName, std::map<string, string> &values);
-   bool compileGLShader(const char* fileNameRoot, string shaderCodeName, string vertex, string geometry, string fragment);
+   const char* m_shaderCodeName = nullptr; // Only valid while loading
+
+   void LOG(int level, const char* fileNameRoot, const string& message);
+   bool parseFile(const char* fileNameRoot, const char* fileName, int level, const std::map<string, string>& values, const string& parentMode);
+   string analyzeFunction(const char* shaderCodeName, const string& technique, const string& functionName, std::map<string, string>& values);
+   bool compileGLShader(const char* fileNameRoot, const string& shaderCodeName, const string& vertex, const string& geometry, const string& fragment);
 
    struct attributeLoc {
       GLenum type;
@@ -289,6 +292,7 @@ private:
       size_t len;
       float* data;
    };
+
 #ifdef TWEAK_GL_SHADER
    struct glShader {
       int program;
@@ -301,10 +305,12 @@ private:
    int uniformInt[SHADER_UNIFORM_COUNT];
    int uniformTex[SHADER_UNIFORM_COUNT];
    shaderTechniques technique;
-   shaderUniforms getUniformByName(const string name);
-   shaderAttributes getAttributeByName(const string name);
-   shaderTechniques getTechniqueByName(const string name);
+   shaderUniforms getUniformByName(const string& name);
+   shaderAttributes getAttributeByName(const string& name);
+   shaderTechniques getTechniqueByName(const string& name);
+
 #else
+
    struct glShader {
       int program;
       std::map<string, attributeLoc> *attributeLocation;
@@ -317,22 +323,29 @@ private:
    std::map<string, int> uniformTex;
    char technique[256];
 #endif
+
    static Matrix3D mWorld, mView, mProj[2];
    static int lastShaderProgram;
    static D3DTexture* noTexture;
    static D3DTexture* noTextureMSAA;
    static float* zeroData;
-   glShader* m_currentTechnique;
    static int nextTextureSlot;
    static int* textureSlotList;
    static std::map<int, int> slotTextureList;
    static int maxSlots;
+
+   glShader* m_currentTechnique;
+
 public:
-   void setAttributeFormat(DWORD fvf);
+   void setAttributeFormat(const DWORD fvf);
+
+   static void setTextureDirty(const int TextureID);
    static std::string shaderPath;
    static std::string Defines;
-   static void setTextureDirty(int TextureID);
+
 #else
+
    ID3DXEffect * m_shader;
+
 #endif
 };

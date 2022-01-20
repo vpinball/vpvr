@@ -868,7 +868,7 @@ void Trigger::RenderSetup()
    if (m_vertexBuffer)
       m_vertexBuffer->release();
    VertexBuffer::CreateVertexBuffer(m_numVertices, USAGE_DYNAMIC, MY_D3DFVF_NOTEX2_VERTEX, &m_vertexBuffer);
-   NumVideoBytes += m_numVertices * (int)sizeof(Vertex3D_NoTex2);
+   NumVideoBytes += m_numVertices*(int)sizeof(Vertex3D_NoTex2);
 
    GenerateMesh();
    Vertex3D_NoTex2 *buf;

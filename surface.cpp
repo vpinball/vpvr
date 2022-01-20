@@ -1055,7 +1055,7 @@ void Surface::RenderSlingshots()
    }
    pd3dDevice->basicShader->End();
 
-   //pd3dDevice->SetRenderState(RenderDevice::CULLMODE, RenderDevice::CULL_CCW);
+   //pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 }
 
 void Surface::RenderWallsAtHeight(const bool drop)
@@ -1154,10 +1154,10 @@ void Surface::RenderWallsAtHeight(const bool drop)
    }
 
    // reset render states
-   //g_pplayer->m_pin3d.DisableAlphaBlend(); //!!  not necessary anymore
-   //pd3dDevice->SetRenderState(RenderDevice::CULLMODE, RenderDevice::CULL_CCW);
+   //pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE); //!!  not necessary anymore
+   //pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
    if ((m_d.m_disableLightingTop != 0.f || m_d.m_disableLightingBelow != 0.f) && (m_d.m_sideVisible || m_d.m_topBottomVisible))
-      pd3dDevice->basicShader->SetDisableLighting(vec4(0.f, 0.f, 0.f, 0.f));
+      pd3dDevice->basicShader->SetDisableLighting(vec4(0.f,0.f, 0.f,0.f));
 }
 
 void Surface::AddPoint(int x, int y, const bool smooth)

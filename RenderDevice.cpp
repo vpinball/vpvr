@@ -71,14 +71,14 @@ static bool IsWindowsVistaOr7()
 }
 
 typedef HRESULT(STDAPICALLTYPE *pRGV)(LPOSVERSIONINFOEXW osi);
-static pRGV mRtlGetVersion = NULL;
+static pRGV mRtlGetVersion = nullptr;
 
 bool IsWindows10_1803orAbove()
 {
-   if (mRtlGetVersion == NULL)
+   if (mRtlGetVersion == nullptr)
       mRtlGetVersion = (pRGV)GetProcAddress(GetModuleHandle(TEXT("ntdll")), "RtlGetVersion"); // apparently the only really reliable solution to get the OS version (as of Win10 1803)
 
-   if (mRtlGetVersion != NULL)
+   if (mRtlGetVersion != nullptr)
    {
       OSVERSIONINFOEXW osInfo;
       osInfo.dwOSVersionInfoSize = sizeof(osInfo);
@@ -154,16 +154,16 @@ const VertexElement VertexTexelElement[] =
    { 0, 3 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },  // tex0
    D3DDECL_END()
 };
-VertexDeclaration* RenderDevice::m_pVertexTexelDeclaration = NULL;
+VertexDeclaration* RenderDevice::m_pVertexTexelDeclaration = nullptr;
 
-const VertexElement VertexNormalTexelElement[] =
+constexpr VertexElement VertexNormalTexelElement[] =
 {
    { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },  // pos
    { 0, 3 * sizeof(float), D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL, 0 },  // normal
    { 0, 6 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },  // tex0
    D3DDECL_END()
 };
-VertexDeclaration* RenderDevice::m_pVertexNormalTexelDeclaration = NULL;
+VertexDeclaration* RenderDevice::m_pVertexNormalTexelDeclaration = nullptr;
 
 /*const VertexElement VertexNormalTexelTexelElement[] =
 {
@@ -174,17 +174,17 @@ VertexDeclaration* RenderDevice::m_pVertexNormalTexelDeclaration = NULL;
    D3DDECL_END()
 };
 
-VertexDeclaration* RenderDevice::m_pVertexNormalTexelTexelDeclaration = NULL;*/
+VertexDeclaration* RenderDevice::m_pVertexNormalTexelTexelDeclaration = nullptr;*/
 
 // pre-transformed, take care that this is a float4 and needs proper w component setup (also see https://docs.microsoft.com/en-us/windows/desktop/direct3d9/mapping-fvf-codes-to-a-directx-9-declaration)
-const VertexElement VertexTrafoTexelElement[] =
+constexpr VertexElement VertexTrafoTexelElement[] =
 {
    { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITIONT, 0 }, // transformed pos
    { 0, 4 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD,  1 }, // (mostly, except for classic lights) unused, there to be able to share same code as VertexNormalTexelElement
-   { 0, 6 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 }, // tex0
+   { 0, 6 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD,  0 }, // tex0
    D3DDECL_END()
 };
-VertexDeclaration* RenderDevice::m_pVertexTrafoTexelDeclaration = NULL;
+VertexDeclaration* RenderDevice::m_pVertexTrafoTexelDeclaration = nullptr;
 #endif
 
 static unsigned int fvfToSize(const DWORD fvf)
@@ -350,9 +350,9 @@ void EnumerateDisplayModes(const int display, std::vector<VideoMode>& modes)
 #else
    std::vector<DisplayConfig> displays;
    getDisplayList(displays);
-   if (display >= displays.size())
+   if (display >= (int)displays.size())
       return;
-   int adapter = displays[display].adapter;
+   const int adapter = displays[display].adapter;
 
    IDirect3D9 *d3d = Direct3DCreate9(D3D_SDK_VERSION);
    if (d3d == nullptr)
@@ -411,7 +411,7 @@ void EnumerateDisplayModes(const int display, std::vector<VideoMode>& modes)
 
 BOOL CALLBACK MonitorEnumList(__in  HMONITOR hMonitor, __in  HDC hdcMonitor, __in  LPRECT lprcMonitor, __in  LPARAM dwData)
 {
-   std::map<std::string, DisplayConfig>* data = reinterpret_cast<std::map<std::string, DisplayConfig>*>(dwData);
+   std::map<std::string,DisplayConfig>* data = reinterpret_cast<std::map<std::string,DisplayConfig>*>(dwData);
    DisplayConfig config;
    MONITORINFOEX info;
    info.cbSize = sizeof(MONITORINFOEX);
@@ -437,26 +437,25 @@ int getDisplayList(std::vector<DisplayConfig>& displays)
    displays.clear();
    std::map<std::string, DisplayConfig> displayMap;
    // Get the resolution of all enabled displays.
-   EnumDisplayMonitors(NULL, NULL, MonitorEnumList, reinterpret_cast<LPARAM>(&displayMap));
-   DISPLAY_DEVICE DispDev;
-   ZeroMemory(&DispDev, sizeof(DispDev));
+   EnumDisplayMonitors(nullptr, nullptr, MonitorEnumList, reinterpret_cast<LPARAM>(&displayMap));
+   DISPLAY_DEVICE DispDev = {};
    DispDev.cb = sizeof(DispDev);
 #ifndef ENABLE_SDL
    IDirect3D9* pD3D = Direct3DCreate9(D3D_SDK_VERSION);
-   if (pD3D == NULL)
+   if (pD3D == nullptr)
    {
       ShowError("Could not create D3D9 object.");
       throw 0;
    }
    // Map the displays to the DX9 adapter. Otherwise this leads to an performance impact on systems with multiple GPUs
-   int adapterCount = pD3D->GetAdapterCount();
+   const int adapterCount = pD3D->GetAdapterCount();
    for (int i = 0;i < adapterCount;++i) {
       D3DADAPTER_IDENTIFIER9 adapter;
       pD3D->GetAdapterIdentifier(i, 0, &adapter);
       std::map<std::string, DisplayConfig>::iterator display = displayMap.find(adapter.DeviceName);
       if (display != displayMap.end()) {
          display->second.adapter = i;
-         strncpy_s(display->second.GPU_Name, adapter.Description, sizeof(display->second.GPU_Name) - 1);
+         strncpy_s(display->second.GPU_Name, adapter.Description, sizeof(display->second.GPU_Name)-1);
       }
    }
    SAFE_RELEASE(pD3D);
@@ -515,21 +514,21 @@ int getPrimaryDisplay()
 static bool NVAPIinit = false; //!! meh
 
 bool RenderDevice::m_INTZ_support = false;
-VertexBuffer *RenderDevice::m_quadVertexBuffer = NULL;
+VertexBuffer *RenderDevice::m_quadVertexBuffer = nullptr;
 
 #ifdef USE_D3D9EX
-typedef HRESULT(WINAPI *pD3DC9Ex)(UINT SDKVersion, IDirect3D9Ex**);
-static pD3DC9Ex mDirect3DCreate9Ex = NULL;
+ typedef HRESULT(WINAPI *pD3DC9Ex)(UINT SDKVersion, IDirect3D9Ex**);
+ static pD3DC9Ex mDirect3DCreate9Ex = nullptr;
 #endif
 
 #define DWM_EC_DISABLECOMPOSITION         0
 #define DWM_EC_ENABLECOMPOSITION          1
 typedef HRESULT(STDAPICALLTYPE *pDICE)(BOOL* pfEnabled);
-static pDICE mDwmIsCompositionEnabled = NULL;
+static pDICE mDwmIsCompositionEnabled = nullptr;
 typedef HRESULT(STDAPICALLTYPE *pDF)();
-static pDF mDwmFlush = NULL;
+static pDF mDwmFlush = nullptr;
 typedef HRESULT(STDAPICALLTYPE *pDEC)(UINT uCompositionAction);
-static pDEC mDwmEnableComposition = NULL;
+static pDEC mDwmEnableComposition = nullptr;
 
 #ifdef _DEBUG
 #ifdef ENABLE_SDL
@@ -1247,10 +1246,9 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    // check if auto generation of mipmaps can be used, otherwise will be done via d3dx
    m_autogen_mipmap = (caps.Caps2 & D3DCAPS2_CANAUTOGENMIPMAP) != 0;
    if (m_autogen_mipmap)
-      m_autogen_mipmap = (m_pD3D->CheckDeviceFormat(m_adapter, devtype, params.BackBufferFormat, textureUsage::AUTOMIPMAP, D3DRTYPE_TEXTURE, (D3DFORMAT)(colorFormat::RGBA8)) == D3D_OK);
+      m_autogen_mipmap = (m_pD3D->CheckDeviceFormat(m_adapter, devtype, params.BackBufferFormat, textureUsage::AUTOMIPMAP, D3DRTYPE_TEXTURE, (D3DFORMAT)colorFormat::RGBA8) == D3D_OK);
 
    //m_autogen_mipmap = false; //!! could be done to support correct sRGB/gamma correct generation of mipmaps which is not possible with auto gen mipmap in DX9! at the moment disabled, as the sRGB software path is super slow for similar mipmap filter quality
-
 
 #ifndef DISABLE_FORCE_NVIDIA_OPTIMUS
    if (!NVAPIinit)
@@ -1306,13 +1304,13 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
          m_windowHwnd,
          flags /*| D3DCREATE_PUREDEVICE*/,
          &params,
-         m_fullscreen ? &mode : NULL,
+         m_fullscreen ? &mode : nullptr,
          &m_pD3DDeviceEx));
 
       m_pD3DDeviceEx->QueryInterface(__uuidof(IDirect3DDevice9), reinterpret_cast<void**>(&m_pD3DDevice));
 
       // Get the display mode so that we can report back the actual refresh rate.
-      CHECKD3D(m_pD3DDeviceEx->GetDisplayModeEx(0, &mode, NULL));
+      CHECKD3D(m_pD3DDeviceEx->GetDisplayModeEx(0, &mode, nullptr));
 
       refreshrate = mode.RefreshRate;
    }
@@ -1342,7 +1340,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    /*if (m_fullscreen)
        hr = m_pD3DDevice->SetDialogBoxMode(TRUE);*/ // needs D3DPRESENTFLAG_LOCKABLE_BACKBUFFER, but makes rendering slower on some systems :/
 
-       // Retrieve a reference to the back buffer.
+   // Retrieve a reference to the back buffer.
    hr = m_pD3DDevice->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &m_pBackBuffer);
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create back buffer!", hr, __FILE__, __LINE__);
@@ -1358,11 +1356,10 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create reflection buffer!", hr, __FILE__, __LINE__);
    }
-   else {
-      m_pReflectionBufferTexture = NULL;
-   }
+   else
+      m_pReflectionBufferTexture = nullptr;
 
-   if (g_pplayer != NULL)
+   if (g_pplayer != nullptr)
    {
       const bool drawBallReflection = ((g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
       if (g_pplayer->m_ptable->m_reflectElementsOnPlayfield || drawBallReflection)
@@ -1389,9 +1386,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create stereo3D/post-processing AA buffer!", hr, __FILE__, __LINE__);
    }
-   else {
-      m_pOffscreenBackBufferStereoTexture = NULL;
-   }
+   else
+      m_pOffscreenBackBufferStereoTexture = nullptr;
 
    // alloc one more temporary buffer for SMAA
    if (m_FXAA == Quality_SMAA)
@@ -1400,9 +1396,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create SMAA buffer!", hr, __FILE__, __LINE__);
    }
-   else {
-      m_pOffscreenBackBufferPPTexture1 = NULL;
-   }
+   else
+      m_pOffscreenBackBufferPPTexture1 = nullptr;
 
    if (video10bit && (m_FXAA == Quality_SMAA || m_FXAA == Standard_DLAA))
       ShowError("SMAA or DLAA post-processing AA should not be combined with 10bit-output rendering (will result in visible artifacts)!");
@@ -1416,7 +1411,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    //CreateVertexDeclaration( VertexNormalTexelTexelElement, &m_pVertexNormalTexelTexelDeclaration );
    CreateVertexDeclaration(VertexTrafoTexelElement, &m_pVertexTrafoTexelDeclaration);
 
-   if (m_quadVertexBuffer == NULL) {
+   if (m_quadVertexBuffer == nullptr) {
       VertexBuffer::CreateVertexBuffer(4, 0, MY_D3DFVF_TEX, &m_quadVertexBuffer);
       Vertex3D_TexelOnly* bufvb;
       m_quadVertexBuffer->lock(0, 0, (void**)&bufvb, VertexBuffer::WRITEONLY);
@@ -1452,9 +1447,8 @@ bool RenderDevice::LoadShaders()
       StereoShader = new Shader(this);
       shaderCompilationOkay = StereoShader->Load(g_StereoShaderCode, sizeof(g_StereoShaderCode)) && shaderCompilationOkay;
    }
-   else {
-      StereoShader = NULL;
-   }
+   else
+      StereoShader = nullptr;
 
    flasherShader = new Shader(this);
    shaderCompilationOkay = flasherShader->Load(g_flasherShaderCode, sizeof(g_flasherShaderCode)) && shaderCompilationOkay;
@@ -1483,32 +1477,32 @@ RenderDevice::~RenderDevice()
 {
    if (m_quadVertexBuffer)
       m_quadVertexBuffer->release();
-   m_quadVertexBuffer = NULL;
+   m_quadVertexBuffer = nullptr;
 
 #ifndef DISABLE_FORCE_NVIDIA_OPTIMUS
-   if (srcr_cache != NULL)
+   if (srcr_cache != nullptr)
       CHECKNVAPI(NvAPI_D3D9_UnregisterResource(srcr_cache)); //!! meh
-   srcr_cache = NULL;
-   if (srct_cache != NULL)
+   srcr_cache = nullptr;
+   if (srct_cache != nullptr)
       CHECKNVAPI(NvAPI_D3D9_UnregisterResource(srct_cache)); //!! meh
-   srct_cache = NULL;
-   if (dest_cache != NULL)
+   srct_cache = nullptr;
+   if (dest_cache != nullptr)
       CHECKNVAPI(NvAPI_D3D9_UnregisterResource(dest_cache)); //!! meh
-   dest_cache = NULL;
+   dest_cache = nullptr;
    if (NVAPIinit) //!! meh
       CHECKNVAPI(NvAPI_Unload());
    NVAPIinit = false;
 #endif
 
    //
-   m_pD3DDevice->SetStreamSource(0, NULL, 0, 0);
-   m_pD3DDevice->SetIndices(NULL);
-   m_pD3DDevice->SetVertexShader(NULL);
-   m_pD3DDevice->SetPixelShader(NULL);
+   m_pD3DDevice->SetStreamSource(0, nullptr, 0, 0);
+   m_pD3DDevice->SetIndices(nullptr);
+   m_pD3DDevice->SetVertexShader(nullptr);
+   m_pD3DDevice->SetPixelShader(nullptr);
    m_pD3DDevice->SetFVF(D3DFVF_XYZ);
-   //m_pD3DDevice->SetVertexDeclaration(NULL); // invalid call
-   //m_pD3DDevice->SetRenderTarget(0, NULL); // invalid call
-   m_pD3DDevice->SetDepthStencilSurface(NULL);
+   //m_pD3DDevice->SetVertexDeclaration(nullptr); // invalid call
+   //m_pD3DDevice->SetRenderTarget(0, nullptr); // invalid call
+   m_pD3DDevice->SetDepthStencilSurface(nullptr);
 
    FreeShader();
 
@@ -1531,7 +1525,6 @@ RenderDevice::~RenderDevice()
    }
    SAFE_RELEASE(m_pBloomBufferTexture);
    SAFE_RELEASE(m_pBloomTmpBufferTexture);
-
    SAFE_RELEASE(m_pBackBuffer);
 
    SAFE_RELEASE(m_SMAAareaTexture);
@@ -1560,9 +1553,9 @@ RenderDevice::~RenderDevice()
 #endif
 
    /*
-   * D3D sets the FPU to single precision/round to nearest int mode when it's initialized,
-   * but doesn't bother to reset the FPU when it's destroyed. We reset it manually here.
-   */
+    * D3D sets the FPU to single precision/round to nearest int mode when it's initialized,
+    * but doesn't bother to reset the FPU when it's destroyed. We reset it manually here.
+    */
    _fpreset();
 
    if (m_dwm_was_enabled)
@@ -1760,7 +1753,7 @@ void RenderDevice::CopySurface(RenderTarget* dest, RenderTarget* src)
    //TODO - Function seems to be unused for SDL
    return;
 #else
-   CHECKD3D(m_pD3DDevice->StretchRect(src, NULL, dest, NULL, D3DTEXF_NONE));
+   CHECKD3D(m_pD3DDevice->StretchRect(src, nullptr, dest, nullptr, D3DTEXF_NONE));
 #endif
 }
 
@@ -1768,7 +1761,7 @@ D3DTexture* RenderDevice::DuplicateTexture(RenderTarget* src)
 {
 #ifdef ENABLE_SDL
    //TODO - Function seems to be unused
-   return NULL;
+   return nullptr;
 #else
    D3DSURFACE_DESC desc;
    src->GetDesc(&desc);
@@ -1783,7 +1776,7 @@ D3DTexture* RenderDevice::DuplicateTextureSingleChannel(RenderTarget* src)
 {
 #ifdef ENABLE_SDL
    //TODO - Function seems to be unused
-   return NULL;
+   return nullptr;
 #else
    D3DSURFACE_DESC desc;
    src->GetDesc(&desc);
@@ -1799,7 +1792,7 @@ D3DTexture* RenderDevice::DuplicateDepthTexture(RenderTarget* src)
 {
 #ifdef ENABLE_SDL
    //TODO - Function seems to be unused
-   return NULL;
+   return nullptr;
 #else
    D3DSURFACE_DESC desc;
    src->GetDesc(&desc);
@@ -2049,7 +2042,7 @@ D3DTexture* RenderDevice::CreateSystemTexture(const int texwidth, const int texh
       const float * const __restrict psrc = (float*)(surf->data());
       for (int i = 0; i < texwidth*texheight; ++i)
       {
-         pdest[i * 4] = psrc[i * 3];
+         pdest[i * 4    ] = psrc[i * 3    ];
          pdest[i * 4 + 1] = psrc[i * 3 + 1];
          pdest[i * 4 + 2] = psrc[i * 3 + 2];
          pdest[i * 4 + 3] = 1.f;
@@ -2066,14 +2059,14 @@ D3DTexture* RenderDevice::CreateSystemTexture(const int texwidth, const int texh
       sysRect.left = 0;
       sysRect.right = texwidth;
       sysRect.bottom = texheight;
-      CHECKD3D(D3DXLoadSurfaceFromMemory(sysSurf, NULL, NULL, surf->data, (D3DFORMAT)(colorFormat::RGBA), surf->pitch, NULL, &sysRect, D3DX_FILTER_NONE, 0));
+      CHECKD3D(D3DXLoadSurfaceFromMemory(sysSurf, nullptr, nullptr, surf->data, (D3DFORMAT)(colorFormat::RGBA), surf->pitch, NULL, &sysRect, D3DX_FILTER_NONE, 0));
       SAFE_RELEASE_NO_RCC(sysSurf);
    }
 
    if (!(texformat != colorFormat::DXT5 && m_autogen_mipmap))
-      CHECKD3D(D3DXFilterTexture(sysTex, NULL, D3DX_DEFAULT, D3DX_DEFAULT)); //!! D3DX_FILTER_SRGB
+      CHECKD3D(D3DXFilterTexture(sysTex, nullptr, D3DX_DEFAULT, D3DX_DEFAULT)); //!! D3DX_FILTER_SRGB
       // normal maps or float textures are already in linear space!
-      //CHECKD3D(D3DXFilterTexture(sysTex, NULL, D3DX_DEFAULT, (texformat == D3DFMT_A32B32G32R32F || linearRGB) ? D3DX_DEFAULT : (D3DX_FILTER_TRIANGLE | ((isPowerOf2(texwidth) && isPowerOf2(texheight)) ? 0 : D3DX_FILTER_DITHER) | D3DX_FILTER_SRGB))); // DX9 doc says default equals box filter (and dither for non power of 2 tex size), but actually it seems to be triangle!
+      //CHECKD3D(D3DXFilterTexture(sysTex, nullptr, D3DX_DEFAULT, (texformat == D3DFMT_A32B32G32R32F || linearRGB) ? D3DX_DEFAULT : (D3DX_FILTER_TRIANGLE | ((isPowerOf2(texwidth) && isPowerOf2(texheight)) ? 0 : D3DX_FILTER_DITHER) | D3DX_FILTER_SRGB))); // DX9 doc says default equals box filter (and dither for non power of 2 tex size), but actually it seems to be triangle!
 
 
    return sysTex;
@@ -2126,10 +2119,10 @@ void RenderDevice::UploadAndSetSMAATextures()
 
       //!! use D3DXLoadSurfaceFromMemory
       D3DLOCKED_RECT locked;
-      CHECKD3D(sysTex->LockRect(0, &locked, NULL, 0));
+      CHECKD3D(sysTex->LockRect(0, &locked, nullptr, 0));
       void * const pdest = locked.pBits;
       const void * const psrc = searchTexBytes;
-      memcpy(pdest, psrc, SEARCHTEX_SIZE);
+      memcpy(pdest,psrc,SEARCHTEX_SIZE);
       CHECKD3D(sysTex->UnlockRect(0));
 
       CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, m_SMAAsearchTexture));
@@ -2147,10 +2140,10 @@ void RenderDevice::UploadAndSetSMAATextures()
 
       //!! use D3DXLoadSurfaceFromMemory
       D3DLOCKED_RECT locked;
-      CHECKD3D(sysTex->LockRect(0, &locked, NULL, 0));
+      CHECKD3D(sysTex->LockRect(0, &locked, nullptr, 0));
       void * const pdest = locked.pBits;
       const void * const psrc = areaTexBytes;
-      memcpy(pdest, psrc, AREATEX_SIZE);
+      memcpy(pdest,psrc,AREATEX_SIZE);
       CHECKD3D(sysTex->UnlockRect(0));
 
       CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, m_SMAAareaTexture));
@@ -2358,7 +2351,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
       CHECKD3D(glViewport(0, 0, m_pBackBuffer->width, m_pBackBuffer->height));
    }
 #else
-   RenderTarget *surf = NULL;
+   RenderTarget *surf = nullptr;
    texture->GetSurfaceLevel(0, &surf);
    CHECKD3D(m_pD3DDevice->SetRenderTarget(0, surf));
    SAFE_RELEASE_NO_RCC(surf);
@@ -2385,7 +2378,7 @@ void RenderDevice::SetZBuffer(RenderTarget* surf)
 void RenderDevice::UnSetZBuffer()
 {
 #ifndef ENABLE_SDL
-   CHECKD3D(m_pD3DDevice->SetDepthStencilSurface(NULL));
+   CHECKD3D(m_pD3DDevice->SetDepthStencilSurface(nullptr));
 #endif
 }
 
@@ -2472,56 +2465,56 @@ void RenderDevice::SetRenderStateCulling(RenderStateValue cull) {
       CHECKD3D(glCullFace(GL_FRONT));
    }
 #else
-   CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)RenderStates::CULLMODE, cull));
+   CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)CULLMODE, cull));
 #endif
    m_curStateChanges++;
 }
 
-void RenderDevice::SetRenderStateDepthBias(float bias) {
+void RenderDevice::SetRenderStateDepthBias(float bias)
+{
    if (SetRenderStateCache(DEPTHBIAS, *((DWORD*)&bias))) return;
 
 #ifdef ENABLE_SDL
-   if (bias == 0.0f) {
+   if (bias == 0.0f)
       CHECKD3D(glDisable(GL_POLYGON_OFFSET_FILL));
-   }
    else {
       CHECKD3D(glEnable(GL_POLYGON_OFFSET_FILL));
       CHECKD3D(glPolygonOffset(0.0f, bias));
    }
 #else
    bias *= BASEDEPTHBIAS;
-   CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)RenderStates::DEPTHBIAS, *((DWORD*)&bias)));
+   CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)DEPTHBIAS, *((DWORD*)&bias)));
 #endif
+   m_curStateChanges++;
 }
 
-void RenderDevice::SetRenderStateClipPlane0(bool enabled) {
-   if (SetRenderStateCache(CLIPPLANEENABLE, enabled ? 1 : 0)) return;
+void RenderDevice::SetRenderStateClipPlane0(const bool enabled)
+{
+   if (SetRenderStateCache(CLIPPLANEENABLE, enabled ? PLANE0 : 0)) return;
 
 #ifdef ENABLE_SDL
    // Basicshader already prepared with proper clipplane so just need to enable/disable it
    if (enabled)
-   {
       CHECKD3D(glEnable(GL_CLIP_DISTANCE0));
-}
    else
-   {
       CHECKD3D(glDisable(GL_CLIP_DISTANCE0));
-   }
 #else
-   CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)RenderStates::CLIPPLANEENABLE, enabled ? PLANE0 : 0));
+   CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)CLIPPLANEENABLE, enabled ? PLANE0 : 0));
 #endif 
+   m_curStateChanges++;
 }
 
-void RenderDevice::SetRenderStateAlphaTestFunction(DWORD testValue, RenderStateValue testFunction, bool enabled) {
+void RenderDevice::SetRenderStateAlphaTestFunction(const DWORD testValue, const RenderStateValue testFunction, const bool enabled)
+{
 #ifdef ENABLE_SDL
    //TODO Needs to be done in shader
 #else 
-      if (!SetRenderStateCache(ALPHAREF, testValue))
-         CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)RenderStates::ALPHAREF, testValue));
+   if (!SetRenderStateCache(ALPHAREF, testValue))
+      CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)ALPHAREF, testValue));
    if (!SetRenderStateCache(ALPHATESTENABLE, enabled ? RS_TRUE : RS_FALSE))
-      CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)RenderStates::ALPHATESTENABLE, enabled ? RS_TRUE : RS_FALSE));
-      if (!SetRenderStateCache(ALPHAFUNC, Z_GREATEREQUAL))
-         CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)RenderStates::ALPHAFUNC, Z_GREATEREQUAL));
+      CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)ALPHATESTENABLE, enabled ? RS_TRUE : RS_FALSE));
+   if (!SetRenderStateCache(ALPHAFUNC, testFunction))
+      CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)ALPHAFUNC, testFunction));
 #endif
 }
 
@@ -2566,15 +2559,15 @@ void* RenderDevice::AttachZBufferTo(RenderTarget* surf)
    {
       D3DTexture* dup;
       CHECKD3D(m_pD3DDevice->CreateTexture(desc.Width, desc.Height, 1,
-         D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)MAKEFOURCC('I', 'N', 'T', 'Z'), (D3DPOOL)memoryPool::DEFAULT, &dup, NULL)); // D3DUSAGE_AUTOGENMIPMAP?
+               D3DUSAGE_DEPTHSTENCIL, (D3DFORMAT)MAKEFOURCC('I', 'N', 'T', 'Z'), (D3DPOOL)memoryPool::DEFAULT, &dup, nullptr)); // D3DUSAGE_AUTOGENMIPMAP?
 
       return dup;
    }
    else
    {
       IDirect3DSurface9 *pZBuf;
-      HRESULT hr = m_pD3DDevice->CreateDepthStencilSurface(desc.Width, desc.Height, D3DFMT_D16 /*D3DFMT_D24X8*/, //!!
-         desc.MultiSampleType, desc.MultiSampleQuality, FALSE, &pZBuf, NULL);
+      const HRESULT hr = m_pD3DDevice->CreateDepthStencilSurface(desc.Width, desc.Height, D3DFMT_D16 /*D3DFMT_D24X8*/, //!!
+                                                                 desc.MultiSampleType, desc.MultiSampleQuality, FALSE, &pZBuf, nullptr);
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create depth buffer!", hr, __FILE__, __LINE__);
 
@@ -2582,7 +2575,7 @@ void* RenderDevice::AttachZBufferTo(RenderTarget* surf)
    }
    SAFE_RELEASE_NO_RCC(surf);
 #endif
-   return NULL;
+   return nullptr;
 }
 
 //Only used for DX9
@@ -2599,7 +2592,7 @@ void RenderDevice::DrawPrimitive(const PrimitiveTypes type, const DWORD fvf, con
    hr = m_pD3DDevice->DrawPrimitiveUP((D3DPRIMITIVETYPE)type, np, vertices, fvfToSize(fvf));
    if (FAILED(hr))
       ReportError("Fatal Error: DrawPrimitiveUP failed!", hr, __FILE__, __LINE__);
-   vertexBuffer::bindNull();      // DrawPrimitiveUP sets the VB to NULL
+   vertexBuffer::bindNull();      // DrawPrimitiveUP sets the VB to nullptr
 
    m_curDrawCalls++;
 #endif
@@ -2640,7 +2633,7 @@ void RenderDevice::DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, V
 
 void RenderDevice::DrawIndexedPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, IndexBuffer* ib, const DWORD startIndex, const DWORD indexCount)
 {
-   if (vb == NULL || ib == NULL)
+   if (vb == nullptr || ib == nullptr)
       return;
 
    const unsigned int np = ComputePrimitiveCount(type, indexCount);
@@ -2667,7 +2660,7 @@ void RenderDevice::UpdateVRPosition()
 #ifdef ENABLE_VR
    if (!m_pHMD) return;
 
-   vr::VRCompositor()->WaitGetPoses(m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, NULL, 0);
+   vr::VRCompositor()->WaitGetPoses(m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, nullptr, 0);
 
    for (int device = 0; device < vr::k_unMaxTrackedDeviceCount; device++) {
       if ((m_rTrackedDevicePose[device].bPoseIsValid) && (m_pHMD->GetTrackedDeviceClass(device) == vr::TrackedDeviceClass_HMD)) {

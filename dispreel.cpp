@@ -158,7 +158,6 @@ void DispReel::UIRenderPass2(Sur * const psur)
    }
 }
 
-
 // Registers the timer with the game call which then makes a call back when the interval
 // has expired.
 //
@@ -232,7 +231,7 @@ void DispReel::RenderDynamic()
    // set up all the reel positions within the object frame
    const float renderspacingx = max(0.0f, m_d.m_reelspacing / (float)EDITOR_BG_WIDTH);
    const float renderspacingy = max(0.0f, m_d.m_reelspacing / (float)EDITOR_BG_HEIGHT);
-   float x1 = m_d.m_v1.x / (float)EDITOR_BG_WIDTH + renderspacingx;
+         float x1 = m_d.m_v1.x / (float)EDITOR_BG_WIDTH  + renderspacingx;
    const float y1 = m_d.m_v1.y / (float)EDITOR_BG_HEIGHT + renderspacingy;
 
    for (int r = 0; r < m_d.m_reelcount; ++r) //!! optimize by doing all draws in a single one
@@ -242,19 +241,19 @@ void DispReel::RenderDynamic()
       const float u1 = m_digitTexCoords[m_reelInfo[r].currentValue].u_max;
       const float v1 = m_digitTexCoords[m_reelInfo[r].currentValue].v_max;
 
-       pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScale, x1, y1, m_renderwidth, m_renderheight);
-       pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScaleTex, u0, v0, u1-u0, v1-v0);
-       pd3dDevice->DMDShader->Begin(0);
-       pd3dDevice->DrawTexturedQuad();//(Vertex3D_TexelOnly*)Verts
-       pd3dDevice->DMDShader->End();
+      pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScale, x1, y1, m_renderwidth, m_renderheight);
+      pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScaleTex, u0, v0, u1-u0, v1-v0);
+      pd3dDevice->DMDShader->Begin(0);
+      pd3dDevice->DrawTexturedQuad();//(Vertex3D_TexelOnly*)Verts
+      pd3dDevice->DMDShader->End();
 
-       // move to the next reel
-       x1 += renderspacingx + m_renderwidth;
+      // move to the next reel
+      x1 += renderspacingx + m_renderwidth;
    }
    pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScale, 0.0f, 0.0f, 1.0f, 1.0f);
    pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScaleTex, 0.0f, 0.0f, 1.0f, 1.0f);
 
-   //g_pplayer->m_pin3d.DisableAlphaBlend(); //!! not necessary anymore
+   //pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE); //!! not necessary anymore
    pd3dDevice->SetRenderState(RenderDevice::ALPHATESTENABLE, RenderDevice::RS_FALSE);
 
    //if(m_ptable->m_tblMirrorEnabled^m_ptable->m_reflectionEnabled)
@@ -308,13 +307,13 @@ void DispReel::RenderSetup()
    if (GridCols != 0 && GridRows != 0)
    {
       // get the size of the individual reel digits (if m_digitrange is wrong we can forget the rest)
-      m_reeldigitwidth = (float)pin->m_width / (float)GridCols;
+      m_reeldigitwidth  = (float)pin->m_width  / (float)GridCols;
       m_reeldigitheight = (float)pin->m_height / (float)GridRows;
    }
    else
       ShowError("DispReel: GridCols/GridRows are zero!");
 
-   const float ratiox = m_reeldigitwidth / (float)pin->m_width;
+   const float ratiox = m_reeldigitwidth  / (float)pin->m_width;
    const float ratioy = m_reeldigitheight / (float)pin->m_height;
 
    int gr = 0;
@@ -435,7 +434,6 @@ void DispReel::SetObjectPos()
    m_vpinball->SetObjectPosCur(m_d.m_v1.x, m_d.m_v1.y);
 }
 
-
 void DispReel::MoveOffset(const float dx, const float dy)
 {
    m_d.m_v1.x += dx;
@@ -457,7 +455,6 @@ void DispReel::PutCenter(const Vertex2D& pv)
    m_d.m_v2.x = pv.x + getBoxWidth();
    m_d.m_v2.y = pv.y + getBoxHeight();
 }
-
 
 HRESULT DispReel::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupForPlay)
 {

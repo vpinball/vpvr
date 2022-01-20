@@ -191,7 +191,9 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
       ZFUNC = D3DRS_ZFUNC,
       ZWRITEENABLE = D3DRS_ZWRITEENABLE,
       DEPTHBIAS = D3DRS_DEPTHBIAS,
-      COLORWRITEENABLE = D3DRS_COLORWRITEENABLE
+      COLORWRITEENABLE = D3DRS_COLORWRITEENABLE,
+      RENDERSTATE_COUNT,
+      RENDERSTATE_INVALID
    };
 
    enum RenderStateValue
@@ -257,7 +259,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    void Flip(const bool vsync);
 
    bool SetMaximumPreRenderedFrames(const DWORD frames);
-   
+
    D3DTexture* GetBackBufferTexture() const { return m_pOffscreenBackBufferTexture; }
    D3DTexture* GetBackBufferTmpTexture() const { return m_pOffscreenBackBufferStereoTexture; }
    D3DTexture* GetNonMSAABlitTexture(int m_MSAASamples) const { return m_MSAASamples == 1 ? m_pOffscreenBackBufferTexture : m_pOffscreenNonMSAABlitTexture; }

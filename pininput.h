@@ -199,8 +199,8 @@ private:
    bool m_keyPressedState[4];
    DWORD m_nextKeyPressedTime;
 
-   int m_inputApi; //0=DirectInput 1=XInput, 2=SDL, 3=iGamecontroller
-   int m_rumbleMode; //0 Off, 1=Table only, 2=Generic only, 3=Table with generic as fallback
+   int m_inputApi;   // 0=DirectInput 1=XInput, 2=SDL, 3=IGamecontroller
+   int m_rumbleMode; // 0=Off, 1=Table only, 2=Generic only, 3=Table with generic as fallback
 
 #ifdef ENABLE_XINPUT
    int m_inputDeviceXI;
@@ -217,7 +217,7 @@ private:
 };
 
 #define VK_TO_DIK_SIZE 105
-static const unsigned char VK_TO_DIK[VK_TO_DIK_SIZE][2] =
+static constexpr unsigned char VK_TO_DIK[VK_TO_DIK_SIZE][2] =
 {
    { VK_BACK, DIK_BACK },
    { VK_TAB, DIK_TAB },

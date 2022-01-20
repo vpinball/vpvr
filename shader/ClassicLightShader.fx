@@ -79,9 +79,9 @@ struct VS_LIGHT_OUTPUT
 };
 
 // vertex shader is skipped for backglass elements, due to D3DDECLUSAGE_POSITIONT 
-VS_LIGHT_OUTPUT vs_light_main (in float4 vPosition : POSITION0,  
-                               in float3 vNormal   : NORMAL0,  
-                               in float2 tc        : TEXCOORD0) 
+VS_LIGHT_OUTPUT vs_light_main (in float4 vPosition : POSITION0,
+                               in float3 vNormal   : NORMAL0,
+                               in float2 tc        : TEXCOORD0)
 {
    // trafo all into worldview space (as most of the weird trafos happen in view, world is identity so far)
    const float3 P = mul(vPosition, matWorldView).xyz;

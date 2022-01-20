@@ -117,7 +117,6 @@ public:
 
    RenderDevice* m_pd3dPrimaryDevice;
    RenderDevice* m_pd3dSecondaryDevice;
-
    RenderTarget* m_pddsBackBuffer;
 
    D3DTexture* m_pddsAOBackBuffer;
@@ -146,9 +145,10 @@ public:
    float m_AAfactor;
 
 private:
-   VertexBuffer * m_tableVBuffer;
+   VertexBuffer *m_tableVBuffer;
 #ifdef ENABLE_BAM
-   public: void UpdateBAMHeadTracking();                 // #ravarcade: UpdateBAMHeadTracking will set proj/view matrix to add BAM view and head tracking
+public:
+   void UpdateBAMHeadTracking();                 // #ravarcade: UpdateBAMHeadTracking will set proj/view matrix to add BAM view and head tracking
 #endif
 };
 
