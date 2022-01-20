@@ -17,8 +17,8 @@ public:
    void unlock(void);
    void release(void);
    void bind();
-   static void bindNull() { m_curIndexBuffer = nullptr; }
 
+   static void bindNull() { m_curIndexBuffer = nullptr; }
    static void CreateIndexBuffer(const unsigned int numIndices, const DWORD usage, const IndexBuffer::Format format, IndexBuffer **idxBuffer);
 
    static IndexBuffer* CreateAndFillIndexBuffer(const unsigned int numIndices, const unsigned int * indices);
@@ -26,9 +26,11 @@ public:
    static IndexBuffer* CreateAndFillIndexBuffer(const std::vector<unsigned int>& indices);
    static IndexBuffer* CreateAndFillIndexBuffer(const std::vector<WORD>& indices);
 
+   static void UploadBuffers();
+
    GLuint getOffset() const { return offset; }
    Format getIndexFormat() const { return indexFormat; }
-   static void UploadBuffers();
+
 private:
    GLuint count;
    GLuint size;
@@ -48,6 +50,7 @@ private:
 
    static IndexBuffer* m_curIndexBuffer; // for caching
    static std::vector<IndexBuffer*> notUploadedBuffers;
+
    void UploadData(bool freeData);
    void addToNotUploadedBuffers(const void* indices = nullptr);
 };
@@ -66,24 +69,28 @@ public:
       WRITEONLY = 0,                      // in DX9, this is specified during VB creation
       NOOVERWRITE = D3DLOCK_NOOVERWRITE,  // meaning: no recently drawn vertices are overwritten. only works with dynamic VBs.
                                           // it's only needed for VBs which are locked several times per frame
-                                          DISCARD = D3DLOCK_DISCARD           // discard previous contents; only works with dynamic VBs
+      DISCARD = D3DLOCK_DISCARD           // discard previous contents; only works with dynamic VBs
    };
 
    void lock(const unsigned int offsetToLock, const unsigned int sizeToLock, void **dataBuffer, const DWORD flags);
    void unlock(void);
    void release(void);
+   void bind();
 
-   static void CreateIndexBuffer(const unsigned int numIndices, const DWORD usage, const IndexBuffer::Format format, IndexBuffer **idxBuffer);
+   static void bindNull() { m_curIndexBuffer = nullptr; }
+   static void setD3DDevice(IDirect3DDevice9* pD3DDevice) { m_pD3DDevice = pD3DDevice; }
+
+   static void CreateIndexBuffer(const unsigned int numIndices, const DWORD usage, const IndexBuffer::Format format, IndexBuffer** idxBuffer);
 
    static IndexBuffer* CreateAndFillIndexBuffer(const unsigned int numIndices, const unsigned int * indices);
    static IndexBuffer* CreateAndFillIndexBuffer(const unsigned int numIndices, const WORD * indices);
    static IndexBuffer* CreateAndFillIndexBuffer(const std::vector<unsigned int>& indices);
    static IndexBuffer* CreateAndFillIndexBuffer(const std::vector<WORD>& indices);
 
-   static void setD3DDevice(IDirect3DDevice9* pD3DDevice);
-
 private:
    IndexBuffer();      // disable default constructor
+
+   static IndexBuffer* m_curIndexBuffer; // for caching
    static IDirect3DDevice9* m_pD3DDevice;
 };
 

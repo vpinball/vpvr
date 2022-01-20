@@ -337,7 +337,7 @@ void Plunger::RenderSetup()
    float springLoops = 0.0f, springEndLoops = 0.0f;
    float springGauge = 0.0f;
    float springRadius = 0.0f;
-   const float springMinSpacing = 2.2f;
+   constexpr float springMinSpacing = 2.2f;
    float rody = beginy + m_d.m_height;
    const float zScale = m_ptable->m_BG_scalez[m_ptable->m_BG_current_set];
 

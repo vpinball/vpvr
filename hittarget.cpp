@@ -17,6 +17,7 @@
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
 
+
 ////////////////////////////////////////////////////////////////////////////////
 constexpr float HitTarget::DROP_TARGET_LIMIT = 52.0f;
 
@@ -705,7 +706,7 @@ void HitTarget::RenderObject()
    pd3dDevice->SetRenderStateDepthBias(0.0f);
    pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
 #ifdef TWOSIDED_TRANSPARENCY
-   pd3dDevice->SetRenderStateCulling(mat->m_bOpacityActive ? D3DCULL_CW : D3DCULL_CCW);
+   pd3dDevice->SetRenderStateCulling(mat->m_bOpacityActive ? RenderDevice::CULL_CW : RenderDevice::CULL_CCW);
 #else
    pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 #endif
@@ -743,9 +744,9 @@ void HitTarget::RenderObject()
 #endif
 
    pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_CLAMP);
-   //g_pplayer->m_pin3d.DisableAlphaBlend(); //!! not necessary anymore
+   //pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE); //!! not necessary anymore
    if (m_d.m_disableLightingTop != 0.f || m_d.m_disableLightingBelow != 0.f)
-      pd3dDevice->basicShader->SetDisableLighting(vec4(0.f, 0.f, 0.f, 0.f));
+      pd3dDevice->basicShader->SetDisableLighting(vec4(0.f,0.f, 0.f,0.f));
 }
 
 void HitTarget::UpdateTarget()

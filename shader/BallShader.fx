@@ -155,7 +155,6 @@ voutReflection vsBallReflection( in vin IN )
 voutTrail vsBallTrail( in vin IN )
 {
     voutTrail OUT;
-    
     OUT.position = mul(IN.position, matWorldViewProj);
 	OUT.tex0_alpha = float3(IN.tex0, IN.normal.x); //!! abuses normal for now
 

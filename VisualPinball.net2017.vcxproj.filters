@@ -533,9 +533,6 @@
     <Filter Include="inc">
       <UniqueIdentifier>{ba1f1ac4-658a-4269-9aa3-1a5f1b5a4784}</UniqueIdentifier>
     </Filter>
-    <Filter Include="xaudio">
-      <UniqueIdentifier>{3be2f050-9d6d-4658-b7eb-86d3fbd2ac86}</UniqueIdentifier>
-    </Filter>
     <Filter Include="headers">
       <UniqueIdentifier>{7753e061-8049-4205-aff5-172e23e728ad}</UniqueIdentifier>
     </Filter>
@@ -609,60 +606,6 @@
     </ClInclude>
     <ClInclude Include="inc\scintilla.h">
       <Filter>inc</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\aac_codec.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\audio_output.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\control.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\control_win32.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\decoder.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\feedback.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\fft.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\file_input.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\file_output.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\memory_input.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\mpeg_codec.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\player.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\properties.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\resampling_output_filter.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\stream_input.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\wave_codec.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\xanalyze.h">
-      <Filter>xaudio</Filter>
-    </ClInclude>
-    <ClInclude Include="inc\xaudio\xaudio.h">
-      <Filter>xaudio</Filter>
     </ClInclude>
     <ClInclude Include="ballex.h">
       <Filter>headers</Filter>
@@ -1072,6 +1015,12 @@
     <ClInclude Include="inc\win32xx\include\wxx_file.h">
       <Filter>inc\Win32xx\include</Filter>
     </ClInclude>
+    <ClInclude Include="inc\win32xx\include\wxx_filefind.h">
+      <Filter>inc\Win32xx\include</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\win32xx\include\wxx_folderdialog.h">
+      <Filter>inc\Win32xx\include</Filter>
+    </ClInclude>
     <ClInclude Include="inc\win32xx\include\wxx_frame.h">
       <Filter>inc\Win32xx\include</Filter>
     </ClInclude>
@@ -1096,6 +1045,9 @@
     <ClInclude Include="inc\win32xx\include\wxx_metafile.h">
       <Filter>inc\Win32xx\include</Filter>
     </ClInclude>
+    <ClInclude Include="inc\win32xx\include\wxx_mutex.h">
+      <Filter>inc\Win32xx\include</Filter>
+    </ClInclude>
     <ClInclude Include="inc\win32xx\include\wxx_printdialogs.h">
       <Filter>inc\Win32xx\include</Filter>
     </ClInclude>
@@ -1115,6 +1067,9 @@
       <Filter>inc\Win32xx\include</Filter>
     </ClInclude>
     <ClInclude Include="inc\win32xx\include\wxx_richedit.h">
+      <Filter>inc\Win32xx\include</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\win32xx\include\wxx_scrollview.h">
       <Filter>inc\Win32xx\include</Filter>
     </ClInclude>
     <ClInclude Include="inc\win32xx\include\wxx_shared_ptr.h">

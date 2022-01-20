@@ -68,16 +68,16 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
    char tmp[256];
    sprintf_s(tmp, 256, "%f", ballAspecRatioOffsetX);
    SetDlgItemTextA(IDC_CORRECTION_X, tmp);
-   float ballAspecRatioOffsetY = 0.0f;
+   constexpr float ballAspecRatioOffsetY = 0.0f;
    sprintf_s(tmp, 256, "%f", ballAspecRatioOffsetY);
    SetDlgItemTextA(IDC_CORRECTION_Y, tmp);
-   float latitude = 52.52f;
+   constexpr float latitude = 52.52f;
    sprintf_s(tmp, 256, "%f", latitude);
    SetDlgItemTextA(IDC_DN_LATITUDE, tmp);
-   float longitude = 13.37f;
+   constexpr float longitude = 13.37f;
    sprintf_s(tmp, 256, "%f", longitude);
    SetDlgItemTextA(IDC_DN_LONGITUDE, tmp);
-   float nudgeStrength = 2e-2f;
+   constexpr float nudgeStrength = 2e-2f;
    sprintf_s(tmp, 256, "%f", nudgeStrength);
    SetDlgItemTextA(IDC_NUDGE_STRENGTH, tmp);
 
@@ -109,10 +109,10 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
    float stereo3DOfs = 0.0f;
    sprintf_s(tmp, 256, "%f", stereo3DOfs);
    SetDlgItemTextA(IDC_3D_STEREO_OFS, tmp);
-   float stereo3DMS = 0.03f;
+   constexpr float stereo3DMS = 0.03f;
    sprintf_s(tmp, 256, "%f", stereo3DMS);
    SetDlgItemTextA(IDC_3D_STEREO_MS, tmp);
-   float stereo3DZPD = 0.5f;
+   constexpr float stereo3DZPD = 0.5f;
    sprintf_s(tmp, 256, "%f", stereo3DZPD);
    SetDlgItemTextA(IDC_3D_STEREO_ZPD, tmp);
    SendMessage(GetDlgItem(IDC_USE_NVIDIA_API_CHECK).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -286,11 +286,11 @@ BOOL VideoOptionsDialog::OnInitDialog()
    const int maxTexDim = LoadValueIntWithDefault("Player", "MaxTexDimension", 0); // default: Don't resize textures
    switch (maxTexDim)
    {
-   case 3072:SendMessage(GetDlgItem(IDC_Tex3072).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);      break;
-   case 512: // legacy, map to 1024 nowadays
-   case 1024:SendMessage(GetDlgItem(IDC_Tex1024).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);      break;
-   case 2048:SendMessage(GetDlgItem(IDC_Tex2048).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);      break;
-   default:	SendMessage(GetDlgItem(IDC_TexUnlimited).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0); break;
+      case 3072:SendMessage(GetDlgItem(IDC_Tex3072).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);      break;
+      case 512: // legacy, map to 1024 nowadays
+      case 1024:SendMessage(GetDlgItem(IDC_Tex1024).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);      break;
+      case 2048:SendMessage(GetDlgItem(IDC_Tex2048).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);      break;
+      default:	SendMessage(GetDlgItem(IDC_TexUnlimited).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0); break;
    }
 
    const bool reflection = LoadValueBoolWithDefault("Player", "BallReflection", true);
@@ -489,7 +489,6 @@ BOOL VideoOptionsDialog::OnInitDialog()
    SendMessage(GetDlgItem(IDC_10BIT_VIDEO).GetHwnd(), BM_SETCHECK, video10bit ? BST_CHECKED : BST_UNCHECKED, 0);
 
    const int depthcur = LoadValueIntWithDefault("Player", "ColorDepth", 32);
-
    const int refreshrate = LoadValueIntWithDefault("Player", "RefreshRate", 0);
 
    int display;
@@ -499,7 +498,8 @@ BOOL VideoOptionsDialog::OnInitDialog()
    if ((hr != S_OK) || ((int)displays.size() <= display))
       display = -1;
 
-   SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_RESETCONTENT, 0, 0);
+   hwnd = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
+   SendMessage(hwnd, CB_RESETCONTENT, 0, 0);
 
    for (std::vector<DisplayConfig>::iterator dispConf = displays.begin(); dispConf != displays.end(); ++dispConf)
    {
@@ -507,9 +507,9 @@ BOOL VideoOptionsDialog::OnInitDialog()
          display = dispConf->display;
       char displayName[256];
       sprintf_s(displayName, "Display %d%s %dx%d %s", dispConf->display + 1, (dispConf->isPrimary) ? "*" : "", dispConf->width, dispConf->height, dispConf->GPU_Name);
-      SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)displayName);
+      SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)displayName);
    }
-   SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_SETCURSEL, display, 0);
+   SendMessage(hwnd, CB_SETCURSEL, display, 0);
 
    const bool fullscreen = LoadValueBoolWithDefault("Player", "FullScreen", IsWindows10_1803orAbove());
 
@@ -541,10 +541,10 @@ BOOL VideoOptionsDialog::OnInitDialog()
    const int ballStretchMode = LoadValueIntWithDefault("Player", "BallStretchMode", 0);
    switch (ballStretchMode)
    {
-   default:
-   case 0:  SendMessage(GetDlgItem(IDC_StretchNo).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);      break;
-   case 1:  SendMessage(GetDlgItem(IDC_StretchYes).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);     break;
-   case 2:  SendMessage(GetDlgItem(IDC_StretchMonitor).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0); break;
+      default:
+      case 0:  SendMessage(GetDlgItem(IDC_StretchNo).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);      break;
+      case 1:  SendMessage(GetDlgItem(IDC_StretchYes).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);     break;
+      case 2:  SendMessage(GetDlgItem(IDC_StretchMonitor).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0); break;
    }
 
    // set selected Monitors
@@ -717,8 +717,8 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
       } // end case GET_WINDOW_MODES
       case GET_FULLSCREENMODES:
       {
-         HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
-         int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
+         const HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
+         const int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
          EnumerateDisplayModes(display, allVideoModes);
 
          VideoMode curSelMode;
@@ -775,109 +775,107 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 
    switch (LOWORD(wParam))
    {
-   case IDC_DEFAULTS:
-   {
-      ResetVideoPreferences(0);
-      break;
-   }
-   case IDC_DEFAULTS_LOW:
-   {
-      ResetVideoPreferences(1);
-      break;
-   }
-   case IDC_DEFAULTS_HIGH:
-   {
-      ResetVideoPreferences(2);
-      break;
-   }
-   case IDC_RESET_WINDOW:
-   {
-      (void)DeleteValue("Player", "WindowPosX");
-      (void)DeleteValue("Player", "WindowPosY");
-      break;
-   }
-   case IDC_OVERWRITE_BALL_IMAGE_CHECK:
-   {
-      const BOOL overwriteEnabled = (IsDlgButtonChecked(IDC_OVERWRITE_BALL_IMAGE_CHECK) == BST_CHECKED) ? TRUE : FALSE;
-      ::EnableWindow(GetDlgItem(IDC_BROWSE_BALL_IMAGE).GetHwnd(), overwriteEnabled);
-      ::EnableWindow(GetDlgItem(IDC_BROWSE_BALL_DECAL).GetHwnd(), overwriteEnabled);
-      ::EnableWindow(GetDlgItem(IDC_BALL_IMAGE_EDIT).GetHwnd(), overwriteEnabled);
-      ::EnableWindow(GetDlgItem(IDC_BALL_DECAL_EDIT).GetHwnd(), overwriteEnabled);
-      break;
-   }
-   case IDC_BROWSE_BALL_IMAGE:
-   {
-      char szFileName[MAXSTRING];
-      szFileName[0] = '\0';
-
-      OPENFILENAME ofn;
-      ZeroMemory(&ofn, sizeof(OPENFILENAME));
-      ofn.lStructSize = sizeof(OPENFILENAME);
-      ofn.hInstance = g_pvp->theInstance;
-      ofn.hwndOwner = g_pvp->GetHwnd();
-      // TEXT
-      ofn.lpstrFilter = "Bitmap, JPEG, PNG, TGA, WEBP, EXR, HDR Files (.bmp/.jpg/.png/.tga/.webp/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.tga;*.webp;*.exr;*.hdr\0";
-      ofn.lpstrFile = szFileName;
-      ofn.nMaxFile = sizeof(szFileName);
-      ofn.lpstrDefExt = "png";
-      ofn.Flags = OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY;
-      const int ret = GetOpenFileName(&ofn);
-      if (!ret)
+      case IDC_DEFAULTS:
+      {
+         ResetVideoPreferences(0);
          break;
-      SetDlgItemText(IDC_BALL_IMAGE_EDIT, szFileName);
-
-      break;
-   }
-   case IDC_BROWSE_BALL_DECAL:
-   {
-      char szFileName[MAXSTRING];
-      szFileName[0] = '\0';
-
-      OPENFILENAME ofn;
-      ZeroMemory(&ofn, sizeof(OPENFILENAME));
-      ofn.lStructSize = sizeof(OPENFILENAME);
-      ofn.hInstance = g_pvp->theInstance;
-      ofn.hwndOwner = g_pvp->GetHwnd();
-      // TEXT
-	  ofn.lpstrFilter = "Bitmap, JPEG, PNG, TGA, WEBP, EXR, HDR Files (.bmp/.jpg/.png/.tga/.webp/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.tga;*.webp;*.exr;*.hdr\0";
-      ofn.lpstrFile = szFileName;
-      ofn.nMaxFile = sizeof(szFileName);
-      ofn.lpstrDefExt = "png";
-      ofn.Flags = OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY;
-      const int ret = GetOpenFileName(&ofn);
-      if (!ret)
-         break;
-      SetDlgItemText(IDC_BALL_DECAL_EDIT, szFileName);
-      break;
-   }
-
-   case IDC_DISPLAY_ID:
-   {
-      const size_t checked = SendDlgItemMessage(IDC_FULLSCREEN, BM_GETCHECK, 0, 0);
-      const size_t index = SendMessage(GetDlgItem(IDC_SIZELIST).GetHwnd(), LB_GETCURSEL, 0, 0);
-      if (allVideoModes.size() == 0) {
-         const int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
-         EnumerateDisplayModes(display, allVideoModes);
       }
-      if (allVideoModes.size() > index) {
-         const VideoMode* const pvm = &allVideoModes[index];
-         if (checked)
-            SendMessage(GET_FULLSCREENMODES, (pvm->width << 16) | pvm->refreshrate, (pvm->height << 16) | pvm->depth);
+      case IDC_DEFAULTS_LOW:
+      {
+         ResetVideoPreferences(1);
+         break;
+      }
+      case IDC_DEFAULTS_HIGH:
+      {
+         ResetVideoPreferences(2);
+         break;
+      }
+      case IDC_RESET_WINDOW:
+      {
+         (void)DeleteValue("Player", "WindowPosX");
+         (void)DeleteValue("Player", "WindowPosY");
+         break;
+      }
+      case IDC_OVERWRITE_BALL_IMAGE_CHECK:
+      {
+         const BOOL overwriteEnabled = (IsDlgButtonChecked(IDC_OVERWRITE_BALL_IMAGE_CHECK) == BST_CHECKED) ? TRUE : FALSE;
+         ::EnableWindow(GetDlgItem(IDC_BROWSE_BALL_IMAGE).GetHwnd(), overwriteEnabled);
+         ::EnableWindow(GetDlgItem(IDC_BROWSE_BALL_DECAL).GetHwnd(), overwriteEnabled);
+         ::EnableWindow(GetDlgItem(IDC_BALL_IMAGE_EDIT).GetHwnd(), overwriteEnabled);
+         ::EnableWindow(GetDlgItem(IDC_BALL_DECAL_EDIT).GetHwnd(), overwriteEnabled);
+         break;
+      }
+      case IDC_BROWSE_BALL_IMAGE:
+      {
+         char szFileName[MAXSTRING];
+         szFileName[0] = '\0';
+
+         OPENFILENAME ofn = {};
+         ofn.lStructSize = sizeof(OPENFILENAME);
+         ofn.hInstance = g_pvp->theInstance;
+         ofn.hwndOwner = g_pvp->GetHwnd();
+         // TEXT
+         ofn.lpstrFilter = "Bitmap, JPEG, PNG, TGA, WEBP, EXR, HDR Files (.bmp/.jpg/.png/.tga/.webp/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.tga;*.webp;*.exr;*.hdr\0";
+         ofn.lpstrFile = szFileName;
+         ofn.nMaxFile = sizeof(szFileName);
+         ofn.lpstrDefExt = "png";
+         ofn.Flags = OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY;
+         const int ret = GetOpenFileName(&ofn);
+         if (!ret)
+            break;
+         SetDlgItemText(IDC_BALL_IMAGE_EDIT, szFileName);
+
+         break;
+      }
+      case IDC_BROWSE_BALL_DECAL:
+      {
+         char szFileName[MAXSTRING];
+         szFileName[0] = '\0';
+
+         OPENFILENAME ofn = {};
+         ofn.lStructSize = sizeof(OPENFILENAME);
+         ofn.hInstance = g_pvp->theInstance;
+         ofn.hwndOwner = g_pvp->GetHwnd();
+         // TEXT
+         ofn.lpstrFilter = "Bitmap, JPEG, PNG, TGA, WEBP, EXR, HDR Files (.bmp/.jpg/.png/.tga/.webp/.exr/.hdr)\0*.bmp;*.jpg;*.jpeg;*.png;*.tga;*.webp;*.exr;*.hdr\0";
+         ofn.lpstrFile = szFileName;
+         ofn.nMaxFile = sizeof(szFileName);
+         ofn.lpstrDefExt = "png";
+         ofn.Flags = OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY;
+         const int ret = GetOpenFileName(&ofn);
+         if (!ret)
+            break;
+         SetDlgItemText(IDC_BALL_DECAL_EDIT, szFileName);
+
+         break;
+      }
+      case IDC_DISPLAY_ID:
+      {
+         const size_t checked = SendDlgItemMessage(IDC_FULLSCREEN, BM_GETCHECK, 0, 0);
+         const size_t index = SendMessage(GetDlgItem(IDC_SIZELIST).GetHwnd(), LB_GETCURSEL, 0, 0);
+         if (allVideoModes.size() == 0) {
+            const int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
+            EnumerateDisplayModes(display, allVideoModes);
+         }
+         if (allVideoModes.size() > index) {
+            const VideoMode* const pvm = &allVideoModes[index];
+            if (checked)
+               SendMessage(GET_FULLSCREENMODES, (pvm->width << 16) | pvm->refreshrate, (pvm->height << 16) | pvm->depth);
+            else
+               SendMessage(GET_WINDOW_MODES, pvm->width, pvm->height);
+         }
          else
-            SendMessage(GET_WINDOW_MODES, pvm->width, pvm->height);
+            SendMessage(checked ? GET_FULLSCREENMODES : GET_WINDOW_MODES, 0, 0);
+         break;
       }
-      else
+      case IDC_FULLSCREEN:
+      {
+         const size_t checked = SendDlgItemMessage(IDC_FULLSCREEN, BM_GETCHECK, 0, 0);
          SendMessage(checked ? GET_FULLSCREENMODES : GET_WINDOW_MODES, 0, 0);
-      break;
-   }
-   case IDC_FULLSCREEN:
-   {
-      const size_t checked = SendDlgItemMessage(IDC_FULLSCREEN, BM_GETCHECK, 0, 0);
-      SendMessage(checked ? GET_FULLSCREENMODES : GET_WINDOW_MODES, 0, 0);
-      break;
-   }
-   default:
-      return FALSE;
+         break;
+      }
+      default:
+         return FALSE;
    }
    return TRUE;
 }
@@ -1039,7 +1037,6 @@ void VideoOptionsDialog::OnOK()
    SaveValueInt("Player", "BallStretchMode", ballStretchMode);
 
    // get selected Monitors
-   // Monitors: 4:3, 16:9, 16:10, 21:10
    // Monitors: 4:3, 16:9, 16:10, 21:10, 21:9
    /*size_t selected = SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_GETCURSEL, 0, 0);
    if (selected == LB_ERR)

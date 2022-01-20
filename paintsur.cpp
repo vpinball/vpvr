@@ -182,9 +182,9 @@ void PaintSur::Polyline(const Vertex2D * const rgv, const int count)
    SelectObject(m_hdc, m_hpnLine);
 
    /*
-   * There seems to be a known GDI bug where drawing very large polylines in one
-   * call freezes the system shortly, so we batch them into groups of MAX_SUR_PT_CACHE.
-   */
+    * There seems to be a known GDI bug where drawing very large polylines in one
+    * call freezes the system shortly, so we batch them into groups of MAX_SUR_PT_CACHE.
+    */
    //m_ptCache.resize(min(count,MAX_SUR_PT_CACHE+1));
 
    for (int i = 0; i < count; i += MAX_SUR_PT_CACHE)
@@ -206,9 +206,9 @@ void PaintSur::Lines(const Vertex2D * const rgv, const int count)
    SelectObject(m_hdc, m_hpnLine);
 
    /*
-   * There seems to be a known GDI bug where drawing very large polylines in one
-   * call freezes the system shortly, so we batch them into groups of MAX_SUR_PT_CACHE.
-   */
+    * There seems to be a known GDI bug where drawing very large polylines in one
+    * call freezes the system shortly, so we batch them into groups of MAX_SUR_PT_CACHE.
+    */
    //m_ptCache.resize(min(count,MAX_SUR_PT_CACHE)*2);
    //std::vector<DWORD> m_ptCache_idx(min(count,MAX_SUR_PT_CACHE),2);
 

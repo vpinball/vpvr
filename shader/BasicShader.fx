@@ -108,11 +108,9 @@ struct VS_DEPTH_ONLY_TEX_OUTPUT
    float2 tex0     : TEXCOORD0;
 };
 
-float3x3 TBN_trafo(const float3 N, const float3 V, const float2 uv)
+float3x3 TBN_trafo(const float3 N, const float3 V, const float2 uv, const float3 dpx, const float3 dpy)
 {
    // derivatives: edge vectors for tri-pos and tri-uv
-   const float3 dpx = ddx(V);
-   const float3 dpy = ddy(V);
    const float2 duvx = ddx(uv);
    const float2 duvy = ddy(uv);
 
@@ -130,12 +128,15 @@ float3 normal_map(const float3 N, const float3 V, const float2 uv)
 {
    float3 tn = tex2D(texSamplerN, uv).xyz * (255./127.) - (128./127.); // Note that Blender apparently does export tangent space normalmaps for Z (Blue) at full range, so 0..255 -> 0..1, which misses an option for here!
 
+   const float3 dpx = ddx(V); //!! these 2 are declared here instead of TBN_trafo() to workaround a compiler quirk
+   const float3 dpy = ddy(V);
+
    [branch] if (objectSpaceNormalMap)
    {
       tn.z = -tn.z; // this matches the object space, +X +Y +Z, export/baking in Blender with our trafo setup
       return normalize( mul(tn, matWorldViewInverseTranspose).xyz );
    } else // tangent space
-      return normalize( mul(TBN_trafo(N, V, uv),
+      return normalize( mul(TBN_trafo(N, V, uv, dpx, dpy),
                             tn) );
 }
 
@@ -163,7 +164,7 @@ VS_OUTPUT vs_main (in float4 vPosition : POSITION0,
 VS_NOTEX_OUTPUT vs_notex_main (in float4 vPosition : POSITION0,  
                                in float3 vNormal   : NORMAL0,  
                                in float2 tc        : TEXCOORD0)
-{ 
+{
    // trafo all into worldview space (as most of the weird trafos happen in view, world is identity so far)
    const float3 P = mul(vPosition, matWorldView).xyz;
    const float3 N = normalize(mul(vNormal, matWorldViewInverseTranspose).xyz);
@@ -181,7 +182,7 @@ VS_NOTEX_OUTPUT vs_notex_main (in float4 vPosition : POSITION0,
 }
 
 VS_DEPTH_ONLY_NOTEX_OUTPUT vs_depth_only_main_without_texture(in float4 vPosition : POSITION0) 
-{ 
+{
    VS_DEPTH_ONLY_NOTEX_OUTPUT Out;
 
    Out.pos = mul(vPosition, matWorldViewProj);
@@ -206,7 +207,7 @@ float4 ps_main(in VS_NOTEX_OUTPUT IN, uniform bool is_metal) : COLOR
    const float3 glossy   = is_metal ? cBase_Alpha.xyz : cGlossy_ImageLerp.xyz*0.08;
    const float3 specular = cClearcoat_EdgeAlpha.xyz*0.08;
    const float  edge     = is_metal ? 1.0 : Roughness_WrapL_Edge_Thickness.z;
-   
+
    const float3 V = normalize(/*camera=0,0,0,1*/-IN.worldPos_t1x.xyz);
    const float3 N = normalize(IN.normal_t1y.xyz);
 
@@ -299,12 +300,12 @@ float4 ps_main_bg_decal_texture(in VS_OUTPUT IN) : COLOR
 //------------------------------------------
 // Kicker boolean vertex shader
 
-float fKickerScale = 1.;
+float fKickerScale;
 
 VS_NOTEX_OUTPUT vs_kicker (in float4 vPosition : POSITION0,  
                            in float3 vNormal   : NORMAL0,  
                            in float2 tc        : TEXCOORD0) 
-{ 
+{
     const float3 P = mul(vPosition, matWorldView).xyz;
     const float3 N = normalize(mul(vNormal, matWorldViewInverseTranspose).xyz);
 

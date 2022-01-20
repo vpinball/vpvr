@@ -278,7 +278,6 @@ VS_OUTPUT_2D vs_main_no_trafo (in float4 vPosition  : POSITION0,
                                in float2 tc         : TEXCOORD0)
 {
    VS_OUTPUT_2D Out;
-
    Out.pos = float4(vPosition.xy, 0.0,1.0);
    Out.tex0 = tc;
 
@@ -618,6 +617,15 @@ technique stereo
    }
 }
 
+technique stereo_anaglyph
+{
+   pass P0
+   {
+      VertexShader = compile vs_3_0 vs_main_no_trafo();
+      PixelShader  = compile ps_3_0 ps_main_stereo_anaglyph();
+   }
+}
+
 technique NFAA
 {
 	pass P0
@@ -897,6 +905,28 @@ technique SSReflection
 	{
 		VertexShader = compile vs_3_0 vs_main_no_trafo();
 		PixelShader  = compile ps_3_0 ps_main_fb_ss_refl();
+	}
+}
+
+//
+
+technique CAS
+{
+	pass P0
+	{
+		VertexShader = compile vs_3_0 vs_main_no_trafo();
+		PixelShader  = compile ps_3_0 ps_main_CAS();
+	}
+}
+
+//
+
+technique BilateralSharp_CAS
+{
+	pass P0
+	{
+		VertexShader = compile vs_3_0 vs_main_no_trafo();
+		PixelShader  = compile ps_3_0 ps_main_BilateralSharp_CAS();
 	}
 }
 

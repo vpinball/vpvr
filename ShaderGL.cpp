@@ -21,17 +21,17 @@
 #define WRITE_SHADER_FILES 1
 #endif
 
-static std::ofstream* logFile = NULL;
-std::string Shader::shaderPath = "";
-std::string Shader::Defines = "";
+static std::ofstream* logFile = nullptr;
+std::string Shader::shaderPath;
+std::string Shader::Defines;
 Matrix3D Shader::mWorld, Shader::mView, Shader::mProj[2];
 int Shader::lastShaderProgram = -1;
-D3DTexture* Shader::noTexture = NULL;
-D3DTexture* Shader::noTextureMSAA = NULL;
+D3DTexture* Shader::noTexture = nullptr;
+D3DTexture* Shader::noTextureMSAA = nullptr;
 static float zeroValues[16] = { 0.0f,0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 float* Shader::zeroData = zeroValues;
 int Shader::nextTextureSlot = 0;
-int* Shader::textureSlotList = NULL;
+int* Shader::textureSlotList = nullptr;
 std::map<int, int> Shader::slotTextureList;
 int Shader::maxSlots = 0;
 
@@ -67,7 +67,7 @@ static string shaderTechniqueNames[]{
    "stereo_TB", "stereo_SBS", "stereo_Int", "stereo_AMD_DEBUG"
 };
 
-shaderUniforms Shader::getUniformByName(const string name) {
+shaderUniforms Shader::getUniformByName(const string& name) {
    for (int i = 0;i < SHADER_UNIFORM_COUNT; ++i) {
       if (name.compare(shaderUniformNames[i]) == 0) {
          return shaderUniforms(i);
@@ -77,7 +77,7 @@ shaderUniforms Shader::getUniformByName(const string name) {
    return SHADER_UNIFORM_INVALID;
 }
 
-shaderAttributes Shader::getAttributeByName(const string name) {
+shaderAttributes Shader::getAttributeByName(const string& name) {
    for (int i = 0;i < SHADER_UNIFORM_COUNT; ++i) {
       if (name.compare(shaderAttributeNames[i]) == 0) {
          return shaderAttributes(i);
@@ -87,7 +87,7 @@ shaderAttributes Shader::getAttributeByName(const string name) {
    return SHADER_ATTRIBUTE_INVALID;
 }
 
-shaderTechniques Shader::getTechniqueByName(const string name) {
+shaderTechniques Shader::getTechniqueByName(const string& name) {
    for (int i = 0;i < SHADER_UNIFORM_COUNT; ++i) {
       if (name.compare(shaderTechniqueNames[i]) == 0) {
          return shaderTechniques(i);
@@ -108,16 +108,16 @@ Shader::~Shader()
       maxSlots = 0;
       nextTextureSlot = 0;
       delete noTexture;
-      noTexture = NULL;
+      noTexture = nullptr;
    }
-   textureSlotList = NULL;
+   textureSlotList = nullptr;
    slotTextureList.clear();
    if (m_currentShader == this)
-      m_currentShader = NULL;
+      m_currentShader = nullptr;
 }
 
 
-void Shader::LOG(int level, const char* fileNameRoot, string message) {
+void Shader::LOG(int level, const char* fileNameRoot, const string& message) {
    if (level <= DEBUG_LEVEL_LOG) {
       if (!logFile && fileNameRoot) {
          string name = Shader::shaderPath;
@@ -127,7 +127,7 @@ void Shader::LOG(int level, const char* fileNameRoot, string message) {
          if (!logFile->is_open()) {
             char msg[512];
             TCHAR full_path[MAX_PATH];
-            GetFullPathName(_T(name.c_str()), MAX_PATH, full_path, NULL);
+            GetFullPathName(_T(name.c_str()), MAX_PATH, full_path, nullptr);
             sprintf_s(msg, 512, "could not create logfile %s", full_path);
             ShowError(msg);
          }
@@ -143,15 +143,15 @@ void Shader::LOG(int level, const char* fileNameRoot, string message) {
          (*logFile) << "I:";
          break;
       default:
-         (*logFile) << level << ":";
+         (*logFile) << level << ':';
          break;
       }
-      (*logFile) << message << "\n";
+      (*logFile) << message << '\n';
    }
 }
 
 //parse a file. Is called recursively for includes
-bool Shader::parseFile(const char* fileNameRoot, const char* fileName, int level, std::map<string, string> &values, string parentMode) {
+bool Shader::parseFile(const char* fileNameRoot, const char* fileName, int level, std::map<string, string> &values, const string& parentMode) {
    if (level > 16) {//Can be increased, but looks very much like an infinite recursion.
       LOG(1, fileNameRoot, string("Reached more than 16 include while trying to include ").append(fileName).append("levels. Aborting..."));
       return false;
@@ -174,7 +174,7 @@ bool Shader::parseFile(const char* fileNameRoot, const char* fileName, int level
          if (line.compare(0, 4, "////") == 0) {
             string newMode = line.substr(4, line.length() - 4);
             if (newMode.compare("DEFINES") == 0) {
-               currentElement.append(Shader::Defines).append("\n");
+               currentElement.append(Shader::Defines).append('\n');
             } else if (newMode.compare(currentMode) != 0) {
                values[currentMode] = currentElement;
                currentElemIt = values.find(newMode);
@@ -192,7 +192,7 @@ bool Shader::parseFile(const char* fileNameRoot, const char* fileName, int level
             currentElement = values[currentMode];
          }
          else {
-            currentElement.append(line).append("\n");
+            currentElement.append(line).append('\n');
          }
       }
       values[currentMode] = currentElement;
@@ -206,16 +206,16 @@ bool Shader::parseFile(const char* fileNameRoot, const char* fileName, int level
 }
 
 //compile and link shader. Also write the created shader files
-bool Shader::compileGLShader(const char* fileNameRoot, string shaderCodeName, string vertex, string geometry, string fragment) {
+bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeName, const string& vertex, const string& geometry, const string& fragment) {
    bool success = true;
    int result;
    GLuint vertexShader = 0;
    GLuint geometryShader = 0;
    GLuint fragmentShader = 0;
    GLuint shaderprogram = 0;
-   GLchar* vertexSource = NULL;
-   GLchar* geometrySource = NULL;
-   GLchar* fragmentSource = NULL;
+   GLchar* vertexSource = nullptr;
+   GLchar* geometrySource = nullptr;
+   GLchar* fragmentSource = nullptr;
 
    //Vertex Shader
    vertexSource = (GLchar*)malloc(vertex.length() + 1);
@@ -251,7 +251,6 @@ bool Shader::compileGLShader(const char* fileNameRoot, string shaderCodeName, st
       CHECKD3D(glShaderSource(geometryShader, 1, &geometrySource, 0));
       CHECKD3D(glCompileShader(geometryShader));
 
-
       CHECKD3D(glGetShaderiv(geometryShader, GL_COMPILE_STATUS, &result));
       if (result == FALSE)
       {
@@ -275,7 +274,6 @@ bool Shader::compileGLShader(const char* fileNameRoot, string shaderCodeName, st
       CHECKD3D();
       CHECKD3D(glShaderSource(fragmentShader, 1, &fragmentSource, 0));
       CHECKD3D(glCompileShader(fragmentShader));
-
 
       CHECKD3D(glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &result));
       if (result == FALSE)
@@ -461,7 +459,7 @@ bool Shader::compileGLShader(const char* fileNameRoot, string shaderCodeName, st
 }
 
 //Check if technique is valid and replace %PARAMi% with the values in the function header
-string Shader::analyzeFunction(const char* shaderCodeName, string technique, string functionName, std::map<string, string> &values) {
+string Shader::analyzeFunction(const char* shaderCodeName, const string& technique, const string& functionName, const std::map<string, string> &values) {
    size_t start, end;
    start = functionName.find("(");
    end = functionName.find(")");
@@ -492,7 +490,7 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
       for (int i = 0;i < maxSlots;++i)
          textureSlotList[i] = -2;
    }
-   m_currentTechnique = NULL;
+   m_currentTechnique = nullptr;
    LOG(3, (const char*)shaderCodeName, "Start parsing file");
    std::map<string, string> values;
    bool success = parseFile((const char*)shaderCodeName, (const char*)shaderCodeName, 0, values, "GLOBAL");
@@ -563,7 +561,7 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
    if (logFile) {
       logFile->close();
    }
-   logFile = NULL;
+   logFile = nullptr;
    //Set default values from Material.fxh for uniforms.
    SetVector(SHADER_cBase_Alpha, 0.5f, 0.5f, 0.5f, 1.0f);
    SetVector(SHADER_Roughness_WrapL_Edge_Thickness, 4.0f, 0.5f, 1.0f, 0.05f);
@@ -934,7 +932,7 @@ void Shader::Begin(const unsigned int pass)
          #else
          auto valueT = uniformTex.find(uniformName);
 /*         int Shader::nextTextureSlot = 0;
-         static int* textureSlotList = NULL;
+         static int* textureSlotList = nullptr;
          static std::map<int, int> slotTextureList;*/
          int TextureID;
          if (valueT != uniformTex.end()) {
@@ -1097,7 +1095,7 @@ void Shader::SetUniformBlock(const SHADER_UNIFORM_HANDLE hParameter, const float
       elem = *element;
 #else
    auto element = uniformFloatP.find(hParameter);
-   if ((element == uniformFloatP.end()) || (element->second.data == NULL)) {
+   if ((element == uniformFloatP.end()) || (element->second.data == nullptr)) {
       elem.data = (float*)malloc(size * sizeof(float));
       elem.len = size;
    } else
@@ -1141,7 +1139,7 @@ void Shader::SetMatrix(const SHADER_UNIFORM_HANDLE hParameter, const Matrix3D* p
       elem = *element;
 #else
    auto element = uniformFloatP.find(hParameter);
-   if ((element == uniformFloatP.end()) || (element->second.data == NULL)) {
+   if ((element == uniformFloatP.end()) || (element->second.data == nullptr)) {
       elem.data = (float*)malloc(16 * sizeof(float));
       elem.len = 16;
    }
@@ -1213,7 +1211,7 @@ void Shader::SetVector(const SHADER_UNIFORM_HANDLE hParameter, const vec4* pVect
    }
 #else
    auto element = uniformFloatP.find(hParameter);
-   if ((element == uniformFloatP.end()) || (element->second.data == NULL)) {
+   if ((element == uniformFloatP.end()) || (element->second.data == nullptr)) {
       elem.data = (float*)malloc(4 * sizeof(float));
       elem.len = 4;
    }
@@ -1269,7 +1267,7 @@ void Shader::SetVector(const SHADER_UNIFORM_HANDLE hParameter, const float x, co
    }
 #else
    auto element = uniformFloatP.find(hParameter);
-   if ((element == uniformFloatP.end()) || (element->second.data == NULL)) {
+   if ((element == uniformFloatP.end()) || (element->second.data == nullptr)) {
       elem.data = (float*)malloc(4 * sizeof(float));
       elem.len = 4;
    }
@@ -1396,7 +1394,7 @@ void Shader::SetFloatArray(const SHADER_UNIFORM_HANDLE hParameter, const float* 
    }
 #else
    auto element = uniformFloatP.find(hParameter);
-   if ((element == uniformFloatP.end()) || (element->second.data == NULL)) {
+   if ((element == uniformFloatP.end()) || (element->second.data == nullptr)) {
       elem.data = (float*)malloc(count * sizeof(float));
       elem.len = count;
    }

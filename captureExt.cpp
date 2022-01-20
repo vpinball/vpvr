@@ -21,7 +21,7 @@ void captureCheckTextures()
 {
    if (ecDMD.ecStage == ecTexture)
    {
-      if (g_pplayer->m_texdmd != NULL)
+      if (g_pplayer->m_texdmd != nullptr)
       {
          g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.UnloadTexture(g_pplayer->m_texdmd);
          delete g_pplayer->m_texdmd;
@@ -33,7 +33,7 @@ void captureCheckTextures()
    }
    if (ecPUP.ecStage == ecTexture)
    {
-      if (g_pplayer->m_texPUP != NULL)
+      if (g_pplayer->m_texPUP != nullptr)
       {
          g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.UnloadTexture(g_pplayer->m_texPUP);
          delete g_pplayer->m_texPUP;
@@ -146,17 +146,17 @@ capturelisttype ExtCapture::m_allCaptures;
 
 void ExtCapture::SearchWindow()
 {
-   HWND target = NULL;
+   HWND target = nullptr;
 
    for (const string& windowtext : m_searchWindows)
    {
-      target = FindWindowA(NULL, windowtext.c_str());
-      if (target == NULL)
-         target = FindWindowA(windowtext.c_str(), NULL);
-      if (target != NULL)
+      target = FindWindowA(nullptr, windowtext.c_str());
+      if (target == nullptr)
+         target = FindWindowA(windowtext.c_str(), nullptr);
+      if (target != nullptr)
          break;
    }
-   if (target != NULL)
+   if (target != nullptr)
    {
       if (m_delay == 0)
       {
@@ -182,7 +182,7 @@ void ExtCapture::Setup(std::list<string> windowlist)
    ecStage = ecUninitialized;
    m_delay = 0;
    m_searchWindows = windowlist;
-   m_pData = NULL;
+   m_pData = nullptr;
 }
 
 bool ExtCapture::SetupCapture(RECT inputRect)
@@ -198,7 +198,7 @@ bool ExtCapture::SetupCapture(RECT inputRect)
       m_Output->Release();
 
    /* Retrieve a IDXGIFactory that can enumerate the adapters. */
-   IDXGIFactory1* factory = NULL;
+   IDXGIFactory1* factory = nullptr;
    HRESULT hr = CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)(&factory));
 
    if (FAILED(hr))
@@ -287,8 +287,8 @@ bool ExtCapture::SetupCapture(RECT inputRect)
          return false;
       }
 
-      if (NULL == &m_pCapOut->m_duplication) {
-         printf("Error: okay, we shouldn't arrive here but the duplication var is NULL.\n");
+      if (nullptr == &m_pCapOut->m_duplication) {
+         printf("Error: okay, we shouldn't arrive here but the duplication var is nullptr.\n");
          return false;
       }
       /* Create the staging texture that we need to download the pixels from gpu. */
@@ -305,7 +305,7 @@ bool ExtCapture::SetupCapture(RECT inputRect)
       tex_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
       tex_desc.MiscFlags = 0;
 
-      hr = m_pCapOut->d3d_device->CreateTexture2D(&tex_desc, NULL, &m_pCapOut->staging_tex);
+      hr = m_pCapOut->d3d_device->CreateTexture2D(&tex_desc, nullptr, &m_pCapOut->staging_tex);
       if (E_INVALIDARG == hr) {
          printf("Error: received E_INVALIDARG when trying to create the texture.\n");
          return false;
@@ -320,7 +320,7 @@ bool ExtCapture::SetupCapture(RECT inputRect)
 
    // duplication->GetDesc(&m_duplication_desc);
 
-   HDC all_screen = GetDC(NULL);
+   HDC all_screen = GetDC(nullptr);
    int BitsPerPixel = GetDeviceCaps(all_screen, BITSPIXEL);
    HDC hdc2 = CreateCompatibleDC(all_screen);
 
@@ -342,8 +342,8 @@ void ExtCaptureOutput::AcquireFrame()
    HRESULT hr;
    srcdata = nullptr;
    DXGI_OUTDUPL_FRAME_INFO frame_info;
-   IDXGIResource* desktop_resource = NULL;
-   ID3D11Texture2D* tex = NULL;
+   IDXGIResource* desktop_resource = nullptr;
+   ID3D11Texture2D* tex = nullptr;
    DXGI_MAPPED_RECT mapped_rect;
 
    hr = m_duplication->AcquireNextFrame(2500, &frame_info, &desktop_resource);
@@ -463,14 +463,14 @@ void ExtCaptureOutput::AcquireFrame()
    /* Clean up */
    {
 
-      if (NULL != tex) {
+      if (nullptr != tex) {
          tex->Release();
-         tex = NULL;
+         tex = nullptr;
       }
 
-      if (NULL != desktop_resource) {
+      if (nullptr != desktop_resource) {
          desktop_resource->Release();
-         desktop_resource = NULL;
+         desktop_resource = nullptr;
       }
 
       /* We must release the frame. */

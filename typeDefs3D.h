@@ -99,7 +99,8 @@ enum clearType {
    TARGET = GL_COLOR_BUFFER_BIT
 };
 
-#else 
+#else
+
 typedef LPD3DXFONT FontHandle;
 typedef IDirect3DTexture9 D3DTexture;
 typedef D3DVIEWPORT9 ViewPort;

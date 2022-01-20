@@ -25,8 +25,8 @@ inline char nextChar(size_t &inPos, size_t inSize, const char* inChars, const ch
 returns actual data size if successful or -1 if something went wrong.
 */
 int decode_base64(const char* inData, char* outData, size_t inSize, size_t outSize) {
-   static const char inChars[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-   static char* outChars = NULL;
+   static constexpr char inChars[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+   static char* outChars = nullptr;
    //Create decode table from encode table
    if (!outChars) {
       outChars = (char*)malloc(256);
@@ -76,7 +76,7 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice,Texture * backgroundFallback
    std::string b2sFileName = string(g_pplayer->m_ptable->m_szFileName);
    b2sFileName = b2sFileName.substr(0, b2sFileName.find_last_of("."));
    b2sFileName.append(".directb2s");
-   void* data = NULL;
+   void* data = nullptr;
    size_t data_len = 0;
    backglass_dmd_x = 0;
    backglass_dmd_y = 0;
@@ -181,7 +181,7 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice,Texture * backgroundFallback
       }
    }
    catch (...) {//If file does not exist, or something else goes wrong just disable the Backglass. This is very experimental anyway.
-      m_backgroundTexture = NULL;
+      m_backgroundTexture = nullptr;
    }
    if (data) free(data);
    float tableWidth, glassHeight;
@@ -286,7 +286,7 @@ void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DM
       if (captureExternalDMD())
          m_pd3dDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD_ext);
 
-      if (g_pplayer->m_texdmd != NULL)
+      if (g_pplayer->m_texdmd != nullptr)
          m_pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, false, true), false);
       //      m_pd3dPrimaryDevice->DMDShader->SetVector(SHADER_quadOffsetScale, 0.0f, -1.0f, backglass_scale, backglass_scale*(float)backglass_height / (float)backglass_width);
       bool zDisabled = false;

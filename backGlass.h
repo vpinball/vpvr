@@ -13,7 +13,7 @@ public:
 
 private:
    RenderDevice* m_pd3dDevice;
-   Texture * m_backgroundFallback;
+   Texture* m_backgroundFallback;
    D3DTexture* m_backgroundTexture;
    int backglass_dmd_x;
    int backglass_dmd_y;
@@ -28,4 +28,3 @@ private:
    int backglass_height;
    float backglass_scale;
 };
-

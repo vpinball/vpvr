@@ -134,7 +134,7 @@ void FlasherVisualsProperty::UpdateProperties(const int dispid)
                const float newX = PropertyDialog::GetFloatTextbox(m_posXEdit);
                if (oldX != newX)
                {
-                  const float dx = newX - oldX;
+                  const float dx = newX-oldX;
                   PropertyDialog::StartUndo(flash);
                   flash->MoveOffset(dx, 0.0f);
                   PropertyDialog::EndUndo(flash);
@@ -147,7 +147,7 @@ void FlasherVisualsProperty::UpdateProperties(const int dispid)
                const float newY = PropertyDialog::GetFloatTextbox(m_posYEdit);
                if (oldY != newY)
                {
-                  const float dy = newY - oldY;
+                  const float dy = newY-oldY;
                   PropertyDialog::StartUndo(flash);
                   flash->MoveOffset(0.0f, dy);
                   PropertyDialog::EndUndo(flash);

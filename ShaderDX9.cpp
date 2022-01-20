@@ -22,20 +22,19 @@ bool Shader::Load(const BYTE* shaderCodeName, UINT codeSize)
    dwShaderFlags,		// Flags
    NULL,				// pPool
    &m_shader,			// ppEffect
-   &pBufferErrors);	// ppCompilationErrors
+   &pBufferErrors);		// ppCompilationErrors
    }
    else
    {
    hr = D3DXCreateEffectFromResource(	m_renderDevice->GetCoreDevice(),		// pDevice
    NULL,
-   shaderName,         // resource name
+   shaderName,			// resource name
    NULL,				// pDefines
    NULL,				// pInclude
    dwShaderFlags,		// Flags
    NULL,				// pPool
    &m_shader,			// ppEffect
-   &pBufferErrors);	// ppCompilationErrors
-
+   &pBufferErrors);		// ppCompilationErrors
    }
    */
    hr = D3DXCreateEffect(m_renderDevice->GetCoreDevice(), shaderCodeName, codeSize, NULL, NULL, dwShaderFlags, NULL, &m_shader, &pBufferErrors);
@@ -93,9 +92,9 @@ void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, c
 
    if (!texel || !texel->m_pdsBuffer) {
       if (cache) {
-         currentTexture[idx] = NULL; // invalidate cache
+         currentTexture[idx] = nullptr; // invalidate cache
       }
-      CHECKD3D(m_shader->SetTexture(texelName, NULL));
+      CHECKD3D(m_shader->SetTexture(texelName, nullptr));
 
       m_renderDevice->m_curTextureChanges++;
 
@@ -117,7 +116,7 @@ void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel
 {
    const unsigned int idx = texelName[strlen(texelName) - 1] - '0'; // current convention: SetTexture gets "TextureX", where X 0..4
    if (idx < TEXTURESET_STATE_CACHE_SIZE) {
-      currentTexture[idx] = NULL; // direct set of device tex invalidates the cache
+      currentTexture[idx] = nullptr; // direct set of device tex invalidates the cache
    }
 
    CHECKD3D(m_shader->SetTexture(texelName, texel));
@@ -131,9 +130,9 @@ void Shader::SetTextureNull(const SHADER_UNIFORM_HANDLE texelName)
    bool cache = idx < TEXTURESET_STATE_CACHE_SIZE;
 
    if (cache)
-      currentTexture[idx] = NULL; // direct set of device tex invalidates the cache
+      currentTexture[idx] = nullptr; // direct set of device tex invalidates the cache
 
-   CHECKD3D(m_shader->SetTexture(texelName, NULL));
+   CHECKD3D(m_shader->SetTexture(texelName, nullptr));
 
    m_renderDevice->m_curTextureChanges++;
 }

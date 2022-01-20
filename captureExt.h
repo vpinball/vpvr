@@ -22,15 +22,15 @@ class ExtCaptureOutput
 public:
    ~ExtCaptureOutput() { delete m_MetaDataBuffer; };
 
-   IDXGIOutputDuplication* m_duplication = NULL;
-   ID3D11Device* d3d_device = NULL;
-   ID3D11DeviceContext* d3d_context = NULL;
+   IDXGIOutputDuplication* m_duplication = nullptr;
+   ID3D11Device* d3d_device = nullptr;
+   ID3D11DeviceContext* d3d_context = nullptr;
    unsigned char* srcdata;
    int m_pitch = 0;
-   void* m_MetaDataBuffer = NULL;
+   void* m_MetaDataBuffer = nullptr;
    int m_MetaDataBufferSize = 0;
-   ID3D11Texture2D* staging_tex = NULL;
-   ID3D11Texture2D* gdi_tex = NULL;
+   ID3D11Texture2D* staging_tex = nullptr;
+   ID3D11Texture2D* gdi_tex = nullptr;
 
    void AcquireFrame();
 };
@@ -48,9 +48,9 @@ public:
    std::list<string> m_searchWindows;
    int m_delay;
 
-   IDXGIAdapter1* m_Adapter = NULL;
-   IDXGIOutput1* m_Output1 = NULL;
-   IDXGIOutput* m_Output = NULL;
+   IDXGIAdapter1* m_Adapter = nullptr;
+   IDXGIOutput1* m_Output1 = nullptr;
+   IDXGIOutput* m_Output = nullptr;
    RECT m_Rect;
    int m_DispTop, m_DispLeft = 0;
    DXGI_OUTPUT_DESC m_outputdesc;
@@ -78,6 +78,4 @@ public:
    int m_Width, m_Height = 0;
 
    static void Dispose(); // Call when you have deleted all instances.
-
 };
-

@@ -393,7 +393,7 @@ BOOL KeysConfigDialog::OnInitDialog()
             case 28:hr = LoadValue("Player", "JoyPMUp", selected); item = IDC_JOYPMUP; break;
             case 29:hr = LoadValue("Player", "JoyPMEnter", selected); item = IDC_JOYPMENTER; break;
             case 30:hr = LoadValue("Player", "JoyLockbarKey", selected); item = IDC_JOYLOCKBARCOMBO; break;
- 			case 31:hr = LoadValue("Player", "JoyRoomRecenterKey", selected); item = IDC_JOYROOMRECENTER; break;
+            case 31:hr = LoadValue("Player", "JoyRoomRecenterKey", selected); item = IDC_JOYROOMRECENTER; break;
             case 32:hr = LoadValue("Player", "JoyTableRecenterKey", selected); item = IDC_JOYTABLERECENTER; break;
             case 33:hr = LoadValue("Player", "JoyTableUpKey", selected); item = IDC_JOYTABLEUP; break;
             case 34:hr = LoadValue("Player", "JoyTableDownKey", selected); item = IDC_JOYTABLEDOWN; break;
@@ -745,11 +745,11 @@ BOOL KeysConfigDialog::OnInitDialog()
 
     GetDlgItem(IDC_COMBO_RUMBLE).EnableWindow(inputApiCount > 1);
 
-    int rumbleMode = LoadValueIntWithDefault("Player", "RumbleMode", 3);
+    const int rumbleMode = LoadValueIntWithDefault("Player", "RumbleMode", 3);
     const HWND hwndRumble = GetDlgItem(IDC_COMBO_RUMBLE).GetHwnd();
     ::SendMessage(hwndRumble, CB_ADDSTRING, 0, (LPARAM)"Off");
-    ::SendMessage(hwndRumble, CB_ADDSTRING, 0, (LPARAM)"Table only");
-    ::SendMessage(hwndRumble, CB_ADDSTRING, 0, (LPARAM)"Generic only");
+    ::SendMessage(hwndRumble, CB_ADDSTRING, 0, (LPARAM)"Table only (N/A yet)"); //!! not supported yet
+    ::SendMessage(hwndRumble, CB_ADDSTRING, 0, (LPARAM)"Generic only (N/A yet)"); //!! not supported yet
     ::SendMessage(hwndRumble, CB_ADDSTRING, 0, (LPARAM)"Table with generic fallback");
     ::SendMessage(hwndRumble, CB_SETCURSEL, rumbleMode, 0);
 
@@ -940,10 +940,12 @@ BOOL KeysConfigDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                 return FALSE;
         }//switch
     }//if (HIWORD(wParam) == BN_CLICKED)
+
     if (LOWORD(wParam) == IDC_COMBO_INPUT_API) {
-       size_t inputApi = SendMessage(GetDlgItem(IDC_COMBO_INPUT_API).GetHwnd(), CB_GETCURSEL, 0, 0);
+       const size_t inputApi = SendMessage(GetDlgItem(IDC_COMBO_INPUT_API).GetHwnd(), CB_GETCURSEL, 0, 0);
        GetDlgItem(IDC_COMBO_RUMBLE).EnableWindow(inputApi > 0);
     }
+
     return TRUE;
 }
 
@@ -1106,7 +1108,7 @@ void KeysConfigDialog::OnOK()
     selected = ::SendMessage(GetDlgItem(IDC_CAP_PUP).GetHwnd(), BM_GETCHECK, 0, 0);
     SaveValueBool("Player", "CapturePUP", selected != 0);
 
-    size_t inputApi = SendMessage(GetDlgItem(IDC_COMBO_INPUT_API).GetHwnd(), CB_GETCURSEL, 0, 0);
+    int inputApi = (int)SendMessage(GetDlgItem(IDC_COMBO_INPUT_API).GetHwnd(), CB_GETCURSEL, 0, 0);
 #ifndef ENABLE_XINPUT
     if (inputApi >= 1) inputApi++;
 #endif
@@ -1121,7 +1123,7 @@ void KeysConfigDialog::OnOK()
 #endif
     SaveValueInt("Player", "InputApi", inputApi);
 
-    const size_t rumble = SendMessage(GetDlgItem(IDC_COMBO_RUMBLE).GetHwnd(), CB_GETCURSEL, 0, 0);
+    const int rumble = (int)SendMessage(GetDlgItem(IDC_COMBO_RUMBLE).GetHwnd(), CB_GETCURSEL, 0, 0);
     SaveValueInt("Player", "RumbleMode", rumble);
 
     CDialog::OnOK();

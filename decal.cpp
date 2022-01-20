@@ -68,7 +68,7 @@ void Decal::SetDefaults(bool fromMouseClick)
       m_d.m_sztext.clear();
 
    m_d.m_sizingtype = fromMouseClick ? (enum SizingType)LoadValueIntWithDefault("DefaultProps\\Decal", "Sizing", (int)ManualSize) : ManualSize;
-   m_d.m_color = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Decal", "Color", RGB(0, 0, 0)) : RGB(0, 0, 0);
+   m_d.m_color = fromMouseClick ? LoadValueIntWithDefault("DefaultProps\\Decal", "Color", RGB(0,0,0)) : RGB(0,0,0);
    m_d.m_verticalText = fromMouseClick ? LoadValueBoolWithDefault("DefaultProps\\Decal", "VerticalText", false) : false;
 
    if (!m_pIFont)
@@ -87,8 +87,8 @@ void Decal::SetDefaults(bool fromMouseClick)
       else
       {
          const int len = lstrlen(tmp) + 1;
-         fd.lpstrName = (LPOLESTR)malloc(len * sizeof(WCHAR));
-         memset(fd.lpstrName, 0, len * sizeof(WCHAR));
+         fd.lpstrName = (LPOLESTR)malloc(len*sizeof(WCHAR));
+         memset(fd.lpstrName, 0, len*sizeof(WCHAR));
          MultiByteToWideCharNull(CP_ACP, 0, tmp, -1, fd.lpstrName, len);
       }
 
@@ -104,16 +104,16 @@ void Decal::SetDefaults(bool fromMouseClick)
 
 char * Decal::GetFontName()
 {
-   if (m_pIFont)
-   {
-      CComBSTR bstr;
-      /*HRESULT hr =*/ m_pIFont->get_Name(&bstr);
+    if(m_pIFont)
+    {
+        CComBSTR bstr;
+        /*HRESULT hr =*/ m_pIFont->get_Name(&bstr);
 
-      static char fontName[LF_FACESIZE];
-      WideCharToMultiByteNull(CP_ACP, 0, bstr, -1, fontName, LF_FACESIZE, NULL, NULL);
-      return fontName;
-   }
-   return NULL;
+        static char fontName[LF_FACESIZE];
+        WideCharToMultiByteNull(CP_ACP, 0, bstr, -1, fontName, LF_FACESIZE, nullptr, nullptr);
+        return fontName;
+    }
+    return nullptr;
 }
 
 void Decal::WriteRegDefaults()
@@ -241,7 +241,6 @@ void Decal::GetTextSize(int * const px, int * const py)
 
    TEXTMETRIC tm;
    clientDC.GetTextMetrics(tm);
-
    if (m_d.m_verticalText)
    {
       // Do huge amounts of work to get rid of the descent and internal ascent of the font, because it leaves ugly spaces
@@ -254,7 +253,7 @@ void Decal::GetTextSize(int * const px, int * const py)
          rcOut.top = 0;		//-tm.tmInternalLeading + 2; // Leave a pixel for anti-aliasing;
          rcOut.right = 0x1;
          rcOut.bottom = 0x1;
-         clientDC.DrawText(m_d.m_sztext.c_str() + i, 1, rcOut, alignment | DT_NOCLIP | DT_NOPREFIX | DT_WORDBREAK | DT_CALCRECT);
+         clientDC.DrawText(m_d.m_sztext.c_str()+i, 1, rcOut, alignment | DT_NOCLIP | DT_NOPREFIX | DT_WORDBREAK | DT_CALCRECT);
 
          *px = max(*px, (int)rcOut.right);
       }
@@ -306,7 +305,7 @@ void Decal::PreRenderText()
          rcOut.top = 0;//-tm.tmInternalLeading + 2; // Leave a pixel for anti-aliasing;
          rcOut.right = 1;
          rcOut.bottom = 1;
-         clientDC.DrawText(m_d.m_sztext.c_str() + i, 1, rcOut, alignment | DT_NOCLIP | DT_NOPREFIX | DT_WORDBREAK | DT_CALCRECT);
+         clientDC.DrawText(m_d.m_sztext.c_str()+i, 1, rcOut, alignment | DT_NOCLIP | DT_NOPREFIX | DT_WORDBREAK | DT_CALCRECT);
          maxwidth = max(maxwidth, (int)rcOut.right);
       }
 
@@ -372,9 +371,9 @@ void Decal::PreRenderText()
    {
       for (int i = 0; i < len; i++)
       {
-         rcOut.top = AUTOLEADING*i;//-tm.tmInternalLeading + 2; // Leave a pixel for anti-aliasing;
+         rcOut.top = AUTOLEADING * i;//-tm.tmInternalLeading + 2; // Leave a pixel for anti-aliasing;
          rcOut.bottom = rcOut.top + 100;
-         dc.DrawText(m_d.m_sztext.c_str() + i, 1, rcOut, alignment | DT_NOCLIP | DT_NOPREFIX | DT_WORDBREAK);
+         dc.DrawText(m_d.m_sztext.c_str()+i, 1, rcOut, alignment | DT_NOCLIP | DT_NOPREFIX | DT_WORDBREAK);
       }
    }
    else
@@ -387,7 +386,7 @@ void Decal::PreRenderText()
    {
       for (int l = 0; l < m_textImg->width(); l++, dest++, bitsd++)
          *dest = *bitsd | 0xFF000000u;
-      dest += m_textImg->pitch() / 4 - m_textImg->width();
+      dest += m_textImg->pitch()/4 - m_textImg->width();
    }
 
    dc.SelectObject(hFontOld);
@@ -482,6 +481,7 @@ void Decal::RenderSetup()
    {
       for (int i = 0; i < 4; i++)
          vertices[i].z = height + 0.2f;
+
       SetNormal(vertices, rgi0123, 4);
    }
    else
@@ -561,12 +561,13 @@ void Decal::RenderObject()
    // Set texture to mirror, so the alpha state of the texture blends correctly to the outside
    //!!   pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_MIRROR);
 
+   //Pin3D * const ppin3d = &g_pplayer->m_pin3d;
    //ppin3d->SetPrimaryTextureFilter ( 0, TEXTURE_MODE_TRILINEAR );
    g_pplayer->m_pin3d.EnableAlphaBlend(false);
 
    if (!m_backglass)
    {
-      const float depthbias = -5.f;
+      constexpr float depthbias = -5.f;
       pd3dDevice->SetRenderStateDepthBias(depthbias);
    }
    else
@@ -579,6 +580,13 @@ void Decal::RenderObject()
    pd3dDevice->basicShader->Begin(0);
    pd3dDevice->DrawPrimitiveVB(RenderDevice::TRIANGLEFAN, m_backglass ? MY_D3DTRANSFORMED_NOTEX2_VERTEX : MY_D3DFVF_NOTEX2_VERTEX, vertexBuffer, 0, 4, true);
    pd3dDevice->basicShader->End();
+
+   // Set the render state.
+   //pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_WRAP);
+   //pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE); //!! not necessary anymore
+
+   //if(m_backglass && (m_ptable->m_tblMirrorEnabled^m_ptable->m_reflectionEnabled))
+   //   pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 }
 
 void Decal::RenderStatic()
@@ -612,8 +620,8 @@ HRESULT Decal::SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupF
    bw.WriteFloat(FID(ROTA), m_d.m_rotation);
    bw.WriteString(FID(IMAG), m_d.m_szImage);
    bw.WriteString(FID(SURF), m_d.m_szSurface);
-   bw.WriteWideString(FID(NAME), (WCHAR *)m_wzName);
    bw.WriteWideString(FID(NAME), m_wzName);
+   bw.WriteString(FID(TEXT), m_d.m_sztext);
    bw.WriteInt(FID(TYPE), m_d.m_decaltype);
    bw.WriteString(FID(MATR), m_d.m_szMaterial);
    bw.WriteInt(FID(COLR), m_d.m_color);
@@ -822,7 +830,6 @@ STDMETHODIMP Decal::put_Image(BSTR newVal)
       ShowError("Cannot use a HDR image (.exr/.hdr) here");
       return E_FAIL;
    }
-
    m_d.m_szImage = szImage;
 
    return S_OK;

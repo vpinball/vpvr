@@ -1183,7 +1183,7 @@ void Ramp::PrepareHabitrail()
    if (m_dynamicIndexBuffer)
       m_dynamicIndexBuffer->release();
 
-      m_dynamicIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_meshIndices);
+   m_dynamicIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_meshIndices);
 
    delete[] m_vertBuffer;
    delete[] tmpBuf1;

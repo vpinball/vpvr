@@ -5,13 +5,13 @@
 #include "typeDefs3D.h"
 #include "RenderDevice.h"
 
-RenderDevice *Shader::m_renderDevice = NULL;
+RenderDevice *Shader::m_renderDevice = nullptr;
 
 Shader* Shader::getCurrentShader() {
    return m_currentShader;
 }
 
-Shader* Shader::m_currentShader = NULL;
+Shader* Shader::m_currentShader = nullptr;
 int Shader::shaderCount = 0;
 
 Shader::Shader(RenderDevice *renderDevice) : currentMaterial(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX,
