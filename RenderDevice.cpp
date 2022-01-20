@@ -467,7 +467,11 @@ int getDisplayList(std::vector<DisplayConfig>& displays)
       if (display->second.adapter >= 0) {
          display->second.display = i;
 #ifdef ENABLE_SDL
-         strncpy_s(display->second.GPU_Name, SDL_GetDisplayName(display->second.adapter), sizeof(display->second.GPU_Name) - 1);
+         const char* name = SDL_GetDisplayName(display->second.adapter);
+         if(name != nullptr)
+            strncpy_s(display->second.GPU_Name, name, sizeof(display->second.GPU_Name) - 1);
+         else
+            display->second.GPU_Name[0] = '\0';
 #endif
          displays.push_back(display->second);
       }
