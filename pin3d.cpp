@@ -449,7 +449,6 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
 
 #ifdef ENABLE_SDL
    m_pddsBackBuffer = m_pd3dPrimaryDevice->GetBackBufferTexture();
-
 #else
    m_pd3dPrimaryDevice->GetBackBufferTexture()->GetSurfaceLevel(0, &m_pddsBackBuffer);
 

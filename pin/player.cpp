@@ -1296,7 +1296,7 @@ HRESULT Player::Init()
 
    getDisplaySetupByID(display, x, y, m_screenwidth, m_screenheight);
    if (m_fullScreen) {
-      SetWindowPos(NULL, x, y, m_screenwidth, m_screenheight, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
+      SetWindowPos(nullptr, x, y, m_screenwidth, m_screenheight, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
    }
    else
    {
@@ -5148,7 +5148,7 @@ void Player::DrawBalls()
 
       for (unsigned int light_i = 0; light_i < MAX_BALL_LIGHT_SOURCES; light_i++)
       {
-         if (light_nearest[light_i] != NULL)
+         if (light_nearest[light_i] != nullptr)
          {
             lightSources++;
             lightPos[light_i + MAX_LIGHT_SOURCES][0] = light_nearest[light_i]->m_d.m_vCenter.x;
