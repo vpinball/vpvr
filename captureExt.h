@@ -28,7 +28,7 @@ public:
    unsigned char* srcdata;
    int m_pitch = 0;
    void* m_MetaDataBuffer = nullptr;
-   int m_MetaDataBufferSize = 0;
+   UINT m_MetaDataBufferSize = 0;
    ID3D11Texture2D* staging_tex = nullptr;
    ID3D11Texture2D* gdi_tex = nullptr;
 

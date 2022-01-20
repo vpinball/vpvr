@@ -220,9 +220,9 @@ void BackGlass::Render()
       {
          // If we expect a DMD the captured image is probably missing a grill in 3scr mode
          // 3scr mode preferable to support VR rooms, so better to just drop the grills in this experimental mode.
-         int dmdheightoff = (backglass_scale * tableWidth / 16.0f*9.0f) * .3;
-         int dmdheightextra = tableWidth * .05;
-         glassHeight += dmdheightoff + dmdheightextra;
+         int dmdheightoff = (int)((backglass_scale * tableWidth / 16.0*9.0) * .3);
+         int dmdheightextra = (int)(tableWidth * .05);
+         glassHeight += (float)(dmdheightoff + dmdheightextra);
 
          m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - backglass_scale / 2.0f), glassHeight, backglass_scale * tableWidth, backglass_scale * tableWidth / 16.0f*9.0f);
 
@@ -230,7 +230,7 @@ void BackGlass::Render()
          dmd_width = 0.8f;
          dmd_height = dmd_width / 4.0f;
          dmd_x = tableWidth * (0.5f - dmd_width / 2.0f);
-         dmd_y = -dmdheightoff + dmdheightextra / 2;
+         dmd_y = (float)(-dmdheightoff + dmdheightextra / 2);
 
       }
       else

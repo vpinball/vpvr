@@ -57,7 +57,6 @@ void VertexBuffer::CreateVertexBuffer(const unsigned int vertexCount, const DWOR
 
 void VertexBuffer::lock(const unsigned int offsetToLock, const unsigned int sizeToLock, void **dataBuffer, const DWORD flags)
 {
-   m_curLockCalls++;
 #ifdef ENABLE_SDL
    if (sizeToLock == 0)
       this->sizeToLock = size;

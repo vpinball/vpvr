@@ -2475,8 +2475,9 @@ void RenderDevice::SetRenderStateDepthBias(float bias)
    if (SetRenderStateCache(DEPTHBIAS, *((DWORD*)&bias))) return;
 
 #ifdef ENABLE_SDL
-   if (bias == 0.0f)
+   if (bias == 0.0f) {
       CHECKD3D(glDisable(GL_POLYGON_OFFSET_FILL));
+   }
    else {
       CHECKD3D(glEnable(GL_POLYGON_OFFSET_FILL));
       CHECKD3D(glPolygonOffset(0.0f, bias));
@@ -2494,8 +2495,9 @@ void RenderDevice::SetRenderStateClipPlane0(const bool enabled)
 
 #ifdef ENABLE_SDL
    // Basicshader already prepared with proper clipplane so just need to enable/disable it
-   if (enabled)
+   if (enabled) {
       CHECKD3D(glEnable(GL_CLIP_DISTANCE0));
+   }
    else
       CHECKD3D(glDisable(GL_CLIP_DISTANCE0));
 #else

@@ -111,7 +111,6 @@ IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const std::vector<unsigned in
 
 void IndexBuffer::lock(const unsigned int offsetToLock, const unsigned int sizeToLock, void **dataBuffer, const DWORD flags)
 {
-   m_curLockCalls++;
 #ifdef ENABLE_SDL
    if (sizeToLock == 0)
       this->sizeToLock = size;
