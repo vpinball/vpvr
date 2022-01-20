@@ -41,9 +41,9 @@
 #pragma comment(lib, "dxerr.lib")       // TODO: put into build system
 #endif
 
-static RenderTarget *srcr_cache = NULL; //!! meh, for nvidia depth read only
-static D3DTexture *srct_cache = NULL;
-static D3DTexture* dest_cache = NULL;
+static RenderTarget *srcr_cache = nullptr; //!! meh, for nvidia depth read only
+static D3DTexture *srct_cache = nullptr;
+static D3DTexture* dest_cache = nullptr;
 
 static bool IsWindowsVistaOr7()
 {
@@ -621,7 +621,7 @@ void RenderDevice::InitVR() {
       }
       if (!vr::VRCompositor())
          if (VRError != vr::VRInitError_None) {
-            m_pHMD = NULL;
+            m_pHMD = nullptr;
             char buf[1024];
             sprintf_s(buf, sizeof(buf), "Unable to init VR compositor: %s", vr::VR_GetVRInitErrorAsEnglishDescription(VRError));
             std::runtime_error vrInitFailed(buf);
@@ -707,8 +707,8 @@ RenderDevice::RenderDevice(const int width, const int height, const bool fullscr
    m_ssRefl(ss_refl), m_useNvidiaApi(useNvidiaApi), m_disableDwm(disable_dwm), m_BWrendering(BWrendering), m_GLversion(0)
 {
 #ifdef ENABLE_VR
-   m_pHMD = NULL;
-   m_rTrackedDevicePose = NULL;
+   m_pHMD = nullptr;
+   m_rTrackedDevicePose = nullptr;
 #endif
    for (int i = 0; i < RENDERSTATE_COUNT; ++i) renderStateCache[i] = 0;
 }
@@ -862,28 +862,28 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    colorFormat renderBufferFormat = RGBA16F;
 
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
-   m_pOffscreenBackBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, m_stereo3D);
+   m_pOffscreenBackBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, nullptr, m_stereo3D);
 
    // If we are doing MSAA we need a texture with the same dimensions as the Back Buffer to resolve the end result to, can also use it for Post-AA
    if (g_pplayer->m_MSAASamples > 1 || m_FXAA > 0)
-      m_pOffscreenNonMSAABlitTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
+      m_pOffscreenNonMSAABlitTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, nullptr, m_stereo3D);
    else
-      m_pOffscreenNonMSAABlitTexture = NULL;
+      m_pOffscreenNonMSAABlitTexture = nullptr;
 
-   if ((g_pplayer != NULL) && (g_pplayer->m_ptable->m_reflectElementsOnPlayfield || (g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1)))
-      m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, m_stereo3D);
+   if ((g_pplayer != nullptr) && (g_pplayer->m_ptable->m_reflectElementsOnPlayfield || (g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1)))
+      m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, nullptr, m_stereo3D);
 
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
-   m_pBloomBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, NULL, m_stereo3D);
+   m_pBloomBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, nullptr, m_stereo3D);
 
    // temporary buffer for gaussian blur
-   m_pBloomTmpBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, NULL, m_stereo3D);
+   m_pBloomTmpBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, nullptr, m_stereo3D);
 
    // alloc temporary buffer for postprocessing, we don't use this anymore
    //if ((m_FXAA > 0) || (m_stereo3D > 0))
-     // m_pOffscreenBackBufferStereoTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, 0);
+     // m_pOffscreenBackBufferStereoTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, nullptr, 0);
    //else
-      m_pOffscreenBackBufferStereoTexture = NULL;
+      m_pOffscreenBackBufferStereoTexture = nullptr;
 
    if (m_stereo3D == STEREO_VR) {
       //AMD Debugging
@@ -904,25 +904,25 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
          renderBufferFormatVR = RGBA8;
          break;
       }
-      m_pOffscreenVRLeft = CreateTexture(m_Buf_width / 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, NULL, 0);
-      m_pOffscreenVRRight = CreateTexture(m_Buf_width / 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, NULL, 0);
+      m_pOffscreenVRLeft = CreateTexture(m_Buf_width / 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, nullptr, 0);
+      m_pOffscreenVRRight = CreateTexture(m_Buf_width / 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, nullptr, 0);
    }
 
    // Non-MSAA Buffers for post-processing
-   m_pOffscreenBackBufferPPTexture1 = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, 0);
-   m_pOffscreenBackBufferPPTexture2 = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, NULL, 0);
+   m_pOffscreenBackBufferPPTexture1 = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, nullptr, 0);
+   m_pOffscreenBackBufferPPTexture2 = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, nullptr, 0);
 
    // Use postprocessing buffer instead of separate reflectionbuffer
    /*if (m_ssRefl)
-      m_pReflectionBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, NULL, 0);
+      m_pReflectionBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, nullptr, 0);
    else*/
-      m_pReflectionBufferTexture = NULL;
+      m_pReflectionBufferTexture = nullptr;
 
    if (video10bit && (m_FXAA == Quality_SMAA || m_FXAA == Standard_DLAA))
       ShowError("SMAA or DLAA post-processing AA should not be combined with 10bit-output rendering (will result in visible artifacts)!");
 
-   currentDeclaration = NULL;
-   //m_curShader = NULL;
+   currentDeclaration = nullptr;
+   //m_curShader = nullptr;
 
    // fill state caches with dummy values
    memset(textureStateCache, 0xCC, sizeof(DWORD) * 8 * TEXTURE_STATE_CACHE_SIZE);
@@ -938,7 +938,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    m_maxaniso = 0;
    CHECKD3D(glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_maxaniso));
 
-   if (m_quadVertexBuffer == NULL) {
+   if (m_quadVertexBuffer == nullptr) {
       VertexBuffer::CreateVertexBuffer(4, USAGE_STATIC, MY_D3DFVF_TEX, &m_quadVertexBuffer);
       Vertex3D_TexelOnly* bufvb;
       m_quadVertexBuffer->lock(0, 0, (void**)&bufvb, USAGE_STATIC);
@@ -964,7 +964,7 @@ bool RenderDevice::LoadShaders()
    CHECKD3D();
 
    char glShaderPath[MAX_PATH];
-   DWORD length = GetModuleFileName(NULL, glShaderPath, MAX_PATH);
+   DWORD length = GetModuleFileName(nullptr, glShaderPath, MAX_PATH);
 
    if (m_stereo3D == STEREO_OFF) {
       Shader::Defines = "#define eyes 1\n#define enable_VR 0";
@@ -1002,7 +1002,7 @@ bool RenderDevice::LoadShaders()
       shaderCompilationOkay = StereoShader->Load("StereoShader.glfx", 0) && shaderCompilationOkay;
    }
    else {
-      StereoShader = NULL;
+      StereoShader = nullptr;
    }
 
    flasherShader = new Shader(this);
@@ -1033,7 +1033,7 @@ RenderDevice::~RenderDevice()
 {
    if (m_quadVertexBuffer)
       m_quadVertexBuffer->release();
-   m_quadVertexBuffer = NULL;
+   m_quadVertexBuffer = nullptr;
 
    FreeShader();
 
@@ -1118,8 +1118,8 @@ RenderDevice::RenderDevice(HWND* const hwnd, const int width, const int height, 
       m_dwm_enabled = false;
    }
 
-   currentDeclaration = NULL;
-   //m_curShader = NULL;
+   currentDeclaration = nullptr;
+   //m_curShader = nullptr;
 
    // fill state caches with dummy values
    memset(textureStateCache, 0xCC, sizeof(DWORD) * 8 * TEXTURE_STATE_CACHE_SIZE);
@@ -1352,11 +1352,11 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    const D3DFORMAT render_format = (D3DFORMAT)((m_BWrendering == 1) ? colorFormat::RG16F : ((m_BWrendering == 2) ? colorFormat::RED16F : colorFormat::RGBA16F));
 
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
-   hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pOffscreenBackBufferTexture, NULL); //!! colorFormat::RGBA32F?
+   hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pOffscreenBackBufferTexture, nullptr); //!! colorFormat::RGBA32F?
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create render buffer!", hr, __FILE__, __LINE__);
    if (m_ssRefl) {
-      hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pReflectionBufferTexture, NULL); //!! D3DFMT_A32B32G32R32F?
+      hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pReflectionBufferTexture, nullptr); //!! D3DFMT_A32B32G32R32F?
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create reflection buffer!", hr, __FILE__, __LINE__);
    }
@@ -1368,25 +1368,25 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       const bool drawBallReflection = ((g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
       if (g_pplayer->m_ptable->m_reflectElementsOnPlayfield || drawBallReflection)
       {
-         hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pMirrorTmpBufferTexture, NULL); //!! colorFormat::RGBA32?
+         hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pMirrorTmpBufferTexture, nullptr); //!! colorFormat::RGBA32?
          if (FAILED(hr))
             ReportError("Fatal Error: unable to create reflection map!", hr, __FILE__, __LINE__);
       }
    }
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
-   hr = m_pD3DDevice->CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pBloomBufferTexture, NULL); //!! 8bit enough?
+   hr = m_pD3DDevice->CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pBloomBufferTexture, nullptr); //!! 8bit enough?
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create bloom buffer!", hr, __FILE__, __LINE__);
 
    // temporary buffer for gaussian blur
-   hr = m_pD3DDevice->CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pBloomTmpBufferTexture, NULL); //!! 8bit are enough! //!! but used also for bulb light transmission hack now!
+   hr = m_pD3DDevice->CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pBloomTmpBufferTexture, nullptr); //!! 8bit are enough! //!! but used also for bulb light transmission hack now!
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create blur buffer!", hr, __FILE__, __LINE__);
 
    // alloc temporary buffer for postprocessing
    if ((m_FXAA > 0) || (m_stereo3D > 0))
    {
-      hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), (D3DPOOL)memoryPool::DEFAULT, &m_pOffscreenBackBufferStereoTexture, NULL);
+      hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), (D3DPOOL)memoryPool::DEFAULT, &m_pOffscreenBackBufferStereoTexture, nullptr);
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create stereo3D/post-processing AA buffer!", hr, __FILE__, __LINE__);
    }
@@ -1396,7 +1396,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    // alloc one more temporary buffer for SMAA
    if (m_FXAA == Quality_SMAA)
    {
-      hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), (D3DPOOL)memoryPool::DEFAULT, &m_pOffscreenBackBufferPPTexture1, NULL);
+      hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), (D3DPOOL)memoryPool::DEFAULT, &m_pOffscreenBackBufferPPTexture1, nullptr);
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create SMAA buffer!", hr, __FILE__, __LINE__);
    }
@@ -1741,12 +1741,12 @@ RenderTarget* RenderDevice::DuplicateRenderTarget(RenderTarget* src)
    RenderTarget *dup;
 #ifdef ENABLE_SDL
    //TODO - Function seems to be unused
-   return NULL;
+   return nullptr;
 #else
    D3DSURFACE_DESC desc;
    src->GetDesc(&desc);
    CHECKD3D(m_pD3DDevice->CreateRenderTarget(desc.Width, desc.Height, desc.Format,
-      desc.MultiSampleType, desc.MultiSampleQuality, FALSE /* lockable */, &dup, NULL));
+      desc.MultiSampleType, desc.MultiSampleQuality, FALSE /* lockable */, &dup, nullptr));
 #endif
    return dup;
 }
@@ -2025,7 +2025,7 @@ D3DTexture* RenderDevice::CreateSystemTexture(const int texwidth, const int texh
 {
    IDirect3DTexture9 *sysTex;
    HRESULT hr;
-   hr = m_pD3DDevice->CreateTexture(texwidth, texheight, (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? 1 : 0, 0, texformat, D3DPOOL_SYSTEMMEM, &sysTex, NULL);
+   hr = m_pD3DDevice->CreateTexture(texwidth, texheight, (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? 1 : 0, 0, texformat, D3DPOOL_SYSTEMMEM, &sysTex, nullptr);
    if (FAILED(hr))
    {
       ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
@@ -2063,7 +2063,7 @@ D3DTexture* RenderDevice::CreateSystemTexture(const int texwidth, const int texh
       sysRect.left = 0;
       sysRect.right = texwidth;
       sysRect.bottom = texheight;
-      CHECKD3D(D3DXLoadSurfaceFromMemory(sysSurf, nullptr, nullptr, surf->data, (D3DFORMAT)(colorFormat::RGBA), surf->pitch, NULL, &sysRect, D3DX_FILTER_NONE, 0));
+      CHECKD3D(D3DXLoadSurfaceFromMemory(sysSurf, nullptr, nullptr, surf->data, (D3DFORMAT)(colorFormat::RGBA), surf->pitch, nullptr, &sysRect, D3DX_FILTER_NONE, 0));
       SAFE_RELEASE_NO_RCC(sysSurf);
    }
 
@@ -2093,7 +2093,7 @@ D3DTexture* RenderDevice::UploadTexture(BaseTexture* const surf, int* const pTex
 
    const colorFormat texformat = (D3DFORMAT)((m_compress_textures && ((texwidth & 3) == 0) && ((texheight & 3) == 0) && (texwidth > 256) && (texheight > 256) && (basetexformat != BaseTexture::RGB_FP)) ? colorFormat::DXT5 : ((basetexformat == BaseTexture::RGB_FP) ? colorFormat::RGBA32F : colorFormat::RGBA));
 
-   hr = m_pD3DDevice->CreateTexture(texwidth, texheight, (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? 0 : sysTex->GetLevelCount(), (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? D3DUSAGE_AUTOGENMIPMAP : 0, texformat, (D3DPOOL)memoryPool::DEFAULT, &tex, NULL);
+   hr = m_pD3DDevice->CreateTexture(texwidth, texheight, (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? 0 : sysTex->GetLevelCount(), (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? D3DUSAGE_AUTOGENMIPMAP : 0, texformat, (D3DPOOL)memoryPool::DEFAULT, &tex, nullptr);
    if (FAILED(hr))
       ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
 
@@ -2114,10 +2114,10 @@ void RenderDevice::UploadAndSetSMAATextures()
 {
    {
       IDirect3DTexture9 *sysTex;
-      HRESULT hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, D3DFMT_L8, D3DPOOL_SYSTEMMEM, &sysTex, NULL);
+      HRESULT hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, D3DFMT_L8, D3DPOOL_SYSTEMMEM, &sysTex, nullptr);
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
-      hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, D3DFMT_L8, (D3DPOOL)memoryPool::DEFAULT, &m_SMAAsearchTexture, NULL);
+      hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, D3DFMT_L8, (D3DPOOL)memoryPool::DEFAULT, &m_SMAAsearchTexture, nullptr);
       if (FAILED(hr))
          ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
 
@@ -2135,10 +2135,10 @@ void RenderDevice::UploadAndSetSMAATextures()
    //
    {
       IDirect3DTexture9 *sysTex;
-      HRESULT hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, D3DFMT_A8L8, D3DPOOL_SYSTEMMEM, &sysTex, NULL);
+      HRESULT hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, D3DFMT_A8L8, D3DPOOL_SYSTEMMEM, &sysTex, nullptr);
       if (FAILED(hr))
          ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
-      hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, D3DFMT_A8L8, (D3DPOOL)memoryPool::DEFAULT, &m_SMAAareaTexture, NULL);
+      hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, D3DFMT_A8L8, (D3DPOOL)memoryPool::DEFAULT, &m_SMAAareaTexture, nullptr);
       if (FAILED(hr))
          ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
 
@@ -2769,7 +2769,7 @@ void RenderDevice::Clear(const DWORD flags, const D3DCOLOR color, const D3DVALUE
    if ((r != clear_r) || (g != clear_g) || (b != clear_b) || (a != clear_a)) { clear_z = z;  glClearColor(r,g,b,a); }
    glClear(flags);
 #else
-   CHECKD3D(m_pD3DDevice->Clear(0, NULL, flags, color, z, stencil));
+   CHECKD3D(m_pD3DDevice->Clear(0, nullptr, flags, color, z, stencil));
 #endif
 }
 
@@ -2838,7 +2838,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
       else // RENDERTARGET & RRENDERTARGET_DEPTH
       {
          CHECKD3D(glBindTexture(GL_TEXTURE_2D, tex->texture));
-         CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, Format, Width, Height, 0, GL_RGBA, col_type, NULL));
+         CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, Format, Width, Height, 0, GL_RGBA, col_type, nullptr));
          CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
          CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
          CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0));
@@ -2958,7 +2958,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
          GLsizei w = Width;
          GLsizei h = Height;
          for (int i = 0; i < num_mips; i++) {
-            CHECKD3D(glTexImage2D(GL_TEXTURE_2D, i, Format, w, h, 0, col_format, col_type, NULL));
+            CHECKD3D(glTexImage2D(GL_TEXTURE_2D, i, Format, w, h, 0, col_format, col_type, nullptr));
             w = max(1, (w / 2));
             h = max(1, (h / 2));
          }
@@ -2988,7 +2988,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
       break;
    }
 
-   hr = m_pD3DDevice->CreateTexture(Width, Height, Levels, Usage, (D3DFORMAT)Format, (D3DPOOL)Pool, &tex, NULL);
+   hr = m_pD3DDevice->CreateTexture(Width, Height, Levels, Usage, (D3DFORMAT)Format, (D3DPOOL)Pool, &tex, nullptr);
    if (FAILED(hr))
    {
       ShowError("Could not create D3D9 texture.");

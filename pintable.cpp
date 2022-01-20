@@ -2078,10 +2078,8 @@ void PinTable::Play(const bool cameraMode)
       {
          g_pplayer = new Player(cameraMode, this);
 #ifdef ENABLE_SDL
-         WNDCLASS wc;
-         ZeroMemory(&wc, sizeof(wc));
-         CREATESTRUCT cs;
-         ZeroMemory(&cs, sizeof(cs));
+         WNDCLASS wc = {};
+         CREATESTRUCT cs = {};
          PreRegisterClass(wc);
          g_pplayer->PreCreate(cs);
          g_pplayer->PreInit();
