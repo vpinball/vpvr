@@ -1,7 +1,8 @@
+#include "stdafx.h"
+
 #include "TextureManager.h"
 #include "RenderDevice.h"
 #include "Texture.h"
-#include "stdafx.h"
 #include "typeDefs3D.h"
 
 D3DTexture* TextureManager::LoadTexture(BaseTexture* memtex, const bool linearRGB, const bool clamptoedge)

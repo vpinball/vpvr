@@ -159,15 +159,15 @@ bool Shader::parseFile(const char* fileNameRoot, const char* fileName, int level
    if (level > 8) {
       LOG(2, fileNameRoot, string("Reached include level ").append(std::to_string(level)).append(" while trying to include ").append(fileName).append("levels. Check for recursion and try to avoid includes with includes."));
    }
-   string line;
    string currentMode = parentMode;
    std::map<string, string>::iterator currentElemIt = values.find(parentMode);
    string currentElement = (currentElemIt != values.end()) ? currentElemIt->second : "";
    std::ifstream glfxFile;
    glfxFile.open(string(Shader::shaderPath).append(fileName), std::ifstream::in);
-   size_t linenumber = 0;
    if (glfxFile.is_open())
    {
+      string line;
+      size_t linenumber = 0;
       while (getline(glfxFile, line))
       {
          linenumber++;
@@ -183,8 +183,8 @@ bool Shader::parseFile(const char* fileNameRoot, const char* fileName, int level
             }
          }
          else if (line.compare(0, 9, "#include ") == 0) {
-            size_t start = line.find('"', 8);
-            size_t end = line.find('"', start + 1);
+            const size_t start = line.find('"', 8);
+            const size_t end = line.find('"', start + 1);
             values[currentMode] = currentElement;
             if ((start == string::npos) || (end == string::npos) || (end <= start) || !parseFile(fileNameRoot, line.substr(start + 1, end - start - 1).c_str(), level + 1, values, currentMode)) {
                LOG(1, fileNameRoot, string(fileName).append("(").append(std::to_string(linenumber)).append("):").append(line).append(" failed."));
@@ -363,9 +363,9 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
             newLoc.type = type;
             //hack for packedLights, but works for all arrays
             newLoc.size = size;
-            for (int i = 0;i < length;i++) {
-               if (uniformName[i] == '[') {
-                  uniformName[i] = 0;
+            for (int i2 = 0;i2 < length;i2++) {
+               if (uniformName[i2] == '[') {
+                  uniformName[i2] = 0;
                   break;
                }
             }
@@ -393,9 +393,9 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
             glGenBuffers(1, &newLoc.blockBuffer);
             //hack for packedLights, but works for all arrays - I don't need it for uniform blocks now and I'm not sure if it makes any sense, but maybe someone else in the future?
             newLoc.size = size;
-            for (int i = 0;i < length;i++) {
-               if (uniformName[i] == '[') {
-                  uniformName[i] = 0;
+            for (int i2 = 0;i2 < length;i2++) {
+               if (uniformName[i2] == '[') {
+                  uniformName[i2] = 0;
                   break;
                }
             }
@@ -409,7 +409,6 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
       }
 
       CHECKD3D(glGetProgramiv(shaderprogram, GL_ACTIVE_ATTRIBUTES, &count));
-      char attributeName[256];
 #ifdef TWEAK_GL_SHADER
       for (int i = 0; i < SHADER_ATTRIBUTE_COUNT; ++i) shader.attributeLocation[i] = { 0, -1, 0};
 #else
@@ -419,6 +418,7 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
          GLenum type;
          int size;
          int length;
+         char attributeName[256];
          CHECKD3D(glGetActiveAttrib(shader.program, (GLuint)i, 256, &length, &size, &type, attributeName));
          int location = glGetAttribLocation(shader.program, attributeName);
          CHECKD3D();
@@ -460,13 +460,13 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
 
 //Check if technique is valid and replace %PARAMi% with the values in the function header
 string Shader::analyzeFunction(const char* shaderCodeName, const string& technique, const string& functionName, const std::map<string, string> &values) {
-   const size_t start = functionName.find("(");
-   const size_t end = functionName.find(")");
+   const size_t start = functionName.find('(');
+   const size_t end = functionName.find(')');
    if ((start == string::npos) || (end == string::npos) || (start > end)) {
       LOG(2, (const char*)shaderCodeName, string("Invalid technique: ").append(technique));
       return "";
    }
-   std::map<string, string>::const_iterator it = values.find(functionName.substr(0, start));
+   const std::map<string, string>::const_iterator it = values.find(functionName.substr(0, start));
    string functionCode = (it != values.end()) ? it->second : "";
    if (end > start + 1) {
       std::stringstream params(functionName.substr(start + 1, end - start - 1));
@@ -598,7 +598,7 @@ void Shader::setAttributeFormat(DWORD fvf)
 #ifdef TWEAK_GL_SHADER
    for (int i = 0; i < SHADER_ATTRIBUTE_COUNT; ++i)
    {
-      int location = m_currentTechnique->attributeLocation[i].location;
+      const int location = m_currentTechnique->attributeLocation[i].location;
       if (location >= 0) {
          int offset;
          CHECKD3D(glEnableVertexAttribArray(m_currentTechnique->attributeLocation[i].location));
@@ -714,9 +714,9 @@ void Shader::Begin(const unsigned int pass)
       switch (currentUniform.type) {
       case -1: {//Uniform blocks
          #ifdef TWEAK_GL_SHADER
-         auto valueFP = uniformFloatP[uniformName];
+         const auto valueFP = uniformFloatP[uniformName];
          #else
-         auto valueFP = uniformFloatP.find(uniformName)->second;
+         const auto valueFP = uniformFloatP.find(uniformName)->second;
          #endif
          CHECKD3D(glBindBuffer(GL_UNIFORM_BUFFER, currentUniform.blockBuffer));
          CHECKD3D(glBufferData(GL_UNIFORM_BUFFER, currentUniform.size, valueFP.data, GL_STREAM_DRAW));
@@ -739,10 +739,10 @@ void Shader::Begin(const unsigned int pass)
       case GL_INT:
       {
          #ifdef TWEAK_GL_SHADER
-         int valueI = uniformInt[uniformName];
+         const int valueI = uniformInt[uniformName];
          #else
-         auto entry = uniformInt.find(uniformName);
-         auto valueI = (entry != uniformInt.end()) ? entry->second : 0;
+         const auto entry = uniformInt.find(uniformName);
+         const auto valueI = (entry != uniformInt.end()) ? entry->second : 0;
          #endif
          CHECKD3D(glUniform1i(currentUniform.location, valueI));
       }
@@ -797,10 +797,10 @@ void Shader::Begin(const unsigned int pass)
       case GL_FLOAT_MAT2:
       {
          #ifdef TWEAK_GL_SHADER
-         auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
          #else
-         auto entry = uniformFloatP.find(uniformName);
-         auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
+         const auto entry = uniformFloatP.find(uniformName);
+         const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
          #endif
          CHECKD3D(glUniformMatrix2fv(currentUniform.location, 1, GL_FALSE, valueFP));
       }
@@ -808,10 +808,10 @@ void Shader::Begin(const unsigned int pass)
       case GL_FLOAT_MAT3:
       {
          #ifdef TWEAK_GL_SHADER
-         auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
          #else
-         auto entry = uniformFloatP.find(uniformName);
-         auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
+         const auto entry = uniformFloatP.find(uniformName);
+         const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
          #endif
          CHECKD3D(glUniformMatrix3fv(currentUniform.location, 1, GL_FALSE, valueFP));
       }
@@ -819,10 +819,10 @@ void Shader::Begin(const unsigned int pass)
       case GL_FLOAT_MAT4:
       {
          #ifdef TWEAK_GL_SHADER
-         auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
          #else
-         auto entry = uniformFloatP.find(uniformName);
-         auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
+         const auto entry = uniformFloatP.find(uniformName);
+         const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
          #endif
          CHECKD3D(glUniformMatrix4fv(currentUniform.location, 1, GL_FALSE, valueFP));
       }
@@ -830,10 +830,10 @@ void Shader::Begin(const unsigned int pass)
       case GL_FLOAT_MAT4x3:
       {
          #ifdef TWEAK_GL_SHADER
-         auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
          #else
-         auto entry = uniformFloatP.find(uniformName);
-         auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
+         const auto entry = uniformFloatP.find(uniformName);
+         const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
          #endif
          CHECKD3D(glUniformMatrix4x3fv(currentUniform.location, 1, GL_FALSE, valueFP));
       }
@@ -841,10 +841,10 @@ void Shader::Begin(const unsigned int pass)
       case GL_FLOAT_MAT4x2:
       {
          #ifdef TWEAK_GL_SHADER
-         auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
          #else
-         auto entry = uniformFloatP.find(uniformName);
-         auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
+         const auto entry = uniformFloatP.find(uniformName);
+         const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
          #endif
          CHECKD3D(glUniformMatrix4x2fv(currentUniform.location, 1, GL_FALSE, valueFP));
       }
@@ -852,10 +852,10 @@ void Shader::Begin(const unsigned int pass)
       case GL_FLOAT_MAT3x4:
       {
          #ifdef TWEAK_GL_SHADER
-         auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
          #else
-         auto entry = uniformFloatP.find(uniformName);
-         auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
+         const auto entry = uniformFloatP.find(uniformName);
+         const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
          #endif
          CHECKD3D(glUniformMatrix3x4fv(currentUniform.location, 1, GL_FALSE, valueFP));
       }
@@ -863,10 +863,10 @@ void Shader::Begin(const unsigned int pass)
       case GL_FLOAT_MAT2x4:
       {
          #ifdef TWEAK_GL_SHADER
-         auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
          #else
-         auto entry = uniformFloatP.find(uniformName);
-         auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
+         const auto entry = uniformFloatP.find(uniformName);
+         const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
          #endif
          CHECKD3D(glUniformMatrix2x4fv(currentUniform.location, 1, GL_FALSE, valueFP));
       }
@@ -874,10 +874,10 @@ void Shader::Begin(const unsigned int pass)
       case GL_FLOAT_MAT3x2:
       {
          #ifdef TWEAK_GL_SHADER
-         auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
          #else
-         auto entry = uniformFloatP.find(uniformName);
-         auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
+         const auto entry = uniformFloatP.find(uniformName);
+         const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
          #endif
          CHECKD3D(glUniformMatrix3x2fv(currentUniform.location, 1, GL_FALSE, valueFP));
       }
@@ -885,10 +885,10 @@ void Shader::Begin(const unsigned int pass)
       case GL_FLOAT_MAT2x3:
       {
          #ifdef TWEAK_GL_SHADER
-         auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
          #else
-         auto entry = uniformFloatP.find(uniformName);
-         auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
+         const auto entry = uniformFloatP.find(uniformName);
+         const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
          #endif
          CHECKD3D(glUniformMatrix2x3fv(currentUniform.location, 1, GL_FALSE, valueFP));
       }
@@ -901,7 +901,7 @@ void Shader::Begin(const unsigned int pass)
             TextureID = uniformTex[uniformName];
          }
          #else
-         auto valueT = uniformTex.find(uniformName);
+         const auto valueT = uniformTex.find(uniformName);
          int TextureID;
          if (valueT != uniformTex.end()) {
             TextureID = valueT->second;
@@ -1002,7 +1002,7 @@ void Shader::SetTextureDepth(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *
       uniformTex[texelName] = 0;
    if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
 #ifdef TWEAK_GL_SHADER
-      auto location = m_currentTechnique->uniformLocation[texelName];
+      const auto location = m_currentTechnique->uniformLocation[texelName];
       if (location.location == -1) return;
 #else
       auto loc = m_currentTechnique->uniformLocation->find(texelName);
@@ -1043,7 +1043,7 @@ void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel
       uniformTex[texelName] = 0;
    if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
 #ifdef TWEAK_GL_SHADER
-      auto location = m_currentTechnique->uniformLocation[texelName];
+      const auto location = m_currentTechnique->uniformLocation[texelName];
       if (location.location == -1) return;
 #else
       auto loc = m_currentTechnique->uniformLocation->find(texelName);
@@ -1109,7 +1109,7 @@ void Shader::SetUniformBlock(const SHADER_UNIFORM_HANDLE hParameter, const float
    uniformFloatP[hParameter] = elem;
    if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
 #ifdef TWEAK_GL_SHADER
-      auto location = m_currentTechnique->uniformLocation[hParameter];
+      const auto location = m_currentTechnique->uniformLocation[hParameter];
       if (location.location == -1) return;
 #else
       auto loc = m_currentTechnique->uniformLocation->find(hParameter);
@@ -1154,7 +1154,7 @@ void Shader::SetMatrix(const SHADER_UNIFORM_HANDLE hParameter, const Matrix3D* p
    uniformFloatP[hParameter] = elem;
    if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
 #ifdef TWEAK_GL_SHADER
-      auto location = m_currentTechnique->uniformLocation[hParameter];
+      const auto location = m_currentTechnique->uniformLocation[hParameter];
       if (location.location == -1) return;
 #else
       auto loc = m_currentTechnique->uniformLocation->find(hParameter);
@@ -1228,7 +1228,7 @@ void Shader::SetVector(const SHADER_UNIFORM_HANDLE hParameter, const vec4* pVect
    uniformFloatP[hParameter] = elem;
    if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
 #ifdef TWEAK_GL_SHADER
-      auto location = m_currentTechnique->uniformLocation[hParameter];
+      const auto location = m_currentTechnique->uniformLocation[hParameter];
       if (location.location == -1) return;
 #else
       auto loc = m_currentTechnique->uniformLocation->find(hParameter);
@@ -1287,7 +1287,7 @@ void Shader::SetVector(const SHADER_UNIFORM_HANDLE hParameter, const float x, co
    uniformFloatP[hParameter] = elem;
    if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
 #ifdef TWEAK_GL_SHADER
-      auto location = m_currentTechnique->uniformLocation[hParameter];
+      const auto location = m_currentTechnique->uniformLocation[hParameter];
       if (location.location == -1) return;
 #else
       auto loc = m_currentTechnique->uniformLocation->find(hParameter);
@@ -1337,7 +1337,7 @@ void Shader::SetInt(const SHADER_UNIFORM_HANDLE hParameter, const int i)
    uniformInt[hParameter] = i;
    if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
 #ifdef TWEAK_GL_SHADER
-      auto location = m_currentTechnique->uniformLocation[hParameter];
+      const auto location = m_currentTechnique->uniformLocation[hParameter];
       if (location.location == -1) return;
 #else
       auto loc = m_currentTechnique->uniformLocation->find(hParameter);
@@ -1353,12 +1353,12 @@ void Shader::SetBool(const SHADER_UNIFORM_HANDLE hParameter, const bool b)
 #ifdef TWEAK_GL_SHADER
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
 #endif
-   int i = b ? 1 : 0;
+   const int i = b ? 1 : 0;
    if (uniformInt[hParameter] == i) return;
    uniformInt[hParameter] = i;
    if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
 #ifdef TWEAK_GL_SHADER
-      auto location = m_currentTechnique->uniformLocation[hParameter];
+      const auto location = m_currentTechnique->uniformLocation[hParameter];
       if (location.location == -1) return;
 #else
       auto loc = m_currentTechnique->uniformLocation->find(hParameter);
@@ -1418,7 +1418,7 @@ void Shader::SetFloatArray(const SHADER_UNIFORM_HANDLE hParameter, const float* 
    uniformFloatP[hParameter] = elem;
    if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
 #ifdef TWEAK_GL_SHADER
-      auto location = m_currentTechnique->uniformLocation[hParameter];
+      const auto location = m_currentTechnique->uniformLocation[hParameter];
       if (location.location == -1) return;
 #else
       auto loc = m_currentTechnique->uniformLocation->find(hParameter);
@@ -1433,13 +1433,14 @@ void Shader::GetTransform(const TransformStateType p1, Matrix3D* p2, const int c
 {
    switch (p1) {
    case TRANSFORMSTATE_WORLD:
-      memcpy(p2, &Shader::mWorld, sizeof(Matrix3D));
+      *p2 = Shader::mWorld;
       break;
    case TRANSFORMSTATE_VIEW:
-      memcpy(p2, &Shader::mView, sizeof(Matrix3D));
+      *p2 = Shader::mView;
       break;
    case TRANSFORMSTATE_PROJECTION:
-      memcpy(p2, &Shader::mProj, sizeof(Matrix3D)*count);
+      for(int i = 0; i < count; ++i)
+         p2[i] = Shader::mProj[i];
       break;
    }
 }
@@ -1448,13 +1449,14 @@ void Shader::SetTransform(const TransformStateType p1, const Matrix3D * p2, cons
 {
    switch (p1) {
    case TRANSFORMSTATE_WORLD:
-      memcpy(&Shader::mWorld, p2, sizeof(Matrix3D));
+      Shader::mWorld = *p2;
       break;
    case TRANSFORMSTATE_VIEW:
-      memcpy(&Shader::mView, p2, sizeof(Matrix3D));
+      Shader::mView = *p2;
       break;
    case TRANSFORMSTATE_PROJECTION:
-      memcpy(Shader::mProj, p2, sizeof(Matrix3D)*count);
+      for(int i = 0; i < count; ++i)
+         Shader::mProj[i] = p2[i];
       break;
    }
 }
