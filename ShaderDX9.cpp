@@ -88,7 +88,7 @@ void Shader::SetTextureDepth(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *
 void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, const bool linearRGB, const bool clamptoedge)
 {
    const unsigned int idx = texelName[strlen(texelName) - 1] - '0'; // current convention: SetTexture gets "TextureX", where X 0..4
-   bool cache = idx < TEXTURESET_STATE_CACHE_SIZE;
+   const bool cache = idx < TEXTURESET_STATE_CACHE_SIZE;
 
    if (!texel || !texel->m_pdsBuffer) {
       if (cache) {
@@ -127,7 +127,7 @@ void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel
 void Shader::SetTextureNull(const SHADER_UNIFORM_HANDLE texelName)
 {
    const unsigned int idx = texelName[strlen(texelName) - 1] - '0'; // current convention: SetTexture gets "TextureX", where X 0..4
-   bool cache = idx < TEXTURESET_STATE_CACHE_SIZE;
+   const bool cache = idx < TEXTURESET_STATE_CACHE_SIZE;
 
    if (cache)
       currentTexture[idx] = nullptr; // direct set of device tex invalidates the cache
@@ -137,13 +137,13 @@ void Shader::SetTextureNull(const SHADER_UNIFORM_HANDLE texelName)
    m_renderDevice->m_curTextureChanges++;
 }
 
-void Shader::SetTechnique(const SHADER_TECHNIQUE_HANDLE technique)
+void Shader::SetTechnique(const SHADER_TECHNIQUE_HANDLE _technique)
 {
-   if (strcmp(currentTechnique, technique) /*|| (m_renderDevice->m_curShader != this)*/)
+   if (strcmp(currentTechnique, _technique) /*|| (m_renderDevice->m_curShader != this)*/)
    {
-      strncpy_s(currentTechnique, technique, sizeof(currentTechnique) - 1);
+      strncpy_s(currentTechnique, _technique, sizeof(currentTechnique) - 1);
       //m_renderDevice->m_curShader = this;
-      CHECKD3D(m_shader->SetTechnique(technique));
+      CHECKD3D(m_shader->SetTechnique(_technique));
       m_renderDevice->m_curTechniqueChanges++;
    }
 }

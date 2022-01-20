@@ -959,8 +959,8 @@ bool RenderDevice::LoadShaders()
    bool shaderCompilationOkay = true;
    CHECKD3D();
 
-   char glShaderPath[256];
-   DWORD length = GetModuleFileName(NULL, glShaderPath, 256);
+   char glShaderPath[MAX_PATH];
+   DWORD length = GetModuleFileName(NULL, glShaderPath, MAX_PATH);
 
    if (m_stereo3D == STEREO_OFF) {
       Shader::Defines = "#define eyes 1\n#define enable_VR 0";
@@ -1013,15 +1013,15 @@ bool RenderDevice::LoadShaders()
 #endif
 
    if (!shaderCompilationOkay)
-      ReportError("Fatal Error: shader compilation failed!", -1, __FILE__, __LINE__);
+      ReportError("Fatal Error: shader files not found or shader compilation failed!", -1, __FILE__, __LINE__);
    CHECKD3D();
    if (shaderCompilationOkay && m_FXAA == Quality_SMAA)
-         UploadAndSetSMAATextures();
-      else
-      {
-         m_SMAAareaTexture = 0;
-         m_SMAAsearchTexture = 0;
-      }
+      UploadAndSetSMAATextures();
+   else
+   {
+      m_SMAAareaTexture = 0;
+      m_SMAAsearchTexture = 0;
+   }
    return shaderCompilationOkay;
 }
 
