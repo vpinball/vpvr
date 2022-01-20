@@ -77,7 +77,6 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice,Texture * backgroundFallback
    b2sFileName = b2sFileName.substr(0, b2sFileName.find_last_of("."));
    b2sFileName.append(".directb2s");
    void* data = nullptr;
-   size_t data_len = 0;
    backglass_dmd_x = 0;
    backglass_dmd_y = 0;
    backglass_dmd_width = 0;
@@ -98,6 +97,7 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice,Texture * backgroundFallback
       if (!rootNode) {
          return;
       }
+      size_t data_len = 0;
       auto currentNode = rootNode->first_node();
       while (currentNode) {//Iterate all Nodes within DirectB2SData
          char* nodeName = currentNode->name();
@@ -206,8 +206,6 @@ BackGlass::~BackGlass()
 
 void BackGlass::Render()
 {
-   PinTable * const ptable = g_pplayer->m_ptable;
-
    if (g_pplayer->m_capPUP && capturePUP())
    {
       m_backgroundTexture = m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texPUP, true, true);
@@ -220,8 +218,8 @@ void BackGlass::Render()
       {
          // If we expect a DMD the captured image is probably missing a grill in 3scr mode
          // 3scr mode preferable to support VR rooms, so better to just drop the grills in this experimental mode.
-         int dmdheightoff = (int)((backglass_scale * tableWidth / 16.0*9.0) * .3);
-         int dmdheightextra = (int)(tableWidth * .05);
+         const int dmdheightoff = (int)((backglass_scale * tableWidth / 16.0*9.0) * .3);
+         const int dmdheightextra = (int)(tableWidth * .05);
          glassHeight += (float)(dmdheightoff + dmdheightextra);
 
          m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - backglass_scale / 2.0f), glassHeight, backglass_scale * tableWidth, backglass_scale * tableWidth / 16.0f*9.0f);
@@ -290,12 +288,12 @@ void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DM
          m_pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, false, true), false);
       //      m_pd3dPrimaryDevice->DMDShader->SetVector(SHADER_quadOffsetScale, 0.0f, -1.0f, backglass_scale, backglass_scale*(float)backglass_height / (float)backglass_width);
       bool zDisabled = false;
-      const float scale = 0.5f;// 0.5 => use 50% of the height of the grill.
       m_pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
       if (m_backgroundTexture) {
          if (dmd_width == 0.0f || dmd_height == 0.0f) {//If file contains no valid VRDMD position
-            if (backglass_grill_height > 0.0f) {
+            if (backglass_grill_height > 0) {
                //DMD is centered in the Grill of the backglass
+               constexpr float scale = 0.5f;// 0.5 => use 50% of the height of the grill.
                float tableWidth;
                g_pplayer->m_ptable->get_Width(&tableWidth);
                tableWidth *= backglass_scale;

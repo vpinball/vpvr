@@ -54,7 +54,7 @@ void captureThread()
 
    while (!StopCapture)
    {
-      for (auto it = ExtCapture::m_duplicatormap.begin(); it != ExtCapture::m_duplicatormap.end(); it++)
+      for (auto it = ExtCapture::m_duplicatormap.begin(); it != ExtCapture::m_duplicatormap.end(); ++it)
       {
          it->second->AcquireFrame();
       }
@@ -86,9 +86,9 @@ void captureThread()
 
 void captureStartup()
 {
-   std::list<string> dmdlist = { "Virtual DMD", "pygame", "PUPSCREEN1", "formDMD", "PUPSCREEN5" };
+   const std::list<string> dmdlist = { "Virtual DMD", "pygame", "PUPSCREEN1", "formDMD", "PUPSCREEN5" };
    ecDMD.Setup(dmdlist);
-   std::list<string> puplist = { "PUPSCREEN2", "Form1" };
+   const std::list<string> puplist = { "PUPSCREEN2", "Form1" };
    ecPUP.Setup(puplist);
    ecDMD.ecStage = g_pplayer->m_capExtDMD ? ecSearching : ecFailure;
    ecPUP.ecStage = g_pplayer->m_capPUP ? ecSearching : ecFailure;
@@ -245,9 +245,8 @@ bool ExtCapture::SetupCapture(RECT inputRect)
    if (!found)
       return false;
 
-   std::tuple<int, int> idx = std::make_tuple(dx, i);
-   outputmaptype::iterator it;
-   it = m_duplicatormap.find(idx);
+   const std::tuple<int, int> idx = std::make_tuple(dx, i);
+   outputmaptype::iterator it = m_duplicatormap.find(idx);
    if (it != m_duplicatormap.end())
    {
       m_pCapOut = it->second;
@@ -320,9 +319,9 @@ bool ExtCapture::SetupCapture(RECT inputRect)
 
    // duplication->GetDesc(&m_duplication_desc);
 
-   HDC all_screen = GetDC(nullptr);
-   int BitsPerPixel = GetDeviceCaps(all_screen, BITSPIXEL);
-   HDC hdc2 = CreateCompatibleDC(all_screen);
+   const HDC all_screen = GetDC(nullptr);
+   const int BitsPerPixel = GetDeviceCaps(all_screen, BITSPIXEL);
+   const HDC hdc2 = CreateCompatibleDC(all_screen);
 
    BITMAPINFO info;
    info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
@@ -339,14 +338,13 @@ bool ExtCapture::SetupCapture(RECT inputRect)
 
 void ExtCaptureOutput::AcquireFrame()
 {
-   HRESULT hr;
    srcdata = nullptr;
    DXGI_OUTDUPL_FRAME_INFO frame_info;
    IDXGIResource* desktop_resource = nullptr;
    ID3D11Texture2D* tex = nullptr;
    DXGI_MAPPED_RECT mapped_rect;
 
-   hr = m_duplication->AcquireNextFrame(2500, &frame_info, &desktop_resource);
+   HRESULT hr = m_duplication->AcquireNextFrame(2500, &frame_info, &desktop_resource);
 
    if (DXGI_ERROR_ACCESS_LOST == hr) {
       printf("Received a DXGI_ERROR_ACCESS_LOST.\n");
@@ -376,7 +374,7 @@ void ExtCaptureOutput::AcquireFrame()
          d3d_context->CopyResource(staging_tex, tex);
 
          D3D11_MAPPED_SUBRESOURCE map;
-         HRESULT map_result = d3d_context->Map(staging_tex,          /* Resource */
+         const HRESULT map_result = d3d_context->Map(staging_tex,          /* Resource */
             0,                    /* Subresource */
             D3D11_MAP_READ,       /* Map type. */
             0,                    /* Map flags. */
@@ -424,12 +422,12 @@ void ExtCaptureOutput::AcquireFrame()
       DXGI_OUTDUPL_MOVE_RECT* pmr = (DXGI_OUTDUPL_MOVE_RECT*)m_MetaDataBuffer;
       for (size_t i = 0;i < BufSize / sizeof(DXGI_OUTDUPL_MOVE_RECT);i++, pmr++)
       {
-         for (auto it = ExtCapture::m_allCaptures.begin(); it != ExtCapture::m_allCaptures.end(); it++)
+         for (auto it = ExtCapture::m_allCaptures.begin(); it != ExtCapture::m_allCaptures.end(); ++it)
          {
-            int capleft = (*it)->m_DispLeft;
-            int captop = (*it)->m_DispTop;
-            int capright = (*it)->m_DispLeft + (*it)->m_Width;
-            int capbottom = (*it)->m_DispTop + (*it)->m_Height;
+            const int capleft = (*it)->m_DispLeft;
+            const int captop = (*it)->m_DispTop;
+            const int capright = (*it)->m_DispLeft + (*it)->m_Width;
+            const int capbottom = (*it)->m_DispTop + (*it)->m_Height;
 
             if (pmr->DestinationRect.left < capright && pmr->DestinationRect.right > capleft &&
                pmr->DestinationRect.top < capbottom && pmr->DestinationRect.bottom > captop)
@@ -504,7 +502,7 @@ bool ExtCapture::GetFrame()
 
 void ExtCapture::Dispose()
 {
-   for (auto it = m_duplicatormap.begin(); it != m_duplicatormap.end(); it++)
+   for (auto it = m_duplicatormap.begin(); it != m_duplicatormap.end(); ++it)
    {
       it->second->m_duplication->Release();
       it->second->d3d_context->Release();
