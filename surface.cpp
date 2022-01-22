@@ -1026,9 +1026,8 @@ void Surface::RenderSlingshots()
    RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
    const Material * const mat = m_ptable->GetMaterial(m_d.m_szSlingShotMaterial);
-   pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_without_texture);
+   pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_without_texture, mat->m_bIsMetal);
    pd3dDevice->basicShader->SetMaterial(mat);
-   pd3dDevice->basicShader->SetBool(SHADER_is_metal, mat->m_bIsMetal);
 
    pd3dDevice->SetRenderStateDepthBias(0.0f);
    pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
@@ -1089,16 +1088,14 @@ void Surface::RenderWallsAtHeight(const bool drop)
       Texture * const pinSide = m_ptable->GetImage(m_d.m_szSideImage);
       if (pinSide)
       {
-         pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_with_texture);
+         pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
          pd3dDevice->basicShader->SetTexture(SHADER_Texture0, pinSide, false);
          pd3dDevice->basicShader->SetAlphaTestValue(pinSide->m_alphaTestValue * (float)(1.0 / 255.0));
 
          //g_pplayer->m_pin3d.SetPrimaryTextureFilter( 0, TEXTURE_MODE_TRILINEAR );
       }
       else
-         pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_without_texture);
-
-      pd3dDevice->basicShader->SetBool(SHADER_is_metal, mat->m_bIsMetal);
+         pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_without_texture, mat->m_bIsMetal);
 
       // combine drawcalls into one (hopefully faster)
       pd3dDevice->basicShader->Begin(0);
@@ -1123,16 +1120,14 @@ void Surface::RenderWallsAtHeight(const bool drop)
       Texture * const pin = m_ptable->GetImage(m_d.m_szImage);
       if (pin)
       {
-         pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_with_texture);
+         pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
          pd3dDevice->basicShader->SetTexture(SHADER_Texture0, pin, false);
          pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
 
          //g_pplayer->m_pin3d.SetPrimaryTextureFilter( 0, TEXTURE_MODE_TRILINEAR );
       }
       else
-         pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_without_texture);
-
-      pd3dDevice->basicShader->SetBool(SHADER_is_metal, mat->m_bIsMetal);
+         pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_without_texture, mat->m_bIsMetal);
 
       // Top
       pd3dDevice->basicShader->Begin(0);

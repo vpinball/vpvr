@@ -385,8 +385,7 @@ void Light::RenderBulbMesh()
 
    RenderDevice * const pd3dDevice = m_backglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
-   pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_without_texture);
-   pd3dDevice->basicShader->SetBool(SHADER_is_metal, mat.m_bIsMetal);
+   pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_without_texture, mat.m_bIsMetal);
    pd3dDevice->basicShader->SetMaterial(&mat);
 
    pd3dDevice->basicShader->Begin(0);
@@ -405,8 +404,7 @@ void Light::RenderBulbMesh()
    mat.m_fGlossyImageLerp = 1.0f;
    mat.m_fThickness = 0.05f;
    mat.m_cClearcoat = 0xFFFFFF;
-   pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_without_texture);
-   pd3dDevice->basicShader->SetBool(SHADER_is_metal, mat.m_bIsMetal);
+   pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_without_texture, mat.m_bIsMetal);
    pd3dDevice->basicShader->SetMaterial(&mat);
 
    pd3dDevice->basicShader->Begin(0);
@@ -523,7 +521,7 @@ void Light::RenderDynamic()
       if (offTexel != nullptr)
       {
          pd3dDevice->classicLightShader->SetBool(SHADER_hdrTexture0, offTexel->IsHDR());
-         pd3dDevice->classicLightShader->SetTechnique(SHADER_TECHNIQUE_light_with_texture);
+         pd3dDevice->classicLightShader->SetTechniqueMetal(SHADER_TECHNIQUE_light_with_texture, m_surfaceMaterial->m_bIsMetal);
          pd3dDevice->classicLightShader->SetTexture(SHADER_Texture0, offTexel, false, true);
          // Was: if (m_ptable->m_reflectElementsOnPlayfield && g_pplayer->m_pf_refl && !m_backglass)*/
          // TOTAN and Flintstones inserts break if alpha blending is disabled here.
@@ -536,8 +534,7 @@ void Light::RenderDynamic()
          }
       }
       else
-         pd3dDevice->classicLightShader->SetTechnique(SHADER_TECHNIQUE_light_without_texture);
-      pd3dDevice->classicLightShader->SetBool(SHADER_is_metal, m_surfaceMaterial->m_bIsMetal);
+         pd3dDevice->classicLightShader->SetTechniqueMetal(SHADER_TECHNIQUE_light_without_texture, m_surfaceMaterial->m_bIsMetal);
    }
    else
    {

@@ -470,8 +470,7 @@ void Gate::RenderObject()
    pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
    pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 
-   pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_without_texture);
-   pd3dDevice->basicShader->SetBool(SHADER_is_metal, mat->m_bIsMetal);
+   pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_without_texture, mat->m_bIsMetal);
    pd3dDevice->basicShader->Begin(0);
 
    // render bracket
