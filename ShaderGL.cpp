@@ -1085,6 +1085,12 @@ void Shader::SetTechnique(const SHADER_TECHNIQUE_HANDLE _technique)
    m_renderDevice->m_curTechniqueChanges++;
 }
 
+void Shader::SetTechniqueMetal(const SHADER_TECHNIQUE_HANDLE _technique, const bool isMetal)
+{
+   SetTechnique(_technique);
+   SetBool(SHADER_is_metal, isMetal);
+}
+
 void Shader::SetUniformBlock(const SHADER_UNIFORM_HANDLE hParameter, const float* pMatrix, const int size)
 {
    floatP elem;

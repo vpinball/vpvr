@@ -228,6 +228,7 @@ public:
    void SetLightImageBackglassMode(const bool imageMode, const bool backglassMode);
 
    void SetTechnique(const SHADER_TECHNIQUE_HANDLE technique);
+   void SetTechniqueMetal(const SHADER_TECHNIQUE_HANDLE technique, const bool isMetal);
 
    void SetMatrix(const SHADER_UNIFORM_HANDLE hParameter, const Matrix3D* pMatrix);
    void SetUniformBlock(const SHADER_UNIFORM_HANDLE hParameter, const float* pMatrix, const int size);
