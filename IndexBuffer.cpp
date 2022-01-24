@@ -5,17 +5,18 @@
 //Disabled since it still has some bugs
 #define COMBINE_BUFFERS 0
 
-IndexBuffer* IndexBuffer::m_curIndexBuffer = nullptr;
+IndexBuffer* IndexBuffer::m_curIndexBuffer = nullptr; // is also reset before each Player start
 
 #ifndef ENABLE_SDL
-IDirect3DDevice9* IndexBuffer::m_pD3DDevice = nullptr;
+IDirect3DDevice9* IndexBuffer::m_pd3dPrimaryDevice = nullptr; // is set before each Player start
+IDirect3DDevice9* IndexBuffer::m_pd3dSecondaryDevice = nullptr; // is set before each Player start
 #endif
 
 #ifdef ENABLE_SDL
 std::vector<IndexBuffer*> IndexBuffer::notUploadedBuffers;
 #endif
 
-void IndexBuffer::CreateIndexBuffer(const unsigned int numIndices, const DWORD usage, const IndexBuffer::Format format, IndexBuffer **idxBuffer)
+void IndexBuffer::CreateIndexBuffer(const unsigned int numIndices, const DWORD usage, const IndexBuffer::Format format, IndexBuffer **idxBuffer, const deviceNumber dN)
 {
 #ifdef ENABLE_SDL
    IndexBuffer* const ib = new IndexBuffer();
@@ -30,14 +31,14 @@ void IndexBuffer::CreateIndexBuffer(const unsigned int numIndices, const DWORD u
    // NB: We always specify WRITEONLY since MSDN states,
    // "Buffers created with D3DPOOL_DEFAULT that do not specify D3DUSAGE_WRITEONLY may suffer a severe performance penalty."
    const unsigned idxSize = (format == IndexBuffer::FMT_INDEX16) ? 2 : 4;
-   const HRESULT hr = m_pD3DDevice->CreateIndexBuffer(idxSize * numIndices, usage | D3DUSAGE_WRITEONLY, (D3DFORMAT)format,
+   const HRESULT hr = (dN == PRIMARY_DEVICE ? m_pd3dPrimaryDevice : m_pd3dSecondaryDevice)->CreateIndexBuffer(idxSize * numIndices, usage | USAGE_STATIC, (D3DFORMAT)format,
       (D3DPOOL)memoryPool::DEFAULT, (IDirect3DIndexBuffer9**)idxBuffer, nullptr);
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create index buffer!", hr, __FILE__, __LINE__);
 #endif
 }
 
-IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const unsigned int numIndices, const WORD * indices)
+IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const unsigned int numIndices, const WORD *indices, const deviceNumber dN)
 {
 #ifdef ENABLE_SDL
    IndexBuffer* const ib = new IndexBuffer();
@@ -58,7 +59,7 @@ IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const unsigned int numIndices
    }
 #else
    IndexBuffer* ib;
-   CreateIndexBuffer(numIndices, 0, IndexBuffer::FMT_INDEX16, &ib);
+   CreateIndexBuffer(numIndices, 0, IndexBuffer::FMT_INDEX16, &ib, dN);
 
    void* buf;
    ib->lock(0, 0, &buf, 0);
@@ -68,7 +69,7 @@ IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const unsigned int numIndices
    return ib;
 }
 
-IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const unsigned int numIndices, const unsigned int * indices)
+IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const unsigned int numIndices, const unsigned int *indices, const deviceNumber dN)
 {
 #ifdef ENABLE_SDL
    IndexBuffer* const ib = new IndexBuffer();
@@ -89,7 +90,7 @@ IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const unsigned int numIndices
    }
 #else
    IndexBuffer* ib;
-   CreateIndexBuffer(numIndices, 0, IndexBuffer::FMT_INDEX32, &ib);
+   CreateIndexBuffer(numIndices, 0, IndexBuffer::FMT_INDEX32, &ib, dN);
 
    void* buf;
    ib->lock(0, 0, &buf, 0);
@@ -99,14 +100,14 @@ IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const unsigned int numIndices
    return ib;
 }
 
-IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const std::vector<WORD>& indices)
+IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const std::vector<WORD>& indices, const deviceNumber dN)
 {
-   return CreateAndFillIndexBuffer((unsigned int)indices.size(), indices.data());
+   return CreateAndFillIndexBuffer((unsigned int)indices.size(), indices.data(), dN);
 }
 
-IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const std::vector<unsigned int>& indices)
+IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const std::vector<unsigned int>& indices, const deviceNumber dN)
 {
-   return CreateAndFillIndexBuffer((unsigned int)indices.size(), indices.data());
+   return CreateAndFillIndexBuffer((unsigned int)indices.size(), indices.data(), dN);
 }
 
 void IndexBuffer::lock(const unsigned int offsetToLock, const unsigned int sizeToLock, void **dataBuffer, const DWORD flags)
@@ -155,7 +156,7 @@ void IndexBuffer::release(void)
 #endif
 }
 
-void IndexBuffer::bind()
+void IndexBuffer::bind(const deviceNumber dN)
 {
 #ifdef ENABLE_SDL
    if (!isUploaded)
@@ -168,7 +169,7 @@ void IndexBuffer::bind()
 #else
    if (m_curIndexBuffer == nullptr || m_curIndexBuffer != this)
    {
-      CHECKD3D(m_pD3DDevice->SetIndices(this));
+      CHECKD3D((dN == PRIMARY_DEVICE ? m_pd3dPrimaryDevice : m_pd3dSecondaryDevice)->SetIndices(this));
       m_curIndexBuffer = this;
    }
 #endif

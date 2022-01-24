@@ -369,7 +369,7 @@ void Flasher::RenderSetup()
 
    if (m_dynamicIndexBuffer)
       m_dynamicIndexBuffer->release();
-   IndexBuffer::CreateIndexBuffer(m_numPolys * 3, 0, IndexBuffer::FMT_INDEX16, &m_dynamicIndexBuffer);
+   IndexBuffer::CreateIndexBuffer(m_numPolys * 3, 0, IndexBuffer::FMT_INDEX16, &m_dynamicIndexBuffer, PRIMARY_DEVICE);
    NumVideoBytes += (int)(m_numPolys * 3 * sizeof(WORD));
 
    WORD* bufi;
@@ -379,7 +379,7 @@ void Flasher::RenderSetup()
 
    if (m_dynamicVertexBuffer)
       m_dynamicVertexBuffer->release();
-   VertexBuffer::CreateVertexBuffer(m_numVertices, USAGE_DYNAMIC, MY_D3DFVF_TEX, &m_dynamicVertexBuffer);
+   VertexBuffer::CreateVertexBuffer(m_numVertices, USAGE_DYNAMIC, MY_D3DFVF_TEX, &m_dynamicVertexBuffer, PRIMARY_DEVICE);
    NumVideoBytes += (int)(m_numVertices*sizeof(Vertex3D_TexelOnly));
 
    if (m_vertices)
@@ -1249,7 +1249,7 @@ void Flasher::RenderDynamic()
        if (captureExternalDMD())
           pd3dDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD_world_ext);
 
-       if (g_pplayer->m_texdmd != NULL)
+       if (g_pplayer->m_texdmd != nullptr)
           pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, false, true), false);
 
        pd3dDevice->DMDShader->Begin(0);

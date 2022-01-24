@@ -863,10 +863,10 @@ void Trigger::RenderSetup()
 
    if (m_triggerIndexBuffer)
       m_triggerIndexBuffer->release();
-   m_triggerIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_numIndices, indices);
+   m_triggerIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_numIndices, indices, PRIMARY_DEVICE);
    if (m_vertexBuffer)
       m_vertexBuffer->release();
-   VertexBuffer::CreateVertexBuffer(m_numVertices, USAGE_DYNAMIC, MY_D3DFVF_NOTEX2_VERTEX, &m_vertexBuffer);
+   VertexBuffer::CreateVertexBuffer(m_numVertices, USAGE_DYNAMIC, MY_D3DFVF_NOTEX2_VERTEX, &m_vertexBuffer, PRIMARY_DEVICE);
    NumVideoBytes += m_numVertices*(int)sizeof(Vertex3D_NoTex2);
 
    GenerateMesh();

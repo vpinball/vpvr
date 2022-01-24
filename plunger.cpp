@@ -542,7 +542,7 @@ void Plunger::RenderSetup()
 
    if (m_vertexBuffer)
       m_vertexBuffer->release();
-   VertexBuffer::CreateVertexBuffer(m_cframes*m_vtsPerFrame, 0, MY_D3DFVF_NOTEX2_VERTEX, &m_vertexBuffer);
+   VertexBuffer::CreateVertexBuffer(m_cframes*m_vtsPerFrame, 0, MY_D3DFVF_NOTEX2_VERTEX, &m_vertexBuffer, PRIMARY_DEVICE);
 
    Vertex3D_NoTex2 *buf;
    m_vertexBuffer->lock(0, 0, (void**)&buf, VertexBuffer::WRITEONLY);
@@ -847,7 +847,7 @@ void Plunger::RenderSetup()
    // create the new index buffer
    if (m_indexBuffer)
       m_indexBuffer->release();
-   m_indexBuffer = IndexBuffer::CreateAndFillIndexBuffer(k, indices);
+   m_indexBuffer = IndexBuffer::CreateAndFillIndexBuffer(k, indices, PRIMARY_DEVICE);
 
    // done with the index scratch pad
    delete[] indices;

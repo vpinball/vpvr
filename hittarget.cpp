@@ -727,6 +727,7 @@ void HitTarget::RenderObject()
    }
    else
       pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_without_texture, mat->m_bIsMetal);
+
    // draw the mesh
    pd3dDevice->basicShader->Begin(0);
    pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, m_vertexBuffer, 0, m_numVertices, m_indexBuffer, 0, m_numIndices);
@@ -822,11 +823,11 @@ void HitTarget::RenderSetup()
       m_vertexBuffer->release();
 
    SetMeshType(m_d.m_targetType);
-   VertexBuffer::CreateVertexBuffer((unsigned int)m_numVertices, USAGE_DYNAMIC, MY_D3DFVF_NOTEX2_VERTEX, &m_vertexBuffer);
+   VertexBuffer::CreateVertexBuffer((unsigned int)m_numVertices, USAGE_DYNAMIC, MY_D3DFVF_NOTEX2_VERTEX, &m_vertexBuffer, PRIMARY_DEVICE);
 
    if (m_indexBuffer)
       m_indexBuffer->release();
-   m_indexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_numIndices, m_indices);
+   m_indexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_numIndices, m_indices, PRIMARY_DEVICE);
 
    m_transformedVertices.resize(m_numVertices);
 
