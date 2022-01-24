@@ -275,11 +275,12 @@ void Primitive::CreateRenderGroup(const Collection * const collection)
 
    if (m_vertexBuffer)
       m_vertexBuffer->release();
-   VertexBuffer::CreateVertexBuffer(m_numGroupVertices, 0, MY_D3DFVF_NOTEX2_VERTEX, &m_vertexBuffer);
+
+   VertexBuffer::CreateVertexBuffer(m_numGroupVertices, 0, MY_D3DFVF_NOTEX2_VERTEX, &m_vertexBuffer, PRIMARY_DEVICE);
 
    if (m_indexBuffer)
       m_indexBuffer->release();
-   m_indexBuffer = IndexBuffer::CreateAndFillIndexBuffer(indices);
+   m_indexBuffer = IndexBuffer::CreateAndFillIndexBuffer(indices, PRIMARY_DEVICE);
 
    unsigned int ofs = 0;
    Vertex3D_NoTex2 *buf;
@@ -1360,11 +1361,11 @@ void Primitive::RenderSetup()
    if (m_vertexBuffer)
       m_vertexBuffer->release();
 
-   VertexBuffer::CreateVertexBuffer((unsigned int)m_mesh.NumVertices(), 0, MY_D3DFVF_NOTEX2_VERTEX, &m_vertexBuffer);
+   VertexBuffer::CreateVertexBuffer((unsigned int)m_mesh.NumVertices(), 0, MY_D3DFVF_NOTEX2_VERTEX, &m_vertexBuffer, PRIMARY_DEVICE);
 
    if (m_indexBuffer)
       m_indexBuffer->release();
-   m_indexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_mesh.m_indices);
+   m_indexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_mesh.m_indices, PRIMARY_DEVICE);
 }
 
 void Primitive::RenderStatic()

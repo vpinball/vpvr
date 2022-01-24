@@ -478,9 +478,9 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
 
    if (m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && useAO) 
    {
-      m_pddsAOBackTmpBuffer = m_pd3dPrimaryDevice->CreateTexture(m_pd3dPrimaryDevice->getBufwidth(), m_pd3dPrimaryDevice->getBufheight(), 1, RENDERTARGET, colorFormat::GREY, NULL, stereo3D);
+      m_pddsAOBackTmpBuffer = m_pd3dPrimaryDevice->CreateTexture(m_pd3dPrimaryDevice->getBufwidth(), m_pd3dPrimaryDevice->getBufheight(), 1, RENDERTARGET, colorFormat::GREY, nullptr, stereo3D);
 
-      m_pddsAOBackBuffer = m_pd3dPrimaryDevice->CreateTexture(m_pd3dPrimaryDevice->getBufwidth(), m_pd3dPrimaryDevice->getBufheight(), 1, RENDERTARGET, colorFormat::GREY, NULL, stereo3D);
+      m_pddsAOBackBuffer = m_pd3dPrimaryDevice->CreateTexture(m_pd3dPrimaryDevice->getBufwidth(), m_pd3dPrimaryDevice->getBufheight(), 1, RENDERTARGET, colorFormat::GREY, nullptr, stereo3D);
 
        if (!m_pddsAOBackBuffer || !m_pddsAOBackTmpBuffer)
           return E_FAIL;
@@ -505,14 +505,20 @@ HRESULT Pin3D::InitRenderDevice(const bool fullScreen, const int width, const in
    if ((InitPrimary(fullScreen, colordepth, refreshrate, VSync, AAfactor, stereo3D, FXAA, useAO, ss_refl)))
       return E_FAIL;
 
-   m_pd3dSecondaryDevice = m_pd3dPrimaryDevice;
+   m_pd3dSecondaryDevice = m_pd3dPrimaryDevice; //!! for now, there is no secondary device :/
    return S_OK;
 }
 
 HRESULT Pin3D::InitPin3D()
 {
    m_backGlass = new BackGlass(m_pd3dSecondaryDevice, g_pplayer->m_ptable->GetDecalsEnabled()
-      ? g_pplayer->m_ptable->GetImage(g_pplayer->m_ptable->m_BG_image[g_pplayer->m_ptable->m_BG_current_set].c_str()) : NULL);
+      ? g_pplayer->m_ptable->GetImage(g_pplayer->m_ptable->m_BG_image[g_pplayer->m_ptable->m_BG_current_set].c_str()) : nullptr);
+#ifndef ENABLE_SDL
+   VertexBuffer::setD3DDevice(m_pd3dPrimaryDevice->GetCoreDevice(), m_pd3dSecondaryDevice->GetCoreDevice());
+   IndexBuffer::setD3DDevice(m_pd3dPrimaryDevice->GetCoreDevice(), m_pd3dSecondaryDevice->GetCoreDevice());
+#endif
+   VertexBuffer::bindNull();
+   IndexBuffer::bindNull();
 
    m_pinballEnvTexture.CreateFromResource(IDB_BALL);
    m_aoDitherTexture.CreateFromResource(IDB_AO_DITHER);
@@ -1063,7 +1069,7 @@ void Pin3D::InitPlayfieldGraphics()
    if (piEdit == nullptr)
    {
       assert(m_tableVBuffer == nullptr);
-      VertexBuffer::CreateVertexBuffer(4, 0, MY_D3DFVF_NOTEX2_VERTEX, &m_tableVBuffer);
+      VertexBuffer::CreateVertexBuffer(4, 0, MY_D3DFVF_NOTEX2_VERTEX, &m_tableVBuffer, PRIMARY_DEVICE);
 
       Vertex3D_NoTex2 *buffer;
       m_tableVBuffer->lock(0, 0, (void**)&buffer, VertexBuffer::WRITEONLY);

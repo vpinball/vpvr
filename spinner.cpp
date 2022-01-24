@@ -436,11 +436,11 @@ void Spinner::RenderSetup()
 
    if (m_bracketIndexBuffer)
       m_bracketIndexBuffer->release();
-   m_bracketIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(spinnerBracketNumFaces, spinnerBracketIndices);
+   m_bracketIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(spinnerBracketNumFaces, spinnerBracketIndices, PRIMARY_DEVICE);
 
    if (m_bracketVertexBuffer)
       m_bracketVertexBuffer->release();
-   VertexBuffer::CreateVertexBuffer(spinnerBracketNumVertices, 0, MY_D3DFVF_NOTEX2_VERTEX, &m_bracketVertexBuffer);
+   VertexBuffer::CreateVertexBuffer(spinnerBracketNumVertices, 0, MY_D3DFVF_NOTEX2_VERTEX, &m_bracketVertexBuffer, PRIMARY_DEVICE);
 
    m_fullMatrix.RotateZMatrix(ANGTORAD(m_d.m_rotation));
 
@@ -467,11 +467,11 @@ void Spinner::RenderSetup()
 
    if (m_plateIndexBuffer)
       m_plateIndexBuffer->release();
-   m_plateIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(spinnerPlateNumFaces, spinnerPlateIndices);
+   m_plateIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(spinnerPlateNumFaces, spinnerPlateIndices, PRIMARY_DEVICE);
 
    if (m_plateVertexBuffer)
       m_plateVertexBuffer->release();
-   VertexBuffer::CreateVertexBuffer(spinnerPlateNumVertices, USAGE_DYNAMIC, MY_D3DFVF_NOTEX2_VERTEX, &m_plateVertexBuffer);
+   VertexBuffer::CreateVertexBuffer(spinnerPlateNumVertices, USAGE_DYNAMIC, MY_D3DFVF_NOTEX2_VERTEX, &m_plateVertexBuffer, PRIMARY_DEVICE);
 
    m_vertexBuffer_spinneranimangle = -FLT_MAX;
    UpdatePlate(nullptr);

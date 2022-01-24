@@ -15,6 +15,11 @@
 
 #include "math/matrix.h"
 
+enum deviceNumber {
+   PRIMARY_DEVICE,
+   SECONDARY_DEVICE
+};
+
 #ifdef ENABLE_SDL
 
 #define MAX_DEVICE_IDENTIFIER_STRING 512

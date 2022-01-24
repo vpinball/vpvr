@@ -102,7 +102,7 @@ const VertexElement VertexTexelElement[] =
 {
    { 3, GL_FLOAT, GL_FALSE, 0, "POSITION0" },
    { 2, GL_FLOAT, GL_FALSE, 0, "TEXCOORD0" },
-   { 0, 0, 0, 0, NULL}
+   { 0, 0, 0, 0, nullptr}
    /*   { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },  // pos
       { 0, 3 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },  // tex0
       D3DDECL_END()*/
@@ -114,7 +114,7 @@ const VertexElement VertexNormalTexelElement[] =
    { 3, GL_FLOAT, GL_FALSE, 0, "POSITION0" },
    { 3, GL_FLOAT, GL_FALSE, 0, "NORMAL0" },
    { 2, GL_FLOAT, GL_FALSE, 0, "TEXCOORD0" },
-   { 0, 0, 0, 0, NULL}
+   { 0, 0, 0, 0, nullptr}
 /*
       { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },  // pos
       { 0, 3 * sizeof(float), D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL, 0 },  // normal
@@ -132,14 +132,14 @@ VertexDeclaration* RenderDevice::m_pVertexNormalTexelDeclaration = (VertexDeclar
    D3DDECL_END()
 };
 
-VertexDeclaration* RenderDevice::m_pVertexNormalTexelTexelDeclaration = NULL;*/
+VertexDeclaration* RenderDevice::m_pVertexNormalTexelTexelDeclaration = nullptr;*/
 
 const VertexElement VertexTrafoTexelElement[] =
 {
    { 4, GL_FLOAT, GL_FALSE, 0, "POSITION0" },
-   { 2, GL_FLOAT, GL_FALSE, 0, NULL },//legacy?
+   { 2, GL_FLOAT, GL_FALSE, 0, nullptr },//legacy?
    { 2, GL_FLOAT, GL_FALSE, 0, "TEXCOORD0" },
-   { 0, 0, 0, 0, NULL }
+   { 0, 0, 0, 0, nullptr }
 
    /*   { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT4, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITIONT, 0 }, // transformed pos
    { 0, 4 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD,  1 }, // (mostly, except for classic lights) unused, there to be able to share same code as VertexNormalTexelElement
@@ -720,7 +720,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    m_useNvidiaApi = false;
 
    int displays = getNumberOfDisplays();
-   if (adapterIndex >= displays) {
+   if ((int)adapterIndex >= displays) {
       m_adapter = 0;
    }
    else {
@@ -939,7 +939,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    CHECKD3D(glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &m_maxaniso));
 
    if (m_quadVertexBuffer == nullptr) {
-      VertexBuffer::CreateVertexBuffer(4, USAGE_STATIC, MY_D3DFVF_TEX, &m_quadVertexBuffer);
+      VertexBuffer::CreateVertexBuffer(4, USAGE_STATIC, MY_D3DFVF_TEX, &m_quadVertexBuffer, PRIMARY_DEVICE); //!!
       Vertex3D_TexelOnly* bufvb;
       m_quadVertexBuffer->lock(0, 0, (void**)&bufvb, USAGE_STATIC);
       static const float verts[4 * 5] = //GL Texture coordinates
@@ -1001,9 +1001,8 @@ bool RenderDevice::LoadShaders()
       StereoShader = new Shader(this);
       shaderCompilationOkay = StereoShader->Load("StereoShader.glfx", 0) && shaderCompilationOkay;
    }
-   else {
+   else
       StereoShader = nullptr;
-   }
 
    flasherShader = new Shader(this);
    shaderCompilationOkay = flasherShader->Load("flasherShader.glfx", 0) && shaderCompilationOkay;
@@ -1406,8 +1405,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    if (video10bit && (m_FXAA == Quality_SMAA || m_FXAA == Standard_DLAA))
       ShowError("SMAA or DLAA post-processing AA should not be combined with 10bit-output rendering (will result in visible artifacts)!");
 
-   VertexBuffer::setD3DDevice(m_pD3DDevice);
-   IndexBuffer::setD3DDevice(m_pD3DDevice);
+   //VertexBuffer::setD3DDevice(m_pD3DDevice);
+   //IndexBuffer::setD3DDevice(m_pD3DDevice);
 
    // create default vertex declarations for shaders
    CreateVertexDeclaration(VertexTexelElement, &m_pVertexTexelDeclaration);
@@ -2598,7 +2597,7 @@ void RenderDevice::DrawPrimitive(const PrimitiveTypes type, const DWORD fvf, con
    hr = m_pD3DDevice->DrawPrimitiveUP((D3DPRIMITIVETYPE)type, np, vertices, fvfToSize(fvf));
    if (FAILED(hr))
       ReportError("Fatal Error: DrawPrimitiveUP failed!", hr, __FILE__, __LINE__);
-   vertexBuffer::bindNull();      // DrawPrimitiveUP sets the VB to nullptr
+   VertexBuffer::bindNull();      // DrawPrimitiveUP sets the VB to nullptr
 
    m_curDrawCalls++;
 #endif
@@ -2621,7 +2620,7 @@ void RenderDevice::DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, V
    const unsigned int np = ComputePrimitiveCount(type, vertexCount);
    m_stats_drawn_triangles += np;
 
-   vb->bind();
+   vb->bind(PRIMARY_DEVICE); //!!
 #ifdef ENABLE_SDL
    //CHECKD3D(glDrawArraysInstanced(type, vb->getOffset() + startVertex, vertexCount, m_stereo3D != STEREO_OFF ? 2 : 1)); // Do instancing in geometry shader instead
    CHECKD3D(glDrawArrays(type, vb->getOffset() + startVertex, vertexCount));
@@ -2644,8 +2643,8 @@ void RenderDevice::DrawIndexedPrimitiveVB(const PrimitiveTypes type, const DWORD
 
    const unsigned int np = ComputePrimitiveCount(type, indexCount);
    m_stats_drawn_triangles += np;
-   vb->bind();
-   ib->bind();
+   vb->bind(PRIMARY_DEVICE); //!!
+   ib->bind(PRIMARY_DEVICE); //!!
 #ifdef ENABLE_SDL
 
    int offset = ib->getOffset() + (ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? 2 : 4) * startIndex;
