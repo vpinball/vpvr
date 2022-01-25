@@ -7,21 +7,6 @@
 #endif
 #include <dinput.h>
 
-#ifdef ENABLE_XINPUT
-#include <Xinput.h>
-#pragma comment(lib, "XInput.lib")
-#endif
-
-#ifdef ENABLE_SDL_INPUT
-#include <sdl2/SDL.h>
-#include <sdl2/SDL_gamecontroller.h>
-#endif
-
-#ifdef ENABLE_IGAMECONTROLLER
-#include "windows.gaming.input.h"
-#pragma comment(lib, "runtimeobject.lib")
-#endif
-
 #define ENABLE_XINPUT
 
 #ifdef ENABLE_XINPUT
@@ -96,8 +81,6 @@ public:
 
    void ProcessThrowBalls(const DIDEVICEOBJECTDATA * __restrict input);
    void ProcessBallControl(const DIDEVICEOBJECTDATA * __restrict input);
-
-   void playRumble(int leftMotor, int rightMotor, int duration);
 
    // Speed: 0..1
    void PlayRumble(const float lowFrequencySpeed, const float highFrequencySpeed, const int ms_duration);
