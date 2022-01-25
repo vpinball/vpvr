@@ -173,6 +173,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    SDL_GLContext  m_sdl_context;
 
 #else
+
    enum RenderStates
    {
       ALPHABLENDENABLE = D3DRS_ALPHABLENDENABLE,
@@ -246,6 +247,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
       LINESTRIP = D3DPT_LINESTRIP
    };
 #endif
+
    void CreateDevice(int &refreshrate, UINT adapterIndex = D3DADAPTER_DEFAULT);
    bool LoadShaders();
    void InitVR();
@@ -306,7 +308,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    void CopyDepth(D3DTexture* dest, void* src);
 #endif
 
-   bool DepthBufferReadBackAvailable();
+   bool DepthBufferReadBackAvailable() const;
 
 #ifndef ENABLE_SDL
    D3DTexture* CreateSystemTexture(BaseTexture* const surf, const bool linearRGB);
@@ -348,27 +350,28 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    void SetViewport(const ViewPort*);
    void GetViewport(ViewPort*);
 
-   void SetTransformVR();
-
    void ForceAnisotropicFiltering(const bool enable) { m_force_aniso = enable; }
    void CompressTextures(const bool enable) { m_compress_textures = enable; }
 
+   unsigned int getBufwidth() const { return m_Buf_width; }
+   unsigned int getBufheight() const { return m_Buf_height; }
+   unsigned int getBufwidthBlur() const { return m_Buf_widthBlur; }
+   unsigned int getBufheightBlur() const { return m_Buf_heightBlur; }
+
    //VR stuff
-   unsigned int getBufwidth() { return m_Buf_width; }
-   unsigned int getBufheight() { return m_Buf_height; }
-   unsigned int getBufwidthBlur() { return m_Buf_widthBlur; }
-   unsigned int getBufheightBlur() { return m_Buf_heightBlur; }
+#ifdef ENABLE_VR
+   void SetTransformVR();
    void UpdateVRPosition();
    void tableUp();
    void tableDown();
    void recenterTable();
    void recenterRoom();
+
+   float m_slope, m_orientation, m_tablex, m_tabley, m_tablez, m_roomOrientation, m_roomx, m_roomy;
+
    void updateTableMatrix();
-   float slope, orientation, tablex, tabley, tablez, roomOrientation, roomx, roomy;
-#ifdef ENABLE_VR
    vr::TrackedDevicePose_t hmdPosition;
 #endif
-
 
    // performance counters
    unsigned int Perf_GetNumDrawCalls() const      { return m_frameDrawCalls; }
@@ -500,7 +503,6 @@ private:
    Matrix3D m_roomWorld;
    vr::TrackedDevicePose_t *m_rTrackedDevicePose;
    float m_scale;
-
 #endif
 
 public:

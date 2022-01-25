@@ -73,22 +73,24 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice,Texture * backgroundFallback
 {
 #ifdef ENABLE_VR
    //Check for a directb2s and try to use its backglass data
-   std::string b2sFileName = string(g_pplayer->m_ptable->m_szFileName);
+   std::string b2sFileName = g_pplayer->m_ptable->m_szFileName;
    b2sFileName = b2sFileName.substr(0, b2sFileName.find_last_of('.'));
    b2sFileName.append(".directb2s");
+   m_backglass_dmd_x = 0;
+   m_backglass_dmd_y = 0;
+   m_backglass_dmd_width = 0;
+   m_backglass_dmd_height = 0;
+   m_backglass_grill_height = 0;
+   m_backglass_width = 0;
+   m_backglass_height = 0;
+   m_backglass_scale = 1.2f;
+   m_dmd_width = 0;
+   m_dmd_height = 0;
+   m_dmd_x = 0;
+   m_dmd_y = 0;
+
    void* data = nullptr;
-   backglass_dmd_x = 0;
-   backglass_dmd_y = 0;
-   backglass_dmd_width = 0;
-   backglass_dmd_height = 0;
-   backglass_grill_height = 0;
-   backglass_width = 0;
-   backglass_height = 0;
-   backglass_scale = 1.2f;
-   dmd_width = 0;
-   dmd_height = 0;
-   dmd_x = 0;
-   dmd_y = 0;
+
    try {
       rapidxml::file<> b2sFile(b2sFileName.c_str());
       rapidxml::xml_document<> b2sTree;
@@ -103,17 +105,17 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice,Texture * backgroundFallback
          char* nodeName = currentNode->name();
          if (strcmp(nodeName, "VRDMDLocation") == 0) {
             auto attrib = currentNode->first_attribute("LocX");
-            if (attrib) backglass_dmd_x = atoi(attrib->value());
+            if (attrib) m_backglass_dmd_x = atoi(attrib->value());
             attrib = currentNode->first_attribute("LocY");
-            if (attrib) backglass_dmd_y = atoi(attrib->value());
+            if (attrib) m_backglass_dmd_y = atoi(attrib->value());
             attrib = currentNode->first_attribute("Width");
-            if (attrib) backglass_dmd_width = atoi(attrib->value());
+            if (attrib) m_backglass_dmd_width = atoi(attrib->value());
             attrib = currentNode->first_attribute("Height");
-            if (attrib) backglass_dmd_height = atoi(attrib->value());
+            if (attrib) m_backglass_dmd_height = atoi(attrib->value());
          }
          else if (strcmp(nodeName, "GrillHeight") == 0) {
             auto attrib = currentNode->first_attribute("Value");
-            if (attrib) backglass_grill_height = atoi(attrib->value());
+            if (attrib) m_backglass_grill_height = atoi(attrib->value());
          }
          else if (strcmp(nodeName, "Illumination") == 0) {
             auto illuminationNode = currentNode->first_node();
@@ -159,8 +161,8 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice,Texture * backgroundFallback
                   int size = decode_base64(attrib->value(), (char*)data, attrib->value_size(), data_len);
                   if ((size > 0) && (strcmp(imagesNode->name(), "BackglassImage") == 0)) {
                      m_backgroundTexture = m_pd3dDevice->m_texMan.LoadTexture(BaseTexture::CreateFromData(data, size), true, true);
-                     backglass_width = m_backgroundTexture->width;
-                     backglass_height = m_backgroundTexture->height;
+                     m_backglass_width = m_backgroundTexture->width;
+                     m_backglass_height = m_backgroundTexture->height;
                   }
 #ifdef WRITE_BACKGLASS_IMAGES
                   if (WRITE_BACKGLASS_IMAGES > 0 && size > 0) {//Write Image to disk. Also useful to check if the base64 decoder is working...
@@ -187,15 +189,15 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice,Texture * backgroundFallback
    float tableWidth, glassHeight;
    g_pplayer->m_ptable->get_Width(&tableWidth);
    g_pplayer->m_ptable->get_GlassHeight(&glassHeight);
-   if (backglass_width>0 && backglass_height>0)
-      m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - backglass_scale / 2.0f), glassHeight, backglass_scale * tableWidth, backglass_scale * tableWidth / (float)backglass_width*(float)backglass_height);
+   if (m_backglass_width>0 && m_backglass_height>0)
+      m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - m_backglass_scale / 2.0f), glassHeight, m_backglass_scale * tableWidth, m_backglass_scale * tableWidth / (float)m_backglass_width*(float)m_backglass_height);
    else
-      m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - backglass_scale / 2.0f), glassHeight, backglass_scale * tableWidth, backglass_scale * tableWidth / 16.0f*9.0f);
-   if (backglass_dmd_width > 0 && backglass_dmd_height > 0 && backglass_width > 0 && backglass_height > 0) {
-      dmd_width = (float)backglass_dmd_width / (float)backglass_width;
-      dmd_height = (float)backglass_dmd_height / (float)backglass_height;
-      dmd_x = tableWidth * backglass_scale * (float)backglass_dmd_x / (float)backglass_width;
-      dmd_y = tableWidth * backglass_scale * (1.0f- (float)backglass_dmd_y / (float)backglass_height - dmd_height);
+      m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - m_backglass_scale / 2.0f), glassHeight, m_backglass_scale * tableWidth, m_backglass_scale * tableWidth / 16.0*9.0);
+   if (m_backglass_dmd_width > 0 && m_backglass_dmd_height > 0 && m_backglass_width > 0 && m_backglass_height > 0) {
+      m_dmd_width = (float)m_backglass_dmd_width / (float)m_backglass_width;
+      m_dmd_height = (float)m_backglass_dmd_height / (float)m_backglass_height;
+      m_dmd_x = tableWidth * m_backglass_scale * (float)m_backglass_dmd_x / (float)m_backglass_width;
+      m_dmd_y = tableWidth * m_backglass_scale * (1.0f- (float)m_backglass_dmd_y / (float)m_backglass_height - m_dmd_height);
    }
 #endif
 }
@@ -209,8 +211,8 @@ void BackGlass::Render()
    if (g_pplayer->m_capPUP && capturePUP())
    {
       m_backgroundTexture = m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texPUP, true, true);
-      backglass_width = m_backgroundTexture->width;
-      backglass_height = m_backgroundTexture->height;
+      m_backglass_width = g_pplayer->m_texPUP->width();
+      m_backglass_height = g_pplayer->m_texPUP->height();
       float tableWidth, glassHeight;
       g_pplayer->m_ptable->get_Width(&tableWidth);
       g_pplayer->m_ptable->get_GlassHeight(&glassHeight);
@@ -218,22 +220,21 @@ void BackGlass::Render()
       {
          // If we expect a DMD the captured image is probably missing a grill in 3scr mode
          // 3scr mode preferable to support VR rooms, so better to just drop the grills in this experimental mode.
-         const int dmdheightoff = (int)((backglass_scale * tableWidth / 16.0*9.0) * .3);
+         const int dmdheightoff = (int)((m_backglass_scale * tableWidth / 16.0*9.0) * .3);
          const int dmdheightextra = (int)(tableWidth * .05);
          glassHeight += (float)(dmdheightoff + dmdheightextra);
 
-         m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - backglass_scale / 2.0f), glassHeight, backglass_scale * tableWidth, backglass_scale * tableWidth / 16.0f*9.0f);
+         m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - m_backglass_scale / 2.0f), glassHeight, m_backglass_scale * tableWidth, m_backglass_scale * tableWidth / 16.0*9.0);
 
          // We lost the grille, so make a nice big DMD.
-         dmd_width = 0.8f;
-         dmd_height = dmd_width / 4.0f;
-         dmd_x = tableWidth * (0.5f - dmd_width / 2.0f);
-         dmd_y = (float)(-dmdheightoff + dmdheightextra / 2);
+         m_dmd_width = 0.8f;
+         m_dmd_height = m_dmd_width / 4.0f;
+         m_dmd_x = tableWidth * (0.5f - m_dmd_width / 2.0f);
+         m_dmd_y = (float)(-dmdheightoff + dmdheightextra / 2);
 
       }
       else
-         m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - backglass_scale / 2.0f), glassHeight, backglass_scale * tableWidth, backglass_scale * tableWidth / 4.0f*3.0f);
-
+         m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - m_backglass_scale / 2.0f), glassHeight, m_backglass_scale * tableWidth, m_backglass_scale * tableWidth / 4.0*3.0);
    }
 
    if (m_backgroundTexture)
@@ -290,20 +291,20 @@ void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DM
       bool zDisabled = false;
       m_pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
       if (m_backgroundTexture) {
-         if (dmd_width == 0.0f || dmd_height == 0.0f) {//If file contains no valid VRDMD position
-            if (backglass_grill_height > 0) {
+         if (m_dmd_width == 0.0f || m_dmd_height == 0.0f) {//If file contains no valid VRDMD position
+            if (m_backglass_grill_height > 0) {
                //DMD is centered in the Grill of the backglass
                constexpr float scale = 0.5f;// 0.5 => use 50% of the height of the grill.
                float tableWidth;
                g_pplayer->m_ptable->get_Width(&tableWidth);
-               tableWidth *= backglass_scale;
-               dmd_height = backglass_scale * scale * (float)backglass_grill_height / (float)backglass_width;
-               dmd_width = dmd_height / (float)(g_pplayer->m_texdmd->height()) * (float)(g_pplayer->m_texdmd->width());
-               dmd_x = tableWidth * (0.5f - dmd_width / 2.0f);
-               dmd_y = (tableWidth * (float)backglass_grill_height*(0.5f - scale / 2.0f) / (float)backglass_width);
+               tableWidth *= m_backglass_scale;
+               m_dmd_height = m_backglass_scale * scale * (float)m_backglass_grill_height / (float)m_backglass_width;
+               m_dmd_width = m_dmd_height / (float)(g_pplayer->m_texdmd->height()) * (float)(g_pplayer->m_texdmd->width());
+               m_dmd_x = tableWidth * (0.5f - m_dmd_width / 2.0f);
+               m_dmd_y = (tableWidth * (float)m_backglass_grill_height*(0.5f - scale / 2.0f) / (float)m_backglass_width);
             }
          }
-         m_pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScale, dmd_x, dmd_y, dmd_width, dmd_height);
+         m_pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScale, m_dmd_x, m_dmd_y, m_dmd_width, m_dmd_height);
          m_pd3dDevice->SetRenderState(RenderDevice::ZENABLE, FALSE);
          zDisabled = true;
       }

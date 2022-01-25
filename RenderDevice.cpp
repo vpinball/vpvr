@@ -683,18 +683,19 @@ void RenderDevice::InitVR() {
       throw(noDevicesFound);
    }
 
-   slope = LoadValueFloatWithDefault("Player", "VRSlope", 6.5f);
-   orientation = LoadValueFloatWithDefault("Player", "VROrientation", 0.0f);
-   tablex = LoadValueFloatWithDefault("Player", "VRTableX", 0.0f);
-   tabley = LoadValueFloatWithDefault("Player", "VRTableY", 0.0f);
-   tablez = LoadValueFloatWithDefault("Player", "VRTableZ", 80.0f);
-   roomOrientation = LoadValueFloatWithDefault("Player", "VRRoomOrientation", 0.0f);
-   roomx = LoadValueFloatWithDefault("Player", "VRRoomX", 0.0f);
-   roomy = LoadValueFloatWithDefault("Player", "VRRoomY", 0.0f);
+   m_slope = LoadValueFloatWithDefault("Player", "VRSlope", 6.5f);
+   m_orientation = LoadValueFloatWithDefault("Player", "VROrientation", 0.0f);
+   m_tablex = LoadValueFloatWithDefault("Player", "VRTableX", 0.0f);
+   m_tabley = LoadValueFloatWithDefault("Player", "VRTableY", 0.0f);
+   m_tablez = LoadValueFloatWithDefault("Player", "VRTableZ", 80.0f);
+   m_roomOrientation = LoadValueFloatWithDefault("Player", "VRRoomOrientation", 0.0f);
+   m_roomx = LoadValueFloatWithDefault("Player", "VRRoomX", 0.0f);
+   m_roomy = LoadValueFloatWithDefault("Player", "VRRoomY", 0.0f);
 
    updateTableMatrix();
 
 #else
+
    std::runtime_error unknownStereoMode("This version of Visual Pinball was compiled without VR support");
    throw(unknownStereoMode);
 #endif
@@ -1036,26 +1037,30 @@ RenderDevice::~RenderDevice()
 
    FreeShader();
 
+#ifdef ENABLE_VR
    if (m_pHMD)
    {
       turnVROff();
-      SaveValueFloat("Player", "VRSlope", slope);
-      SaveValueFloat("Player", "VROrientation", orientation);
-      SaveValueFloat("Player", "VRTableX", tablex);
-      SaveValueFloat("Player", "VRTableY", tabley);
-      SaveValueFloat("Player", "VRTableZ", tablez);
-      SaveValueFloat("Player", "VRRoomOrientation", roomOrientation);
-      SaveValueFloat("Player", "VRRoomX", roomx);
-      SaveValueFloat("Player", "VRRoomY", roomy);
+      SaveValueFloat("Player", "VRSlope", m_slope);
+      SaveValueFloat("Player", "VROrientation", m_orientation);
+      SaveValueFloat("Player", "VRTableX", m_tablex);
+      SaveValueFloat("Player", "VRTableY", m_tabley);
+      SaveValueFloat("Player", "VRTableZ", m_tablez);
+      SaveValueFloat("Player", "VRRoomOrientation", m_roomOrientation);
+      SaveValueFloat("Player", "VRRoomX", m_roomx);
+      SaveValueFloat("Player", "VRRoomY", m_roomy);
    }
+#endif
+
    SDL_GL_DeleteContext(m_sdl_context);
    SDL_DestroyWindow(m_sdl_playfieldHwnd);
 }
 
 #else
-RenderDevice::RenderDevice(HWND* const hwnd, const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const bool useAA, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice)
-   : m_texMan(*this), m_windowHwnd(*hwnd), m_width(width), m_height(height), m_fullscreen(fullscreen),
-      m_colorDepth(colordepth), m_vsync(VSync), m_useAA(useAA), m_stereo3D(stereo3D), m_FXAA(FXAA),
+
+RenderDevice::RenderDevice(const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice)
+   : m_texMan(*this), m_windowHwnd(g_pplayer->GetHwnd()), m_width(width), m_height(height), m_fullscreen(fullscreen),
+      m_colorDepth(colordepth), m_vsync(VSync), m_AAfactor(AAfactor), m_stereo3D(stereo3D), m_FXAA(FXAA),
       m_ssRefl(ss_refl), m_useNvidiaApi(useNvidiaApi), m_disableDwm(disable_dwm), m_BWrendering(BWrendering)
 {
    switch (stereo3D) {
@@ -1064,8 +1069,8 @@ RenderDevice::RenderDevice(HWND* const hwnd, const int width, const int height, 
       m_Buf_height = m_height;
       m_Buf_widthBlur = m_width / 3;
       m_Buf_heightBlur = m_height / 3;
-      m_Buf_widthSS = m_width * (m_useAA ? 2 : 1);
-      m_Buf_heightSS = m_height * (m_useAA ? 2 : 1);
+      m_Buf_widthSS = m_width * m_AAfactor;
+      m_Buf_heightSS = m_height * m_AAfactor;
       break;
    case STEREO_TB:
    case STEREO_INT:
@@ -1073,16 +1078,16 @@ RenderDevice::RenderDevice(HWND* const hwnd, const int width, const int height, 
       m_Buf_height = m_height * 2;
       m_Buf_widthBlur = m_width / 3;
       m_Buf_heightBlur = m_height * 2 / 3;
-      m_Buf_widthSS = m_width * (m_useAA ? 2 : 1);
-      m_Buf_heightSS = m_height * (m_useAA ? 4 : 2);
+      m_Buf_widthSS = m_width * m_AAfactor;
+      m_Buf_heightSS = m_height * m_AAfactor;
       break;
    case STEREO_SBS:
       m_Buf_width = m_width * 2;
       m_Buf_height = m_height;
       m_Buf_widthBlur = m_width * 2 / 3;
       m_Buf_heightBlur = m_height / 3;
-      m_Buf_widthSS = m_width * (m_useAA ? 4 : 2);
-      m_Buf_heightSS = m_height * (m_useAA ? 2 : 1);
+      m_Buf_widthSS = m_width * m_AAfactor;
+      m_Buf_heightSS = m_height * m_AAfactor;
       break;
    default:
       char buf[1024];
@@ -1470,8 +1475,8 @@ bool RenderDevice::LoadShaders()
       UploadAndSetSMAATextures();
    else
    {
-      m_SMAAareaTexture = 0;
-      m_SMAAsearchTexture = 0;
+      m_SMAAareaTexture = nullptr;
+      m_SMAAsearchTexture = nullptr;
    }
    return shaderCompilationOkay;
 }
@@ -1565,7 +1570,8 @@ RenderDevice::~RenderDevice()
       mDwmEnableComposition(DWM_EC_ENABLECOMPOSITION);
 }
 #endif
-bool RenderDevice::DepthBufferReadBackAvailable()
+
+bool RenderDevice::DepthBufferReadBackAvailable() const
 {
 #ifdef ENABLE_SDL
    return true;
@@ -2075,7 +2081,8 @@ D3DTexture* RenderDevice::CreateSystemTexture(const int texwidth, const int texh
    return sysTex;
 }
 
-D3DTexture* RenderDevice::UploadTexture(BaseTexture* const surf, int * const pTexWidth, int * const pTexHeight, const bool linearRGB)
+//!! clamptoedge unused!
+D3DTexture* RenderDevice::UploadTexture(BaseTexture* const surf, int * const pTexWidth, int * const pTexHeight, const bool linearRGB, const bool clamptoedge)
 {
    const int texwidth = surf->width();
    const int texheight = surf->height();
@@ -2659,9 +2666,9 @@ void RenderDevice::DrawIndexedPrimitiveVB(const PrimitiveTypes type, const DWORD
    m_curDrawCalls++;
 }
 
+#ifdef ENABLE_VR
 void RenderDevice::UpdateVRPosition()
 {
-#ifdef ENABLE_VR
    if (!m_pHMD) return;
 
    vr::VRCompositor()->WaitGetPoses(m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, nullptr, 0);
@@ -2679,20 +2686,19 @@ void RenderDevice::UpdateVRPosition()
    }
    m_matView.Invert();
    m_matView = m_tableWorld * m_matView;
-#endif
 }
 
 void RenderDevice::tableUp()
 {
-   tablez += 1.0f;
-   if (tablez > 250.0f) tablez = 250.0f;
+   m_tablez += 1.0f;
+   if (m_tablez > 250.0f) m_tablez = 250.0f;
    updateTableMatrix();
 }
 
 void RenderDevice::tableDown()
 {
-   tablez -= 1.0f;
-   if (tablez < 0.0f) tablez = 0.0f;
+   m_tablez -= 1.0f;
+   if (m_tablez < 0.0f) m_tablez = 0.0f;
    updateTableMatrix();
 }
 
@@ -2700,14 +2706,14 @@ void RenderDevice::tableDown()
 void RenderDevice::recenterTable()
 {
    //hmdPosition;
-   orientation = -RADTOANG(atan2(hmdPosition.mDeviceToAbsoluteTracking.m[0][2], hmdPosition.mDeviceToAbsoluteTracking.m[0][0]));
-   if (orientation < 0.0f) orientation += 360.0f;
-   float w = 100.f*m_scale*0.5f*(g_pplayer->m_ptable->m_right - g_pplayer->m_ptable->m_left);
-   float h = 100.f*m_scale*(g_pplayer->m_ptable->m_bottom - g_pplayer->m_ptable->m_top) + 20.0f;
-   float c = cos(ANGTORAD(orientation));
-   float s = sin(ANGTORAD(orientation));
-   tablex = 100.0f*hmdPosition.mDeviceToAbsoluteTracking.m[0][3] - c * w + s * h;
-   tabley = -100.0f*hmdPosition.mDeviceToAbsoluteTracking.m[2][3] + s * w + c * h;
+   m_orientation = -RADTOANG(atan2(hmdPosition.mDeviceToAbsoluteTracking.m[0][2], hmdPosition.mDeviceToAbsoluteTracking.m[0][0]));
+   if (m_orientation < 0.0f) m_orientation += 360.0f;
+   const float w = 100.f*m_scale*0.5f*(g_pplayer->m_ptable->m_right - g_pplayer->m_ptable->m_left);
+   const float h = 100.f*m_scale*(g_pplayer->m_ptable->m_bottom - g_pplayer->m_ptable->m_top) + 20.0f;
+   const float c = cos(ANGTORAD(m_orientation));
+   const float s = sin(ANGTORAD(m_orientation));
+   m_tablex = 100.0f*hmdPosition.mDeviceToAbsoluteTracking.m[0][3] - c * w + s * h;
+   m_tabley = -100.0f*hmdPosition.mDeviceToAbsoluteTracking.m[2][3] + s * w + c * h;
    updateTableMatrix();
 }
 
@@ -2723,7 +2729,7 @@ void RenderDevice::updateTableMatrix()
    Matrix3D tmp;
    m_tableWorld.SetIdentity();
    //Tilt playfield.
-   m_tableWorld.RotateXMatrix(ANGTORAD(-slope));
+   m_tableWorld.RotateXMatrix(ANGTORAD(-m_slope));
    tmp.SetIdentity();
    //Convert from VPX scale and coords to VR
 
@@ -2732,38 +2738,39 @@ void RenderDevice::updateTableMatrix()
    tmp.m[2][0] = 0.0f;  tmp.m[2][1] = m_scale;  tmp.m[2][2] = 0.0f;
    m_tableWorld = m_tableWorld * tmp;
    tmp.SetIdentity();
-   tmp.RotateYMatrix(ANGTORAD(180 - orientation -roomOrientation));//Rotate table around VR height axis
+   tmp.RotateYMatrix(ANGTORAD(180.f - m_orientation - m_roomOrientation));//Rotate table around VR height axis
    m_tableWorld = m_tableWorld * tmp;
    tmp.SetIdentity();
-   tmp.SetTranslation((roomx+tablex) / 100.0f, tablez / 100.0f, -(roomy+tabley) / 100.0f);//Locate front left corner of the table in the room -x is to the right, -y is up and -z is back - all units in meters
+   tmp.SetTranslation((m_roomx+m_tablex) / 100.0f, m_tablez / 100.0f, -(m_roomy+m_tabley) / 100.0f);//Locate front left corner of the table in the room -x is to the right, -y is up and -z is back - all units in meters
    m_tableWorld = m_tableWorld * tmp;
 
    m_roomWorld.SetIdentity();
+
    tmp.SetIdentity();
-   tmp.RotateYMatrix(ANGTORAD(180 - roomOrientation));//Rotate room around VR height axis
+   tmp.RotateYMatrix(ANGTORAD(180.f - m_roomOrientation));//Rotate room around VR height axis
    tmp.SetIdentity();
-   tmp.SetTranslation((roomx) / 100.0f, 0.0f, -(roomy) / 100.0f);
+   tmp.SetTranslation((m_roomx) / 100.0f, 0.0f, -(m_roomy) / 100.0f); //!! unused?!
 }
 
 void RenderDevice::SetTransformVR()
 {
-#ifdef ENABLE_VR
-      Shader::SetTransform(TRANSFORMSTATE_PROJECTION, m_matProj, m_stereo3D != STEREO_OFF ? 2:1);
-      Shader::SetTransform(TRANSFORMSTATE_VIEW, &m_matView, 1);
-#endif
+   Shader::SetTransform(TRANSFORMSTATE_PROJECTION, m_matProj, m_stereo3D != STEREO_OFF ? 2:1);
+   Shader::SetTransform(TRANSFORMSTATE_VIEW, &m_matView, 1);
 }
+#endif
 
 void RenderDevice::Clear(const DWORD flags, const D3DCOLOR color, const D3DVALUE z, const DWORD stencil)
 {
 #ifdef ENABLE_SDL
    static float clear_r=0.f, clear_g = 0.f, clear_b = 0.f, clear_a = 0.f, clear_z=1.f;//Default OpenGL Values
    static GLint clear_s=0;
+
    if (clear_s != stencil) { clear_s = stencil;  glClearStencil(stencil); }
    if (clear_z != z) { clear_z = z;  glClearDepthf(z); }
-   float r = (float)(color && 0xff) / 255.0f;
-   float g = (float)((color && 0xff00) >> 8) / 255.0f;
-   float b = (float)((color && 0xff0000) >> 16) / 255.0f;
-   float a = (float)((color && 0xff000000) >> 24) / 255.0f;
+   const float r = (float)(color && 0xff) / 255.0f;
+   const float g = (float)((color && 0xff00) >> 8) / 255.0f;
+   const float b = (float)((color && 0xff0000) >> 16) / 255.0f;
+   const float a = (float)((color && 0xff000000) >> 24) / 255.0f;
    if ((r != clear_r) || (g != clear_g) || (b != clear_b) || (a != clear_a)) { clear_z = z;  glClearColor(r,g,b,a); }
    glClear(flags);
 #else

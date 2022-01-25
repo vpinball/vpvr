@@ -81,7 +81,8 @@ void Shader::End()
    CHECKD3D(m_shader->End());
 }
 
-void Shader::SetTextureDepth(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel) {
+void Shader::SetTextureDepth(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel)
+{
    SetTexture(texelName, texel, false);
 }
 
@@ -103,9 +104,8 @@ void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, c
 
    if (!cache || (texel->m_pdsBuffer != currentTexture[idx]))
    {
-      if (cache) {
+      if (cache)
          currentTexture[idx] = texel->m_pdsBuffer;
-      }
       CHECKD3D(m_shader->SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel->m_pdsBuffer, linearRGB, clamptoedge)));
 
       m_renderDevice->m_curTextureChanges++;
@@ -115,9 +115,8 @@ void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, c
 void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel, const bool linearRGB)
 {
    const unsigned int idx = texelName[strlen(texelName) - 1] - '0'; // current convention: SetTexture gets "TextureX", where X 0..4
-   if (idx < TEXTURESET_STATE_CACHE_SIZE) {
+   if (idx < TEXTURESET_STATE_CACHE_SIZE)
       currentTexture[idx] = nullptr; // direct set of device tex invalidates the cache
-   }
 
    CHECKD3D(m_shader->SetTexture(texelName, texel));
 

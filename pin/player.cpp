@@ -3159,7 +3159,7 @@ void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwi
 #endif
       m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetVector(SHADER_vRes_Alpha_time, &r);
 
-      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_texdmd, false));
+      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_texdmd, false), false);
 
       m_pin3d.m_pd3dPrimaryDevice->DMDShader->Begin(0);
       m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)DMDVerts);
@@ -4281,12 +4281,14 @@ void Player::PostProcess(const bool ambientOcclusion)
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_FALSE);
 
+#ifdef ENABLE_SDL
    // Resolve the MSAA buffer to a Non-MSAA buffer if we are using MSAA
    if (g_pplayer->m_MSAASamples > 1)
    {
       CHECKD3D(glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->framebuffer, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->framebuffer,
          0, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST));
    }
+#endif
 
    if (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff)
       Bloom(m_ScreenOffset.x, m_ScreenOffset.y, (float)inv_width, (float)inv_height);
@@ -4309,8 +4311,7 @@ void Player::PostProcess(const bool ambientOcclusion)
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples), true);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, &m_pin3d.m_aoDitherTexture, true);
-#ifdef ENABLE_SDL
-#else
+#ifndef ENABLE_SDL
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture3, m_pin3d.m_pdds3DZBuffer, true);
 #endif
 
