@@ -12,7 +12,7 @@
 //#define WRITE_BACKGLASS_IMAGES 1
 //XML helpers
 
-inline char nextChar(size_t &inPos, size_t inSize, const char* inChars, const char* outChars, const char* inData) {
+inline char nextChar(size_t &inPos, const size_t inSize, const char* const inChars, const char* const outChars, const char* const inData) {
    char c = (inPos >= inSize) ? '=' : inData[inPos];
    while (outChars[c] < 0) {
       inPos++;
@@ -21,6 +21,7 @@ inline char nextChar(size_t &inPos, size_t inSize, const char* inChars, const ch
    inPos++;
    return c;
 }
+
 /*
 returns actual data size if successful or -1 if something went wrong.
 */
@@ -231,7 +232,6 @@ void BackGlass::Render()
          m_dmd_height = m_dmd_width / 4.0f;
          m_dmd_x = tableWidth * (0.5f - m_dmd_width / 2.0f);
          m_dmd_y = (float)(-dmdheightoff + dmdheightextra / 2);
-
       }
       else
          m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - m_backglass_scale / 2.0f), glassHeight, m_backglass_scale * tableWidth, m_backglass_scale * tableWidth / 4.0*3.0);
@@ -251,7 +251,7 @@ void BackGlass::Render()
 
    m_pd3dDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_noDMD);
 
-   m_pd3dDevice->DMDShader->SetVector(SHADER_vColor_Intensity, 1.0, 1.0, 1.0, 1.0);
+   m_pd3dDevice->DMDShader->SetVector(SHADER_vColor_Intensity, 1.0f, 1.0f, 1.0f, 1.0f);
 
    m_pd3dDevice->DMDShader->Begin(0);
    m_pd3dDevice->DrawTexturedQuad();
