@@ -36,7 +36,7 @@
 #pragma comment(lib, "d3d9.lib")        // TODO: put into build system
 #pragma comment(lib, "d3dx9.lib")       // TODO: put into build system
 #if _MSC_VER >= 1900
-#pragma comment(lib, "legacy_stdio_definitions.lib") //dxerr.lib needs this
+ #pragma comment(lib, "legacy_stdio_definitions.lib") //dxerr.lib needs this
 #endif
 #pragma comment(lib, "dxerr.lib")       // TODO: put into build system
 #endif
@@ -256,12 +256,12 @@ const char* glErrorToString(int error) {
 void ReportFatalError(const HRESULT hr, const char *file, const int line)
 {
 #ifdef ENABLE_SDL
-   char msg[128];
-   sprintf_s(msg, 128, "GL Error 0x%0002X %s in %s:%d", hr, glErrorToString(hr), file, line);
+   char msg[1024];
+   sprintf_s(msg, 1024, "GL Error 0x%0002X %s in %s:%d", hr, glErrorToString(hr), file, line);
    ShowError(msg);
 #else
-   char msg[128];
-   sprintf_s(msg, 128, "Fatal error %s (0x%x: %s) at %s:%d", DXGetErrorString(hr), hr, DXGetErrorDescription(hr), file, line);
+   char msg[1024];
+   sprintf_s(msg, 1024, "Fatal error %s (0x%x: %s) at %s:%d", DXGetErrorString(hr), hr, DXGetErrorDescription(hr), file, line);
    ShowError(msg);
    exit(-1);
 #endif
@@ -270,12 +270,12 @@ void ReportFatalError(const HRESULT hr, const char *file, const int line)
 void ReportError(const char *errorText, const HRESULT hr, const char *file, const int line)
 {
 #ifdef ENABLE_SDL
-   char msg[128];
-   sprintf_s(msg, 128, "GL Error 0x%0002X %s in %s:%d", hr, glErrorToString(hr), file, line);
+   char msg[1024];
+   sprintf_s(msg, 1024, "GL Error 0x%0002X %s in %s:%d", hr, glErrorToString(hr), file, line);
    ShowError(msg);
 #else
-   char msg[128];
-   sprintf_s(msg, 128, "%s %s (0x%x: %s) at %s:%d", errorText, DXGetErrorString(hr), hr, DXGetErrorDescription(hr), file, line);
+   char msg[1024];
+   sprintf_s(msg, 1024, "%s %s (0x%x: %s) at %s:%d", errorText, DXGetErrorString(hr), hr, DXGetErrorDescription(hr), file, line);
    ShowError(msg);
    exit(-1);
 #endif
@@ -427,7 +427,7 @@ BOOL CALLBACK MonitorEnumList(__in  HMONITOR hMonitor, __in  HDC hdcMonitor, __i
 #else
    config.adapter = -1;
 #endif
-   memcpy(config.DeviceName, info.szDevice, 32); // Internal display name e.g. "\\\\.\\DISPLAY1"
+   memcpy(config.DeviceName, info.szDevice, CCHDEVICENAME); // Internal display name e.g. "\\\\.\\DISPLAY1"
    data->insert(std::pair<std::string, DisplayConfig>(std::string(config.DeviceName), config));
    return TRUE;
 }
@@ -1210,7 +1210,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    }
    else
    {
-      format = (D3DFORMAT)((video10bit ? colorFormat::RGBA10 : ((m_colorDepth == 16) ? colorFormat::RGB5 : colorFormat::RGB)));
+      format = (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : ((m_colorDepth == 16) ? colorFormat::RGB5 : colorFormat::RGB));
    }
 
    // limit vsync rate to actual refresh rate, otherwise special handling in renderloop
@@ -1265,8 +1265,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 #ifdef ENABLE_SDL
    m_INTZ_support = false;
 #else
-   m_INTZ_support = (m_pD3D->CheckDeviceFormat(m_adapter, devtype, params.BackBufferFormat,
-      D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_TEXTURE, ((D3DFORMAT)(MAKEFOURCC('I', 'N', 'T', 'Z'))))) == D3D_OK;
+   m_INTZ_support = (m_pD3D->CheckDeviceFormat( m_adapter, devtype, params.BackBufferFormat,
+                     D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_TEXTURE, ((D3DFORMAT)(MAKEFOURCC('I','N','T','Z'))))) == D3D_OK;
 #endif
 
    // check if requested MSAA is possible
@@ -1403,7 +1403,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_pOffscreenBackBufferPPTexture1 = nullptr;
 
    if (video10bit && (m_FXAA == Quality_SMAA || m_FXAA == Standard_DLAA))
-      ShowError("SMAA or DLAA post-processing AA should not be combined with 10bit-output rendering (will result in visible artifacts)!");
+      ShowError("SMAA or DLAA post-processing AA should not be combined with 10Bit-output rendering (will result in visible artifacts)!");
 
    //VertexBuffer::setD3DDevice(m_pD3DDevice);
    //IndexBuffer::setD3DDevice(m_pD3DDevice);
@@ -1523,7 +1523,7 @@ RenderDevice::~RenderDevice()
    if (g_pplayer)
    {
       const bool drawBallReflection = ((g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
-      if (g_pplayer->m_ptable->m_reflectElementsOnPlayfield || drawBallReflection)
+      if ((g_pplayer->m_ptable->m_reflectElementsOnPlayfield /*&& g_pplayer->m_pf_refl*/) || drawBallReflection)
          SAFE_RELEASE(m_pMirrorTmpBufferTexture);
    }
    SAFE_RELEASE(m_pBloomBufferTexture);
@@ -1698,6 +1698,7 @@ void RenderDevice::Flip(const bool vsync)
    //glFlush();
    //glFinish();
 #endif
+
 #else
 
    bool dwm = false;
@@ -2062,7 +2063,7 @@ D3DTexture* RenderDevice::CreateSystemTexture(const int texwidth, const int texh
       sysRect.left = 0;
       sysRect.right = texwidth;
       sysRect.bottom = texheight;
-      CHECKD3D(D3DXLoadSurfaceFromMemory(sysSurf, nullptr, nullptr, surf->data, (D3DFORMAT)(colorFormat::RGBA), surf->pitch, nullptr, &sysRect, D3DX_FILTER_NONE, 0));
+      CHECKD3D(D3DXLoadSurfaceFromMemory(sysSurf, nullptr, nullptr, surf->data(), (D3DFORMAT)colorFormat::RGBA, surf->pitch(), nullptr, &sysRect, D3DX_FILTER_NONE, 0));
       SAFE_RELEASE_NO_RCC(sysSurf);
    }
 
@@ -2071,28 +2072,25 @@ D3DTexture* RenderDevice::CreateSystemTexture(const int texwidth, const int texh
       // normal maps or float textures are already in linear space!
       //CHECKD3D(D3DXFilterTexture(sysTex, nullptr, D3DX_DEFAULT, (texformat == D3DFMT_A32B32G32R32F || linearRGB) ? D3DX_DEFAULT : (D3DX_FILTER_TRIANGLE | ((isPowerOf2(texwidth) && isPowerOf2(texheight)) ? 0 : D3DX_FILTER_DITHER) | D3DX_FILTER_SRGB))); // DX9 doc says default equals box filter (and dither for non power of 2 tex size), but actually it seems to be triangle!
 
-
    return sysTex;
 }
 
-D3DTexture* RenderDevice::UploadTexture(BaseTexture* const surf, int* const pTexWidth, int* const pTexHeight, const bool linearRGB)
+D3DTexture* RenderDevice::UploadTexture(BaseTexture* const surf, int * const pTexWidth, int * const pTexHeight, const bool linearRGB)
 {
-   D3DTexture *sysTex, *tex;
-   HRESULT hr;
-
-   int texwidth = surf->width();
-   int texheight = surf->height();
+   const int texwidth = surf->width();
+   const int texheight = surf->height();
 
    if (pTexWidth) *pTexWidth = texwidth;
    if (pTexHeight) *pTexHeight = texheight;
 
    const BaseTexture::Format basetexformat = surf->m_format;
 
-   sysTex = CreateSystemTexture(surf, linearRGB);
+   D3DTexture *sysTex = CreateSystemTexture(surf, linearRGB);
 
-   const colorFormat texformat = (D3DFORMAT)((m_compress_textures && ((texwidth & 3) == 0) && ((texheight & 3) == 0) && (texwidth > 256) && (texheight > 256) && (basetexformat != BaseTexture::RGB_FP)) ? colorFormat::DXT5 : ((basetexformat == BaseTexture::RGB_FP) ? colorFormat::RGBA32F : colorFormat::RGBA));
+   const colorFormat texformat = (m_compress_textures && ((texwidth & 3) == 0) && ((texheight & 3) == 0) && (texwidth > 256) && (texheight > 256) && (basetexformat != BaseTexture::RGB_FP)) ? colorFormat::DXT5 : ((basetexformat == BaseTexture::RGB_FP) ? colorFormat::RGBA32F : colorFormat::RGBA);
 
-   hr = m_pD3DDevice->CreateTexture(texwidth, texheight, (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? 0 : sysTex->GetLevelCount(), (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? D3DUSAGE_AUTOGENMIPMAP : 0, texformat, (D3DPOOL)memoryPool::DEFAULT, &tex, nullptr);
+   D3DTexture *tex;
+   HRESULT hr = m_pD3DDevice->CreateTexture(texwidth, texheight, (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? 0 : sysTex->GetLevelCount(), (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? D3DUSAGE_AUTOGENMIPMAP : 0, (D3DFORMAT)texformat, (D3DPOOL)memoryPool::DEFAULT, &tex, nullptr);
    if (FAILED(hr))
       ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
 
@@ -2112,45 +2110,45 @@ D3DTexture* RenderDevice::UploadTexture(BaseTexture* const surf, int* const pTex
 void RenderDevice::UploadAndSetSMAATextures()
 {
    {
-      IDirect3DTexture9 *sysTex;
-      HRESULT hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, D3DFMT_L8, D3DPOOL_SYSTEMMEM, &sysTex, nullptr);
-      if (FAILED(hr))
-         ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
-      hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, D3DFMT_L8, (D3DPOOL)memoryPool::DEFAULT, &m_SMAAsearchTexture, nullptr);
-      if (FAILED(hr))
-         ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
+   IDirect3DTexture9 *sysTex;
+   HRESULT hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, D3DFMT_L8, D3DPOOL_SYSTEMMEM, &sysTex, nullptr);
+   if (FAILED(hr))
+      ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
+   hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, D3DFMT_L8, (D3DPOOL)memoryPool::DEFAULT, &m_SMAAsearchTexture, nullptr);
+   if (FAILED(hr))
+      ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
 
-      //!! use D3DXLoadSurfaceFromMemory
-      D3DLOCKED_RECT locked;
-      CHECKD3D(sysTex->LockRect(0, &locked, nullptr, 0));
-      void * const pdest = locked.pBits;
-      const void * const psrc = searchTexBytes;
-      memcpy(pdest,psrc,SEARCHTEX_SIZE);
-      CHECKD3D(sysTex->UnlockRect(0));
+   //!! use D3DXLoadSurfaceFromMemory
+   D3DLOCKED_RECT locked;
+   CHECKD3D(sysTex->LockRect(0, &locked, nullptr, 0));
+   void * const pdest = locked.pBits;
+   const void * const psrc = searchTexBytes;
+   memcpy(pdest,psrc,SEARCHTEX_SIZE);
+   CHECKD3D(sysTex->UnlockRect(0));
 
-      CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, m_SMAAsearchTexture));
-      SAFE_RELEASE(sysTex);
+   CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, m_SMAAsearchTexture));
+   SAFE_RELEASE(sysTex);
    }
    //
    {
-      IDirect3DTexture9 *sysTex;
-      HRESULT hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, D3DFMT_A8L8, D3DPOOL_SYSTEMMEM, &sysTex, nullptr);
-      if (FAILED(hr))
-         ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
-      hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, D3DFMT_A8L8, (D3DPOOL)memoryPool::DEFAULT, &m_SMAAareaTexture, nullptr);
-      if (FAILED(hr))
-         ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
+   IDirect3DTexture9 *sysTex;
+   HRESULT hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, D3DFMT_A8L8, D3DPOOL_SYSTEMMEM, &sysTex, nullptr);
+   if (FAILED(hr))
+      ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
+   hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, D3DFMT_A8L8, (D3DPOOL)memoryPool::DEFAULT, &m_SMAAareaTexture, nullptr);
+   if (FAILED(hr))
+      ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
 
-      //!! use D3DXLoadSurfaceFromMemory
-      D3DLOCKED_RECT locked;
-      CHECKD3D(sysTex->LockRect(0, &locked, nullptr, 0));
-      void * const pdest = locked.pBits;
-      const void * const psrc = areaTexBytes;
-      memcpy(pdest,psrc,AREATEX_SIZE);
-      CHECKD3D(sysTex->UnlockRect(0));
+   //!! use D3DXLoadSurfaceFromMemory
+   D3DLOCKED_RECT locked;
+   CHECKD3D(sysTex->LockRect(0, &locked, nullptr, 0));
+   void * const pdest = locked.pBits;
+   const void * const psrc = areaTexBytes;
+   memcpy(pdest,psrc,AREATEX_SIZE);
+   CHECKD3D(sysTex->UnlockRect(0));
 
-      CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, m_SMAAareaTexture));
-      SAFE_RELEASE(sysTex);
+   CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, m_SMAAareaTexture));
+   SAFE_RELEASE(sysTex);
    }
 
    //
@@ -2447,7 +2445,8 @@ void RenderDevice::SetRenderState(const RenderStates p1, DWORD p2)
    m_curStateChanges++;
 }
 
-void RenderDevice::SetRenderStateCulling(RenderStateValue cull) {
+void RenderDevice::SetRenderStateCulling(RenderStateValue cull)
+{
    if (g_pplayer && (g_pplayer->m_ptable->m_tblMirrorEnabled ^ g_pplayer->m_ptable->m_reflectionEnabled))
    {
       if (cull == CULL_CCW)
