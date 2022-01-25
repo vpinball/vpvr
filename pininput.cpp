@@ -968,6 +968,7 @@ void PinInput::FireKeyEvent(const int dispid, int keycode)
       else if (keycode == DIK_LEFT)   keycode = DIK_RIGHT;
       else if (keycode == DIK_RIGHT)  keycode = DIK_LEFT;
    }
+#ifdef ENABLE_VR
    if (keycode == g_pplayer->m_rgKeys[eRoomRecenter] && dispid == DISPID_GameEvents_KeyUp)
       g_pplayer->m_pin3d.m_pd3dPrimaryDevice->recenterTable();
    else if (keycode == g_pplayer->m_rgKeys[eTableRecenter] && dispid == DISPID_GameEvents_KeyUp)
@@ -976,7 +977,9 @@ void PinInput::FireKeyEvent(const int dispid, int keycode)
       g_pplayer->m_pin3d.m_pd3dPrimaryDevice->tableUp();
    else if (keycode == g_pplayer->m_rgKeys[eTableDown] && dispid == DISPID_GameEvents_KeyUp)
       g_pplayer->m_pin3d.m_pd3dPrimaryDevice->tableDown();
-   else if (g_pplayer->m_cameraMode)
+   else
+#endif
+   if (g_pplayer->m_cameraMode)
    {
       m_keyPressedState[eLeftFlipperKey] = false;
       m_keyPressedState[eRightFlipperKey] = false;
