@@ -11,14 +11,8 @@
 #include <map>
 #include <regex>
 
-#ifdef _DEBUG
-//Writes all compile/parse errors/warnings to a file. (0=never, 1=only errors, 2=warnings, 3=info)
-#define DEBUG_LEVEL_LOG 1
-//Writes all shaders that are compiled to separate files (e.g. ShaderName_Technique_Pass.vs and .fs) (0=never, 1=only if compile failed, 2=always)
-#define WRITE_SHADER_FILES 1
-#else 
-#define DEBUG_LEVEL_LOG 1
-#define WRITE_SHADER_FILES 1
+#if DEBUG_LEVEL_LOG == 0
+#define LOG(a,b,c)
 #endif
 
 static std::ofstream* logFile = nullptr;
@@ -37,7 +31,7 @@ int Shader::maxSlots = 0;
 
 #ifdef TWEAK_GL_SHADER
 //Todo: Optimize to improve shader loading time.
-static string shaderUniformNames[] = {
+static const string shaderUniformNames[]{
    "blend_modulate_vs_add", "alphaTestValue", "flasherMode", "eye", "fKickerScale",
    //Vectors and Float Arrays
    "Roughness_WrapL_Edge_Thickness", "cBase_Alpha", "lightCenter_maxRange", "lightColor2_falloff_power", "lightColor_intensity", "matrixBlock", "fenvEmissionScale_TexWidth",
@@ -50,11 +44,11 @@ static string shaderUniformNames[] = {
    "Texture0", "Texture1", "Texture2", "Texture3", "Texture4", "edgesTex2D", "blendTex2D", "areaTex2D", "searchTex2D"
 };
 
-static string shaderAttributeNames[] = {
+static const string shaderAttributeNames[]{
    "vPosition", "vNormal", "tc", "tex0"
 };
 
-static string shaderTechniqueNames[]{
+static const string shaderTechniqueNames[]{
    "RenderBall", "RenderBall_DecalMode", "RenderBall_CabMode", "RenderBall_CabMode_DecalMode", "RenderBallTrail",
    "basic_without_texture", "basic_with_texture", "basic_depth_only_without_texture", "basic_depth_only_with_texture", "bg_decal_without_texture",
    "bg_decal_with_texture", "kickerBoolean", "light_with_texture", "light_without_texture",
@@ -68,31 +62,28 @@ static string shaderTechniqueNames[]{
 };
 
 shaderUniforms Shader::getUniformByName(const string& name) {
-   for (int i = 0;i < SHADER_UNIFORM_COUNT; ++i) {
-      if (name.compare(shaderUniformNames[i]) == 0) {
+   for (int i = 0;i < SHADER_UNIFORM_COUNT; ++i)
+      if (name.compare(shaderUniformNames[i]) == 0)
          return shaderUniforms(i);
-      }
-   }
+
    LOG(1, m_shaderCodeName, std::string("getUniformByName Could not find uniform ").append(name).append(" in shaderUniformNames."));
    return SHADER_UNIFORM_INVALID;
 }
 
 shaderAttributes Shader::getAttributeByName(const string& name) {
-   for (int i = 0;i < SHADER_ATTRIBUTE_COUNT; ++i) {
-      if (name.compare(shaderAttributeNames[i]) == 0) {
+   for (int i = 0;i < SHADER_ATTRIBUTE_COUNT; ++i)
+      if (name.compare(shaderAttributeNames[i]) == 0)
          return shaderAttributes(i);
-      }
-   }
+
    LOG(1, m_shaderCodeName, std::string("getAttributeByName Could not find attribute ").append(name).append(" in shaderAttributeNames."));
    return SHADER_ATTRIBUTE_INVALID;
 }
 
 shaderTechniques Shader::getTechniqueByName(const string& name) {
-   for (int i = 0;i < SHADER_TECHNIQUE_COUNT; ++i) {
-      if (name.compare(shaderTechniqueNames[i]) == 0) {
+   for (int i = 0;i < SHADER_TECHNIQUE_COUNT; ++i)
+      if (name.compare(shaderTechniqueNames[i]) == 0)
          return shaderTechniques(i);
-      }
-   }
+
    LOG(1, m_shaderCodeName, std::string("getTechniqueByName Could not find technique ").append(name).append(" in shaderTechniqueNames."));
    return SHADER_TECHNIQUE_INVALID;
 }
@@ -116,8 +107,8 @@ Shader::~Shader()
       m_currentShader = nullptr;
 }
 
-
-void Shader::LOG(int level, const char* fileNameRoot, const string& message) {
+#if DEBUG_LEVEL_LOG > 0
+void Shader::LOG(const int level, const char* fileNameRoot, const string& message) {
    if (level <= DEBUG_LEVEL_LOG) {
       if (!logFile && fileNameRoot) {
          string name = Shader::shaderPath;
@@ -156,6 +147,7 @@ bla:
       (*logFile) << message << '\n';
    }
 }
+#endif
 
 //parse a file. Is called recursively for includes
 bool Shader::parseFile(const char* fileNameRoot, const char* fileName, int level, std::map<string, string> &values, const string& parentMode) {
@@ -543,13 +535,12 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
             string vertexShaderCode = vertex;
                vertexShaderCode.append("\n//").append(_technique).append("\n//").append(element[2]).append("\n");
                vertexShaderCode.append(analyzeFunction(shaderCodeName, _technique, element[2], values)).append("\0");
-               string geometryShaderCode;
+            string geometryShaderCode;
             if (elem == 5 && element[3].length() > 0) {
                geometryShaderCode = geometry;
                geometryShaderCode.append("\n//").append(_technique).append("\n//").append(element[3]).append("\n");
                geometryShaderCode.append(analyzeFunction(shaderCodeName, _technique, element[3], values)).append("\0");
             }
-            else geometryShaderCode = "";
             string fragmentShaderCode = fragment;
                fragmentShaderCode.append("\n//").append(_technique).append("\n//").append(element[elem-1]).append("\n");
                fragmentShaderCode.append(analyzeFunction(shaderCodeName, _technique, element[elem-1], values)).append("\0");
@@ -703,9 +694,9 @@ void Shader::Begin(const unsigned int pass)
       CHECKD3D(glUseProgram(m_currentTechnique->program));
       lastShaderProgram = m_currentTechnique->program;
    }
-   else {
+   else
       return;
-   }
+
    //Set all uniforms
 #ifdef TWEAK_GL_SHADER
    for (int uniformName = 0; uniformName < SHADER_UNIFORM_COUNT; ++uniformName)
@@ -975,12 +966,12 @@ void Shader::Begin(const unsigned int pass)
       }
       break;
       default:
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          sprintf_s(msg, 256, "Unknown uniform type 0x%0002X for %s in %s", currentUniform.type, 
-            shaderUniformNames[uniformName].c_str(), shaderTechniqueNames[currentShader].c_str());
+            shaderUniformNames[uniformName].c_str(), shaderTechniqueNames[technique].c_str());
 #else
          sprintf_s(msg, 256, "Unknown uniform type 0x%0002X for %s in %s", currentUniform.type, uniformName.c_str(), techName.c_str());
-         #endif
+#endif
          ShowError(msg);
          break;
       }

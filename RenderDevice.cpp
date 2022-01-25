@@ -1836,6 +1836,7 @@ void RenderDevice::UploadAndSetSMAATextures()
    FBShader->SetTexture(SHADER_areaTex2D, m_SMAAareaTexture, true);
    FBShader->SetTexture(SHADER_searchTex2D, m_SMAAsearchTexture, true);
 }
+
 #else 
 
 void RenderDevice::CopySurface(D3DTexture* dest, RenderTarget* src)
@@ -2011,9 +2012,7 @@ void RenderDevice::CopyDepth(D3DTexture* dest, void* src)
    else
       CopyDepth(dest, (RenderTarget*)src);
 }
-#endif
 
-#ifndef ENABLE_SDL
 D3DTexture* RenderDevice::CreateSystemTexture(BaseTexture* const surf, const bool linearRGB) {
    return CreateSystemTexture(surf->width(),
                               surf->height(), 
@@ -2081,7 +2080,6 @@ D3DTexture* RenderDevice::CreateSystemTexture(const int texwidth, const int texh
    return sysTex;
 }
 
-//!! clamptoedge unused!
 D3DTexture* RenderDevice::UploadTexture(BaseTexture* const surf, int * const pTexWidth, int * const pTexHeight, const bool linearRGB, const bool clamptoedge)
 {
    const int texwidth = surf->width();
@@ -2097,7 +2095,7 @@ D3DTexture* RenderDevice::UploadTexture(BaseTexture* const surf, int * const pTe
    const colorFormat texformat = (m_compress_textures && ((texwidth & 3) == 0) && ((texheight & 3) == 0) && (texwidth > 256) && (texheight > 256) && (basetexformat != BaseTexture::RGB_FP)) ? colorFormat::DXT5 : ((basetexformat == BaseTexture::RGB_FP) ? colorFormat::RGBA32F : colorFormat::RGBA);
 
    D3DTexture *tex;
-   HRESULT hr = m_pD3DDevice->CreateTexture(texwidth, texheight, (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? 0 : sysTex->GetLevelCount(), (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? D3DUSAGE_AUTOGENMIPMAP : 0, (D3DFORMAT)texformat, (D3DPOOL)memoryPool::DEFAULT, &tex, nullptr);
+   HRESULT hr = m_pD3DDevice->CreateTexture(texwidth, texheight, (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? 0 : sysTex->GetLevelCount(), (texformat != colorFormat::DXT5 && m_autogen_mipmap) ? D3DUSAGE_AUTOGENMIPMAP : 0, (D3DFORMAT)texformat, (D3DPOOL)memoryPool::DEFAULT, &tex, nullptr, clamptoedge);
    if (FAILED(hr))
       ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
 
@@ -2227,8 +2225,7 @@ void RenderDevice::SetSamplerAnisotropy(const DWORD Sampler, DWORD Value)
 
 void RenderDevice::RenderDevice::SetTextureAddressMode(const DWORD Sampler, const SamplerStateValues mode)
 {
-#ifdef ENABLE_SDL
-#else
+#ifndef ENABLE_SDL
    if (textureSamplerCache[Sampler][D3DSAMP_ADDRESSU] != mode)
    {
       CHECKD3D(m_pD3DDevice->SetSamplerState(Sampler, D3DSAMP_ADDRESSU, mode));
@@ -2293,9 +2290,7 @@ void RenderDevice::SetTextureStageState(const DWORD p1, const D3DTEXTURESTAGESTA
 
    m_curStateChanges++;
 }
-#endif
 
-#ifndef ENABLE_SDL
 void RenderDevice::SetRenderTarget(RenderTarget* surf, bool ignoreStereo)
 {
    if (surf)
@@ -2531,16 +2526,14 @@ void RenderDevice::SetRenderStateAlphaTestFunction(const DWORD testValue, const 
 
 void RenderDevice::CreateVertexDeclaration(const VertexElement * const element, VertexDeclaration ** declaration)
 {
-#ifdef ENABLE_SDL
-#else
+#ifndef ENABLE_SDL
    CHECKD3D(m_pD3DDevice->CreateVertexDeclaration(element, declaration));
 #endif
 }
 
 void RenderDevice::SetVertexDeclaration(VertexDeclaration * declaration)
 {
-#ifdef ENABLE_SDL
-#else
+#ifndef ENABLE_SDL
    if (declaration != currentDeclaration)
    {
       CHECKD3D(m_pD3DDevice->SetVertexDeclaration(declaration));
@@ -2652,8 +2645,7 @@ void RenderDevice::DrawIndexedPrimitiveVB(const PrimitiveTypes type, const DWORD
    vb->bind(PRIMARY_DEVICE); //!!
    ib->bind(PRIMARY_DEVICE); //!!
 #ifdef ENABLE_SDL
-
-   int offset = ib->getOffset() + (ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? 2 : 4) * startIndex;
+   const int offset = ib->getOffset() + (ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? 2 : 4) * startIndex;
    //CHECKD3D(glDrawElementsInstancedBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, m_stereo3D != STEREO_OFF ? 2 : 1, vb->getOffset() + startVertex)); // Do instancing in geometry shader instead
    CHECKD3D(glDrawElementsBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, vb->getOffset() + startVertex));
 #else
