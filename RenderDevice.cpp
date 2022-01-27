@@ -98,7 +98,7 @@ bool IsWindows10_1803orAbove()
 #ifdef ENABLE_SDL
 //my definition for SDL    GLint size;    GLenum type;    GLboolean normalized;    GLsizei stride;
 //D3D definition   WORD Stream;    WORD Offset;    BYTE Type;    BYTE Method;    BYTE Usage;    BYTE UsageIndex;
-const VertexElement VertexTexelElement[] =
+constexpr VertexElement VertexTexelElement[] =
 {
    { 3, GL_FLOAT, GL_FALSE, 0, "POSITION0" },
    { 2, GL_FLOAT, GL_FALSE, 0, "TEXCOORD0" },
@@ -109,7 +109,7 @@ const VertexElement VertexTexelElement[] =
 };
 VertexDeclaration* RenderDevice::m_pVertexTexelDeclaration = (VertexDeclaration*)&VertexTexelElement;
 
-const VertexElement VertexNormalTexelElement[] =
+constexpr VertexElement VertexNormalTexelElement[] =
 {
    { 3, GL_FLOAT, GL_FALSE, 0, "POSITION0" },
    { 3, GL_FLOAT, GL_FALSE, 0, "NORMAL0" },
@@ -123,7 +123,7 @@ const VertexElement VertexNormalTexelElement[] =
 };
 VertexDeclaration* RenderDevice::m_pVertexNormalTexelDeclaration = (VertexDeclaration*)&VertexNormalTexelElement;
 
-/*const VertexElement VertexNormalTexelTexelElement[] =
+/*constexpr VertexElement VertexNormalTexelTexelElement[] =
 {
    { 0, 0  * sizeof(float),D3DDECLTYPE_FLOAT3,   D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },  // pos
    { 0, 3  * sizeof(float),D3DDECLTYPE_FLOAT3,   D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL,   0 },  // normal
@@ -134,7 +134,7 @@ VertexDeclaration* RenderDevice::m_pVertexNormalTexelDeclaration = (VertexDeclar
 
 VertexDeclaration* RenderDevice::m_pVertexNormalTexelTexelDeclaration = nullptr;*/
 
-const VertexElement VertexTrafoTexelElement[] =
+constexpr VertexElement VertexTrafoTexelElement[] =
 {
    { 4, GL_FLOAT, GL_FALSE, 0, "POSITION0" },
    { 2, GL_FLOAT, GL_FALSE, 0, nullptr },//legacy?
@@ -148,7 +148,7 @@ const VertexElement VertexTrafoTexelElement[] =
 };
 VertexDeclaration* RenderDevice::m_pVertexTrafoTexelDeclaration = (VertexDeclaration*)&VertexTrafoTexelElement;
 #else
-const VertexElement VertexTexelElement[] =
+constexpr VertexElement VertexTexelElement[] =
 {
    { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },  // pos
    { 0, 3 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },  // tex0
@@ -165,7 +165,7 @@ constexpr VertexElement VertexNormalTexelElement[] =
 };
 VertexDeclaration* RenderDevice::m_pVertexNormalTexelDeclaration = nullptr;
 
-/*const VertexElement VertexNormalTexelTexelElement[] =
+/*constexpr VertexElement VertexNormalTexelTexelElement[] =
 {
    { 0, 0  * sizeof(float),D3DDECLTYPE_FLOAT3,   D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },  // pos
    { 0, 3  * sizeof(float),D3DDECLTYPE_FLOAT3,   D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL,   0 },  // normal
@@ -239,7 +239,7 @@ static UINT ComputePrimitiveCount(const RenderDevice::PrimitiveTypes type, const
 }
 
 #ifdef ENABLE_SDL
-const char* glErrorToString(int error) {
+static const char* glErrorToString(const int error) {
    switch (error) {
    case GL_INVALID_ENUM: return "GL_INVALID_ENUM";
    case GL_INVALID_VALUE: return "GL_INVALID_VALUE";
@@ -255,12 +255,11 @@ const char* glErrorToString(int error) {
 
 void ReportFatalError(const HRESULT hr, const char *file, const int line)
 {
-#ifdef ENABLE_SDL
    char msg[1024];
-   sprintf_s(msg, 1024, "GL Error 0x%0002X %s in %s:%d", hr, glErrorToString(hr), file, line);
+#ifdef ENABLE_SDL
+   sprintf_s(msg, 1024, "GL Fatal Error 0x%0002X %s in %s:%d", hr, glErrorToString(hr), file, line);
    ShowError(msg);
 #else
-   char msg[1024];
    sprintf_s(msg, 1024, "Fatal error %s (0x%x: %s) at %s:%d", DXGetErrorString(hr), hr, DXGetErrorDescription(hr), file, line);
    ShowError(msg);
    exit(-1);
@@ -269,12 +268,11 @@ void ReportFatalError(const HRESULT hr, const char *file, const int line)
 
 void ReportError(const char *errorText, const HRESULT hr, const char *file, const int line)
 {
-#ifdef ENABLE_SDL
    char msg[1024];
+#ifdef ENABLE_SDL
    sprintf_s(msg, 1024, "GL Error 0x%0002X %s in %s:%d", hr, glErrorToString(hr), file, line);
    ShowError(msg);
 #else
-   char msg[1024];
    sprintf_s(msg, 1024, "%s %s (0x%x: %s) at %s:%d", errorText, DXGetErrorString(hr), hr, DXGetErrorDescription(hr), file, line);
    ShowError(msg);
    exit(-1);
@@ -428,7 +426,7 @@ BOOL CALLBACK MonitorEnumList(__in  HMONITOR hMonitor, __in  HDC hdcMonitor, __i
    config.adapter = -1;
 #endif
    memcpy(config.DeviceName, info.szDevice, CCHDEVICENAME); // Internal display name e.g. "\\\\.\\DISPLAY1"
-   data->insert(std::pair<std::string, DisplayConfig>(std::string(config.DeviceName), config));
+   data->insert(std::pair<std::string, DisplayConfig>(config.DeviceName, config));
    return TRUE;
 }
 
@@ -440,6 +438,7 @@ int getDisplayList(std::vector<DisplayConfig>& displays)
    EnumDisplayMonitors(nullptr, nullptr, MonitorEnumList, reinterpret_cast<LPARAM>(&displayMap));
    DISPLAY_DEVICE DispDev = {};
    DispDev.cb = sizeof(DispDev);
+
 #ifndef ENABLE_SDL
    IDirect3D9* pD3D = Direct3DCreate9(D3D_SDK_VERSION);
    if (pD3D == nullptr)
@@ -460,6 +459,7 @@ int getDisplayList(std::vector<DisplayConfig>& displays)
    }
    SAFE_RELEASE(pD3D);
 #endif
+
    // Apply the same numbering as windows
    int i = 0;
    for (std::map<std::string, DisplayConfig>::iterator display = displayMap.begin(); display != displayMap.end(); ++display)
@@ -1387,7 +1387,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create blur buffer!", hr, __FILE__, __LINE__);
 
-   // alloc temporary buffer for postprocessing
+   // alloc temporary buffer for stereo3D/post-processing AA
    if ((m_FXAA > 0) || (m_stereo3D > 0))
    {
       hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), (D3DPOOL)memoryPool::DEFAULT, &m_pOffscreenBackBufferStereoTexture, nullptr);
@@ -1486,6 +1486,8 @@ RenderDevice::~RenderDevice()
    if (m_quadVertexBuffer)
       m_quadVertexBuffer->release();
    m_quadVertexBuffer = nullptr;
+
+   //m_quadDynVertexBuffer->release();
 
 #ifndef DISABLE_FORCE_NVIDIA_OPTIMUS
    if (srcr_cache != nullptr)
@@ -2080,7 +2082,7 @@ D3DTexture* RenderDevice::CreateSystemTexture(const int texwidth, const int texh
    return sysTex;
 }
 
-D3DTexture* RenderDevice::UploadTexture(BaseTexture* const surf, int * const pTexWidth, int * const pTexHeight, const bool linearRGB, const bool clamptoedge)
+D3DTexture* RenderDevice::UploadTexture(BaseTexture* const surf, int* const pTexWidth, int* const pTexHeight, const bool linearRGB, const bool clamptoedge)
 {
    const int texwidth = surf->width();
    const int texheight = surf->height();
@@ -2614,7 +2616,7 @@ void RenderDevice::DrawTexturedQuadPostProcess()
    DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_TEX, m_quadVertexBuffer, 0, 4, false);
 }
 
-void RenderDevice::DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, bool stereo)
+void RenderDevice::DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, const bool stereo)
 {
    const unsigned int np = ComputePrimitiveCount(type, vertexCount);
    m_stats_drawn_triangles += np;
@@ -2627,8 +2629,7 @@ void RenderDevice::DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, V
    VertexDeclaration * declaration = fvfToDecl(fvf);
    SetVertexDeclaration(declaration);
 
-   HRESULT hr;
-   hr = m_pD3DDevice->DrawPrimitive((D3DPRIMITIVETYPE)type, startVertex, np);
+   const HRESULT hr = m_pD3DDevice->DrawPrimitive((D3DPRIMITIVETYPE)type, startVertex, np);
    if (FAILED(hr))
       ReportError("Fatal Error: DrawPrimitive failed!", hr, __FILE__, __LINE__);
 #endif

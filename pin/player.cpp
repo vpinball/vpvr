@@ -70,7 +70,7 @@ public:
 #include "typeDefs3D.h"
 #include "captureExt.h"
 #ifndef ENABLE_SDL
-#include "BallShader.h"
+ #include "BallShader.h"
 #endif
 #include "../math/bluenoise.h"
 #include "../inc/winsdk/legacy_touch.h"
@@ -1290,6 +1290,7 @@ HRESULT Player::Init()
 
 #ifdef ENABLE_SDL
    // SDL Window appears after InitPin3D, set window default position and flags
+
    int x = 0;
    int y = 0;
 
@@ -1297,9 +1298,8 @@ HRESULT Player::Init()
    display = (display < getNumberOfDisplays()) ? display : -1;
 
    getDisplaySetupByID(display, x, y, m_screenwidth, m_screenheight);
-   if (m_fullScreen) {
+   if (m_fullScreen)
       SetWindowPos(nullptr, x, y, m_screenwidth, m_screenheight, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
-   }
    else
    {
       m_refreshrate = 0; // The default
@@ -1322,8 +1322,8 @@ HRESULT Player::Init()
       // is this a non-fullscreen window? -> get previously saved window position
       if ((m_height != m_screenheight) || (m_width != m_screenwidth))
       {
-         int xTemp = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "WindowPosX", xPos); //!! does this handle multi-display correctly like this?
-         int yTemp = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "WindowPosY", yPos);
+         const int xTemp = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "WindowPosX", xPos); //!! does this handle multi-display correctly like this?
+         const int yTemp = LoadValueIntWithDefault((m_stereo3D == STEREO_VR) ? "PlayerVR" : "Player", "WindowPosY", yPos);
          if (xTemp >= x && (xTemp + m_width < x + m_screenwidth) && yTemp >= y && (yTemp + m_height < y + m_screenheight)) {//Absolute Window position is on screen
             xPos = xTemp;
             yPos = yTemp;
@@ -1333,7 +1333,7 @@ HRESULT Player::Init()
             yPos = y+yTemp;
          }
          m_showWindowedCaption = false;
-         int windowflags = WS_POPUP;
+         const int windowflags = WS_POPUP;
          SetWindowLong(GetHwnd(), GWL_STYLE, windowflags);
          SetWindowPos(HWND_TOP, xPos, yPos, m_width, m_height, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
          ShowWindow(SW_SHOWNORMAL);
@@ -3323,7 +3323,7 @@ void Player::RenderDynamics()
       // Create the playfield reflection
       m_pin3d.m_pd3dPrimaryDevice->SetRenderStateClipPlane0(true);
       RenderDynamicMirror(reflection_path == 1);
-      m_pin3d.m_pd3dPrimaryDevice->SetRenderStateClipPlane0(false);
+      m_pin3d.m_pd3dPrimaryDevice->SetRenderStateClipPlane0(false); // disable playfield clipplane again
    }
 
    // Render the backglass
@@ -4880,7 +4880,7 @@ void Player::Render()
             if (!m_showWindowedCaption && y <= captionheight) y += captionheight + borderwidth;
             x = m_showWindowedCaption ? (x + borderwidth) : (x - borderwidth);
             y = m_showWindowedCaption ? (y + captionheight + borderwidth) : (y - captionheight - borderwidth);
-            
+
             // Add/Remove a pretty window border and standard control boxes.
             const int windowflags = m_showWindowedCaption ? WS_POPUP : (WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_CLIPCHILDREN);
 #ifndef ENABLE_SDL
