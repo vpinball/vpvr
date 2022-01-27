@@ -71,17 +71,15 @@ enum TransformStateType {
 #endif
 };
 
-#ifdef ENABLE_SDL
 enum UsageFlags {
+#ifdef ENABLE_SDL
    USAGE_STATIC = GL_STATIC_DRAW,
    USAGE_DYNAMIC = GL_DYNAMIC_DRAW
-};
 #else
-enum UsageFlags {
-   USAGE_STATIC = D3DUSAGE_WRITEONLY,
+   USAGE_STATIC = D3DUSAGE_WRITEONLY,    // to be used for vertex/index buffers which are uploaded once and never touched again
    USAGE_DYNAMIC = D3DUSAGE_DYNAMIC      // to be used for vertex/index buffers which are locked every frame/very often
-};
 #endif
+};
 
 class TextureManager;
 class Shader;
@@ -321,8 +319,8 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    bool SetRenderStateCache(const RenderStates p1, DWORD p2);
    void SetRenderStateCulling(RenderStateValue cull);
    void SetRenderStateDepthBias(float bias);
-   void SetRenderStateClipPlane0(bool enabled);
-   void SetRenderStateAlphaTestFunction(DWORD testValue, RenderStateValue testFunction, bool enabled);
+   void SetRenderStateClipPlane0(const bool enabled);
+   void SetRenderStateAlphaTestFunction(const DWORD testValue, const RenderStateValue testFunction, const bool enabled);
 
    void SetTextureFilter(const DWORD texUnit, DWORD mode);
    void SetTextureAddressMode(const DWORD texUnit, const SamplerStateValues mode);
@@ -344,7 +342,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    void DrawTexturedQuad();
    void DrawTexturedQuadPostProcess();
    
-   void DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, bool stereo);
+   void DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, const bool stereo);
    void DrawIndexedPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, IndexBuffer* ib, const DWORD startIndex, const DWORD indexCount);
 
    void SetViewport(const ViewPort*);
@@ -428,14 +426,14 @@ private:
 
    void UploadAndSetSMAATextures();
 
-#ifdef ENABLE_SDL
-#else
+#ifndef ENABLE_SDL
 #ifdef USE_D3D9EX
    IDirect3D9Ex* m_pD3DEx;
 
    IDirect3DDevice9Ex* m_pD3DDeviceEx;
 #endif
    IDirect3D9* m_pD3D;
+
    IDirect3DDevice9* m_pD3DDevice;
 #endif
 
@@ -541,4 +539,3 @@ public:
    //static VertexDeclaration* m_pVertexNormalTexelTexelDeclaration;
    static VertexDeclaration* m_pVertexTrafoTexelDeclaration;
 };
-

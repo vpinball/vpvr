@@ -8,7 +8,8 @@
 
 class RenderDevice;
 
-class TextureManager {
+class TextureManager
+{
 public:
    TextureManager(RenderDevice& rd) : m_rd(rd)
    { }

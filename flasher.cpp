@@ -1016,7 +1016,7 @@ void Flasher::ResetVideoCap()
     m_isVideoCap = false;
     if (m_videoCapTex)
     {
-      //  g_pplayer->m_pin3d.m_pd3dPrimaryDevice->flasherShader->SetTexture(SHADER_Texture0, (D3DTexture*)nullptr); //!! ??
+      //  g_pplayer->m_pin3d.m_pd3dPrimaryDevice->flasherShader->SetTextureNull(SHADER_Texture0); //!! ??
         g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.UnloadTexture(m_videoCapTex);
         delete m_videoCapTex;
         m_videoCapTex = nullptr;
@@ -1299,7 +1299,7 @@ void Flasher::RenderDynamic()
           pd3dDevice->flasherShader->SetTexture(SHADER_Texture0, pinA, false, true);
 
           if (!m_d.m_addBlend)
-             flasherData.x = pinA->m_alphaTestValue * (float)(1.0 / 255.0);
+             flasherData.x = pinA->m_alphaTestValue * (float)(1.0/255.0);
 
           //ppin3d->SetPrimaryTextureFilter( 0, TEXTURE_MODE_TRILINEAR );
        }
