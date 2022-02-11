@@ -186,6 +186,7 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
    m_FXAA = LoadValueIntWithDefault("Player", "FXAA", Standard_FXAA);
    m_sharpen = LoadValueIntWithDefault("Player", "Sharpen", 0);
    m_trailForBalls = LoadValueBoolWithDefault("Player", "BallTrail", true);
+   m_disableLightingForBalls = LoadValueBoolWithDefault("Player", "DisableLightingForBalls", false);
    m_reflectionForBalls = LoadValueBoolWithDefault("Player", "BallReflection", true);
    m_AA = LoadValueBoolWithDefault("Player", "USEAA", false);
    m_dynamicAO = LoadValueBoolWithDefault("Player", "DynamicAO", false);
@@ -620,8 +621,8 @@ void Player::Shutdown()
 
    m_pininput.UnInit();
 
-   SAFE_RELEASE(m_ballVertexBuffer);
-   SAFE_RELEASE(m_ballIndexBuffer);
+   SAFE_BUFFER_RELEASE(m_ballVertexBuffer);
+   SAFE_BUFFER_RELEASE(m_ballIndexBuffer);
 #ifndef ENABLE_SDL
    if (m_ballShader)
    {
@@ -630,13 +631,13 @@ void Player::Shutdown()
       CHECKD3D(m_ballShader->Core()->SetTexture(SHADER_Texture2, nullptr));
       CHECKD3D(m_ballShader->Core()->SetTexture(SHADER_Texture3, nullptr));
       delete m_ballShader;
-      m_ballShader = 0;
+      m_ballShader = nullptr;
    }
 #endif
 #ifdef DEBUG_BALL_SPIN
-   SAFE_RELEASE(m_ballDebugPoints);
+   SAFE_BUFFER_RELEASE(m_ballDebugPoints);
 #endif
-   SAFE_RELEASE(m_ballTrailVertexBuffer);
+   SAFE_BUFFER_RELEASE(m_ballTrailVertexBuffer);
    if (m_ballImage)
    {
        delete m_ballImage;
@@ -3805,7 +3806,7 @@ void Player::UpdateHUD_IMGUI()
    if (ImGui::Button("Toggle Profiling"))
       profiling = !profiling;
 
-   ImGui::Text("FPS: %.1f (%.1f avg)  Display %s Objects(%uk/%uk Triangles)", m_fps + 0.01f, fpsAvg + 0.01f, RenderStaticOnly() ? "only static" : "all", (m_pin3d.m_pd3dPrimaryDevice->m_stats_drawn_triangles + 999) / 1000, (stats_drawn_static_triangles + m_pin3d.m_pd3dPrimaryDevice->m_stats_drawn_triangles + 999) / 1000);
+   ImGui::Text("FPS: %.1f (%.1f avg)  Display %s Objects(%uk/%uk Triangles)", m_fps + 0.01f, fpsAvg + 0.01f, RenderStaticOnly() ? "only static" : "all", (RenderDevice::m_stats_drawn_triangles + 999) / 1000, (stats_drawn_static_triangles + m_pin3d.m_pd3dPrimaryDevice->m_stats_drawn_triangles + 999) / 1000);
    ImGui::Text("DayNight %u%%", quantizeUnsignedPercent(m_globalEmissionScale));
 
    const U32 period = m_lastFrameDuration;
@@ -4018,7 +4019,7 @@ void Player::UpdateHUD()
 		//DebugPrint(0, 230, szFoo); //!!?
 
 		// Draw the framerate.
-		sprintf_s(szFoo, "FPS: %.1f (%.1f avg)  Display %s Objects (%uk/%uk Triangles)  DayNight %u%%", m_fps+0.01f, fpsAvg+0.01f, RenderStaticOnly() ? "only static" : "all", (m_pin3d.m_pd3dPrimaryDevice->m_stats_drawn_triangles + 999) / 1000, (stats_drawn_static_triangles + m_pin3d.m_pd3dPrimaryDevice->m_stats_drawn_triangles + 999) / 1000, quantizeUnsignedPercent(m_globalEmissionScale));
+		sprintf_s(szFoo, "FPS: %.1f (%.1f avg)  Display %s Objects (%uk/%uk Triangles)  DayNight %u%%", m_fps+0.01f, fpsAvg+0.01f, RenderStaticOnly() ? "only static" : "all", (RenderDevice::m_stats_drawn_triangles + 999) / 1000, (stats_drawn_static_triangles + m_pin3d.m_pd3dPrimaryDevice->m_stats_drawn_triangles + 999) / 1000, quantizeUnsignedPercent(m_globalEmissionScale));
 		DebugPrint(0, 10, szFoo);
 
 		const U32 period = m_lastFrameDuration;
@@ -4705,7 +4706,7 @@ void Player::Render()
 
    m_LastKnownGoodCounter++;
 
-   m_pin3d.m_pd3dPrimaryDevice->m_stats_drawn_triangles = 0;
+   RenderDevice::m_stats_drawn_triangles = 0;
 
    // Physics/Timer updates, done at the last moment, especially to handle key input (VP<->VPM rountrip) and animation triggers
    if (m_minphyslooptime == 0) // (vsync) latency reduction code not active? -> Do Physics Updates here
@@ -5208,6 +5209,8 @@ void Player::DrawBalls()
       temp.SetTranslation(pball->m_d.m_pos.x, pball->m_d.m_pos.y, zheight);
       temp.Multiply(m3D_full, m3D_full);
       memcpy(m.m, m3D_full.m, 4 * 4 * sizeof(float));
+
+      m_ballShader->SetBool(SHADER_disableLighting, m_disableLightingForBalls);
 
       m_pin3d.m_pd3dPrimaryDevice->ballShader->SetMatrix(SHADER_orientation, &m);
 

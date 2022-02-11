@@ -88,7 +88,7 @@ class RenderDevice
 {
 public:
 
-RenderDevice(const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice = NULL);
+RenderDevice(const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice = nullptr);
 
 #ifdef ENABLE_SDL
    enum RenderStates
@@ -312,7 +312,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    D3DTexture* CreateSystemTexture(BaseTexture* const surf, const bool linearRGB);
    D3DTexture* CreateSystemTexture(const int texwidth, const int texheight, const D3DFORMAT texformat, const void* data, const int pitch, const bool linearRGB);
 #endif
-   D3DTexture* UploadTexture(BaseTexture* const surf, int* const pTexWidth = NULL, int* const pTexHeight = NULL, const bool linearRGB = true, const bool clamptoedge = false);
+   D3DTexture* UploadTexture(BaseTexture* const surf, int* const pTexWidth = nullptr, int* const pTexHeight = nullptr, const bool linearRGB = true, const bool clamptoedge = false);
    void UpdateTexture(D3DTexture* const tex, BaseTexture* const surf, const bool linearRGB);
 
    void SetRenderState(const RenderStates p1, DWORD p2);
@@ -457,13 +457,11 @@ private:
    static constexpr DWORD TEXTURE_STATE_CACHE_SIZE = 256;
    static constexpr DWORD TEXTURE_SAMPLER_CACHE_SIZE = 14;
 
-   DWORD renderStateCache[RENDERSTATE_COUNT];          // for caching
+   DWORD renderStateCache[RENDERSTATE_COUNT];                               // for caching
    DWORD textureStateCache[TEXTURE_SAMPLERS][TEXTURE_STATE_CACHE_SIZE];     // dto.
    DWORD textureSamplerCache[TEXTURE_SAMPLERS][TEXTURE_SAMPLER_CACHE_SIZE]; // dto.
 
    VertexDeclaration *currentDeclaration; // for caching
-
-   static VertexBuffer *m_quadVertexBuffer;      // internal vb for rendering quads
 
 #ifdef ENABLE_SDL
    GLfloat m_maxaniso;
@@ -490,9 +488,7 @@ private:
    unsigned int m_Buf_widthSS;
    unsigned int m_Buf_heightSS;
 
-
    //VR/Stereo Stuff
-
 #ifdef ENABLE_VR
    static vr::IVRSystem *m_pHMD;
    Matrix3D m_matProj[2];
@@ -504,8 +500,11 @@ private:
 #endif
 
 public:
-   bool m_useNvidiaApi;
+   static bool m_useNvidiaApi;
    static bool m_INTZ_support;
+
+   static VertexBuffer* m_quadVertexBuffer;      // internal vb for rendering quads //!! only on primary device for now!
+   //static VertexBuffer *m_quadDynVertexBuffer; // internal vb for rendering dynamic quads //!!
 
    // performance counters
    unsigned int m_curDrawCalls, m_frameDrawCalls;
@@ -532,7 +531,7 @@ public:
 
    TextureManager m_texMan;
 
-   unsigned int m_stats_drawn_triangles;
+   static unsigned int m_stats_drawn_triangles;
 
    static VertexDeclaration* m_pVertexTexelDeclaration;
    static VertexDeclaration* m_pVertexNormalTexelDeclaration;
