@@ -649,7 +649,7 @@ void Player::Shutdown()
        m_decalImage = nullptr;
    }
 
-#ifdef FPS
+#ifndef ENABLE_SDL
    m_limiter.Shutdown();
 #endif
 
@@ -1709,9 +1709,7 @@ HRESULT Player::Init()
       g_pvp->PostWorkToWorkerThread(HANG_SNOOP_START, NULL);
 
    // 0 means disable limiting of draw-ahead queue
-#ifdef FPS
    m_limiter.Init(m_pin3d.m_pd3dPrimaryDevice, m_maxPrerenderedFrames);
-#endif
    //VertexBuffer::UploadBuffers();
    //IndexBuffer::UploadBuffers();
    Render(); //!! why here already? potentially not all initialized yet??
@@ -3389,7 +3387,7 @@ void Player::RenderDynamics()
 
       if (ProfilingMode() == 1)
          m_pin3d.m_gpu_profiler.Timestamp(GTS_NonTransparent);
-#ifdef FPS
+#ifndef ENABLE_SDL
       m_limiter.Execute(m_pin3d.m_pd3dPrimaryDevice); //!! move below other draw calls??
 #endif
 
@@ -3415,7 +3413,7 @@ void Player::RenderDynamics()
    }
    else // special profiling path by doing separate items, will not be accurate, both perf and rendering wise, but better than nothing
    {
-#ifdef FPS
+#ifndef ENABLE_SDL
       m_limiter.Execute(m_pin3d.m_pd3dPrimaryDevice); //!! move below other draw calls??
 #endif
 
@@ -4294,17 +4292,14 @@ void Player::PostProcess(const bool ambientOcclusion)
    if (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff)
       Bloom(m_ScreenOffset.x, m_ScreenOffset.y, (float)inv_width, (float)inv_height);
 
-#ifdef FPS
    if (ProfilingMode() == 1)
       m_pin3d.m_gpu_profiler.Timestamp(GTS_Bloom);
-#endif
+
    if (ss_refl)
       SSRefl();
 
-#ifdef FPS
    if (ProfilingMode() == 1)
       m_pin3d.m_gpu_profiler.Timestamp(GTS_SSR);
-#endif
 
    if (ambientOcclusion) {
       m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pddsAOBackTmpBuffer, true);
@@ -4329,10 +4324,10 @@ void Player::PostProcess(const bool ambientOcclusion)
       m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin(0);
       m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
       m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
-#ifdef FPS
+
       if (ProfilingMode() == 1)
          m_pin3d.m_gpu_profiler.Timestamp(GTS_AO);
-#endif
+
       // flip AO buffers (avoids copy)
       D3DTexture *tmpAO = m_pin3d.m_pddsAOBackBuffer;
       m_pin3d.m_pddsAOBackBuffer = m_pin3d.m_pddsAOBackTmpBuffer;
@@ -4394,10 +4389,8 @@ void Player::PostProcess(const bool ambientOcclusion)
    if (m_stereo3D != STEREO_OFF)
       RenderStereo(m_stereo3D, shaderAA);
 
-#ifdef FPS
    if (ProfilingMode() == 1)
       m_pin3d.m_gpu_profiler.Timestamp(GTS_PostProcess);
-#endif
 
    //
 
