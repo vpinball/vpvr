@@ -1,3 +1,158 @@
+SDL2 / VR Changelog
+------------------------
+
+- Updated to VPX 10.7 commit RXXXX
+
+- Make F11 statistics work
+
+- Fix memory leaks from Vertex and Index Buffers
+
+- Updated to VPX 10.7 commit R4407
+
+- Shader Uniform lookup improved (performance)
+
+- Various updates from Rawnei and DJRobX (improving Render Quality)
+
+- Updated to VPX 10.7 commit R3991
+
+- Updated OpenVR to SDK 1.9.16
+
+- Splitted the Video settings to the old Video settings menu and a VR settings menu. Also different registry entries are used for
+  various entries like Stereo mode, display, resolution, postprocessing etc. Ball rendering and Day/Night cycle is used for both.
+
+- Auto detect if SteamVR drivers are installed. If not desktop mode is started up. If VR drivers are installed and the HMD is turned
+  on, VPVR starts in VR mode. Otherwise a prompt shows up to choose between VR mode and desktop mode (can be disabled).
+
+- Supersampling can now be adjusted with a slider from 0.5 (downsampling) up to 2.0. The factor describes the scaling in X and Y direction
+  so 2.0 increases the pixelcount by factor 4.
+
+- Scaling of the table is now possible in VR settings. You can either set a factor (e.g. 1.1 increases the table by 10%) or you can
+  scale all tables to a fixed width (in centimeters) to match your PinSim Controller. The scaling factor has no lower/upper limit so yes
+  you can scale up the table to play soccer. Or be attacked by a giant rolling Indy-Trap. Or scale it down to matchbox size. If it gets
+  weird I warned you. If you have issues locating the table or getting nightmares, it is NOT my fault. Default values are the box unchecked
+  and 1 (ONE).
+
+- The near/far plane can be adjusted now (in centimeters). Both planes are like walls in front of you. Everything between you and the near
+  plane, and everything behind the farplane is invisible. Might be helpful if you have a room around your table or changed the scaling too
+  much. Depending on the GPU having too small values for the near plane or too large values for the far plane, Z-fighting might occur.
+
+- Some bug fixes.
+
+- More fixes and performance improvements by Rawnei
+
+- Added support for BAM Headtracking (Thanks to Rafal from ravarcade.pl). Usage:
+	All works almost same way as with Arcade Pinball, but you don't have control over table location.
+	1. Player need working Future Pinball with head tracking. (FP is used to setup head tracking, FP is closed).
+	2. Start BAM-Tracker.exe, select head tracking method, left it running.
+	3. Run VPinballX_GL.exe.
+	https://www.youtube.com/watch?v=g-EpTp_3wKo
+
+- Shader and rendering fixes by Rawnei
+
+- Fixed x64 support. If it fails check if the architecture from VPVR matches the architecture from VPinMame.
+
+- Big render engine update that increases the frame rate. This update is based on an article by Krzysztof Kondrak which can be
+  found at http://kondrak.info/blog/programming/rendering-in-vr-using-opengl-instancing/ Benchmarking with Nvidia NSight on the IJ table
+  shows that this update reduces the rendering time on my i5-4590 with 970GTX from 32ms (CPU) to 15ms per frame. The GPU time is increased 
+  from 3ms to 7ms. Due to additional overhead in VPVR this increases the framerate from 25fps to 45fps. That is still not satisfying, but
+  a lot better than the initial commit.
+
+- Fixed a bug for habitrail ramps. Also slightly increased performance with this fix.
+
+- Improved performance with Uniform caching and reduced number of shader program switches.
+
+NOTE: Several changes in this version increases CPU and GPU load, even if you don't use VR or stereo support. Also this is just an early
+	TechDemo / AlphaVersion / Proof of Concept that contain many bugs, the code quality is rather low and chaotic, and not everything is
+	working yet. Main reasons for the problems are the change of the rendering API from DX9 to OpenGL/SDL2 (since OpenVR does not support 
+	DX9), changing the rendering pipeline from static camera and semi-static rendering to fully dynamic rendering. Also some code for the
+	DX9 build was reworked. Also this project was forked from VPX 10.4.0, but I've tried to apply all commits until R3590. If I've messed
+	up somewhere, feel free to report a bug.
+
+How to compile: At the moment only the VS2017 project is up to date, so either get Visual Studio 2017 or update the older project files.
+	Select either Debug_SDL (for debugging) or Release_SDL (for playing) and x86. The normal Debug and Release projects are still using 
+	the DX9 API. This is very helpful for debugging, but there is no VR support. Do not forget to set the correct folders in the project.
+	
+How to run: Get the normal version of VPX to work properly first. There are several good tutorials available. If your setup
+	is running fine, just copy the VisualPinballX_GL.exe, the .dll files and the glshader folder to your Visual Pinball folder and run 
+	Steam VR before executing VisualPinballX_SDL2.exe. In VPX go to the Prefences->Video Options Menu and select on the bottom left
+	in the 3D Stereo Output Menu Steam VR. If you have performance issues, disable stuff like Ambient Occlusion, Anti-Aliasing and Bloom.
+	You can still select a normal Display Window that shows the VR rendering on the screen as Side-By-Side.
+	
+	Set the VR slope to the visual slope (e.g. 6.5 degrees). This does not affect physics, only visual apperance.
+	Set the VR Table orientation to rotate the table in the room. 0 is the default heading of the OpenVR Chaperone, the table is rotated
+	clockwise. The rotation center is the far left corner of the playfield.
+	Set the VR Table X/Y values. Positive X values moves the table to the right when looking in the default heading direction of the Chaperone.
+	Positive Y values moves the table forward. Negative X to the left, Negative Y backward. Always aligned to the default orientation, not
+	the table orientation. Maybe later I make this more intuitive and also configurable while playing.
+	The VR table height is the playfield height on the far left edge above the ground. 
+	Note: All units are in degree or centimeters. (one inch is 2.54 centimeters).
+	
+- Added SDL2 and OpenGL as new Render Pipeline. Switching between DX9 and OpenGL is only possible at compile time.
+
+- Several changes to the DX9 rendering pipeline. I've also added SDL2, SDL2_ttf, glew and glad to the project. Licenses should all be
+	added to the license.txt
+	
+- added support for SteamVR (OpenGL only). To use VR you need a SteamVR compatible HMD, a Steam account, the Steam client with SteamVR 
+	client installed. More information on OpenVR and SteamVR can be found on http://steamvr.com Documentation for the API is available on 
+	https://github.com/ValveSoftware/openvr/wiki/API-Documentation Also check if your VR setup is working. There are some nice free games
+	available: https://store.steampowered.com/search/?vrsupport=402
+
+- removed all static rendering for all rendering modes. At the moment this increases CPU and GPU load for all render modes, but only VR 
+  support benefits from this.
+
+- stereo is no longer computed from depth buffer. If any stereo mode is enabled it is always rendered to two independent buffers. This 
+  increases CPU and GPU load for all stereo modes, but this can increase the image quality for stereo rendering. Also AA can be enabled for 
+  all stereo modes.
+  
+- Known Bugs:
+	- Mirroring of the playfield is broken. (I will fix it as soon as the performance problem is solved...)
+	- Memory leak when closing and restarting a table (DX9 and SDL)
+	- Severe Memory leak (not freeing any textures) when opening another table
+	- Enviromental mapping on metal and balls looks ugly.
+	- Performance sucks. Best thing is to disable all image enhancements. I'm working on this issue.
+	- The room is black and the cabinet does not exist. Will be added later. If you have some nice meshes with textures as a cabinet or
+	  a room feel free to share (please only stuff with a free to share license).
+	- DMD might be missing or missplaced. Initial support for directB2S, but only for backglass image and DMDs. No reels or 7-seg.
+	- At the moment this is only tested with my HTC Vive and a Nvidia GPU. If you have problems with an AMD card or another HMD (Oculus 
+	  Rift, Microsoft Mixed VR), I'm trying to do my best, but it's always hard to debug without the hardware. The SDL2 port was shortly
+	  tested on a Intel UHD 620. Yes it "runs", but it's unplayable slow.
+	- Some issues with Rendering of Quads (sprites or whatever they are called). Most of them should be fixed in the lates commit.
+	- DX9 The SRGB change from r3590 is disabled since it produces some strange issues with insert lights
+	- Sometimes there themes to be a ball below the floor.
+	
+- If you find new Bugs:
+	- Short checklist before you submit a bug:
+		- Is your normal VPX version working properly?
+		- Is OpenVR working? There are several free games available on steam to test.
+		- Is the table working properly in your normal VPX version?
+		- If you have compiled/changed the code yourself, check if the problem also exists with the DX9 build and send me your 
+		  changes, if possible.
+	- Long checklist when you submit a bug:
+		- How can the bug be reproduced?
+		- Try to describe what is going wrong. Does the game crash, does the rendering look wrong, your mother-in-law became an alien...
+		- When does it happen? Only in VR, always on stereo rendering, only if you enable/disable specific settings
+		- Is it table specific or does it happen on all tables?
+		- Check the glshader/log folder. If there are any (recent) files in this folder, please add them to your bug report.
+		- What Hardware and Software (GPU, GPU drivers, CPU, Windows version, SteamVR Version, gamepad, what goggles...) are you using?
+		- If it is table specific: what table, what ROM, which VPinMAME version
+		- Add a screenshot or a video if it makes sense. Also add one from the normal VPX version, if it shows how it should look like.
+		- If you are working on the source code: Any debug information can help. Also if you find a way to fix it: Just add it to the bug report.
+		- Altough it is a good idea to add a lot of data, keep the size of the mail as small as possible.
+		
+You can still send me any other VPX related bug or feature requests, but I will try to focus on OpenGL and VR specific issues. Also I'm not 
+sure if my code will ever be backported to the main VPX branch.
+		
+Next steps:
+	1. Fix bugs
+	2. Optimize performance
+	3. Clean up code
+	4. Add new features
+	5. Go back to step 1 because of step 2,3 and 4
+
+
+-------------------------------------------------------------------------------------------------------------------------------	
+
+
 VP 10.7.1 Changelog
 ------------------------
 
