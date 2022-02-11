@@ -297,6 +297,9 @@
     </ClCompile>
     <ClCompile Include="dialogs\ScriptErrorDialog.cpp" />
     <ClCompile Include="inc\serial.cpp" />
+    <ClCompile Include="imgui\imgui_impl_opengl3.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="vpinball.rc">
@@ -1174,9 +1177,6 @@
     <ClInclude Include="inc\stb_image.h">
       <Filter>inc</Filter>
     </ClInclude>
-    <ClInclude Include="Shader.h">
-      <Filter>inc</Filter>
-    </ClInclude>
     <ClInclude Include="typeDefs3D.h">
       <Filter>headers</Filter>
     </ClInclude>
@@ -1374,6 +1374,12 @@
     <ClInclude Include="dialogs\ScriptErrorDialog.h" />
     <ClInclude Include="inc\win32xx\include\wxx_preview.h" />
     <ClInclude Include="inc\win32xx\include\wxx_printdialogex.h" />
+    <ClInclude Include="Shader.h">
+      <Filter>headers</Filter>
+    </ClInclude>
+    <ClInclude Include="imgui\imgui_impl_opengl3.h">
+      <Filter>imgui</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader\BallShader.fx">
