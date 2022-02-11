@@ -126,7 +126,7 @@ static constexpr int regkey_idc[eCKeys] = {
    -1
 };
 
-#ifdef FPS
+#ifndef ENABLE_SDL
 // Note: Nowadays the original code seems to be counter-productive, so we use the official
 // pre-rendered frame mechanism instead where possible
 // (e.g. all windows versions except for XP and no "EnableLegacyMaximumPreRenderedFrames" set in the registry)
@@ -206,6 +206,15 @@ public:
 private:
    std::vector<VertexBuffer*> m_buffers;
    size_t m_curIdx;
+};
+#else
+class FrameQueueLimiter
+{
+public:
+   static void Init(RenderDevice * const pd3dDevice, const int numFrames)
+   {
+      pd3dDevice->SetMaximumPreRenderedFrames(numFrames);
+   }
 };
 #endif
 
@@ -619,9 +628,7 @@ private:
    U32 m_script_max;
    U32 m_script_max_total;
 
-#ifdef FPS
    FrameQueueLimiter m_limiter;
-#endif
 
    // only called from ctor
    HRESULT Init();
