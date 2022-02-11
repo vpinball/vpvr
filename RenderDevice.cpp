@@ -707,8 +707,10 @@ void RenderDevice::InitVR() {
 RenderDevice::RenderDevice(const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice)
    : m_texMan(*this), m_width(width), m_height(height), m_fullscreen(fullscreen),
    m_colorDepth(colordepth), m_vsync(VSync), m_AAfactor(AAfactor), m_stereo3D(stereo3D), m_FXAA(FXAA),
-   m_ssRefl(ss_refl), m_useNvidiaApi(useNvidiaApi), m_disableDwm(disable_dwm), m_BWrendering(BWrendering), m_GLversion(0)
+   m_ssRefl(ss_refl), m_disableDwm(disable_dwm), m_BWrendering(BWrendering), m_GLversion(0)
 {
+   m_useNvidiaApi = useNvidiaApi;
+
 #ifdef ENABLE_VR
    m_pHMD = nullptr;
    m_rTrackedDevicePose = nullptr;
