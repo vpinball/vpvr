@@ -5210,7 +5210,7 @@ void Player::DrawBalls()
       temp.Multiply(m3D_full, m3D_full);
       memcpy(m.m, m3D_full.m, 4 * 4 * sizeof(float));
 
-      m_ballShader->SetBool(SHADER_disableLighting, m_disableLightingForBalls);
+      m_pin3d.m_pd3dPrimaryDevice->ballShader->SetBool(SHADER_disableLighting, m_disableLightingForBalls);
 
       m_pin3d.m_pd3dPrimaryDevice->ballShader->SetMatrix(SHADER_orientation, &m);
 
