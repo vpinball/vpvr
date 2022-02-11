@@ -515,9 +515,9 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
 
    it = values.find("TECHNIQUES");
    std::stringstream techniques((it != values.end()) ? it->second : "");
-   std::string _technique;
    if (techniques)
    {
+      std::string _technique;
       int tecCount = 0;
       while (std::getline(techniques, _technique, '\n')) {//Parse Technique e.g. basic_with_texture:P0:vs_main():gs_optional_main():ps_main_texture()
          if ((_technique.length() > 0) && (_technique.compare(0, 2, "//") != 0))//Skip empty lines and comments
@@ -725,7 +725,7 @@ void Shader::Begin(const unsigned int pass)
       case GL_FLOAT:
       {
          #ifdef TWEAK_GL_SHADER
-         float valueF = uniformFloat[uniformName];
+         const float valueF = uniformFloat[uniformName];
          #else
          auto entry = uniformFloat.find(uniformName);
          auto valueF = (entry != uniformFloat.end()) ? entry->second : 0.0f;
@@ -1320,7 +1320,7 @@ void Shader::SetFloat(const SHADER_UNIFORM_HANDLE hParameter, const float f)
    uniformFloat[hParameter] = f;
    if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
 #ifdef TWEAK_GL_SHADER
-      auto location = m_currentTechnique->uniformLocation[hParameter];
+      const auto location = m_currentTechnique->uniformLocation[hParameter];
       if (location.location == -1) return;
 #else
       auto loc = m_currentTechnique->uniformLocation->find(hParameter);
