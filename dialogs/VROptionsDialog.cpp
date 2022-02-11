@@ -7,7 +7,7 @@
 
 constexpr int rgwindowsize[] = { 640, 720, 800, 912, 1024, 1152, 1280, 1600 };  // windowed resolutions for selection list
 
-constexpr float AAfactors[] = { 0.5f, 0.75f, 1.0f, 1.25f, 4.0f / 3.0f, 1.5f, 1.75f, 2.0f }; // factor is applied to width and to height, so 2.0f increases pixel count by 4. Additional values can be added.
+constexpr float AAfactors[] = { 0.5f, 0.75f, 1.0f, 1.25f, (float)(4.0/3.0), 1.5f, 1.75f, 2.0f }; // factor is applied to width and to height, so 2.0f increases pixel count by 4. Additional values can be added.
 constexpr int AAfactorCount = 8;
 
 constexpr int MSAASamplesOpts[] = { 1, 4, 6, 8 };
@@ -19,10 +19,10 @@ static float scaleAbsolute = 55.0f;
 
 size_t VROptionsDialog::getBestMatchingAAfactorIndex(float f)
 {
-   float delta = fabs(f - AAfactors[0]);
+   float delta = fabsf(f - AAfactors[0]);
    size_t bestMatch = 0;
    for (size_t i = 1; i < AAfactorCount; ++i)
-      if (fabs(f - AAfactors[i]) < delta) {
+      if (fabsf(f - AAfactors[i]) < delta) {
          delta = fabs(f - AAfactors[i]);
          bestMatch = i;
       }
@@ -47,7 +47,6 @@ void VROptionsDialog::AddToolTip(const char * const text, HWND parentHwnd, HWND 
 void VROptionsDialog::ResetVideoPreferences() // 0 = default, 1 = lowend PC, 2 = highend PC
 {
    const int widthcur = LoadValueIntWithDefault("PlayerVR", "Width", DEFAULT_PLAYER_WIDTH);
-
    const int heightcur = LoadValueIntWithDefault("PlayerVR", "Height", widthcur * 9 / 16);
 
    SendMessage(GetHwnd(), GET_WINDOW_MODES, widthcur << 16, heightcur << 16 | 32);
@@ -76,19 +75,19 @@ void VROptionsDialog::ResetVideoPreferences() // 0 = default, 1 = lowend PC, 2 =
    constexpr float vrSlope = 6.5f;
    sprintf_s(tmp, 256, "%0.1f", vrSlope);
    SetDlgItemTextA(IDC_VR_SLOPE, tmp);
-   
+
    constexpr float vrOrientation = 0.0f;
    sprintf_s(tmp, 256, "%0.1f", vrOrientation);
    SetDlgItemTextA(IDC_3D_VR_ORIENTATION, tmp);
-   
+
    constexpr float vrX = 0.0f;
    sprintf_s(tmp, 256, "%0.1f", vrX);
    SetDlgItemTextA(IDC_VR_OFFSET_X, tmp);
-   
+
    constexpr float vrY = 0.0f;
    sprintf_s(tmp, 256, "%0.1f", vrY);
    SetDlgItemTextA(IDC_VR_OFFSET_Y, tmp);
-   
+
    constexpr float vrZ = 80.0f;
    sprintf_s(tmp, 256, "%0.1f", vrZ);
    SetDlgItemTextA(IDC_VR_OFFSET_Z, tmp);
@@ -101,7 +100,7 @@ void VROptionsDialog::ResetVideoPreferences() // 0 = default, 1 = lowend PC, 2 =
    SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_SETCURSEL, 1, 0);
 
    SendMessage(GetDlgItem(IDC_VR_DISABLE_PREVIEW).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
-   
+
    constexpr bool scaleToFixedWidth = false;
    oldScaleValue = scaleToFixedWidth;
    SendMessage(GetDlgItem(IDC_SCALE_TO_CM).GetHwnd(), BM_SETCHECK, scaleToFixedWidth ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -354,7 +353,6 @@ BOOL VROptionsDialog::OnInitDialog()
    SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_SETCURSEL, display, 0);
 
    const int widthcur = LoadValueIntWithDefault("PlayerVR", "Width", DEFAULT_PLAYER_WIDTH);
-
    const int heightcur = LoadValueIntWithDefault("PlayerVR", "Height", widthcur * 9 / 16);
 
    SendMessage(hwndDlg, GET_WINDOW_MODES, widthcur, heightcur);

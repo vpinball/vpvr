@@ -533,8 +533,8 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
                continue;
             }
             string vertexShaderCode = vertex;
-               vertexShaderCode.append("\n//").append(_technique).append("\n//").append(element[2]).append("\n");
-               vertexShaderCode.append(analyzeFunction(shaderCodeName, _technique, element[2], values)).append("\0");
+            vertexShaderCode.append("\n//").append(_technique).append("\n//").append(element[2]).append("\n");
+            vertexShaderCode.append(analyzeFunction(shaderCodeName, _technique, element[2], values)).append("\0");
             string geometryShaderCode;
             if (elem == 5 && element[3].length() > 0) {
                geometryShaderCode = geometry;
@@ -542,8 +542,8 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
                geometryShaderCode.append(analyzeFunction(shaderCodeName, _technique, element[3], values)).append("\0");
             }
             string fragmentShaderCode = fragment;
-               fragmentShaderCode.append("\n//").append(_technique).append("\n//").append(element[elem-1]).append("\n");
-               fragmentShaderCode.append(analyzeFunction(shaderCodeName, _technique, element[elem-1], values)).append("\0");
+            fragmentShaderCode.append("\n//").append(_technique).append("\n//").append(element[elem-1]).append("\n");
+            fragmentShaderCode.append(analyzeFunction(shaderCodeName, _technique, element[elem-1], values)).append("\0");
             int build = compileGLShader(shaderCodeName, element[0]/*.append("_").append(element[1])*/, vertexShaderCode, geometryShaderCode, fragmentShaderCode);
             if (build) tecCount++;
             success = success && build;

@@ -50,8 +50,7 @@ Pin3D::~Pin3D()
       m_envRadianceTexture = nullptr;
    }
 
-   if (m_tableVBuffer)
-      m_tableVBuffer->release();
+   SAFE_BUFFER_RELEASE(m_tableVBuffer);
 
    SAFE_RELEASE(m_pddsAOBackBuffer);
    SAFE_RELEASE(m_pddsAOBackTmpBuffer);
@@ -68,10 +67,12 @@ Pin3D::~Pin3D()
 
    SAFE_RELEASE_NO_RCC(m_pddsBackBuffer);
 
+   SAFE_BUFFER_RELEASE(RenderDevice::m_quadVertexBuffer);
+   //SAFE_BUFFER_RELEASE(RenderDevice::m_quadDynVertexBuffer);
+
    if (m_pd3dSecondaryDevice && (m_pd3dSecondaryDevice != m_pd3dPrimaryDevice))
       delete m_pd3dSecondaryDevice;
    delete m_pd3dPrimaryDevice;
-
    m_pd3dPrimaryDevice = nullptr;
    m_pd3dSecondaryDevice = nullptr;
 
@@ -519,6 +520,27 @@ HRESULT Pin3D::InitPin3D()
 #endif
    VertexBuffer::bindNull();
    IndexBuffer::bindNull();
+
+   if (RenderDevice::m_quadVertexBuffer == nullptr)
+   {
+      VertexBuffer::CreateVertexBuffer(4, 0, MY_D3DFVF_TEX, &RenderDevice::m_quadVertexBuffer, PRIMARY_DEVICE); //!! have 2 for both devices?
+      Vertex3D_TexelOnly* bufvb;
+      RenderDevice::m_quadVertexBuffer->lock(0, 0, (void**)&bufvb, VertexBuffer::WRITEONLY);
+      static constexpr float verts[4 * 5] =
+      {
+          1.0f,  1.0f, 0.0f, 1.0f, 0.0f,
+         -1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
+          1.0f, -1.0f, 0.0f, 1.0f, 1.0f,
+         -1.0f, -1.0f, 0.0f, 0.0f, 1.0f
+      };
+      memcpy(bufvb, verts, 4*sizeof(Vertex3D_TexelOnly));
+      RenderDevice::m_quadVertexBuffer->unlock();
+   }
+
+   //m_quadDynVertexBuffer = nullptr;
+   //CreateVertexBuffer(4, USAGE_DYNAMIC, MY_D3DFVF_TEX, &RenderDevice::m_quadDynVertexBuffer);
+
+   //
 
    m_pinballEnvTexture.CreateFromResource(IDB_BALL);
    m_aoDitherTexture.CreateFromResource(IDB_AO_DITHER);

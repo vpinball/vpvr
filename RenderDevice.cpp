@@ -159,7 +159,7 @@ VertexDeclaration* RenderDevice::m_pVertexTexelDeclaration = nullptr;
 constexpr VertexElement VertexNormalTexelElement[] =
 {
    { 0, 0 * sizeof(float), D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_POSITION, 0 },  // pos
-   { 0, 3 * sizeof(float), D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL, 0 },  // normal
+   { 0, 3 * sizeof(float), D3DDECLTYPE_FLOAT3, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_NORMAL,   0 },  // normal
    { 0, 6 * sizeof(float), D3DDECLTYPE_FLOAT2, D3DDECLMETHOD_DEFAULT, D3DDECLUSAGE_TEXCOORD, 0 },  // tex0
    D3DDECL_END()
 };
@@ -197,7 +197,7 @@ static unsigned int fvfToSize(const DWORD fvf)
    case MY_D3DFVF_TEX:
       return sizeof(Vertex3D_TexelOnly);
    default:
-      assert(0 && "Unknown FVF type in fvfToSize");
+      assert(!"Unknown FVF type in fvfToSize");
       return 0;
    }
 }
@@ -213,7 +213,7 @@ static VertexDeclaration* fvfToDecl(const DWORD fvf)
    case MY_D3DFVF_TEX:
       return RenderDevice::m_pVertexTexelDeclaration;
    default:
-      assert(0 && "Unknown FVF type in fvfToDecl");
+      assert(!"Unknown FVF type in fvfToDecl");
       return nullptr;
    }
 }
@@ -518,7 +518,9 @@ int getPrimaryDisplay()
 static bool NVAPIinit = false; //!! meh
 
 bool RenderDevice::m_INTZ_support = false;
+bool RenderDevice::m_useNvidiaApi = false;
 VertexBuffer *RenderDevice::m_quadVertexBuffer = nullptr;
+unsigned int RenderDevice::m_stats_drawn_triangles = 0;
 
 #ifdef USE_D3D9EX
  typedef HRESULT(WINAPI *pD3DC9Ex)(UINT SDKVersion, IDirect3D9Ex**);
@@ -1359,6 +1361,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pOffscreenBackBufferTexture, nullptr); //!! colorFormat::RGBA32F?
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create render buffer!", hr, __FILE__, __LINE__);
+
+   // alloc buffer for screen space fake reflection rendering (optionally 2x2 res for manual super sampling)
    if (m_ssRefl) {
       hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pReflectionBufferTexture, nullptr); //!! D3DFMT_A32B32G32R32F?
       if (FAILED(hr))
@@ -2621,7 +2625,7 @@ void RenderDevice::DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, V
    const unsigned int np = ComputePrimitiveCount(type, vertexCount);
    m_stats_drawn_triangles += np;
 
-   vb->bind(PRIMARY_DEVICE); //!!
+   vb->bind();
 #ifdef ENABLE_SDL
    //CHECKD3D(glDrawArraysInstanced(type, vb->getOffset() + startVertex, vertexCount, m_stereo3D != STEREO_OFF ? 2 : 1)); // Do instancing in geometry shader instead
    CHECKD3D(glDrawArrays(type, vb->getOffset() + startVertex, vertexCount));
@@ -2638,13 +2642,13 @@ void RenderDevice::DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, V
 
 void RenderDevice::DrawIndexedPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, IndexBuffer* ib, const DWORD startIndex, const DWORD indexCount)
 {
-   if (vb == nullptr || ib == nullptr)
+   if (vb == nullptr || ib == nullptr) //!! happens for primitives that are grouped on player init render call?!?
       return;
 
    const unsigned int np = ComputePrimitiveCount(type, indexCount);
    m_stats_drawn_triangles += np;
-   vb->bind(PRIMARY_DEVICE); //!!
-   ib->bind(PRIMARY_DEVICE); //!!
+   vb->bind();
+   ib->bind();
 #ifdef ENABLE_SDL
    const int offset = ib->getOffset() + (ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? 2 : 4) * startIndex;
    //CHECKD3D(glDrawElementsInstancedBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, m_stereo3D != STEREO_OFF ? 2 : 1, vb->getOffset() + startVertex)); // Do instancing in geometry shader instead
