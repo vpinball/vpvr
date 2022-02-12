@@ -1,17 +1,23 @@
 SDL2 / VR Changelog
 ------------------------
 
-- Updated to VPX 10.7 commit RXXXX
+- Updated to VPX 10.7.1 commit 983ba54fc9c29c73da94543106fcc2d57e52a5bc (02/12/22)
 
 - Make F11 statistics work
 
 - Fix memory leaks from Vertex and Index Buffers
+
+- Updated OpenVR to SDK 1.16.8
+
+- Updated SDL to 2.0.20
+
 
 - Updated to VPX 10.7 commit R4407
 
 - Shader Uniform lookup improved (performance)
 
 - Various updates from Rawnei and DJRobX (improving Render Quality)
+
 
 - Updated to VPX 10.7 commit R3991
 
