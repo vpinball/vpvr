@@ -1592,7 +1592,7 @@ bool Primitive::LoadToken(const int id, BiffReader * const pbr)
    case FID(RTV6): pbr->GetFloat(m_d.m_aRotAndTra[6]); break;
    case FID(RTV7): pbr->GetFloat(m_d.m_aRotAndTra[7]); break;
    case FID(RTV8): pbr->GetFloat(m_d.m_aRotAndTra[8]); break;
-   case FID(IMAG): pbr->GetString(m_d.m_szImage); break;
+   case FID(IMAG): pbr->GetString(m_d.m_szImage); m_d.m_isBackGlassImage = (_stricmp(m_d.m_szImage.c_str(), "backglassimage") == 0); break;
    case FID(NRMA): pbr->GetString(m_d.m_szNormalMap); break;
    case FID(SIDS): pbr->GetInt(m_d.m_Sides); break;
    case FID(NAME): pbr->GetWideString(m_wzName,sizeof(m_wzName)/sizeof(m_wzName[0])); break;
