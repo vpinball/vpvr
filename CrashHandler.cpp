@@ -121,7 +121,7 @@ namespace
 
    void WriteHeader(FILE* f)
    {
-      fprintf(f, "Crash report VPX rev%i (%s)\n============\n", GIT_REVISION, GIT_SHA);
+      fprintf(f, "Crash report VPX GL rev%i (%s)\n============\n", GIT_REVISION, GIT_SHA);
    }
 
    const char* GetExceptionString(DWORD exc)
