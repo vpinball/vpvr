@@ -8,9 +8,8 @@ Ramp::Ramp()
    m_menuid = IDR_SURFACEMENU;
    m_d.m_collidable = true;
    m_d.m_visible = true;
-   m_dynamicVertexBuffer = 0;
-   m_dynamicIndexBuffer = 0;
-   m_dynamicVertexBuffer2 = 0;
+   m_dynamicVertexBuffer = nullptr;
+   m_dynamicIndexBuffer = nullptr;
    m_dynamicVertexBufferRegenerate = true;
    m_d.m_depthBias = 0.0f;
    m_d.m_wireDiameter = 6.0f;
@@ -26,7 +25,6 @@ Ramp::Ramp()
 Ramp::~Ramp()
 {
    SAFE_BUFFER_RELEASE(m_dynamicVertexBuffer);
-   SAFE_BUFFER_RELEASE(m_dynamicVertexBuffer2);
    SAFE_BUFFER_RELEASE(m_dynamicIndexBuffer);
 
    if (m_rgheightInit)
@@ -875,7 +873,6 @@ void Ramp::EndPlay()
       m_dynamicVertexBufferRegenerate = true;
    }
    SAFE_BUFFER_RELEASE(m_dynamicIndexBuffer);
-   SAFE_BUFFER_RELEASE(m_dynamicVertexBuffer2);
 }
 
 float Ramp::GetDepth(const Vertex3Ds& viewDir) const
@@ -1127,8 +1124,7 @@ void Ramp::PrepareHabitrail()
    GenerateWireMesh(&tmpBuf1, &tmpBuf2);
 
    SAFE_BUFFER_RELEASE(m_dynamicVertexBuffer);
-   SAFE_BUFFER_RELEASE(m_dynamicVertexBuffer2);
-
+   SAFE_BUFFER_RELEASE(m_dynamicIndexBuffer);
 
    switch (m_d.m_type) {
    case RampType4Wire:
@@ -1152,19 +1148,65 @@ void Ramp::PrepareHabitrail()
    // Draw the floor of the ramp.
    Vertex3D_NoTex2 *buf;
    m_dynamicVertexBuffer->lock(0, 0, (void**)&buf, VertexBuffer::WRITEONLY);
-   memcpy(buf, tmpBuf1, sizeof(Vertex3D_NoTex2)*m_numVertices);
+   if (m_factor == 1)
+      memcpy(buf, tmpBuf1, sizeof(Vertex3D_NoTex2)*m_numVertices);
+   else {
+      //Wire 1
+      for (int i = 0;i < m_numVertices;++i) {
+         buf[i] = tmpBuf1[i];
+         buf[i].y = tmpBuf1[i].y+3.0f;
+      }
+      int pitch = m_numVertices;
+      //Wire 2
+      for (int i = 0;i < m_numVertices;++i) {
+         buf[i + pitch] = tmpBuf2[i];
+         buf[i + pitch].y = tmpBuf2[i].y+3.0f;
+      }
+      pitch += m_numVertices;
+      //Left Wire (3)
+      if (m_d.m_type == RampType3WireLeft || m_d.m_type == RampType4Wire) {
+         for (int i = 0;i < m_numVertices;++i) {
+            buf[i + pitch] = tmpBuf2[i];
+            buf[i + pitch].y = tmpBuf2[i].y+m_d.m_wireDistanceY*0.5f;
+         }
+         pitch += m_numVertices;
+      }
+      //Right Wire (3 or 4)
+      if (m_d.m_type == RampType3WireRight || m_d.m_type == RampType4Wire) {
+         for (int i = 0;i < m_numVertices;++i) {
+            buf[i + pitch] = tmpBuf1[i];
+            buf[i + pitch].y = tmpBuf1[i].y+m_d.m_wireDistanceY*0.5f;
+         }
+      }
+   }
    m_dynamicVertexBuffer->unlock();
 
-   if (m_d.m_type != RampType1Wire)
-   {
-      Vertex3D_NoTex2 *buf2;
-      m_dynamicVertexBuffer2->lock(0, 0, (void**)&buf2, VertexBuffer::WRITEONLY);
-      memcpy(buf2, tmpBuf2, sizeof(Vertex3D_NoTex2)*m_numVertices);
-      m_dynamicVertexBuffer2->unlock();
+   if (m_factor > 1) {
+      if (m_numIndices * m_factor < 65535) {
+         WORD* const meshIndices = new WORD[m_numIndices * m_factor];
+         unsigned int offs = 0;
+         for (int i = 0;i < m_factor;++i) {
+            const WORD offs2 = (WORD)(i * m_numVertices);
+            for (int j = 0;j < m_numIndices;++j,++offs)
+               meshIndices[offs] = m_meshIndices[j] + offs2;
+         }
+         m_dynamicIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_numIndices * m_factor, meshIndices, PRIMARY_DEVICE);
+         delete [] meshIndices;
+      }
+      else {
+         unsigned int* const meshIndices = new unsigned int[m_numIndices * m_factor];
+         unsigned int offs = 0;
+         for (int i = 0;i < m_factor;++i) {
+            const unsigned int offs2 = i * m_numVertices;
+            for (int j = 0;j < m_numIndices;++j,++offs)
+               meshIndices[offs] = (unsigned int)m_meshIndices[j] + offs2;
+         }
+         m_dynamicIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_numIndices * m_factor, meshIndices, PRIMARY_DEVICE);
+         delete [] meshIndices;
+      }
    }
-
-   SAFE_BUFFER_RELEASE(m_dynamicIndexBuffer);
-   m_dynamicIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_meshIndices, PRIMARY_DEVICE);
+   else
+      m_dynamicIndexBuffer = IndexBuffer::CreateAndFillIndexBuffer(m_meshIndices, PRIMARY_DEVICE);
 
    delete[] m_vertBuffer;
    delete[] tmpBuf1;

@@ -138,7 +138,6 @@ private:
 
    VertexBuffer *m_dynamicVertexBuffer;
    IndexBuffer *m_dynamicIndexBuffer;
-   VertexBuffer *m_dynamicVertexBuffer2;
    bool m_dynamicVertexBufferRegenerate;
 
    PropertyPane *m_propPhysics;
