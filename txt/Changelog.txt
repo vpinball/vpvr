@@ -1,11 +1,13 @@
 SDL2 / VR Changelog
 ------------------------
 
-- Updated to VPX 10.7.1 commit 983ba54fc9c29c73da94543106fcc2d57e52a5bc (02/12/22)
+- Updated to VPX 10.7.1 commit 109bf5acaa17534d4d67e5c6f0d38cd58c6e5a91 (02/15/22)
 
 - Make F11 statistics work
 
 - Fix memory leaks from Vertex and Index Buffers
+
+- Fix issue with updating Light properties (like bulb height) via script
 
 - Updated OpenVR to SDK 1.16.8
 
