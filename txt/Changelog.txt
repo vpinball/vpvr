@@ -9,7 +9,7 @@ SDL2 / VR Changelog
 
 - Fix issue with updating Light properties (like bulb height) via script
 
-- Updated OpenVR to SDK 1.16.8
+- Updated OpenVR to SDK 1.16.8 (currently disabled as its not working with OpenComposite yet)
 
 - Updated SDL to 2.0.20
 
