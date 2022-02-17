@@ -1369,16 +1369,22 @@
     <ClInclude Include="dialogs\NotesDialog.h" />
     <ClInclude Include="inc\ThreadPool.h" />
     <ClInclude Include="inc\serial.h" />
-    <ClInclude Include="inc\win32xx\include\default_resource.h" />
+    <ClInclude Include="inc\win32xx\include\default_resource.h">
+      <Filter>inc\Win32xx\include</Filter>
+    </ClInclude>
     <ClInclude Include="vpinball_i.h" />
     <ClInclude Include="dialogs\ScriptErrorDialog.h" />
-    <ClInclude Include="inc\win32xx\include\wxx_preview.h" />
-    <ClInclude Include="inc\win32xx\include\wxx_printdialogex.h" />
     <ClInclude Include="Shader.h">
       <Filter>headers</Filter>
     </ClInclude>
     <ClInclude Include="imgui\imgui_impl_opengl3.h">
       <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\win32xx\include\wxx_preview.h">
+      <Filter>inc\Win32xx\include</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\win32xx\include\wxx_printdialogex.h">
+      <Filter>inc\Win32xx\include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
