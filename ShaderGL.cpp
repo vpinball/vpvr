@@ -63,7 +63,7 @@ static const string shaderTechniqueNames[]{
 
 shaderUniforms Shader::getUniformByName(const string& name) {
    for (int i = 0;i < SHADER_UNIFORM_COUNT; ++i)
-      if (name.compare(shaderUniformNames[i]) == 0)
+      if (name == shaderUniformNames[i])
          return shaderUniforms(i);
 
    LOG(1, m_shaderCodeName, std::string("getUniformByName Could not find uniform ").append(name).append(" in shaderUniformNames."));
@@ -72,7 +72,7 @@ shaderUniforms Shader::getUniformByName(const string& name) {
 
 shaderAttributes Shader::getAttributeByName(const string& name) {
    for (int i = 0;i < SHADER_ATTRIBUTE_COUNT; ++i)
-      if (name.compare(shaderAttributeNames[i]) == 0)
+      if (name == shaderAttributeNames[i])
          return shaderAttributes(i);
 
    LOG(1, m_shaderCodeName, std::string("getAttributeByName Could not find attribute ").append(name).append(" in shaderAttributeNames."));
@@ -81,7 +81,7 @@ shaderAttributes Shader::getAttributeByName(const string& name) {
 
 shaderTechniques Shader::getTechniqueByName(const string& name) {
    for (int i = 0;i < SHADER_TECHNIQUE_COUNT; ++i)
-      if (name.compare(shaderTechniqueNames[i]) == 0)
+      if (name == shaderTechniqueNames[i])
          return shaderTechniques(i);
 
    LOG(1, m_shaderCodeName, std::string("getTechniqueByName Could not find technique ").append(name).append(" in shaderTechniqueNames."));
@@ -95,13 +95,13 @@ Shader::~Shader()
    shaderCount--;
    this->Unload();
    if (shaderCount == 0) {
-      free(textureSlotList);
+      delete [] textureSlotList;
+      textureSlotList = nullptr;
       maxSlots = 0;
       nextTextureSlot = 0;
       delete noTexture;
       noTexture = nullptr;
    }
-   textureSlotList = nullptr;
    slotTextureList.clear();
    if (m_currentShader == this)
       m_currentShader = nullptr;
@@ -172,9 +172,9 @@ bool Shader::parseFile(const char* fileNameRoot, const char* fileName, int level
          linenumber++;
          if (line.compare(0, 4, "////") == 0) {
             string newMode = line.substr(4, line.length() - 4);
-            if (newMode.compare("DEFINES") == 0) {
+            if (newMode == "DEFINES") {
                currentElement.append(Shader::Defines).append("\n");
-            } else if (newMode.compare(currentMode) != 0) {
+            } else if (newMode != currentMode) {
                values[currentMode] = currentElement;
                currentElemIt = values.find(newMode);
                currentElement = (currentElemIt != values.end()) ? currentElemIt->second : "";
@@ -217,15 +217,14 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
    GLchar* fragmentSource = nullptr;
 
    //Vertex Shader
-   vertexSource = (GLchar*)malloc(vertex.length() + 1);
+   vertexSource = new GLchar[vertex.length() + 1];
    memcpy((void*)vertexSource, vertex.c_str(), vertex.length());
    vertexSource[vertex.length()] = 0;
 
    vertexShader = glCreateShader(GL_VERTEX_SHADER);
    CHECKD3D();
-   CHECKD3D(glShaderSource(vertexShader, 1, &vertexSource, 0));
+   CHECKD3D(glShaderSource(vertexShader, 1, &vertexSource, nullptr));
    CHECKD3D(glCompileShader(vertexShader));
-
 
    CHECKD3D(glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result));
    if (result == FALSE)
@@ -241,13 +240,13 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
    }
    //Geometry Shader
    if (success && geometry.length()>0) {
-      geometrySource = (GLchar*)malloc(geometry.length() + 1);
+      geometrySource = new GLchar[geometry.length() + 1];
       memcpy((void*)geometrySource, geometry.c_str(), geometry.length());
       geometrySource[geometry.length()] = 0;
 
       geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
       CHECKD3D();
-      CHECKD3D(glShaderSource(geometryShader, 1, &geometrySource, 0));
+      CHECKD3D(glShaderSource(geometryShader, 1, &geometrySource, nullptr));
       CHECKD3D(glCompileShader(geometryShader));
 
       CHECKD3D(glGetShaderiv(geometryShader, GL_COMPILE_STATUS, &result));
@@ -265,13 +264,13 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
    }
    //Fragment Shader
    if (success) {
-      fragmentSource = (GLchar*)malloc(fragment.length() + 1);
+      fragmentSource = new GLchar[fragment.length() + 1];
       memcpy((void*)fragmentSource, fragment.c_str(), fragment.length());
       fragmentSource[fragment.length()] = 0;
 
       fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
       CHECKD3D();
-      CHECKD3D(glShaderSource(fragmentShader, 1, &fragmentSource, 0));
+      CHECKD3D(glShaderSource(fragmentShader, 1, &fragmentSource, nullptr));
       CHECKD3D(glCompileShader(fragmentShader));
 
       CHECKD3D(glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &result));
@@ -327,9 +326,10 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
    CHECKD3D(glDeleteShader(vertexShader));
    CHECKD3D(glDeleteShader(geometryShader));
    CHECKD3D(glDeleteShader(fragmentShader));
-   free(fragmentSource);
-   free(geometrySource);
-   free(vertexSource);
+   delete [] fragmentSource;
+   delete [] geometrySource;
+   delete [] vertexSource;
+
    if (success) {
       int count = 0;
       glShader shader;
@@ -357,7 +357,7 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
          int location = glGetUniformLocation(shader.program, uniformName);
          CHECKD3D();
          if (location >= 0 && size>0) {
-            uniformLoc newLoc;
+            uniformLoc newLoc = {};
             newLoc.location = location;
             newLoc.type = type;
             //hack for packedLights, but works for all arrays
@@ -386,7 +386,7 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
          int location = glGetUniformBlockIndex(shader.program, uniformName);
          CHECKD3D();
          if (location >= 0 && size>0) {
-            uniformLoc newLoc;
+            uniformLoc newLoc = {};
             newLoc.location = location;
             newLoc.type = -1;
             glGenBuffers(1, &newLoc.blockBuffer);
@@ -422,7 +422,7 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
          int location = glGetAttribLocation(shader.program, attributeName);
          CHECKD3D();
          if (location >= 0) {
-            attributeLoc newLoc;
+            attributeLoc newLoc = {};
             newLoc.location = location;
             newLoc.type = type;
             switch (type) {
@@ -484,7 +484,7 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
    m_shaderCodeName = shaderCodeName;
    if (!textureSlotList) {
       glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxSlots);
-      textureSlotList = (int*)malloc(maxSlots * sizeof(int));
+      textureSlotList = new int[maxSlots];
       for (int i = 0;i < maxSlots;++i)
          textureSlotList[i] = -2;
    }
@@ -598,7 +598,7 @@ void Shader::setAttributeFormat(DWORD fvf)
    {
       const int location = m_currentTechnique->attributeLocation[i].location;
       if (location >= 0) {
-         int offset;
+         size_t offset;
          CHECKD3D(glEnableVertexAttribArray(m_currentTechnique->attributeLocation[i].location));
          switch (i) {
          case SHADER_ATTRIBUTE_POS:
@@ -628,9 +628,9 @@ void Shader::setAttributeFormat(DWORD fvf)
       int size;
       switch (fvf) {
       case MY_D3DFVF_TEX:
-         if (it->first.compare(SHADER_ATTRIBUTE_POS) == 0) offset = 0;
-         else if (it->first.compare(SHADER_ATTRIBUTE_TC) == 0) offset = 12;
-         else if (it->first.compare(SHADER_ATTRIBUTE_TEX) == 0) offset = 12;
+         if (it->first == SHADER_ATTRIBUTE_POS) offset = 0;
+         else if (it->first == SHADER_ATTRIBUTE_TC) offset = 12;
+         else if (it->first == SHADER_ATTRIBUTE_TEX) offset = 12;
          else {
             ReportError("unknown Attribute", 666, __FILE__, __LINE__);
             exit(-1);
@@ -639,10 +639,10 @@ void Shader::setAttributeFormat(DWORD fvf)
          break;
       case MY_D3DFVF_NOTEX2_VERTEX:
       case MY_D3DTRANSFORMED_NOTEX2_VERTEX:
-         if (it->first.compare(SHADER_ATTRIBUTE_POS) == 0) offset = 0;
-         else if (it->first.compare(SHADER_ATTRIBUTE_NORM) == 0) offset = 12;
-         else if (it->first.compare(SHADER_ATTRIBUTE_TC) == 0) offset = 24;
-         else if (it->first.compare(SHADER_ATTRIBUTE_TEX) == 0) offset = 24;
+         if (it->first == SHADER_ATTRIBUTE_POS) offset = 0;
+         else if (it->first == SHADER_ATTRIBUTE_NORM) offset = 12;
+         else if (it->first == SHADER_ATTRIBUTE_TC) offset = 24;
+         else if (it->first == SHADER_ATTRIBUTE_TEX) offset = 24;
          else {
             ReportError("unknown Attribute", 666, __FILE__, __LINE__);
             exit(-1);
@@ -993,9 +993,11 @@ void Shader::End()
 }
 
 void Shader::SetTextureDepth(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel) {
-   if (uniformTex[texelName] == texel->zTexture) return;
    if (texel)
+   {
+      if (uniformTex[texelName] == texel->zTexture) return;
       uniformTex[texelName] = texel->zTexture;
+   }
    else
       uniformTex[texelName] = 0;
    if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
@@ -1082,7 +1084,7 @@ void Shader::SetTechniqueMetal(const SHADER_TECHNIQUE_HANDLE _technique, const b
    SetBool(SHADER_is_metal, isMetal);
 }
 
-void Shader::SetUniformBlock(const SHADER_UNIFORM_HANDLE hParameter, const float* pMatrix, const int size)
+void Shader::SetUniformBlock(const SHADER_UNIFORM_HANDLE hParameter, const float* pMatrix, const size_t size)
 {
    floatP elem;
 #ifdef TWEAK_GL_SHADER
@@ -1153,7 +1155,7 @@ void Shader::SetMatrix(const SHADER_UNIFORM_HANDLE hParameter, const Matrix3D* p
    else
       elem = element->second;
 #endif
-   memcpy(elem.data, pMatrix, 16 * sizeof(float));
+   memcpy(elem.data, pMatrix->m16, 16 * sizeof(float));
    uniformFloatP[hParameter] = elem;
    if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
 #ifdef TWEAK_GL_SHADER

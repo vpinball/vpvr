@@ -242,7 +242,7 @@ public:
    void SetTechniqueMetal(const SHADER_TECHNIQUE_HANDLE technique, const bool isMetal);
 
    void SetMatrix(const SHADER_UNIFORM_HANDLE hParameter, const Matrix3D* pMatrix);
-   void SetUniformBlock(const SHADER_UNIFORM_HANDLE hParameter, const float* pMatrix, const int size);
+   void SetUniformBlock(const SHADER_UNIFORM_HANDLE hParameter, const float* pMatrix, const size_t size);
    void SetVector(const SHADER_UNIFORM_HANDLE hParameter, const vec4* pVector);
    void SetVector(const SHADER_UNIFORM_HANDLE hParameter, const float x, const float y, const float z, const float w);
    void SetFloat(const SHADER_UNIFORM_HANDLE hParameter, const float f);

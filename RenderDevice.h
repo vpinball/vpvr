@@ -21,13 +21,12 @@ void ReportError(const char *errorText, const HRESULT hr, const char *file, cons
 #ifdef _DEBUG
 #ifdef ENABLE_SDL
 void checkGLErrors(const char *file, const int line);
-//#define CHECKD3D(s) {s;}
-#define CHECKD3D(s) { s;checkGLErrors(__FILE__, __LINE__);}
+#define CHECKD3D(s) { s; checkGLErrors(__FILE__, __LINE__); }
 #else //ENABLE_SDL
 #define CHECKD3D(s) { const HRESULT hrTmp = (s); if (FAILED(hrTmp)) ReportFatalError(hrTmp, __FILE__, __LINE__); }
 #endif
 #else //_DEBUG
-#define CHECKD3D(s) {s;}
+#define CHECKD3D(s) { s; }
 #endif
 
 bool IsWindows10_1803orAbove();
