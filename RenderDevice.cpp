@@ -45,6 +45,7 @@ static RenderTarget *srcr_cache = nullptr; //!! meh, for nvidia depth read only
 static D3DTexture *srct_cache = nullptr;
 static D3DTexture* dest_cache = nullptr;
 
+#ifndef ENABLE_SDL
 static bool IsWindowsVistaOr7()
 {
    OSVERSIONINFOEXW osvi = { sizeof(osvi), 0, 0, 0, 0,{ 0 }, 0, 0 };
@@ -69,6 +70,7 @@ static bool IsWindowsVistaOr7()
 
    return vista || win7;
 }
+#endif
 
 typedef HRESULT(STDAPICALLTYPE *pRGV)(LPOSVERSIONINFOEXW osi);
 static pRGV mRtlGetVersion = nullptr;
@@ -622,22 +624,19 @@ void RenderDevice::InitVR() {
          throw(vrInitFailed);
       }
       if (!vr::VRCompositor())
-         if (VRError != vr::VRInitError_None) {
+         /*if (VRError != vr::VRInitError_None)*/ {
             m_pHMD = nullptr;
             char buf[1024];
-            sprintf_s(buf, sizeof(buf), "Unable to init VR compositor: %s", vr::VR_GetVRInitErrorAsEnglishDescription(VRError));
+            sprintf_s(buf, sizeof(buf), "Unable to init VR compositor");// :% s", vr::VR_GetVRInitErrorAsEnglishDescription(VRError));
             std::runtime_error vrInitFailed(buf);
             throw(vrInitFailed);
          }
    }
    m_pHMD->GetRecommendedRenderTargetSize(&m_Buf_width, &m_Buf_height);
-   vr::HmdMatrix34_t mat34;
-   vr::HmdMatrix44_t mat44;
-
-   Matrix3D matEye2Head, matProjection;
 
    //Calculate left EyeProjection Matrix relative to HMD position
-   mat34 = m_pHMD->GetEyeToHeadTransform(vr::Eye_Left);
+   vr::HmdMatrix34_t mat34 = m_pHMD->GetEyeToHeadTransform(vr::Eye_Left);
+   Matrix3D matEye2Head;
    for (int i = 0;i < 3;i++)
       for (int j = 0;j < 4;j++)
          matEye2Head.m[j][i] = mat34.m[i][j];
@@ -646,12 +645,13 @@ void RenderDevice::InitVR() {
 
    matEye2Head.Invert();
 
-   float nearPlane = LoadValueFloatWithDefault("PlayerVR", "nearPlane", 5.0f) / 100.0f;
-   float farPlane = 5000.0f;//LoadValueFloatWithDefault("PlayerVR", "farPlane", 5000.0f) / 100.0f;
+   const float nearPlane = LoadValueFloatWithDefault("PlayerVR", "nearPlane", 5.0f) / 100.0f;
+   const float farPlane = 5000.0f;//LoadValueFloatWithDefault("PlayerVR", "farPlane", 5000.0f) / 100.0f;
 
-   mat44 = m_pHMD->GetProjectionMatrix(vr::Eye_Left, nearPlane, farPlane);//5cm to 50m should be a reasonable range
+   vr::HmdMatrix44_t mat44 = m_pHMD->GetProjectionMatrix(vr::Eye_Left, nearPlane, farPlane);//5cm to 50m should be a reasonable range
    mat44.m[2][2] = -1.0f;
    mat44.m[2][3] = -nearPlane;
+   Matrix3D matProjection;
    for (int i = 0;i < 4;i++)
       for (int j = 0;j < 4;j++)
             matProjection.m[j][i] = mat44.m[i][j];
@@ -2276,7 +2276,7 @@ void RenderDevice::SetTextureFilter(const DWORD texUnit, DWORD mode)
    case TEXTURE_MODE_ANISOTROPIC:
       // Full HQ anisotropic Filter. Should lead to driver doing whatever it thinks is best.
       SetSamplerState(texUnit, LINEAR, LINEAR, LINEAR);
-      if (m_maxaniso>0)
+      //if (m_maxaniso>0)
          //SetSamplerAnisotropy(texUnit, min(m_maxaniso, (DWORD)16));
       break;
    }
@@ -2317,15 +2317,15 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
 #ifdef ENABLE_SDL
    static GLfloat viewPorts[] = { 0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f,0.0f };
    static int currentFrameBuffer = -1;
-   static int currentStereoMode = -1;
+   //static int currentStereoMode = -1;
    if (currentFrameBuffer != (texture ? texture->framebuffer : 0)) {
       currentFrameBuffer = texture ? texture->framebuffer : 0;
       CHECKD3D(glBindFramebuffer(GL_FRAMEBUFFER, currentFrameBuffer));
-      currentStereoMode = -1;
+      //currentStereoMode = -1;
    }
    if (texture && (texture->texture) > 0) Shader::setTextureDirty(texture->texture);
-   currentStereoMode = ignoreStereo ? 0 : texture->stereo;
    if (texture) {
+      //currentStereoMode = ignoreStereo ? 0 : texture->stereo;
       if (ignoreStereo)
       {
          CHECKD3D(glViewport(0, 0, texture->width, texture->height));
@@ -2340,7 +2340,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
          case STEREO_INT:
             CHECKD3D(glViewport(0, 0, texture->width, texture->height / 2)); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
             viewPorts[2] = viewPorts[6] = (float)texture->width;
-            viewPorts[3] = viewPorts[7] = (float)texture->height/2.0f;
+            viewPorts[3] = viewPorts[7] = (float)texture->height / 2.0f;
             viewPorts[4] = 0.0f;
             viewPorts[5] = (float)texture->height / 2.0f;
             CHECKD3D(glViewportArrayv(0, 2, viewPorts));
@@ -2359,6 +2359,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
          }
    }
    else {
+      //currentStereoMode = 0;
       CHECKD3D(glViewport(0, 0, m_pBackBuffer->width, m_pBackBuffer->height));
    }
 #else
@@ -2766,10 +2767,10 @@ void RenderDevice::Clear(const DWORD flags, const D3DCOLOR color, const D3DVALUE
 
    if (clear_s != stencil) { clear_s = stencil;  glClearStencil(stencil); }
    if (clear_z != z) { clear_z = z;  glClearDepthf(z); }
-   const float r = (float)(color && 0xff) / 255.0f;
-   const float g = (float)((color && 0xff00) >> 8) / 255.0f;
-   const float b = (float)((color && 0xff0000) >> 16) / 255.0f;
-   const float a = (float)((color && 0xff000000) >> 24) / 255.0f;
+   const float r = (float)( color & 0xff) / 255.0f;
+   const float g = (float)((color & 0xff00) >> 8) / 255.0f;
+   const float b = (float)((color & 0xff0000) >> 16) / 255.0f;
+   const float a = (float)((color & 0xff000000) >> 24) / 255.0f;
    if ((r != clear_r) || (g != clear_g) || (b != clear_b) || (a != clear_a)) { clear_z = z;  glClearColor(r,g,b,a); }
    glClear(flags);
 #else
