@@ -2971,15 +2971,17 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
 
    if (data)
    {
+      const bool compress = (m_compress_textures && ((Width & 3) == 0) && ((Height & 3) == 0) && (Width > 256) && (Height > 256) && (col_type != GL_FLOAT)); //!! use BC6 for floats?
+
       const int num_mips = (int)std::log2(float(std::max(Width, Height))) + 1;
       if (m_GLversion >= 403) {
-         CHECKD3D(glTexStorage2D(GL_TEXTURE_2D, num_mips, Format, Width, Height));
+         CHECKD3D(glTexStorage2D(GL_TEXTURE_2D, num_mips, compress ? (GLAD_GL_ARB_texture_compression_bptc ? colorFormat::BC7 : colorFormat::DXT5) : Format, Width, Height));
       }
       else {
          GLsizei w = Width;
          GLsizei h = Height;
          for (int i = 0; i < num_mips; i++) {
-            CHECKD3D(glTexImage2D(GL_TEXTURE_2D, i, Format, w, h, 0, col_format, col_type, nullptr));
+            CHECKD3D(glTexImage2D(GL_TEXTURE_2D, i, compress ? (GLAD_GL_ARB_texture_compression_bptc ? colorFormat::BC7 : colorFormat::DXT5) : Format, w, h, 0, col_format, col_type, nullptr));
             w = max(1, (w / 2));
             h = max(1, (h / 2));
          }
