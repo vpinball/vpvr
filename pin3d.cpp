@@ -54,6 +54,7 @@ Pin3D::~Pin3D()
 
    SAFE_RELEASE(m_pddsAOBackBuffer);
    SAFE_RELEASE(m_pddsAOBackTmpBuffer);
+#ifndef ENABLE_SDL
    if (!m_pd3dPrimaryDevice->m_useNvidiaApi && m_pd3dPrimaryDevice->m_INTZ_support)
    {
       SAFE_RELEASE_NO_SET((D3DTexture*)m_pddsZBuffer);
@@ -62,6 +63,9 @@ Pin3D::~Pin3D()
    {
       SAFE_RELEASE_NO_SET((RenderTarget*)m_pddsZBuffer);
    }
+#else
+   assert(m_pddsZBuffer == nullptr);
+#endif
    m_pddsZBuffer = nullptr;
    SAFE_RELEASE(m_pdds3DZBuffer);
 

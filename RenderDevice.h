@@ -467,8 +467,8 @@ private:
    int m_GLversion;
 #else
    DWORD m_maxaniso;
-#endif
    bool m_mag_aniso;
+#endif
 
    bool m_autogen_mipmap;
    //bool m_RESZ_support;
@@ -499,8 +499,10 @@ private:
 #endif
 
 public:
+#ifndef ENABLE_SDL
    static bool m_useNvidiaApi;
    static bool m_INTZ_support;
+#endif
 
    static VertexBuffer* m_quadVertexBuffer;      // internal vb for rendering quads //!! only on primary device for now!
    //static VertexBuffer *m_quadDynVertexBuffer; // internal vb for rendering dynamic quads //!!
