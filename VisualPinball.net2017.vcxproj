@@ -1384,7 +1384,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <ClInclude Include="xaudplayer.h" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="shader\BallShader.fx">
+    <FxCompile Include="shader\BallShader.hlsl">
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ballShaderCode</EntryPointName>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">ballShaderCode</EntryPointName>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Effect</ShaderType>
@@ -1438,7 +1438,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="shader\BasicShader.fx">
+    <FxCompile Include="shader\BasicShader.hlsl">
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -1492,7 +1492,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="shader\DMDShader.fx">
+    <FxCompile Include="shader\DMDShader.hlsl">
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -1546,7 +1546,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="shader\FBShader.fx">
+    <FxCompile Include="shader\FBShader.hlsl">
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -1600,7 +1600,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="shader\FlasherShader.fx">
+    <FxCompile Include="shader\FlasherShader.hlsl">
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -1654,7 +1654,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="shader\LightShader.fx">
+    <FxCompile Include="shader\LightShader.hlsl">
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -1708,7 +1708,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug_SDL|x64'">true</ExcludedFromBuild>
     </FxCompile>
-    <FxCompile Include="shader\ClassicLightShader.fx">
+    <FxCompile Include="shader\ClassicLightShader.hlsl">
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -1767,7 +1767,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release_SDL|x64'">
       </ObjectFileOutput>
     </FxCompile>
-    <FxCompile Include="shader\StereoShader.fx">
+    <FxCompile Include="shader\StereoShader.hlsl">
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <HeaderFileOutput Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">shader\%(Filename).h</HeaderFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
