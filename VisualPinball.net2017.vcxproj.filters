@@ -1388,28 +1388,28 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="shader\BallShader.fx">
+    <FxCompile Include="shader\BallShader.hlsl">
       <Filter>shaders</Filter>
     </FxCompile>
-    <FxCompile Include="shader\StereoShader.fx">
+    <FxCompile Include="shader\StereoShader.hlsl">
       <Filter>shaders</Filter>
     </FxCompile>
-    <FxCompile Include="shader\BasicShader.fx">
+    <FxCompile Include="shader\BasicShader.hlsl">
       <Filter>shaders</Filter>
     </FxCompile>
-    <FxCompile Include="shader\DMDShader.fx">
+    <FxCompile Include="shader\DMDShader.hlsl">
       <Filter>shaders</Filter>
     </FxCompile>
-    <FxCompile Include="shader\FBShader.fx">
+    <FxCompile Include="shader\FBShader.hlsl">
       <Filter>shaders</Filter>
     </FxCompile>
-    <FxCompile Include="shader\FlasherShader.fx">
+    <FxCompile Include="shader\FlasherShader.hlsl">
       <Filter>shaders</Filter>
     </FxCompile>
-    <FxCompile Include="shader\LightShader.fx">
+    <FxCompile Include="shader\LightShader.hlsl">
       <Filter>shaders</Filter>
     </FxCompile>
-    <FxCompile Include="shader\ClassicLightShader.fx">
+    <FxCompile Include="shader\ClassicLightShader.hlsl">
       <Filter>shaders</Filter>
     </FxCompile>
   </ItemGroup>
