@@ -515,15 +515,15 @@ int getPrimaryDisplay()
 
 ////////////////////////////////////////////////////////////////////
 
+VertexBuffer* RenderDevice::m_quadVertexBuffer = nullptr;
+unsigned int RenderDevice::m_stats_drawn_triangles = 0;
+
 #ifndef ENABLE_SDL
 #define CHECKNVAPI(s) { NvAPI_Status hr = (s); if (hr != NVAPI_OK) { NvAPI_ShortString ss; NvAPI_GetErrorMessage(hr,ss); g_pvp->MessageBox(ss, "NVAPI", MB_OK | MB_ICONEXCLAMATION); } }
 static bool NVAPIinit = false; //!! meh
-#endif
 
 bool RenderDevice::m_INTZ_support = false;
 bool RenderDevice::m_useNvidiaApi = false;
-VertexBuffer* RenderDevice::m_quadVertexBuffer = nullptr;
-unsigned int RenderDevice::m_stats_drawn_triangles = 0;
 
 #ifdef USE_D3D9EX
  typedef HRESULT(WINAPI *pD3DC9Ex)(UINT SDKVersion, IDirect3D9Ex**);
@@ -538,6 +538,7 @@ typedef HRESULT(STDAPICALLTYPE *pDF)();
 static pDF mDwmFlush = nullptr;
 typedef HRESULT(STDAPICALLTYPE *pDEC)(UINT uCompositionAction);
 static pDEC mDwmEnableComposition = nullptr;
+#endif
 
 #ifdef _DEBUG
 #ifdef ENABLE_SDL
@@ -709,7 +710,7 @@ RenderDevice::RenderDevice(const int width, const int height, const bool fullscr
    m_colorDepth(colordepth), m_vsync(VSync), m_AAfactor(AAfactor), m_stereo3D(stereo3D), m_FXAA(FXAA),
    m_ssRefl(ss_refl), m_disableDwm(disable_dwm), m_BWrendering(BWrendering), m_GLversion(0)
 {
-   m_useNvidiaApi = useNvidiaApi;
+   //m_useNvidiaApi = useNvidiaApi;
 
 #ifdef ENABLE_VR
    m_pHMD = nullptr;
@@ -721,8 +722,6 @@ RenderDevice::RenderDevice(const int width, const int height, const bool fullscr
 void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 {
    m_stats_drawn_triangles = 0;
-
-   m_useNvidiaApi = false;
 
    const int displays = getNumberOfDisplays();
    if ((int)adapterIndex >= displays)
@@ -2824,7 +2823,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    tex->width = Width;
    tex->height = Height;
    tex->format = Format;
-   tex->slot = -1;
+   //tex->slot = -1;
 
    const GLuint col_type = ((Format == RGBA32F) || (Format == RGBA16F) || (Format == RGB32F) || (Format == RGB16F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
    const GLuint col_format = (Format == GREY) ? GL_RED : (Format == GREY_ALPHA) ? GL_RG : ((Format == RGB) || (Format == RGB5) || (Format == RGB10) || (Format == RGB16F) || (Format == RGB32F)) ? GL_BGR : GL_BGRA;
@@ -2987,7 +2986,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
       }
 
       CHECKD3D(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Width, Height, col_format, col_type, data));
-      CHECKD3D(glGenerateMipmap(GL_TEXTURE_2D)); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwhise good idea to limit by GL_TEXTURE_MAX_LEVEL
+      CHECKD3D(glGenerateMipmap(GL_TEXTURE_2D)); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwise good idea to limit by GL_TEXTURE_MAX_LEVEL
    }
 #else //D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, void* data) {
    D3DPOOL Pool;

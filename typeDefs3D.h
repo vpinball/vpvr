@@ -61,7 +61,7 @@ struct RenderTarget {
    textureUsage usage;
    GLuint texture = 0, zTexture = 0, framebuffer = 0, zBuffer = 0;
    GLuint width = 0, height = 0;
-   GLint slot = -1;//Current slot for caching
+   //GLint slot = -1;//Current slot for caching
    int stereo = 0;
 };
 
