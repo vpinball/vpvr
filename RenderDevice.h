@@ -188,6 +188,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
       ZENABLE = D3DRS_ZENABLE,
       ZFUNC = D3DRS_ZFUNC,
       ZWRITEENABLE = D3DRS_ZWRITEENABLE,
+      TEXTUREFACTOR = D3DRS_TEXTUREFACTOR,
       DEPTHBIAS = D3DRS_DEPTHBIAS,
       COLORWRITEENABLE = D3DRS_COLORWRITEENABLE,
       RENDERSTATE_COUNT,
@@ -261,8 +262,10 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
 
    D3DTexture* GetBackBufferTexture() const { return m_pOffscreenBackBufferTexture; }
    D3DTexture* GetBackBufferTmpTexture() const { return m_pOffscreenBackBufferStereoTexture; }
+#ifdef ENABLE_SDL
    D3DTexture* GetNonMSAABlitTexture(int m_MSAASamples) const { return m_MSAASamples == 1 ? m_pOffscreenBackBufferTexture : m_pOffscreenNonMSAABlitTexture; }
    D3DTexture* GetOffscreenVR(int eye) const { return eye == 0 ? m_pOffscreenVRLeft : m_pOffscreenVRRight;}
+#endif
    D3DTexture* GetBackBufferPPTexture1() const { return m_pOffscreenBackBufferPPTexture1; }
    D3DTexture* GetBackBufferPPTexture2() const { return m_pOffscreenBackBufferPPTexture2; }
    D3DTexture* GetMirrorTmpBufferTexture() const { return m_pMirrorTmpBufferTexture; }
@@ -277,9 +280,11 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    D3DTexture* DuplicateTextureSingleChannel(RenderTarget* src);
    D3DTexture* DuplicateDepthTexture(RenderTarget* src);
 
+#ifdef ENABLE_SDL
    static bool isVRinstalled();
    static bool isVRturnedOn();
    static void turnVROff();
+#endif
 
 #ifndef ENABLE_SDL
    void SetRenderTarget(RenderTarget* surf, bool ignoreStereo = false);
@@ -299,7 +304,6 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    void CopySurface(RenderTarget* dest, D3DTexture* src);
    void CopySurface(D3DTexture* dest, D3DTexture* src);
    void CopySurface(void* dest, void* src);
-
    void CopyDepth(D3DTexture* dest, RenderTarget* src);
    void CopyDepth(D3DTexture* dest, D3DTexture* src);
    void CopyDepth(D3DTexture* dest, void* src);

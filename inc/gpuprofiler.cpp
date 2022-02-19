@@ -24,7 +24,7 @@ void CGpuProfiler::EndFrame() {}
 void CGpuProfiler::WaitForDataAndUpdate() {}
 #else
 CGpuProfiler::CGpuProfiler ()
-:   m_init(false),
+:	m_init(false),
 	m_iFrameQuery(0),
 	m_iFrameCollect(-1),
 	m_frequencyQuery(nullptr),

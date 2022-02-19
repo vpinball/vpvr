@@ -123,7 +123,7 @@ protected:
 	IDirect3DQuery9 * m_apQueryTs[GTS_Max][2];	// Individual timestamp queries for each relevant point in the frame
 	IDirect3DQuery9 * m_frequencyQuery;
 #endif
-	bool m_apQueryTs_triggered[GTS_Max][2];     // Check which queries actually were triggered in the frame
+	bool m_apQueryTs_triggered[GTS_Max][2];		// Check which queries actually were triggered in the frame
 
 	double m_adT[GTS_Max];						// Last frame's timings (each relative to previous GTS)
 	double m_adTAvg[GTS_Max];					// Timings averaged over 0.5 second

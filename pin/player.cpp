@@ -3346,15 +3346,15 @@ void Player::RenderDynamics()
 
    m_pin3d.InitLights();
 
-   const vec4 st(m_ptable->m_envEmissionScale*m_globalEmissionScale, m_pin3d.m_envTexture ? (float)m_pin3d.m_envTexture->m_height/*+m_pin3d.m_envTexture->m_width)*0.5f*/ : (float)m_pin3d.m_builtinEnvTexture.m_height/*+m_pin3d.m_builtinEnvTexture.m_width)*0.5f*/, 0.f, 0.f); //!! dto.
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetVector(SHADER_fenvEmissionScale_TexWidth, &st);
+      const vec4 st(m_ptable->m_envEmissionScale*m_globalEmissionScale, m_pin3d.m_envTexture ? (float)m_pin3d.m_envTexture->m_height/*+m_pin3d.m_envTexture->m_width)*0.5f*/ : (float)m_pin3d.m_builtinEnvTexture.m_height/*+m_pin3d.m_builtinEnvTexture.m_width)*0.5f*/, 0.f, 0.f); //!! dto.
+      m_pin3d.m_pd3dPrimaryDevice->basicShader->SetVector(SHADER_fenvEmissionScale_TexWidth, &st);
 #ifdef SEPARATE_CLASSICLIGHTSHADER
-   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetVector(SHADER_fenvEmissionScale_TexWidth, &st);
+      m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetVector(SHADER_fenvEmissionScale_TexWidth, &st);
 #endif
 
-   UpdateBallShaderMatrix();
+      UpdateBallShaderMatrix();
 
-   m_pin3d.RenderPlayfieldGraphics(false); // Render the playfield mesh/texture
+      m_pin3d.RenderPlayfieldGraphics(false);
 
    if (reflection_path != 0)
    {
@@ -3399,6 +3399,7 @@ void Player::RenderDynamics()
 
       if (ProfilingMode() == 1)
          m_pin3d.m_gpu_profiler.Timestamp(GTS_NonTransparent);
+
 #ifndef ENABLE_SDL
       m_limiter.Execute(m_pin3d.m_pd3dPrimaryDevice); //!! move below other draw calls??
 #endif
@@ -4734,7 +4735,14 @@ void Player::Render()
 
    RenderDevice::m_stats_drawn_triangles = 0;
 
+#ifndef ENABLE_SDL
+   // copy static buffers to back buffer and z buffer
+   m_pin3d.m_pd3dPrimaryDevice->CopySurface(m_pin3d.m_pddsBackBuffer, m_pin3d.m_pddsStatic);
+   m_pin3d.m_pd3dPrimaryDevice->CopySurface(m_pin3d.m_pddsZBuffer, m_pin3d.m_pddsStaticZ); // cannot be called inside BeginScene -> EndScene cycle
+#endif
+
    // Physics/Timer updates, done at the last moment, especially to handle key input (VP<->VPM rountrip) and animation triggers
+   //if ( !cameraMode )
    if (m_minphyslooptime == 0) // (vsync) latency reduction code not active? -> Do Physics Updates here
       UpdatePhysics();
 
