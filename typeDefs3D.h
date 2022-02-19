@@ -42,7 +42,9 @@ enum colorFormat {
    RGBA = GL_RGBA8,
    RGBA8 = GL_RGBA8,
    RGBA10 = GL_RGB10_A2,
-   DXT5 = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT
+   DXT5 = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+   BC7 = GL_COMPRESSED_RGBA_BPTC_UNORM
+   //!! BC6H for floats?
 };
 
 enum textureUsage {

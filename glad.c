@@ -969,6 +969,7 @@ PFNGLVIEWPORTINDEXEDFVPROC glad_glViewportIndexedfv = NULL;
 PFNGLWAITSYNCPROC glad_glWaitSync = NULL;
 int GLAD_GL_ARB_texture_filter_anisotropic = 0;
 int GLAD_GL_EXT_texture_compression_s3tc = 0;
+int GLAD_GL_ARB_texture_compression_bptc = 0;
 int GLAD_GL_EXT_texture_filter_anisotropic = 0;
 int GLAD_GL_KHR_texture_compression_astc_hdr = 0;
 int GLAD_GL_KHR_texture_compression_astc_ldr = 0;
@@ -1730,6 +1731,7 @@ static int find_extensionsGL(void) {
 	if (!get_exts()) return 0;
 	GLAD_GL_ARB_texture_filter_anisotropic = has_ext("GL_ARB_texture_filter_anisotropic");
 	GLAD_GL_EXT_texture_compression_s3tc = has_ext("GL_EXT_texture_compression_s3tc");
+	GLAD_GL_ARB_texture_compression_bptc = has_ext("GL_ARB_texture_compression_bptc");
 	GLAD_GL_EXT_texture_filter_anisotropic = has_ext("GL_EXT_texture_filter_anisotropic");
 	GLAD_GL_KHR_texture_compression_astc_hdr = has_ext("GL_KHR_texture_compression_astc_hdr");
 	GLAD_GL_KHR_texture_compression_astc_ldr = has_ext("GL_KHR_texture_compression_astc_ldr");

@@ -3697,6 +3697,10 @@ GLAPI int GLAD_GL_ARB_texture_filter_anisotropic;
 #define GL_EXT_texture_compression_s3tc 1
 GLAPI int GLAD_GL_EXT_texture_compression_s3tc;
 #endif
+#ifndef GL_ARB_texture_compression_bptc
+#define GL_ARB_texture_compression_bptc 1
+GLAPI int GLAD_GL_ARB_texture_compression_bptc;
+#endif
 #ifndef GL_EXT_texture_filter_anisotropic
 #define GL_EXT_texture_filter_anisotropic 1
 GLAPI int GLAD_GL_EXT_texture_filter_anisotropic;
