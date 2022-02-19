@@ -1769,8 +1769,8 @@ void RenderDevice::Flip(const bool vsync)
    m_frameTextureUpdates = m_curTextureUpdates;
    m_curTextureUpdates = 0;
 
-   m_frameLockCalls = m_curLockCalls;
-   m_curLockCalls = 0;
+   //m_frameLockCalls = m_curLockCalls;
+   //m_curLockCalls = 0;
 }
 
 RenderTarget* RenderDevice::DuplicateRenderTarget(RenderTarget* src)
