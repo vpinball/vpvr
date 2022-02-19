@@ -64,24 +64,21 @@ public:
    Vertex3Ds Get3DPointFrom2D(const POINT& p);
 
    void Flip(const bool vsync);
+
 #ifdef ENABLE_SDL
    void SetRenderTarget(RenderDevice * const pd3dDevice, RenderTarget* pddsSurface, void* unused) const;
    void SetPrimaryRenderTarget(RenderTarget* pddsSurface, void* unused) const;
    void SetSecondaryRenderTarget(RenderTarget* pddsSurface, void* unused) const;
 #else
-   void SetRenderTarget(RenderDevice * const pd3dDevice, D3DTexture* pddsSurface, RenderTarget* pddsZ) const;
-   void SetRenderTarget(RenderDevice * const pd3dDevice, D3DTexture* pddsSurface, D3DTexture* pddsZ) const;
+   void SetRenderTarget(RenderDevice * const pd3dDevice, RenderTarget* pddsSurface, RenderTarget* pddsZ) const;
+   void SetRenderTarget(RenderDevice * const pd3dDevice, RenderTarget* pddsSurface, D3DTexture* pddsZ) const;
    void SetRenderTarget(RenderDevice * const pd3dDevice, RenderTarget* pddsSurface, void* pddsZ) const;
-   void SetRenderTarget(RenderDevice * const pd3dDevice, D3DTexture* pddsSurface, void* pddsZ) const;
-
-   void SetPrimaryRenderTarget(D3DTexture* pddsSurface, RenderTarget* pddsZ) const;
-   void SetPrimaryRenderTarget(D3DTexture* pddsSurface, D3DTexture* pddsZ) const;
+   void SetPrimaryRenderTarget(RenderTarget* pddsSurface, RenderTarget* pddsZ) const;
+   void SetPrimaryRenderTarget(RenderTarget* pddsSurface, D3DTexture* pddsZ) const;
    void SetPrimaryRenderTarget(RenderTarget* pddsSurface, void* pddsZ) const;
-   void SetPrimaryRenderTarget(D3DTexture* pddsSurface, void* pddsZ) const;
-   void SetSecondaryRenderTarget(D3DTexture* pddsSurface, RenderTarget* pddsZ) const;
-   void SetSecondaryRenderTarget(D3DTexture* pddsSurface, D3DTexture* pddsZ) const;
+   void SetSecondaryRenderTarget(RenderTarget* pddsSurface, RenderTarget* pddsZ) const;
    void SetSecondaryRenderTarget(RenderTarget* pddsSurface, void* pddsZ) const;
-   void SetSecondaryRenderTarget(D3DTexture* pddsSurface, void* pddsZ) const;
+   void SetSecondaryRenderTarget(RenderTarget* pddsSurface, D3DTexture* pddsZ) const;
 #endif
 
    void SetTextureFilter(RenderDevice * const pd3dDevice, const int TextureNum, const int Mode) const;
@@ -125,6 +122,11 @@ public:
    D3DTexture* m_pdds3DZBuffer;
 
    void* m_pddsZBuffer; // D3DTexture* or RenderTarget*, depending on HW support
+
+#ifndef ENABLE_SDL
+   RenderTarget* m_pddsStatic;
+   void* m_pddsStaticZ; // D3DTexture* or RenderTarget*, depending on HW support
+#endif
 
    Texture m_pinballEnvTexture; // loaded from Resources
    Texture m_builtinEnvTexture; // loaded from Resources

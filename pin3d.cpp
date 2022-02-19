@@ -57,18 +57,21 @@ Pin3D::~Pin3D()
 #ifndef ENABLE_SDL
    if (!m_pd3dPrimaryDevice->m_useNvidiaApi && m_pd3dPrimaryDevice->m_INTZ_support)
    {
+      SAFE_RELEASE_NO_SET((D3DTexture*)m_pddsStaticZ);
       SAFE_RELEASE_NO_SET((D3DTexture*)m_pddsZBuffer);
    }
    else
    {
+      SAFE_RELEASE_NO_SET((RenderTarget*)m_pddsStaticZ);
       SAFE_RELEASE_NO_SET((RenderTarget*)m_pddsZBuffer);
    }
+   m_pddsStaticZ = nullptr;
+   SAFE_RELEASE(m_pddsStatic);
 #else
    assert(m_pddsZBuffer == nullptr);
 #endif
    m_pddsZBuffer = nullptr;
    SAFE_RELEASE(m_pdds3DZBuffer);
-
    SAFE_RELEASE_NO_RCC(m_pddsBackBuffer);
 
    SAFE_BUFFER_RELEASE(RenderDevice::m_quadVertexBuffer);
@@ -457,6 +460,15 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
 #else
    m_pd3dPrimaryDevice->GetBackBufferTexture()->GetSurfaceLevel(0, &m_pddsBackBuffer);
 
+   m_pddsStatic = m_pd3dPrimaryDevice->DuplicateRenderTarget(m_pddsBackBuffer);
+   if(!m_pddsStatic)
+      return E_FAIL;
+
+   m_pddsZBuffer = m_pd3dPrimaryDevice->AttachZBufferTo(m_pddsBackBuffer);
+   m_pddsStaticZ = m_pd3dPrimaryDevice->AttachZBufferTo(m_pddsStatic);
+   if (!m_pddsZBuffer || !m_pddsStaticZ)
+      return E_FAIL;
+
    if (m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && (stereo3D || useAO || ss_refl))
       m_pdds3DZBuffer = !m_pd3dPrimaryDevice->m_useNvidiaApi ? (D3DTexture*)m_pd3dPrimaryDevice->AttachZBufferTo(m_pddsBackBuffer) : m_pd3dPrimaryDevice->DuplicateDepthTexture((RenderTarget*)m_pddsZBuffer);
 
@@ -754,6 +766,11 @@ void Pin3D::DrawBackground()
 
 void Pin3D::InitLights()
 {
+   //m_pd3dPrimaryDevice->basicShader->SetInt("iLightPointNum",MAX_LIGHT_SOURCES);
+#ifdef SEPARATE_CLASSICLIGHTSHADER
+   //m_pd3dPrimaryDevice->classicLightShader->SetInt("iLightPointNum",MAX_LIGHT_SOURCES);
+#endif
+
    g_pplayer->m_ptable->m_Light[0].pos.x = g_pplayer->m_ptable->m_right*0.5f;
    g_pplayer->m_ptable->m_Light[1].pos.x = g_pplayer->m_ptable->m_right*0.5f;
    g_pplayer->m_ptable->m_Light[0].pos.y = g_pplayer->m_ptable->m_bottom*(float)(1.0 / 3.0);
@@ -864,7 +881,7 @@ void Pin3D::InitLayoutFS()
    vec3 at(0.0f, yof, 1.0f);
    const vec3 up(0.0f, -1.0f, 0.0f);
 
-   Matrix3D rotationMat = Matrix3D::MatrixRotationYawPitchRoll(inclination, 0.0f, rotation);
+   const Matrix3D rotationMat = Matrix3D::MatrixRotationYawPitchRoll(inclination, 0.0f, rotation);
 #ifdef ENABLE_SDL
    eye = vec3::TransformCoord(eye, rotationMat);
    at = vec3::TransformCoord(at, rotationMat);
@@ -875,7 +892,7 @@ void Pin3D::InitLayoutFS()
    //D3DXVec3TransformCoord(&up, &up, &rotationMat);
    //at=eye+at;
 
-   Matrix3D mView = Matrix3D::MatrixLookAtLH(eye, at, up);
+   const Matrix3D mView = Matrix3D::MatrixLookAtLH(eye, at, up);
    memcpy(m_proj.m_matView.m, mView.m, sizeof(float) * 4 * 4);
    m_proj.ScaleView(g_pplayer->m_ptable->m_BG_scalex[g_pplayer->m_ptable->m_BG_current_set], g_pplayer->m_ptable->m_BG_scaley[g_pplayer->m_ptable->m_BG_current_set], 1.0f);
    m_proj.RotateView(0, 0, rotation);
@@ -911,14 +928,17 @@ void Pin3D::InitLayoutFS()
    bottom *= z_near_to_z_screen;
 
    //Create Projection Matrix - For Realtime Headtracking this matrix should be updated every frame. VR has its own V and P matrices.
+#ifdef ENABLE_SDL
    if (m_stereo3D != STEREO_OFF) {
-      float stereoOffset = 0.03f;
+      constexpr float stereoOffset = 0.03f; //!!
       proj = Matrix3D::MatrixPerspectiveOffCenterLH(left - stereoOffset, right - stereoOffset, bottom, top, m_proj.m_rznear, m_proj.m_rzfar);
       memcpy(m_proj.m_matProj[0].m, proj.m, sizeof(float) * 4 * 4);
       proj = Matrix3D::MatrixPerspectiveOffCenterLH(left + stereoOffset, right + stereoOffset, bottom, top, m_proj.m_rznear, m_proj.m_rzfar);
       memcpy(m_proj.m_matProj[1].m, proj.m, sizeof(float) * 4 * 4);
    }
-   else {
+   else
+#endif
+   {
       proj = Matrix3D::MatrixPerspectiveOffCenterLH(left, right, bottom, top, m_proj.m_rznear, m_proj.m_rzfar);
       memcpy(m_proj.m_matProj[0].m, proj.m, sizeof(float) * 4 * 4);
    }

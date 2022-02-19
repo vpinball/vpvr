@@ -358,6 +358,8 @@ public:
 #ifdef ENABLE_SDL
    SDL_Window *m_sdl_playfieldHwnd;
    SDL_Window *m_sdl_backdropHwnd;
+#else
+   Shader      *m_ballShader;
 #endif
 
    IndexBuffer *m_ballIndexBuffer;
@@ -689,7 +691,7 @@ private:
 #ifdef ENABLE_SDL
    TTF_Font *m_pFont;
 #else
-   FontHandle m_pFont;
+   ID3DXFont *m_pFont;
    LPD3DXSPRITE m_fontSprite;
    RECT     m_fontRect;
 #endif

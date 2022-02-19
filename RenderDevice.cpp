@@ -29,6 +29,7 @@
 #endif
 #endif
 
+// SMAA:
 #include "shader/AreaTex.h"
 #include "shader/SearchTex.h"
 
@@ -287,9 +288,9 @@ void checkGLErrors(const char *file, const int line) {
       count++;
       ReportFatalError(err, file, line);
    }
-   if (count>0) {
-      /*exit(-1);*/
-   }
+   /*if (count>0) {
+      exit(-1);
+   }*/
 }
 #endif
 
@@ -309,7 +310,8 @@ void EnumerateDisplayModes(const int display, std::vector<VideoMode>& modes)
    modes.clear();
 
 #ifdef ENABLE_SDL
-   for (int mode = 0; mode < SDL_GetNumDisplayModes(display); ++mode) {
+   const int amount = SDL_GetNumDisplayModes(display);
+   for (int mode = 0; mode < amount; ++mode) {
       SDL_DisplayMode myMode;
       SDL_GetDisplayMode(display, mode, &myMode);
       VideoMode vmode = {};
@@ -1061,8 +1063,10 @@ RenderDevice::~RenderDevice()
 RenderDevice::RenderDevice(const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice)
    : m_texMan(*this), m_windowHwnd(g_pplayer->GetHwnd()), m_width(width), m_height(height), m_fullscreen(fullscreen),
       m_colorDepth(colordepth), m_vsync(VSync), m_AAfactor(AAfactor), m_stereo3D(stereo3D), m_FXAA(FXAA),
-      m_ssRefl(ss_refl), m_useNvidiaApi(useNvidiaApi), m_disableDwm(disable_dwm), m_BWrendering(BWrendering)
+      m_ssRefl(ss_refl), m_disableDwm(disable_dwm), m_BWrendering(BWrendering)
 {
+   m_useNvidiaApi = useNvidiaApi;
+
    switch (stereo3D) {
    case STEREO_OFF:
       m_Buf_width = m_width;
@@ -1126,15 +1130,18 @@ RenderDevice::RenderDevice(const int width, const int height, const bool fullscr
    //m_curShader = nullptr;
 
    // fill state caches with dummy values
-   memset(textureStateCache, 0xCC, sizeof(DWORD) * 8 * TEXTURE_STATE_CACHE_SIZE);
-   memset(textureSamplerCache, 0xCC, sizeof(DWORD) * 8 * TEXTURE_SAMPLER_CACHE_SIZE);
+   memset(textureStateCache, 0xCC, sizeof(DWORD) * TEXTURE_SAMPLERS * TEXTURE_STATE_CACHE_SIZE);
+   memset(textureSamplerCache, 0xCC, sizeof(DWORD) * TEXTURE_SAMPLERS * TEXTURE_SAMPLER_CACHE_SIZE);
 
    // initialize performance counters
    m_curDrawCalls = m_frameDrawCalls = 0;
    m_curStateChanges = m_frameStateChanges = 0;
    m_curTextureChanges = m_frameTextureChanges = 0;
    m_curParameterChanges = m_frameParameterChanges = 0;
+   m_curTechniqueChanges = m_frameTechniqueChanges = 0;
    m_curTextureUpdates = m_frameTextureUpdates = 0;
+
+   m_curLockCalls = m_frameLockCalls = 0; //!! meh
 }
 
 void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
@@ -1216,7 +1223,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    }
    else
    {
-      format = (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : ((m_colorDepth == 16) ? colorFormat::RGB5 : colorFormat::RGB));
+      format = (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : ((m_colorDepth == 16) ? colorFormat::RGB5 : colorFormat::RGB8));
    }
 
    // limit vsync rate to actual refresh rate, otherwise special handling in renderloop
@@ -1402,12 +1409,12 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    if (FAILED(hr))
       ReportError("Fatal Error: unable to create blur buffer!", hr, __FILE__, __LINE__);
 
-   // alloc temporary buffer for stereo3D/post-processing AA
-   if ((m_FXAA > 0) || (m_stereo3D > 0))
+   // alloc temporary buffer for stereo3D/post-processing AA/sharpen
+   if ((m_stereo3D > 0) || (m_FXAA > 0) || m_sharpen)
    {
       hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), (D3DPOOL)memoryPool::DEFAULT, &m_pOffscreenBackBufferStereoTexture, nullptr);
       if (FAILED(hr))
-         ReportError("Fatal Error: unable to create stereo3D/post-processing AA buffer!", hr, __FILE__, __LINE__);
+         ReportError("Fatal Error: unable to create stereo3D/post-processing AA/sharpen buffer!", hr, __FILE__, __LINE__);
    }
    else
       m_pOffscreenBackBufferStereoTexture = nullptr;
@@ -1761,6 +1768,9 @@ void RenderDevice::Flip(const bool vsync)
    m_curDrawCalls = m_curStateChanges = m_curTextureChanges = m_curParameterChanges = m_curTechniqueChanges = 0;
    m_frameTextureUpdates = m_curTextureUpdates;
    m_curTextureUpdates = 0;
+
+   m_frameLockCalls = m_curLockCalls;
+   m_curLockCalls = 0;
 }
 
 RenderTarget* RenderDevice::DuplicateRenderTarget(RenderTarget* src)
@@ -2600,9 +2610,10 @@ void* RenderDevice::AttachZBufferTo(RenderTarget* surf)
 
       return pZBuf;
    }
-   SAFE_RELEASE_NO_RCC(surf);
-#endif
+   SAFE_RELEASE_NO_RCC(surf); //!! ?
+#else
    return nullptr;
+#endif
 }
 
 //Only used for DX9
@@ -2615,8 +2626,7 @@ void RenderDevice::DrawPrimitive(const PrimitiveTypes type, const DWORD fvf, con
    VertexDeclaration * declaration = fvfToDecl(fvf);
    SetVertexDeclaration(declaration);
 
-   HRESULT hr;
-   hr = m_pD3DDevice->DrawPrimitiveUP((D3DPRIMITIVETYPE)type, np, vertices, fvfToSize(fvf));
+   HRESULT hr = m_pD3DDevice->DrawPrimitiveUP((D3DPRIMITIVETYPE)type, np, vertices, fvfToSize(fvf));
 
    if (FAILED(hr))
       ReportError("Fatal Error: DrawPrimitiveUP failed!", hr, __FILE__, __LINE__);
