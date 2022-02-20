@@ -222,18 +222,17 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
    vertexSource[vertex.length()] = 0;
 
    vertexShader = glCreateShader(GL_VERTEX_SHADER);
-   CHECKD3D();
-   CHECKD3D(glShaderSource(vertexShader, 1, &vertexSource, nullptr));
-   CHECKD3D(glCompileShader(vertexShader));
+   glShaderSource(vertexShader, 1, &vertexSource, nullptr);
+   glCompileShader(vertexShader);
 
-   CHECKD3D(glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result));
+   glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result);
    if (result == FALSE)
    {
       GLint maxLength;
-      CHECKD3D(glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &maxLength));
+      glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &maxLength);
       char* errorText = (char *)malloc(maxLength);
 
-      CHECKD3D(glGetShaderInfoLog(vertexShader, maxLength, &maxLength, errorText));
+      glGetShaderInfoLog(vertexShader, maxLength, &maxLength, errorText);
       LOG(1, fileNameRoot, string(shaderCodeName).append(": Vertex Shader compilation failed with: ").append(errorText));
       free(errorText);
       success = false;
@@ -245,18 +244,17 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
       geometrySource[geometry.length()] = 0;
 
       geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
-      CHECKD3D();
-      CHECKD3D(glShaderSource(geometryShader, 1, &geometrySource, nullptr));
-      CHECKD3D(glCompileShader(geometryShader));
+      glShaderSource(geometryShader, 1, &geometrySource, nullptr);
+      glCompileShader(geometryShader);
 
-      CHECKD3D(glGetShaderiv(geometryShader, GL_COMPILE_STATUS, &result));
+      glGetShaderiv(geometryShader, GL_COMPILE_STATUS, &result);
       if (result == FALSE)
       {
          GLint maxLength;
-         CHECKD3D(glGetShaderiv(geometryShader, GL_INFO_LOG_LENGTH, &maxLength));
+         glGetShaderiv(geometryShader, GL_INFO_LOG_LENGTH, &maxLength);
          char* errorText = (char *)malloc(maxLength);
 
-         CHECKD3D(glGetShaderInfoLog(geometryShader, maxLength, &maxLength, errorText));
+         glGetShaderInfoLog(geometryShader, maxLength, &maxLength, errorText);
          LOG(1, fileNameRoot, string(shaderCodeName).append(": Geometry Shader compilation failed with: ").append(errorText));
          free(errorText);
          success = false;
@@ -269,18 +267,17 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
       fragmentSource[fragment.length()] = 0;
 
       fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-      CHECKD3D();
-      CHECKD3D(glShaderSource(fragmentShader, 1, &fragmentSource, nullptr));
-      CHECKD3D(glCompileShader(fragmentShader));
+      glShaderSource(fragmentShader, 1, &fragmentSource, nullptr);
+      glCompileShader(fragmentShader);
 
-      CHECKD3D(glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &result));
+      glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &result);
       if (result == FALSE)
       {
          GLint maxLength;
-         CHECKD3D(glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &maxLength));
+         glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &maxLength);
          char* errorText = (char *)malloc(maxLength);
 
-         CHECKD3D(glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, errorText));
+         glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, errorText);
          LOG(1, fileNameRoot, string(shaderCodeName).append(": Fragment Shader compilation failed with: ").append(errorText));
          free(errorText);
          success = false;
@@ -289,23 +286,23 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
    if (success) {
       shaderprogram = glCreateProgram();
 
-      CHECKD3D(glAttachShader(shaderprogram, vertexShader));
-      if (geometryShader>0) CHECKD3D(glAttachShader(shaderprogram, geometryShader));
-      CHECKD3D(glAttachShader(shaderprogram, fragmentShader));
+      glAttachShader(shaderprogram, vertexShader);
+      if (geometryShader>0) glAttachShader(shaderprogram, geometryShader);
+      glAttachShader(shaderprogram, fragmentShader);
 
-      CHECKD3D(glLinkProgram(shaderprogram));
+      glLinkProgram(shaderprogram);
 
-      CHECKD3D(glGetProgramiv(shaderprogram, GL_LINK_STATUS, (int *)&result));
+      glGetProgramiv(shaderprogram, GL_LINK_STATUS, (int *)&result);
       if (result == FALSE)
       {
          GLint maxLength;
-         CHECKD3D(glGetProgramiv(shaderprogram, GL_INFO_LOG_LENGTH, &maxLength));
+         glGetProgramiv(shaderprogram, GL_INFO_LOG_LENGTH, &maxLength);
 
          /* The maxLength includes the NULL character */
          char* errorText = (char *)malloc(maxLength);
 
          /* Notice that glGetProgramInfoLog, not glGetShaderInfoLog. */
-         CHECKD3D(glGetProgramInfoLog(shaderprogram, maxLength, &maxLength, errorText));
+         glGetProgramInfoLog(shaderprogram, maxLength, &maxLength, errorText);
          LOG(1, fileNameRoot, string(shaderCodeName).append(": Linking Shader failed with: ").append(errorText));
          free(errorText);
          success = false;
@@ -323,9 +320,9 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
       shaderCode << fragment;
       shaderCode.close();
    }
-   CHECKD3D(glDeleteShader(vertexShader));
-   CHECKD3D(glDeleteShader(geometryShader));
-   CHECKD3D(glDeleteShader(fragmentShader));
+   glDeleteShader(vertexShader);
+   glDeleteShader(geometryShader);
+   glDeleteShader(fragmentShader);
    delete [] fragmentSource;
    delete [] geometrySource;
    delete [] vertexSource;
@@ -344,7 +341,7 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
 #endif
       shader.program = shaderprogram;
 
-      CHECKD3D(glGetProgramiv(shaderprogram, GL_ACTIVE_UNIFORMS, &count));
+      glGetProgramiv(shaderprogram, GL_ACTIVE_UNIFORMS, &count);
       char uniformName[256];
 #ifndef TWEAK_GL_SHADER
       shader.uniformLocation = new std::map<string, uniformLoc>;
@@ -353,9 +350,8 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
          GLenum type;
          int size;
          int length;
-         CHECKD3D(glGetActiveUniform(shader.program, (GLuint)i, 256, &length, &size, &type, uniformName));
+         glGetActiveUniform(shader.program, (GLuint)i, 256, &length, &size, &type, uniformName);
          int location = glGetUniformLocation(shader.program, uniformName);
-         CHECKD3D();
          if (location >= 0 && size>0) {
             uniformLoc newLoc = {};
             newLoc.location = location;
@@ -377,14 +373,13 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
          }
       }
 
-      CHECKD3D(glGetProgramiv(shaderprogram, GL_ACTIVE_UNIFORM_BLOCKS, &count));
+      glGetProgramiv(shaderprogram, GL_ACTIVE_UNIFORM_BLOCKS, &count);
       for (int i = 0;i < count;++i) {
          int size;
          int length;
-         CHECKD3D(glGetActiveUniformBlockName(shader.program, (GLuint)i, 256, &length, uniformName));
-         CHECKD3D(glGetActiveUniformBlockiv(shader.program, (GLuint)i, GL_UNIFORM_BLOCK_DATA_SIZE, &size));
+         glGetActiveUniformBlockName(shader.program, (GLuint)i, 256, &length, uniformName);
+         glGetActiveUniformBlockiv(shader.program, (GLuint)i, GL_UNIFORM_BLOCK_DATA_SIZE, &size);
          int location = glGetUniformBlockIndex(shader.program, uniformName);
-         CHECKD3D();
          if (location >= 0 && size>0) {
             uniformLoc newLoc = {};
             newLoc.location = location;
@@ -407,7 +402,7 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
          }
       }
 
-      CHECKD3D(glGetProgramiv(shaderprogram, GL_ACTIVE_ATTRIBUTES, &count));
+      glGetProgramiv(shaderprogram, GL_ACTIVE_ATTRIBUTES, &count);
 #ifdef TWEAK_GL_SHADER
       for (int i = 0; i < SHADER_ATTRIBUTE_COUNT; ++i) shader.attributeLocation[i] = { 0, -1, 0};
 #else
@@ -418,9 +413,8 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
          int size;
          int length;
          char attributeName[256];
-         CHECKD3D(glGetActiveAttrib(shader.program, (GLuint)i, 256, &length, &size, &type, attributeName));
+         glGetActiveAttrib(shader.program, (GLuint)i, 256, &length, &size, &type, attributeName);
          int location = glGetAttribLocation(shader.program, attributeName);
-         CHECKD3D();
          if (location >= 0) {
             attributeLoc newLoc = {};
             newLoc.location = location;
@@ -581,7 +575,7 @@ void Shader::Unload()
    if (shaderList.size() > 0)
       for (auto it = shaderList.begin(); it != shaderList.end(); it++)
       {
-         CHECKD3D(glDeleteProgram(it->second.program));
+         glDeleteProgram(it->second.program);
          it->second.uniformLocation->clear();
       }
    shaderList.clear();
@@ -599,7 +593,7 @@ void Shader::setAttributeFormat(DWORD fvf)
       const int location = m_currentTechnique->attributeLocation[i].location;
       if (location >= 0) {
          size_t offset;
-         CHECKD3D(glEnableVertexAttribArray(m_currentTechnique->attributeLocation[i].location));
+         glEnableVertexAttribArray(m_currentTechnique->attributeLocation[i].location);
          switch (i) {
          case SHADER_ATTRIBUTE_POS:
             offset = 0;
@@ -616,14 +610,14 @@ void Shader::setAttributeFormat(DWORD fvf)
             offset = 0;
             break;
          }
-         CHECKD3D(glVertexAttribPointer(m_currentTechnique->attributeLocation[i].location, m_currentTechnique->attributeLocation[i].size, GL_FLOAT, GL_FALSE, (fvf == MY_D3DFVF_TEX) ? 20 : 32, (void*)offset));
+         glVertexAttribPointer(m_currentTechnique->attributeLocation[i].location, m_currentTechnique->attributeLocation[i].size, GL_FLOAT, GL_FALSE, (fvf == MY_D3DFVF_TEX) ? 20 : 32, (void*)offset);
       }
    }
 #else
    for (auto it = m_currentTechnique->attributeLocation->begin(); it != m_currentTechnique->attributeLocation->end(); it++)
    {
       attributeLoc currentAttribute = it->second;
-      CHECKD3D(glEnableVertexAttribArray(currentAttribute.location));
+      glEnableVertexAttribArray(currentAttribute.location);
       int offset;
       int size;
       switch (fvf) {
@@ -654,7 +648,7 @@ void Shader::setAttributeFormat(DWORD fvf)
          ReportError("unknown Attribute configuration", 666,__FILE__, __LINE__);
          exit(-1);
       }
-      CHECKD3D(glVertexAttribPointer(currentAttribute.location, currentAttribute.size, GL_FLOAT, GL_FALSE, (fvf == MY_D3DFVF_TEX) ? 20 : 32, (void*)offset));
+      glVertexAttribPointer(currentAttribute.location, currentAttribute.size, GL_FLOAT, GL_FALSE, (fvf == MY_D3DFVF_TEX) ? 20 : 32, (void*)offset;
    }
 #endif
 }
@@ -662,7 +656,6 @@ void Shader::setAttributeFormat(DWORD fvf)
 void Shader::Begin(const unsigned int pass)
 {
    m_currentShader = this;
-   CHECKD3D();
    char msg[256];
 #ifdef TWEAK_GL_SHADER
    if (technique >= SHADER_TECHNIQUE_COUNT) {
@@ -691,7 +684,7 @@ void Shader::Begin(const unsigned int pass)
    if (lastShaderProgram != m_currentTechnique->program)
    {
       nextTextureSlot = 0;
-      CHECKD3D(glUseProgram(m_currentTechnique->program));
+      glUseProgram(m_currentTechnique->program);
       lastShaderProgram = m_currentTechnique->program;
    }
    else
@@ -711,234 +704,230 @@ void Shader::Begin(const unsigned int pass)
 #endif
       switch (currentUniform.type) {
       case -1: {//Uniform blocks
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          const auto valueFP = uniformFloatP[uniformName];
-         #else
+#else
          const auto valueFP = uniformFloatP.find(uniformName)->second;
-         #endif
-         CHECKD3D(glBindBuffer(GL_UNIFORM_BUFFER, currentUniform.blockBuffer));
-         CHECKD3D(glBufferData(GL_UNIFORM_BUFFER, currentUniform.size, valueFP.data, GL_STREAM_DRAW));
-         CHECKD3D(glUniformBlockBinding(lastShaderProgram, currentUniform.location, 0));
-         CHECKD3D(glBindBufferRange(GL_UNIFORM_BUFFER, 0, currentUniform.blockBuffer, 0, currentUniform.size));
+#endif
+         glBindBuffer(GL_UNIFORM_BUFFER, currentUniform.blockBuffer);
+         glBufferData(GL_UNIFORM_BUFFER, currentUniform.size, valueFP.data, GL_STREAM_DRAW);
+         glUniformBlockBinding(lastShaderProgram, currentUniform.location, 0);
+         glBindBufferRange(GL_UNIFORM_BUFFER, 0, currentUniform.blockBuffer, 0, currentUniform.size);
       }
       break;
       case GL_FLOAT:
       {
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          const float valueF = uniformFloat[uniformName];
-         #else
+#else
          auto entry = uniformFloat.find(uniformName);
          auto valueF = (entry != uniformFloat.end()) ? entry->second : 0.0f;
-         #endif
-         CHECKD3D(glUniform1f(currentUniform.location, valueF));
+#endif
+         glUniform1f(currentUniform.location, valueF);
       }
       break;
       case GL_BOOL:
       case GL_INT:
       {
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          const int valueI = uniformInt[uniformName];
-         #else
+#else
          const auto entry = uniformInt.find(uniformName);
          const auto valueI = (entry != uniformInt.end()) ? entry->second : 0;
-         #endif
-         CHECKD3D(glUniform1i(currentUniform.location, valueI));
+#endif
+         glUniform1i(currentUniform.location, valueI);
       }
       break;
       case GL_FLOAT_VEC2:
       {
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          auto valueFP = uniformFloatP[uniformName].data;
          if (valueFP)
-            {CHECKD3D(glUniform2f(currentUniform.location, valueFP[0], valueFP[1]));}
-         #else
+            glUniform2f(currentUniform.location, valueFP[0], valueFP[1]);
+#else
          auto valueFP = uniformFloatP.find(uniformName);
          if ((valueFP != uniformFloatP.end()) && valueFP->second.data)
-            {CHECKD3D(glUniform2f(currentUniform.location, valueFP->second.data[0], valueFP->second.data[1]));}
-         #endif
+            glUniform2f(currentUniform.location, valueFP->second.data[0], valueFP->second.data[1]);
+#endif
          else
-            {CHECKD3D(glUniform2f(currentUniform.location, 0.0f, 0.0f));}
+            glUniform2f(currentUniform.location, 0.0f, 0.0f);
       }
       break;
       case GL_FLOAT_VEC3:
       {
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          auto valueFP = uniformFloatP[uniformName].data;
          if (valueFP)
-            {CHECKD3D(glUniform3f(currentUniform.location, valueFP[0], valueFP[1], valueFP[2]));}
-         #else
+            glUniform3f(currentUniform.location, valueFP[0], valueFP[1], valueFP[2]);
+#else
          auto valueFP = uniformFloatP.find(uniformName);
          if ((valueFP != uniformFloatP.end()) && valueFP->second.data)
-            {CHECKD3D(glUniform3f(currentUniform.location, valueFP->second.data[0], valueFP->second.data[1], valueFP->second.data[2]));}
-         #endif
-         else 
-            {CHECKD3D(glUniform3f(currentUniform.location, 0.0f, 0.0f, 0.0f));}
+            glUniform3f(currentUniform.location, valueFP->second.data[0], valueFP->second.data[1], valueFP->second.data[2]);
+#endif
+         else
+            glUniform3f(currentUniform.location, 0.0f, 0.0f, 0.0f);
       }
       break;
       case GL_FLOAT_VEC4:
       {
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          auto valueFP = uniformFloatP[uniformName].data;
          if (valueFP)
-         {
-            CHECKD3D(glUniform4f(currentUniform.location, valueFP[0], valueFP[1], valueFP[2], valueFP[3]));
-         }
-         #else
+            glUniform4f(currentUniform.location, valueFP[0], valueFP[1], valueFP[2], valueFP[3]);
+#else
          auto valueFP = uniformFloatP.find(uniformName);
          if ((valueFP != uniformFloatP.end()) && valueFP->second.data)
-            {CHECKD3D(glUniform4fv(currentUniform.location, valueFP->second.len/4, valueFP->second.data));}
-         #endif
+            glUniform4fv(currentUniform.location, valueFP->second.len/4, valueFP->second.data);
+#endif
          else 
-            {CHECKD3D(glUniform4f(currentUniform.location, 0.0f, 0.0f, 0.0f, 0.0f));}
+            glUniform4f(currentUniform.location, 0.0f, 0.0f, 0.0f, 0.0f);
       }
       break;
       case GL_FLOAT_MAT2:
       {
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         #else
+#else
          const auto entry = uniformFloatP.find(uniformName);
          const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
-         #endif
-         CHECKD3D(glUniformMatrix2fv(currentUniform.location, 1, GL_FALSE, valueFP));
+#endif
+         glUniformMatrix2fv(currentUniform.location, 1, GL_FALSE, valueFP);
       }
       break;
       case GL_FLOAT_MAT3:
       {
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         #else
+#else
          const auto entry = uniformFloatP.find(uniformName);
          const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
-         #endif
-         CHECKD3D(glUniformMatrix3fv(currentUniform.location, 1, GL_FALSE, valueFP));
+#endif
+         glUniformMatrix3fv(currentUniform.location, 1, GL_FALSE, valueFP);
       }
       break;
       case GL_FLOAT_MAT4:
       {
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         #else
+#else
          const auto entry = uniformFloatP.find(uniformName);
          const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
-         #endif
-         CHECKD3D(glUniformMatrix4fv(currentUniform.location, 1, GL_FALSE, valueFP));
+#endif
+         glUniformMatrix4fv(currentUniform.location, 1, GL_FALSE, valueFP);
       }
       break;
       case GL_FLOAT_MAT4x3:
       {
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         #else
+#else
          const auto entry = uniformFloatP.find(uniformName);
          const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
-         #endif
-         CHECKD3D(glUniformMatrix4x3fv(currentUniform.location, 1, GL_FALSE, valueFP));
+#endif
+         glUniformMatrix4x3fv(currentUniform.location, 1, GL_FALSE, valueFP);
       }
       break;
       case GL_FLOAT_MAT4x2:
       {
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         #else
+#else
          const auto entry = uniformFloatP.find(uniformName);
          const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
-         #endif
-         CHECKD3D(glUniformMatrix4x2fv(currentUniform.location, 1, GL_FALSE, valueFP));
+#endif
+         glUniformMatrix4x2fv(currentUniform.location, 1, GL_FALSE, valueFP);
       }
       break;
       case GL_FLOAT_MAT3x4:
       {
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         #else
+#else
          const auto entry = uniformFloatP.find(uniformName);
          const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
-         #endif
-         CHECKD3D(glUniformMatrix3x4fv(currentUniform.location, 1, GL_FALSE, valueFP));
+#endif
+         glUniformMatrix3x4fv(currentUniform.location, 1, GL_FALSE, valueFP);
       }
       break;
       case GL_FLOAT_MAT2x4:
       {
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         #else
+#else
          const auto entry = uniformFloatP.find(uniformName);
          const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
-         #endif
-         CHECKD3D(glUniformMatrix2x4fv(currentUniform.location, 1, GL_FALSE, valueFP));
+#endif
+         glUniformMatrix2x4fv(currentUniform.location, 1, GL_FALSE, valueFP);
       }
       break;
       case GL_FLOAT_MAT3x2:
       {
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         #else
+#else
          const auto entry = uniformFloatP.find(uniformName);
          const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
-         #endif
-         CHECKD3D(glUniformMatrix3x2fv(currentUniform.location, 1, GL_FALSE, valueFP));
+#endif
+         glUniformMatrix3x2fv(currentUniform.location, 1, GL_FALSE, valueFP);
       }
       break;
       case GL_FLOAT_MAT2x3:
       {
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         #else
+#else
          const auto entry = uniformFloatP.find(uniformName);
          const auto valueFP = ((entry != uniformFloatP.end()) && entry->second.data) ? entry->second.data : zeroData;
-         #endif
-         CHECKD3D(glUniformMatrix2x3fv(currentUniform.location, 1, GL_FALSE, valueFP));
+#endif
+         glUniformMatrix2x3fv(currentUniform.location, 1, GL_FALSE, valueFP);
       }
       break;
       case GL_SAMPLER_2D_MULTISAMPLE:
       {
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          int TextureID;
          if (uniformTex[uniformName]>0) {
             TextureID = uniformTex[uniformName];
          }
-         #else
+#else
          const auto valueT = uniformTex.find(uniformName);
          int TextureID;
          if (valueT != uniformTex.end()) {
             TextureID = valueT->second;
          }
-         #endif
+#endif
          else {
             if (!noTextureMSAA) {
-               unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
+               constexpr unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
                noTextureMSAA = m_renderDevice->CreateTexture(2, 2, 0, RENDERTARGET_MSAA, RGBA, &data, 0);
             }
             TextureID = noTextureMSAA->texture;
          }
-         CHECKD3D(glActiveTexture(GL_TEXTURE0 + nextTextureSlot));
-         CHECKD3D(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, TextureID));
-         CHECKD3D(glUniform1i(currentUniform.location, nextTextureSlot));
+         glActiveTexture(GL_TEXTURE0 + nextTextureSlot);
+         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, TextureID);
+         glUniform1i(currentUniform.location, nextTextureSlot);
 
          nextTextureSlot = (nextTextureSlot+1) % maxSlots;
       }
       break;
       case GL_SAMPLER_2D:
       {
-         #ifdef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
          int TextureID;
-         if (uniformTex[uniformName]>0) {
+         if (uniformTex[uniformName]>0)
             TextureID = uniformTex[uniformName];
-         }
-         #else
+#else
          auto valueT = uniformTex.find(uniformName);
 /*         int Shader::nextTextureSlot = 0;
          static int* textureSlotList = nullptr;
          static std::map<int, int> slotTextureList;*/
          int TextureID;
-         if (valueT != uniformTex.end()) {
+         if (valueT != uniformTex.end())
             TextureID = valueT->second;
-         }
-         #endif
+#endif
          else {
-            if (!noTexture) { 
-               unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
+            if (!noTexture) {
+               constexpr unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
                noTexture = m_renderDevice->CreateTexture(2, 2, 0, STATIC, RGBA, &data, 0);
             }
             TextureID = noTexture->texture;
@@ -946,22 +935,22 @@ void Shader::Begin(const unsigned int pass)
 //Texture Cache
 /*         auto slot = slotTextureList.find(TextureID);
          if ((slot == slotTextureList.end()) || (textureSlotList[slot->second] != TextureID)) {
-            CHECKD3D(glActiveTexture(GL_TEXTURE0 + nextTextureSlot));
-            CHECKD3D(glBindTexture(GL_TEXTURE_2D, TextureID));//TODO implement a cache for textures
-            CHECKD3D(glUniform1i(currentUniform.location, nextTextureSlot));
+            glActiveTexture(GL_TEXTURE0 + nextTextureSlot);
+            glBindTexture(GL_TEXTURE_2D, TextureID);//TODO implement a cache for textures
+            glUniform1i(currentUniform.location, nextTextureSlot);
             slotTextureList[TextureID] = nextTextureSlot;
             textureSlotList[nextTextureSlot] = TextureID;
             nextTextureSlot = (++nextTextureSlot) % maxSlots;
          }
          else {
-            CHECKD3D(glActiveTexture(GL_TEXTURE0 + slot->second));
-            CHECKD3D(glBindTexture(GL_TEXTURE_2D, TextureID));//TODO implement a cache for textures
-            CHECKD3D(glUniform1i(currentUniform.location, slot->second));
+            glActiveTexture(GL_TEXTURE0 + slot->second);
+            glBindTexture(GL_TEXTURE_2D, TextureID);//TODO implement a cache for textures
+            glUniform1i(currentUniform.location, slot->second);
          }
          */
-         CHECKD3D(glActiveTexture(GL_TEXTURE0 + nextTextureSlot));
-         CHECKD3D(glBindTexture(GL_TEXTURE_2D, TextureID));//TODO implement a cache for textures
-         CHECKD3D(glUniform1i(currentUniform.location, nextTextureSlot));
+         glActiveTexture(GL_TEXTURE0 + nextTextureSlot);
+         glBindTexture(GL_TEXTURE_2D, TextureID);//TODO implement a cache for textures
+         glUniform1i(currentUniform.location, nextTextureSlot);
          nextTextureSlot = (nextTextureSlot+1) % maxSlots;
       }
       break;
@@ -989,7 +978,6 @@ void Shader::setTextureDirty(int TextureID) {//Invalidate cache
 void Shader::End()
 {
    //Nothing to do for GL
-   CHECKD3D();
 }
 
 void Shader::SetTextureDepth(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel) {
@@ -1008,17 +996,13 @@ void Shader::SetTextureDepth(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *
       auto loc = m_currentTechnique->uniformLocation->find(texelName);
       if (loc == m_currentTechnique->uniformLocation->end()) return;
       auto location = loc->second;
-#endif  
-      CHECKD3D(glActiveTexture(GL_TEXTURE0 + nextTextureSlot));
+#endif
+      glActiveTexture(GL_TEXTURE0 + nextTextureSlot);
       if (texel->usage == RENDERTARGET_MSAA || texel->usage == RENDERTARGET_MSAA_DEPTH)
-      {
-         CHECKD3D(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texel->zTexture));
-      }
+         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texel->zTexture);
       else
-      {
-         CHECKD3D(glBindTexture(GL_TEXTURE_2D, texel->zTexture));
-      }
-      CHECKD3D(glUniform1i(location.location, nextTextureSlot));
+         glBindTexture(GL_TEXTURE_2D, texel->zTexture);
+      glUniform1i(location.location, nextTextureSlot);
       nextTextureSlot = (nextTextureSlot+1) % maxSlots;//TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
    }
 }
@@ -1048,17 +1032,13 @@ void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel
       auto loc = m_currentTechnique->uniformLocation->find(texelName);
       if (loc == m_currentTechnique->uniformLocation->end()) return;
       auto location = loc->second;
-#endif  
-      CHECKD3D(glActiveTexture(GL_TEXTURE0 + nextTextureSlot));
+#endif
+      glActiveTexture(GL_TEXTURE0 + nextTextureSlot);
       if (texel->usage == RENDERTARGET_MSAA || texel->usage == RENDERTARGET_MSAA_DEPTH)
-      {
-         CHECKD3D(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texel->texture));
-      }
+         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texel->texture);
       else
-      {
-         CHECKD3D(glBindTexture(GL_TEXTURE_2D, texel->texture));
-      }
-      CHECKD3D(glUniform1i(location.location, nextTextureSlot));
+         glBindTexture(GL_TEXTURE_2D, texel->texture);
+      glUniform1i(location.location, nextTextureSlot);
       nextTextureSlot = (nextTextureSlot+1) % maxSlots;//TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
    }
 }
@@ -1121,10 +1101,10 @@ void Shader::SetUniformBlock(const SHADER_UNIFORM_HANDLE hParameter, const float
       if (loc == m_currentTechnique->uniformLocation->end()) return;
       auto location = loc->second;
 #endif
-      CHECKD3D(glBindBuffer(GL_UNIFORM_BUFFER, location.blockBuffer));
-      CHECKD3D(glBufferData(GL_UNIFORM_BUFFER, sizeof(GLfloat) * size, elem.data, GL_STREAM_DRAW));
-      CHECKD3D(glUniformBlockBinding(lastShaderProgram, location.location, 0));
-      CHECKD3D(glBindBufferRange(GL_UNIFORM_BUFFER, 0, location.blockBuffer, 0, sizeof(GLfloat) * size));
+      glBindBuffer(GL_UNIFORM_BUFFER, location.blockBuffer);
+      glBufferData(GL_UNIFORM_BUFFER, sizeof(GLfloat) * size, elem.data, GL_STREAM_DRAW);
+      glUniformBlockBinding(lastShaderProgram, location.location, 0);
+      glBindBufferRange(GL_UNIFORM_BUFFER, 0, location.blockBuffer, 0, sizeof(GLfloat) * size);
    }
 }
 
@@ -1168,31 +1148,31 @@ void Shader::SetMatrix(const SHADER_UNIFORM_HANDLE hParameter, const Matrix3D* p
 #endif
       switch (location.type) {
       case GL_FLOAT_MAT2:
-         CHECKD3D(glUniformMatrix2fv(location.location, 1, GL_FALSE, elem.data));
+         glUniformMatrix2fv(location.location, 1, GL_FALSE, elem.data);
          break;
       case GL_FLOAT_MAT3:
-         CHECKD3D(glUniformMatrix3fv(location.location, 1, GL_FALSE, elem.data));
+         glUniformMatrix3fv(location.location, 1, GL_FALSE, elem.data);
          break;
       case GL_FLOAT_MAT4:
-         CHECKD3D(glUniformMatrix4fv(location.location, 1, GL_FALSE, elem.data));
+         glUniformMatrix4fv(location.location, 1, GL_FALSE, elem.data);
          break;
       case GL_FLOAT_MAT4x3:
-         CHECKD3D(glUniformMatrix4x3fv(location.location, 1, GL_FALSE, elem.data));
+         glUniformMatrix4x3fv(location.location, 1, GL_FALSE, elem.data);
          break;
       case GL_FLOAT_MAT4x2:
-         CHECKD3D(glUniformMatrix4x2fv(location.location, 1, GL_FALSE, elem.data));
+         glUniformMatrix4x2fv(location.location, 1, GL_FALSE, elem.data);
          break;
       case GL_FLOAT_MAT3x4:
-         CHECKD3D(glUniformMatrix3x4fv(location.location, 1, GL_FALSE, elem.data));
+         glUniformMatrix3x4fv(location.location, 1, GL_FALSE, elem.data);
          break;
       case GL_FLOAT_MAT2x4:
-         CHECKD3D(glUniformMatrix2x4fv(location.location, 1, GL_FALSE, elem.data));
+         glUniformMatrix2x4fv(location.location, 1, GL_FALSE, elem.data);
          break;
       case GL_FLOAT_MAT3x2:
-         CHECKD3D(glUniformMatrix3x2fv(location.location, 1, GL_FALSE, elem.data));
+         glUniformMatrix3x2fv(location.location, 1, GL_FALSE, elem.data);
          break;
       case GL_FLOAT_MAT2x3:
-         CHECKD3D(glUniformMatrix2x3fv(location.location, 1, GL_FALSE, elem.data));
+         glUniformMatrix2x3fv(location.location, 1, GL_FALSE, elem.data);
          break;
       }
    }
@@ -1242,13 +1222,13 @@ void Shader::SetVector(const SHADER_UNIFORM_HANDLE hParameter, const vec4* pVect
 #endif
       switch (location.type) {
       case GL_FLOAT_VEC2:
-         CHECKD3D(glUniform2fv(location.location, 1, elem.data));
+         glUniform2fv(location.location, 1, elem.data);
          break;
       case GL_FLOAT_VEC3:
-         CHECKD3D(glUniform3fv(location.location, 1, elem.data));
+         glUniform3fv(location.location, 1, elem.data);
          break;
       case GL_FLOAT_VEC4:
-         CHECKD3D(glUniform4fv(location.location, 1, elem.data));
+         glUniform4fv(location.location, 1, elem.data);
          break;
       }
    }
@@ -1301,13 +1281,13 @@ void Shader::SetVector(const SHADER_UNIFORM_HANDLE hParameter, const float x, co
 #endif
       switch (location.type) {
       case GL_FLOAT_VEC2:
-         CHECKD3D(glUniform2fv(location.location, 1, elem.data));
+         glUniform2fv(location.location, 1, elem.data);
          break;
       case GL_FLOAT_VEC3:
-         CHECKD3D(glUniform3fv(location.location, 1, elem.data));
+         glUniform3fv(location.location, 1, elem.data);
          break;
       case GL_FLOAT_VEC4:
-         CHECKD3D(glUniform4fv(location.location, 1, elem.data));
+         glUniform4fv(location.location, 1, elem.data);
          break;
       }
    }
@@ -1329,7 +1309,7 @@ void Shader::SetFloat(const SHADER_UNIFORM_HANDLE hParameter, const float f)
       if (loc == m_currentTechnique->uniformLocation->end()) return;
       auto location = loc->second;
 #endif
-      CHECKD3D(glUniform1f(location.location, f));
+      glUniform1f(location.location, f);
    }
 }
 
@@ -1349,7 +1329,7 @@ void Shader::SetInt(const SHADER_UNIFORM_HANDLE hParameter, const int i)
       if (loc == m_currentTechnique->uniformLocation->end()) return;
       auto location = loc->second;
 #endif
-      CHECKD3D(glUniform1i(location.location, i));
+      glUniform1i(location.location, i);
    }
 }
 
@@ -1370,7 +1350,7 @@ void Shader::SetBool(const SHADER_UNIFORM_HANDLE hParameter, const bool b)
       if (loc == m_currentTechnique->uniformLocation->end()) return;
       auto location = loc->second;
 #endif
-      CHECKD3D(glUniform1i(location.location, i));
+      glUniform1i(location.location, i);
    }
 }
 
@@ -1430,7 +1410,7 @@ void Shader::SetFloatArray(const SHADER_UNIFORM_HANDLE hParameter, const float* 
       if (loc == m_currentTechnique->uniformLocation->end()) return;
       auto location = loc->second;
 #endif
-      CHECKD3D(glUniform4fv(location.location, count, elem.data));
+      glUniform4fv(location.location, count, elem.data);
    }
 }
 

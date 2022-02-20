@@ -280,7 +280,7 @@ void ReportError(const char *errorText, const HRESULT hr, const char *file, cons
 #endif
 }
 
-#ifdef ENABLE_SDL
+#if 0//def ENABLE_SDL //not used anymore
 void checkGLErrors(const char *file, const int line) {
    GLenum err;
    unsigned int count = 0;
@@ -292,6 +292,117 @@ void checkGLErrors(const char *file, const int line) {
       exit(-1);
    }*/
 }
+
+// Callback function for printing debug statements
+#ifdef _DEBUG
+void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id,
+                            GLenum severity, GLsizei length,
+                            const GLchar *msg, const void *data)
+{
+    char* _source;
+    switch (source) {
+        case GL_DEBUG_SOURCE_API:
+        _source = "API";
+        break;
+
+        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+        _source = "WINDOW SYSTEM";
+        break;
+
+        case GL_DEBUG_SOURCE_SHADER_COMPILER:
+        _source = "SHADER COMPILER";
+        break;
+
+        case GL_DEBUG_SOURCE_THIRD_PARTY:
+        _source = "THIRD PARTY";
+        break;
+
+        case GL_DEBUG_SOURCE_APPLICATION:
+        _source = "APPLICATION";
+        break;
+
+        case GL_DEBUG_SOURCE_OTHER:
+        _source = "UNKNOWN";
+        break;
+
+        default:
+        _source = "UNHANDLED";
+        break;
+    }
+
+    char* _type;
+    switch (type) {
+        case GL_DEBUG_TYPE_ERROR:
+        _type = "ERROR";
+        break;
+
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        _type = "DEPRECATED BEHAVIOR";
+        break;
+
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        _type = "UNDEFINED BEHAVIOR";
+        break;
+
+        case GL_DEBUG_TYPE_PORTABILITY:
+        _type = "PORTABILITY";
+        break;
+
+        case GL_DEBUG_TYPE_PERFORMANCE:
+        _type = "PERFORMANCE";
+        break;
+
+        case GL_DEBUG_TYPE_OTHER:
+        _type = "OTHER";
+        break;
+
+        case GL_DEBUG_TYPE_MARKER:
+        _type = "MARKER";
+        break;
+
+        case GL_DEBUG_TYPE_PUSH_GROUP:
+        _type = "GL_DEBUG_TYPE_PUSH_GROUP";
+        break;
+
+        case GL_DEBUG_TYPE_POP_GROUP:
+        _type = "GL_DEBUG_TYPE_POP_GROUP";
+        break;
+
+    	default:
+        _type = "UNHANDLED";
+        break;
+    }
+
+    char* _severity;
+    switch (severity) {
+        case GL_DEBUG_SEVERITY_HIGH:
+        _severity = "HIGH";
+        break;
+
+        case GL_DEBUG_SEVERITY_MEDIUM:
+        _severity = "MEDIUM";
+        break;
+
+        case GL_DEBUG_SEVERITY_LOW:
+        _severity = "LOW";
+        break;
+
+        case GL_DEBUG_SEVERITY_NOTIFICATION:
+        _severity = "NOTIFICATION";
+        break;
+
+        default:
+        _severity = "UNHANDLED";
+        break;
+    }
+
+    //if(severity != GL_DEBUG_SEVERITY_NOTIFICATION)
+    fprintf(stderr,"%d: %s of %s severity, raised from %s: %s\n", id, _type, _severity, _source, msg);
+
+    if (type == GL_DEBUG_TYPE_ERROR || type == GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR || severity == GL_DEBUG_SEVERITY_HIGH)
+        ShowError(msg);
+}
+#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////
@@ -787,7 +898,18 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       exit(-1);
    }
 
-   m_GLversion = gl_majorVersion * 100 + gl_minorVersion;
+   m_GLversion = gl_majorVersion*100 + gl_minorVersion;
+
+   // Enable debugging layer of OpenGL
+#ifdef _DEBUG
+   glEnable(GL_DEBUG_OUTPUT); // on its own is the 'fast' version
+   //glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // callback is in sync with errors, so a breakpoint can be placed on the callback in order to get a stacktrace for the GL error
+   glDebugMessageCallback(GLDebugMessageCallback, nullptr);
+#endif
+#if 0
+   glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_FALSE); // disable all
+   glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_ERROR, GL_DONT_CARE, 0, nullptr, GL_TRUE); // enable only errors
+#endif
 
    GLint frameBuffer[4];
    glGetIntegerv(GL_VIEWPORT, frameBuffer);
@@ -847,8 +969,6 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       throw(unknownStereoMode);
    }
 
-   CHECKD3D();
-
    if (m_stereo3D == STEREO_VR || m_vsync > refreshrate)
       m_vsync = 0;
    SDL_GL_SetSwapInterval(m_vsync);
@@ -860,7 +980,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    m_pBackBuffer->width = fbWidth;
    m_pBackBuffer->height = fbHeight;
 
-   CHECKD3D(glGetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)(&m_pBackBuffer->framebuffer)));
+   glGetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)(&m_pBackBuffer->framebuffer));
 
    constexpr colorFormat renderBufferFormat = RGBA16F;
 
@@ -939,7 +1059,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    m_curTextureUpdates = m_frameTextureUpdates = 0;
 
    m_maxaniso = 0;
-   CHECKD3D(glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &m_maxaniso));
+   glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &m_maxaniso);
 
    if (m_quadVertexBuffer == nullptr) {
       VertexBuffer::CreateVertexBuffer(4, USAGE_STATIC, MY_D3DFVF_TEX, &m_quadVertexBuffer, PRIMARY_DEVICE); //!!
@@ -957,14 +1077,11 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    }
 
    SetRenderState(RenderDevice::ZFUNC, RenderDevice::Z_LESSEQUAL);
-
-   CHECKD3D();
 }
 
 bool RenderDevice::LoadShaders()
 {
    bool shaderCompilationOkay = true;
-   CHECKD3D();
 
    char glShaderPath[MAX_PATH];
    /*DWORD length =*/ GetModuleFileName(nullptr, glShaderPath, MAX_PATH);
@@ -1020,7 +1137,7 @@ bool RenderDevice::LoadShaders()
 
    if (!shaderCompilationOkay)
       ReportError("Fatal Error: shader files not found or shader compilation failed!", -1, __FILE__, __LINE__);
-   CHECKD3D();
+
    if (shaderCompilationOkay && m_FXAA == Quality_SMAA)
       UploadAndSetSMAATextures();
    else
@@ -2201,9 +2318,9 @@ void RenderDevice::UpdateTexture(D3DTexture* const tex, BaseTexture* const surf,
    const GLuint col_type = ((tex->format == RGBA32F) || (tex->format == RGBA16F) || (tex->format == RGB32F) || (tex->format == RGB16F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
    const GLuint col_format = (tex->format == GREY) ? GL_RED : (tex->format == GREY_ALPHA) ? GL_RG : ((tex->format == RGB) || (tex->format == RGB5) || (tex->format == RGB10) || (tex->format == RGB16F) || (tex->format == RGB32F)) ? GL_BGR : GL_BGRA;
    glBindTexture(GL_TEXTURE_2D, tex->texture);
-   CHECKD3D(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, surf->width(), surf->height(), col_format, col_type, surf->data()));
-   //CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, tex->format, surf->width(), surf->height(), 0, col_format, col_type, surf->data())); // Use TexStorage instead
-   CHECKD3D(glGenerateMipmap(GL_TEXTURE_2D)); // Generate mip-maps
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, surf->width(), surf->height(), col_format, col_type, surf->data());
+   //glTexImage2D(GL_TEXTURE_2D, 0, tex->format, surf->width(), surf->height(), 0, col_format, col_type, surf->data()); // Use TexStorage instead
+   glGenerateMipmap(GL_TEXTURE_2D); // Generate mip-maps
    glBindTexture(GL_TEXTURE_2D, 0);
 #else
    IDirect3DTexture9* sysTex = CreateSystemTexture(surf, linearRGB);
@@ -2216,8 +2333,8 @@ void RenderDevice::UpdateTexture(D3DTexture* const tex, BaseTexture* const surf,
 void RenderDevice::SetSamplerState(const DWORD Sampler, const DWORD minFilter, const DWORD magFilter, const SamplerStateValues mipFilter)
 {
 #ifdef ENABLE_SDL
-/*   CHECKD3D(glSamplerParameteri(Sampler, GL_TEXTURE_MIN_FILTER, minFilter ? (mipFilter ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR) : GL_NEAREST));
-   CHECKD3D(glSamplerParameteri(Sampler, GL_TEXTURE_MAG_FILTER, magFilter ? (mipFilter ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR) : GL_NEAREST));
+/*   glSamplerParameteri(Sampler, GL_TEXTURE_MIN_FILTER, minFilter ? (mipFilter ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR) : GL_NEAREST);
+   glSamplerParameteri(Sampler, GL_TEXTURE_MAG_FILTER, magFilter ? (mipFilter ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR) : GL_NEAREST);
    m_curStateChanges += 2;*/
 #else
    if (textureSamplerCache[Sampler][D3DSAMP_MINFILTER] != minFilter)
@@ -2343,7 +2460,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
    //static int currentStereoMode = -1;
    if (currentFrameBuffer != (texture ? texture->framebuffer : 0)) {
       currentFrameBuffer = texture ? texture->framebuffer : 0;
-      CHECKD3D(glBindFramebuffer(GL_FRAMEBUFFER, currentFrameBuffer));
+      glBindFramebuffer(GL_FRAMEBUFFER, currentFrameBuffer);
       //currentStereoMode = -1;
    }
    if (texture && (texture->texture) > 0) Shader::setTextureDirty(texture->texture);
@@ -2351,39 +2468,39 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
       //currentStereoMode = ignoreStereo ? 0 : texture->stereo;
       if (ignoreStereo)
       {
-         CHECKD3D(glViewport(0, 0, texture->width, texture->height));
+         glViewport(0, 0, texture->width, texture->height);
       }
       else
          switch (texture->stereo) {
          case STEREO_OFF:
-            CHECKD3D(glViewport(0, 0, texture->width, texture->height));
+            glViewport(0, 0, texture->width, texture->height);
             lightShader->SetBool(SHADER_ignoreStereo, true); // For non-stereo lightbulb texture, can't use pre-processor for this
             break;
          case STEREO_TB:
          case STEREO_INT:
-            CHECKD3D(glViewport(0, 0, texture->width, texture->height / 2)); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
+            glViewport(0, 0, texture->width, texture->height / 2); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
             viewPorts[2] = viewPorts[6] = (float)texture->width;
             viewPorts[3] = viewPorts[7] = (float)texture->height / 2.0f;
             viewPorts[4] = 0.0f;
             viewPorts[5] = (float)texture->height / 2.0f;
-            CHECKD3D(glViewportArrayv(0, 2, viewPorts));
+            glViewportArrayv(0, 2, viewPorts);
             lightShader->SetBool(SHADER_ignoreStereo, false);
             break;
          case STEREO_SBS:
          case STEREO_VR:
-            CHECKD3D(glViewport(0, 0, texture->width / 2, texture->height)); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
+            glViewport(0, 0, texture->width / 2, texture->height); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
             viewPorts[2] = viewPorts[6] = (float)texture->width / 2.0f;
             viewPorts[3] = viewPorts[7] = (float)texture->height;
             viewPorts[4] = (float)texture->width / 2.0f;
             viewPorts[5] = 0.0f;
-            CHECKD3D(glViewportArrayv(0, 2, viewPorts));
+            glViewportArrayv(0, 2, viewPorts);
             lightShader->SetBool(SHADER_ignoreStereo, false);
             break;
          }
    }
    else {
       //currentStereoMode = 0;
-      CHECKD3D(glViewport(0, 0, m_pBackBuffer->width, m_pBackBuffer->height));
+      glViewport(0, 0, m_pBackBuffer->width, m_pBackBuffer->height);
    }
 #else
    RenderTarget *surf = nullptr;
@@ -2437,28 +2554,28 @@ void RenderDevice::SetRenderState(const RenderStates p1, DWORD p2)
    switch (p1) {
       //glEnable and glDisable functions
    case ALPHABLENDENABLE:
-      CHECKD3D({ if (p2) glEnable(GL_BLEND); else glDisable(GL_BLEND); });
+      if (p2) glEnable(GL_BLEND); else glDisable(GL_BLEND);
       break;
    case ZENABLE:
-      CHECKD3D({ if (p2) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST); });
+      if (p2) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
       break;
    case BLENDOP:
-      CHECKD3D(glBlendEquation(p2));
+      glBlendEquation(p2);
       break;
    case SRCBLEND:
-      CHECKD3D(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       break;
    case DESTBLEND:
-      CHECKD3D(glBlendFunc(renderStateCache[SRCBLEND], renderStateCache[DESTBLEND]));
+      glBlendFunc(renderStateCache[SRCBLEND], renderStateCache[DESTBLEND]);
       break;
    case ZFUNC:
-      CHECKD3D(glDepthFunc(p2));
+      glDepthFunc(p2);
       break;
    case ZWRITEENABLE:
-      CHECKD3D(glDepthMask(p2 ? GL_TRUE : GL_FALSE));
+      glDepthMask(p2 ? GL_TRUE : GL_FALSE);
       break;
    case COLORWRITEENABLE:
-      CHECKD3D(glColorMask((p2 & 1) ? GL_TRUE : GL_FALSE, (p2 & 2) ? GL_TRUE : GL_FALSE, (p2 & 4) ? GL_TRUE : GL_FALSE, (p2 & 8) ? GL_TRUE : GL_FALSE));
+      glColorMask((p2 & 1) ? GL_TRUE : GL_FALSE, (p2 & 2) ? GL_TRUE : GL_FALSE, (p2 & 4) ? GL_TRUE : GL_FALSE, (p2 & 8) ? GL_TRUE : GL_FALSE);
       break;
       //Replaced by specific function
    case DEPTHBIAS:
@@ -2490,16 +2607,16 @@ void RenderDevice::SetRenderStateCulling(RenderStateValue cull)
          cull = CULL_CCW;
    }
    if (renderStateCache[RenderStates::CULLMODE] == CULL_NONE && (cull != CULL_NONE))
-      CHECKD3D(glEnable(GL_CULL_FACE));
+      glEnable(GL_CULL_FACE);
    if (SetRenderStateCache(CULLMODE, cull)) return;
 
 #ifdef ENABLE_SDL
    if (cull == CULL_NONE) {
-     CHECKD3D(glDisable(GL_CULL_FACE));
+      glDisable(GL_CULL_FACE);
    }
    else {
-      CHECKD3D(glFrontFace(cull));
-      CHECKD3D(glCullFace(GL_FRONT));
+      glFrontFace(cull);
+      glCullFace(GL_FRONT);
    }
 #else
    CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)CULLMODE, cull));
@@ -2513,11 +2630,11 @@ void RenderDevice::SetRenderStateDepthBias(float bias)
 
 #ifdef ENABLE_SDL
    if (bias == 0.0f) {
-      CHECKD3D(glDisable(GL_POLYGON_OFFSET_FILL));
+      glDisable(GL_POLYGON_OFFSET_FILL);
    }
    else {
-      CHECKD3D(glEnable(GL_POLYGON_OFFSET_FILL));
-      CHECKD3D(glPolygonOffset(0.0f, bias));
+      glEnable(GL_POLYGON_OFFSET_FILL);
+      glPolygonOffset(0.0f, bias);
    }
 #else
    bias *= BASEDEPTHBIAS;
@@ -2532,11 +2649,10 @@ void RenderDevice::SetRenderStateClipPlane0(const bool enabled)
 
 #ifdef ENABLE_SDL
    // Basicshader already prepared with proper clipplane so just need to enable/disable it
-   if (enabled) {
-      CHECKD3D(glEnable(GL_CLIP_DISTANCE0));
-   }
+   if (enabled)
+      glEnable(GL_CLIP_DISTANCE0);
    else
-      CHECKD3D(glDisable(GL_CLIP_DISTANCE0));
+      glDisable(GL_CLIP_DISTANCE0);
 #else
    CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)CLIPPLANEENABLE, enabled ? PLANE0 : 0));
 #endif 
@@ -2656,8 +2772,8 @@ void RenderDevice::DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, V
 
    vb->bind();
 #ifdef ENABLE_SDL
-   //CHECKD3D(glDrawArraysInstanced(type, vb->getOffset() + startVertex, vertexCount, m_stereo3D != STEREO_OFF ? 2 : 1)); // Do instancing in geometry shader instead
-   CHECKD3D(glDrawArrays(type, vb->getOffset() + startVertex, vertexCount));
+   //glDrawArraysInstanced(type, vb->getOffset() + startVertex, vertexCount, m_stereo3D != STEREO_OFF ? 2 : 1); // Do instancing in geometry shader instead
+   glDrawArrays(type, vb->getOffset() + startVertex, vertexCount);
 #else
    VertexDeclaration * declaration = fvfToDecl(fvf);
    SetVertexDeclaration(declaration);
@@ -2680,8 +2796,8 @@ void RenderDevice::DrawIndexedPrimitiveVB(const PrimitiveTypes type, const DWORD
    ib->bind();
 #ifdef ENABLE_SDL
    const int offset = ib->getOffset() + (ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? 2 : 4) * startIndex;
-   //CHECKD3D(glDrawElementsInstancedBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, m_stereo3D != STEREO_OFF ? 2 : 1, vb->getOffset() + startVertex)); // Do instancing in geometry shader instead
-   CHECKD3D(glDrawElementsBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, vb->getOffset() + startVertex));
+   //glDrawElementsInstancedBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, m_stereo3D != STEREO_OFF ? 2 : 1, vb->getOffset() + startVertex); // Do instancing in geometry shader instead
+   glDrawElementsBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, vb->getOffset() + startVertex);
 #else
    VertexDeclaration * declaration = fvfToDecl(fvf);
    SetVertexDeclaration(declaration);
@@ -2841,24 +2957,24 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    // Create MSAA/Non-MSAA Renderbuffers
    if ((tex->usage == RENDERTARGET) || (tex->usage == RENDERTARGET_DEPTH) || (tex->usage == RENDERTARGET_MSAA) || (tex->usage == RENDERTARGET_MSAA_DEPTH)) {
       tex->stereo = stereo;
-      CHECKD3D(glGenFramebuffers(1, &tex->framebuffer));
-      CHECKD3D(glBindFramebuffer(GL_FRAMEBUFFER, tex->framebuffer));
-      CHECKD3D(glGenTextures(1, &tex->texture));
+      glGenFramebuffers(1, &tex->framebuffer);
+      glBindFramebuffer(GL_FRAMEBUFFER, tex->framebuffer);
+      glGenTextures(1, &tex->texture);
 
       if (g_pplayer->m_MSAASamples > 1 && (tex->usage == RENDERTARGET_MSAA || tex->usage == RENDERTARGET_MSAA_DEPTH))
       {
-         CHECKD3D(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex->texture));
-         CHECKD3D(glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, g_pplayer->m_MSAASamples, Format, Width, Height, GL_TRUE));
-         CHECKD3D(glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0));
-         CHECKD3D(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, tex->texture, 0));
+         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex->texture);
+         glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, g_pplayer->m_MSAASamples, Format, Width, Height, GL_TRUE);
+         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, tex->texture, 0);
 
          if (tex->usage == RENDERTARGET_MSAA_DEPTH)
          {
-            CHECKD3D(glGenRenderbuffers(1, &tex->zBuffer));
-            CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, tex->zBuffer));
-            CHECKD3D(glRenderbufferStorageMultisample(GL_RENDERBUFFER, g_pplayer->m_MSAASamples, GL_DEPTH_COMPONENT, Width, Height));
-            CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, 0));
-            CHECKD3D(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, tex->zBuffer));
+            glGenRenderbuffers(1, &tex->zBuffer);
+            glBindRenderbuffer(GL_RENDERBUFFER, tex->zBuffer);
+            glRenderbufferStorageMultisample(GL_RENDERBUFFER, g_pplayer->m_MSAASamples, GL_DEPTH_COMPONENT, Width, Height);
+            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, tex->zBuffer);
          }
          else
          {
@@ -2866,21 +2982,21 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
             tex->zBuffer = 0;
          }
       }
-      else // RENDERTARGET & RRENDERTARGET_DEPTH
+      else // RENDERTARGET & RENDERTARGET_DEPTH
       {
-         CHECKD3D(glBindTexture(GL_TEXTURE_2D, tex->texture));
-         CHECKD3D(glTexImage2D(GL_TEXTURE_2D, 0, Format, Width, Height, 0, GL_RGBA, col_type, nullptr));
-         CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
-         CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
-         CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0));
-         CHECKD3D(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->texture, 0));
+         glBindTexture(GL_TEXTURE_2D, tex->texture);
+         glTexImage2D(GL_TEXTURE_2D, 0, Format, Width, Height, 0, GL_RGBA, col_type, nullptr);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->texture, 0);
 
          if (tex->usage == RENDERTARGET_DEPTH || tex->usage == RENDERTARGET_MSAA_DEPTH) {
-            CHECKD3D(glGenRenderbuffers(1, &tex->zBuffer));
-            CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, tex->zBuffer));
-            CHECKD3D(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, Width, Height));
-            CHECKD3D(glBindRenderbuffer(GL_RENDERBUFFER, 0));
-            CHECKD3D(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, tex->zBuffer));
+            glGenRenderbuffers(1, &tex->zBuffer);
+            glBindRenderbuffer(GL_RENDERBUFFER, tex->zBuffer);
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, Width, Height);
+            glBindRenderbuffer(GL_RENDERBUFFER, 0);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, tex->zBuffer);
          }
          else
          {
@@ -2890,11 +3006,10 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
       }
 
       constexpr GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
-      CHECKD3D(glDrawBuffers(1, DrawBuffers));
+      glDrawBuffers(1, DrawBuffers);
 
       const int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
       if (status != GL_FRAMEBUFFER_COMPLETE) {
-         CHECKD3D();
          char msg[256];
          const char* errorCode;
          switch (status) {
@@ -2937,46 +3052,46 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    tex->zTexture = 0;
    tex->stereo = 0;
 
-   CHECKD3D(glGenTextures(1, &tex->texture));
-   CHECKD3D(glBindTexture(GL_TEXTURE_2D, tex->texture));
+   glGenTextures(1, &tex->texture);
+   glBindTexture(GL_TEXTURE_2D, tex->texture);
 
    if (clamptoedge)
    {
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    }
    else
    {
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
    }
 
-   CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)); // Use mipmap filtering GL_LINEAR_MIPMAP_LINEAR
-   CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)); // MAG Filter does not support mipmaps
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // Use mipmap filtering GL_LINEAR_MIPMAP_LINEAR
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // MAG Filter does not support mipmaps
 
    if (Format == GREY) {//Hack so that GL_RED behaves as GL_GREY
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA));
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
       Format = RGB8;
    }
    else if (Format == GREY_ALPHA) {//Hack so that GL_RG behaves as GL_GREY_ALPHA
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_GREEN));
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_GREEN);
       Format = RGB8;
    }
    else {//Default
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_GREEN));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_BLUE));
-      CHECKD3D(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA));
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_GREEN);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_BLUE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
 
       // Anisotropic filtering
       if (m_maxaniso > 0)
-         CHECKD3D(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, min(max(1.f,m_maxaniso),16.f)));
+         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, min(max(1.f,m_maxaniso),16.f));
    }
 
    if (data)
@@ -2985,20 +3100,20 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
 
       const int num_mips = (int)std::log2(float(std::max(Width, Height))) + 1;
       if (m_GLversion >= 403) {
-         CHECKD3D(glTexStorage2D(GL_TEXTURE_2D, num_mips, compress ? (GLAD_GL_ARB_texture_compression_bptc ? colorFormat::BC7 : colorFormat::DXT5) : Format, Width, Height));
+         glTexStorage2D(GL_TEXTURE_2D, num_mips, compress ? (GLAD_GL_ARB_texture_compression_bptc ? colorFormat::BC7 : colorFormat::DXT5) : Format, Width, Height);
       }
       else {
          GLsizei w = Width;
          GLsizei h = Height;
          for (int i = 0; i < num_mips; i++) {
-            CHECKD3D(glTexImage2D(GL_TEXTURE_2D, i, compress ? (GLAD_GL_ARB_texture_compression_bptc ? colorFormat::BC7 : colorFormat::DXT5) : Format, w, h, 0, col_format, col_type, nullptr));
+            glTexImage2D(GL_TEXTURE_2D, i, compress ? (GLAD_GL_ARB_texture_compression_bptc ? colorFormat::BC7 : colorFormat::DXT5) : Format, w, h, 0, col_format, col_type, nullptr);
             w = max(1, (w / 2));
             h = max(1, (h / 2));
          }
       }
 
-      CHECKD3D(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Width, Height, col_format, col_type, data));
-      CHECKD3D(glGenerateMipmap(GL_TEXTURE_2D)); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwise good idea to limit by GL_TEXTURE_MAX_LEVEL
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Width, Height, col_format, col_type, data);
+      glGenerateMipmap(GL_TEXTURE_2D); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwise good idea to limit by GL_TEXTURE_MAX_LEVEL
    }
 #else //D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, void* data) {
    D3DPOOL Pool;

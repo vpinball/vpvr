@@ -18,10 +18,10 @@
 void ReportFatalError(const HRESULT hr, const char *file, const int line);
 void ReportError(const char *errorText, const HRESULT hr, const char *file, const int line);
 
-#ifdef _DEBUG
+#if 1//def _DEBUG
 #ifdef ENABLE_SDL
-void checkGLErrors(const char *file, const int line);
-#define CHECKD3D(s) { s; checkGLErrors(__FILE__, __LINE__); }
+//void checkGLErrors(const char *file, const int line);
+//#define CHECKD3D(s) { s; } //checkGLErrors(__FILE__, __LINE__); } // by now the callback is used instead
 #else //ENABLE_SDL
 #define CHECKD3D(s) { const HRESULT hrTmp = (s); if (FAILED(hrTmp)) ReportFatalError(hrTmp, __FILE__, __LINE__); }
 #endif
