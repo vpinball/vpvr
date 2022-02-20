@@ -899,7 +899,7 @@ void Shader::Begin(const unsigned int pass)
          else {
             if (!noTextureMSAA) {
                constexpr unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
-               noTextureMSAA = m_renderDevice->CreateTexture(2, 2, 0, RENDERTARGET_MSAA, RGBA, &data, 0);
+               noTextureMSAA = m_renderDevice->CreateTexture(2, 2, 0, RENDERTARGET_MSAA, RGBA, (void*)&data, 0);
             }
             TextureID = noTextureMSAA->texture;
          }
@@ -928,7 +928,7 @@ void Shader::Begin(const unsigned int pass)
          else {
             if (!noTexture) {
                constexpr unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
-               noTexture = m_renderDevice->CreateTexture(2, 2, 0, STATIC, RGBA, &data, 0);
+               noTexture = m_renderDevice->CreateTexture(2, 2, 0, STATIC, RGBA, (void*)&data, 0);
             }
             TextureID = noTexture->texture;
          }
