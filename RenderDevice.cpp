@@ -292,6 +292,7 @@ void checkGLErrors(const char *file, const int line) {
       exit(-1);
    }*/
 }
+#endif
 
 // Callback function for printing debug statements
 #ifdef _DEBUG
@@ -402,7 +403,6 @@ void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id,
     if (type == GL_DEBUG_TYPE_ERROR || type == GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR || severity == GL_DEBUG_SEVERITY_HIGH)
         ShowError(msg);
 }
-#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////
