@@ -84,7 +84,7 @@ shaderTechniques Shader::getTechniqueByName(const string& name) {
       if (name == shaderTechniqueNames[i])
          return shaderTechniques(i);
 
-   LOG(1, m_shaderCodeName, std::string("getTechniqueByName Could not find technique ").append(name).append(" in shaderTechniqueNames."));
+   LOG(1, m_shaderCodeName, std::string("getTechniqueByName: Could not find technique ").append(name).append(" in shaderTechniqueNames."));
    return SHADER_TECHNIQUE_INVALID;
 }
 
@@ -123,7 +123,7 @@ bla:
                 char msg[512];
                 TCHAR full_path[MAX_PATH];
                 GetFullPathName(_T(name.c_str()), MAX_PATH, full_path, nullptr);
-                sprintf_s(msg, 512, "could not create logfile %s", full_path);
+                sprintf_s(msg, 512, "Could not create logfile %s", full_path);
                 ShowError(msg);
             }
             else
@@ -152,15 +152,15 @@ bla:
 //parse a file. Is called recursively for includes
 bool Shader::parseFile(const char* fileNameRoot, const char* fileName, int level, std::map<string, string> &values, const string& parentMode) {
    if (level > 16) {//Can be increased, but looks very much like an infinite recursion.
-      LOG(1, fileNameRoot, string("Reached more than 16 include while trying to include ").append(fileName).append("levels. Aborting..."));
+      LOG(1, fileNameRoot, string("Reached more than 16 includes while trying to include ").append(fileName).append(" Aborting..."));
       return false;
    }
    if (level > 8) {
-      LOG(2, fileNameRoot, string("Reached include level ").append(std::to_string(level)).append(" while trying to include ").append(fileName).append("levels. Check for recursion and try to avoid includes with includes."));
+      LOG(2, fileNameRoot, string("Reached include level ").append(std::to_string(level)).append(" while trying to include ").append(fileName).append(" Check for recursion and try to avoid includes with includes."));
    }
    string currentMode = parentMode;
    std::map<string, string>::iterator currentElemIt = values.find(parentMode);
-   string currentElement = (currentElemIt != values.end()) ? currentElemIt->second : "";
+   string currentElement = (currentElemIt != values.end()) ? currentElemIt->second : string();
    std::ifstream glfxFile;
    glfxFile.open(string(Shader::shaderPath).append(fileName), std::ifstream::in);
    if (glfxFile.is_open())
@@ -177,7 +177,7 @@ bool Shader::parseFile(const char* fileNameRoot, const char* fileName, int level
             } else if (newMode != currentMode) {
                values[currentMode] = currentElement;
                currentElemIt = values.find(newMode);
-               currentElement = (currentElemIt != values.end()) ? currentElemIt->second : "";
+               currentElement = (currentElemIt != values.end()) ? currentElemIt->second : string();
                currentMode = newMode;
             }
          }
@@ -457,10 +457,10 @@ string Shader::analyzeFunction(const char* shaderCodeName, const string& _techni
    const size_t end = functionName.find(')');
    if ((start == string::npos) || (end == string::npos) || (start > end)) {
       LOG(2, (const char*)shaderCodeName, string("Invalid technique: ").append(_technique));
-      return "";
+      return string();
    }
    const std::map<string, string>::const_iterator it = values.find(functionName.substr(0, start));
-   string functionCode = (it != values.end()) ? it->second : "";
+   string functionCode = (it != values.end()) ? it->second : string();
    if (end > start + 1) {
       std::stringstream params(functionName.substr(start + 1, end - start - 1));
       std::string param;
@@ -487,28 +487,28 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
    std::map<string, string> values;
    bool success = parseFile((const char*)shaderCodeName, (const char*)shaderCodeName, 0, values, "GLOBAL");
    if (!success) {
-      LOG(1, (const char*)shaderCodeName, "Parsing failed\n");
+      LOG(1, (const char*)shaderCodeName, "Parsing failed");
    }
    else {
       LOG(3, (const char*)shaderCodeName, "Parsing successful. Start compiling shaders");
    }
    std::map<string, string>::iterator it = values.find("GLOBAL");
-   string global = (it != values.end()) ? it->second : "";
+   string global = (it != values.end()) ? it->second : string();
 
    it = values.find("VERTEX");
    string vertex = global;
-   vertex.append((it != values.end()) ? it->second : "");
+   vertex.append((it != values.end()) ? it->second : string());
 
    it = values.find("GEOMETRY");
    string geometry = global;
-   geometry.append((it != values.end()) ? it->second : "");
+   geometry.append((it != values.end()) ? it->second : string());
 
    it = values.find("FRAGMENT");
    string fragment = global;
-   fragment.append((it != values.end()) ? it->second : "");
+   fragment.append((it != values.end()) ? it->second : string());
 
    it = values.find("TECHNIQUES");
-   std::stringstream techniques((it != values.end()) ? it->second : "");
+   std::stringstream techniques((it != values.end()) ? it->second : string());
    if (techniques)
    {
       std::string _technique;
@@ -546,7 +546,7 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
       LOG(3, (const char*)shaderCodeName, string("Compiled successfully ").append(std::to_string(tecCount)).append(" shaders."));
    }
    else {
-      LOG(1, (const char*)shaderCodeName, "No techniques found.\n");
+      LOG(1, (const char*)shaderCodeName, "No techniques found.");
       success = false;
    }
    if (logFile) {
@@ -562,14 +562,16 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
 
 void Shader::Unload()
 {
-#ifndef TWEAK_GL_SHADER
+#ifdef TWEAK_GL_SHADER
+   for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i)
+      if(uniformFloatP[i].data)
+         free(uniformFloatP[i].data);
+#else
    //Free all uniform cache pointers
    if (uniformFloatP.size() > 0)
       for (auto it = uniformFloatP.begin(); it != uniformFloatP.end(); it++)
-      {
          if (it->second.data)
             free(it->second.data);
-      }
    uniformFloatP.clear();
    //Delete all glPrograms and their uniformLocation cache
    if (shaderList.size() > 0)
@@ -606,7 +608,7 @@ void Shader::setAttributeFormat(DWORD fvf)
             offset = (fvf == MY_D3DFVF_TEX) ? 12 : 24;
             break;
          default:
-            ReportError("unknown Attribute", 666, __FILE__, __LINE__);
+            ReportError("Unknown Attribute", 666, __FILE__, __LINE__);
             offset = 0;
             break;
          }
@@ -626,7 +628,7 @@ void Shader::setAttributeFormat(DWORD fvf)
          else if (it->first == SHADER_ATTRIBUTE_TC) offset = 12;
          else if (it->first == SHADER_ATTRIBUTE_TEX) offset = 12;
          else {
-            ReportError("unknown Attribute", 666, __FILE__, __LINE__);
+            ReportError("Unknown Attribute", 666, __FILE__, __LINE__);
             exit(-1);
          }
          size = sizeof(float)*(3 + 2);
@@ -638,14 +640,14 @@ void Shader::setAttributeFormat(DWORD fvf)
          else if (it->first == SHADER_ATTRIBUTE_TC) offset = 24;
          else if (it->first == SHADER_ATTRIBUTE_TEX) offset = 24;
          else {
-            ReportError("unknown Attribute", 666, __FILE__, __LINE__);
+            ReportError("Unknown Attribute", 666, __FILE__, __LINE__);
             exit(-1);
          }
          size = sizeof(float)*(3 + 3 + 2);
          break;
       default:
          //broken?
-         ReportError("unknown Attribute configuration", 666,__FILE__, __LINE__);
+         ReportError("Unknown Attribute configuration", 666,__FILE__, __LINE__);
          exit(-1);
       }
       glVertexAttribPointer(currentAttribute.location, currentAttribute.size, GL_FLOAT, GL_FALSE, (fvf == MY_D3DFVF_TEX) ? 20 : 32, (void*)offset;
@@ -1186,7 +1188,7 @@ void Shader::SetVector(const SHADER_UNIFORM_HANDLE hParameter, const vec4* pVect
    auto element = &uniformFloatP[hParameter];
    if (element->len < 4) {
       free(element->data);
-      elem.data = (float*)malloc(16 * sizeof(float));
+      elem.data = (float*)malloc(4 * sizeof(float));
       elem.len = 4;
    }
    else {
@@ -1242,7 +1244,7 @@ void Shader::SetVector(const SHADER_UNIFORM_HANDLE hParameter, const float x, co
    auto element = &uniformFloatP[hParameter];
    if (element->len < 4) {
       free(element->data);
-      elem.data = (float*)malloc(16 * sizeof(float));
+      elem.data = (float*)malloc(4 * sizeof(float));
       elem.len = 4;
    }
    else {
