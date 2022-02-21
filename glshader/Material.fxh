@@ -76,11 +76,11 @@ vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edg
    if(!is_metal)
        ambient += diffuse;
 
-   vec3 result;
-#if 1//!enable_VR
-      result = Out * lightEmission[i].xyz * fAtten + ambient * cAmbient_LightRange.xyz;
+   vec3 result
+#if !enable_VR
+      = Out * lightEmission[i].xyz * fAtten + ambient * cAmbient_LightRange.xyz;
 #else
-      result = Out * lightEmission[i].xyz * (fAtten*0.00001) + ambient * cAmbient_LightRange.xyz;
+      = Out * lightEmission[i].xyz * (fAtten*0.00001) + ambient * cAmbient_LightRange.xyz;
 #endif
 
    if(fDisableLighting_top_below.x != 0.0)

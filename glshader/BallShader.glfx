@@ -187,11 +187,11 @@ vec3 PFDoPointLight(vec3 pos, vec3 N, vec3 diffuse, int i)
    float fAtten = saturate(1.0 - sqrl_lightDir*sqrl_lightDir/(cAmbient_LightRange.w*cAmbient_LightRange.w*cAmbient_LightRange.w*cAmbient_LightRange.w)); //!! pre-mult/invert cAmbient_LightRange.w?
    fAtten = fAtten*fAtten/(sqrl_lightDir + 1.0);
 
-   #if 1//!enable_VR
-      return Out * lightEmission[i].xyz * fAtten;
-   #else
-      return Out * lightEmission[i].xyz * (fAtten*0.00001);
-   #endif
+#if !enable_VR
+   return Out * lightEmission[i].xyz * fAtten;
+#else
+   return Out * lightEmission[i].xyz * (fAtten*0.00001);
+#endif
 }
 
 vec3 PFlightLoop(vec3 pos, vec3 N, vec3 diffuse)
@@ -266,7 +266,7 @@ void main()
 #if !enable_VR
       NdotR = dot(playfield_normal,r);
 #else
-      NdotR = dot(playfield_normal,-r);
+      NdotR = -dot(playfield_normal,r);
 #endif
 
    vec3 playfieldColor;
@@ -278,7 +278,7 @@ void main()
 #if !enable_VR
          playfield_hit = worldPos_t0y.xyz - t*r;
 #else
-         playfield_hit = worldPos_t0y.xyz - t*-r;
+         playfield_hit = worldPos_t0y.xyz + t*r;
 #endif
 
       vec2 uv = (inverse(matWorldView) * vec4(playfield_hit, 1.0)).xy * invTableRes_playfield_height_reflection.xy;
