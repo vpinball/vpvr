@@ -77,7 +77,7 @@ vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edg
        ambient += diffuse;
 
    vec3 result;
-#if !enable_VR
+#if 1//!enable_VR
       result = Out * lightEmission[i].xyz * fAtten + ambient * cAmbient_LightRange.xyz;
 #else
       result = Out * lightEmission[i].xyz * (fAtten*0.00001) + ambient * cAmbient_LightRange.xyz;
@@ -94,14 +94,14 @@ vec3 DoEnvmapDiffuse(vec3 N, vec3 diffuse)
 {
    vec2 uv = vec2( // remap to 2D envmap coords
 		0.5 + atan2_approx_div2PI(N.y, N.x),
-	    acos_approx_divPI(N.z));
+		acos_approx_divPI(N.z));
 
    vec3 env;
-   
+
    if (!hdrEnvTextures)
         env = InvGamma(textureLod(Texture2, uv, 0).rgb);
    else
         env = textureLod(Texture2, uv, 0).bgr;
-        
+
    return diffuse * env*fenvEmissionScale_TexWidth.x;
 }

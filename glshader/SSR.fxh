@@ -39,8 +39,8 @@ void main()
 	float depth0 = color0.x;
 	if((depth0 == 1.0) || (depth0 == 0.0)) {//!!! early out if depth too large (=BG) or too small (=DMD,etc -> retweak render options (depth write on), otherwise also screwup with stereo)
 		color = vec4(color0, 1.0);
-	    return;
-    }
+		return;
+	}
 
 	vec3 normal = normalize(get_nonunit_normal(depth0,u));
 	vec3 normal_b = approx_bump_normal(u, 0.01 * w_h_height.xy / depth0, depth0 / (0.05*depth0 + 0.0001), 1000.0); //!! magic
@@ -54,7 +54,7 @@ void main()
 	                     * sqr(normal_fade_factor(normal_b/*normal*/)); // avoid reflections on playfield, etc
 
 #if 0 // test code
-    color = vec4(0.,sqr(normal_fade_factor(normal_b/*normal*/)),0., 1.0);
+	color = vec4(0.,sqr(normal_fade_factor(normal_b/*normal*/)),0., 1.0);
 	return;
 #endif
 
