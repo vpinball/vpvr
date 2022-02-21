@@ -69,8 +69,8 @@ in float2 tex0;
 void main()
 {
 	float2 u = tex0 + w_h_height.xy*0.5;
-   float2 uv0 = tex0 + w_h_height.xy; // half pixel shift in x & y for filter
-   float2 uv1 = tex0;                 // dto.
+	float2 uv0 = tex0 + w_h_height.xy; // half pixel shift in x & y for filter
+	float2 uv1 = tex0;                 // dto.
 
 	float depth0 = textureLod(Texture0, u, 0).x;
 	if((depth0 == 1.0) || (depth0 == 0.0)) //!! early out if depth too large (=BG) or too small (=DMD,etc -> retweak render options (depth write on), otherwise also screwup with stereo)
@@ -541,9 +541,9 @@ void main()
 		float minWN = min(lumaN, lumaW);
 		float rangeMax = max(maxWN, maxESM);
 		float rangeMin = min(minWN, minESM);
-		float rangeMaxScaled = rangeMax * 0.166; //0.333 (faster) .. 0.063 (slower)
+		float rangeMaxScaled = rangeMax * 0.125; //0.333 (faster) .. 0.063 (slower) // reshade: 0.125, fxaa : 0.166
 		float range = rangeMax - rangeMin;
-		float rangeMaxClamped = max(0.0833, rangeMaxScaled); //0.0625 (high quality/faster) .. 0.0312 (visible limit/slower)
+		float rangeMaxClamped = max(0.0833, rangeMaxScaled); //0.0625 (high quality/faster) .. 0.0312 (visible limit/slower) // reshade: 0.0, fxaa : 0.0833
 		bool earlyExit = range < rangeMaxClamped;
 		if (earlyExit)
 			color = float4(rgbyM, 1.0);
@@ -631,7 +631,7 @@ void main()
 			bool goodSpan = directionN ? goodSpanN : goodSpanP;
 			float subpixG = subpixF * subpixF;
 			float pixelOffset = 0.5 - dst * spanLengthRcp;
-			float subpixH = subpixG * 0.75; //1.00 (upper limit/softer) .. 0.50 (lower limit/sharper) .. 0.00 (completely off)
+			float subpixH = subpixG * 0.5; //1.00 (upper limit/softer) .. 0.50 (lower limit/sharper) .. 0.00 (completely off) // reshade : 0.25, fxaa : 0.75
 			float pixelOffsetGood = goodSpan ? pixelOffset : 0.0;
 			float pixelOffsetSubpix = max(pixelOffsetGood, subpixH);
 			float2 un = u;
@@ -693,9 +693,9 @@ void main()
 		float minWN = min(lumaN, lumaW);
 		float rangeMax = max(maxWN, maxESM);
 		float rangeMin = min(minWN, minESM);
-		float rangeMaxScaled = rangeMax * 0.166; //0.333 (faster) .. 0.063 (slower)
+		float rangeMaxScaled = rangeMax * 0.125; //0.333 (faster) .. 0.063 (slower) // reshade: 0.125, fxaa : 0.166
 		float range = rangeMax - rangeMin;
-		float rangeMaxClamped = max(0.0833, rangeMaxScaled); //0.0625 (high quality/faster) .. 0.0312 (visible limit/slower)
+		float rangeMaxClamped = max(0.0833, rangeMaxScaled); //0.0625 (high quality/faster) .. 0.0312 (visible limit/slower) // reshade: 0.0, fxaa : 0.0833
 		bool earlyExit = range < rangeMaxClamped;
 		if(earlyExit)
 			color = float4(rgbyM, 1.0f);
@@ -911,7 +911,7 @@ void main()
 			bool goodSpan = directionN ? goodSpanN : goodSpanP;
 			float subpixG = subpixF * subpixF;
 			float pixelOffset = 0.5 - dst * spanLengthRcp;
-			float subpixH = subpixG * 0.75; //1.00 (upper limit/softer) .. 0.50 (lower limit/sharper) .. 0.00 (completely off)
+			float subpixH = subpixG * 0.5; //1.00 (upper limit/softer) .. 0.50 (lower limit/sharper) .. 0.00 (completely off) // reshade : 0.25, fxaa : 0.75
 			float pixelOffsetGood = goodSpan ? pixelOffset : 0.0;
 			float pixelOffsetSubpix = max(pixelOffsetGood, subpixH);
 			float2 un = u;
