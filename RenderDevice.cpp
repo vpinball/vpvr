@@ -297,8 +297,8 @@ void checkGLErrors(const char *file, const int line) {
 // Callback function for printing debug statements
 #ifdef _DEBUG
 void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id,
-                            GLenum severity, GLsizei length,
-                            const GLchar *msg, const void *data)
+                                     GLenum severity, GLsizei length,
+                                     const GLchar *msg, const void *data)
 {
     char* _source;
     switch (source) {
@@ -734,6 +734,7 @@ void RenderDevice::InitVR() {
          m_pHMD = nullptr;
          char buf[1024];
          sprintf_s(buf, sizeof(buf), "Unable to init VR runtime: %s", vr::VR_GetVRInitErrorAsEnglishDescription(VRError));
+         ShowError(buf);
          std::runtime_error vrInitFailed(buf);
          throw(vrInitFailed);
       }
@@ -742,6 +743,7 @@ void RenderDevice::InitVR() {
             m_pHMD = nullptr;
             char buf[1024];
             sprintf_s(buf, sizeof(buf), "Unable to init VR compositor");// :% s", vr::VR_GetVRInitErrorAsEnglishDescription(VRError));
+            ShowError(buf);
             std::runtime_error vrInitFailed(buf);
             throw(vrInitFailed);
          }
@@ -945,14 +947,13 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 #ifdef ENABLE_VR
    case STEREO_VR:
       if (LoadValueBoolWithDefault("PlayerVR", "scaleToFixedWidth", false)) {
-         float width = 0.0f;
+         float width;
          g_pplayer->m_ptable->get_Width(&width);
-         m_scale = LoadValueFloatWithDefault("PlayerVR", "scaleAbsolute", 55.0f) *0.01f / width;
+         m_scale = LoadValueFloatWithDefault("PlayerVR", "scaleAbsolute", 55.0f) * 0.01f / width;
       }
-      else {
+      else
          m_scale = 0.000540425f * LoadValueFloatWithDefault("PlayerVR", "scaleRelative", 1.0f);
-      }
-      if (m_scale <= 0)
+      if (m_scale <= 0.f)
          m_scale = 0.000540425f;// Scale factor for VPUnits to Meters
       InitVR();
       m_Buf_width = m_Buf_width * 2;
@@ -3099,10 +3100,9 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
       const bool compress = (m_compress_textures && ((Width & 3) == 0) && ((Height & 3) == 0) && (Width > 256) && (Height > 256) && (col_type != GL_FLOAT)); //!! use BC6 for floats?
 
       const int num_mips = (int)std::log2(float(std::max(Width, Height))) + 1;
-      if (m_GLversion >= 403) {
+      if (m_GLversion >= 403)
          glTexStorage2D(GL_TEXTURE_2D, num_mips, compress ? (GLAD_GL_ARB_texture_compression_bptc ? colorFormat::BC7 : colorFormat::DXT5) : Format, Width, Height);
-      }
-      else {
+      else { // should never be triggered nowadays
          GLsizei w = Width;
          GLsizei h = Height;
          for (int i = 0; i < num_mips; i++) {

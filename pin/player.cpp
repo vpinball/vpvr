@@ -3776,15 +3776,22 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
          }
          break;
       }
-      vr::EVRCompositorError error;
       vr::Texture_t leftEyeTexture = { (void *)leftTexture->texture, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
-      error = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
+      vr::EVRCompositorError error = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
    	  if(error != vr::VRCompositorError_None)
-         ShowError("VRCompositor Submit Left Error");
+   	  {
+         char msg[128];
+         sprintf_s(msg, "VRCompositor Submit Left Error %u", error);
+         ShowError(msg);
+   	  }
       vr::Texture_t rightEyeTexture = { (void *)rightTexture->texture, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
       error = vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
    	  if(error != vr::VRCompositorError_None)
-         ShowError("VRCompositor Submit Right Error");
+   	  {
+         char msg[128];
+         sprintf_s(msg, "VRCompositor Submit Right Error %u", error);
+         ShowError(msg);
+   	  }
       //vr::VRCompositor()->PostPresentHandoff(); // PostPresentHandoff gives mixed results, improved GPU frametime for some, worse CPU frametime for others, troublesome enough to not warrants it's usage for now
    }
 #endif

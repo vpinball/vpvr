@@ -388,17 +388,17 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    void SetVertexDeclaration(VertexDeclaration * declaration);
 
 #ifdef ENABLE_SDL
-   inline void* GetCoreDevice() const
+   void* GetCoreDevice() const
    {
       return nullptr;
    }
 
-   inline int getGLVersion() const
+   int getGLVersion() const
    {
       return m_GLversion;
    }
 #else
-   inline IDirect3DDevice9* GetCoreDevice() const
+   IDirect3DDevice9* GetCoreDevice() const
    {
       return m_pD3DDevice;
    }
