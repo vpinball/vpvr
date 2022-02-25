@@ -280,14 +280,14 @@ private:
    unsigned int currentLightBackglassMode;
 
 #ifdef ENABLE_SDL
-   const char* m_shaderCodeName = nullptr; // Only valid while loading
+   string m_shaderCodeName;
 
 #if DEBUG_LEVEL_LOG > 0
-   void LOG(const int level, const char* fileNameRoot, const string& message);
+   void LOG(const int level, const string& fileNameRoot, const string& message);
 #endif
-   bool parseFile(const char* fileNameRoot, const char* fileName, int level, std::map<string, string>& values, const string& parentMode);
+   bool parseFile(const string& fileNameRoot, const string& fileName, int level, std::map<string, string>& values, const string& parentMode);
    string analyzeFunction(const char* shaderCodeName, const string& technique, const string& functionName, const std::map<string, string>& values);
-   bool compileGLShader(const char* fileNameRoot, const string& shaderCodeName, const string& vertex, const string& geometry, const string& fragment);
+   bool compileGLShader(const string& fileNameRoot, const string& shaderCodeName, const string& vertex, const string& geometry, const string& fragment);
 
    struct attributeLoc {
       GLenum type;

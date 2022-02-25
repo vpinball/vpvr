@@ -108,9 +108,9 @@ Shader::~Shader()
 }
 
 #if DEBUG_LEVEL_LOG > 0
-void Shader::LOG(const int level, const char* fileNameRoot, const string& message) {
+void Shader::LOG(const int level, const string& fileNameRoot, const string& message) {
    if (level <= DEBUG_LEVEL_LOG) {
-      if (!logFile && fileNameRoot) {
+      if (!logFile) {
          string name = Shader::shaderPath;
          name.append("log\\").append(fileNameRoot).append(".log");
          logFile = new std::ofstream();
@@ -150,7 +150,7 @@ bla:
 #endif
 
 //parse a file. Is called recursively for includes
-bool Shader::parseFile(const char* fileNameRoot, const char* fileName, int level, std::map<string, string> &values, const string& parentMode) {
+bool Shader::parseFile(const string& fileNameRoot, const string& fileName, int level, std::map<string, string> &values, const string& parentMode) {
    if (level > 16) {//Can be increased, but looks very much like an infinite recursion.
       LOG(1, fileNameRoot, string("Reached more than 16 includes while trying to include ").append(fileName).append(" Aborting..."));
       return false;
@@ -186,7 +186,7 @@ bool Shader::parseFile(const char* fileNameRoot, const char* fileName, int level
             const size_t end = line.find('"', start + 1);
             values[currentMode] = currentElement;
             if ((start == string::npos) || (end == string::npos) || (end <= start) || !parseFile(fileNameRoot, line.substr(start + 1, end - start - 1).c_str(), level + 1, values, currentMode)) {
-               LOG(1, fileNameRoot, string(fileName).append("(").append(std::to_string(linenumber)).append("):").append(line).append(" failed."));
+               LOG(1, fileNameRoot, fileName + "(" + std::to_string(linenumber) + "):" + line + " failed.");
             }
             currentElement = values[currentMode];
          }
@@ -198,33 +198,30 @@ bool Shader::parseFile(const char* fileNameRoot, const char* fileName, int level
       glfxFile.close();
    }
    else {
-      LOG(1, fileNameRoot, string(fileName).append(" not found."));
+      LOG(1, fileNameRoot, fileName + " not found.");
       return false;
    }
    return true;
 }
 
 //compile and link shader. Also write the created shader files
-bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeName, const string& vertex, const string& geometry, const string& fragment) {
+bool Shader::compileGLShader(const string& fileNameRoot, const string& shaderCodeName, const string& vertex, const string& geometry, const string& fragment) {
    bool success = true;
-   int result;
-   GLuint vertexShader = 0;
    GLuint geometryShader = 0;
-   GLuint fragmentShader = 0;
-   GLuint shaderprogram = 0;
-   GLchar* vertexSource = nullptr;
    GLchar* geometrySource = nullptr;
+   GLuint fragmentShader = 0;
    GLchar* fragmentSource = nullptr;
 
    //Vertex Shader
-   vertexSource = new GLchar[vertex.length() + 1];
+   GLchar* vertexSource = new GLchar[vertex.length() + 1];
    memcpy((void*)vertexSource, vertex.c_str(), vertex.length());
    vertexSource[vertex.length()] = 0;
 
-   vertexShader = glCreateShader(GL_VERTEX_SHADER);
+   GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
    glShaderSource(vertexShader, 1, &vertexSource, nullptr);
    glCompileShader(vertexShader);
 
+   int result;
    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result);
    if (result == FALSE)
    {
@@ -234,6 +231,9 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
 
       glGetShaderInfoLog(vertexShader, maxLength, &maxLength, errorText);
       LOG(1, fileNameRoot, string(shaderCodeName).append(": Vertex Shader compilation failed with: ").append(errorText));
+      char msg[2048];
+      sprintf_s(msg, "Fatal Error: Vertex Shader compilation of %s:%s failed!\n\n%s", fileNameRoot.c_str(), shaderCodeName.c_str(),errorText);
+      ReportError(msg, -1, __FILE__, __LINE__);
       free(errorText);
       success = false;
    }
@@ -256,6 +256,9 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
 
          glGetShaderInfoLog(geometryShader, maxLength, &maxLength, errorText);
          LOG(1, fileNameRoot, string(shaderCodeName).append(": Geometry Shader compilation failed with: ").append(errorText));
+         char msg[2048];
+         sprintf_s(msg, "Fatal Error: Geometry Shader compilation of %s:%s failed!\n\n%s", fileNameRoot.c_str(), shaderCodeName.c_str(), errorText);
+         ReportError(msg, -1, __FILE__, __LINE__);
          free(errorText);
          success = false;
       }
@@ -278,11 +281,16 @@ bool Shader::compileGLShader(const char* fileNameRoot, const string& shaderCodeN
          char* errorText = (char *)malloc(maxLength);
 
          glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, errorText);
-         LOG(1, fileNameRoot, string(shaderCodeName).append(": Fragment Shader compilation failed with: ").append(errorText));
+         LOG(1, fileNameRoot, shaderCodeName + ": Fragment Shader compilation failed with: " + errorText);
+         char msg[2048];
+         sprintf_s(msg, "Fatal Error: Fragment Shader compilation of %s:%s failed!\n\n%s", fileNameRoot.c_str(), shaderCodeName.c_str(), errorText);
+         ReportError(msg, -1, __FILE__, __LINE__);
          free(errorText);
          success = false;
       }
    }
+
+   GLuint shaderprogram = 0;
    if (success) {
       shaderprogram = glCreateProgram();
 
@@ -485,9 +493,15 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
    m_currentTechnique = nullptr;
    LOG(3, (const char*)shaderCodeName, "Start parsing file");
    std::map<string, string> values;
-   bool success = parseFile((const char*)shaderCodeName, (const char*)shaderCodeName, 0, values, "GLOBAL");
-   if (!success) {
+   const bool parsing = parseFile(m_shaderCodeName, m_shaderCodeName, 0, values, "GLOBAL");
+   if (!parsing) {
       LOG(1, (const char*)shaderCodeName, "Parsing failed");
+      char msg[128];
+      sprintf_s(msg, "Fatal Error: Shader parsing of %s failed!", shaderCodeName);
+      ReportError(msg, -1, __FILE__, __LINE__);
+      if (logFile)
+         logFile->close();
+      return false;
    }
    else {
       LOG(3, (const char*)shaderCodeName, "Parsing successful. Start compiling shaders");
@@ -538,26 +552,39 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
             string fragmentShaderCode = fragment;
             fragmentShaderCode.append("\n//").append(_technique).append("\n//").append(element[elem-1]).append("\n");
             fragmentShaderCode.append(analyzeFunction(shaderCodeName, _technique, element[elem-1], values)).append("\0");
-            int build = compileGLShader(shaderCodeName, element[0]/*.append("_").append(element[1])*/, vertexShaderCode, geometryShaderCode, fragmentShaderCode);
-            if (build) tecCount++;
-            success = success && build;
+            const bool build = compileGLShader(shaderCodeName, element[0]/*.append("_").append(element[1])*/, vertexShaderCode, geometryShaderCode, fragmentShaderCode);
+            if(!build)
+            {
+               char msg[128];
+               sprintf_s(msg, "Fatal Error: Shader compilation failed for %s!", shaderCodeName);
+               ReportError(msg, -1, __FILE__, __LINE__);
+               if (logFile)
+                  logFile->close();
+               return false;
+            }
+            tecCount++;
          }
       }
       LOG(3, (const char*)shaderCodeName, string("Compiled successfully ").append(std::to_string(tecCount)).append(" shaders."));
    }
    else {
       LOG(1, (const char*)shaderCodeName, "No techniques found.");
-      success = false;
+      char msg[128];
+      sprintf_s(msg, "Fatal Error: No shader techniques found in %s!", shaderCodeName);
+      ReportError(msg, -1, __FILE__, __LINE__);
+      if (logFile)
+         logFile->close();
+      return false;
    }
-   if (logFile) {
+
+   if (logFile)
       logFile->close();
-   }
    logFile = nullptr;
+
    //Set default values from Material.fxh for uniforms.
    SetVector(SHADER_cBase_Alpha, 0.5f, 0.5f, 0.5f, 1.0f);
    SetVector(SHADER_Roughness_WrapL_Edge_Thickness, 4.0f, 0.5f, 1.0f, 0.05f);
-   m_shaderCodeName = nullptr;
-   return success;
+   return true;
 }
 
 void Shader::Unload()

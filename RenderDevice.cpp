@@ -256,12 +256,12 @@ static const char* glErrorToString(const int error) {
 
 void ReportFatalError(const HRESULT hr, const char *file, const int line)
 {
-   char msg[1024];
+   char msg[2048+128];
 #ifdef ENABLE_SDL
-   sprintf_s(msg, 1024, "GL Fatal Error 0x%0002X %s in %s:%d", hr, glErrorToString(hr), file, line);
+   sprintf_s(msg, "GL Fatal Error 0x%0002X %s in %s:%d", hr, glErrorToString(hr), file, line);
    ShowError(msg);
 #else
-   sprintf_s(msg, 1024, "Fatal error %s (0x%x: %s) at %s:%d", DXGetErrorString(hr), hr, DXGetErrorDescription(hr), file, line);
+   sprintf_s(msg, "Fatal error %s (0x%x: %s) at %s:%d", DXGetErrorString(hr), hr, DXGetErrorDescription(hr), file, line);
    ShowError(msg);
    exit(-1);
 #endif
@@ -269,12 +269,12 @@ void ReportFatalError(const HRESULT hr, const char *file, const int line)
 
 void ReportError(const char *errorText, const HRESULT hr, const char *file, const int line)
 {
-   char msg[1024];
+   char msg[2048+128];
 #ifdef ENABLE_SDL
-   sprintf_s(msg, 1024, "GL Error 0x%0002X %s in %s:%d", hr, glErrorToString(hr), file, line);
+   sprintf_s(msg, "GL Error 0x%0002X %s in %s:%d\n%s", hr, glErrorToString(hr), file, line, errorText);
    ShowError(msg);
 #else
-   sprintf_s(msg, 1024, "%s %s (0x%x: %s) at %s:%d", errorText, DXGetErrorString(hr), hr, DXGetErrorDescription(hr), file, line);
+   sprintf_s(msg, "%s %s (0x%x: %s) at %s:%d", errorText, DXGetErrorString(hr), hr, DXGetErrorDescription(hr), file, line);
    ShowError(msg);
    exit(-1);
 #endif
@@ -1135,9 +1135,6 @@ bool RenderDevice::LoadShaders()
    classicLightShader = new Shader(this);
    shaderCompilationOkay = classicLightShader->Load("classicLightShader.glfx", 0) && shaderCompilationOkay;
 #endif
-
-   if (!shaderCompilationOkay)
-      ReportError("Fatal Error: shader files not found or shader compilation failed!", -1, __FILE__, __LINE__);
 
    if (shaderCompilationOkay && m_FXAA == Quality_SMAA)
       UploadAndSetSMAATextures();
