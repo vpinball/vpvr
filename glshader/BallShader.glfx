@@ -49,6 +49,7 @@ uniform vec4  invTableRes_playfield_height_reflection;
 //const float    reflection_ball_playfield;
 
 uniform bool hdrTexture0;
+uniform bool disableLighting;
 
 out vec4 color;
 
@@ -253,11 +254,22 @@ void main()
 	   // decal texture is an alpha scratch texture and must be added to the ball texture
 	   // the strength of the scratches totally rely on the alpha values.
 	   decalColor *= decalColorT.a;
-	   ballImageColor = (ballImageColor+decalColor) * fenvEmissionScale_TexWidth.x;
+	   ballImageColor += decalColor;
 	}
 	else
-	   ballImageColor = ScreenHDR( ballImageColor, decalColor ) * (0.5*fenvEmissionScale_TexWidth.x); //!! 0.5=magic
-    
+	   ballImageColor = ScreenHDR(ballImageColor, decalColor) * (0.5*fenvEmissionScale_TexWidth.x);
+
+    if (disableLighting)
+    {
+       color = vec4(ballImageColor,cBase_Alpha.a);
+       return;
+    }
+
+    if (!%PARAM1%)
+       ballImageColor *= fenvEmissionScale_TexWidth.x;
+    else
+       ballImageColor *= 0.5*fenvEmissionScale_TexWidth.x; //!! 0.5=magic
+
    vec3 playfield_normal = normalize((matWorldViewInverseTranspose * vec4(0.,0.,1.,0.)).xyz); //!! normalize necessary?
 
    vec3 lightLoop_normal = (matWorldView * vec4(0.,0.,1.,0.)).xyz;
@@ -339,7 +351,10 @@ void main()
       ballImageColor = InvGamma(texture(Texture0, tex0_alpha.xy).rgb);
    else
       ballImageColor = texture(Texture0, tex0_alpha.xy).bgr;
-   color = vec4((cBase_Alpha.xyz*(0.075*0.25) + ballImageColor)*fenvEmissionScale_TexWidth.x, tex0_alpha.z); //!! just add the ballcolor in, this is a whacky trail anyhow
+   if (disableLighting)
+      color = vec4(ballImageColor, tex0_alpha.z);
+   else
+      color = vec4((cBase_Alpha.xyz*(0.075*0.25) + ballImageColor)*fenvEmissionScale_TexWidth.x, tex0_alpha.z); //!! just add the ballcolor in, this is a whacky trail anyhow
 }
 
 //------------------------------------

@@ -69,7 +69,7 @@ int decode_base64(const char* inData, char* outData, size_t inSize, size_t outSi
 
 //Actual Backglass code
 
-BackGlass::BackGlass(RenderDevice* const pd3dDevice,Texture * backgroundFallback) : 
+BackGlass::BackGlass(RenderDevice* const pd3dDevice, Texture * backgroundFallback) :
    m_pd3dDevice(pd3dDevice), m_backgroundFallback(backgroundFallback)
 {
 #ifdef ENABLE_VR
@@ -191,14 +191,14 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice,Texture * backgroundFallback
    g_pplayer->m_ptable->get_Width(&tableWidth);
    g_pplayer->m_ptable->get_GlassHeight(&glassHeight);
    if (m_backglass_width>0 && m_backglass_height>0)
-      m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - m_backglass_scale / 2.0f), glassHeight, m_backglass_scale * tableWidth, m_backglass_scale * tableWidth / (float)m_backglass_width*(float)m_backglass_height);
+      m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - m_backglass_scale / 2.0f), glassHeight, m_backglass_scale * tableWidth, m_backglass_scale * tableWidth * (float)m_backglass_height / (float)m_backglass_width);
    else
-      m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - m_backglass_scale / 2.0f), glassHeight, m_backglass_scale * tableWidth, m_backglass_scale * tableWidth / 16.0*9.0);
+      m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - m_backglass_scale / 2.0f), glassHeight, m_backglass_scale * tableWidth, m_backglass_scale * tableWidth * (float)(9.0 / 16.0));
    if (m_backglass_dmd_width > 0 && m_backglass_dmd_height > 0 && m_backglass_width > 0 && m_backglass_height > 0) {
       m_dmd_width = (float)m_backglass_dmd_width / (float)m_backglass_width;
       m_dmd_height = (float)m_backglass_dmd_height / (float)m_backglass_height;
       m_dmd_x = tableWidth * m_backglass_scale * (float)m_backglass_dmd_x / (float)m_backglass_width;
-      m_dmd_y = tableWidth * m_backglass_scale * (1.0f- (float)m_backglass_dmd_y / (float)m_backglass_height - m_dmd_height);
+      m_dmd_y = tableWidth * m_backglass_scale * (1.0f - (float)m_backglass_dmd_y / (float)m_backglass_height - m_dmd_height);
    }
 #endif
 }
@@ -221,11 +221,11 @@ void BackGlass::Render()
       {
          // If we expect a DMD the captured image is probably missing a grill in 3scr mode
          // 3scr mode preferable to support VR rooms, so better to just drop the grills in this experimental mode.
-         const int dmdheightoff = (int)((m_backglass_scale * tableWidth / 16.0*9.0) * .3);
+         const int dmdheightoff = (int)((m_backglass_scale * tableWidth * 9.0 / 16.0) * .3);
          const int dmdheightextra = (int)(tableWidth * .05);
          glassHeight += (float)(dmdheightoff + dmdheightextra);
 
-         m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - m_backglass_scale / 2.0f), glassHeight, m_backglass_scale * tableWidth, m_backglass_scale * tableWidth / 16.0*9.0);
+         m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - m_backglass_scale / 2.0f), glassHeight, m_backglass_scale * tableWidth, m_backglass_scale * tableWidth * (float)(9.0 / 16.0));
 
          // We lost the grille, so make a nice big DMD.
          m_dmd_width = 0.8f;
@@ -234,7 +234,7 @@ void BackGlass::Render()
          m_dmd_y = (float)(-dmdheightoff + dmdheightextra / 2);
       }
       else
-         m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - m_backglass_scale / 2.0f), glassHeight, m_backglass_scale * tableWidth, m_backglass_scale * tableWidth / 4.0*3.0);
+         m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - m_backglass_scale / 2.0f), glassHeight, m_backglass_scale * tableWidth, m_backglass_scale * tableWidth * (float)(3.0 / 4.0));
    }
 
    if (m_backgroundTexture)
@@ -275,7 +275,7 @@ void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DM
       const vec4 c = convertColor(DMDcolor, intensity);
       m_pd3dDevice->DMDShader->SetVector(SHADER_vColor_Intensity, &c);
 #ifdef DMD_UPSCALE
-      const vec4 r((float)(m_dmdx * 3), (float)(m_dmdy * 3), 1.f, (float)(g_pplayer->m_overall_frames % 2048));
+      const vec4 r((float)(m_dmd.x * 3), (float)(m_dmd.y * 3), 1.f, (float)(g_pplayer->m_overall_frames % 2048));
 #else
       const vec4 r((float)g_pplayer->m_dmd.x, (float)g_pplayer->m_dmd.y, 1.f, (float)(g_pplayer->m_overall_frames % 2048));
 #endif
@@ -299,16 +299,16 @@ void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DM
                g_pplayer->m_ptable->get_Width(&tableWidth);
                tableWidth *= m_backglass_scale;
                m_dmd_height = m_backglass_scale * scale * (float)m_backglass_grill_height / (float)m_backglass_width;
-               m_dmd_width = m_dmd_height / (float)(g_pplayer->m_texdmd->height()) * (float)(g_pplayer->m_texdmd->width());
+               m_dmd_width = m_dmd_height / (float)g_pplayer->m_texdmd->height() * (float)g_pplayer->m_texdmd->width();
                m_dmd_x = tableWidth * (0.5f - m_dmd_width / 2.0f);
-               m_dmd_y = (tableWidth * (float)m_backglass_grill_height*(0.5f - scale / 2.0f) / (float)m_backglass_width);
+               m_dmd_y = tableWidth * (float)m_backglass_grill_height*(0.5f - scale / 2.0f) / (float)m_backglass_width;
             }
          }
          m_pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScale, m_dmd_x, m_dmd_y, m_dmd_width, m_dmd_height);
          m_pd3dDevice->SetRenderState(RenderDevice::ZENABLE, FALSE);
          zDisabled = true;
       }
-      else//No VR, so place it where it was intended
+      else //No VR, so place it where it was intended
          m_pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScale, DMDposx, DMDposy, DMDwidth, DMDheight);
 
       m_pd3dDevice->DMDShader->Begin(0);
