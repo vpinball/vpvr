@@ -1303,7 +1303,8 @@ void Primitive::RenderObject()
    {
       // shader is already fully configured in the playfield rendering case when we arrive here, so we only setup some special primitive params
 
-      pd3dDevice->basicShader->SetDisableLighting(vec4(0.f, 1.f, 0.f, 0.f));;
+      //pd3dDevice->basicShader->SetDisableLighting(vec4(0.f, 1.f, 0.f, 0.f)); //!! disabled again, if enabling it, ALSO CHANGE THE RESET CONDITION SOME LINES BELOW to always be executed!!
+      pd3dDevice->basicShader->SetDisableLighting(vec4(m_d.m_disableLightingTop, m_d.m_disableLightingBelow, 0.f, 0.f));
 
       //pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW); // don't mess with the render states when doing playfield rendering
       // set transform

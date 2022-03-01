@@ -2123,7 +2123,7 @@ void PinTable::Play(const bool cameraMode)
 
       m_progressDialog.Destroy();
 
-   	  g_pvp->m_table_played_via_SelectTableOnStart = false;
+      g_pvp->m_table_played_via_SelectTableOnStart = false;
    }
 }
 

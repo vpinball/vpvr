@@ -2162,7 +2162,7 @@ void Ramp::RenderRamp(const Material * const mat)
       pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
       pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE); // as both floor and walls are thinwalled
 
-      pd3dDevice->basicShader->SetDisableLighting(vec4(0.f, 1.f, 0.f, 0.f));
+//      pd3dDevice->basicShader->SetDisableLighting(vec4(0.f, 1.f, 0.f, 0.f)); //!! disabled again, if enabling it, ALSO ADD A RESET CONDITION SOME LINES BELOW to set it to 0,0,0,0 again!!
 
       //Pin3D * const ppin3d = &g_pplayer->m_pin3d;
       Texture * const pin = m_ptable->GetImage(m_d.m_szImage);
