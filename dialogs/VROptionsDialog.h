@@ -15,7 +15,7 @@ protected:
 
 private:
    void AddToolTip(const char * const text, HWND parentHwnd, HWND toolTipHwnd, HWND controlHwnd);
-   void ResetVideoPreferences(); // 0 = default, 1 = lowend PC, 2 = highend PC
+   void ResetVideoPreferences();
    void FillVideoModesList(const std::vector<VideoMode>& modes, const VideoMode* curSelMode = 0);
    size_t getBestMatchingAAfactorIndex(float f);
 

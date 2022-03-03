@@ -562,12 +562,12 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
          const int heightcur = (int)lParam;
 
          SendMessage(GetHwnd(), RESET_SIZELIST_CONTENT, 0, 0);
-         HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
+         const HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
          //indx = SendMessage(hwndList, LB_GETCURSEL, 0L, 0L);
          //if (indx == LB_ERR)
          //  indx = 0;
 
-         const size_t csize = sizeof(rgwindowsize) / sizeof(int);
+         constexpr size_t csize = sizeof(rgwindowsize) / sizeof(int);
          int screenwidth;
          int screenheight;
          int x, y;
@@ -719,7 +719,7 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
       }
       case RESET_SIZELIST_CONTENT:
       {
-         HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
+         const HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
          SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
          break;
       }
@@ -1003,8 +1003,8 @@ void VideoOptionsDialog::OnOK()
    tmpStr = GetDlgItemTextA(IDC_3D_STEREO_DESATURATION);
    SaveValue("Player", "Stereo3DDesaturation", tmpStr);
 
-   size_t bamHeadtracking = SendMessage(GetDlgItem(IDC_HEADTRACKING).GetHwnd(), BM_GETCHECK, 0, 0);
-   SaveValueInt("Player", "BAMheadTracking", bamHeadtracking);
+   const size_t bamHeadtracking = SendMessage(GetDlgItem(IDC_HEADTRACKING).GetHwnd(), BM_GETCHECK, 0, 0);
+   SaveValueInt("Player", "BAMheadTracking", (int)bamHeadtracking);
 
    const bool disableDWM = (SendMessage(GetDlgItem(IDC_DISABLE_DWM).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
    SaveValueBool("Player", "DisableDWM", disableDWM);

@@ -1,16 +1,11 @@
 #pragma once
 #include "typeDefs3D.h"
 
-#include <sal.h>
-#include <new>
-#include <warning.h>
 #include <list>
 #include <string>
 #include <mutex>
-#include <DirectXMath.h>
 
 bool captureExternalDMD();
-void captureFindPUP();
 bool capturePUP();
 void captureStartup();
 void captureStop();
@@ -23,14 +18,14 @@ public:
    ~ExtCaptureOutput() { delete m_MetaDataBuffer; };
 
    IDXGIOutputDuplication* m_duplication = nullptr;
-   ID3D11Device* d3d_device = nullptr;
-   ID3D11DeviceContext* d3d_context = nullptr;
-   unsigned char* srcdata;
+   ID3D11Device* m_d3d_device = nullptr;
+   ID3D11DeviceContext* m_d3d_context = nullptr;
+   unsigned char* m_srcdata;
    int m_pitch = 0;
    char* m_MetaDataBuffer = nullptr;
    UINT m_MetaDataBufferSize = 0;
-   ID3D11Texture2D* staging_tex = nullptr;
-   ID3D11Texture2D* gdi_tex = nullptr;
+   ID3D11Texture2D* m_staging_tex = nullptr;
+   ID3D11Texture2D* m_gdi_tex = nullptr;
 
    void AcquireFrame();
 };
@@ -55,7 +50,7 @@ public:
    int m_DispTop, m_DispLeft = 0;
    DXGI_OUTPUT_DESC m_outputdesc;
 
-   D3D_FEATURE_LEVEL d3d_feature_level; /* The selected feature level (D3D version), selected from the Feature Levels array, which is NULL here; when it's NULL the default list is used see:  https://msdn.microsoft.com/en-us/library/windows/desktop/ff476082%28v=vs.85%29.aspx ) */
+   D3D_FEATURE_LEVEL m_d3d_feature_level; /* The selected feature level (D3D version), selected from the Feature Levels array, which is NULL here; when it's NULL the default list is used see:  https://msdn.microsoft.com/en-us/library/windows/desktop/ff476082%28v=vs.85%29.aspx ) */
    ExtCaptureOutput *m_pCapOut;
 
    bool m_FoundRect = false;
@@ -68,7 +63,7 @@ public:
 
    bool SetupCapture(RECT inputRect);
 
-   ecStage ecStage = ecUninitialized;
+   ecStage m_ecStage = ecUninitialized;
 
    void Setup(const std::list<string>& windowlist);
    void SearchWindow();

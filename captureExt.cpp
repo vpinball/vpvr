@@ -9,17 +9,23 @@
 // 4. Wait for main thread to create texture.
 // 5. Fill texture data periodically.
 
-ExtCapture ecDMD, ecPUP;
+static ExtCapture ecDMD, ecPUP;
 //std::map<void*, ExtCapture> ecDyn;
-bool StopCapture;
-std::thread threadCap;
+static bool StopCapture;
+static std::thread threadCap;
+
+static std::mutex mtx;
+static std::condition_variable cv;
+
+outputmaptype ExtCapture::m_duplicatormap;
+capturelisttype ExtCapture::m_allCaptures;
 
 // Call from VP's rendering loop.   Prepares textures once the sizes are detected by the 
 // capture thread. 
 
 void captureCheckTextures()
 {
-   if (ecDMD.ecStage == ecTexture)
+   if (ecDMD.m_ecStage == ecTexture)
    {
       if (g_pplayer->m_texdmd != nullptr)
       {
@@ -29,9 +35,9 @@ void captureCheckTextures()
       // Sleaze alert! - ec creates a HBitmap, but we hijack ec's data pointer to dump its data directly into VP's texture
       g_pplayer->m_texdmd = BaseTexture::CreateFromHBitmap(ecDMD.m_HBitmap);
       ecDMD.m_pData = g_pplayer->m_texdmd->data();
-      ecDMD.ecStage = ecCapturing;
+      ecDMD.m_ecStage = ecCapturing;
    }
-   if (ecPUP.ecStage == ecTexture)
+   if (ecPUP.m_ecStage == ecTexture)
    {
       if (g_pplayer->m_texPUP != nullptr)
       {
@@ -40,13 +46,9 @@ void captureCheckTextures()
       }
       g_pplayer->m_texPUP = BaseTexture::CreateFromHBitmap(ecPUP.m_HBitmap);
       ecPUP.m_pData = g_pplayer->m_texPUP->data();
-      ecPUP.ecStage = ecCapturing;
+      ecPUP.m_ecStage = ecCapturing;
    }
-
 }
-
-std::mutex mtx;
-std::condition_variable cv;
 
 void captureThread()
 {
@@ -58,20 +60,19 @@ void captureThread()
       {
          it->second->AcquireFrame();
       }
-      if (ecDMD.ecStage == ecSearching)
+      if (ecDMD.m_ecStage == ecSearching)
          ecDMD.SearchWindow();
-      if (ecDMD.ecStage == ecCapturing)
+      if (ecDMD.m_ecStage == ecCapturing)
       {
          if (ecDMD.GetFrame())
             g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.SetDirty(g_pplayer->m_texdmd);
-
       }
 
-      if (ecPUP.ecStage == ecSearching)
+      if (ecPUP.m_ecStage == ecSearching)
       {
          ecPUP.SearchWindow();
       }
-      if (ecPUP.ecStage == ecCapturing)
+      if (ecPUP.m_ecStage == ecCapturing)
       {
          if (ecPUP.GetFrame())
             g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.SetDirty(g_pplayer->m_texPUP);
@@ -80,7 +81,6 @@ void captureThread()
 
       cv.wait(lck);
       Sleep(16);
-
    }
 }
 
@@ -90,8 +90,8 @@ void captureStartup()
    ecDMD.Setup(dmdlist);
    const std::list<string> puplist = { "PUPSCREEN2", "Form1" };
    ecPUP.Setup(puplist);
-   ecDMD.ecStage = g_pplayer->m_capExtDMD ? ecSearching : ecFailure;
-   ecPUP.ecStage = g_pplayer->m_capPUP ? ecSearching : ecFailure;
+   ecDMD.m_ecStage = g_pplayer->m_capExtDMD ? ecSearching : ecFailure;
+   ecPUP.m_ecStage = g_pplayer->m_capPUP ? ecSearching : ecFailure;
    StopCapture = false;
    std::thread t(captureThread);
    threadCap = move(t);
@@ -104,45 +104,38 @@ void captureStop()
    if (threadCap.joinable())
       threadCap.join();
    ExtCapture::Dispose();
-   ecDMD.ecStage = ecPUP.ecStage = ecUninitialized;
+   ecDMD.m_ecStage = ecPUP.m_ecStage = ecUninitialized;
 }
 
 bool capturePUP()
 {
-   if (ecPUP.ecStage == ecUninitialized)
+   if (ecPUP.m_ecStage == ecUninitialized)
    {
       captureStartup();
       return false;
    }
-   if (ecPUP.ecStage == ecFailure)
+   if (ecPUP.m_ecStage == ecFailure)
       return false;
    captureCheckTextures();
    cv.notify_one();
-   if (ecPUP.ecStage == ecCapturing)
-      return true;
 
-   return false;
+   return (ecPUP.m_ecStage == ecCapturing);
 }
 
 bool captureExternalDMD()
 {
-   if (ecDMD.ecStage == ecUninitialized)
+   if (ecDMD.m_ecStage == ecUninitialized)
    {
       captureStartup();
       return false;
    }
-   if (ecDMD.ecStage == ecFailure)
+   if (ecDMD.m_ecStage == ecFailure)
       return false;
    captureCheckTextures();
    cv.notify_one();
-   if (ecDMD.ecStage == ecCapturing)
-      return true;
 
-   return false;
+   return (ecDMD.m_ecStage == ecCapturing);
 }
-
-outputmaptype ExtCapture::m_duplicatormap;
-capturelisttype ExtCapture::m_allCaptures;
 
 void ExtCapture::SearchWindow()
 {
@@ -159,27 +152,20 @@ void ExtCapture::SearchWindow()
    if (target != nullptr)
    {
       if (m_delay == 0)
-      {
          m_delay = clock() + 1 * CLOCKS_PER_SEC;
-      }
+
       if (clock() < m_delay)
          return;
+
       RECT r;
       GetWindowRect(target, &r);
-      if (SetupCapture(r))
-      {
-         ecStage = ecTexture;
-      }
-      else
-      {
-         ecStage = ecFailure;
-      }
+      m_ecStage = SetupCapture(r) ? ecTexture : ecFailure;
    }
 }
 
 void ExtCapture::Setup(const std::list<string>& windowlist)
 {
-   ecStage = ecUninitialized;
+   m_ecStage = ecUninitialized;
    m_delay = 0;
    m_searchWindows = windowlist;
    m_pData = nullptr;
@@ -210,7 +196,6 @@ bool ExtCapture::SetupCapture(RECT inputRect)
    POINT pt;
    pt.x = m_Rect.left;
    pt.y = m_Rect.top;
-
 
    bool found = false;
    while (!found && DXGI_ERROR_NOT_FOUND != factory->EnumAdapters1(i, &m_Adapter)) {
@@ -254,16 +239,16 @@ bool ExtCapture::SetupCapture(RECT inputRect)
    {
       m_pCapOut = new ExtCaptureOutput();
 
-      hr = D3D11CreateDevice(m_Adapter,              /* Adapter: The adapter (video card) we want to use. We may use NULL to pick the default adapter. */
+      hr = D3D11CreateDevice(m_Adapter, /* Adapter: The adapter (video card) we want to use. We may use NULL to pick the default adapter. */
          D3D_DRIVER_TYPE_UNKNOWN,  /* DriverType: We use the GPU as backing device. */
          NULL,                     /* Software: we're using a D3D_DRIVER_TYPE_HARDWARE so it's not applicaple. */
          NULL,                     /* Flags: maybe we need to use D3D11_CREATE_DEVICE_BGRA_SUPPORT because desktop duplication is using this. */
-         NULL,                     /* Feature Levels (ptr to array):  what version to use. */
+         nullptr,                  /* Feature Levels (ptr to array):  what version to use. */
          0,                        /* Number of feature levels. */
          D3D11_SDK_VERSION,        /* The SDK version, use D3D11_SDK_VERSION */
-         &m_pCapOut->d3d_device,              /* OUT: the ID3D11Device object. */
-         &d3d_feature_level,       /* OUT: the selected feature level. */
-         &m_pCapOut->d3d_context);            /* OUT: the ID3D11DeviceContext that represents the above features. */
+         &m_pCapOut->m_d3d_device, /* OUT: the ID3D11Device object. */
+         &m_d3d_feature_level,     /* OUT: the selected feature level. */
+         &m_pCapOut->m_d3d_context); /* OUT: the ID3D11DeviceContext that represents the above features. */
 
       if (S_OK != hr) {
          printf("Error: failed to create the D3D11 Device.\n");
@@ -279,13 +264,13 @@ bool ExtCapture::SetupCapture(RECT inputRect)
          return false;
       }
 
-      hr = m_Output1->DuplicateOutput(m_pCapOut->d3d_device, &m_pCapOut->m_duplication);
+      hr = m_Output1->DuplicateOutput(m_pCapOut->m_d3d_device, &m_pCapOut->m_duplication);
       if (S_OK != hr) {
          printf("Error: failed to create the duplication output.\n");
          return false;
       }
 
-      if (nullptr == &m_pCapOut->m_duplication) {
+      if (nullptr == m_pCapOut->m_duplication) {
          printf("Error: okay, we shouldn't arrive here but the duplication var is nullptr.\n");
          return false;
       }
@@ -303,7 +288,7 @@ bool ExtCapture::SetupCapture(RECT inputRect)
       tex_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
       tex_desc.MiscFlags = 0;
 
-      hr = m_pCapOut->d3d_device->CreateTexture2D(&tex_desc, nullptr, &m_pCapOut->staging_tex);
+      hr = m_pCapOut->m_d3d_device->CreateTexture2D(&tex_desc, nullptr, &m_pCapOut->m_staging_tex);
       if (E_INVALIDARG == hr) {
          printf("Error: received E_INVALIDARG when trying to create the texture.\n");
          return false;
@@ -337,12 +322,11 @@ bool ExtCapture::SetupCapture(RECT inputRect)
 
 void ExtCaptureOutput::AcquireFrame()
 {
-   srcdata = nullptr;
-   DXGI_OUTDUPL_FRAME_INFO frame_info;
+   m_srcdata = nullptr;
    IDXGIResource* desktop_resource = nullptr;
    ID3D11Texture2D* tex = nullptr;
-   DXGI_MAPPED_RECT mapped_rect;
 
+   DXGI_OUTDUPL_FRAME_INFO frame_info;
    HRESULT hr = m_duplication->AcquireNextFrame(2500, &frame_info, &desktop_resource);
 
    if (DXGI_ERROR_ACCESS_LOST == hr) {
@@ -361,26 +345,27 @@ void ExtCaptureOutput::AcquireFrame()
          printf("Error: failed to query the ID3D11Texture2D interface on the IDXGIResource we got.\n");
          exit(EXIT_FAILURE);
       }
+      DXGI_MAPPED_RECT mapped_rect;
       hr = m_duplication->MapDesktopSurface(&mapped_rect);
       if (S_OK == hr) {
-         printf("We got acess to the desktop surface\n");
+         printf("We got access to the desktop surface\n");
          hr = m_duplication->UnMapDesktopSurface();
          if (S_OK != hr) {
             printf("Error: failed to unmap the desktop surface after successfully mapping it.\n");
          }
       }
       else if (DXGI_ERROR_UNSUPPORTED == hr) {
-         d3d_context->CopyResource(staging_tex, tex);
+         m_d3d_context->CopyResource(m_staging_tex, tex);
 
          D3D11_MAPPED_SUBRESOURCE map;
-         const HRESULT map_result = d3d_context->Map(staging_tex,          /* Resource */
+         const HRESULT map_result = m_d3d_context->Map(m_staging_tex,          /* Resource */
             0,                    /* Subresource */
             D3D11_MAP_READ,       /* Map type. */
             0,                    /* Map flags. */
             &map);
 
          if (S_OK == map_result) {
-            srcdata = (unsigned char*)map.pData;
+            m_srcdata = (unsigned char*)map.pData;
             //printf("Mapped the staging tex; we can access the data now.\n");
             //printf("RowPitch: %u, DepthPitch: %u, %02X, %02X, %02X\n", map.RowPitch, map.DepthPitch, data[0], data[1], data[2]);
             m_pitch = map.RowPitch;
@@ -390,7 +375,7 @@ void ExtCaptureOutput::AcquireFrame()
             printf("Error: failed to map the staging tex. Cannot access the pixels.\n");
          }
 
-         d3d_context->Unmap(staging_tex, 0);
+         m_d3d_context->Unmap(m_staging_tex, 0);
       }
       else if (DXGI_ERROR_INVALID_CALL == hr) {
          printf("MapDesktopSurface returned DXGI_ERROR_INVALID_CALL.\n");
@@ -442,9 +427,8 @@ void ExtCaptureOutput::AcquireFrame()
    hr = m_duplication->GetFrameDirtyRects(BufSize, reinterpret_cast<RECT*>(m_MetaDataBuffer), &BufSize);
    if (SUCCEEDED(hr))
    {
-      RECT* r = (RECT*)m_MetaDataBuffer;
-      for (size_t i = 0;i < BufSize / sizeof(RECT);i++, r++)
-      {
+      const RECT* r = (RECT*)m_MetaDataBuffer;
+      for (size_t i = 0;i < BufSize / sizeof(RECT);++i, ++r)
          for (auto it = ExtCapture::m_allCaptures.begin(); it != ExtCapture::m_allCaptures.end(); ++it)
          {
             const int capleft = (*it)->m_DispLeft;
@@ -456,11 +440,9 @@ void ExtCaptureOutput::AcquireFrame()
                r->top < capbottom && r->bottom > captop)
                (*it)->m_bDirty = true;
          }
-      }
    }
    /* Clean up */
    {
-
       if (nullptr != tex) {
          tex->Release();
          tex = nullptr;
@@ -487,7 +469,7 @@ bool ExtCapture::GetFrame()
 
    m_bDirty = false;
 
-   const uint8_t* sptr = reinterpret_cast<uint8_t*>(m_pCapOut->srcdata) + m_pCapOut->m_pitch * m_DispTop;
+   const uint8_t* sptr = reinterpret_cast<uint8_t*>(m_pCapOut->m_srcdata) + m_pCapOut->m_pitch * m_DispTop;
    uint8_t* ddptr = (uint8_t*)m_pData;
 
    for (int h = 0; h < m_Height; ++h)
@@ -505,8 +487,8 @@ void ExtCapture::Dispose()
    for (auto it = m_duplicatormap.begin(); it != m_duplicatormap.end(); ++it)
    {
       it->second->m_duplication->Release();
-      it->second->d3d_context->Release();
-      it->second->d3d_device->Release();
+      it->second->m_d3d_context->Release();
+      it->second->m_d3d_device->Release();
       delete it->second;
    }
    m_duplicatormap.clear();

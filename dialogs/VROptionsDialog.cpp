@@ -5,7 +5,7 @@
 #define GET_WINDOW_MODES		WM_USER+100
 #define RESET_SIZELIST_CONTENT	WM_USER+102
 
-constexpr int rgwindowsize[] = { 640, 720, 800, 912, 1024, 1152, 1280, 1600 };  // windowed resolutions for selection list
+static constexpr int rgwindowsize[] = { 640, 720, 800, 912, 1024, 1152, 1280, 1360, 1366, 1400, 1440, 1600, 1680, 1920, 2048, 2560, 3440, 3840, 4096, 5120, 6400, 7680, 8192, 11520, 15360 };  // windowed resolutions for selection list
 
 constexpr float AAfactors[] = { 0.5f, 0.75f, 1.0f, 1.25f, (float)(4.0/3.0), 1.5f, 1.75f, 2.0f }; // factor is applied to width and to height, so 2.0f increases pixel count by 4. Additional values can be added.
 constexpr int AAfactorCount = 8;
@@ -23,7 +23,7 @@ size_t VROptionsDialog::getBestMatchingAAfactorIndex(float f)
    size_t bestMatch = 0;
    for (size_t i = 1; i < AAfactorCount; ++i)
       if (fabsf(f - AAfactors[i]) < delta) {
-         delta = fabs(f - AAfactors[i]);
+         delta = fabsf(f - AAfactors[i]);
          bestMatch = i;
       }
    return bestMatch;
@@ -127,11 +127,11 @@ void VROptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes, co
 {
    const HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
    SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
+
    int bestMatch = 0; // to find closest matching res
    int bestMatchingPoints = 0; // dto.
 
-   int screenwidth;
-   int screenheight;
+   int screenwidth, screenheight;
    int x, y;
    const int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
    getDisplaySetupByID(display, x, y, screenwidth, screenheight);
@@ -243,28 +243,28 @@ BOOL VROptionsDialog::OnInitDialog()
    }
    SetDlgItemText(IDC_MSAASLIDER_LABEL, MSAAText);
 
-   int useAO = LoadValueIntWithDefault("PlayerVR", "DynamicAO", LoadValueIntWithDefault("Player", "DynamicAO", 0));
-   SendMessage(GetDlgItem(IDC_DYNAMIC_AO).GetHwnd(), BM_SETCHECK, (useAO != 0) ? BST_CHECKED : BST_UNCHECKED, 0);
+   bool useAO = LoadValueBoolWithDefault("PlayerVR", "DynamicAO", LoadValueBoolWithDefault("Player", "DynamicAO", false));
+   SendMessage(GetDlgItem(IDC_DYNAMIC_AO).GetHwnd(), BM_SETCHECK, useAO ? BST_CHECKED : BST_UNCHECKED, 0);
 
-   useAO = LoadValueIntWithDefault("PlayerVR", "DisableAO", LoadValueIntWithDefault("Player", "DisableAO", 0));
-   SendMessage(GetDlgItem(IDC_ENABLE_AO).GetHwnd(), BM_SETCHECK, (useAO != 0) ? BST_UNCHECKED : BST_CHECKED, 0); // inverted logic
+   useAO = LoadValueBoolWithDefault("PlayerVR", "DisableAO", LoadValueBoolWithDefault("Player", "DisableAO", false));
+   SendMessage(GetDlgItem(IDC_ENABLE_AO).GetHwnd(), BM_SETCHECK, useAO ? BST_UNCHECKED : BST_CHECKED, 0); // inverted logic
 
-   const int ssreflection = LoadValueIntWithDefault("PlayerVR", "SSRefl", LoadValueIntWithDefault("Player", "SSRefl", 0));
+   const bool ssreflection = LoadValueBoolWithDefault("PlayerVR", "SSRefl", LoadValueBoolWithDefault("Player", "SSRefl", false));
    SendMessage(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), BM_SETCHECK, ssreflection ? BST_CHECKED : BST_UNCHECKED, 0);
 
-   const int pfreflection = LoadValueIntWithDefault("PlayerVR", "PFRefl", LoadValueIntWithDefault("PlayerVR", "PFRefl", 1));
+   const bool pfreflection = LoadValueBoolWithDefault("PlayerVR", "PFRefl", LoadValueBoolWithDefault("PlayerVR", "PFRefl", true));
    SendMessage(GetDlgItem(IDC_GLOBAL_PFREFLECTION_CHECK).GetHwnd(), BM_SETCHECK, pfreflection ? BST_CHECKED : BST_UNCHECKED, 0);
 
    const int fxaa = LoadValueIntWithDefault("PlayerVR", "FXAA", LoadValueIntWithDefault("Player", "FXAA", 0));
-
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Disabled");
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Fast FXAA");
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Standard FXAA");
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Quality FXAA");
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Fast NFAA");
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Standard DLAA");
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Quality SMAA");
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_SETCURSEL, fxaa, 0);
+   HWND hwnd = GetDlgItem(IDC_FXAACB).GetHwnd();
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Disabled");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Fast FXAA");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Standard FXAA");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Quality FXAA");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Fast NFAA");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Standard DLAA");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Quality SMAA");
+   SendMessage(hwnd, CB_SETCURSEL, fxaa, 0);
 
    const bool scaleFX_DMD = LoadValueBoolWithDefault("PlayerVR", "ScaleFXDMD", LoadValueBoolWithDefault("Player", "ScaleFXDMD", false));
    SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_SETCHECK, scaleFX_DMD ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -310,7 +310,7 @@ BOOL VROptionsDialog::OnInitDialog()
    sprintf_s(tmp, 256, "%0.1f", vrZ);
    SetDlgItemTextA(IDC_VR_OFFSET_Z, tmp);
 
-   const int bloomOff = LoadValueIntWithDefault("PlayerVR", "ForceBloomOff", LoadValueIntWithDefault("Player", "ForceBloomOff", false));
+   const bool bloomOff = LoadValueBoolWithDefault("PlayerVR", "ForceBloomOff", LoadValueBoolWithDefault("Player", "ForceBloomOff", false));
    SendMessage(GetDlgItem(IDC_BLOOM_OFF).GetHwnd(), BM_SETCHECK, bloomOff ? BST_CHECKED : BST_UNCHECKED, 0);
 
    const int askToTurnOn = LoadValueIntWithDefault("PlayerVR", "AskToTurnOn", 1);
@@ -320,13 +320,13 @@ BOOL VROptionsDialog::OnInitDialog()
    SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), CB_SETCURSEL, askToTurnOn, 0);
 
    const int DMDsource = LoadValueIntWithDefault("PlayerVR", "DMDsource", 1);
-   SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"internal text/flasher (via vbscript)");
+   SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Internal Text/Flasher (via vbscript)");
    SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Screenreader");
    SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"SharedMemory API");
    SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_SETCURSEL, DMDsource, 0);
 
    const int BGsource = LoadValueIntWithDefault("PlayerVR", "BGsource", 1);
-   SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"default table background");
+   SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"Default table background");
    SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"directb2s File (auto only)");
    SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"directb2s File");
    SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"SharedMemory API");
@@ -336,11 +336,11 @@ BOOL VROptionsDialog::OnInitDialog()
    const HRESULT hr = LoadValue("PlayerVR", "Display", display);
    std::vector<DisplayConfig> displays;
    getDisplayList(displays);
-
    if ((hr != S_OK) || ((int)displays.size() <= display) || (display<-1))
       display = -1;
 
-   SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_RESETCONTENT, 0, 0);
+   hwnd = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
+   SendMessage(hwnd, CB_RESETCONTENT, 0, 0);
 
    for (std::vector<DisplayConfig>::iterator dispConf = displays.begin(); dispConf != displays.end(); ++dispConf)
    {
@@ -348,9 +348,9 @@ BOOL VROptionsDialog::OnInitDialog()
          display = dispConf->display;
       char displayName[256];
       sprintf_s(displayName, "Display %d%s %dx%d %s", dispConf->display + 1, (dispConf->isPrimary) ? "*" : "", dispConf->width, dispConf->height, dispConf->GPU_Name);
-      SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)displayName);
+      SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)displayName);
    }
-   SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_SETCURSEL, display, 0);
+   SendMessage(hwnd, CB_SETCURSEL, display, 0);
 
    const int widthcur = LoadValueIntWithDefault("PlayerVR", "Width", DEFAULT_PLAYER_WIDTH);
    const int heightcur = LoadValueIntWithDefault("PlayerVR", "Height", widthcur * 9 / 16);
@@ -382,7 +382,8 @@ INT_PTR VROptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
       {
          size_t indexcur = -1;
          size_t indx = -1;
-         const int widthcur = (int)wParam, heightcur = (int)lParam;
+         const int widthcur  = (int)wParam;
+         const int heightcur = (int)lParam;
 
          SendMessage(GetHwnd(), RESET_SIZELIST_CONTENT, 0, 0);
          const HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
@@ -391,8 +392,7 @@ INT_PTR VROptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
          //  indx = 0;
 
          constexpr size_t csize = sizeof(rgwindowsize) / sizeof(int);
-         int screenwidth;
-         int screenheight;
+         int screenwidth, screenheight;
          int x, y;
          const int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
          getDisplaySetupByID(display, x, y, screenwidth, screenheight);
@@ -411,7 +411,7 @@ INT_PTR VROptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
          // 16:9 aspect ratio resolutions:  1280*720, 1366*768, 1600*900, 1920*1080, 2560*1440 and 3840*2160
          // 21:9 aspect ratio resolution:   3440*1440
          // 4:3  aspect ratio resolutions:  1280*1024
-         const unsigned int num_portrait_modes = 15;
+         constexpr unsigned int num_portrait_modes = 15;
          constexpr int portrait_modes_width[num_portrait_modes] = { 720, 720, 1024, 768, 800, 900, 900,1050,1050,1080,1200,1440,1440,1600,2160 };
          constexpr int portrait_modes_height[num_portrait_modes] = { 1024,1280, 1280,1366,1280,1440,1600,1600,1680,1920,1920,2560,3440,2560,3840 };
 
@@ -556,10 +556,10 @@ BOOL VROptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
    }
    case IDC_DISPLAY_ID:
    {
-      const size_t index = (int)SendMessage(GetDlgItem(IDC_SIZELIST).GetHwnd(), LB_GETCURSEL, 0, 0);
+      const size_t index = SendMessage(GetDlgItem(IDC_SIZELIST).GetHwnd(), LB_GETCURSEL, 0, 0);
       if (allVideoModes.empty()) {
          const HWND hwndDisplay = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
-         const int display = SendMessage(hwndDisplay, CB_GETCURSEL, 0, 0);
+         const int display = (int)SendMessage(hwndDisplay, CB_GETCURSEL, 0, 0);
          EnumerateDisplayModes(display, allVideoModes);
       }
       if (allVideoModes.size() > index) {
@@ -602,7 +602,7 @@ void VROptionsDialog::OnOK()
    SaveValueInt("PlayerVR", "Height", pvm->height);
 
    size_t display = SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
-   SaveValueInt("PlayerVR", "Display", display);
+   SaveValueInt("PlayerVR", "Display", (int)display);
 
    CString tmpStr;
 
@@ -615,10 +615,10 @@ void VROptionsDialog::OnOK()
    size_t fxaa = SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_GETCURSEL, 0, 0);
    if (fxaa == LB_ERR)
       fxaa = 0;
-   SaveValueInt("PlayerVR", "FXAA", fxaa);
+   SaveValueInt("PlayerVR", "FXAA", (int)fxaa);
 
-   size_t scaleFX_DMD = SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_GETCHECK, 0, 0);
-   SaveValueInt("PlayerVR", "ScaleFXDMD", scaleFX_DMD);
+   const bool scaleFX_DMD = SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_GETCHECK, 0, 0) != 0;
+   SaveValueBool("PlayerVR", "ScaleFXDMD", scaleFX_DMD);
 
    const size_t AAfactorIndex = SendMessage(GetDlgItem(IDC_SSSLIDER).GetHwnd(), TBM_GETPOS, 0, 0);
    const float AAfactor = (AAfactorIndex < AAfactorCount) ? AAfactors[AAfactorIndex] : 1.0f;
@@ -628,30 +628,30 @@ void VROptionsDialog::OnOK()
    const int MSAASamples = (MSAASamplesIndex < MSAASampleCount) ? MSAASamplesOpts[MSAASamplesIndex] : 1;
    SaveValueInt("PlayerVR", "MSAASamples", MSAASamples);
 
-   size_t useAO = SendMessage(GetDlgItem(IDC_DYNAMIC_AO).GetHwnd(), BM_GETCHECK, 0, 0);
-   SaveValueInt("PlayerVR", "DynamicAO", useAO);
+   bool useAO = SendMessage(GetDlgItem(IDC_DYNAMIC_AO).GetHwnd(), BM_GETCHECK, 0, 0) != 0;
+   SaveValueBool("PlayerVR", "DynamicAO", useAO);
 
-   useAO = SendMessage(GetDlgItem(IDC_ENABLE_AO).GetHwnd(), BM_GETCHECK, 0, 0) ? 0 : 1; // inverted logic
-   SaveValueInt("PlayerVR", "DisableAO", useAO);
+   useAO = SendMessage(GetDlgItem(IDC_ENABLE_AO).GetHwnd(), BM_GETCHECK, 0, 0) ? false : true; // inverted logic
+   SaveValueBool("PlayerVR", "DisableAO", useAO);
 
-   const size_t ssreflection = SendMessage(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), BM_GETCHECK, 0, 0);
-   SaveValueInt("PlayerVR", "SSRefl", ssreflection);
+   const bool ssreflection = SendMessage(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), BM_GETCHECK, 0, 0) != 0;
+   SaveValueBool("PlayerVR", "SSRefl", ssreflection);
 
-   const size_t pfreflection = SendMessage(GetDlgItem(IDC_GLOBAL_PFREFLECTION_CHECK).GetHwnd(), BM_GETCHECK, 0, 0);
-   SaveValueInt("PlayerVR", "PFRefl", pfreflection);
+   const bool pfreflection = SendMessage(GetDlgItem(IDC_GLOBAL_PFREFLECTION_CHECK).GetHwnd(), BM_GETCHECK, 0, 0) != 0;
+   SaveValueBool("PlayerVR", "PFRefl", pfreflection);
 
    //AMD Debugging
    const size_t textureModeVR = SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_GETCURSEL, 0, 0);
-   SaveValueInt("Player", "textureModeVR", textureModeVR);
+   SaveValueInt("Player", "textureModeVR", (int)textureModeVR);
 
    const size_t blitModeVR = SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_GETCURSEL, 0, 0);
-   SaveValueInt("Player", "blitModeVR", blitModeVR);
+   SaveValueInt("Player", "blitModeVR", (int)blitModeVR);
 
-   const size_t disableVRPreview = SendMessage(GetDlgItem(IDC_VR_DISABLE_PREVIEW).GetHwnd(), BM_GETCHECK, 0, 0);
-   SaveValueInt("PlayerVR", "VRPreviewDisabled", disableVRPreview);
+   const bool disableVRPreview = SendMessage(GetDlgItem(IDC_VR_DISABLE_PREVIEW).GetHwnd(), BM_GETCHECK, 0, 0) != 0;
+   SaveValueBool("PlayerVR", "VRPreviewDisabled", disableVRPreview);
 
-   const size_t scaleToFixedWidth = SendMessage(GetDlgItem(IDC_SCALE_TO_CM).GetHwnd(), BM_GETCHECK, 0, 0);
-   SaveValueInt("PlayerVR", "scaleToFixedWidth", scaleToFixedWidth);
+   const bool scaleToFixedWidth = SendMessage(GetDlgItem(IDC_SCALE_TO_CM).GetHwnd(), BM_GETCHECK, 0, 0) != 0;
+   SaveValueBool("PlayerVR", "scaleToFixedWidth", scaleToFixedWidth);
 
    tmpStr = GetDlgItemTextA(IDC_VR_SCALE);
    SaveValue("PlayerVR", scaleToFixedWidth ? "scaleAbsolute" : "scaleRelative", tmpStr);
@@ -679,17 +679,17 @@ void VROptionsDialog::OnOK()
    tmpStr = GetDlgItemTextA(IDC_VR_OFFSET_Z);
    SaveValue("Player", "VRTableZ", tmpStr);
 
-   const size_t bloomOff = SendMessage(GetDlgItem(IDC_BLOOM_OFF).GetHwnd(), BM_GETCHECK, 0, 0);
-   SaveValueInt("PlayerVR", "ForceBloomOff", bloomOff);
+   const bool bloomOff = SendMessage(GetDlgItem(IDC_BLOOM_OFF).GetHwnd(), BM_GETCHECK, 0, 0) != 0;
+   SaveValueBool("PlayerVR", "ForceBloomOff", bloomOff);
    
    const size_t askToTurnOn = SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), CB_GETCURSEL, 0, 0);
-   SaveValueInt("PlayerVR", "AskToTurnOn", askToTurnOn);
+   SaveValueInt("PlayerVR", "AskToTurnOn", (int)askToTurnOn);
 
    const size_t dmdSource = SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_GETCURSEL, 0, 0);
-   SaveValueInt("PlayerVR", "DMDsource", dmdSource);
+   SaveValueInt("PlayerVR", "DMDsource", (int)dmdSource);
 
    const size_t bgSource = SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_GETCURSEL, 0, 0);
-   SaveValueInt("PlayerVR", "BGsource", bgSource);
+   SaveValueInt("PlayerVR", "BGsource", (int)bgSource);
 
    CDialog::OnOK();
 

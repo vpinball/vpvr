@@ -3139,9 +3139,9 @@ void Player::UpdatePhysics()
    m_phys_period = (U32)((usec() - delta_frame) - initial_time_usec);
 }
 
+#ifndef ENABLE_SDL
 void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwidth, const float DMDheight, const COLORREF DMDcolor, const float intensity)
 {
-#ifndef ENABLE_SDL
    if (m_texdmd)
    {
       float DMDVerts[4 * 5] =
@@ -3176,8 +3176,8 @@ void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwi
       m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)DMDVerts);
       m_pin3d.m_pd3dPrimaryDevice->DMDShader->End();
    }
-#endif
 }
+#endif
 
 void Player::Spritedraw(const float posx, const float posy, const float width, const float height, const COLORREF color, Texture * const tex, const float intensity, const bool backdrop)
 {
@@ -3694,7 +3694,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
    }
    static int disableVRPreview = -1;
    if (disableVRPreview == -1) {
-      disableVRPreview = LoadValueIntWithDefault("PlayerVR", "VRPreviewDisabled", 0);
+      disableVRPreview = LoadValueBoolWithDefault("PlayerVR", "VRPreviewDisabled", false);
    }
 #endif
    switch (stereo3D) {
