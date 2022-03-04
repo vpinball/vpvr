@@ -171,17 +171,21 @@ void ExtCapture::Setup(const std::list<string>& windowlist)
    m_pData = nullptr;
 }
 
-bool ExtCapture::SetupCapture(RECT inputRect)
+bool ExtCapture::SetupCapture(const RECT& inputRect)
 {
-   memcpy(&m_Rect, &inputRect, sizeof(RECT));
-
-   m_Width = m_Rect.right - m_Rect.left;
-   m_Height = m_Rect.bottom - m_Rect.top;
+   m_Width = inputRect.right - inputRect.left;
+   m_Height = inputRect.bottom - inputRect.top;
 
    if (m_Adapter)
+   {
       m_Adapter->Release();
+      m_Adapter = nullptr;
+   }
    if (m_Output)
+   {
       m_Output->Release();
+      m_Output = nullptr;
+   }
 
    /* Retrieve a IDXGIFactory that can enumerate the adapters. */
    IDXGIFactory1* factory = nullptr;
@@ -194,8 +198,8 @@ bool ExtCapture::SetupCapture(RECT inputRect)
    UINT i = 0, dx = 0;
 
    POINT pt;
-   pt.x = m_Rect.left;
-   pt.y = m_Rect.top;
+   pt.x = inputRect.left;
+   pt.y = inputRect.top;
 
    bool found = false;
    while (!found && DXGI_ERROR_NOT_FOUND != factory->EnumAdapters1(i, &m_Adapter)) {
@@ -208,7 +212,7 @@ bool ExtCapture::SetupCapture(RECT inputRect)
             if (m_Output)
             {
                hr = m_Output->GetDesc(&m_outputdesc);
-               if (PtInRect(&m_outputdesc.DesktopCoordinates, pt))
+               if (hr == S_OK && PtInRect(&m_outputdesc.DesktopCoordinates, pt))
                {
                   found = true;
                   m_DispLeft = pt.x - m_outputdesc.DesktopCoordinates.left;
@@ -217,12 +221,14 @@ bool ExtCapture::SetupCapture(RECT inputRect)
                else
                {
                   m_Output->Release();
+                  m_Output = nullptr;
                }
             }
          }
          if (!found)
          {
             m_Adapter->Release();
+            m_Adapter = nullptr;
          }
       }
    }
@@ -230,7 +236,7 @@ bool ExtCapture::SetupCapture(RECT inputRect)
       return false;
 
    const std::tuple<int, int> idx = std::make_tuple(dx, i);
-   outputmaptype::iterator it = m_duplicatormap.find(idx);
+   const outputmaptype::iterator it = m_duplicatormap.find(idx);
    if (it != m_duplicatormap.end())
    {
       m_pCapOut = it->second;
@@ -241,7 +247,7 @@ bool ExtCapture::SetupCapture(RECT inputRect)
 
       hr = D3D11CreateDevice(m_Adapter, /* Adapter: The adapter (video card) we want to use. We may use NULL to pick the default adapter. */
          D3D_DRIVER_TYPE_UNKNOWN,  /* DriverType: We use the GPU as backing device. */
-         NULL,                     /* Software: we're using a D3D_DRIVER_TYPE_HARDWARE so it's not applicaple. */
+         nullptr,                  /* Software: we're using a D3D_DRIVER_TYPE_HARDWARE so it's not applicaple. */
          NULL,                     /* Flags: maybe we need to use D3D11_CREATE_DEVICE_BGRA_SUPPORT because desktop duplication is using this. */
          nullptr,                  /* Feature Levels (ptr to array):  what version to use. */
          0,                        /* Number of feature levels. */
@@ -294,7 +300,7 @@ bool ExtCapture::SetupCapture(RECT inputRect)
          return false;
       }
       else if (S_OK != hr) {
-         printf("Error: failed to create the 2D texture, error: %d.\n", hr);
+         printf("Error: failed to create the 2D texture, error: %u.\n", hr);
          return false;
       }
       m_duplicatormap[idx] = m_pCapOut;

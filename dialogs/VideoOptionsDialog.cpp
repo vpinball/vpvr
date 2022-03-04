@@ -14,7 +14,7 @@ constexpr int AAfactorCount = 8;
 constexpr int MSAASamplesOpts[] = { 1, 4, 6, 8 };
 constexpr int MSAASampleCount = 4;
 
-size_t VideoOptionsDialog::getBestMatchingAAfactorIndex(float f)
+static size_t getBestMatchingAAfactorIndex(float f)
 {
    float delta = fabsf(f - AAfactors[0]);
    size_t bestMatch = 0;

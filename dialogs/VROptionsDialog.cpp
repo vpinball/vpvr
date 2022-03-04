@@ -2,8 +2,8 @@
 #include "resource.h"
 #include "VROptionsDialog.h"
 
-#define GET_WINDOW_MODES		WM_USER+100
-#define RESET_SIZELIST_CONTENT	WM_USER+102
+#define GET_WINDOW_MODES		(WM_USER+100)
+#define RESET_SIZELIST_CONTENT	(WM_USER+102)
 
 static constexpr int rgwindowsize[] = { 640, 720, 800, 912, 1024, 1152, 1280, 1360, 1366, 1400, 1440, 1600, 1680, 1920, 2048, 2560, 3440, 3840, 4096, 5120, 6400, 7680, 8192, 11520, 15360 };  // windowed resolutions for selection list
 
@@ -17,7 +17,7 @@ static bool oldScaleValue = false;
 static float scaleRelative = 1.0f;
 static float scaleAbsolute = 55.0f;
 
-size_t VROptionsDialog::getBestMatchingAAfactorIndex(float f)
+static size_t getBestMatchingAAfactorIndex(float f)
 {
    float delta = fabsf(f - AAfactors[0]);
    size_t bestMatch = 0;
@@ -44,7 +44,7 @@ void VROptionsDialog::AddToolTip(const char * const text, HWND parentHwnd, HWND 
    SendMessage(toolTipHwnd, TTM_ADDTOOL, 0, (LPARAM)&toolInfo);
 }
 
-void VROptionsDialog::ResetVideoPreferences() // 0 = default, 1 = lowend PC, 2 = highend PC
+void VROptionsDialog::ResetVideoPreferences()
 {
    const int widthcur = LoadValueIntWithDefault("PlayerVR", "Width", DEFAULT_PLAYER_WIDTH);
    const int heightcur = LoadValueIntWithDefault("PlayerVR", "Height", widthcur * 9 / 16);

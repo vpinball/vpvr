@@ -126,7 +126,7 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice, Texture * backgroundFallbac
                auto attrib = illuminationNode->first_attribute("Image");
                if (attrib) {
                   if (data_len < attrib->value_size() * 3 / 4 + 1) {
-                     if (data) delete [] data;
+                     delete [] data;
                      data_len = attrib->value_size() * 3 / 4 + 1;
                      data = new char[data_len];
                   }
@@ -156,7 +156,7 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice, Texture * backgroundFallbac
                auto attrib = imagesNode->first_attribute("Value");
                if (attrib) {
                   if (data_len < attrib->value_size() * 3 / 4 + 1) {
-                     if (data) delete [] data;
+                     delete [] data;
                      data_len = attrib->value_size() * 3 / 4 + 1;
                      data = new char[data_len];
                   }
@@ -187,7 +187,7 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice, Texture * backgroundFallbac
    catch (...) {//If file does not exist, or something else goes wrong just disable the Backglass. This is very experimental anyway.
       m_backgroundTexture = nullptr;
    }
-   if (data) delete [] data;
+   delete [] data;
    float tableWidth, glassHeight;
    g_pplayer->m_ptable->get_Width(&tableWidth);
    g_pplayer->m_ptable->get_GlassHeight(&glassHeight);
