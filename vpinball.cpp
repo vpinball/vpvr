@@ -339,7 +339,7 @@ bool VPinball::OpenFileDialog(const string& initDir, std::vector<std::string>& f
    }
    else
    {
-      filename.push_back("");
+      filename.push_back(string());
 
       return false;
    }
@@ -360,7 +360,7 @@ bool VPinball::SaveFileDialog(const string& initDir, std::vector<std::string>& f
    }
    else
    {
-      filename.push_back("");
+      filename.push_back(string());
 
       return false;
    }
@@ -1226,19 +1226,21 @@ void VPinball::UpdateRecentFileList(const string& szfilename)
          // now search for filenames with & and replace with && so that these display correctly
          const char * const ns = replace(m_recentTableList[i].c_str(), "&", "&&");
          char recentMenuname[MAX_PATH];
-         snprintf(recentMenuname, MAX_PATH-1, "&%i %s", (int)i+1, ns);
+         snprintf(recentMenuname, MAX_PATH-1, "&%i  %s", (int)i+1, ns);
          delete[] ns;
 
          // set the IDM of this menu item
          // set up the menu info block
          MENUITEMINFO menuInfo = {};
          menuInfo.cbSize = GetSizeofMenuItemInfo();
-         menuInfo.fMask = MIIM_ID | MIIM_TYPE | MIIM_STATE;
-         menuInfo.fType = MFT_STRING;
+         menuInfo.fMask = MIIM_ID | MIIM_STRING | MIIM_STATE;
+         menuInfo.fState = MFS_ENABLED;
          menuInfo.wID = RECENT_FIRST_MENU_IDM + (UINT)i;
          menuInfo.dwTypeData = recentMenuname;
+         menuInfo.cch = strlen(recentMenuname);
 
          menuFile.InsertMenuItem(count, menuInfo, TRUE);
+         //or: menuFile.InsertMenu(count, MF_BYPOSITION | MF_ENABLED | MF_STRING, RECENT_FIRST_MENU_IDM + (UINT)i, recentMenuname);
          count++;
       }
 
@@ -1246,8 +1248,10 @@ void VPinball::UpdateRecentFileList(const string& szfilename)
       MENUITEMINFO menuInfo = {};
       menuInfo.cbSize = GetSizeofMenuItemInfo();
       menuInfo.fMask = MIIM_ID | MIIM_TYPE | MIIM_STATE;
+      menuInfo.fState = MFS_ENABLED;
       menuInfo.fType = MFT_SEPARATOR;
       menuInfo.wID = RECENT_FIRST_MENU_IDM + (UINT)m_recentTableList.size();
+
       menuFile.InsertMenuItem(count, menuInfo, TRUE);
 
       // update the menu bar
@@ -2359,8 +2363,8 @@ void VPinball::OpenNewTable(size_t tableId)
       return;
    }
 
-   PinTableMDI *mdiTable = new PinTableMDI(this);
-   CComObject<PinTable>* ppt = mdiTable->GetTable();
+   PinTableMDI * const mdiTable = new PinTableMDI(this);
+   CComObject<PinTable>* const ppt = mdiTable->GetTable();
    m_vtable.push_back(ppt);
    ppt->InitBuiltinTable(tableId);
    ppt->InitTablePostLoad();

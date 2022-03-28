@@ -1121,6 +1121,12 @@ STDMETHODIMP ScriptGlobalTable::GetSerialDevices(VARIANT *pVal)
    return S_OK;
 }
 
+STDMETHODIMP ScriptGlobalTable::get_RenderingMode(int *pVal)
+{
+   *pVal = (g_pplayer->m_stereo3D == STEREO_VR) ? 2 : (((g_pplayer->m_stereo3D != 0) && g_pplayer->m_stereo3Denabled) ? 1 : 0); // 0 = Normal 2D, 1 = Stereo 3D, 2 = VR
+   return S_OK;
+}
+
 #pragma endregion
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1328,7 +1334,7 @@ void PinTable::FVerifySaveToClose()
       for (size_t i = 0; i < m_vAsyncHandles.size(); i++)
          CloseHandle(m_vAsyncHandles[i]);
 
-      m_vpinball->SetActionCur("");
+      m_vpinball->SetActionCur(string());
    }
 }
 
@@ -2048,32 +2054,32 @@ void PinTable::Play(const bool cameraMode)
       float fOverrideContactScatterAngle;
       if (m_overridePhysics)
       {
-          char tmp[256];
+         char tmp[256];
 
-          sprintf_s(tmp, 256, "TablePhysicsGravityConstant%d", m_overridePhysics - 1);
-          m_fOverrideGravityConstant = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_GRAVITY);
-          m_fOverrideGravityConstant *= GRAVITYCONST;
+         sprintf_s(tmp, 256, "TablePhysicsGravityConstant%d", m_overridePhysics - 1);
+         m_fOverrideGravityConstant = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_GRAVITY);
+         m_fOverrideGravityConstant *= GRAVITYCONST;
 
-          sprintf_s(tmp, 256, "TablePhysicsContactFriction%d", m_overridePhysics - 1);
-          m_fOverrideContactFriction = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_CONTACTFRICTION);
+         sprintf_s(tmp, 256, "TablePhysicsContactFriction%d", m_overridePhysics - 1);
+         m_fOverrideContactFriction = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_CONTACTFRICTION);
 
-          sprintf_s(tmp, 256, "TablePhysicsElasticity%d", m_overridePhysics - 1);
-          m_fOverrideElasticity = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_ELASTICITY);
+         sprintf_s(tmp, 256, "TablePhysicsElasticity%d", m_overridePhysics - 1);
+         m_fOverrideElasticity = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_ELASTICITY);
 
-          sprintf_s(tmp, 256, "TablePhysicsElasticityFalloff%d", m_overridePhysics - 1);
-          m_fOverrideElasticityFalloff = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_ELASTICITY_FALLOFF);
+         sprintf_s(tmp, 256, "TablePhysicsElasticityFalloff%d", m_overridePhysics - 1);
+         m_fOverrideElasticityFalloff = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_ELASTICITY_FALLOFF);
 
-          sprintf_s(tmp, 256, "TablePhysicsScatterAngle%d", m_overridePhysics - 1);
-          m_fOverrideScatterAngle = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_PFSCATTERANGLE);
+         sprintf_s(tmp, 256, "TablePhysicsScatterAngle%d", m_overridePhysics - 1);
+         m_fOverrideScatterAngle = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_PFSCATTERANGLE);
 
-          sprintf_s(tmp, 256, "TablePhysicsContactScatterAngle%d", m_overridePhysics - 1);
-          fOverrideContactScatterAngle = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_SCATTERANGLE);
+         sprintf_s(tmp, 256, "TablePhysicsContactScatterAngle%d", m_overridePhysics - 1);
+         fOverrideContactScatterAngle = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_SCATTERANGLE);
 
-          sprintf_s(tmp, 256, "TablePhysicsMinSlope%d", m_overridePhysics - 1);
-          m_fOverrideMinSlope = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_MIN_SLOPE);
+         sprintf_s(tmp, 256, "TablePhysicsMinSlope%d", m_overridePhysics - 1);
+         m_fOverrideMinSlope = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_MIN_SLOPE);
 
-          sprintf_s(tmp, 256, "TablePhysicsMaxSlope%d", m_overridePhysics - 1);
-          m_fOverrideMaxSlope = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_MAX_SLOPE);
+         sprintf_s(tmp, 256, "TablePhysicsMaxSlope%d", m_overridePhysics - 1);
+         m_fOverrideMaxSlope = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_MAX_SLOPE);
       }
 
       c_hardScatter = ANGTORAD(m_overridePhysics ? fOverrideContactScatterAngle : m_defaultScatter);
@@ -2088,18 +2094,18 @@ void PinTable::Play(const bool cameraMode)
       g_pplayer->PreCreate(cs);
       if (g_pplayer->PreInit() != S_OK)
       {
-          delete g_pplayer;
-          g_pplayer = nullptr;
+         delete g_pplayer;
+         g_pplayer = nullptr;
 
-          RestoreBackup();
-          g_keepUndoRecords = true;
-          m_pcv->EndSession();
+         RestoreBackup();
+         g_keepUndoRecords = true;
+         m_pcv->EndSession();
 
-          m_progressDialog.Destroy();
+         m_progressDialog.Destroy();
 
-          g_pvp->m_table_played_via_SelectTableOnStart = false;
+         g_pvp->m_table_played_via_SelectTableOnStart = false;
 
-          return;
+         return;
       }
       g_pplayer->Attach(g_pplayer->m_pin3d.m_pd3dPrimaryDevice ? g_pplayer->m_pin3d.m_pd3dPrimaryDevice->getHwnd() : 0);
 #else
@@ -2228,7 +2234,7 @@ void PinTable::AutoSave()
    }
    else
    {
-      m_vpinball->SetActionCur("");
+      m_vpinball->SetActionCur(string());
    }
 
    m_vpinball->SetCursorCur(nullptr, IDC_ARROW);
@@ -2344,7 +2350,7 @@ HRESULT PinTable::Save(const bool saveAs)
       pstgRoot->Commit(STGC_DEFAULT);
       pstgRoot->Release();
 
-      m_vpinball->SetActionCur("");
+      m_vpinball->SetActionCur(string());
       m_vpinball->SetCursorCur(nullptr, IDC_ARROW);
 
       m_undo.SetCleanPoint(eSaveClean);
@@ -3663,7 +3669,7 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
 
    pstgRoot->Release();
 
-   m_vpinball->SetActionCur("");
+   m_vpinball->SetActionCur(string());
 
    m_vpinball->GetLayersListDialog()->ClearList();
    // copy all elements into their layers
@@ -3678,16 +3684,9 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
          if (psel->m_oldLayerIndex == i)
          {
              m_layer[i].push_back(piedit);
-             if (psel->m_layerName == "")
-             {
-                 const string name = "Layer_" + std::to_string(i+1);
-                 psel->m_layerName = name;
-                 m_vpinball->GetLayersListDialog()->AddLayer(name, piedit);
-             }
-             else
-             {
-                 m_vpinball->GetLayersListDialog()->AddLayer(psel->m_layerName, piedit);
-             }
+             if (psel->m_layerName.empty())
+                 psel->m_layerName = "Layer_" + std::to_string(i+1);
+             m_vpinball->GetLayersListDialog()->AddLayer(psel->m_layerName, piedit);
          }
       }
    }
@@ -4572,9 +4571,9 @@ void PinTable::FillCollectionContextMenu(CMenu &mainMenu, CMenu &colSubMenu, ISe
     const LocalString ls16(IDS_TO_COLLECTION);
     mainMenu.AppendMenu(MF_POPUP | MF_STRING, (size_t)colSubMenu.GetHandle(), ls16.m_szbuffer);
 
-    const int maxItems = min(m_vcollection.size() - 1, 32);
+    const int maxItems = m_vcollection.size() - 1;
 
-    // run through all collections and list up to 32 of them in the context menu
+    // run through all collections and list them in the context menu
     // the actual processing is done in ISelect::DoCommand() 
     for (int i = maxItems; i >= 0; i--)
     {
@@ -4583,8 +4582,10 @@ void PinTable::FillCollectionContextMenu(CMenu &mainMenu, CMenu &colSubMenu, ISe
         char szT[MAXNAMEBUFFER*2]; // Names can only be 32 characters (plus terminator)
         WideCharToMultiByteNull(CP_ACP, 0, bstr, -1, szT, MAXNAMEBUFFER*2, nullptr, nullptr);
 
-        colSubMenu.AppendMenu(MF_POPUP, 0x40000 + i, szT);
-        colSubMenu.CheckMenuItem(0x40000 + i, MF_UNCHECKED);
+        UINT flags = MF_POPUP | MF_UNCHECKED;
+        if ((maxItems-i) % 32 == 0) // add new column each 32 entries
+           flags |= MF_MENUBREAK;
+        colSubMenu.AppendMenu(flags, 0x40000 + i, szT);
     }
     if (m_vmultisel.size() == 1)
     {
@@ -4808,7 +4809,7 @@ void PinTable::DoCommand(int icmd, int x, int y)
 
 void PinTable::UpdateCollection(const int index)
 {
-   if (index < m_vcollection.size() && index < 32)
+   if (index < m_vcollection.size())
    {
       if (!m_vmultisel.empty())
       {
@@ -5426,8 +5427,7 @@ void PinTable::ImportBackdropPOV(const string& filename)
         buffer << myFile.rdbuf();
         myFile.close();
 
-        std::string content(buffer.str());
-        xmlDoc.parse<0>(&content[0]);
+        xmlDoc.parse<0>((char*)buffer.str().c_str());
 
         xml_node<> *root = xmlDoc.first_node("POV");
         if(!root)
@@ -9269,8 +9269,7 @@ void PinTable::ImportVPP(const string& filename)
       buffer << myFile.rdbuf();
       myFile.close();
 
-      std::string content(buffer.str());
-      xmlDoc.parse<0>(&content[0]);
+      xmlDoc.parse<0>((char*)buffer.str().c_str());
       xml_node<> *root = xmlDoc.first_node("physics");
       xml_node<> *physTab = root->first_node("table");
       xml_node<> *physFlip = root->first_node("flipper");
