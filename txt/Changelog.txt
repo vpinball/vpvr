@@ -178,6 +178,8 @@ FEATURES:
 
 - add disable lighting option for balls (and their trails) to the video preferences (e.g. to help the visually handicapped)
 
+- add additive blending to primitives (same as flashers)
+
 FIXES:
 
 - fix crashes in Direct Sound when using certain WAVE_FORMAT_IEEE_FLOAT .wav samples

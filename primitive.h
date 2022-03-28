@@ -76,6 +76,10 @@ public:
    bool m_drawTexturesInside;
    bool m_staticRendering;
 
+   bool m_addBlend;
+   COLORREF m_color;
+   float m_alpha;
+
    bool m_toy;
    bool m_skipRendering;
    bool m_groupdRendering;
@@ -224,6 +228,13 @@ public:
    STDMETHOD(get_ObjectSpaceNormalMap)(/*[out, retval]*/ VARIANT_BOOL *pVal);
    STDMETHOD(put_ObjectSpaceNormalMap)(/*[in]*/ VARIANT_BOOL newVal);
 
+   STDMETHOD(get_AddBlend)(/*[out, retval]*/ VARIANT_BOOL* pVal);
+   STDMETHOD(put_AddBlend)(/*[in]*/ VARIANT_BOOL newVal);
+   STDMETHOD(get_Opacity)(/*[out, retval]*/ float* pVal);
+   STDMETHOD(put_Opacity)(/*[in]*/ float newVal);
+   STDMETHOD(get_Color)(/*[out, retval]*/ OLE_COLOR* pVal);
+   STDMETHOD(put_Color)(/*[in]*/ OLE_COLOR newVal);
+
    Primitive();
    virtual ~Primitive();
 
@@ -261,6 +272,9 @@ public:
 
    virtual bool LoadMeshDialog();
    virtual void ExportMeshDialog();
+
+   float GetAlpha(void) const { return m_d.m_alpha; }
+   void SetAlpha(const float value) { m_d.m_alpha = max(value, 0.f); }
 
    virtual bool IsTransparent() const;
    virtual float GetDepth(const Vertex3Ds& viewDir) const;
