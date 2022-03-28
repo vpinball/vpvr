@@ -1143,6 +1143,11 @@ bool RenderDevice::LoadShaders()
       m_SMAAareaTexture = 0;
       m_SMAAsearchTexture = 0;
    }
+
+   // Initialize uniform to default value
+   if (shaderCompilationOkay)
+       basicShader->SetFlasherColorAlpha(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
    return shaderCompilationOkay;
 }
 

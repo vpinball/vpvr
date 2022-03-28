@@ -232,6 +232,7 @@ public:
    void SetDisableLighting(const vec4& value); // set top and below
    void SetAlphaTestValue(const float value);
    void SetFlasherColorAlpha(const vec4& color);
+   vec4 GetCurrentFlasherColorAlpha();
    void SetFlasherData(const vec4& color, const float mode);
    void SetLightColorIntensity(const vec4& color);
    void SetLightColor2FalloffPower(const vec4& color);
