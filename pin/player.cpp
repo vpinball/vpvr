@@ -236,7 +236,7 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
       m_maxPrerenderedFrames = LoadValueIntWithDefault("Player", "MaxPrerenderedFrames", 0);
       m_NudgeShake = LoadValueFloatWithDefault("Player", "NudgeStrength", 2e-2f);
       m_FXAA = LoadValueIntWithDefault("Player", "FXAA", Disabled);
-      //m_MSAASamples = LoadValueIntWithDefault("Player", "MSAASamples", 4);
+      //m_MSAASamples = LoadValueIntWithDefault("Player", "MSAASamples", 1);
       m_MSAASamples = 1; // Not much difference in non-VR only performance hog
       //m_AAfactor = LoadValueFloatWithDefault("Player", "AAFactor", LoadValueBoolWithDefault("Player", "USEAA", false) ? 1.5f : 1.0f);
       m_AAfactor = 1.0f; // Not much difference in non-VR only performance hog
@@ -256,7 +256,7 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
    }
 
 #ifdef ENABLE_BAM
-   m_headTracking = LoadValueIntWithDefault("Player", "BAMheadTracking", 0) != 0;
+   m_headTracking = LoadValueBoolWithDefault("Player", "BAMheadTracking", false);
 #endif
 
    m_ballImage = nullptr;
