@@ -96,12 +96,7 @@ vec3 DoEnvmapDiffuse(vec3 N, vec3 diffuse)
 		0.5 + atan2_approx_div2PI(N.y, N.x),
 		acos_approx_divPI(N.z));
 
-   vec3 env;
-
-   if (!hdrEnvTextures)
-        env = InvGamma(textureLod(Texture2, uv, 0).rgb);
-   else
-        env = textureLod(Texture2, uv, 0).bgr;
+   vec3 env = textureLod(Texture2, uv, 0).bgr; //!! LDR: rgb?
 
    return diffuse * env*fenvEmissionScale_TexWidth.x;
 }

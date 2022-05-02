@@ -5,8 +5,6 @@ uniform vec4 lightColor2_falloff_power;
 uniform vec4 lightCenter_maxRange;
 uniform vec2 imageBackglassMode; // actually bool2
 
-uniform bool hdrTexture0;
-
 ////vs_light_main
 
 in vec3 vPosition;
@@ -75,8 +73,6 @@ in vec3 normal;
 void main()
 {
     vec4 pixel = textureLod(Texture0, tex0, 0); //!! IN.tex0 abused in backglass mode
-    if(!hdrTexture0)
-        pixel.xyz = InvGamma(pixel.xyz);
 
     // no lighting if HUD vertices or passthrough mode
     if(imageBackglassMode.x != 0. || imageBackglassMode.y != 0.)

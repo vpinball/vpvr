@@ -3050,6 +3050,8 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
       return tex;
    }
 
+   // normal textures:
+
    tex->framebuffer = 0;
    tex->zTexture = 0;
    tex->stereo = 0;

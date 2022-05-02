@@ -34,6 +34,7 @@ Shader::Shader(RenderDevice *renderDevice) : currentMaterial(-FLT_MAX, -FLT_MAX,
    currentAlphaTestValue = -FLT_MAX;
    currentDisableLighting = vec4(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
    currentFlasherData = vec4(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
+   currentFlasherData2 = vec4(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
    currentFlasherColor = vec4(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
    currentLightColor = vec4(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
    currentLightColor2 = vec4(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
@@ -172,17 +173,17 @@ vec4 Shader::GetCurrentFlasherColorAlpha()
     return currentFlasherColor;
 }
 
-void Shader::SetFlasherData(const vec4& color, const float mode)
+void Shader::SetFlasherData(const vec4& color, const vec4& c2)
 {
    if (currentFlasherData.x != color.x || currentFlasherData.y != color.y || currentFlasherData.z != color.z || currentFlasherData.w != color.w)
    {
       currentFlasherData = color;
       SetVector(SHADER_alphaTestValueAB_filterMode_addBlend, &color);
    }
-   if (currentFlasherMode != mode)
+   if (currentFlasherData2.x != c2.x || currentFlasherData2.y != c2.y || currentFlasherData2.z != c2.z || currentFlasherData2.w != c2.w)
    {
-      currentFlasherMode = mode;
-      SetFloat(SHADER_flasherMode, mode);
+      currentFlasherData2 = c2;
+      SetVector(SHADER_amount_blend_modulate_vs_add_flasherMode, &c2);
    }
 }
 

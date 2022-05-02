@@ -1022,11 +1022,9 @@ void Player::InitShader()
 {
    UpdateBasicShaderMatrix();
 
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetBool(SHADER_hdrEnvTextures, (m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture)->IsHDR());
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture1, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, false);
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture2, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_pin3d.m_envRadianceTexture, false, false), false);
 #ifdef SEPARATE_CLASSICLIGHTSHADER
-   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetBool(SHADER_hdrEnvTextures, (m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture)->IsHDR());
    m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_Texture1, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, false);
    m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_Texture2, m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_envRadianceTexture, false), false);
 #endif
@@ -5259,15 +5257,9 @@ void Player::DrawBalls()
       m_pin3d.m_pd3dPrimaryDevice->ballShader->SetMatrix(SHADER_orientation, &m);
 
       if (!pball->m_pinballEnv)
-      {
-         m_pin3d.m_pd3dPrimaryDevice->ballShader->SetBool(SHADER_hdrTexture0, m_pin3d.m_pinballEnvTexture.IsHDR()); // should always be false, as read from (LDR-Bitmap-)Resources
          m_pin3d.m_pd3dPrimaryDevice->ballShader->SetTexture(SHADER_Texture0, &m_pin3d.m_pinballEnvTexture, false);
-      }
       else
-      {
-         m_pin3d.m_pd3dPrimaryDevice->ballShader->SetBool(SHADER_hdrTexture0, pball->m_pinballEnv->IsHDR());
          m_pin3d.m_pd3dPrimaryDevice->ballShader->SetTexture(SHADER_Texture0, pball->m_pinballEnv, false);
-      }
 
       if (pball->m_pinballDecal)
          m_pin3d.m_pd3dPrimaryDevice->ballShader->SetTexture(SHADER_Texture3, pball->m_pinballDecal, false);

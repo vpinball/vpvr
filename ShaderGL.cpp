@@ -32,14 +32,14 @@ int Shader::maxSlots = 0;
 #ifdef TWEAK_GL_SHADER
 //Todo: Optimize to improve shader loading time.
 static const string shaderUniformNames[]{
-   "blend_modulate_vs_add", "alphaTestValue", "flasherMode", "eye", "fKickerScale",
+   "blend_modulate_vs_add", "alphaTestValue", "eye", "fKickerScale",
    //Vectors and Float Arrays
    "Roughness_WrapL_Edge_Thickness", "cBase_Alpha", "lightCenter_maxRange", "lightColor2_falloff_power", "lightColor_intensity", "matrixBlock", "fenvEmissionScale_TexWidth",
    "invTableRes_playfield_height_reflection", "lightEmission", "lightPos", "orientation", "cAmbient_LightRange", "cClearcoat_EdgeAlpha", "cGlossy_ImageLerp",
    "fDisableLighting_top_below", "backBoxSize", "quadOffsetScale", "quadOffsetScaleTex", "vColor_Intensity", "w_h_height", "alphaTestValueAB_filterMode_addBlend",
-   "amount_blend_modulate_vs_add_hdrTexture01", "staticColor_Alpha", "width_height_rotated_flipLR", "vRes_Alpha_time", "mirrorFactor", "SSR_bumpHeight_fresnelRefl_scale_FS", "AO_scale_timeblur",
+   "amount_blend_modulate_vs_add_flasherMode", "staticColor_Alpha", "width_height_rotated_flipLR", "vRes_Alpha_time", "mirrorFactor", "SSR_bumpHeight_fresnelRefl_scale_FS", "AO_scale_timeblur",
    //Integer and Bool
-   "ignoreStereo", "SRGBTexture", "hdrTexture0", "disableLighting", "lightSources", "doNormalMapping", "hdrEnvTextures", "is_metal", "color_grade", "do_bloom", "lightingOff", "objectSpaceNormalMap", "do_dither", //!! disableLighting not wired/used yet in shaders
+   "ignoreStereo", "disableLighting", "lightSources", "doNormalMapping", "is_metal", "color_grade", "do_bloom", "lightingOff", "objectSpaceNormalMap", "do_dither", //!! disableLighting not wired/used yet in shaders
    //Textures
    "Texture0", "Texture1", "Texture2", "Texture3", "Texture4", "edgesTex2D", "blendTex2D", "areaTex2D", "searchTex2D"
 };
@@ -1038,13 +1038,10 @@ void Shader::SetTextureDepth(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *
 
 void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, const bool linearRGB, const bool clamptoedge)
 {
-   if (!texel || !texel->m_pdsBuffer) {
+   if (!texel || !texel->m_pdsBuffer)
       SetTextureNull(texelName);
-   }
-   else {
+   else
       SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel->m_pdsBuffer, linearRGB, clamptoedge), linearRGB);
-      SetBool(SHADER_SRGBTexture, linearRGB);
-   }
 }
 
 void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel, const bool linearRGB)

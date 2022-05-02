@@ -229,7 +229,7 @@ public:
    void SetAlphaTestValue(const float value);
    void SetFlasherColorAlpha(const vec4& color);
    vec4 GetCurrentFlasherColorAlpha();
-   void SetFlasherData(const vec4& color, const float mode);
+   void SetFlasherData(const vec4& color, const vec4& c2);
    void SetLightColorIntensity(const vec4& color);
    void SetLightColor2FalloffPower(const vec4& color);
    void SetLightData(const vec4& color);
@@ -268,7 +268,7 @@ private:
 
    vec4  currentFlasherColor; // flasher only-data
    vec4  currentFlasherData;
-   float currentFlasherMode;
+   vec4  currentFlasherData2;
 
    vec4 currentLightColor; // all light only-data
    vec4 currentLightColor2;

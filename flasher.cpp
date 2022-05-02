@@ -1230,29 +1230,12 @@ void Flasher::RenderDynamic()
        Texture * const pinA = m_ptable->GetImage(m_d.m_szImageA);
        Texture * const pinB = m_ptable->GetImage(m_d.m_szImageB);
 
-       bool hdrTex0;
-       if (pinA && !pinB)
-           hdrTex0 = pinA->IsHDR();
-       else if (!pinA && pinB)
-           hdrTex0 = pinB->IsHDR();
-       else if (pinA && pinB)
-           hdrTex0 = pinA->IsHDR();
-       else
-           hdrTex0 = false;
-
-       if (m_isVideoCap)
-           hdrTex0 = false;
-
-       const vec4 ab((float)m_d.m_filterAmount / 100.0f, min(max(m_d.m_modulate_vs_add, 0.00001f), 0.9999f), // avoid 0, as it disables the blend and avoid 1 as it looks not good with day->night changes
-           hdrTex0 ? 1.f : 0.f, (pinA && pinB && pinB->IsHDR()) ? 1.f : 0.f);
-       pd3dDevice->flasherShader->SetVector(SHADER_amount_blend_modulate_vs_add_hdrTexture01, &ab);
-
        pd3dDevice->flasherShader->SetFlasherColorAlpha(color);
 
        vec4 flasherData(-1.f, -1.f, (float)m_d.m_filter, m_d.m_addBlend ? 1.f : 0.f);
-       float flasherMode;
        pd3dDevice->flasherShader->SetTechnique(SHADER_TECHNIQUE_basic_noLight);
 
+       float flasherMode;
        if (pinA && !pinB)
        {
           flasherMode = 0.f;
@@ -1290,7 +1273,9 @@ void Flasher::RenderDynamic()
        else
           flasherMode = 2.f;
 
-       pd3dDevice->flasherShader->SetFlasherData(flasherData, flasherMode);
+       const vec4 flasherData2((float)m_d.m_filterAmount / 100.0f, min(max(m_d.m_modulate_vs_add, 0.00001f), 0.9999f), // avoid 0, as it disables the blend and avoid 1 as it looks not good with day->night changes
+          flasherMode, 0.f);
+       pd3dDevice->flasherShader->SetFlasherData(flasherData, flasherData2);
 
        pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
        g_pplayer->m_pin3d.EnableAlphaBlend(m_d.m_addBlend, false, false);

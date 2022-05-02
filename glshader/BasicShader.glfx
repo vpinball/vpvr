@@ -47,7 +47,6 @@ uniform sampler2D Texture2; // envmap radiance
 uniform sampler2D Texture3; // bulb light buffer
 uniform sampler2D Texture4; // normal map
 
-uniform bool hdrEnvTextures;
 uniform bool objectSpaceNormalMap;
 uniform bool is_metal;
 uniform bool doNormalMapping;
@@ -177,11 +176,7 @@ vec3 lightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 specula
          colorMip = textureLod(Texture1, Ruv, mipLevel);
       }
          
-      vec3 envTex;
-      if (!hdrEnvTextures)
-           envTex = InvGamma(colorMip.rgb);
-      else
-           envTex = colorMip.bgr;
+      vec3 envTex = colorMip.bgr; //!! LDR: rgb?
 
       // EnvmapGlossy
 	   if(glossyMax > 0.0)
@@ -413,7 +408,7 @@ void main() {
    color.xyz = lightLoop(worldPos, N, V, diffuse, glossy, specular, edge, true, is_metal); //!! have a "real" view vector instead that mustn't assume that viewer is directly in front of monitor? (e.g. cab setup) -> viewer is always relative to playfield and/or user definable
    color.a = clamp(cBase_Alpha.a, 0.0, 1.0);
 
-   if(cBase_Alpha.a < 1.0) {
+   if (cBase_Alpha.a < 1.0) {
       color.a = GeometricOpacity(max(dot(N,V), 0.0), color.a);
 
       if (fDisableLighting_top_below.y < 1.0)

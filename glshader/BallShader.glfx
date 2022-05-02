@@ -39,7 +39,6 @@ uniform sampler2D Texture1; // playfield
 uniform sampler2D Texture2; // envmap radiance
 uniform sampler2D Texture3; // ball decal
 
-uniform bool hdrEnvTextures;// = false;
 uniform bool is_metal = false;
 
 #include "Material.fxh"
@@ -48,7 +47,6 @@ uniform vec4  invTableRes_playfield_height_reflection;
 
 //const float    reflection_ball_playfield;
 
-uniform bool hdrTexture0;
 uniform bool disableLighting;
 
 out vec4 color;
@@ -240,11 +238,7 @@ void main()
 #else
         uv0 = %PARAM0% ? vec2(r.y*m + 0.5, r.x*m + 0.5) : vec2(r.x*m + 0.5, r.y*-m + 0.5);
 #endif
-    vec3 ballImageColor;
-    if (!hdrTexture0)
-        ballImageColor = InvGamma(texture(Texture0, uv0).rgb);
-    else
-        ballImageColor = texture(Texture0, uv0).bgr;
+    vec3 ballImageColor = texture(Texture0, uv0).bgr; //!! LDR: rgb?
 
 	vec4 decalColorT = texture(Texture3, vec2(normal_t0x.w, worldPos_t0y.w));
 	vec3 decalColor = InvGamma(decalColorT.xyz);
@@ -327,11 +321,7 @@ vec4 psBallReflection( in voutReflection IN ) : COLOR
 {
    vec2 envTex = /*cabMode*/false ? vec2(r.y*0.5f + 0.5f, -r.x*0.5f + 0.5f) : vec2(r.x*0.5f + 0.5f, r.y*0.5f + 0.5f);
    
-   vec3 ballImageColor;
-   if(!hdrTexture0)
-      ballImageColor = InvGamma(texture(Texture0, envTex).rgb);
-   else
-      ballImageColor = texture(Texture0, envTex).bgr;
+   vec3 ballImageColor = texture(Texture0, envTex).bgr; //!! LDR: rgb?
       
    ballImageColor = (cBase_Alpha.xyz*(0.075*0.25) + ballImageColor)*fenvEmissionScale_TexWidth.x; //!! just add the ballcolor in, this is a whacky reflection anyhow
    float alpha = clamp((tex0.y - position_radius.y) / position_radius.w, 0.0, 1.0);
@@ -346,11 +336,7 @@ in vec3 tex0_alpha;
 
 void main()
 {
-   vec3 ballImageColor;
-   if (!hdrTexture0)
-      ballImageColor = InvGamma(texture(Texture0, tex0_alpha.xy).rgb);
-   else
-      ballImageColor = texture(Texture0, tex0_alpha.xy).bgr;
+   vec3 ballImageColor = texture(Texture0, tex0_alpha.xy).bgr; //!! LDR: rgb?
    if (disableLighting)
       color = vec4(ballImageColor, tex0_alpha.z);
    else
