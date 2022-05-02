@@ -7,7 +7,6 @@
 #include "codeviewedit.h"
 #include "ScriptErrorDialog.h"
 #include "inc\scintilla.h"
-#include "inc\scilexer.h"
 
 #define MAX_FIND_LENGTH 81
 #define MAX_LINE_LENGTH 2048
@@ -245,8 +244,8 @@ public:
    void LoadFromFile(const string& filename);
    void SetCaption(const string& szCaption);
 
-   bool ShowTooltip(const SCNotification *Scn);
-   void ShowAutoComplete(SCNotification *pSCN);
+   bool ShowTooltipOrGoToDefinition(const SCNotification *pSCN, const bool tooltip);
+   void ShowAutoComplete(const SCNotification *pSCN);
 
    void UpdateRegWithPrefs();
    void UpdatePrefsfromReg();
@@ -296,7 +295,7 @@ public:
    bool m_dwellDisplay;
    int m_dwellDisplayTime;
 
-   vector<UserData> *m_pageConstructsDict;
+   vector<UserData> m_pageConstructsDict;
    Sci_TextRange m_wordUnderCaret;
 
    CComObject<DebuggerModule> *m_pdm; // Object to expose to script for global functions
@@ -328,13 +327,13 @@ protected:
 
 private:
    CodeViewer* GetCodeViewerPtr();
-   BOOL ParseClickEvents(const int id);
-   BOOL ParseSelChangeEvent(const int id, SCNotification *pscn);
+   BOOL ParseClickEvents(const int id, const SCNotification *pSCN);
+   BOOL ParseSelChangeEvent(const int id, const SCNotification *pSCN);
 
    bool ParseOKLineLength(const size_t LineLen);
    void ParseDelimtByColon(string &result, string &wholeline);
    void ParseFindConstruct(size_t &Pos, const string &UCLine, WordType &Type, int &ConstructSize);
-   bool ParseStructureName(vector<UserData> *ListIn, UserData ud, const string &UCline, const string &line, const int Lineno);
+   bool ParseStructureName(vector<UserData>& ListIn, UserData ud, const string &UCline, const string &line, const int Lineno);
    
    size_t SureFind(const string &LineIn, const string &ToFind);
    void RemoveByVal(string &line); 
@@ -346,9 +345,9 @@ private:
 
    void ParseVPCore();
    
-   void ReadLineToParseBrain(string wholeline, const int linecount, vector<UserData> *ListIn);
+   void ReadLineToParseBrain(string wholeline, const int linecount, vector<UserData>& ListIn);
 
-   void GetMembers(vector<UserData>* ListIn, const string &StrIn);
+   void GetMembers(const vector<UserData>& ListIn, const string &StrIn);
 
    void InitPreferences();
 
@@ -388,7 +387,7 @@ private:
    VectorSortString<CodeViewDispatch*> m_vcvdTemp; // Objects added through script
 
    string m_validChars;
-   string m_VBvalidChars;
+   const string m_VBvalidChars;
 
    // CodeViewer Preferences
    CVPreference *prefDefault;
@@ -398,17 +397,20 @@ private:
    CVPreference *prefComments;
    CVPreference *prefLiterals;
    CVPreference *prefVPcore;
-   //bool ParentTreeInvalid;
+
+   int m_parentLevel = 0;
+   string m_currentParentKey; // always lower case
+   //bool m_parentTreeInvalid;
    //TODO: int TabStop;
 
    // keyword lists
    string m_vbsKeyWords;
-   vector<string> *m_autoCompList;
+   vector<string> m_autoCompList;
    // Dictionaries
-   vector<UserData> *m_VBwordsDict;
-   vector<UserData> *m_componentsDict;
-   vector<UserData> *m_VPcoreDict;
-   vector<UserData> *m_currentMembers;
+   vector<UserData> m_VBwordsDict;
+   vector<UserData> m_componentsDict;
+   vector<UserData> m_VPcoreDict;
+   vector<UserData> m_currentMembers;
    string m_autoCompString;
    string m_autoCompMembersString;
    Sci_TextRange m_currentConstruct;
@@ -515,22 +517,20 @@ private:
 
 // general string helpers:
 
-inline bool IsWhitespace(const char ch)
+__forceinline bool IsWhitespace(const char ch)
 {
    return (ch == ' ' || ch == 9/*tab*/);
 }
 
-inline string upperCase(string input)
+__forceinline string upperCase(string input)
 {
-   for (string::iterator it = input.begin(); it != input.end(); ++it)
-      *it = toupper(*it);
+   std::transform(input.begin(), input.end(), input.begin(), ::toupper);
    return input;
 }
 
-inline string lowerCase(string input)
+__forceinline string lowerCase(string input)
 {
-   for (string::iterator it = input.begin(); it != input.end(); ++it)
-      *it = tolower(*it);
+   std::transform(input.begin(), input.end(), input.begin(), ::tolower);
    return input;
 }
 
@@ -560,8 +560,8 @@ inline void RemovePadding(string &line)
 
 inline string ParseRemoveVBSLineComments(string &Line)
 {
-    const size_t commentIdx = Line.find("'");
-    if (commentIdx == string::npos) return "";
+    const size_t commentIdx = Line.find('\'');
+    if (commentIdx == string::npos) return string();
     string RetVal = Line.substr(commentIdx + 1, string::npos);
     RemovePadding(RetVal);
     if (commentIdx > 0)

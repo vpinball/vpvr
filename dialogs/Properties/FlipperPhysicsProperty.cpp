@@ -39,7 +39,7 @@ void FlipperPhysicsProperty::UpdateVisuals(const int dispid/*=-1*/)
         if (dispid == 19 || dispid == -1)
             PropertyDialog::SetFloatTextbox(m_strengthEdit, flipper->m_d.m_strength);
         if (dispid == 28 || dispid == -1)
-            PropertyDialog::SetFloatTextbox(m_elasticityFalloffEdit, flipper->GetElastacityFalloff());
+            PropertyDialog::SetFloatTextbox(m_elasticityFalloffEdit, flipper->GetElasticityFalloff());
         if (dispid == 23 || dispid == -1)
             PropertyDialog::SetFloatTextbox(m_returnStrengthEdit, flipper->m_d.m_return);
         if (dispid == 27 || dispid == -1)
@@ -75,7 +75,7 @@ void FlipperPhysicsProperty::UpdateProperties(const int dispid)
                 CHECK_UPDATE_VALUE_SETTER(flipper->SetRampUp, flipper->GetRampUp, PropertyDialog::GetFloatTextbox, m_coilUpRampEdit, flipper);
                 break;
             case 28:
-                CHECK_UPDATE_VALUE_SETTER(flipper->SetElastacityFalloff, flipper->GetElastacityFalloff, PropertyDialog::GetFloatTextbox, m_elasticityFalloffEdit, flipper);
+                CHECK_UPDATE_VALUE_SETTER(flipper->SetElasticityFalloff, flipper->GetElasticityFalloff, PropertyDialog::GetFloatTextbox, m_elasticityFalloffEdit, flipper);
                 break;
             case 113:
                 CHECK_UPDATE_ITEM(flipper->m_d.m_torqueDamping, PropertyDialog::GetFloatTextbox(m_eosTorqueEdit), flipper);
@@ -118,28 +118,29 @@ BOOL FlipperPhysicsProperty::OnInitDialog()
     m_overwriteSettingsCombo.AttachItem(1044);
     UpdateVisuals();
     m_resizer.Initialize(*this, CRect(0, 0, 0, 0));
-    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), topleft, 0);
-    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), topleft, 0);
-    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), topleft, 0);
-    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), topleft, 0);
-    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), topleft, 0);
-    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), topleft, 0);
-    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), topleft, 0);
-    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), topleft, 0);
-    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), topleft, 0);
-    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), topleft, 0);
-    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), topleft, 0);
-    m_resizer.AddChild(m_massEdit, topleft, RD_STRETCH_WIDTH);
-    m_resizer.AddChild(m_strengthEdit, topleft, RD_STRETCH_WIDTH);
-    m_resizer.AddChild(m_elasticityEdit, topleft, RD_STRETCH_WIDTH);
-    m_resizer.AddChild(m_elasticityFalloffEdit, topleft, RD_STRETCH_WIDTH);
-    m_resizer.AddChild(m_frictionEdit, topleft, RD_STRETCH_WIDTH);
-    m_resizer.AddChild(m_returnStrengthEdit, topleft, RD_STRETCH_WIDTH);
-    m_resizer.AddChild(m_coilUpRampEdit, topleft, RD_STRETCH_WIDTH);
-    m_resizer.AddChild(m_scatterAngleEdit, topleft, RD_STRETCH_WIDTH);
-    m_resizer.AddChild(m_eosTorqueEdit, topleft, RD_STRETCH_WIDTH);
-    m_resizer.AddChild(m_eosTorqueAngleEdit, topleft, RD_STRETCH_WIDTH);
-    m_resizer.AddChild(m_overwriteSettingsCombo, topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC1), CResizer::topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC2), CResizer::topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC3), CResizer::topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC4), CResizer::topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC5), CResizer::topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC6), CResizer::topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC7), CResizer::topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC8), CResizer::topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC9), CResizer::topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC10), CResizer::topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_STATIC11), CResizer::topleft, 0);
+    m_resizer.AddChild(m_massEdit, CResizer::topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_strengthEdit, CResizer::topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_elasticityEdit, CResizer::topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_elasticityFalloffEdit, CResizer::topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_frictionEdit, CResizer::topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_returnStrengthEdit, CResizer::topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_coilUpRampEdit, CResizer::topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_scatterAngleEdit, CResizer::topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_eosTorqueEdit, CResizer::topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_eosTorqueAngleEdit, CResizer::topleft, RD_STRETCH_WIDTH);
+    m_resizer.AddChild(m_overwriteSettingsCombo, CResizer::topleft, RD_STRETCH_WIDTH);
+
     return TRUE;
 }
 

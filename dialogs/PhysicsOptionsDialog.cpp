@@ -32,8 +32,9 @@ BOOL PhysicsOptionsDialog::OnInitDialog()
         const int* sd = (int *)SendMessage(hwndList, LB_GETITEMDATA, i, 0);
         delete sd;
     }
-    SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
 
+    SendMessage(hwndList, WM_SETREDRAW, FALSE, 0); // to speed up adding the entries :/
+    SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
     for (unsigned int i = 0; i < num_physicsoptions; i++)
     {
         physicsoptions[i] = new char[256];
@@ -48,6 +49,7 @@ BOOL PhysicsOptionsDialog::OnInitDialog()
         SendMessage(hwndList, LB_SETITEMDATA, index, (LPARAM)sd);
     }
     SendMessage(hwndList, LB_SETCURSEL, physicsselection, 0);
+    SendMessage(hwndList, WM_SETREDRAW, TRUE, 0);
 
     char tmp[256];
 
@@ -420,8 +422,7 @@ bool PhysicsOptionsDialog::LoadSetting()
         buffer << myFile.rdbuf();
         myFile.close();
 
-        std::string content(buffer.str());
-        xmlDoc.parse<0>(&content[0]);
+        xmlDoc.parse<0>((char*)buffer.str().c_str());
         const xml_node<> *root = xmlDoc.first_node("physics");
         const xml_node<> *table = root->first_node("table");
         const xml_node<> *flipper = root->first_node("flipper");

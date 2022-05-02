@@ -1997,6 +1997,17 @@ void PinTable::SetDirtyDraw()
    InvalidateRect(false);
 }
 
+void PinTable::HandleLoadFailure()
+{
+   RestoreBackup();
+   g_keepUndoRecords = true;
+   m_pcv->EndSession();
+
+   m_progressDialog.Destroy();
+
+   g_pvp->m_table_played_via_SelectTableOnStart = false;
+}
+
 // also creates Player instance
 void PinTable::Play(const bool cameraMode)
 {
@@ -2097,14 +2108,7 @@ void PinTable::Play(const bool cameraMode)
          delete g_pplayer;
          g_pplayer = nullptr;
 
-         RestoreBackup();
-         g_keepUndoRecords = true;
-         m_pcv->EndSession();
-
-         m_progressDialog.Destroy();
-
-         g_pvp->m_table_played_via_SelectTableOnStart = false;
-
+         HandleLoadFailure();
          return;
       }
       g_pplayer->Attach(g_pplayer->m_pin3d.m_pd3dPrimaryDevice ? g_pplayer->m_pin3d.m_pd3dPrimaryDevice->getHwnd() : 0);
@@ -2122,15 +2126,7 @@ void PinTable::Play(const bool cameraMode)
       m_vpinball->ToggleToolbar();
    }
    else
-   {
-      RestoreBackup();
-      g_keepUndoRecords = true;
-      m_pcv->EndSession();
-
-      m_progressDialog.Destroy();
-
-      g_pvp->m_table_played_via_SelectTableOnStart = false;
-   }
+      HandleLoadFailure();
 }
 
 // called before Player instance gets deleted
@@ -3652,6 +3648,14 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
          if (loadfileversion < 1040) // the m_fThickness part was included first with 10.4, so set all previously saved materials to the old default
             for (size_t i = 0; i < m_materials.size(); ++i)
                m_materials[i]->m_fThickness = 0.05f;
+
+         if (loadfileversion < 1072) // playfield meshes were always forced as collidable until 10.7.1
+            for (size_t i = 0; i < m_vedit.size(); ++i)
+               if (m_vedit[i]->GetItemType() == ItemTypeEnum::eItemPrimitive && strcmp(m_vedit[i]->GetName(), "playfield_mesh") == 0)
+               {
+                  ((Primitive*)m_vedit[i])->put_IsToy(False);
+                  ((Primitive*)m_vedit[i])->put_Collidable(True);
+               }
 
          //////// End Authentication block
       }

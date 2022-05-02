@@ -1988,7 +1988,7 @@ void RenderDevice::UploadAndSetSMAATextures()
    FBShader->SetTexture(SHADER_searchTex2D, m_SMAAsearchTexture, true);
 }
 
-#else 
+#else
 
 void RenderDevice::CopySurface(D3DTexture* dest, RenderTarget* src)
 {
@@ -2632,9 +2632,8 @@ void RenderDevice::SetRenderStateDepthBias(float bias)
    if (SetRenderStateCache(DEPTHBIAS, *((DWORD*)&bias))) return;
 
 #ifdef ENABLE_SDL
-   if (bias == 0.0f) {
+   if (bias == 0.0f)
       glDisable(GL_POLYGON_OFFSET_FILL);
-   }
    else {
       glEnable(GL_POLYGON_OFFSET_FILL);
       glPolygonOffset(0.0f, bias);

@@ -1746,7 +1746,7 @@ typedef [uuid(D09B9F0E-C1AE-40dd-84D6-B1F74053AA8E)]
                 [propput, id(556), helpstring("property AddBlend")] HRESULT AddBlend([in] VARIANT_BOOL newVal);
                 [propget, id(557), helpstring("property Color")] HRESULT Color([out, retval] OLE_COLOR *pVal);
                 [propput, id(557), helpstring("property Color")] HRESULT Color([in] OLE_COLOR newVal);
-				
+
                 [propget, id(397), helpstring("property DepthBias")] HRESULT DepthBias([out, retval] float *pVal);
                 [propput, id(397), helpstring("property DepthBias")] HRESULT DepthBias([in] float newVal);
 

@@ -23,14 +23,14 @@
 //Todo tweak Enums for uniforms and techniques to reuse same numbers in different shaders/techniques. Reduces the array sizes, but might be hard to debug.
 enum shaderUniforms {
    //Floats
-   SHADER_blend_modulate_vs_add, SHADER_alphaTestValue, SHADER_flasherMode, SHADER_eye, SHADER_fKickerScale,
+   SHADER_blend_modulate_vs_add, SHADER_alphaTestValue, SHADER_eye, SHADER_fKickerScale,
    //Vectors and Float Arrays
    SHADER_Roughness_WrapL_Edge_Thickness, SHADER_cBase_Alpha, SHADER_lightCenter_maxRange, SHADER_lightColor2_falloff_power, SHADER_lightColor_intensity, SHADER_matrixBlock, SHADER_fenvEmissionScale_TexWidth,
    SHADER_invTableRes_playfield_height_reflection, SHADER_lightEmission, SHADER_lightPos, SHADER_orientation, SHADER_cAmbient_LightRange, SHADER_cClearcoat_EdgeAlpha, SHADER_cGlossy_ImageLerp,
    SHADER_fDisableLighting_top_below, SHADER_backBoxSize, SHADER_quadOffsetScale, SHADER_quadOffsetScaleTex, SHADER_vColor_Intensity, SHADER_w_h_height, SHADER_alphaTestValueAB_filterMode_addBlend,
-   SHADER_amount_blend_modulate_vs_add_hdrTexture01, SHADER_staticColor_Alpha, SHADER_width_height_rotated_flipLR, SHADER_vRes_Alpha_time, SHADER_mirrorFactor, SHADER_SSR_bumpHeight_fresnelRefl_scale_FS, SHADER_AO_scale_timeblur,
+   SHADER_amount_blend_modulate_vs_add_flasherMode, SHADER_staticColor_Alpha, SHADER_width_height_rotated_flipLR, SHADER_vRes_Alpha_time, SHADER_mirrorFactor, SHADER_SSR_bumpHeight_fresnelRefl_scale_FS, SHADER_AO_scale_timeblur,
    //Integer and Bool
-   SHADER_ignoreStereo, SHADER_SRGBTexture, SHADER_hdrTexture0, SHADER_disableLighting, SHADER_lightSources, SHADER_doNormalMapping, SHADER_hdrEnvTextures, SHADER_is_metal, SHADER_color_grade, SHADER_do_bloom, SHADER_lightingOff, SHADER_objectSpaceNormalMap, SHADER_do_dither,
+   SHADER_ignoreStereo, SHADER_disableLighting, SHADER_lightSources, SHADER_doNormalMapping, SHADER_is_metal, SHADER_color_grade, SHADER_do_bloom, SHADER_lightingOff, SHADER_objectSpaceNormalMap, SHADER_do_dither,
    //Textures
    SHADER_Texture0, SHADER_Texture1, SHADER_Texture2, SHADER_Texture3, SHADER_Texture4, SHADER_edgesTex2D, SHADER_blendTex2D, SHADER_areaTex2D, SHADER_searchTex2D,
    SHADER_UNIFORM_COUNT, SHADER_UNIFORM_INVALID
@@ -64,7 +64,6 @@ typedef void ID3DXEffect;
 //Float
 #define SHADER_blend_modulate_vs_add "blend_modulate_vs_add"
 #define SHADER_alphaTestValue "alphaTestValue"
-#define SHADER_flasherMode "flasherMode"
 #define SHADER_eye "eye"
 #define SHADER_fKickerScale "fKickerScale"
 
@@ -90,7 +89,7 @@ typedef void ID3DXEffect;
 #define SHADER_vColor_Intensity "vColor_Intensity"
 #define SHADER_w_h_height "w_h_height"
 #define SHADER_alphaTestValueAB_filterMode_addBlend "alphaTestValueAB_filterMode_addBlend"
-#define SHADER_amount_blend_modulate_vs_add_hdrTexture01 "amount_blend_modulate_vs_add_hdrTexture01"
+#define SHADER_amount_blend_modulate_vs_add_flasherMode "amount_blend_modulate_vs_add_flasherMode"
 #define SHADER_staticColor_Alpha "staticColor_Alpha"
 #define SHADER_width_height_rotated_flipLR "width_height_rotated_flipLR"
 #define SHADER_vRes_Alpha_time "vRes_Alpha_time"
@@ -100,12 +99,9 @@ typedef void ID3DXEffect;
 
 //Integer
 #define SHADER_ignoreStereo "ignoreStereo"
-#define SHADER_SRGBTexture "SRGBTexture"
-#define SHADER_hdrTexture0 "hdrTexture0"
 #define SHADER_disableLighting "disableLighting"
 #define SHADER_lightSources "lightSources"
 #define SHADER_doNormalMapping "doNormalMapping"
-#define SHADER_hdrEnvTextures "hdrEnvTextures"
 #define SHADER_is_metal "is_metal"
 #define SHADER_color_grade "color_grade"
 #define SHADER_do_bloom "do_bloom"

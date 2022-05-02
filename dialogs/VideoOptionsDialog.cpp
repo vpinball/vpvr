@@ -138,7 +138,9 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
 void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes, const VideoMode* curSelMode)
 {
    const HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
+   SendMessage(hwndList, WM_SETREDRAW, FALSE, 0); // to speed up adding the entries :/
    SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
+   SendMessage(hwndList, LB_INITSTORAGE, modes.size(), modes.size() * 128); // *128 is artificial
 
    int bestMatch = 0; // to find closest matching res
    int bestMatchingPoints = 0; // dto.
@@ -219,6 +221,7 @@ void VideoOptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes,
       }
    }
    SendMessage(hwndList, LB_SETCURSEL, bestMatch, 0);
+   SendMessage(hwndList, WM_SETREDRAW, TRUE, 0);
 }
 
 
@@ -405,6 +408,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
 
    const int stereo3D = LoadValueIntWithDefault("Player", "Stereo3D", 0);
    hwnd = GetDlgItem(IDC_3D_STEREO).GetHwnd();
+   SendMessage(hwnd, WM_SETREDRAW, FALSE, 0); // to speed up adding the entries :/
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Disabled");
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"TB (Top / Bottom)");
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Interlaced (e.g. LG TVs)");
@@ -425,6 +429,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Anaglyph Deghosted Magenta/Green");
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Anaglyph Amber/Blue");
    SendMessage(hwnd, CB_SETCURSEL, stereo3D, 0);
+   SendMessage(hwnd, WM_SETREDRAW, TRUE, 0);
 
    const bool stereo3DY = LoadValueBoolWithDefault("Player", "Stereo3DYAxis", false);
    SendMessage(GetDlgItem(IDC_3D_STEREO_Y).GetHwnd(), BM_SETCHECK, stereo3DY ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -441,7 +446,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
    sprintf_s(tmp, 256, "%f", stereo3DZPD);
    SetDlgItemTextA(IDC_3D_STEREO_ZPD, tmp);
 
-   const int bamHeadtracking = LoadValueIntWithDefault("Player", "BAMheadTracking", 0);
+   const bool bamHeadtracking = LoadValueBoolWithDefault("Player", "BAMheadTracking", false);
    SendMessage(GetDlgItem(IDC_HEADTRACKING).GetHwnd(), BM_SETCHECK, bamHeadtracking ? BST_CHECKED : BST_UNCHECKED, 0);
 
    const float stereo3DContrast = LoadValueFloatWithDefault("Player", "Stereo3DContrast", 1.0f);
@@ -1003,8 +1008,8 @@ void VideoOptionsDialog::OnOK()
    tmpStr = GetDlgItemTextA(IDC_3D_STEREO_DESATURATION);
    SaveValue("Player", "Stereo3DDesaturation", tmpStr);
 
-   const size_t bamHeadtracking = SendMessage(GetDlgItem(IDC_HEADTRACKING).GetHwnd(), BM_GETCHECK, 0, 0);
-   SaveValueInt("Player", "BAMheadTracking", (int)bamHeadtracking);
+   const bool bamHeadtracking = (SendMessage(GetDlgItem(IDC_HEADTRACKING).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
+   SaveValueBool("Player", "BAMheadTracking", bamHeadtracking);
 
    const bool disableDWM = (SendMessage(GetDlgItem(IDC_DISABLE_DWM).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
    SaveValueBool("Player", "DisableDWM", disableDWM);

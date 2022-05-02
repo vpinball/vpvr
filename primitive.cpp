@@ -464,8 +464,7 @@ void Primitive::GetHitShapes(vector<HitObject*> &pvho)
 
    //
 
-   // playfield can't be a toy
-   if (m_d.m_toy && !m_d.m_useAsPlayfield)
+   if (m_d.m_toy)
       return;
 
    RecalculateMatrices();
@@ -606,33 +605,29 @@ void Primitive::AddHitEdge(vector<HitObject*> &pvho, std::set< std::pair<unsigne
 void Primitive::SetupHitObject(vector<HitObject*> &pvho, HitObject * obj)
 {
    const Material * const mat = m_ptable->GetMaterial(m_d.m_szPhysicsMaterial);
-   if (!m_d.m_useAsPlayfield)
+   if (m_d.m_useAsPlayfield)
    {
-       if (mat != nullptr && !m_d.m_overwritePhysics)
-       {
-           obj->m_elasticity = mat->m_fElasticity;
-           obj->m_elasticityFalloff = mat->m_fElasticityFalloff;
-           obj->SetFriction(mat->m_fFriction);
-           obj->m_scatter = ANGTORAD(mat->m_fScatterAngle);
-       }
-       else
-       {
-           obj->m_elasticity = m_d.m_elasticity;
-           obj->m_elasticityFalloff = m_d.m_elasticityFalloff;
-           obj->SetFriction(m_d.m_friction);
-           obj->m_scatter = ANGTORAD(m_d.m_scatter);
-       }
-
-       obj->m_enabled = m_d.m_collidable;
+      obj->m_elasticity = m_ptable->m_elasticity;
+      obj->m_elasticityFalloff = m_ptable->m_elasticityFalloff;
+      obj->SetFriction(m_ptable->m_friction);
+      obj->m_scatter = ANGTORAD(m_ptable->m_scatter);
+   }
+   else if (mat != nullptr && !m_d.m_overwritePhysics)
+   {
+       obj->m_elasticity = mat->m_fElasticity;
+       obj->m_elasticityFalloff = mat->m_fElasticityFalloff;
+       obj->SetFriction(mat->m_fFriction);
+       obj->m_scatter = ANGTORAD(mat->m_fScatterAngle);
    }
    else
    {
-       obj->m_elasticity = m_ptable->m_elasticity;
-       obj->m_elasticityFalloff = m_ptable->m_elasticityFalloff;
-       obj->SetFriction(m_ptable->m_friction);
-       obj->m_scatter = ANGTORAD(m_ptable->m_scatter);
-       obj->m_enabled = true;
+       obj->m_elasticity = m_d.m_elasticity;
+       obj->m_elasticityFalloff = m_d.m_elasticityFalloff;
+       obj->SetFriction(m_d.m_friction);
+       obj->m_scatter = ANGTORAD(m_d.m_scatter);
    }
+
+   obj->m_enabled = m_d.m_collidable;
    obj->m_threshold = m_d.m_threshold;
    obj->m_ObjType = ePrimitive;
    obj->m_obj = (IFireEvents *)this;
@@ -653,6 +648,7 @@ void Primitive::EndPlay()
       m_vertexBufferRegenerate = true;
    }
    SAFE_BUFFER_RELEASE(m_indexBuffer);
+
    m_d.m_skipRendering = false;
    m_d.m_groupdRendering = false;
 
@@ -1150,7 +1146,7 @@ void Primitive::UpdateStatusBarInfo()
        m_vpinball->SetStatusBarUnitInfo(tbuf, false);
    }
    else
-       m_vpinball->SetStatusBarUnitInfo("", false);
+       m_vpinball->SetStatusBarUnitInfo(string(), false);
 
 }
 
@@ -1284,15 +1280,15 @@ void Primitive::RenderObject()
       vec4 previousFlasherColorAlpha = pd3dDevice->basicShader->GetCurrentFlasherColorAlpha();
       if (m_d.m_addBlend)
       {
-          g_pplayer->m_pin3d.EnableAlphaBlend(true);
-          pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
-          const vec4 color = convertColor(m_d.m_color, m_d.m_alpha * (float)(1.0 / 100.0));
-          pd3dDevice->basicShader->SetFlasherColorAlpha(vec4(color.x * color.w, color.y * color.w, color.z * color.w, color.w));
+         g_pplayer->m_pin3d.EnableAlphaBlend(true);
+         pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
+         const vec4 color = convertColor(m_d.m_color, m_d.m_alpha * (float)(1.0 / 100.0));
+         pd3dDevice->basicShader->SetFlasherColorAlpha(vec4(color.x * color.w, color.y * color.w, color.z * color.w, color.w));
       }
       else
       {
-          const vec4 color = convertColor(m_d.m_color, m_d.m_alpha * (float)(1.0 / 100.0));
-          pd3dDevice->basicShader->SetFlasherColorAlpha(color);
+         const vec4 color = convertColor(m_d.m_color, m_d.m_alpha * (float)(1.0 / 100.0));
+         pd3dDevice->basicShader->SetFlasherColorAlpha(color);
       }
 
       // draw the mesh
@@ -1363,6 +1359,14 @@ void Primitive::RenderDynamic()
            return;
        if (m_ptable->m_reflectionEnabled && !m_d.m_reflectionEnabled)
            return;
+       if (m_d.m_addBlend)
+       {
+          const vec4 color = convertColor(m_d.m_color, m_d.m_alpha * (float)(1.0 / 100.0));
+          if (color.w == 0.f)
+             return;
+          if (color.x == 0.f && color.y == 0.f && color.z == 0.f)
+             return;
+       }
    }
 
    RenderObject();
@@ -1861,7 +1865,7 @@ INT_PTR CALLBACK Primitive::ObjImportProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
             char szFileName[MAXSTRING] = { 0 };
 
             GetDlgItemText(hwndDlg, IDC_FILENAME_EDIT, szFileName, MAXSTRING);
-            if (szFileName[0] == 0)
+            if (szFileName[0] == '\0')
             {
                ShowError("No .obj file selected!");
                break;
@@ -2087,11 +2091,6 @@ STDMETHODIMP Primitive::put_Image(BSTR newVal)
    char szImage[MAXTOKEN];
    WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, szImage, MAXTOKEN, nullptr, nullptr);
    const Texture * const tex = m_ptable->GetImage(szImage);
-   if (tex && tex->IsHDR())
-   {
-       ShowError("Cannot use a HDR image (.exr/.hdr) here");
-       return E_FAIL;
-   }
 
    m_d.m_szImage = szImage;
 
@@ -2568,43 +2567,44 @@ STDMETHODIMP Primitive::put_ObjRotZ(float newVal)
    return S_OK;
 }
 
-STDMETHODIMP Primitive::get_Opacity(float* pVal)
+
+STDMETHODIMP Primitive::get_Opacity(float *pVal)
 {
-    *pVal = m_d.m_alpha;
-    return S_OK;
+   *pVal = m_d.m_alpha;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::put_Opacity(float newVal)
 {
-    SetAlpha(newVal);
-    return S_OK;
+   SetAlpha(newVal);
+   return S_OK;
 }
 
-STDMETHODIMP Primitive::get_Color(OLE_COLOR* pVal)
+STDMETHODIMP Primitive::get_Color(OLE_COLOR *pVal)
 {
-    *pVal = m_d.m_color;
+   *pVal = m_d.m_color;
 
-    return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::put_Color(OLE_COLOR newVal)
 {
-    m_d.m_color = newVal;
+   m_d.m_color = newVal;
 
-    return S_OK;
+   return S_OK;
 }
 
-STDMETHODIMP Primitive::get_AddBlend(VARIANT_BOOL* pVal)
+STDMETHODIMP Primitive::get_AddBlend(VARIANT_BOOL *pVal)
 {
-    *pVal = FTOVB(m_d.m_addBlend);
+   *pVal = FTOVB(m_d.m_addBlend);
 
-    return S_OK;
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::put_AddBlend(VARIANT_BOOL newVal)
 {
-    m_d.m_addBlend = VBTOb(newVal);
-    return S_OK;
+   m_d.m_addBlend = VBTOb(newVal);
+   return S_OK;
 }
 
 STDMETHODIMP Primitive::get_EdgeFactorUI(float *pVal)

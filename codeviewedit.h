@@ -10,7 +10,7 @@ enum WordType { eUnknown, eClass, eSub, eFunction, ePropGet, ePropLet, ePropSet,
 class UserData
 {
 public:
-   string m_uniqueKey;
+   string m_uniqueKey;        // always lower case
    int m_lineNum;             // Line No. Declaration
    string m_keyName;          // Name
    WordType eTyping;
@@ -23,16 +23,6 @@ public:
    UserData(const int LineNo, const string &Desc, const string &Name, const WordType TypeIn);
    ~UserData() {}
 };
-
-bool FindOrInsertStringIntoAutolist(vector<string>* const ListIn, const string& strIn);
-size_t FindOrInsertUD(vector<UserData>* const ListIn, const UserData& udIn);
-int FindUD(vector<UserData>* const ListIn, string& strIn, vector<UserData>::iterator& UDiterOut, int& Pos);
-int FindClosestUD(const vector<UserData>* const ListIn, const int CurrentLine, const int CurrentIdx);
-int UDKeyIndex(const vector<UserData>* const ListIn, const string& strIn);
-int UDIndex(const vector<UserData>* const ListIn, const string& strIn);
-UserData GetUDfromUniqueKey(const vector<UserData>* const ListIn, const string& UniKey);
-size_t GetUDPointerfromUniqueKey(const vector<UserData>* const ListIn, const string& UniKey);
-
 
 // CodeViewer Preferences
 class CVPreference
@@ -47,7 +37,7 @@ public:
    int IDC_Font_code;
 
 private:
-   string szRegName;
+   string m_szRegName;
    bool m_highlight;
 
 public:

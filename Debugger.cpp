@@ -5,7 +5,7 @@
 #include <string>
 
 #define RECOMPUTEBUTTONCHECK WM_USER+100
-#define RESIZE_FROM_EXPAND WM_USER+101
+#define RESIZE_FROM_EXPAND   WM_USER+101
 
 DebuggerDialog::DebuggerDialog() : CDialog(IDD_DEBUGGER)
 {
@@ -85,10 +85,10 @@ BOOL DebuggerDialog::OnInitDialog()
 
     m_resizer.Initialize(*this, rcDialog);
     AttachItem(IDC_EDITSIZE, m_notesEdit);
-    m_resizer.AddChild(m_notesEdit.GetHwnd(), bottomright, RD_STRETCH_HEIGHT | RD_STRETCH_WIDTH);
-    m_resizer.AddChild(g_pplayer->m_hwndDebugOutput, bottomright, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
-    m_resizer.AddChild(GetDlgItem(IDC_GUIDE1).GetHwnd(), topleft, 0);
-    m_resizer.AddChild(GetDlgItem(IDC_GUIDE2).GetHwnd(), bottomright, 0);
+    m_resizer.AddChild(m_notesEdit.GetHwnd(), CResizer::bottomright, RD_STRETCH_HEIGHT | RD_STRETCH_WIDTH);
+    m_resizer.AddChild(g_pplayer->m_hwndDebugOutput, CResizer::bottomright, RD_STRETCH_WIDTH | RD_STRETCH_HEIGHT);
+    m_resizer.AddChild(GetDlgItem(IDC_GUIDE1).GetHwnd(), CResizer::topleft, 0);
+    m_resizer.AddChild(GetDlgItem(IDC_GUIDE2).GetHwnd(), CResizer::bottomright, 0);
     return TRUE;
 }
 
@@ -208,7 +208,7 @@ LRESULT DebuggerDialog::OnNotify(WPARAM wparam, LPARAM lparam)
         case SCN_CHARADDED:
         {
             const SCNotification* const pscnmh = (SCNotification*)lparam;
-            if (pscnmh->ch == '\n')
+            if (pscnmh->ch == '\n') // execute code
             {
                 SendMessage(pnmh->hwndFrom, SCI_DELETEBACK, 0, 0);
 
@@ -230,7 +230,7 @@ LRESULT DebuggerDialog::OnNotify(WPARAM wparam, LPARAM lparam)
                 {
                     // need to add a new line to the end
                     SendMessage(pnmh->hwndFrom, SCI_DOCUMENTEND, 0, 0);
-                    SendMessage(pnmh->hwndFrom, SCI_ADDTEXT, lstrlen("\n"), (LPARAM)"\n");
+                    SendMessage(pnmh->hwndFrom, SCI_ADDTEXT, 1, (LPARAM)"\n");
                 }
                 else
                 {

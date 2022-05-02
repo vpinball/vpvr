@@ -9,10 +9,10 @@ Flasher::Flasher()
    m_menuid = IDR_SURFACEMENU;
    m_d.m_isVisible = true;
    m_d.m_depthBias = 0.0f;
-   m_dynamicVertexBuffer = 0;
-   m_dynamicIndexBuffer = 0;
+   m_dynamicVertexBuffer = nullptr;
+   m_dynamicIndexBuffer = nullptr;
    m_dynamicVertexBufferRegenerate = true;
-   m_vertices = 0;
+   m_vertices = nullptr;
    m_propVisual = nullptr;
    m_ptable = nullptr;
    m_numVertices = 0;
@@ -649,7 +649,7 @@ STDMETHODIMP Flasher::InterfaceSupportsErrorInfo(REFIID riid)
 STDMETHODIMP Flasher::get_X(float *pVal)
 {
    *pVal = m_d.m_vCenter.x;
-   m_vpinball->SetStatusBarUnitInfo("", true);
+   m_vpinball->SetStatusBarUnitInfo(string(), true);
 
    return S_OK;
 }
@@ -764,11 +764,7 @@ STDMETHODIMP Flasher::get_Color(OLE_COLOR *pVal)
 
 STDMETHODIMP Flasher::put_Color(OLE_COLOR newVal)
 {
-   if (m_d.m_color != newVal)
-   {
-      m_d.m_color = newVal;
-      m_dynamicVertexBufferRegenerate = true;
-   }
+   m_d.m_color = newVal;
 
    return S_OK;
 }
@@ -854,30 +850,15 @@ STDMETHODIMP Flasher::put_Filter(BSTR newVal)
    WideCharToMultiByteNull(CP_ACP, 0, newVal, -1, m_szFilter, MAXNAMEBUFFER, nullptr, nullptr);
 
    if (strcmp(m_szFilter, "Additive") == 0 && m_d.m_filter != Filter_Additive)
-   {
       m_d.m_filter = Filter_Additive;
-      m_dynamicVertexBufferRegenerate = true;
-   }
    else if (strcmp(m_szFilter, "Multiply") == 0 && m_d.m_filter != Filter_Multiply)
-   {
       m_d.m_filter = Filter_Multiply;
-      m_dynamicVertexBufferRegenerate = true;
-   }
    else if (strcmp(m_szFilter, "Overlay") == 0 && m_d.m_filter != Filter_Overlay)
-   {
       m_d.m_filter = Filter_Overlay;
-      m_dynamicVertexBufferRegenerate = true;
-   }
    else if (strcmp(m_szFilter, "Screen") == 0 && m_d.m_filter != Filter_Screen)
-   {
       m_d.m_filter = Filter_Screen;
-      m_dynamicVertexBufferRegenerate = true;
-   }
    else if (strcmp(m_szFilter, "None") == 0 && m_d.m_filter != Filter_None)
-   {
       m_d.m_filter = Filter_None;
-      m_dynamicVertexBufferRegenerate = true;
-   }
 
    return S_OK;
 }
@@ -1113,11 +1094,7 @@ STDMETHODIMP Flasher::get_DepthBias(float *pVal)
 
 STDMETHODIMP Flasher::put_DepthBias(float newVal)
 {
-   if (m_d.m_depthBias != newVal)
-   {
-      m_d.m_depthBias = newVal;
-      m_dynamicVertexBufferRegenerate = true;
-   }
+   m_d.m_depthBias = newVal;
 
    return S_OK;
 }
@@ -1131,11 +1108,7 @@ STDMETHODIMP Flasher::get_ImageAlignment(RampImageAlignment *pVal)
 
 STDMETHODIMP Flasher::put_ImageAlignment(RampImageAlignment newVal)
 {
-   if (m_d.m_imagealignment != newVal)
-   {
-      m_d.m_imagealignment = newVal;
-      m_dynamicVertexBufferRegenerate = true;
-   }
+   m_d.m_imagealignment = newVal;
 
    return S_OK;
 }
@@ -1151,15 +1124,15 @@ void Flasher::RenderDynamic()
    RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
    TRACE_FUNCTION();
-   
+
    //Don't render if LightSequence in play and state is off
    if (m_lockedByLS) 
    {
-       if (!m_inPlayState) return;
+      if (!m_inPlayState) return;
    }
    //Don't render if invisible (or DMD connection not set)
    else if (!m_d.m_isVisible || m_dynamicVertexBuffer == nullptr || m_ptable->m_reflectionEnabled || (m_d.m_isDMD && !g_pplayer->m_texdmd))
-       return;
+      return;
 
    const vec4 color = convertColor(m_d.m_color, (float)m_d.m_alpha*m_d.m_intensity_scale / 100.0f);
    if (color.w == 0.f)
@@ -1179,8 +1152,8 @@ void Flasher::RenderDynamic()
    {
        if (m_dynamicVertexBufferRegenerate)
        {
-         UpdateMesh();
-         m_dynamicVertexBufferRegenerate = false;
+          UpdateMesh();
+          m_dynamicVertexBufferRegenerate = false;
        }
 
        pd3dDevice->SetRenderStateDepthBias(0.0f);
