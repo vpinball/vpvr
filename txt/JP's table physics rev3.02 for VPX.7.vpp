@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <physics>
-	<name>Attack and Revenge from Mars 3.1_test 25</name>
+	<name>JP Physics 3.01</name>
 	<table>
 		<gravityConstant>0.980665</gravityConstant>
 		<contactFriction>0.025000</contactFriction>
@@ -12,7 +12,7 @@
 	<flipper>
 		<speed>1.500000</speed>
 		<strength>5000.000000</strength>
-		<elasticity>0.850000</elasticity>
+		<elasticity>0.750000</elasticity>
 		<scatter>0.000000</scatter>
 		<eosTorque>0.750000</eosTorque>
 		<eosTorqueAngle>10.000000</eosTorqueAngle>
