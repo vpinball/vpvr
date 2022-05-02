@@ -432,7 +432,7 @@ void main() {
    if (pixel.a <= alphaTestValue)
       discard;           //stop the pixel shader if alpha test should reject pixel
 
-   vec3 t = InvGamma(pixel.xyz);
+   vec3 t = pixel.xyz;
 
    vec3 diffuse  = t*cBase_Alpha.xyz;
    vec3 glossy   = is_metal ? diffuse : (t*cGlossy_ImageLerp.w + (1.0-cGlossy_ImageLerp.w))*cGlossy_ImageLerp.xyz*0.08; //!! use AO for glossy? specular?
@@ -498,9 +498,8 @@ void main() {
    //if (pixel.a <= alphaTestValue) discard;
 
    pixel.a = clamp(pixel.a * cBase_Alpha.a, 0.0, 1.0);
-   float3 t = InvGamma(pixel.xyz); // DX9: uses automatic sRGB trafo instead in sampler! - still missing in OpenGL so we still need InvGamma
 
-   color = vec4(InvToneMap(t*cBase_Alpha.xyz), pixel.a);
+   color = vec4(InvToneMap(pixel.xyz*cBase_Alpha.xyz), pixel.a);
 }
 
 
