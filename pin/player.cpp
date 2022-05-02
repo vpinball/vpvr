@@ -587,13 +587,13 @@ void Player::OnInitialUpdate()
         SetWindowFeedbackSetting(GetHwnd(), FEEDBACK_TOUCH_DOUBLETAP, 0, sizeof(enabled), &enabled);
         SetWindowFeedbackSetting(GetHwnd(), FEEDBACK_TOUCH_PRESSANDHOLD, 0, sizeof(enabled), &enabled);
         SetWindowFeedbackSetting(GetHwnd(), FEEDBACK_TOUCH_RIGHTTAP, 0, sizeof(enabled), &enabled);
-                                 
+
         SetWindowFeedbackSetting(GetHwnd(), FEEDBACK_PEN_BARRELVISUALIZATION, 0, sizeof(enabled), &enabled);
         SetWindowFeedbackSetting(GetHwnd(), FEEDBACK_PEN_TAP, 0, sizeof(enabled), &enabled);
         SetWindowFeedbackSetting(GetHwnd(), FEEDBACK_PEN_DOUBLETAP, 0, sizeof(enabled), &enabled);
         SetWindowFeedbackSetting(GetHwnd(), FEEDBACK_PEN_PRESSANDHOLD, 0, sizeof(enabled), &enabled);
         SetWindowFeedbackSetting(GetHwnd(), FEEDBACK_PEN_RIGHTTAP, 0, sizeof(enabled), &enabled);
-                                 
+
         SetWindowFeedbackSetting(GetHwnd(), FEEDBACK_GESTURE_PRESSANDTAP, 0, sizeof(enabled), &enabled);
     }
 
@@ -603,7 +603,9 @@ void Player::OnInitialUpdate()
     if (!m_fullScreen) // see above
         SetCursorPos(400, 999999);
 
-    Init();
+    const HRESULT result = Init();
+    if (result != S_OK)
+        throw 0; //!! have a more specific code (that is catched in the VPinball PeekMessageA loop)?!
 }
 
 void Player::Shutdown()
@@ -1446,7 +1448,6 @@ HRESULT Player::Init()
    //   zeta = c / (2 sqrt(k)).
    // Solving for the damping coefficient c, we get
    m_nudgeDamping = dampingRatio * 2.0f * sqrtf(m_nudgeSpring);
-
 
    // Need to set timecur here, for init functions that set timers
    m_time_msec = 0;
@@ -4225,7 +4226,7 @@ void Player::UpdateHUD()
 	if (m_closeDown) // print table name,author,version and blurb and description in pause mode
 	{
 		char szFoo[256];
-		szFoo[0] = 0;
+		szFoo[0] = '\0';
 
 		int line = 0;
 
