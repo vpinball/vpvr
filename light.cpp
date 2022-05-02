@@ -312,7 +312,7 @@ void Light::EndPlay()
 
 float Light::GetDepth(const Vertex3Ds& viewDir) const
 {
-   return (!m_backglass) ? (m_d.m_depthBias + viewDir.x * m_d.m_vCenter.x + viewDir.y * m_d.m_vCenter.y + viewDir.z * m_surfaceHeight) : 0.f;
+   return !m_backglass ? (m_d.m_depthBias + viewDir.x * m_d.m_vCenter.x + viewDir.y * m_d.m_vCenter.y + viewDir.z * m_surfaceHeight) : 0.f;
 }
 
 void Light::ClearForOverwrite()
@@ -371,18 +371,6 @@ void Light::RenderDynamic()
 
    TRACE_FUNCTION();
 
-   if (!m_d.m_visible || m_ptable->m_reflectionEnabled)
-      return;
-
-   if (m_customMoverVBuffer == nullptr) // in case of degenerate light
-      return;
-
-   if (m_backglass && !GetPTable()->GetDecalsEnabled())
-      return;
-
-   if (m_d.m_BulbLight && m_d.m_showBulbMesh && !m_d.m_staticBulbMesh)
-      RenderBulbMesh();
-
    const U32 old_time_msec = (m_d.m_time_msec < g_pplayer->m_time_msec) ? m_d.m_time_msec : g_pplayer->m_time_msec;
    m_d.m_time_msec = g_pplayer->m_time_msec;
    const float diff_time_msec = (float)(g_pplayer->m_time_msec - old_time_msec);
@@ -417,6 +405,18 @@ void Light::RenderDynamic()
             m_d.m_currentIntensity = 0.0f;
       }
    }
+
+   if (!m_d.m_visible || m_ptable->m_reflectionEnabled)
+      return;
+
+   if (m_customMoverVBuffer == nullptr) // in case of degenerate light
+      return;
+
+   if (m_backglass && !GetPTable()->GetDecalsEnabled())
+      return;
+
+   if (m_d.m_BulbLight && m_d.m_showBulbMesh && !m_d.m_staticBulbMesh)
+      RenderBulbMesh();
 
    Texture *offTexel = nullptr;
 
@@ -1116,7 +1116,7 @@ STDMETHODIMP Light::put_ColorFull(OLE_COLOR newVal)
 STDMETHODIMP Light::get_X(float *pVal)
 {
    *pVal = m_d.m_vCenter.x;
-   m_vpinball->SetStatusBarUnitInfo("", true);
+   m_vpinball->SetStatusBarUnitInfo(string(), true);
 
    return S_OK;
 }
@@ -1503,11 +1503,11 @@ STDMETHODIMP Light::GetInPlayStateBool(VARIANT_BOOL* pVal)
     return S_OK;
 }
 
-STDMETHODIMP Light::GetInPlayIntensity(float* pVal)
+STDMETHODIMP Light::GetInPlayIntensity(float *pVal)
 {
-    *pVal = m_d.m_currentIntensity;
+   *pVal = m_d.m_currentIntensity;
 
-    return S_OK;
+   return S_OK;
 }
 
 void Light::setLightState(const LightState newVal)
