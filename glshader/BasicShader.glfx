@@ -7,7 +7,7 @@
 
 #define NUM_BALL_LIGHTS 0 // just to avoid having too much constant mem allocated
 
-layout(std140) uniform matrixBlock { 
+layout(std140) uniform matrixBlock {
 	mat4 matView;
 	mat4 matWorldView;
 	mat3x4 matWorldViewInverseTranspose;
@@ -118,7 +118,7 @@ vec3 lightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 specula
    float glossyMax = max(glossy.x,max(glossy.y,glossy.z));
    float specularMax = max(specular.x,max(specular.y,specular.z)); //!! not needed as 2nd layer only so far
    float sum = diffuseMax + glossyMax /*+ specularMax*/;
-   if(sum > 1.0)
+   if(sum > 1.0 && fDisableLighting_top_below.x < 1.0)
    {
       float invsum = 1.0/sum;
       diffuse  *= invsum;
@@ -179,11 +179,11 @@ vec3 lightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 specula
       vec3 envTex = colorMip.bgr; //!! LDR: rgb?
 
       // EnvmapGlossy
-	   if(glossyMax > 0.0)
+      if(glossyMax > 0.0)
         color += glossy * envTex * fenvEmissionScale_TexWidth.x;
 
       // Envmap2ndLayer
-	   if(fix_normal_orientation && specularMax > 0.0)
+      if(fix_normal_orientation && specularMax > 0.0)
       {
         vec3 w = FresnelSchlick(specular, NdotV, Roughness_WrapL_Edge_Thickness.z);
         color = mix(color, envTex * fenvEmissionScale_TexWidth.x, w);
@@ -211,7 +211,7 @@ out vec3 normal_gs;
 out float gl_ClipDistance[1];
 
 void main()
-{ 
+{
    gl_Position = vec4(vPosition, 1.0);
    gl_ClipDistance[0] = dot(vPosition, vec3(0, 1, 0)); // For Render Dynamic Mirror when enabling clipping.
    tex01_gs = tc;
@@ -431,6 +431,9 @@ void main() {
 
    if (pixel.a <= alphaTestValue)
       discard;           //stop the pixel shader if alpha test should reject pixel
+
+   if (fDisableLighting_top_below.x < 1.0) // if there is lighting applied, make sure to clamp the values (as it could be coming from a HDR tex)
+      pixel.xyz = clamp(pixel.xyz, vec3(0.0,0.0,0.0), vec3(1.0,1.0,1.0));
 
    vec3 t = pixel.xyz;
 

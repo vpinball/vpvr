@@ -268,7 +268,7 @@ private:
 
    vec4  currentFlasherColor; // flasher only-data
    vec4  currentFlasherData;
-   vec4  currentFlasherData2;
+   vec4  currentFlasherData2; // w unused
 
    vec4 currentLightColor; // all light only-data
    vec4 currentLightColor2;

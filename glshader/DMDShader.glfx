@@ -143,7 +143,7 @@ void main()
             else
                 color.rgb *= rgba.b * (255.9 / 100.);
 
-      // simulate dot within the sampled texel
+            // simulate dot within the sampled texel
             vec2 dist = fract(uv*vRes_Alpha_time.xy) * 2.2 - 1.1;
             float d = dist.x * dist.x + dist.y * dist.y;
 

@@ -2,10 +2,10 @@
 #version 400
 
 ////DEFINES
-#define Filter_None	    0.
-#define Filter_Additive	1.
-#define Filter_Overlay	2.
-#define Filter_Multiply	3.
+#define Filter_None     0.
+#define Filter_Additive 1.
+#define Filter_Overlay  2.
+#define Filter_Multiply 3.
 #define Filter_Screen   4.
 
 layout(std140) uniform matrixBlock { mat4 matWorldViewProj[eyes];};
@@ -61,16 +61,16 @@ out vec2 tex0;
 
 void main()
 {
-   gl_ViewportIndex = gl_InvocationID;
+	gl_ViewportIndex = gl_InvocationID;
 	for (int i=0;i<gl_in.length();i++) {
 		//Default
-      gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
+		gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
 		//Custom
 		tex0 = tex0_gs[i];
 		//Default
 		EmitVertex();
 	}
-    EndPrimitive();
+	EndPrimitive();
 }
 
 ////ps_main_noLight
@@ -117,7 +117,7 @@ void main()
       color = result;
    else
       color = float4(result.xyz*(-amount_blend_modulate_vs_add_flasherMode.y*result.a), // negative as it will be blended with '1.0-thisvalue' (the 1.0 is needed to modulate the underlying elements correctly, but not wanted for the term below)
-                    1.0/amount_blend_modulate_vs_add_flasherMode.y - 1.0);
+                     1.0/amount_blend_modulate_vs_add_flasherMode.y - 1.0);
 }
 
 

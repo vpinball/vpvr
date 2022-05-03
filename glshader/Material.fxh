@@ -49,11 +49,11 @@ vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edg
    vec3 L = normalize(lightDir);
    float NdotL = dot(N, L);
    vec3 Out = vec3(0.0,0.0,0.0);
-   
+
    // compute diffuse color (lambert with optional rim/wrap component)
    if(!is_metal && (NdotL + Roughness_WrapL_Edge_Thickness.y > 0.0))
       Out = diffuse * ((NdotL + Roughness_WrapL_Edge_Thickness.y) / sqr(1.0+Roughness_WrapL_Edge_Thickness.y));
-    
+
    // add glossy component (modified ashikhmin/blinn bastard), not fully energy conserving, but good enough
    if(NdotL > 0.0)
    {
@@ -64,10 +64,10 @@ vec3 DoPointLight(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, float edg
       if((NdotH > 0.0) && (LdotH > 0.0) && (VdotH > 0.0))
          Out += FresnelSchlick(glossy, LdotH, edge) * clamp((( Roughness_WrapL_Edge_Thickness.x + 1.0) / (8.0*VdotH)) * pow(NdotH,  Roughness_WrapL_Edge_Thickness.x), 0.0, 1.0);
    }
- 
+
    //float fAtten = clamp( 1.0 - dot(lightDir/cAmbient_LightRange.w, lightDir/cAmbient_LightRange.w) ,0.0, 1.0);
    //float fAtten = 1.0/dot(lightDir,lightDir); // original/correct falloff
-   
+
    float sqrl_lightDir = dot(lightDir,lightDir); // tweaked falloff to have ranged lightsources
    float fAtten = clamp(1.0 - sqrl_lightDir*sqrl_lightDir/(cAmbient_LightRange.w*cAmbient_LightRange.w*cAmbient_LightRange.w*cAmbient_LightRange.w),0.0, 1.0); //!! pre-mult/invert cAmbient_LightRange.w?
    fAtten = fAtten*fAtten/(sqrl_lightDir + 1.0);

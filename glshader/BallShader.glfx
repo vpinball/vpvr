@@ -6,7 +6,7 @@
 ////DEFINES
 uniform mat4 orientation;
 
-layout(std140) uniform matrixBlock { 
+layout(std140) uniform matrixBlock {
 	mat4 matView;
 	mat4 matWorldView;
 	mat4 matWorldViewInverseTranspose;
@@ -65,7 +65,7 @@ void main()
 	// apply spinning and move the ball to it's actual position
 	vec4 pos = vec4(vPosition, 1.0);
 	pos.xyz = (orientation * pos).xyz;
-	
+
 	// apply spinning to the normals too to get the sphere mapping effect
 	vec3 nspin = (orientation * vec4(vNormal,0.0)).xyz;
 	vec3 normal = normalize((matWorldViewInverseTranspose * vec4(nspin, 0.0)).xyz); // actually: mul(vec4(nspin,0.), matWorldViewInverseTranspose), but optimized to save one matrix
@@ -87,7 +87,7 @@ out vec3 tex0_alpha_gs;
 
 void main()
 {
-   gl_Position = vec4(vPosition, 1.0);
+	gl_Position = vec4(vPosition, 1.0);
 	tex0_alpha_gs = vec3(tex0, vNormal.x); //!! abuses normal for now
 }
 
@@ -158,7 +158,7 @@ vec3 ballLightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 spe
    //   N = -N;
 
    vec3 color = vec3(0.0, 0.0, 0.0);
-      
+
    if((!is_metal && (diffuseMax > 0.0)) || (glossyMax > 0.0))
    {
       for(int i = 0; i < lightSources; i++)  
@@ -170,7 +170,7 @@ vec3 ballLightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 spe
 
    if(specularMax > 0.0)
       color += specular; //!! blend? //!! Fresnel with 1st layer?
-  
+
    return color;
 }
 
@@ -238,7 +238,7 @@ void main()
 #else
         uv0 = %PARAM0% ? vec2(r.y*m + 0.5, r.x*m + 0.5) : vec2(r.x*m + 0.5, r.y*-m + 0.5);
 #endif
-    vec3 ballImageColor = texture(Texture0, uv0).bgr; //!! LDR: rgb?
+	vec3 ballImageColor = texture(Texture0, uv0).bgr; //!! LDR: rgb?
 
 	vec4 decalColorT = texture(Texture3, vec2(normal_t0x.w, worldPos_t0y.w));
 	vec3 decalColor = decalColorT.xyz;
@@ -320,9 +320,9 @@ void main()
 vec4 psBallReflection( in voutReflection IN ) : COLOR
 {
    vec2 envTex = /*cabMode*/false ? vec2(r.y*0.5f + 0.5f, -r.x*0.5f + 0.5f) : vec2(r.x*0.5f + 0.5f, r.y*0.5f + 0.5f);
-   
+
    vec3 ballImageColor = texture(Texture0, envTex).bgr; //!! LDR: rgb?
-      
+
    ballImageColor = (cBase_Alpha.xyz*(0.075*0.25) + ballImageColor)*fenvEmissionScale_TexWidth.x; //!! just add the ballcolor in, this is a whacky reflection anyhow
    float alpha = clamp((tex0.y - position_radius.y) / position_radius.w, 0.0, 1.0);
    alpha = (alpha*alpha)*(alpha*alpha)*reflection_ball_playfield;
