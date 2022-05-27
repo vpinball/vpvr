@@ -31,7 +31,7 @@ int Shader::maxSlots = 0;
 
 #ifdef TWEAK_GL_SHADER
 //Todo: Optimize to improve shader loading time.
-static const string shaderUniformNames[]{
+static const string shaderUniformNames[SHADER_UNIFORM_COUNT]{
    "blend_modulate_vs_add", "alphaTestValue", "eye", "fKickerScale",
    //Vectors and Float Arrays
    "Roughness_WrapL_Edge_Thickness", "cBase_Alpha", "lightCenter_maxRange", "lightColor2_falloff_power", "lightColor_intensity", "matrixBlock", "fenvEmissionScale_TexWidth",
@@ -44,11 +44,11 @@ static const string shaderUniformNames[]{
    "Texture0", "Texture1", "Texture2", "Texture3", "Texture4", "edgesTex2D", "blendTex2D", "areaTex2D", "searchTex2D"
 };
 
-static const string shaderAttributeNames[]{
+static const string shaderAttributeNames[SHADER_ATTRIBUTE_COUNT]{
    "vPosition", "vNormal", "tc", "tex0"
 };
 
-static const string shaderTechniqueNames[]{
+static const string shaderTechniqueNames[SHADER_TECHNIQUE_COUNT]{
    "RenderBall", "RenderBall_DecalMode", "RenderBall_CabMode", "RenderBall_CabMode_DecalMode", "RenderBallTrail",
    "basic_without_texture", "basic_with_texture", "basic_depth_only_without_texture", "basic_depth_only_with_texture", "bg_decal_without_texture",
    "bg_decal_with_texture", "kickerBoolean", "light_with_texture", "light_without_texture",
@@ -185,7 +185,7 @@ bool Shader::parseFile(const string& fileNameRoot, const string& fileName, int l
             const size_t start = line.find('"', 8);
             const size_t end = line.find('"', start + 1);
             values[currentMode] = currentElement;
-            if ((start == string::npos) || (end == string::npos) || (end <= start) || !parseFile(fileNameRoot, line.substr(start + 1, end - start - 1).c_str(), level + 1, values, currentMode)) {
+            if ((start == string::npos) || (end == string::npos) || (end <= start) || !parseFile(fileNameRoot, line.substr(start + 1, end - start - 1), level + 1, values, currentMode)) {
                LOG(1, fileNameRoot, fileName + "(" + std::to_string(linenumber) + "):" + line + " failed.");
             }
             currentElement = values[currentMode];
@@ -391,7 +391,7 @@ bool Shader::compileGLShader(const string& fileNameRoot, const string& shaderCod
          if (location >= 0 && size>0) {
             uniformLoc newLoc = {};
             newLoc.location = location;
-            newLoc.type = -1;
+            newLoc.type = ~0u;
             glGenBuffers(1, &newLoc.blockBuffer);
             //hack for packedLights, but works for all arrays - I don't need it for uniform blocks now and I'm not sure if it makes any sense, but maybe someone else in the future?
             newLoc.size = size;
@@ -732,7 +732,7 @@ void Shader::Begin(const unsigned int pass)
       string uniformName = it->first;
 #endif
       switch (currentUniform.type) {
-      case -1: {//Uniform blocks
+      case ~0u: {//Uniform blocks
 #ifdef TWEAK_GL_SHADER
          const auto valueFP = uniformFloatP[uniformName];
 #else
