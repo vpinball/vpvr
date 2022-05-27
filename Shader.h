@@ -317,9 +317,14 @@ private:
    int uniformInt[SHADER_UNIFORM_COUNT];
    int uniformTex[SHADER_UNIFORM_COUNT];
    shaderTechniques technique;
-   static shaderUniforms getUniformByName(const string& name);
-   static shaderAttributes getAttributeByName(const string& name);
-   static shaderTechniques getTechniqueByName(const string& name);
+#ifndef _DEBUG
+ #define staticS static
+#else
+ #define staticS
+#endif
+   staticS shaderUniforms getUniformByName(const string& name);
+   staticS shaderAttributes getAttributeByName(const string& name);
+   staticS shaderTechniques getTechniqueByName(const string& name);
 
 #else
 
