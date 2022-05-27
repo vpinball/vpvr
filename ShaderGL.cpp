@@ -3,12 +3,12 @@
 #include "typeDefs3D.h"
 #include "RenderDevice.h"
 
-#include <windows.h>
+#include <Windows.h>
 
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <map>
+#include <inc/robin_hood.h>
 #include <regex>
 
 #if DEBUG_LEVEL_LOG == 0
@@ -22,11 +22,11 @@ Matrix3D Shader::mWorld, Shader::mView, Shader::mProj[2];
 int Shader::lastShaderProgram = -1;
 D3DTexture* Shader::noTexture = nullptr;
 D3DTexture* Shader::noTextureMSAA = nullptr;
-static float zeroValues[16] = { 0.0f,0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-float* Shader::zeroData = zeroValues;
+static const float zeroValues[16] = { 0.0f,0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+const float* Shader::zeroData = zeroValues;
 int Shader::nextTextureSlot = 0;
 int* Shader::textureSlotList = nullptr;
-std::map<int, int> Shader::slotTextureList;
+//std::map<int, int> Shader::slotTextureList;
 int Shader::maxSlots = 0;
 
 #ifdef TWEAK_GL_SHADER
@@ -102,7 +102,7 @@ Shader::~Shader()
       delete noTexture;
       noTexture = nullptr;
    }
-   slotTextureList.clear();
+   //slotTextureList.clear();
    if (m_currentShader == this)
       m_currentShader = nullptr;
 }
@@ -150,7 +150,7 @@ bla:
 #endif
 
 //parse a file. Is called recursively for includes
-bool Shader::parseFile(const string& fileNameRoot, const string& fileName, int level, std::map<string, string> &values, const string& parentMode) {
+bool Shader::parseFile(const string& fileNameRoot, const string& fileName, int level, robin_hood::unordered_map<string, string> &values, const string& parentMode) {
    if (level > 16) {//Can be increased, but looks very much like an infinite recursion.
       LOG(1, fileNameRoot, string("Reached more than 16 includes while trying to include ").append(fileName).append(" Aborting..."));
       return false;
@@ -159,7 +159,7 @@ bool Shader::parseFile(const string& fileNameRoot, const string& fileName, int l
       LOG(2, fileNameRoot, string("Reached include level ").append(std::to_string(level)).append(" while trying to include ").append(fileName).append(" Check for recursion and try to avoid includes with includes."));
    }
    string currentMode = parentMode;
-   std::map<string, string>::iterator currentElemIt = values.find(parentMode);
+   robin_hood::unordered_map<string, string>::iterator currentElemIt = values.find(parentMode);
    string currentElement = (currentElemIt != values.end()) ? currentElemIt->second : string();
    std::ifstream glfxFile;
    glfxFile.open(string(Shader::shaderPath).append(fileName), std::ifstream::in);
@@ -352,7 +352,7 @@ bool Shader::compileGLShader(const string& fileNameRoot, const string& shaderCod
       glGetProgramiv(shaderprogram, GL_ACTIVE_UNIFORMS, &count);
       char uniformName[256];
 #ifndef TWEAK_GL_SHADER
-      shader.uniformLocation = new std::map<string, uniformLoc>;
+      shader.uniformLocation = new std::map<string, uniformLoc>; //!! unordered_map?
 #endif
       for (int i = 0;i < count;++i) {
          GLenum type;
@@ -414,7 +414,7 @@ bool Shader::compileGLShader(const string& fileNameRoot, const string& shaderCod
 #ifdef TWEAK_GL_SHADER
       for (int i = 0; i < SHADER_ATTRIBUTE_COUNT; ++i) shader.attributeLocation[i] = { 0, -1, 0};
 #else
-      shader.attributeLocation = new std::map<string, attributeLoc>;
+      shader.attributeLocation = new std::map<string, attributeLoc>; //!! unordered_map?
 #endif
       for (int i = 0;i < count;++i) {
          GLenum type;
@@ -460,14 +460,14 @@ bool Shader::compileGLShader(const string& fileNameRoot, const string& shaderCod
 }
 
 //Check if technique is valid and replace %PARAMi% with the values in the function header
-string Shader::analyzeFunction(const char* shaderCodeName, const string& _technique, const string& functionName, const std::map<string, string> &values) {
+string Shader::analyzeFunction(const char* shaderCodeName, const string& _technique, const string& functionName, const robin_hood::unordered_map<string, string> &values) {
    const size_t start = functionName.find('(');
    const size_t end = functionName.find(')');
    if ((start == string::npos) || (end == string::npos) || (start > end)) {
       LOG(2, (const char*)shaderCodeName, string("Invalid technique: ").append(_technique));
       return string();
    }
-   const std::map<string, string>::const_iterator it = values.find(functionName.substr(0, start));
+   const robin_hood::unordered_map<string, string>::const_iterator it = values.find(functionName.substr(0, start));
    string functionCode = (it != values.end()) ? it->second : string();
    if (end > start + 1) {
       std::stringstream params(functionName.substr(start + 1, end - start - 1));
@@ -492,7 +492,7 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
    }
    m_currentTechnique = nullptr;
    LOG(3, (const char*)shaderCodeName, "Start parsing file");
-   std::map<string, string> values;
+   robin_hood::unordered_map<string, string> values;
    const bool parsing = parseFile(m_shaderCodeName, m_shaderCodeName, 0, values, "GLOBAL");
    if (!parsing) {
       LOG(1, (const char*)shaderCodeName, "Parsing failed");
@@ -506,7 +506,7 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
    else {
       LOG(3, (const char*)shaderCodeName, "Parsing successful. Start compiling shaders");
    }
-   std::map<string, string>::iterator it = values.find("GLOBAL");
+   robin_hood::unordered_map<string, string>::iterator it = values.find("GLOBAL");
    string global = (it != values.end()) ? it->second : string();
 
    it = values.find("VERTEX");

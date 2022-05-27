@@ -15,9 +15,12 @@
 #define _HAS_ITERATOR_DEBUGGING 0
 
 #ifdef ENABLE_SDL
+#ifndef TWEAK_GL_SHADER
 #include <map>
-#include <string>
 #endif
+#endif
+
+#include <string>
 
 #if defined(ENABLE_SDL) && defined(TWEAK_GL_SHADER)
 //Todo tweak Enums for uniforms and techniques to reuse same numbers in different shaders/techniques. Reduces the array sizes, but might be hard to debug.
@@ -282,8 +285,8 @@ private:
 #if DEBUG_LEVEL_LOG > 0
    void LOG(const int level, const string& fileNameRoot, const string& message);
 #endif
-   bool parseFile(const string& fileNameRoot, const string& fileName, int level, std::map<string, string>& values, const string& parentMode);
-   string analyzeFunction(const char* shaderCodeName, const string& technique, const string& functionName, const std::map<string, string>& values);
+   bool parseFile(const string& fileNameRoot, const string& fileName, int level, robin_hood::unordered_map<string, string>& values, const string& parentMode);
+   string analyzeFunction(const char* shaderCodeName, const string& technique, const string& functionName, const robin_hood::unordered_map<string, string>& values);
    bool compileGLShader(const string& fileNameRoot, const string& shaderCodeName, const string& vertex, const string& geometry, const string& fragment);
 
    struct attributeLoc {
@@ -314,15 +317,15 @@ private:
    int uniformInt[SHADER_UNIFORM_COUNT];
    int uniformTex[SHADER_UNIFORM_COUNT];
    shaderTechniques technique;
-   shaderUniforms getUniformByName(const string& name);
-   shaderAttributes getAttributeByName(const string& name);
-   shaderTechniques getTechniqueByName(const string& name);
+   static shaderUniforms getUniformByName(const string& name);
+   static shaderAttributes getAttributeByName(const string& name);
+   static shaderTechniques getTechniqueByName(const string& name);
 
 #else
 
    struct glShader {
       int program;
-      std::map<string, attributeLoc> *attributeLocation;
+      std::map<string, attributeLoc> *attributeLocation; //!! all unordered maps?
       std::map<string, uniformLoc> *uniformLocation;
    };
    std::map<string, glShader> shaderList;
@@ -337,10 +340,10 @@ private:
    static int lastShaderProgram;
    static D3DTexture* noTexture;
    static D3DTexture* noTextureMSAA;
-   static float* zeroData;
+   static const float* zeroData;
    static int nextTextureSlot;
    static int* textureSlotList;
-   static std::map<int, int> slotTextureList;
+   //static std::map<int, int> slotTextureList;
    static int maxSlots;
 
    glShader* m_currentTechnique;
