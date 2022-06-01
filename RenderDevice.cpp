@@ -1972,15 +1972,16 @@ void RenderDevice::CopyDepth(RenderTarget* dest, RenderTarget* src) {
 
 D3DTexture* RenderDevice::UploadTexture(BaseTexture* surf, int *pTexWidth, int *pTexHeight, const bool linearRGB, const bool clamptoedge)
 {
-    colorFormat fpformat = colorFormat::RGBA32F;
-    if (surf->m_format == BaseTexture::RGB_FP)
-    {
-        const float* const __restrict psrc = (float*)(surf->m_data.data());
-        float maxval = psrc[0];
-        for (int i = 1; i < surf->width() * surf->height() * 3; ++i)
-            maxval = max(maxval, psrc[i]);
-        fpformat = (maxval <= 65504.f) ? colorFormat::RGB16F : colorFormat::RGB32F;
-    }
+   colorFormat fpformat = colorFormat::RGB32F;
+   if (surf->m_format == BaseTexture::RGB_FP)
+   {
+      const float* const __restrict psrc = (float*)(surf->m_data.data());
+      float maxval = psrc[0];
+      const unsigned int size = surf->width() * surf->height() * 3;
+      for (unsigned int i = 1; i < size; ++i)
+         maxval = max(maxval, psrc[i]);
+      fpformat = (maxval <= 65504.f) ? colorFormat::RGB16F : colorFormat::RGB32F;
+   }
    D3DTexture *tex = CreateTexture(surf->width(), surf->height(), 0, STATIC, surf->m_format == BaseTexture::RGB_FP ? fpformat : RGBA, surf->m_data.data(), 0, clamptoedge);
 
    if (pTexWidth) *pTexWidth = surf->width();
@@ -2242,8 +2243,8 @@ D3DTexture* RenderDevice::CreateSystemTexture(const int texwidth, const int texh
 
 D3DTexture* RenderDevice::UploadTexture(BaseTexture* const surf, int* const pTexWidth, int* const pTexHeight, const bool linearRGB, const bool clamptoedge)
 {
-   const int texwidth = surf->width();
-   const int texheight = surf->height();
+   const unsigned int texwidth = surf->width();
+   const unsigned int texheight = surf->height();
 
    if (pTexWidth) *pTexWidth = texwidth;
    if (pTexHeight) *pTexHeight = texheight;
@@ -2326,18 +2327,19 @@ void RenderDevice::UploadAndSetSMAATextures()
 void RenderDevice::UpdateTexture(D3DTexture* const tex, BaseTexture* const surf, const bool linearRGB)
 {
 #ifdef ENABLE_SDL
-    colorFormat fpformat = colorFormat::RGBA32F;
-    if (surf->m_format == BaseTexture::RGB_FP)
-    {
-        const float* const __restrict psrc = (float*)(surf->m_data.data());
-        float maxval = psrc[0];
-        for (int i = 1; i < surf->width() * surf->height() * 3; ++i)
-            maxval = max(maxval, psrc[i]);
-        fpformat = (maxval <= 65504.f) ? colorFormat::RGB16F : colorFormat::RGB32F;
-    }
-    tex->format = (surf->m_format == BaseTexture::RGB_FP) ? fpformat : RGBA;
+   colorFormat fpformat = colorFormat::RGB32F;
+   if (surf->m_format == BaseTexture::RGB_FP)
+   {
+      const float* const __restrict psrc = (float*)(surf->m_data.data());
+      float maxval = psrc[0];
+      const unsigned int size = surf->width() * surf->height() * 3;
+      for (unsigned int i = 1; i < size; ++i)
+         maxval = max(maxval, psrc[i]);
+      fpformat = (maxval <= 65504.f) ? colorFormat::RGB16F : colorFormat::RGB32F;
+   }
+   tex->format = (surf->m_format == BaseTexture::RGB_FP) ? fpformat : RGBA;
    const GLuint col_type = ((tex->format == RGBA32F) || (tex->format == RGBA16F) || (tex->format == RGB32F) || (tex->format == RGB16F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
-   const GLuint col_format = (tex->format == GREY) ? GL_RED : (tex->format == GREY_ALPHA) ? GL_RG : ((tex->format == RGB16F) || (tex->format == RGB32F)) ? GL_RGB : ((tex->format == RGB) || (tex->format == RGB5) || (tex->format == RGB10) || (tex->format == RGB16F) || (tex->format == RGB32F)) ? GL_BGR : GL_BGRA;
+   const GLuint col_format = (tex->format == GREY) ? GL_RED : (tex->format == GREY_ALPHA) ? GL_RG : ((tex->format == RGB16F) || (tex->format == RGB32F)) ? GL_RGB : ((tex->format == RGB) || (tex->format == RGB5) || (tex->format == RGB10)) ? GL_BGR : GL_BGRA;
    glBindTexture(GL_TEXTURE_2D, tex->texture);
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, surf->width(), surf->height(), col_format, col_type, surf->data());
    //glTexImage2D(GL_TEXTURE_2D, 0, tex->format, surf->width(), surf->height(), 0, col_format, col_type, surf->data()); // Use TexStorage instead
@@ -2972,7 +2974,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    //tex->slot = -1;
 
    const GLuint col_type = ((Format == RGBA32F) || (Format == RGBA16F) || (Format == RGB32F) || (Format == RGB16F)) ? GL_FLOAT : GL_UNSIGNED_BYTE;
-   const GLuint col_format = (Format == GREY) ? GL_RED : (Format == GREY_ALPHA) ? GL_RG : ((Format == RGB16F) || (Format == RGB32F)) ? GL_RGB : ((Format == RGB) || (Format == RGB5) || (Format == RGB10) || (Format == RGB16F) || (Format == RGB32F)) ? GL_BGR : GL_BGRA;
+   const GLuint col_format = (Format == GREY) ? GL_RED : (Format == GREY_ALPHA) ? GL_RG : ((Format == RGB16F) || (Format == RGB32F)) ? GL_RGB : ((Format == RGB) || (Format == RGB5) || (Format == RGB10)) ? GL_BGR : GL_BGRA;
 
    // Create MSAA/Non-MSAA Renderbuffers
    if ((tex->usage == RENDERTARGET) || (tex->usage == RENDERTARGET_DEPTH) || (tex->usage == RENDERTARGET_MSAA) || (tex->usage == RENDERTARGET_MSAA_DEPTH)) {
