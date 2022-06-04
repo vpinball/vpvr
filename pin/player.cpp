@@ -976,14 +976,8 @@ void Player::UpdateBasicShaderMatrix(const Matrix3D& objectTrafo)
 
    if (m_ptable->m_tblMirrorEnabled)
    {
-      const Matrix3D flipx(-1, 0, 0, 0,
-         0, 1, 0, 0,
-         0, 0, 1, 0,
-         0, 0, 0, 1);
-      const Matrix3D flipy(1, 0, 0, 0,
-         0, -1, 0, 0,
-         0, 0, 1, 0,
-         0, 0, 0, 1);
+      const Matrix3D flipx(-1, 0, 0, 0,  0,  1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1);
+      const Matrix3D flipy( 1, 0, 0, 0,  0, -1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1);
       const float rotation = fmodf(m_ptable->m_BG_rotation[m_ptable->m_BG_current_set], 360.f);
       for (int eye = 0;eye<eyes;++eye) matrices.matWorldViewProj[eye] = matrices.matWorldViewProj[eye] * (rotation != 0.0f ? flipy : flipx);
    }
@@ -1058,14 +1052,8 @@ void Player::UpdateBallShaderMatrix()
 
    if (m_ptable->m_tblMirrorEnabled)
    {
-      const Matrix3D flipx(-1, 0, 0, 0,
-         0, 1, 0, 0,
-         0, 0, 1, 0,
-         0, 0, 0, 1);
-      const Matrix3D flipy(1, 0, 0, 0,
-         0, -1, 0, 0,
-         0, 0, 1, 0,
-         0, 0, 0, 1);
+      const Matrix3D flipx(-1, 0, 0, 0,  0,  1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1);
+      const Matrix3D flipy( 1, 0, 0, 0,  0, -1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1);
       const float rotation = fmodf(m_ptable->m_BG_rotation[m_ptable->m_BG_current_set], 360.f);
       for (int eye = 0;eye<eyes;++eye) matrices.matWorldViewProj[eye] = matrices.matWorldViewProj[eye] * (rotation != 0.f ? flipy : flipx);
    }
@@ -4312,7 +4300,7 @@ void Player::PostProcess(const bool ambientOcclusion)
    }
 #endif
 
-   double inv_width = 1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidth();
+   double inv_width  = 1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidth();
    double inv_height = 1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheight();
 
    m_pin3d.m_pd3dPrimaryDevice->BeginScene();
@@ -4399,6 +4387,7 @@ void Player::PostProcess(const bool ambientOcclusion)
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_do_dither, !m_ditherOff);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_do_bloom, (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff));
 
+   //const unsigned int jittertime = (unsigned int)((U64)msec()*90/1000);
    const float jitter = (float)((msec()&2047)/1000.0);
    const vec4 fb_inv_resolution_05((float)(0.5 / (double)m_width), (float)(0.5 / (double)m_height),
       //1.0f, 1.0f);
@@ -4912,8 +4901,8 @@ void Player::Render()
          // add or remove caption, border and buttons (only if in windowed mode)?
          if (!m_fullScreen && m_height < m_screenheight)
          {
-            int captionheight = GetSystemMetrics(SM_CYCAPTION);
-            int borderwidth = (GetSystemMetrics(SM_CYFIXEDFRAME) * 2) + 2;
+            const int captionheight = GetSystemMetrics(SM_CYCAPTION);
+            const int borderwidth = (GetSystemMetrics(SM_CYFIXEDFRAME) * 2) + 2;
 
             RECT rect;
             ::GetWindowRect(GetHwnd(), &rect);
@@ -5196,8 +5185,7 @@ void Player::DrawBalls()
       float lightEmission[MAX_LIGHT_SOURCES + MAX_BALL_LIGHT_SOURCES][4] = { 0.0f, 0.0f, 0.0f, 0.0f };
       int lightSources = MAX_LIGHT_SOURCES;
 
-      for (unsigned int light_i = 0; light_i < MAX_BALL_LIGHT_SOURCES; light_i++)
-      {
+      for (unsigned int light_i = 0; light_i < MAX_BALL_LIGHT_SOURCES; ++light_i)
          if (light_nearest[light_i] != nullptr)
          {
             lightSources++;
@@ -5211,7 +5199,6 @@ void Player::DrawBalls()
             lightEmission[light_i + MAX_LIGHT_SOURCES][1] = color.y*c;
             lightEmission[light_i + MAX_LIGHT_SOURCES][2] = color.z*c;
          }
-      }
 
       m_pin3d.m_pd3dPrimaryDevice->ballShader->SetFloatArray(SHADER_lightPos, (float *)lightPos, 4 * lightSources);
       m_pin3d.m_pd3dPrimaryDevice->ballShader->SetFloatArray(SHADER_lightEmission, (float *)lightEmission, 4 * lightSources);

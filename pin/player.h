@@ -519,7 +519,8 @@ public:
    U32 m_LastPlungerHit;		// The last time the plunger was in contact (at least the vicinity) of the ball.
    float m_curMechPlungerPos;
 
-   int m_width, m_height, m_display;
+   int m_width, m_height;
+   int m_display;
 
    int m_screenwidth, m_screenheight, m_refreshrate;
    bool m_fullScreen;
