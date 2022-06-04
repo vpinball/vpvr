@@ -215,7 +215,7 @@ inline void ShowError(const string& sz)
 
 #include "editablereg.h"
 
-#include <typeDefs3D.h>
+#include "typedefs3D.h"
 
 
 __forceinline float getBGxmult()

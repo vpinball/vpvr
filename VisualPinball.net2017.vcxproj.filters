@@ -1177,7 +1177,7 @@
     <ClInclude Include="inc\stb_image.h">
       <Filter>inc</Filter>
     </ClInclude>
-    <ClInclude Include="typeDefs3D.h">
+    <ClInclude Include="typedefs3D.h">
       <Filter>headers</Filter>
     </ClInclude>
     <ClInclude Include="IndexBuffer.h">

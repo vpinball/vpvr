@@ -71,7 +71,7 @@ public:
 #include <time.h>
 #include "../meshes/ballMesh.h"
 #include "Shader.h"
-#include "typeDefs3D.h"
+#include "typedefs3D.h"
 #include "captureExt.h"
 #ifndef ENABLE_SDL
  #include "BallShader.h"

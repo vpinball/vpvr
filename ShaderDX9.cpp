@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "Shader.h"
-#include "typeDefs3D.h"
+#include "typedefs3D.h"
 #include "RenderDevice.h"
 
 // loads an HLSL effect file

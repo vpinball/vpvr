@@ -3,7 +3,7 @@
 #include "kdtree.h"
 #include "quadtree.h"
 #include "Debugger.h"
-#include "typeDefs3D.h"
+#include "typedefs3D.h"
 #include "sdl2/SDL_TTF.h"
 #include "pininput.h"
 

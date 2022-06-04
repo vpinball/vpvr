@@ -4,7 +4,7 @@
 
 #include "Texture.h"
 #include "stdafx.h"
-#include "typeDefs3D.h"
+#include "typedefs3D.h"
 
 class RenderDevice;
 

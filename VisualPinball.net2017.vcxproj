@@ -1371,7 +1371,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <ClInclude Include="timer.h" />
     <ClInclude Include="trace.h" />
     <ClInclude Include="trigger.h" />
-    <ClInclude Include="typeDefs3D.h" />
+    <ClInclude Include="typedefs3D.h" />
     <ClInclude Include="variant.h" />
     <ClInclude Include="vector.h" />
     <ClInclude Include="vectorsort.h" />

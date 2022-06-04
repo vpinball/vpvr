@@ -1,7 +1,7 @@
 #pragma once
 
 #include "stdafx.h"
-#include "typeDefs3D.h"
+#include "typedefs3D.h"
 
 #ifdef ENABLE_SDL
 

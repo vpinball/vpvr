@@ -8,7 +8,7 @@
 #include "nvapi.h"
 #endif
 
-#include "typeDefs3D.h"
+#include "typedefs3D.h"
 #ifdef ENABLE_SDL
 #include "sdl2/SDL_syswm.h"
 #endif
