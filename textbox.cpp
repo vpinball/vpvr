@@ -398,11 +398,14 @@ void Textbox::PreRenderText()
    {
       for (int l = 0; l < m_texture->width(); l++, dest++, bitsd++)
       {
-         const D3DCOLOR src = *bitsd;
-         if (m_d.m_transparent && ((src & 0xFFFFFFu) == m_d.m_backcolor))
-            *dest = 0x00000000; // set to black & alpha full transparent
-         else
-            *dest = src | 0xFF000000u;
+		  const D3DCOLOR src = *bitsd;
+		  if (m_d.m_transparent && ((src & 0xFFFFFFu) == m_d.m_backcolor))
+			  *dest = 0x00000000; // set to black & alpha full transparent
+		  else
+			  *dest = ((src & 0x000000FFu) << 16)
+			  | (src & 0x0000FF00u)
+			  | ((src & 0x0000FF0000u) >> 16)
+			  | 0xFF000000u;
       }
       dest += m_texture->pitch()/4 - m_texture->width();
    }

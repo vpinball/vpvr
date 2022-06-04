@@ -139,9 +139,9 @@ void main()
             vec4 rgba = texture(Texture0, uv); //!! lots of tex access by doing this all the time, but (tex) cache should be able to catch all of it
             color.rgb = vColor_Intensity.xyz * vColor_Intensity.w; //!! create function that resembles LUT from VPM?
             if (rgba.a != 0.0)
-                color.rgb *= rgba.bgr;
+                color.rgb *= rgba.rgb;
             else
-                color.rgb *= rgba.b * (255.9 / 100.);
+                color.rgb *= rgba.r * (255.9 / 100.);
 
             // simulate dot within the sampled texel
             vec2 dist = fract(uv*vRes_Alpha_time.xy) * 2.2 - 1.1;
