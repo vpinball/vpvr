@@ -165,8 +165,8 @@ vec3 FBColorGrade(vec3 color)
    color.z *= 15.0;
 
    float x = (color.x + floor(color.z))/16.0;
-   vec3 lut1 = FBGamma(textureLod(Texture4, vec2(x,          color.y), 0).xyz); // two lookups to blend/lerp between blue 2D regions
-   vec3 lut2 = FBGamma(textureLod(Texture4, vec2(x+1.0/16.0, color.y), 0).xyz);
+   vec3 lut1 = textureLod(Texture4, vec2(x,          color.y), 0).xyz; // two lookups to blend/lerp between blue 2D regions
+   vec3 lut2 = textureLod(Texture4, vec2(x+1.0/16.0, color.y), 0).xyz;
    return mix(lut1,lut2, frac(color.z));
 }
 
