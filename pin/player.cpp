@@ -1258,7 +1258,7 @@ HRESULT Player::Init()
    //
    const bool dynamicDayNight = LoadValueBoolWithDefault("Player", "DynamicDayNight", false);
 
-   if(dynamicDayNight && !m_ptable->m_overwriteGlobalDayNight)
+   if(dynamicDayNight && !m_ptable->m_overwriteGlobalDayNight && !g_pvp->m_bgles)
    {
        time_t hour_machine;
        time(&hour_machine);
@@ -1284,7 +1284,7 @@ HRESULT Player::Init()
        m_globalEmissionScale = clamp(factor, 0.15f, 1.f); //!! configurable clamp?
    }
    else
-       m_globalEmissionScale = m_ptable->m_globalEmissionScale;
+       m_globalEmissionScale = g_pvp->m_bgles ? g_pvp->m_fgles : m_ptable->m_globalEmissionScale;
 
    //
 
@@ -5221,8 +5221,7 @@ void Player::DrawBalls()
       float Roughness = 0.8f;
       if (light_nearest[0] != nullptr)
       {
-         const float dist = Vertex3Ds(light_nearest[0]->m_d.m_vCenter.x - pball->m_d.m_pos.x, light_nearest[0]->m_d.m_vCenter.y - pball->m_d.m_pos.y, 
-                                      light_nearest[0]->m_d.m_meshRadius + light_nearest[0]->m_surfaceHeight - pball->m_d.m_pos.z).Length(); //!! z pos
+         const float dist = Vertex3Ds(light_nearest[0]->m_d.m_vCenter.x - pball->m_d.m_pos.x, light_nearest[0]->m_d.m_vCenter.y - pball->m_d.m_pos.y, light_nearest[0]->m_d.m_meshRadius + light_nearest[0]->m_surfaceHeight - pball->m_d.m_pos.z).Length(); //!! z pos
          Roughness = min(max(dist*0.006f, 0.4f), Roughness);
       }
       const vec4 rwem(exp2f(10.0f * Roughness + 1.0f), 0.f, 1.f, 0.05f);

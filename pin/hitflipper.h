@@ -8,10 +8,10 @@ public:
    FlipperMoverObject(const Vertex2D& center, const float baser, const float endr, const float flipr, const float angleStart, float angleEnd,
       const float zlow, const float zhigh, Flipper* const pflipper);
 
-   virtual void UpdateDisplacements(const float dtime);
-   virtual void UpdateVelocities();
+   virtual void UpdateDisplacements(const float dtime) override;
+   virtual void UpdateVelocities() override;
 
-   virtual bool AddToList() const { return true; }
+   virtual bool AddToList() const override { return true; }
 
    void SetSolenoidState(const bool s);
    float GetStrokeRatio() const;
@@ -76,12 +76,12 @@ public:
       const float zlow, const float zhigh, Flipper* const pflipper);
    ~HitFlipper() { /*m_pflipper->m_phitflipper = nullptr;*/ }
 
-   virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const;
-   virtual int GetType() const { return eFlipper; }
-   virtual void Collide(const CollisionEvent& coll);
-   virtual void Contact(CollisionEvent& coll, const float dtime);
-   virtual void CalcHitBBox();
-   virtual MoverObject *GetMoverObject() { return &m_flipperMover; }
+   virtual float HitTest(const BallS& ball, const float dtime, CollisionEvent& coll) const override;
+   virtual int GetType() const override { return eFlipper; }
+   virtual void Collide(const CollisionEvent& coll) override;
+   virtual void Contact(CollisionEvent& coll, const float dtime) override;
+   virtual void CalcHitBBox() override;
+   virtual MoverObject *GetMoverObject() override { return &m_flipperMover; }
 
    void UpdatePhysicsFromFlipper();
 
