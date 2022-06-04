@@ -5,13 +5,13 @@
 #include "Texture.h"
 #include "typeDefs3D.h"
 
-D3DTexture* TextureManager::LoadTexture(BaseTexture* memtex, const bool linearRGB, const bool clamptoedge)
+D3DTexture* TextureManager::LoadTexture(BaseTexture* memtex, const bool clamptoedge)
 {
    const Iter it = m_map.find(memtex);
    if (it == m_map.end())
    {
       TexInfo texinfo;
-      texinfo.d3dtex = m_rd.UploadTexture(memtex, &texinfo.texWidth, &texinfo.texHeight, linearRGB, clamptoedge);
+      texinfo.d3dtex = m_rd.UploadTexture(memtex, &texinfo.texWidth, &texinfo.texHeight, clamptoedge);
       if (!texinfo.d3dtex)
          return 0;
       texinfo.dirty = false;
@@ -22,7 +22,7 @@ D3DTexture* TextureManager::LoadTexture(BaseTexture* memtex, const bool linearRG
    {
       if (it->second.dirty)
       {
-         m_rd.UpdateTexture(it->second.d3dtex, memtex, linearRGB);
+         m_rd.UpdateTexture(it->second.d3dtex, memtex);
          it->second.dirty = false;
       }
       return it->second.d3dtex;

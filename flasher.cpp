@@ -1014,7 +1014,7 @@ STDMETHODIMP Flasher::put_VideoCapUpdate(BSTR cWinTitle)
         //source videocap found.  lets start!
         GetClientRect(m_videoCapHwnd, &m_videoSourceRect);
         ResetVideoCap();
-        m_videoCapTex = new BaseTexture(m_videoCapWidth, m_videoCapHeight, BaseTexture::RGBA, false);
+        m_videoCapTex = new BaseTexture(m_videoCapWidth, m_videoCapHeight, BaseTexture::SRGBA);
     }
 
     // Retrieve the handle to a display device context for the client
@@ -1210,7 +1210,7 @@ void Flasher::RenderDynamic()
           pd3dDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD_world_ext);
 
        if (g_pplayer->m_texdmd != nullptr)
-          pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, false, true), false);
+          pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, true));
 
        pd3dDevice->DMDShader->Begin(0);
        pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_TEX, m_dynamicVertexBuffer, 0, m_numVertices, m_dynamicIndexBuffer, 0, m_numPolys * 3);
@@ -1239,7 +1239,7 @@ void Flasher::RenderDynamic()
        if (pinA && !pinB)
        {
           flasherMode = 0.f;
-          pd3dDevice->flasherShader->SetTexture(SHADER_Texture0, pinA, false, true);
+          pd3dDevice->flasherShader->SetTexture(SHADER_Texture0, pinA, true);
 
           if (!m_d.m_addBlend)
              flasherData.x = pinA->m_alphaTestValue * (float)(1.0/255.0);
@@ -1249,7 +1249,7 @@ void Flasher::RenderDynamic()
        else if (!pinA && pinB)
        {
           flasherMode = 0.f;
-          pd3dDevice->flasherShader->SetTexture(SHADER_Texture0, pinB, false, true);
+          pd3dDevice->flasherShader->SetTexture(SHADER_Texture0, pinB, true);
 
           if (!m_d.m_addBlend)
              flasherData.x = pinB->m_alphaTestValue * (float)(1.0/255.0);
@@ -1259,8 +1259,8 @@ void Flasher::RenderDynamic()
        else if (pinA && pinB)
        {
           flasherMode = 1.f;
-          pd3dDevice->flasherShader->SetTexture(SHADER_Texture0, pinA, false, true);
-          pd3dDevice->flasherShader->SetTexture(SHADER_Texture1, pinB, false, true);
+          pd3dDevice->flasherShader->SetTexture(SHADER_Texture0, pinA, true);
+          pd3dDevice->flasherShader->SetTexture(SHADER_Texture1, pinB, true);
 
           if (!m_d.m_addBlend)
           {

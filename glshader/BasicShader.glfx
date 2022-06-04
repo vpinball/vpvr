@@ -154,6 +154,9 @@ vec3 lightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 specula
 			0.5 + atan2_approx_div2PI(R.y, R.x),
 			acos_approx_divPI(R.z));
           
+#if !enable_VR
+	vec4 colorMip = texture(Texture1, Ruv);
+#else
       // Abuse mipmaps to reduce shimmering in VR
       vec4 colorMip;
       if (is_metal)
@@ -175,8 +178,9 @@ vec3 lightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 specula
             mipLevel = 4.0;
          colorMip = textureLod(Texture1, Ruv, mipLevel);
       }
+#endif
          
-      vec3 envTex = colorMip.bgr; //!! LDR: rgb?
+      vec3 envTex = colorMip.rgb;
 
       // EnvmapGlossy
       if(glossyMax > 0.0)

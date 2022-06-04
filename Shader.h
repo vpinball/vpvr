@@ -221,8 +221,8 @@ public:
    void Begin(const unsigned int pass);
    void End();
 
-   void SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, const bool linearRGB, const bool clamptoedge = false);
-   void SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel, const bool linearRGB);
+   void SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, const bool clamptoedge = false);
+   void SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel);
    void SetTextureDepth(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel);
    void SetTextureNull(const SHADER_UNIFORM_HANDLE texelName);
    void SetMaterial(const Material * const mat);

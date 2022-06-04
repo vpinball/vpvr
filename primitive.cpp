@@ -1237,7 +1237,7 @@ void Primitive::RenderObject()
       if (g_pplayer->m_texPUP && m_d.m_isBackGlassImage)
       {
          pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
-         pd3dDevice->basicShader->SetTexture(SHADER_Texture0, pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texPUP, true, false), false);
+         pd3dDevice->basicShader->SetTexture(SHADER_Texture0, pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texPUP, false));
 
          //g_pplayer->m_pin3d.SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
          // accommodate models with UV coords outside of [0,1]
