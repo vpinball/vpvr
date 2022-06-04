@@ -4394,7 +4394,14 @@ void Player::PostProcess(const bool ambientOcclusion)
 
    Texture * const pin = m_ptable->GetImage(m_ptable->m_imageColorGrade);
    if (pin)
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, pin, false);
+   {
+       // Texture used for LUT color grading must be treated as if they were linear
+	   if (pin->m_pdsBuffer->m_format == BaseTexture::SRGB)
+		   pin->m_pdsBuffer->m_format = BaseTexture::RGB;
+       else if (pin->m_pdsBuffer->m_format == BaseTexture::SRGBA)
+           pin->m_pdsBuffer->m_format = BaseTexture::RGBA;
+       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, pin, false);
+   }
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_color_grade, pin != nullptr);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_do_dither, !m_ditherOff);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_do_bloom, (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff));
