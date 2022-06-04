@@ -11,7 +11,6 @@
 #include "SoundDialog.h"
 #include "EditorOptionsDialog.h"
 #include "VideoOptionsDialog.h"
-#include "VROptionsDialog.h"
 #include "AudioOptionsDialog.h"
 #include "CollectionManagerDialog.h"
 #include "PhysicsOptionsDialog.h"
@@ -25,6 +24,9 @@
 #include "LayersListDialog.h"
 #include "NotesDialog.h"
 #include "Properties/PropertyDialog.h"
+#ifdef ENABLE_SDL
+#include "VROptionsDialog.h"
+#endif
 
 class PinTable;
 class PinTableMDI;
@@ -279,7 +281,6 @@ private:
    SoundDialog m_soundMngDlg;
    AudioOptionsDialog m_audioOptDialog;
    VideoOptionsDialog m_videoOptDialog;
-   VROptionsDialog m_vrOptDialog;
    EditorOptionsDialog m_editorOptDialog;
    CollectionManagerDialog m_collectionMngDlg;
    PhysicsOptionsDialog m_physicsOptDialog;
@@ -287,6 +288,9 @@ private:
    DimensionDialog m_dimensionDialog;
    MaterialDialog m_materialDialog;
    AboutDialog m_aboutDialog;
+#ifdef ENABLE_SDL
+   VROptionsDialog m_vrOptDialog;
+#endif
 
    ToolbarDialog *m_toolbarDialog = nullptr;
    PropertyDialog *m_propertyDialog = nullptr;
