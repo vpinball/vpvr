@@ -1,6 +1,6 @@
 #pragma once
 
-#define MIN_TEXTURE_SIZE 8
+#define MIN_TEXTURE_SIZE 8u
 
 struct FIBITMAP;
 
@@ -14,7 +14,7 @@ public:
       RGBA,			// Linear RGB with alpha channel, 1 byte per channel
       SRGB,			// sRGB without alpha channel, 1 byte per channel
       SRGBA,		// sRGB with alpha channel, 1 byte per channel
-      RGB_FP16,	    // Linear RGB, 1 half float per channel
+      RGB_FP16,		// Linear RGB, 1 half float per channel
       RGB_FP32		// Linear RGB, 1 float per channel
    };
 
@@ -29,11 +29,11 @@ public:
    bool has_alpha() const  { return m_format == RGBA || m_format == SRGBA; }
 
 private:
-   int m_width, m_height;
+   unsigned int m_width, m_height;
    std::vector<BYTE> m_data;
 
 public:
-   int m_realWidth, m_realHeight;
+   unsigned int m_realWidth, m_realHeight;
    Format m_format;
 
    static BaseTexture *CreateFromHBitmap(const HBITMAP hbm, bool with_alpha = true);

@@ -18,8 +18,8 @@ BaseTexture* BaseTexture::CreateFromFreeImage(FIBITMAP* dib)
    if (maxTexDim <= 0)
       maxTexDim = 65536;
 
-   const int pictureWidth = FreeImage_GetWidth(dib);
-   const int pictureHeight = FreeImage_GetHeight(dib);
+   const unsigned int pictureWidth  = FreeImage_GetWidth(dib);
+   const unsigned int pictureHeight = FreeImage_GetHeight(dib);
 
    FIBITMAP* dibResized = dib;
    FIBITMAP* dibConv = dib;
@@ -36,24 +36,24 @@ BaseTexture* BaseTexture::CreateFromFreeImage(FIBITMAP* dib)
          return nullptr;
       }
 
-      if ((pictureHeight > maxTexDim) || (pictureWidth > maxTexDim))
+      if ((pictureHeight > (unsigned int)maxTexDim) || (pictureWidth > (unsigned int)maxTexDim))
       {
-         int newWidth = max(min(pictureWidth, maxTexDim), MIN_TEXTURE_SIZE);
-         int newHeight = max(min(pictureHeight, maxTexDim), MIN_TEXTURE_SIZE);
+         unsigned int newWidth  = max(min(pictureWidth,  (unsigned int)maxTexDim), MIN_TEXTURE_SIZE);
+         unsigned int newHeight = max(min(pictureHeight, (unsigned int)maxTexDim), MIN_TEXTURE_SIZE);
          /*
           * The following code tries to maintain the aspect ratio while resizing.
           */
          if (pictureWidth - newWidth > pictureHeight - newHeight)
-             newHeight = min(pictureHeight * newWidth / pictureWidth, maxTexDim);
+             newHeight = min(pictureHeight * newWidth / pictureWidth,  (unsigned int)maxTexDim);
          else
-             newWidth = min(pictureWidth * newHeight / pictureHeight, maxTexDim);
+             newWidth  = min(pictureWidth * newHeight / pictureHeight, (unsigned int)maxTexDim);
          dibResized = FreeImage_Rescale(dib, newWidth, newHeight, FILTER_BILINEAR); //!! use a better filter in case scale ratio is pretty high?
       }
       else if (pictureWidth < MIN_TEXTURE_SIZE || pictureHeight < MIN_TEXTURE_SIZE)
       {
          // some drivers seem to choke on small (1x1) textures, so be safe by scaling them up
-         const int newWidth = max(pictureWidth, MIN_TEXTURE_SIZE);
-         const int newHeight = max(pictureHeight, MIN_TEXTURE_SIZE);
+         const unsigned int newWidth  = max(pictureWidth,  MIN_TEXTURE_SIZE);
+         const unsigned int newHeight = max(pictureHeight, MIN_TEXTURE_SIZE);
          dibResized = FreeImage_Rescale(dib, newWidth, newHeight, FILTER_BOX);
       }
 
@@ -61,7 +61,7 @@ BaseTexture* BaseTexture::CreateFromFreeImage(FIBITMAP* dib)
       if (!dibResized)
       {
          maxTexDim /= 2;
-         while ((maxTexDim > pictureHeight) && (maxTexDim > pictureWidth))
+         while (((unsigned int)maxTexDim > pictureHeight) && ((unsigned int)maxTexDim > pictureWidth))
              maxTexDim /= 2;
 
          continue;
@@ -83,7 +83,7 @@ BaseTexture* BaseTexture::CreateFromFreeImage(FIBITMAP* dib)
          if (!dibConv)
          {
             maxTexDim /= 2;
-            while ((maxTexDim > pictureHeight) && (maxTexDim > pictureWidth))
+            while (((unsigned int)maxTexDim > pictureHeight) && ((unsigned int)maxTexDim > pictureWidth))
                maxTexDim /= 2;
 
             continue;
@@ -96,11 +96,11 @@ BaseTexture* BaseTexture::CreateFromFreeImage(FIBITMAP* dib)
       if (rgbf)
       {
           float maxval = 0.f;
-          BYTE* bits = (BYTE*)FreeImage_GetBits(dibConv);
-          int pitch = FreeImage_GetPitch(dibConv);
-          for (unsigned int y = 0; y < tex_h; y++) {
-              float* pixel = (float*)bits;
-              for (unsigned int x = 0; x < tex_w * 3; x++) {
+          const BYTE* __restrict bits = (BYTE*)FreeImage_GetBits(dibConv);
+          const int pitch = FreeImage_GetPitch(dibConv);
+          for (unsigned int y = 0; y < tex_h; ++y) {
+              const float* const __restrict pixel = (float*)bits;
+              for (unsigned int x = 0; x < tex_w * 3; ++x) {
                   maxval = max(maxval, pixel[x]);
               }
               bits += pitch;
@@ -127,7 +127,7 @@ BaseTexture* BaseTexture::CreateFromFreeImage(FIBITMAP* dib)
             FreeImage_Unload(dibResized);
 
          maxTexDim /= 2;
-         while ((maxTexDim > pictureHeight) && (maxTexDim > pictureWidth))
+         while (((unsigned int)maxTexDim > pictureHeight) && ((unsigned int)maxTexDim > pictureWidth))
             maxTexDim /= 2;
       }
    }
@@ -135,20 +135,19 @@ BaseTexture* BaseTexture::CreateFromFreeImage(FIBITMAP* dib)
    tex->m_realWidth = pictureWidth;
    tex->m_realHeight = pictureHeight;
 
-   const int pitchdst = tex->pitch(), pitchsrc = FreeImage_GetPitch(dibConv), pitch = min(pitchsrc, pitchdst);
    // Copy, applying channel and data format conversion as well as flipping upside down
    // Note that free image use RGB for float image, and the FI_RGBA_xxx for others
    if (tex->m_format == RGB_FP16)
    {
       const BYTE* __restrict bits = FreeImage_GetBits(dibConv);
-      unsigned pitch = FreeImage_GetPitch(dibConv);
+      const unsigned pitch = FreeImage_GetPitch(dibConv);
       unsigned short* const __restrict pdst = (unsigned short*)tex->data();
-      for (int y = 0; y < tex->m_height; ++y)
+      for (unsigned int y = 0; y < tex->m_height; ++y)
       {
-         float* pixel = (float*)bits;
-         for (int x = 0; x < tex->m_width; ++x)
+         const float* __restrict pixel = (float*)bits;
+         const unsigned int offs = (tex->m_height - y - 1) * (tex->m_width*3);
+         for (unsigned int o = offs; o < tex->m_width*3+offs; o+=3)
          {
-            int o = 3 * (x + (tex->m_height - y - 1) * tex->m_width);
             pdst[o + 0] = float2half(pixel[0]);
             pdst[o + 1] = float2half(pixel[1]);
             pdst[o + 2] = float2half(pixel[2]);
@@ -160,14 +159,14 @@ BaseTexture* BaseTexture::CreateFromFreeImage(FIBITMAP* dib)
    else if (tex->m_format == RGB_FP32)
    {
       const BYTE* __restrict bits = FreeImage_GetBits(dibConv);
-      unsigned pitch = FreeImage_GetPitch(dibConv);
+      const unsigned pitch = FreeImage_GetPitch(dibConv);
       float* const __restrict pdst = (float*)tex->data();
-      for (int y = 0; y < tex->m_height; ++y)
+      for (unsigned int y = 0; y < tex->m_height; ++y)
       {
-         float* pixel = (float*)bits;
-         for (int x = 0; x < tex->m_width; ++x)
+         const float* __restrict pixel = (float*)bits;
+         const unsigned int offs = (tex->m_height - y - 1) * (tex->m_width*3);
+         for (unsigned int o = offs; o < tex->m_width*3+offs; o+=3)
          {
-            int o = 3 * (x + (tex->m_height - y - 1) * tex->m_width);
             pdst[o + 0] = pixel[0];
             pdst[o + 1] = pixel[1];
             pdst[o + 2] = pixel[2];
@@ -179,31 +178,21 @@ BaseTexture* BaseTexture::CreateFromFreeImage(FIBITMAP* dib)
    else
    {
       const BYTE* __restrict bits = FreeImage_GetBits(dibConv);
-      unsigned pitch = FreeImage_GetPitch(dibConv);
+      const unsigned pitch = FreeImage_GetPitch(dibConv);
       BYTE* const __restrict pdst = tex->data();
-      bool has_alpha = (tex->m_format == RGBA) || (tex->m_format == SRGBA);
-      for (int y = 0; y < tex->m_height; ++y)
+      const bool has_alpha = (tex->m_format == RGBA) || (tex->m_format == SRGBA);
+      const unsigned int stride = has_alpha ? 4 : 3;
+      for (unsigned int y = 0; y < tex->m_height; ++y)
       {
-         BYTE* pixel = (BYTE*)bits;
-         for (int x = 0; x < tex->m_width; ++x)
+         const BYTE* __restrict pixel = (BYTE*)bits;
+         const unsigned int offs = (tex->m_height - y - 1) * (tex->m_width*stride);
+         for (unsigned int o = offs; o < tex->m_width*stride+offs; o+=stride)
          {
-            if (has_alpha)
-            { 
-               int o = 4 * (x + (tex->m_height - y - 1) * tex->m_width);
-               pdst[o + 0] = pixel[FI_RGBA_RED];
-               pdst[o + 1] = pixel[FI_RGBA_GREEN];
-               pdst[o + 2] = pixel[FI_RGBA_BLUE];
-               pdst[o + 3] = pixel[FI_RGBA_ALPHA];
-               pixel += 4;
-            }
-            else
-            {
-               int o = 3 * (x + (tex->m_height - y - 1) * tex->m_width);
-               pdst[o + 0] = pixel[FI_RGBA_RED];
-               pdst[o + 1] = pixel[FI_RGBA_GREEN];
-               pdst[o + 2] = pixel[FI_RGBA_BLUE];
-               pixel += 3;
-            }
+            pdst[o + 0] = pixel[FI_RGBA_RED];
+            pdst[o + 1] = pixel[FI_RGBA_GREEN];
+            pdst[o + 2] = pixel[FI_RGBA_BLUE];
+            if(has_alpha) pdst[o + 3] = pixel[FI_RGBA_ALPHA];
+            pixel += stride;
          }
          bits += pitch;
       }
@@ -302,7 +291,7 @@ BaseTexture* BaseTexture::CreateFromHBitmap(const HBITMAP hbm, bool with_alpha)
       return nullptr;
    if (with_alpha && FreeImage_GetBPP(dib) == 24)
    {
-      FIBITMAP*  dibConv = FreeImage_ConvertTo32Bits(dib);
+      FIBITMAP* dibConv = FreeImage_ConvertTo32Bits(dib);
       FreeImage_Unload(dib);
       dib = dibConv;
       if (!dib)
@@ -597,7 +586,7 @@ void Texture::CreateGDIVersion()
    }
    else if (m_pdsBuffer->m_format == BaseTexture::RGB || m_pdsBuffer->m_format == BaseTexture::SRGB)
    {
-      BYTE* const __restrict src = m_pdsBuffer->data();
+      const BYTE* const __restrict src = m_pdsBuffer->data();
       unsigned int o = 0;
       for (int j = 0; j < m_pdsBuffer->height(); ++j)
          for (int i = 0; i < m_pdsBuffer->width(); ++i, ++o)
@@ -651,6 +640,8 @@ void Texture::CreateGDIVersion()
          }
       }
    }
+   else
+      assert(!"unknown format");
 
    SetStretchBltMode(hdcNew, COLORONCOLOR);
    StretchDIBits(hdcNew,
