@@ -6764,10 +6764,10 @@ bool PinTable::ExportImage(const Texture * const ppi, const char * const szfilen
       if (hFile == INVALID_HANDLE_VALUE)
          return false;
 
-      const int surfwidth = ppi->m_width;					// texture width 
-      const int surfheight = ppi->m_height;					// and height		
+      const unsigned int surfwidth = ppi->m_width;				// texture width 
+      const unsigned int surfheight = ppi->m_height;			// and height		
 
-      const int bmplnsize = (surfwidth * 4 + 3) & -4;		// line size ... 4 bytes per pixel + pad to 4 byte boundary		
+      const unsigned int bmplnsize = (surfwidth * 4 + 3) & -4;	// line size ... 4 bytes per pixel + pad to 4 byte boundary		
 
       //<<<< began bmp file header and info <<<<<<<<<<<<<<<
 
@@ -6808,10 +6808,10 @@ bool PinTable::ExportImage(const Texture * const ppi, const char * const szfilen
       unsigned char* info;
       for (info = sinfo + surfwidth * 3; info < sinfo + bmplnsize; *info++ = 0); //fill padding with 0			
 
-      const int pitch = ppi->m_pdsBuffer->pitch();
+      const unsigned int pitch = ppi->m_pdsBuffer->pitch();
       const BYTE *spch = ppi->m_pdsBuffer->data() + (surfheight * pitch); // just past the end of the Texture part of DD surface
 
-      for (int i = 0; i < surfheight; i++)
+      for (unsigned int i = 0; i < surfheight; i++)
       {
          const BYTE * const pch = (spch -= pitch); // start on previous previous line
          memcpy(sinfo, pch, surfwidth*4);
@@ -6832,10 +6832,10 @@ bool PinTable::ExportImage(const Texture * const ppi, const char * const szfilen
       FIBITMAP *dib = FreeImage_Allocate(ppi->m_width, ppi->m_height, ppi->m_pdsBuffer->has_alpha() ? 32 : 24);
       BYTE * const psrc = FreeImage_GetBits(dib);
 
-      const int pitch = ppi->m_pdsBuffer->pitch();
+      const unsigned int pitch = ppi->m_pdsBuffer->pitch();
       const BYTE *spch = ppi->m_pdsBuffer->data() + (ppi->m_height * pitch); // just past the end of the Texture part of DD surface
 
-      for (int i = 0; i < ppi->m_height; i++)
+      for (unsigned int i = 0; i < ppi->m_height; i++)
       {
          const BYTE * const pch = (spch -= pitch); // start on previous previous line
          memcpy(psrc + i * pitch, pch, pitch);

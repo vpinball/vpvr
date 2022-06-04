@@ -453,10 +453,10 @@ bool Texture::LoadToken(const int id, BiffReader * const pbr)
 
       // Find out if all alpha values are 0x00 or 0xFF
       bool has_alpha = false;
-      for (int i = 0; i < m_height && !has_alpha; i++)
+      for (unsigned int i = 0; i < m_height && !has_alpha; i++)
       {
          unsigned int o = i * m_width * 4 + 3;
-         for (int l = 0; l < m_width && !has_alpha; l++,o+=4)
+         for (unsigned int l = 0; l < m_width && !has_alpha; l++,o+=4)
          {
             if (tmp[o] != 0 && tmp[o] != 255)
                has_alpha = true;
@@ -467,9 +467,10 @@ bool Texture::LoadToken(const int id, BiffReader * const pbr)
 
       // copy, converting from SBGR to SRGB, and eventually dropping the alpha channel
       BYTE* const __restrict pdst = m_pdsBuffer->data();
-      unsigned int o1 = 0, o2 = 0, o2_step = has_alpha ? 4 : 3;
-      for (int yo = 0; yo < m_height; yo++)
-         for (int xo = 0; xo < m_width; xo++, o1+=4, o2+=o2_step)
+      unsigned int o1 = 0, o2 = 0;
+      const unsigned int o2_step = has_alpha ? 4 : 3;
+      for (unsigned int yo = 0; yo < m_height; yo++)
+         for (unsigned int xo = 0; xo < m_width; xo++, o1+=4, o2+=o2_step)
          {
             pdst[o2    ] = tmp[o1 + 2];
             pdst[o2 + 1] = tmp[o1 + 1];
@@ -541,7 +542,7 @@ void Texture::CreateGDIVersion()
    BITMAPINFO bmi = {};
    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
    bmi.bmiHeader.biWidth = m_width;
-   bmi.bmiHeader.biHeight = -m_height;
+   bmi.bmiHeader.biHeight = -(LONG)m_height;
    bmi.bmiHeader.biPlanes = 1;
    bmi.bmiHeader.biBitCount = 32;
    bmi.bmiHeader.biCompression = BI_RGB;
@@ -552,8 +553,8 @@ void Texture::CreateGDIVersion()
    {
       const float* const __restrict src = (float*)m_pdsBuffer->data();
       unsigned int o = 0;
-      for (int j = 0; j < m_pdsBuffer->height(); ++j)
-         for (int i = 0; i < m_pdsBuffer->width(); ++i, ++o)
+      for (unsigned int j = 0; j < m_pdsBuffer->height(); ++j)
+         for (unsigned int i = 0; i < m_pdsBuffer->width(); ++i, ++o)
          {
             const float r = src[o * 3 + 0];
             const float g = src[o * 3 + 1];
@@ -570,8 +571,8 @@ void Texture::CreateGDIVersion()
    {
       const unsigned short* const __restrict src = (unsigned short*)m_pdsBuffer->data();
       unsigned int o = 0;
-      for (int j = 0; j < m_pdsBuffer->height(); ++j)
-         for (int i = 0; i < m_pdsBuffer->width(); ++i, ++o)
+      for (unsigned int j = 0; j < m_pdsBuffer->height(); ++j)
+         for (unsigned int i = 0; i < m_pdsBuffer->width(); ++i, ++o)
          {
             const float r = half2float(src[o * 3 + 0]);
             const float g = half2float(src[o * 3 + 1]);
@@ -588,8 +589,8 @@ void Texture::CreateGDIVersion()
    {
       const BYTE* const __restrict src = m_pdsBuffer->data();
       unsigned int o = 0;
-      for (int j = 0; j < m_pdsBuffer->height(); ++j)
-         for (int i = 0; i < m_pdsBuffer->width(); ++i, ++o)
+      for (unsigned int j = 0; j < m_pdsBuffer->height(); ++j)
+         for (unsigned int i = 0; i < m_pdsBuffer->width(); ++i, ++o)
          {
             tmp[o * 4 + 0] = src[o * 3 + 2]; // B
             tmp[o * 4 + 1] = src[o * 3 + 1]; // G
@@ -601,15 +602,15 @@ void Texture::CreateGDIVersion()
    {
       const BYTE* const __restrict psrc = m_pdsBuffer->data();
       unsigned int o = 0;
-      bool isWinXP = GetWinVersion() < 2600;
-      for (int j = 0; j < m_pdsBuffer->height(); ++j)
+      const bool isWinXP = GetWinVersion() < 2600;
+      for (unsigned int j = 0; j < m_pdsBuffer->height(); ++j)
       {
-         for (int i = 0; i < m_pdsBuffer->width(); ++i, ++o)
+         for (unsigned int i = 0; i < m_pdsBuffer->width(); ++i, ++o)
          {
             int r = psrc[o * 4 + 0];
             int g = psrc[o * 4 + 1];
             int b = psrc[o * 4 + 2];
-            int alpha = psrc[o * 4 + 3];
+            const int alpha = psrc[o * 4 + 3];
             if (!isWinXP) // For everything newer than Windows XP: use the alpha in the bitmap, thus RGB needs to be premultiplied with alpha, due to how AlphaBlend() works
             {
                if (alpha == 0) // adds a checkerboard where completely transparent (for the image manager display)

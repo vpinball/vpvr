@@ -16,14 +16,14 @@ private:
    Texture* m_backgroundFallback;
    D3DTexture* m_backgroundTexture;
    int2 m_backglass_dmd;
-   int m_backglass_dmd_width;
-   int m_backglass_dmd_height;
+   unsigned int m_backglass_dmd_width;
+   unsigned int m_backglass_dmd_height;
    float m_dmd_height;
    float m_dmd_width;
    Vertex2D m_dmd;
-   int m_backglass_grill_height;
-   int m_backglass_width;
-   int m_backglass_height;
+   unsigned int m_backglass_grill_height;
+   unsigned int m_backglass_width;
+   unsigned int m_backglass_height;
 
    static constexpr float m_backglass_scale = 1.2f;
 };
