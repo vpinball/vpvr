@@ -135,9 +135,9 @@ BaseTexture* EnvmapPrecalc(const Texture* envTex, const unsigned int rad_env_xre
    const unsigned int env_xres = envTex->m_pdsBuffer->width();
    const unsigned int env_yres = envTex->m_pdsBuffer->height();
    BaseTexture::Format env_format = envTex->m_pdsBuffer->m_format;
-   BaseTexture::Format rad_format = (env_format == BaseTexture::RGB_FP16 || env_format == BaseTexture::RGB_FP32) ? env_format : BaseTexture::SRGB;
+   const BaseTexture::Format rad_format = (env_format == BaseTexture::RGB_FP16 || env_format == BaseTexture::RGB_FP32) ? env_format : BaseTexture::SRGB;
    BaseTexture* radTex = new BaseTexture(rad_env_xres, rad_env_yres, rad_format);
-   BYTE* __restrict rad_envmap = radTex->data();
+   BYTE* const __restrict rad_envmap = radTex->data();
    bool free_envmap = false;
 
 #define PREFILTER_ENVMAP_DIFFUSE
@@ -311,6 +311,8 @@ BaseTexture* EnvmapPrecalc(const Texture* envTex, const unsigned int rad_env_xre
                      g = invGammaApprox((float)(rgb & 0x0000FF00) * (float)(1.0 /    65280.0));
                      b = invGammaApprox((float)(rgb & 0x000000FF) * (float)(1.0 /      255.0));
                   }
+                  else
+                     assert(!"unknown format");
 #ifndef USE_ENVMAP_PRECALC_COSINE
                   sum_r += r * NdotL;
                   sum_g += g * NdotL;
@@ -566,8 +568,9 @@ HRESULT Pin3D::InitRenderDevice(const bool fullScreen, const int width, const in
    m_viewPort.MinZ = 0.0f;
    m_viewPort.MaxZ = 1.0f;
 
-   if ((InitPrimary(fullScreen, colordepth, refreshrate, VSync, AAfactor, stereo3D, FXAA, useAO, ss_refl)))
-      return E_FAIL;
+   const HRESULT res = InitPrimary(fullScreen, colordepth, refreshrate, VSync, AAfactor, stereo3D, FXAA, useAO, ss_refl);
+   if (FAILED(res))
+      return res;
 
    m_pd3dSecondaryDevice = m_pd3dPrimaryDevice; //!! for now, there is no secondary device :/
    return S_OK;
@@ -825,9 +828,9 @@ void Pin3D::InitLights()
    //emission.y *= g_pplayer->m_ptable->m_lightEmissionScale*g_pplayer->m_globalEmissionScale;
    //emission.z *= g_pplayer->m_ptable->m_lightEmissionScale*g_pplayer->m_globalEmissionScale;
 
-   float lightPos[MAX_LIGHT_SOURCES][4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-   float lightEmission[MAX_LIGHT_SOURCES][4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-   int lightSources = MAX_LIGHT_SOURCES;
+   float lightPos[MAX_LIGHT_SOURCES][4] = { 0.f };
+   float lightEmission[MAX_LIGHT_SOURCES][4] = { 0.f };
+   constexpr int lightSources = MAX_LIGHT_SOURCES;
 
    for (unsigned int i = 0; i < MAX_LIGHT_SOURCES; i++)
    {
@@ -1585,8 +1588,6 @@ void CreateProjectionAndViewMatrix(float * const __restrict P, float * const __r
    float DisplaySize;
    float DisplayNativeWidth;
    float DisplayNativeHeight;
-   float AboveScreen;
-   float InsideScreen;
 
    // Data from head tracking
    float ViewerPositionX, ViewerPositionY, ViewerPositionZ;
@@ -1607,8 +1608,8 @@ void CreateProjectionAndViewMatrix(float * const __restrict P, float * const __r
    DisplaySize = (float)(sqrt(w*w + h * h) / 25.4); // [mm] -> [inchs]
 
                                                     // constant params for this project
-   AboveScreen = 200.0; // 0.2m
-   InsideScreen = 2000.0; // 2.0m
+   constexpr float AboveScreen = 200.0f; // 0.2m
+   constexpr float InsideScreen = 2000.0f; // 2.0m
 
    // Data build projection matrix
    BuildProjectionMatrix(P,

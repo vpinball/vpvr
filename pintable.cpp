@@ -6798,7 +6798,10 @@ bool PinTable::ExportImage(const Texture * const ppi, const char * const szfilen
       CloseHandle(hFile);
 #else
       if (ppi->m_pdsBuffer->m_format == BaseTexture::RGB_FP16 || ppi->m_pdsBuffer->m_format == BaseTexture::RGB_FP32)
+      {
+          assert(!"float format export");
           return false; // Unsupported but this should not happens since all HDR image are imported and have a m_ppb field
+      }
 
       FIBITMAP *dib = FreeImage_Allocate(ppi->m_width, ppi->m_height, ppi->m_pdsBuffer->has_alpha() ? 32 : 24);
       BYTE * const psrc = FreeImage_GetBits(dib);

@@ -96,8 +96,8 @@ namespace BAM_Tracker {
 			double dT = Tend - Tstart;
 			
 			// Block interpolation if for long time there is no new HT data
-			const double dTmin = 200; // time, when we start to slow down move if there is no new HT data
-			const double dTmax = 400; // max time without HT data
+			constexpr double dTmin = 200; // time, when we start to slow down move if there is no new HT data
+			constexpr double dTmax = 400; // max time without HT data
 
 			double t = Tnow - Tend;
 			double kt = 1.0;
