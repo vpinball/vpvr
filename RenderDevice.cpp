@@ -3126,15 +3126,19 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
 
    colorFormat comp_format = Format;
    if (m_compress_textures && ((Width & 3) == 0) && ((Height & 3) == 0) && (Width > 256) && (Height > 256))
+   {
       if (col_type == GL_FLOAT || col_type == GL_HALF_FLOAT)
+      {
          if (GLAD_GL_ARB_texture_compression_bptc)
             comp_format = colorFormat::BC6S; // We should use unsigned BC6 but this needs to know before hand if the texture is only positive
+      }
       else if (GLAD_GL_ARB_texture_compression_bptc)
          comp_format = col_is_linear ? colorFormat::BC7 : colorFormat::SBC7;
       else
          comp_format = col_is_linear ? colorFormat::DXT5 : colorFormat::SDXT5;
-   
-   const int num_mips = (int)std::log2(float(std::max(Width, Height))) + 1;
+   }
+
+   const int num_mips = (int)std::log2(float(max(Width, Height))) + 1;
    if (m_GLversion >= 403)
       glTexStorage2D(GL_TEXTURE_2D, num_mips, comp_format, Width, Height);
    else { // should never be triggered nowadays
