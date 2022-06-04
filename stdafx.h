@@ -99,6 +99,8 @@
 
 #define DEFAULT_SECURITY_LEVEL  0
 
+#define NUM_ASSIGN_LAYERS       20
+
 //VR Support
 
 #define STEREO_OFF 0

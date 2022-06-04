@@ -78,25 +78,25 @@ public:
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
    
-   virtual void MoveOffset(const float dx, const float dy);
-   virtual void SetObjectPos();
+   virtual void MoveOffset(const float dx, const float dy) override;
+   virtual void SetObjectPos() override;
    
    // Multi-object manipulation
-   virtual Vertex2D GetCenter() const;
-   virtual void PutCenter(const Vertex2D& pv);
+   virtual Vertex2D GetCenter() const override;
+   virtual void PutCenter(const Vertex2D &pv) override;
 
-   virtual void SetDefaultPhysics(bool fromMouseClick);
-   virtual void ExportMesh(ObjLoader& loader);
-   virtual void RenderBlueprint(Sur *psur, const bool solid);
+   virtual void SetDefaultPhysics(bool fromMouseClick) override;
+   virtual void ExportMesh(ObjLoader &loader) override;
+   virtual void RenderBlueprint(Sur *psur, const bool solid) override;
 
-   virtual unsigned long long GetMaterialID() const
+   virtual unsigned long long GetMaterialID() const override
    {
       if (!m_d.m_baseVisible && m_d.m_capVisible)
          return m_ptable->GetMaterial(m_d.m_szCapMaterial)->hash();
       else
          return 64-3; //!! some constant number
    }
-   virtual unsigned long long GetImageID() const
+   virtual unsigned long long GetImageID() const override
    {
       if (!m_d.m_baseVisible && m_d.m_capVisible)
          return (unsigned long long)&m_capTexture; //!! meh
@@ -104,9 +104,9 @@ public:
          return 0;
    }
    
-   virtual ItemTypeEnum HitableGetItemType() const { return eItemBumper; }
+   virtual ItemTypeEnum HitableGetItemType() const override { return eItemBumper; }
    
-   virtual void WriteRegDefaults();
+   virtual void WriteRegDefaults() override;
    
    BumperData m_d;
    

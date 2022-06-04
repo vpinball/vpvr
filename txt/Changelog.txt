@@ -173,6 +173,7 @@ VP 10.7.1 Changelog
 ------------------------
 
 FEATURES:
+- add "Assign to Layer" context menu again by showing the first 20 layers.
 
 - expose background and selection color in the script editor preferences
 
@@ -181,12 +182,18 @@ FEATURES:
 - add 'Go To Definition' to the script editor (via F12 key), which allows to jump to the function/sub/variable definition from the current cursor pos/selection
 
 - add more columns to the search/select dialog (Physics Material, Collection, Collidable, Visible, Timer enabled, Depth Bias, Static Rendering, Reflections enabled)
+- fix mem size ordering (culture neutral) and add image format column to the image dialog
 
 - add additive blending to primitives (same as flashers)
 - support HDR textures on primitives (same as flashers), full high dynamic range is only available if lighting disabled though (otherwise clamped to 0..1)
 - allow playfield mesh to optionally be not collidable (or a toy). In that case another collidable object must be added as the playfield. This allows to use different meshes for the physics and the visuals.
 
+- add new command line parameter "-GLES [value]" which overrides the global emission scale (day/night setting, value range: 0.115..0.925)
+
 FIXES:
+- improve very slow layer operations (open/close table, filter/unfilter)
+- fix an issue when hiding all layers
+- assigning an element to a hidden layer, the element will also be set to hidden.
 
 - update line number for script subs/functions when updating the function list
   (i.e. so that jumping to these works properly again after changing other script code)
@@ -206,6 +213,9 @@ FIXES:
 - on import/rename an image in the image manager also update the comboboxes to select the new image for selected elements
 
 - do not poll XInput gamedevice/joypad/stick if its disconnected, otherwise there was a noticable overhead/slowdown
+
+- decrease main memory usage for textures by using smaller texture formats where possible
+- optimize floating point texture video memory usage/bandwidth (e.g. flasher/primitive and environment textures)
 
 - update FreeImage library to latest 3.18.0 (custom build) (currently disabled)
 - DirectX 8 port for input handling (currently disabled)

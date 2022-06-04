@@ -70,15 +70,15 @@ public:
 
    STANDARD_EDITABLE_DECLARES(DispReel, eItemDispReel, DISPREEL, 2)
 
-   virtual void MoveOffset(const float dx, const float dy);
-   virtual void SetObjectPos();
+   virtual void MoveOffset(const float dx, const float dy) override;
+   virtual void SetObjectPos() override;
    // Multi-object manipulation
-   virtual Vertex2D GetCenter() const;
-   virtual void PutCenter(const Vertex2D& pv);
+   virtual Vertex2D GetCenter() const override;
+   virtual void PutCenter(const Vertex2D &pv) override;
 
-   virtual ItemTypeEnum HitableGetItemType() const { return eItemDispReel; }
+   virtual ItemTypeEnum HitableGetItemType() const override { return eItemDispReel; }
 
-   virtual void WriteRegDefaults();
+   virtual void WriteRegDefaults() override;
 
    DECLARE_REGISTRY_RESOURCEID(IDR_DISP_REEL)
    // ISupportsErrorInfo
@@ -150,7 +150,7 @@ public:
    class DispReelAnimObject : public AnimObject
    {
    public:
-      virtual void Animate() { m_pDispReel->Animate(); } // this function is called every frame to animate the object/reels animation
+      virtual void Animate() override { m_pDispReel->Animate(); } // this function is called every frame to animate the object/reels animation
 
       DispReel *m_pDispReel;
    } m_dispreelanim;

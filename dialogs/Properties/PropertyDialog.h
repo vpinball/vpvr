@@ -25,7 +25,7 @@ public:
     }
     virtual void UpdateProperties(const int dispid) = 0;
     virtual void UpdateVisuals(const int dispid=-1) = 0;
-    virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam)
+    virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam) override
     {
         UNREFERENCED_PARAMETER(lParam);
         const int dispID = LOWORD(wParam);
@@ -182,11 +182,10 @@ public:
             rect.bottom -= iChange;
             dc.DrawFocusRect(rect);
         }
-        unsigned char r, g, b;
 
-        r = GetRValue(m_color);
-        g = GetGValue(m_color);
-        b = GetBValue(m_color);
+        unsigned char r = GetRValue(m_color);
+        unsigned char g = GetGValue(m_color);
+        unsigned char b = GetBValue(m_color);
         vertex[0].x = rect.TopLeft().x;
         vertex[0].y = rect.TopLeft().y;
         vertex[0].Red   = ((unsigned int)r << 8) + r;

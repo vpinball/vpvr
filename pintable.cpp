@@ -4616,6 +4616,21 @@ void PinTable::FillCollectionContextMenu(CMenu &mainMenu, CMenu &colSubMenu, ISe
     }
 }
 
+void PinTable::FillLayerContextMenu(CMenu &mainMenu, CMenu &layerSubMenu, ISelect *psel) 
+{
+   const LocalString ls16(IDS_ASSIGN_TO_LAYER2);
+   mainMenu.AppendMenu(MF_POPUP | MF_STRING, (size_t)layerSubMenu.GetHandle(), ls16.m_szbuffer);
+   std::vector<std::string> layerNames = g_pvp->GetLayersListDialog()->GetAllLayerNames();
+   int i = 0;
+   for (const auto &name : layerNames)
+   {
+      layerSubMenu.AppendMenu(MF_STRING, ID_ASSIGN_TO_LAYER1 + i, name.c_str());
+      i++;
+      if (i == NUM_ASSIGN_LAYERS)
+        break;
+   }
+}
+
 void PinTable::DoContextMenu(int x, int y, const int menuid, ISelect *psel)
 {
    POINT pt;
@@ -4642,8 +4657,11 @@ void PinTable::DoContextMenu(int x, int y, const int menuid, ISelect *psel)
       
       CMenu assignLayerMenu;
       CMenu colSubMenu;
+      CMenu layerSubMenu;
+
       assignLayerMenu.CreatePopupMenu();
       colSubMenu.CreatePopupMenu();
+      layerSubMenu.CreatePopupMenu();
 
       // TEXT
       const LocalString ls17(IDS_COPY_ELEMENT);
@@ -4668,9 +4686,11 @@ void PinTable::DoContextMenu(int x, int y, const int menuid, ISelect *psel)
       const LocalString ls3(IDS_SETASDEFAULT);
       newMenu.AppendMenu(MF_STRING, ID_SETASDEFAULT, ls3.m_szbuffer);
 
-      const LocalString lsLayer(IDS_ASSIGN_TO_LAYER);
-      newMenu.AppendMenu(MF_STRING, ID_ASSIGN_TO_LAYER, lsLayer.m_szbuffer);
+      newMenu.AppendMenu(MF_SEPARATOR, ~0u, "");
 
+      FillLayerContextMenu(newMenu, layerSubMenu, psel);
+      const LocalString lsLayer(IDS_ASSIGN_TO_CURRENT_LAYER);
+      newMenu.AppendMenu(MF_STRING, ID_ASSIGN_TO_CURRENT_LAYER, lsLayer.m_szbuffer);
       FillCollectionContextMenu(newMenu, colSubMenu, psel);
 
       const LocalString ls5(IDS_LOCK);
@@ -4775,6 +4795,12 @@ void PinTable::DoCommand(int icmd, int x, int y)
       return;
    }
 
+   if ((icmd >= ID_ASSIGN_TO_LAYER1) && (icmd <= ID_ASSIGN_TO_LAYER1+NUM_ASSIGN_LAYERS-1))
+   {
+      /*add to layer*/
+      m_vpinball->GetLayersListDialog()->AssignToLayerByIndex(icmd - ID_ASSIGN_TO_LAYER1);
+   }
+
    if ((icmd & 0x0000FFFF) == ID_SELECT_ELEMENT)
    {
       const int i = (icmd & 0x00FF0000) >> 16;
@@ -4796,7 +4822,7 @@ void PinTable::DoCommand(int icmd, int x, int y)
            }
            break;
        }
-       case ID_ASSIGN_TO_LAYER: m_vpinball->GetLayersListDialog()->OnAssignButton(); break;
+       case ID_ASSIGN_TO_CURRENT_LAYER: m_vpinball->GetLayersListDialog()->OnAssignButton(); break;
        case ID_EDIT_DRAWINGORDER_HIT: m_vpinball->ShowDrawingOrderDialog(false); break;
        case ID_EDIT_DRAWINGORDER_SELECT: m_vpinball->ShowDrawingOrderDialog(true); break;
        case ID_LOCK: LockElements(); break;

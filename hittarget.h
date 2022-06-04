@@ -6,7 +6,7 @@
 #define AFX_HITTARGET_H__A67DE998_7D97_4E03_BE91_55BFD3A48DB6__INCLUDED_
 
 #include "resource.h"
-#include <set>
+#include <inc/robin_hood.h>
 
 // Indices for RotAndTra:
 //     RotX = 0
@@ -163,9 +163,9 @@ public:
 
    virtual bool IsTransparent() const;
    virtual float GetDepth(const Vertex3Ds& viewDir) const;
-   virtual unsigned long long GetMaterialID() const { return m_ptable->GetMaterial(m_d.m_szMaterial)->hash(); }
-   virtual unsigned long long GetImageID() const { return (unsigned long long)(m_ptable->GetImage(m_d.m_szImage)); }
-   virtual ItemTypeEnum HitableGetItemType() const { return eItemHitTarget; }
+   virtual unsigned long long GetMaterialID() const override { return m_ptable->GetMaterial(m_d.m_szMaterial)->hash(); }
+   virtual unsigned long long GetImageID() const override { return (unsigned long long)(m_ptable->GetImage(m_d.m_szImage)); }
+   virtual ItemTypeEnum HitableGetItemType() const override { return eItemHitTarget; }
 
    virtual void SetDefaultPhysics(bool fromMouseClick);
    virtual void ExportMesh(ObjLoader& loader);
@@ -185,7 +185,7 @@ private:
    void RenderObject();
    void UpdateTarget();
    void SetupHitObject(vector<HitObject*> &pvho, HitObject * obj, const bool setHitObject);
-   void AddHitEdge(vector<HitObject*> &pvho, std::set< std::pair<unsigned, unsigned> >& addedEdges, const unsigned i, const unsigned j, const Vertex3Ds &vi, const Vertex3Ds &vj, const bool setHitObject = true);
+   void AddHitEdge(vector<HitObject*> &pvho, robin_hood::unordered_set< robin_hood::pair<unsigned, unsigned> >& addedEdges, const unsigned i, const unsigned j, const Vertex3Ds &vi, const Vertex3Ds &vj, const bool setHitObject = true);
 
    PinTable        *m_ptable;
 

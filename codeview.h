@@ -50,11 +50,11 @@ class DebuggerModule :
 
    void Init(CodeViewer * const pcv);
 
-   virtual IDispatch *GetDispatch() { return (IDispatch *)this; }
-   virtual const IDispatch *GetDispatch() const { return (const IDispatch *)this; }
+   virtual IDispatch *GetDispatch() override { return (IDispatch *)this; }
+   virtual const IDispatch *GetDispatch() const override { return (const IDispatch *)this; }
 
-   virtual ISelect *GetISelect() { return nullptr; }
-   virtual const ISelect *GetISelect() const { return nullptr; }
+   virtual ISelect *GetISelect() override { return nullptr; }
+   virtual const ISelect *GetISelect() const override { return nullptr; }
 
    STDMETHOD(get_Name)(BSTR *pVal);
 
@@ -457,16 +457,16 @@ public:
 
    // IScriptable
    STDMETHOD(get_Name)(BSTR *pVal);
-   virtual IDispatch *GetDispatch() { return (IDispatch *)this; }
-   virtual const IDispatch *GetDispatch() const { return (const IDispatch *)this; }
+   virtual IDispatch *GetDispatch() override { return (IDispatch *)this; }
+   virtual const IDispatch *GetDispatch() const override { return (const IDispatch *)this; }
 
-   virtual ISelect *GetISelect() { return nullptr; }
-   virtual const ISelect *GetISelect() const { return nullptr; }
+   virtual ISelect *GetISelect() override { return nullptr; }
+   virtual const ISelect *GetISelect() const override { return nullptr; }
 
    //ILoadable
    virtual HRESULT SaveData(IStream *pstm, HCRYPTHASH hcrypthash, const bool backupForPlay);
    virtual HRESULT LoadData(IStream *pstm, PinTable *ppt, int version, HCRYPTHASH hcrypthash, HCRYPTKEY hcryptkey);
-   virtual bool LoadToken(const int id, BiffReader * const pbr);
+   virtual bool LoadToken(const int id, BiffReader * const pbr) override;
 
    STDMETHOD(get_Count)(long __RPC_FAR *plCount);
    STDMETHOD(get_Item)(long index, IDispatch __RPC_FAR * __RPC_FAR *ppidisp);
