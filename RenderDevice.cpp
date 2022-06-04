@@ -2980,7 +2980,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
       || (Format == SRGB) || (Format == SRGB8) || (Format == RGB5) || (Format == RGB10) || (Format == RGB16F) || (Format == RGB32F)) ? GL_RGB : GL_RGBA;
    const bool col_is_linear = (Format == GREY) || (Format == RED16F) || (Format == GREY_ALPHA) || (Format == RG16F) || (Format == RGB5) || (Format == RGB) || (Format == RGB8) || 
       (Format == RGB10) || (Format == RGB16F) || (Format == RGB32F) || (Format == RGBA16F) || (Format == RGBA32F) || (Format == RGBA) || (Format == RGBA8) || (Format == RGBA10) || 
-      (Format == DXT5) || (Format == BC7);
+      (Format == DXT5) || (Format == BC6U) || (Format == BC6S) || (Format == BC7);
 
    // Create MSAA/Non-MSAA Renderbuffers
    if ((tex->usage == RENDERTARGET) || (tex->usage == RENDERTARGET_DEPTH) || (tex->usage == RENDERTARGET_MSAA) || (tex->usage == RENDERTARGET_MSAA_DEPTH)) {
@@ -3126,7 +3126,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
 
    colorFormat comp_format = Format;
    if (m_compress_textures && ((Width & 3) == 0) && ((Height & 3) == 0) && (Width > 256) && (Height > 256))
-      if (col_type == GL_FLOAT)
+      if (col_type == GL_FLOAT || col_type == GL_HALF_FLOAT)
          if (GLAD_GL_ARB_texture_compression_bptc)
             comp_format = colorFormat::BC6S; // We should use unsigned BC6 but this needs to know before hand if the texture is only positive
       else if (GLAD_GL_ARB_texture_compression_bptc)
