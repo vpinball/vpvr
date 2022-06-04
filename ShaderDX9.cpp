@@ -86,7 +86,7 @@ void Shader::SetTextureDepth(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *
    SetTexture(texelName, texel, false);
 }
 
-void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, const bool linearRGB, const bool clamptoedge)
+void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, const bool clamptoedge)
 {
    const unsigned int idx = texelName[strlen(texelName) - 1] - '0'; // current convention: SetTexture gets "TextureX", where X 0..4
    const bool cache = idx < TEXTURESET_STATE_CACHE_SIZE;
@@ -106,13 +106,13 @@ void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, c
    {
       if (cache)
          currentTexture[idx] = texel->m_pdsBuffer;
-      CHECKD3D(m_shader->SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel->m_pdsBuffer, linearRGB, clamptoedge)));
+      CHECKD3D(m_shader->SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel->m_pdsBuffer, clamptoedge)));
 
       m_renderDevice->m_curTextureChanges++;
    }
 }
 
-void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel, const bool linearRGB)
+void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel)
 {
    const unsigned int idx = texelName[strlen(texelName) - 1] - '0'; // current convention: SetTexture gets "TextureX", where X 0..4
    if (idx < TEXTURESET_STATE_CACHE_SIZE)

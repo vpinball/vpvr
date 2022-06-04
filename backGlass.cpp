@@ -162,7 +162,7 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice, Texture * backgroundFallbac
                   }
                   int size = decode_base64(attrib->value(), data, attrib->value_size(), data_len);
                   if ((size > 0) && (strcmp(imagesNode->name(), "BackglassImage") == 0)) {
-                     m_backgroundTexture = m_pd3dDevice->m_texMan.LoadTexture(BaseTexture::CreateFromData(data, size), true, true);
+                     m_backgroundTexture = m_pd3dDevice->m_texMan.LoadTexture(BaseTexture::CreateFromData(data, size), true);
                      m_backglass_width = m_backgroundTexture->width;
                      m_backglass_height = m_backgroundTexture->height;
                   }
@@ -212,7 +212,7 @@ void BackGlass::Render()
 {
    if (g_pplayer->m_capPUP && capturePUP())
    {
-      m_backgroundTexture = m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texPUP, true, true);
+      m_backgroundTexture = m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texPUP, true);
       m_backglass_width = g_pplayer->m_texPUP->width();
       m_backglass_height = g_pplayer->m_texPUP->height();
       float tableWidth, glassHeight;
@@ -239,9 +239,9 @@ void BackGlass::Render()
    }
 
    if (m_backgroundTexture)
-      m_pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, m_backgroundTexture, false);
+      m_pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, m_backgroundTexture);
    else if (m_backgroundFallback)
-      m_pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, m_backgroundFallback, false, true);
+      m_pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, m_backgroundFallback, true);
    else return;
 
    m_pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
@@ -286,7 +286,7 @@ void BackGlass::DMDdraw(const float DMDposx, const float DMDposy, const float DM
          m_pd3dDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD_ext);
 
       if (g_pplayer->m_texdmd != nullptr)
-         m_pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, false, true), false);
+         m_pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, true));
       //      m_pd3dPrimaryDevice->DMDShader->SetVector(SHADER_quadOffsetScale, 0.0f, -1.0f, backglass_scale, backglass_scale*(float)backglass_height / (float)backglass_width);
       bool zDisabled = false;
       m_pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);

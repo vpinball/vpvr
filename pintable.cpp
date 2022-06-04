@@ -853,9 +853,9 @@ STDMETHODIMP ScriptGlobalTable::put_DMDPixels(VARIANT pVal) // assumes VT_UI1 as
             delete g_pplayer->m_texdmd;
          }
 #ifdef DMD_UPSCALE
-         g_pplayer->m_texdmd = new BaseTexture(g_pplayer->m_dmd.x*3, g_pplayer->m_dmd.y*3, BaseTexture::RGBA, false);
+         g_pplayer->m_texdmd = new BaseTexture(g_pplayer->m_dmd.x*3, g_pplayer->m_dmd.y*3, BaseTexture::SRGBA);
 #else
-         g_pplayer->m_texdmd = new BaseTexture(g_pplayer->m_dmd.x, g_pplayer->m_dmd.y, BaseTexture::RGBA, false);
+         g_pplayer->m_texdmd = new BaseTexture(g_pplayer->m_dmd.x, g_pplayer->m_dmd.y, BaseTexture::SRGBA);
 #endif
       }
 
@@ -900,9 +900,9 @@ STDMETHODIMP ScriptGlobalTable::put_DMDColoredPixels(VARIANT pVal) //!! assumes 
             delete g_pplayer->m_texdmd;
          }
 #ifdef DMD_UPSCALE
-         g_pplayer->m_texdmd = new BaseTexture(g_pplayer->m_dmd.x*3, g_pplayer->m_dmd.y*3, BaseTexture::RGBA, false);
+         g_pplayer->m_texdmd = new BaseTexture(g_pplayer->m_dmd.x*3, g_pplayer->m_dmd.y*3, BaseTexture::SRGBA);
 #else
-         g_pplayer->m_texdmd = new BaseTexture(g_pplayer->m_dmd.x, g_pplayer->m_dmd.y, BaseTexture::RGBA, false);
+         g_pplayer->m_texdmd = new BaseTexture(g_pplayer->m_dmd.x, g_pplayer->m_dmd.y, BaseTexture::SRGBA);
 #endif
       }
 
@@ -6797,7 +6797,10 @@ bool PinTable::ExportImage(const Texture * const ppi, const char * const szfilen
       delete[] sinfo;
       CloseHandle(hFile);
 #else
-      FIBITMAP * dib = FreeImage_Allocate(ppi->m_width, ppi->m_height, 32);
+      if (ppi->m_pdsBuffer->m_format == BaseTexture::RGB_FP16 || ppi->m_pdsBuffer->m_format == BaseTexture::RGB_FP32)
+          return false; // Unsupported but this should not happens since all HDR image are imported and have a m_ppb field
+
+      FIBITMAP *dib = FreeImage_Allocate(ppi->m_width, ppi->m_height, ppi->m_pdsBuffer->has_alpha() ? 32 : 24);
       BYTE * const psrc = FreeImage_GetBits(dib);
 
       const int pitch = ppi->m_pdsBuffer->pitch();
@@ -6806,7 +6809,7 @@ bool PinTable::ExportImage(const Texture * const ppi, const char * const szfilen
       for (int i = 0; i < ppi->m_height; i++)
       {
          const BYTE * const pch = (spch -= pitch); // start on previous previous line
-         memcpy(psrc + i*(ppi->m_width*4), pch, ppi->m_width*4);
+         memcpy(psrc + i * pitch, pch, pitch);
       }
 
       if (!FreeImage_Save(FreeImage_GetFIFFromFilename(szfilename), dib, szfilename, PNG_Z_BEST_COMPRESSION | JPEG_QUALITYGOOD | BMP_SAVE_RLE))
@@ -6890,9 +6893,38 @@ int PinTable::AddListImage(HWND hwndListView, Texture * const ppi)
    ListView_SetItemText(hwndListView, index, 2, sizeString);
    ListView_SetItemText(hwndListView, index, 3, usedStringNo);
 
-   char * const sizeConv = StrFormatByteSize64(ppi->m_pdsBuffer->m_data.size(), sizeString, MAXTOKEN);
-
+   char *const sizeConv = StrFormatByteSize64(ppi->m_pdsBuffer->height() * ppi->m_pdsBuffer->pitch(), sizeString, MAXTOKEN);
    ListView_SetItemText(hwndListView, index, 4, sizeConv);
+
+   if (ppi->m_pdsBuffer == nullptr)
+   {
+      ListView_SetItemText(hwndListView, index, 5, "-");
+   }
+   else if (ppi->m_pdsBuffer->m_format == BaseTexture::SRGB)
+   {
+      ListView_SetItemText(hwndListView, index, 5, "sRGB");
+   }
+   else if (ppi->m_pdsBuffer->m_format == BaseTexture::SRGBA)
+   {
+      ListView_SetItemText(hwndListView, index, 5, "sRGBA");
+   }
+   else if (ppi->m_pdsBuffer->m_format == BaseTexture::RGB)
+   {
+      ListView_SetItemText(hwndListView, index, 5, "RGB");
+   }
+   else if (ppi->m_pdsBuffer->m_format == BaseTexture::RGBA)
+   {
+      ListView_SetItemText(hwndListView, index, 5, "RGBA");
+   }
+   else if (ppi->m_pdsBuffer->m_format == BaseTexture::RGB_FP16)
+   {
+      ListView_SetItemText(hwndListView, index, 5, "RGB 16F");
+   }
+   else if (ppi->m_pdsBuffer->m_format == BaseTexture::RGB_FP32)
+   {
+      ListView_SetItemText(hwndListView, index, 5, "RGB 32F");
+   }
+
    if ((_stricmp(m_image.c_str(), ppi->m_szName.c_str()) == 0)
     || (_stricmp(m_ballImage.c_str(), ppi->m_szName.c_str()) == 0) 
     || (_stricmp(m_ballImageDecal.c_str(), ppi->m_szName.c_str()) == 0)

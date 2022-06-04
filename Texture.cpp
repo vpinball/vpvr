@@ -3,6 +3,8 @@
 
 #include "freeimage.h"
 
+#include "math/math.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_JPEG // only use the SSE2-JPG path from stbi, as all others are not faster than FreeImage //!! can remove stbi again if at some point FreeImage incorporates libjpeg-turbo or something similar
 #define STBI_NO_STDIO
@@ -27,102 +29,185 @@ BaseTexture* BaseTexture::CreateFromFreeImage(FIBITMAP* dib)
    bool success = false;
    while(!success)
    {
-   // the mem is so low that the texture won't even be able to be rescaled -> return
-   if (maxTexDim <= 0)
-   {
-      FreeImage_Unload(dib);
-      return nullptr;
-   }
+      // the mem is so low that the texture won't even be able to be rescaled -> return
+      if (maxTexDim <= 0)
+      {
+         FreeImage_Unload(dib);
+         return nullptr;
+      }
 
-   if ((pictureHeight > maxTexDim) || (pictureWidth > maxTexDim))
-   {
-      int newWidth = max(min(pictureWidth, maxTexDim), MIN_TEXTURE_SIZE);
-      int newHeight = max(min(pictureHeight, maxTexDim), MIN_TEXTURE_SIZE);
-      /*
-       * The following code tries to maintain the aspect ratio while resizing.
-       */
-      if (pictureWidth - newWidth > pictureHeight - newHeight)
-          newHeight = min(pictureHeight * newWidth / pictureWidth, maxTexDim);
-      else
-          newWidth = min(pictureWidth * newHeight / pictureHeight, maxTexDim);
-      dibResized = FreeImage_Rescale(dib, newWidth, newHeight, FILTER_BILINEAR); //!! use a better filter in case scale ratio is pretty high?
-   }
-   else if (pictureWidth < MIN_TEXTURE_SIZE || pictureHeight < MIN_TEXTURE_SIZE)
-   {
-      // some drivers seem to choke on small (1x1) textures, so be safe by scaling them up
-      const int newWidth = max(pictureWidth, MIN_TEXTURE_SIZE);
-      const int newHeight = max(pictureHeight, MIN_TEXTURE_SIZE);
-      dibResized = FreeImage_Rescale(dib, newWidth, newHeight, FILTER_BOX);
-   }
-
-   // failed to get mem?
-   if (!dibResized)
-   {
-      maxTexDim /= 2;
-      while ((maxTexDim > pictureHeight) && (maxTexDim > pictureWidth))
-          maxTexDim /= 2;
-
-      continue;
-   }
-
-   const FREE_IMAGE_TYPE img_type = FreeImage_GetImageType(dibResized);
-   const bool rgbf = (img_type == FIT_FLOAT) || (img_type == FIT_DOUBLE) || (img_type == FIT_RGBF) || (img_type == FIT_RGBAF); //(FreeImage_GetBPP(dibResized) > 32);
-   const bool has_alpha = !!FreeImage_IsTransparent(dibResized);
-   // already in correct format?
-   if(((img_type == FIT_BITMAP) && (FreeImage_GetBPP(dibResized) == 32)) || (img_type == FIT_RGBF))
-      dibConv = dibResized;
-   else
-   {
-      dibConv = rgbf ? FreeImage_ConvertToRGBF(dibResized) : FreeImage_ConvertTo32Bits(dibResized);
-      if (dibResized != dib) // did we allocate a rescaled copy?
-         FreeImage_Unload(dibResized);
+      if ((pictureHeight > maxTexDim) || (pictureWidth > maxTexDim))
+      {
+         int newWidth = max(min(pictureWidth, maxTexDim), MIN_TEXTURE_SIZE);
+         int newHeight = max(min(pictureHeight, maxTexDim), MIN_TEXTURE_SIZE);
+         /*
+          * The following code tries to maintain the aspect ratio while resizing.
+          */
+         if (pictureWidth - newWidth > pictureHeight - newHeight)
+             newHeight = min(pictureHeight * newWidth / pictureWidth, maxTexDim);
+         else
+             newWidth = min(pictureWidth * newHeight / pictureHeight, maxTexDim);
+         dibResized = FreeImage_Rescale(dib, newWidth, newHeight, FILTER_BILINEAR); //!! use a better filter in case scale ratio is pretty high?
+      }
+      else if (pictureWidth < MIN_TEXTURE_SIZE || pictureHeight < MIN_TEXTURE_SIZE)
+      {
+         // some drivers seem to choke on small (1x1) textures, so be safe by scaling them up
+         const int newWidth = max(pictureWidth, MIN_TEXTURE_SIZE);
+         const int newHeight = max(pictureHeight, MIN_TEXTURE_SIZE);
+         dibResized = FreeImage_Rescale(dib, newWidth, newHeight, FILTER_BOX);
+      }
 
       // failed to get mem?
-      if (!dibConv)
+      if (!dibResized)
       {
          maxTexDim /= 2;
          while ((maxTexDim > pictureHeight) && (maxTexDim > pictureWidth))
-            maxTexDim /= 2;
+             maxTexDim /= 2;
 
          continue;
       }
-   }
 
-   try
-   {
-      tex = new BaseTexture(FreeImage_GetWidth(dibConv), FreeImage_GetHeight(dibConv), rgbf ? RGB_FP : RGBA, rgbf ? false : has_alpha);
+      const FREE_IMAGE_TYPE img_type = FreeImage_GetImageType(dibResized);
+      const bool rgbf = (img_type == FIT_FLOAT) || (img_type == FIT_DOUBLE) || (img_type == FIT_RGBF) || (img_type == FIT_RGBAF); //(FreeImage_GetBPP(dibResized) > 32);
+      const bool has_alpha = !rgbf && FreeImage_IsTransparent(dibResized);
+      // already in correct format?
+      if(((img_type == FIT_BITMAP) && (FreeImage_GetBPP(dibResized) == (has_alpha ? 32 : 24))) || (img_type == FIT_RGBF))
+         dibConv = dibResized;
+      else
+      {
+         dibConv = rgbf ? FreeImage_ConvertToRGBF(dibResized) : has_alpha ? FreeImage_ConvertTo32Bits(dibResized) : FreeImage_ConvertTo24Bits(dibResized);
+         if (dibResized != dib) // did we allocate a rescaled copy?
+            FreeImage_Unload(dibResized);
 
-      success = true;
-   }
-   // failed to get mem?
-   catch(...)
-   {
-      if (tex)
-         delete tex;
+         // failed to get mem?
+         if (!dibConv)
+         {
+            maxTexDim /= 2;
+            while ((maxTexDim > pictureHeight) && (maxTexDim > pictureWidth))
+               maxTexDim /= 2;
 
-      if (dibConv != dibResized) // did we allocate a copy from conversion?
-         FreeImage_Unload(dibConv);
-      else if (dibResized != dib) // did we allocate a rescaled copy?
-         FreeImage_Unload(dibResized);
+            continue;
+         }
+      }
 
-      maxTexDim /= 2;
-      while ((maxTexDim > pictureHeight) && (maxTexDim > pictureWidth))
+      Format format;
+      const unsigned int tex_w = FreeImage_GetWidth(dibConv);
+      const unsigned int tex_h = FreeImage_GetHeight(dibConv);
+      if (rgbf)
+      {
+          float maxval = 0.f;
+          BYTE* bits = (BYTE*)FreeImage_GetBits(dibConv);
+          int pitch = FreeImage_GetPitch(dibConv);
+          for (unsigned int y = 0; y < tex_h; y++) {
+              float* pixel = (float*)bits;
+              for (unsigned int x = 0; x < tex_w * 3; x++) {
+                  maxval = max(maxval, pixel[x]);
+              }
+              bits += pitch;
+          }
+          format = (maxval <= 65504.f) ? RGB_FP16 : RGB_FP32;
+      }
+      else
+          format = has_alpha ? SRGBA : SRGB;
+
+      try
+      {
+         tex = new BaseTexture(tex_w, tex_h, format);
+         success = true;
+      }
+      // failed to get mem?
+      catch(...)
+      {
+         if (tex)
+            delete tex;
+
+         if (dibConv != dibResized) // did we allocate a copy from conversion?
+            FreeImage_Unload(dibConv);
+         else if (dibResized != dib) // did we allocate a rescaled copy?
+            FreeImage_Unload(dibResized);
+
          maxTexDim /= 2;
-   }
+         while ((maxTexDim > pictureHeight) && (maxTexDim > pictureWidth))
+            maxTexDim /= 2;
+      }
    }
 
    tex->m_realWidth = pictureWidth;
    tex->m_realHeight = pictureHeight;
 
-   const BYTE* const __restrict psrc = FreeImage_GetBits(dibConv);
-   BYTE* const __restrict pdst = tex->data();
-   const int pitchdst = tex->pitch(), pitchsrc = FreeImage_GetPitch(dibConv);
-   const int height = tex->height();
-   const int pitch = MIN(pitchsrc,pitchdst);
-
-   // flip upside down //!! meh, could this be done somewhere else to avoid additional overhead?
-   for (int y = 0; y < height; ++y)
-      memcpy(pdst + (height - y - 1)*pitchdst, psrc + y*pitchsrc, pitch);
+   const int pitchdst = tex->pitch(), pitchsrc = FreeImage_GetPitch(dibConv), pitch = min(pitchsrc, pitchdst);
+   // Copy, applying channel and data format conversion as well as flipping upside down
+   // Note that free image use RGB for float image, and the FI_RGBA_xxx for others
+   if (tex->m_format == RGB_FP16)
+   {
+      const BYTE* __restrict bits = FreeImage_GetBits(dibConv);
+      unsigned pitch = FreeImage_GetPitch(dibConv);
+      unsigned short* const __restrict pdst = (unsigned short*)tex->data();
+      for (int y = 0; y < tex->m_height; ++y)
+      {
+         float* pixel = (float*)bits;
+         for (int x = 0; x < tex->m_width; ++x)
+         {
+            int o = 3 * (x + (tex->m_height - y - 1) * tex->m_width);
+            pdst[o + 0] = float2half(pixel[0]);
+            pdst[o + 1] = float2half(pixel[1]);
+            pdst[o + 2] = float2half(pixel[2]);
+            pixel += 3;
+         }
+         bits += pitch;
+      }
+   }
+   else if (tex->m_format == RGB_FP32)
+   {
+      const BYTE* __restrict bits = FreeImage_GetBits(dibConv);
+      unsigned pitch = FreeImage_GetPitch(dibConv);
+      float* const __restrict pdst = (float*)tex->data();
+      for (int y = 0; y < tex->m_height; ++y)
+      {
+         float* pixel = (float*)bits;
+         for (int x = 0; x < tex->m_width; ++x)
+         {
+            int o = 3 * (x + (tex->m_height - y - 1) * tex->m_width);
+            pdst[o + 0] = pixel[0];
+            pdst[o + 1] = pixel[1];
+            pdst[o + 2] = pixel[2];
+            pixel += 3;
+         }
+         bits += pitch;
+      }
+   }
+   else
+   {
+      const BYTE* __restrict bits = FreeImage_GetBits(dibConv);
+      unsigned pitch = FreeImage_GetPitch(dibConv);
+      BYTE* const __restrict pdst = tex->data();
+      bool has_alpha = (tex->m_format == RGBA) || (tex->m_format == SRGBA);
+      for (int y = 0; y < tex->m_height; ++y)
+      {
+         BYTE* pixel = (BYTE*)bits;
+         for (int x = 0; x < tex->m_width; ++x)
+         {
+            if (has_alpha)
+            { 
+               int o = 4 * (x + (tex->m_height - y - 1) * tex->m_width);
+               pdst[o + 0] = pixel[FI_RGBA_RED];
+               pdst[o + 1] = pixel[FI_RGBA_GREEN];
+               pdst[o + 2] = pixel[FI_RGBA_BLUE];
+               pdst[o + 3] = pixel[FI_RGBA_ALPHA];
+               pixel += 4;
+            }
+            else
+            {
+               int o = 3 * (x + (tex->m_height - y - 1) * tex->m_width);
+               pdst[o + 0] = pixel[FI_RGBA_RED];
+               pdst[o + 1] = pixel[FI_RGBA_GREEN];
+               pdst[o + 2] = pixel[FI_RGBA_BLUE];
+               pixel += 3;
+            }
+         }
+         bits += pitch;
+      }
+   }
 
    if (dibConv != dibResized) // did we allocate a copy from conversion?
       FreeImage_Unload(dibConv);
@@ -180,13 +265,7 @@ BaseTexture* BaseTexture::CreateFromData(const void *data, const size_t size)
       FreeImage_CloseMemory(dataHandle);
       if (!dib)
          return nullptr;
-
-      BaseTexture* const mySurface = BaseTexture::CreateFromFreeImage(dib);
-
-      //if (bitsPerPixel == 24)
-      //   mySurface->SetOpaque();
-
-      return mySurface;
+      return BaseTexture::CreateFromFreeImage(dib);
    }
    else
    {
@@ -216,11 +295,19 @@ static FIBITMAP* HBitmapToFreeImage(HBITMAP hbmp)
    return dib;
 }
 
-BaseTexture* BaseTexture::CreateFromHBitmap(const HBITMAP hbm)
+BaseTexture* BaseTexture::CreateFromHBitmap(const HBITMAP hbm, bool with_alpha)
 {
-   FIBITMAP* const dib = HBitmapToFreeImage(hbm);
+   FIBITMAP* dib = HBitmapToFreeImage(hbm);
    if (!dib)
       return nullptr;
+   if (with_alpha && FreeImage_GetBPP(dib) == 24)
+   {
+      FIBITMAP*  dibConv = FreeImage_ConvertTo32Bits(dib);
+      FreeImage_Unload(dib);
+      dib = dibConv;
+      if (!dib)
+         return nullptr;
+   }
    BaseTexture* const pdds = BaseTexture::CreateFromFreeImage(dib);
    return pdds;
 }
@@ -303,46 +390,39 @@ bool Texture::LoadFromMemory(BYTE * const data, const DWORD size)
    const int maxTexDim = LoadValueIntWithDefault("Player", "MaxTexDimension", 0); // default: Don't resize textures
    if(maxTexDim <= 0) // only use fast JPG path via stbi if no texture resize must be triggered
    {
-   int x, y, channels_in_file;
-   unsigned char * const __restrict stbi_data = stbi_load_from_memory(data, size, &x, &y, &channels_in_file, 4);
-   if (stbi_data) // will only enter this path for JPG files
-   {
-      BaseTexture* tex = nullptr;
-      try
+      int ok, x, y, channels_in_file;
+      ok = stbi_info_from_memory(data, size, &x, &y, &channels_in_file); // Request stbi to convert image to SRGB or SRGBA
+      unsigned char * const __restrict stbi_data = stbi_load_from_memory(data, size, &x, &y, &channels_in_file, (ok && channels_in_file <= 3) ? 3 : 4);
+      if (stbi_data) // will only enter this path for JPG files
       {
-         tex = new BaseTexture(x, y, BaseTexture::RGBA, channels_in_file == 4); //!! stbi at the moment does not support alpha channel JPGs, so channels_in_file will be 3 or 1
+         assert(channels_in_file == 3 || channels_in_file == 4);
+         BaseTexture* tex = nullptr;
+         try
+         {
+            tex = new BaseTexture(x, y, channels_in_file == 4 ? BaseTexture::SRGBA : BaseTexture::SRGB);
+         }
+         // failed to get mem?
+         catch(...)
+         {
+            if(tex)
+               delete tex;
+
+            goto freeimage_fallback;
+         }
+
+         BYTE* const __restrict pdst = (BYTE*)tex->data();
+         const BYTE* const __restrict psrc = (BYTE*)stbi_data;
+         memcpy(pdst, psrc, x * y * channels_in_file);
+         stbi_image_free(stbi_data);
+
+         tex->m_realWidth = x;
+         tex->m_realHeight = y;
+
+         m_pdsBuffer = tex;
+         SetSizeFrom(m_pdsBuffer);
+
+         return true;
       }
-      // failed to get mem?
-      catch(...)
-      {
-         if(tex)
-            delete tex;
-
-         goto freeimage_fallback;
-      }
-
-      // copy, but exchange R,B channels //!! meh, could this be done somewhere else to avoid additional overhead?
-      DWORD* const __restrict pdst = (DWORD*)tex->data();
-      const DWORD* const __restrict psrc = (DWORD*)stbi_data;
-      assert(tex->pitch() == x*4);
-      unsigned int o = 0;
-      for (int yo = 0; yo < y; ++yo)
-          for (int xo = 0; xo < x; ++xo,++o)
-          {
-              const DWORD src = psrc[o];
-              pdst[o] = (src & 0xFF00FF00u) | _rotl(src & 0x00FF00FFu, 16);
-          }
-
-      stbi_image_free(stbi_data);
-
-      tex->m_realWidth = x;
-      tex->m_realHeight = y;
-
-      m_pdsBuffer = tex;
-      SetSizeFrom(m_pdsBuffer);
-
-      return true;
-   }
    }
 
 freeimage_fallback:
@@ -377,47 +457,39 @@ bool Texture::LoadToken(const int id, BiffReader * const pbr)
       if (m_pdsBuffer)
          FreeStuff();
 
-      m_pdsBuffer = new BaseTexture(m_width, m_height, BaseTexture::RGBA, true);
-      SetSizeFrom(m_pdsBuffer);
-
-      // 32-bit picture
-      LZWReader lzwreader(pbr->m_pistream, (int *)m_pdsBuffer->data(), m_width * 4, m_height, m_pdsBuffer->pitch());
+      // BMP stored as a 32-bit SBGRA picture
+      BYTE* tmp = new BYTE[m_width * m_height * 4];
+      LZWReader lzwreader(pbr->m_pistream, (int *)tmp, m_width * 4, m_height, m_width * 4);
       lzwreader.Decoder();
 
-      const int lpitch = m_pdsBuffer->pitch();
-
-      // Assume our 32 bit color structure
-      // Find out if all alpha values are zero
-      BYTE * const __restrict pch = (BYTE *)m_pdsBuffer->data();
-      bool allAlphaZero = true;
-      for (int i = 0; i < m_height; i++)
+      // Find out if all alpha values are 0x00 or 0xFF
+      bool has_alpha = false;
+      for (int i = 0; i < m_height && !has_alpha; i++)
       {
-         unsigned int o = i*lpitch + 3;
-         for (int l = 0; l < m_width; l++,o+=4)
+         unsigned int o = i * m_width * 4 + 3;
+         for (int l = 0; l < m_width && !has_alpha; l++,o+=4)
          {
-            if (pch[o] != 0)
-            {
-               allAlphaZero = false;
-               goto endAlphaCheck;
-            }
+            if (tmp[o] != 0 && tmp[o] != 255)
+               has_alpha = true;
          }
       }
-   endAlphaCheck:
 
-      //!! if (allAlpha255)
-      // m_pdsBuffer->m_has_alpha = false;
+      m_pdsBuffer = new BaseTexture(m_width, m_height, has_alpha ? BaseTexture::SRGBA : BaseTexture::SRGB);
 
-      // all alpha values are 0: set them all to 0xff
-      if (allAlphaZero)
-      {
-         m_pdsBuffer->m_has_alpha = false;
-         for (int i = 0; i < m_height; i++)
+      // copy, converting from SBGR to SRGB, and eventually dropping the alpha channel
+      BYTE* const __restrict pdst = m_pdsBuffer->data();
+      unsigned int o1 = 0, o2 = 0, o2_step = has_alpha ? 4 : 3;
+      for (int yo = 0; yo < m_height; yo++)
+         for (int xo = 0; xo < m_width; xo++, o1+=4, o2+=o2_step)
          {
-            unsigned int o = i*lpitch + 3;
-            for (int l = 0; l < m_width; l++,o+=4)
-               pch[o] = 0xff;
+            pdst[o2    ] = tmp[o1 + 2];
+            pdst[o2 + 1] = tmp[o1 + 1];
+            pdst[o2 + 2] = tmp[o1    ];
+            if (has_alpha) pdst[o2 + 3] = tmp[o1 + 3];
          }
-      }
+      
+      delete[] tmp;
+      SetSizeFrom(m_pdsBuffer);
 
       break;
    }
@@ -486,22 +558,105 @@ void Texture::CreateGDIVersion()
    bmi.bmiHeader.biCompression = BI_RGB;
    bmi.bmiHeader.biSizeImage = 0;
 
-   BYTE* tmp;
-   const bool needs_conversion = m_pdsBuffer->Needs_ConvertAlpha_Tonemap();
-   if (needs_conversion)
+   BYTE* tmp = new BYTE[m_width * m_height * 4];
+   if (m_pdsBuffer->m_format == BaseTexture::RGB_FP32) // Tonemap for 8bpc-Display
    {
-      tmp = new BYTE[m_width*m_height * 4];
-      m_pdsBuffer->CopyTo_ConvertAlpha_Tonemap(tmp);
+      const float* const __restrict src = (float*)m_pdsBuffer->data();
+      unsigned int o = 0;
+      for (int j = 0; j < m_pdsBuffer->height(); ++j)
+         for (int i = 0; i < m_pdsBuffer->width(); ++i, ++o)
+         {
+            const float r = src[o * 3 + 0];
+            const float g = src[o * 3 + 1];
+            const float b = src[o * 3 + 2];
+            const float l = r * 0.176204f + g * 0.812985f + b * 0.0108109f;
+            const float n = (l * (float)(255. * 0.25) + 255.0f) / (l + 1.0f); // simple tonemap and scale by 255, overflow is handled by clamp below
+            tmp[o * 4 + 0] = (int)clamp(b * n, 0.f, 255.f);
+            tmp[o * 4 + 1] = (int)clamp(g * n, 0.f, 255.f);
+            tmp[o * 4 + 2] = (int)clamp(r * n, 0.f, 255.f);
+            tmp[o * 4 + 3] = 255;
+         }
+   }
+   else if (m_pdsBuffer->m_format == BaseTexture::RGB_FP16) // Tonemap for 8bpc-Display
+   {
+      const unsigned short* const __restrict src = (unsigned short*)m_pdsBuffer->data();
+      unsigned int o = 0;
+      for (int j = 0; j < m_pdsBuffer->height(); ++j)
+         for (int i = 0; i < m_pdsBuffer->width(); ++i, ++o)
+         {
+            const float r = half2float(src[o * 3 + 0]);
+            const float g = half2float(src[o * 3 + 1]);
+            const float b = half2float(src[o * 3 + 2]);
+            const float l = r * 0.176204f + g * 0.812985f + b * 0.0108109f;
+            const float n = (l * (float)(255. * 0.25) + 255.0f) / (l + 1.0f); // simple tonemap and scale by 255, overflow is handled by clamp below
+            tmp[o * 4 + 0] = (int)clamp(b * n, 0.f, 255.f);
+            tmp[o * 4 + 1] = (int)clamp(g * n, 0.f, 255.f);
+            tmp[o * 4 + 2] = (int)clamp(r * n, 0.f, 255.f);
+            tmp[o * 4 + 3] = 255;
+         }
+   }
+   else if (m_pdsBuffer->m_format == BaseTexture::RGB || m_pdsBuffer->m_format == BaseTexture::SRGB)
+   {
+      BYTE* const __restrict src = m_pdsBuffer->data();
+      unsigned int o = 0;
+      for (int j = 0; j < m_pdsBuffer->height(); ++j)
+         for (int i = 0; i < m_pdsBuffer->width(); ++i, ++o)
+         {
+            tmp[o * 4 + 0] = src[o * 3 + 2]; // B
+            tmp[o * 4 + 1] = src[o * 3 + 1]; // G
+            tmp[o * 4 + 2] = src[o * 3 + 0]; // R
+            tmp[o * 4 + 3] = 255; // A
+         }
+   }
+   else if (m_pdsBuffer->m_format == BaseTexture::RGBA || m_pdsBuffer->m_format == BaseTexture::SRGBA)
+   {
+      const BYTE* const __restrict psrc = m_pdsBuffer->data();
+      unsigned int o = 0;
+      bool isWinXP = GetWinVersion() < 2600;
+      for (int j = 0; j < m_pdsBuffer->height(); ++j)
+      {
+         for (int i = 0; i < m_pdsBuffer->width(); ++i, ++o)
+         {
+            int r = psrc[o * 4 + 0];
+            int g = psrc[o * 4 + 1];
+            int b = psrc[o * 4 + 2];
+            int alpha = psrc[o * 4 + 3];
+            if (!isWinXP) // For everything newer than Windows XP: use the alpha in the bitmap, thus RGB needs to be premultiplied with alpha, due to how AlphaBlend() works
+            {
+               if (alpha == 0) // adds a checkerboard where completely transparent (for the image manager display)
+               {
+                  r = g = b = ((((i >> 4) ^ (j >> 4)) & 1) << 7) + 127;
+               }
+               else if (alpha != 255) // premultiply alpha for win32 AlphaBlend()
+               {
+                  r = r * alpha >> 8;
+                  g = g * alpha >> 8;
+                  b = b * alpha >> 8;
+               }
+            }
+            else
+            {
+               if (alpha != 255)
+               {
+                  const unsigned int c = (((((i >> 4) ^ (j >> 4)) & 1) << 7) + 127) * (255 - alpha);
+                  r = (r * alpha + c) >> 8;
+                  g = (g * alpha + c) >> 8;
+                  b = (b * alpha + c) >> 8;
+               }
+            }
+            tmp[o * 4 + 0] = b;
+            tmp[o * 4 + 1] = g;
+            tmp[o * 4 + 2] = r;
+            tmp[o * 4 + 3] = alpha;
+         }
+      }
    }
 
    SetStretchBltMode(hdcNew, COLORONCOLOR);
    StretchDIBits(hdcNew,
       0, 0, m_width, m_height,
       0, 0, m_width, m_height,
-      needs_conversion ? tmp : m_pdsBuffer->data(), &bmi, DIB_RGB_COLORS, SRCCOPY);
-
-   if (needs_conversion)
-      delete[] tmp;
+      tmp, &bmi, DIB_RGB_COLORS, SRCCOPY);
 
    SelectObject(hdcNew, hbmOld);
    DeleteDC(hdcNew);
@@ -534,9 +689,9 @@ void Texture::CreateFromResource(const int id)
    m_pdsBuffer = CreateFromHBitmap(hbm);
 }
 
-BaseTexture* Texture::CreateFromHBitmap(const HBITMAP hbm)
+BaseTexture* Texture::CreateFromHBitmap(const HBITMAP hbm, bool with_alpha)
 {
-   BaseTexture* const pdds = BaseTexture::CreateFromHBitmap(hbm);
+   BaseTexture* const pdds = BaseTexture::CreateFromHBitmap(hbm, with_alpha);
    SetSizeFrom(pdds);
 
    return pdds;

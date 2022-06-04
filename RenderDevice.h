@@ -312,11 +312,11 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    bool DepthBufferReadBackAvailable() const;
 
 #ifndef ENABLE_SDL
-   D3DTexture* CreateSystemTexture(BaseTexture* const surf, const bool linearRGB);
-   D3DTexture* CreateSystemTexture(const int texwidth, const int texheight, const D3DFORMAT texformat, const void* data, const int pitch, const bool linearRGB);
+   D3DTexture* CreateSystemTexture(BaseTexture* const surf);
+   D3DTexture* CreateSystemTexture(const int texwidth, const int texheight, const D3DFORMAT texformat, const void* data, const int pitch);
 #endif
-   D3DTexture* UploadTexture(BaseTexture* const surf, int* const pTexWidth = nullptr, int* const pTexHeight = nullptr, const bool linearRGB = true, const bool clamptoedge = false);
-   void UpdateTexture(D3DTexture* const tex, BaseTexture* const surf, const bool linearRGB);
+   D3DTexture* UploadTexture(BaseTexture* const surf, int* const pTexWidth = nullptr, int* const pTexHeight = nullptr, const bool clamptoedge = false);
+   void UpdateTexture(D3DTexture* const tex, BaseTexture* const surf);
 
    void SetRenderState(const RenderStates p1, DWORD p2);
    bool SetRenderStateCache(const RenderStates p1, DWORD p2);

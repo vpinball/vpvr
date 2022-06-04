@@ -294,7 +294,7 @@ void Textbox::RenderDynamic()
          g_pplayer->m_pin3d.EnableAlphaTestReference(0x80);
          g_pplayer->m_pin3d.EnableAlphaBlend(false);
 
-         g_pplayer->Spritedraw(x, y, width, height, 0xFFFFFFFF, pd3dDevice->m_texMan.LoadTexture(m_texture, false), m_d.m_intensity_scale);
+         g_pplayer->Spritedraw(x, y, width, height, 0xFFFFFFFF, pd3dDevice->m_texMan.LoadTexture(m_texture), m_d.m_intensity_scale);
 
          //pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE); //!! not necessary anymore
          pd3dDevice->SetRenderState(RenderDevice::ALPHATESTENABLE, RenderDevice::RS_FALSE);
@@ -389,7 +389,7 @@ void Textbox::PreRenderText()
    GdiFlush();     // make sure everything is drawn
 
    if (!m_texture)
-      m_texture = new BaseTexture(width, height, BaseTexture::RGBA, m_d.m_transparent);
+      m_texture = new BaseTexture(width, height, BaseTexture::SRGBA); // This could be optimized to an RGB texture if transparent is not set
 
    // Set alpha for pixels that match transparent color (if transparent enabled), otherwise set to opaque
    D3DCOLOR* __restrict bitsd = (D3DCOLOR*)bits;
