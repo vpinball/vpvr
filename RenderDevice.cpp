@@ -1151,33 +1151,6 @@ bool RenderDevice::LoadShaders()
    return shaderCompilationOkay;
 }
 
-RenderDevice::~RenderDevice()
-{
-   if (m_quadVertexBuffer)
-      m_quadVertexBuffer->release();
-   m_quadVertexBuffer = nullptr;
-
-   FreeShader();
-
-#ifdef ENABLE_VR
-   if (m_pHMD)
-   {
-      turnVROff();
-      SaveValueFloat("Player", "VRSlope", m_slope);
-      SaveValueFloat("Player", "VROrientation", m_orientation);
-      SaveValueFloat("Player", "VRTableX", m_tablex);
-      SaveValueFloat("Player", "VRTableY", m_tabley);
-      SaveValueFloat("Player", "VRTableZ", m_tablez);
-      SaveValueFloat("Player", "VRRoomOrientation", m_roomOrientation);
-      SaveValueFloat("Player", "VRRoomX", m_roomx);
-      SaveValueFloat("Player", "VRRoomY", m_roomy);
-   }
-#endif
-
-   SDL_GL_DeleteContext(m_sdl_context);
-   SDL_DestroyWindow(m_sdl_playfieldHwnd);
-}
-
 #else
 
 RenderDevice::RenderDevice(const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice)
@@ -1626,98 +1599,120 @@ bool RenderDevice::LoadShaders()
 
    return true;
 }
+#endif
 
 RenderDevice::~RenderDevice()
 {
-   if (m_quadVertexBuffer)
-      m_quadVertexBuffer->release();
-   m_quadVertexBuffer = nullptr;
+    if (m_quadVertexBuffer)
+        m_quadVertexBuffer->release();
+    m_quadVertexBuffer = nullptr;
 
-   //m_quadDynVertexBuffer->release();
+    //m_quadDynVertexBuffer->release();
 
+#ifndef ENABLE_SDL
 #ifndef DISABLE_FORCE_NVIDIA_OPTIMUS
-   if (srcr_cache != nullptr)
-      CHECKNVAPI(NvAPI_D3D9_UnregisterResource(srcr_cache)); //!! meh
-   srcr_cache = nullptr;
-   if (srct_cache != nullptr)
-      CHECKNVAPI(NvAPI_D3D9_UnregisterResource(srct_cache)); //!! meh
-   srct_cache = nullptr;
-   if (dest_cache != nullptr)
-      CHECKNVAPI(NvAPI_D3D9_UnregisterResource(dest_cache)); //!! meh
-   dest_cache = nullptr;
-   if (NVAPIinit) //!! meh
-      CHECKNVAPI(NvAPI_Unload());
-   NVAPIinit = false;
+    if (srcr_cache != nullptr)
+        CHECKNVAPI(NvAPI_D3D9_UnregisterResource(srcr_cache)); //!! meh
+    srcr_cache = nullptr;
+    if (srct_cache != nullptr)
+        CHECKNVAPI(NvAPI_D3D9_UnregisterResource(srct_cache)); //!! meh
+    srct_cache = nullptr;
+    if (dest_cache != nullptr)
+        CHECKNVAPI(NvAPI_D3D9_UnregisterResource(dest_cache)); //!! meh
+    dest_cache = nullptr;
+    if (NVAPIinit) //!! meh
+        CHECKNVAPI(NvAPI_Unload());
+    NVAPIinit = false;
 #endif
 
-   //
-   m_pD3DDevice->SetStreamSource(0, nullptr, 0, 0);
-   m_pD3DDevice->SetIndices(nullptr);
-   m_pD3DDevice->SetVertexShader(nullptr);
-   m_pD3DDevice->SetPixelShader(nullptr);
-   m_pD3DDevice->SetFVF(D3DFVF_XYZ);
-   //m_pD3DDevice->SetVertexDeclaration(nullptr); // invalid call
-   //m_pD3DDevice->SetRenderTarget(0, nullptr); // invalid call
-   m_pD3DDevice->SetDepthStencilSurface(nullptr);
+    //
+    m_pD3DDevice->SetStreamSource(0, nullptr, 0, 0);
+    m_pD3DDevice->SetIndices(nullptr);
+    m_pD3DDevice->SetVertexShader(nullptr);
+    m_pD3DDevice->SetPixelShader(nullptr);
+    m_pD3DDevice->SetFVF(D3DFVF_XYZ);
+    //m_pD3DDevice->SetVertexDeclaration(nullptr); // invalid call
+    //m_pD3DDevice->SetRenderTarget(0, nullptr); // invalid call
+    m_pD3DDevice->SetDepthStencilSurface(nullptr);
+#endif
 
-   FreeShader();
+    FreeShader();
 
-   SAFE_RELEASE(m_pVertexTexelDeclaration);
-   SAFE_RELEASE(m_pVertexNormalTexelDeclaration);
-   //SAFE_RELEASE(m_pVertexNormalTexelTexelDeclaration);
-   SAFE_RELEASE(m_pVertexTrafoTexelDeclaration);
+    SAFE_RELEASE(m_pVertexTexelDeclaration);
+    SAFE_RELEASE(m_pVertexNormalTexelDeclaration);
+    //SAFE_RELEASE(m_pVertexNormalTexelTexelDeclaration);
+    SAFE_RELEASE(m_pVertexTrafoTexelDeclaration);
 
-   m_texMan.UnloadAll();
-   SAFE_RELEASE(m_pOffscreenBackBufferTexture);
-   SAFE_RELEASE(m_pOffscreenBackBufferStereoTexture);
-   SAFE_RELEASE(m_pOffscreenBackBufferPPTexture1);
-   SAFE_RELEASE(m_pReflectionBufferTexture);
+    m_texMan.UnloadAll();
+    SAFE_RELEASE_RENDER_TARGET(m_pOffscreenBackBufferTexture);
+    SAFE_RELEASE_RENDER_TARGET(m_pOffscreenBackBufferStereoTexture);
+    SAFE_RELEASE_RENDER_TARGET(m_pOffscreenBackBufferPPTexture1);
+    SAFE_RELEASE_RENDER_TARGET(m_pReflectionBufferTexture);
 
-   if (g_pplayer)
-   {
-      const bool drawBallReflection = ((g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
-      if ((g_pplayer->m_ptable->m_reflectElementsOnPlayfield /*&& g_pplayer->m_pf_refl*/) || drawBallReflection)
-         SAFE_RELEASE(m_pMirrorTmpBufferTexture);
-   }
-   SAFE_RELEASE(m_pBloomBufferTexture);
-   SAFE_RELEASE(m_pBloomTmpBufferTexture);
-   SAFE_RELEASE(m_pBackBuffer);
+    if (g_pplayer)
+    {
+        const bool drawBallReflection = ((g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
+        if ((g_pplayer->m_ptable->m_reflectElementsOnPlayfield /*&& g_pplayer->m_pf_refl*/) || drawBallReflection)
+            SAFE_RELEASE_RENDER_TARGET(m_pMirrorTmpBufferTexture);
+    }
+    SAFE_RELEASE_RENDER_TARGET(m_pBloomBufferTexture);
+    SAFE_RELEASE_RENDER_TARGET(m_pBloomTmpBufferTexture);
+    SAFE_RELEASE_RENDER_TARGET(m_pBackBuffer);
 
-   SAFE_RELEASE(m_SMAAareaTexture);
-   SAFE_RELEASE(m_SMAAsearchTexture);
+    SAFE_RELEASE_TEXTURE(m_SMAAareaTexture);
+    SAFE_RELEASE_TEXTURE(m_SMAAsearchTexture);
 
+#ifndef ENABLE_SDL
 #ifdef _DEBUG
-   CheckForD3DLeak(m_pD3DDevice);
+    CheckForD3DLeak(m_pD3DDevice);
 #endif
 
 #ifdef USE_D3D9EX
-   //!! if (m_pD3DDeviceEx == m_pD3DDevice) m_pD3DDevice = nullptr; //!! needed for Caligula if m_adapter > 0 ?? weird!! BUT MESSES UP FULLSCREEN EXIT (=hangs)
-   SAFE_RELEASE_NO_RCC(m_pD3DDeviceEx);
+    //!! if (m_pD3DDeviceEx == m_pD3DDevice) m_pD3DDevice = nullptr; //!! needed for Caligula if m_adapter > 0 ?? weird!! BUT MESSES UP FULLSCREEN EXIT (=hangs)
+    SAFE_RELEASE_NO_RCC(m_pD3DDeviceEx);
 #endif
 #ifdef DEBUG_REFCOUNT_TRIGGER
-   SAFE_RELEASE(m_pD3DDevice);
+    SAFE_RELEASE(m_pD3DDevice);
 #else
-   FORCE_RELEASE(m_pD3DDevice); //!! why is this necessary for some setups? is the refcount still off for some settings?
+    FORCE_RELEASE(m_pD3DDevice); //!! why is this necessary for some setups? is the refcount still off for some settings?
 #endif
 #ifdef USE_D3D9EX
-   SAFE_RELEASE_NO_RCC(m_pD3DEx);
+    SAFE_RELEASE_NO_RCC(m_pD3DEx);
 #endif
 #ifdef DEBUG_REFCOUNT_TRIGGER
-   SAFE_RELEASE(m_pD3D);
+    SAFE_RELEASE(m_pD3D);
 #else
-   FORCE_RELEASE(m_pD3D); //!! why is this necessary for some setups? is the refcount still off for some settings?
+    FORCE_RELEASE(m_pD3D); //!! why is this necessary for some setups? is the refcount still off for some settings?
 #endif
 
    /*
     * D3D sets the FPU to single precision/round to nearest int mode when it's initialized,
     * but doesn't bother to reset the FPU when it's destroyed. We reset it manually here.
     */
-   _fpreset();
+    _fpreset();
 
-   if (m_dwm_was_enabled)
-      mDwmEnableComposition(DWM_EC_ENABLECOMPOSITION);
-}
+    if (m_dwm_was_enabled)
+        mDwmEnableComposition(DWM_EC_ENABLECOMPOSITION);
+#else
+#ifdef ENABLE_VR
+    if (m_pHMD)
+    {
+        turnVROff();
+        SaveValueFloat("Player", "VRSlope", m_slope);
+        SaveValueFloat("Player", "VROrientation", m_orientation);
+        SaveValueFloat("Player", "VRTableX", m_tablex);
+        SaveValueFloat("Player", "VRTableY", m_tabley);
+        SaveValueFloat("Player", "VRTableZ", m_tablez);
+        SaveValueFloat("Player", "VRRoomOrientation", m_roomOrientation);
+        SaveValueFloat("Player", "VRRoomX", m_roomx);
+        SaveValueFloat("Player", "VRRoomY", m_roomy);
+    }
 #endif
+
+    SDL_GL_DeleteContext(m_sdl_context);
+    SDL_DestroyWindow(m_sdl_playfieldHwnd);
+#endif
+}
 
 bool RenderDevice::DepthBufferReadBackAvailable() const
 {
