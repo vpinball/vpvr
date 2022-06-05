@@ -1,13 +1,17 @@
 SDL2 / VR Changelog
 ------------------------
 
-- Updated to VPX 10.7.1 commit 297dce2d17d3d5bef242b0ca9aae8e852ea45018 (02/27/22)
+- Updated to VPX 10.7.1 commit b50a24cb3455df7a8e6d0be006007056c0011999 (05/06/22)
+
+- Dispose Texture/RenderTarget OpenGL resources
+
+- Fix normal map color space
 
 - Fix a regression (e.g. too dark flashers) by respecting the proper disable lighting values for primitives and disable the weird disable lighting code for ramps
 
 - Make new disable lighting for balls work
 
-- Enable texture compression (BC7 or DXT5 as fallback) support (enabled in the video preferences, same as VPX)
+- Enable texture compression (BC6/BC7 or DXT5 as fallback) support (enabled in the video preferences, same as VPX)
 
 - Make F11 statistics work
 
@@ -205,6 +209,10 @@ FIXES:
 - fix animation/fading of lights when not visible/when only visible through reflections 
 
 - fix crashes in Direct Sound when using certain WAVE_FORMAT_IEEE_FLOAT .wav samples
+
+- fix missing image(s) due to main memory limit when using multithreaded loading
+
+- fix bumper texture memory leak
 
 - fix showing property dialog if multiple elements were selected
 
