@@ -1016,11 +1016,11 @@ void Player::InitShader()
 {
    UpdateBasicShaderMatrix();
 
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture1, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, false);
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture2, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_pin3d.m_envRadianceTexture, false));
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture1, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, false, false);
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture2, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_pin3d.m_envRadianceTexture, false, false));
 #ifdef SEPARATE_CLASSICLIGHTSHADER
    m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_Texture1, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, false);
-   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_Texture2, m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_envRadianceTexture), false);
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_Texture2, m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_envRadianceTexture, false, false), false);
 #endif
    const vec4 st(m_ptable->m_envEmissionScale*m_globalEmissionScale, m_pin3d.m_envTexture ? (float)m_pin3d.m_envTexture->m_height/*+m_pin3d.m_envTexture->m_width)*0.5f*/ : (float)m_pin3d.m_builtinEnvTexture.m_height/*+m_pin3d.m_builtinEnvTexture.m_width)*0.5f*/, 0.f, 0.f);
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetVector(SHADER_fenvEmissionScale_TexWidth, &st);
@@ -1095,9 +1095,9 @@ void Player::InitBallShader()
 
    Texture * const playfield = m_ptable->GetImage(m_ptable->m_image);
    if (playfield)
-      m_pin3d.m_pd3dPrimaryDevice->ballShader->SetTexture(SHADER_Texture1, playfield, false);
+      m_pin3d.m_pd3dPrimaryDevice->ballShader->SetTexture(SHADER_Texture1, playfield, false, false);
 
-   m_pin3d.m_pd3dPrimaryDevice->ballShader->SetTexture(SHADER_Texture2, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_pin3d.m_envRadianceTexture, false));
+   m_pin3d.m_pd3dPrimaryDevice->ballShader->SetTexture(SHADER_Texture2, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_pin3d.m_envRadianceTexture, false, false));
 
    assert(m_ballIndexBuffer == nullptr);
    const bool lowDetailBall = (m_ptable->GetDetailLevel() < 10);
@@ -3157,7 +3157,7 @@ void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwi
 #endif
       m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetVector(SHADER_vRes_Alpha_time, &r);
 
-      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_texdmd), false);
+      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_texdmd), false, false);
 
       m_pin3d.m_pd3dPrimaryDevice->DMDShader->Begin(0);
       m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)DMDVerts);
@@ -3175,7 +3175,7 @@ void Player::Spritedraw(const float posx, const float posy, const float width, c
    pd3dDevice->DMDShader->SetVector(SHADER_vColor_Intensity, &c);
 
    if (tex)
-      pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, tex, false);
+      pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, tex, false, false);
 
    pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScale, posx, posy, width, height);
 
@@ -3527,7 +3527,7 @@ void Player::SSRefl()
    m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture2());
 
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples));
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, &m_pin3d.m_aoDitherTexture, true); //!!!
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, &m_pin3d.m_aoDitherTexture, true, false); //!!!
 
    const vec4 w_h_height((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheight()), 1.0f/*radical_inverse(m_overall_frames%2048)*/, 1.0f);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &w_h_height);
@@ -4336,7 +4336,7 @@ void Player::PostProcess(const bool ambientOcclusion)
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples));
 
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, &m_pin3d.m_aoDitherTexture, true);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, &m_pin3d.m_aoDitherTexture, true, false);
 #ifndef ENABLE_SDL
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture3, m_pin3d.m_pdds3DZBuffer, true);
 #endif
@@ -4384,11 +4384,7 @@ void Player::PostProcess(const bool ambientOcclusion)
    if (pin)
    {
        // Texture used for LUT color grading must be treated as if they were linear
-	   if (pin->m_pdsBuffer->m_format == BaseTexture::SRGB)
-		   pin->m_pdsBuffer->m_format = BaseTexture::RGB;
-       else if (pin->m_pdsBuffer->m_format == BaseTexture::SRGBA)
-           pin->m_pdsBuffer->m_format = BaseTexture::RGBA;
-       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, pin, false);
+       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, pin, false, true);
    }
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_color_grade, pin != nullptr);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_do_dither, !m_ditherOff);
@@ -5250,12 +5246,12 @@ void Player::DrawBalls()
       m_pin3d.m_pd3dPrimaryDevice->ballShader->SetMatrix(SHADER_orientation, &m);
 
       if (!pball->m_pinballEnv)
-         m_pin3d.m_pd3dPrimaryDevice->ballShader->SetTexture(SHADER_Texture0, &m_pin3d.m_pinballEnvTexture, false);
+         m_pin3d.m_pd3dPrimaryDevice->ballShader->SetTexture(SHADER_Texture0, &m_pin3d.m_pinballEnvTexture, false, false);
       else
-         m_pin3d.m_pd3dPrimaryDevice->ballShader->SetTexture(SHADER_Texture0, pball->m_pinballEnv, false);
+         m_pin3d.m_pd3dPrimaryDevice->ballShader->SetTexture(SHADER_Texture0, pball->m_pinballEnv, false, false);
 
       if (pball->m_pinballDecal)
-         m_pin3d.m_pd3dPrimaryDevice->ballShader->SetTexture(SHADER_Texture3, pball->m_pinballDecal, false);
+         m_pin3d.m_pd3dPrimaryDevice->ballShader->SetTexture(SHADER_Texture3, pball->m_pinballDecal, false, false);
 
       const bool lowDetailBall = m_ptable->GetDetailLevel() < 10;
 

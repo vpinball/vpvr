@@ -315,8 +315,8 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    D3DTexture* CreateSystemTexture(BaseTexture* const surf);
    D3DTexture* CreateSystemTexture(const int texwidth, const int texheight, const D3DFORMAT texformat, const void* data, const int pitch);
 #endif
-   D3DTexture* UploadTexture(BaseTexture* const surf, int* const pTexWidth = nullptr, int* const pTexHeight = nullptr, const bool clamptoedge = false);
-   void UpdateTexture(D3DTexture* const tex, BaseTexture* const surf);
+   D3DTexture* UploadTexture(BaseTexture* const surf, int* const pTexWidth, int* const pTexHeight, const bool clamptoedge, const bool force_linear_rgb);
+   void UpdateTexture(D3DTexture* const tex, BaseTexture* const surf, const bool force_linear_rgb);
 
    void SetRenderState(const RenderStates p1, DWORD p2);
    bool SetRenderStateCache(const RenderStates p1, DWORD p2);
