@@ -1036,12 +1036,12 @@ void Shader::SetTextureDepth(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *
    }
 }
 
-void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, const bool clamptoedge)
+void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, const bool clamptoedge, const bool force_linear_rgb)
 {
    if (!texel || !texel->m_pdsBuffer)
       SetTextureNull(texelName);
    else
-      SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel->m_pdsBuffer, clamptoedge));
+      SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel->m_pdsBuffer, clamptoedge, force_linear_rgb));
 }
 
 void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel)

@@ -19,7 +19,7 @@ public:
       UnloadAll();
    }
 
-   D3DTexture* LoadTexture(BaseTexture* memtex, const bool clamptoedge = false);
+   D3DTexture* LoadTexture(BaseTexture* memtex, const bool clamptoedge, const bool force_linear_rgb);
    void SetDirty(BaseTexture* memtex);
    void UnloadTexture(BaseTexture* memtex);
    void UnloadAll();
