@@ -3526,7 +3526,7 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
                   cloadeditems++;
                }
             }
-            // due to multithreaded loading and pre-allocation, check if some images could not be loaded, and perform a retry since more memory is availabler now
+            // due to multithreaded loading and pre-allocation, check if some images could not be loaded, and perform a retry since more memory is available now
             for (size_t i = 0; i < m_vimage.size(); ++i)
                 if (!m_vimage[i] || m_vimage[i]->m_pdsBuffer == nullptr)
                 {

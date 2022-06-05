@@ -7,7 +7,7 @@
 
 D3DTexture* TextureManager::LoadTexture(BaseTexture* memtex, const bool clamptoedge, const bool force_linear_rgb)
 {
-    const Iter it = m_map.find(memtex);
+   const Iter it = m_map.find(memtex);
    if (it == m_map.end())
    {
       TexInfo texinfo;
@@ -41,7 +41,7 @@ void TextureManager::UnloadTexture(BaseTexture* memtex)
    const Iter it = m_map.find(memtex);
    if (it != m_map.end())
    {
-       SAFE_RELEASE_TEXTURE(it->second.d3dtex);
+      SAFE_RELEASE_TEXTURE(it->second.d3dtex);
       m_map.erase(it);
    }
 }
@@ -49,7 +49,7 @@ void TextureManager::UnloadTexture(BaseTexture* memtex)
 void TextureManager::UnloadAll()
 {
    for (Iter it = m_map.begin(); it != m_map.end(); ++it)
-       SAFE_RELEASE_TEXTURE(it->second.d3dtex);
+      SAFE_RELEASE_TEXTURE(it->second.d3dtex);
 
    m_map.clear();
 }
