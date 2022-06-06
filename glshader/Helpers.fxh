@@ -7,6 +7,31 @@ float sqr( float v)
 	return v*v;
 }
 
+float2 sqr(const float2 v)
+{
+    return v*v;
+}
+
+float3 sqr(const float3 v)
+{
+    return v*v;
+}
+
+float3 mul_w1(const float3 v, const float4x4 m)
+{
+    return v.x*m[0].xyz + (v.y*m[1].xyz + (v.z*m[2].xyz + m[3].xyz));
+}
+
+float3 mul_w1(const float3 v, const float4x3 m)
+{
+    return v.x*m[0] + (v.y*m[1] + (v.z*m[2] + m[3]));
+}
+
+float3 mul_w0(const float3 v, const float4x3 m)
+{
+    return v.x*m[0] + v.y*m[1] + v.z*m[2];
+}
+
 float acos_approx( float v)
 {
 	float x = abs(v);
@@ -40,10 +65,14 @@ float atan2_approx( float y,  float x)
 
 float atan2_approx_div2PI( float y,  float x)
 {
+	//return atan2(y,x)*(0.5/PI);
+
 	float abs_y = abs(y);
 	float abs_x = abs(x);
+
 	if(abs_x < 0.0000001 && abs_y < 0.0000001)
 		return 0.;//(PI/4.)*(0.5/PI);
+
 	float r = (abs_x - abs_y) / (abs_x + abs_y);
 	float angle = ((x < 0.) ? (3./8.) : (1./8.))
                 + (0.211868/*C3*//(2.*PI) * r * r - 0.987305/*C1*//(2.*PI)) * ((x < 0.) ? -r : r);

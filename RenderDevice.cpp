@@ -986,22 +986,22 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    constexpr colorFormat renderBufferFormat = RGBA16F;
 
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
-   m_pOffscreenBackBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, nullptr, m_stereo3D);
+   m_pOffscreenBackBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, nullptr, m_stereo3D, TextureFilter::TEXTURE_MODE_NONE, false, false);
 
    // If we are doing MSAA we need a texture with the same dimensions as the Back Buffer to resolve the end result to, can also use it for Post-AA
    if (g_pplayer->m_MSAASamples > 1 || m_FXAA > 0)
-      m_pOffscreenNonMSAABlitTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, nullptr, m_stereo3D);
+      m_pOffscreenNonMSAABlitTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, nullptr, m_stereo3D, TextureFilter::TEXTURE_MODE_NONE, false, false);
    else
       m_pOffscreenNonMSAABlitTexture = nullptr;
 
    if ((g_pplayer != nullptr) && (g_pplayer->m_ptable->m_reflectElementsOnPlayfield || (g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1)))
-      m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, nullptr, m_stereo3D);
+      m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, nullptr, m_stereo3D, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
 
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
-   m_pBloomBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, nullptr, m_stereo3D);
+   m_pBloomBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, nullptr, m_stereo3D, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
 
    // temporary buffer for gaussian blur
-   m_pBloomTmpBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, nullptr, m_stereo3D);
+   m_pBloomTmpBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, nullptr, m_stereo3D, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
 
    // alloc temporary buffer for postprocessing, we don't use this anymore
    //if ((m_FXAA > 0) || (m_stereo3D > 0))
@@ -1028,13 +1028,13 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
          renderBufferFormatVR = RGBA8;
          break;
       }
-      m_pOffscreenVRLeft = CreateTexture(m_Buf_width / 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, nullptr, 0);
-      m_pOffscreenVRRight = CreateTexture(m_Buf_width / 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, nullptr, 0);
+      m_pOffscreenVRLeft = CreateTexture(m_Buf_width / 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, nullptr, 0, TextureFilter::TEXTURE_MODE_NONE, false, false);
+      m_pOffscreenVRRight = CreateTexture(m_Buf_width / 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, nullptr, 0, TextureFilter::TEXTURE_MODE_NONE, false, false);
    }
 
    // Non-MSAA Buffers for post-processing
-   m_pOffscreenBackBufferPPTexture1 = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, nullptr, 0);
-   m_pOffscreenBackBufferPPTexture2 = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, nullptr, 0);
+   m_pOffscreenBackBufferPPTexture1 = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, nullptr, 0, TextureFilter::TEXTURE_MODE_NONE, false, false);
+   m_pOffscreenBackBufferPPTexture2 = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, nullptr, 0, TextureFilter::TEXTURE_MODE_NONE, false, false);
 
    // Use postprocessing buffer instead of separate reflectionbuffer
    /*if (m_ssRefl)
@@ -1965,7 +1965,7 @@ void RenderDevice::CopyDepth(RenderTarget* dest, RenderTarget* src) {
    //Not required for GL.
 }
 
-D3DTexture* RenderDevice::UploadTexture(BaseTexture* surf, int *pTexWidth, int *pTexHeight, const bool clamptoedge, const bool force_linear_rgb)
+D3DTexture* RenderDevice::UploadTexture(BaseTexture* surf, int *pTexWidth, int *pTexHeight, const TextureFilter filter, const bool clampU, const bool clampV, const bool force_linear_rgb)
 {
    colorFormat format;
    if (surf->m_format == BaseTexture::SRGBA)
@@ -1985,7 +1985,7 @@ D3DTexture* RenderDevice::UploadTexture(BaseTexture* surf, int *pTexWidth, int *
            format = colorFormat::RGB;
        else if (format == colorFormat::SRGBA)
            format = colorFormat::RGBA;
-   D3DTexture *tex = CreateTexture(surf->width(), surf->height(), 0, STATIC, format, surf->data(), 0, clamptoedge);
+   D3DTexture *tex = CreateTexture(surf->width(), surf->height(), 0, STATIC, format, surf->data(), 0, filter, clampU, clampV);
    if (pTexWidth) *pTexWidth = surf->width();
    if (pTexHeight) *pTexHeight = surf->height();
    return tex;
@@ -1993,8 +1993,8 @@ D3DTexture* RenderDevice::UploadTexture(BaseTexture* surf, int *pTexWidth, int *
 
 void RenderDevice::UploadAndSetSMAATextures()
 {
-   m_SMAAsearchTexture = CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, STATIC, GREY, (void*)&searchTexBytes[0], 0);
-   m_SMAAareaTexture = CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, STATIC, GREY_ALPHA, (void*)&areaTexBytes[0], 0);
+   m_SMAAsearchTexture = CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, STATIC, GREY, (void*)&searchTexBytes[0], 0, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
+   m_SMAAareaTexture = CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, STATIC, GREY_ALPHA, (void*)&areaTexBytes[0], 0, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
 
    FBShader->SetTexture(SHADER_areaTex2D, m_SMAAareaTexture);
    FBShader->SetTexture(SHADER_searchTex2D, m_SMAAsearchTexture);
@@ -2972,7 +2972,7 @@ void RenderDevice::GetViewport(ViewPort* p1)
 #endif
 }
 
-D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, void* data, int stereo, bool clamptoedge) {
+D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, void* data, int stereo, const TextureFilter filter, const bool clampU, const bool clampV) {
 #ifdef ENABLE_SDL
    D3DTexture* tex = new D3DTexture();
    tex->usage = Usage;
@@ -3020,7 +3020,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
          glBindTexture(GL_TEXTURE_2D, tex->texture);
          glTexImage2D(GL_TEXTURE_2D, 0, Format, Width, Height, 0, GL_RGBA, col_type, nullptr);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter == TextureFilter::TEXTURE_MODE_NONE ? GL_NEAREST : GL_LINEAR);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
          glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->texture, 0);
 
@@ -3090,19 +3090,12 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    glGenTextures(1, &tex->texture);
    glBindTexture(GL_TEXTURE_2D, tex->texture);
 
-   if (clamptoedge)
-   {
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-   }
-   else
-   {
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-   }
+   
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clampU ? GL_CLAMP_TO_EDGE : GL_REPEAT);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clampV ? GL_CLAMP_TO_EDGE : GL_REPEAT);
 
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // Use mipmap filtering GL_LINEAR_MIPMAP_LINEAR
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // MAG Filter does not support mipmaps
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter == TextureFilter::TEXTURE_MODE_NONE ? GL_NEAREST : GL_LINEAR_MIPMAP_LINEAR); // Use mipmap filtering GL_LINEAR_MIPMAP_LINEAR
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter == TextureFilter::TEXTURE_MODE_NONE ? GL_NEAREST : GL_LINEAR); // MAG Filter does not support mipmaps
 
    if (Format == GREY) {//Hack so that GL_RED behaves as GL_GREY
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);

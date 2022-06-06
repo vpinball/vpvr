@@ -13,6 +13,8 @@
 #define tex2Dlod(sampler, v) textureLod(sampler, (v).xy,(v).w)
 #define tex2D(sampler, v) texture(sampler, v)
 
+#define const
+
 #define float4 vec4
 #define float3 vec3
 #define float2 vec2

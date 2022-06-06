@@ -21,13 +21,16 @@ Shader::Shader(RenderDevice *renderDevice) : currentMaterial(-FLT_MAX, -FLT_MAX,
    m_renderDevice = renderDevice;
 #ifndef ENABLE_SDL
    m_shader = 0;
-#elif defined(TWEAK_GL_SHADER)
+#else
+   m_nullTexture = new Texture(new BaseTexture(1, 1, BaseTexture::RGB));
+#if defined(TWEAK_GL_SHADER)
    for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i) {
       uniformFloat[i] = 0.0f;
       uniformFloatP[i] = { 0, nullptr };
       uniformInt[i] = 0;
       uniformTex[i] = 0;
    }
+#endif
 #endif
    for (unsigned int i = 0; i < TEXTURESET_STATE_CACHE_SIZE; ++i)
       currentTexture[i] = 0;
