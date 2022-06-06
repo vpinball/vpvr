@@ -5,6 +5,7 @@
 #include "Texture.h"
 #include "stdafx.h"
 #include "typedefs3D.h"
+#include "pin3d.h"
 
 class RenderDevice;
 
@@ -19,7 +20,7 @@ public:
       UnloadAll();
    }
 
-   D3DTexture* LoadTexture(BaseTexture* memtex, const bool clamptoedge, const bool force_linear_rgb);
+   D3DTexture* LoadTexture(BaseTexture* memtex, const TextureFilter filter, const bool clampU, const bool clampV, const bool force_linear_rgb);
    void SetDirty(BaseTexture* memtex);
    void UnloadTexture(BaseTexture* memtex);
    void UnloadAll();

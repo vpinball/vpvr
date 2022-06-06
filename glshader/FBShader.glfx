@@ -269,11 +269,12 @@ in vec2 tex0;
 
 void main()
 {
-
+   //vec3 result = FBToneMap(textureLod(Texture0, tex0+w_h_height.xy, 0).xyz);
    vec3 result = FBToneMap(textureLod(Texture0, tex0, 0).xyz);
    if (do_bloom)
       result += textureLod(Texture1, tex0, 0).xyz; //!! offset?
-   color = vec4(/*FBDither(*/FBColorGrade(FBGamma(clamp(result, 0.0, 1.0))),/*tex0*w_h_height.zw),*/ 1.0);
+   // color = vec4(/*FBDither(*/FBColorGrade(FBGamma(clamp(result, 0.0, 1.0))),/*tex0*w_h_height.zw),*/ 1.0);
+   color = vec4(FBColorGrade(FBGamma(clamp(FBDither(result, tex0), 0.0, 1.0))), 1.0);
 }
 
 ////ps_main_fb_tonemap_no_filterRG

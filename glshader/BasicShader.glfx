@@ -97,106 +97,6 @@ vec3 normal_map(vec3 N, vec3 V, vec2 uv)
       return normalize((tn * TBN_trafo(N, V, uv)).xyz);  // !! The order of tn, and TBN_trainfo matters here?  Ship on FishTales gets blown out if you reverse them 
 }
 
-float GeometricOpacity(float NdotV, float alpha/*, float blending, float t*/)
-{
-    // blending = cClearcoat_EdgeAlpha.w, no need to pass uniform
-    // t = Roughness_WrapL_Edge_Thickness.w, no need to pass uniform
-    //old version without thickness
-    //return mix(alpha, 1.0, blending*pow(1.0-abs(NdotV),5)); // fresnel for falloff towards silhouette
-
-    //new version (COD/IW, t = thickness), t = 0.05 roughly corresponds to above version
-    float x = abs(NdotV); // flip normal in case of wrong orientation (backside lighting)
-
-    float g = cClearcoat_EdgeAlpha.w - cClearcoat_EdgeAlpha.w * ( x / (x * (1.0 - Roughness_WrapL_Edge_Thickness.w ) + Roughness_WrapL_Edge_Thickness.w) ); // Smith-Schlick G
-    return mix(alpha, 1.0, g); // fake opacity lerp to ‘shadowed’
-}
-
-vec3 lightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 specular, float edge, bool fix_normal_orientation, bool is_metal) // input vectors (N,V) are normalized for BRDF evals
-{
-   // normalize BRDF layer inputs //!! use diffuse = (1-glossy)*diffuse instead?
-   float diffuseMax = max(diffuse.x,max(diffuse.y,diffuse.z));
-   float glossyMax = max(glossy.x,max(glossy.y,glossy.z));
-   float specularMax = max(specular.x,max(specular.y,specular.z)); //!! not needed as 2nd layer only so far
-   float sum = diffuseMax + glossyMax /*+ specularMax*/;
-   if(sum > 1.0 && fDisableLighting_top_below.x < 1.0)
-   {
-      float invsum = 1.0/sum;
-      diffuse  *= invsum;
-      glossy   *= invsum;
-      //specular *= invsum;
-   }
-
-   float NdotV = dot(N,V);
-   if(fix_normal_orientation && (NdotV < 0.0)) // flip normal in case of wrong orientation? (backside lighting), currently disabled if normal mapping active, for that case we should actually clamp the normal with respect to V instead (see f.e. 'view-dependant shading normal adaptation')
-   {
-      N = -N;
-      NdotV = -NdotV;
-   }
-
-   vec3 color = vec3(0.0, 0.0, 0.0);
-
-   // 1st Layer
-    if((!is_metal && (diffuseMax > 0.0)) || (glossyMax > 0.0))
-    {
-        for(int i = 0; i < lightSources; i++)//Rendering issues when doing this in an loop. Weird.
-            color += DoPointLight(pos, N, V, diffuse, glossy, edge, i, is_metal); // no clearcoat needed as only pointlights so far
-    }
-
-   if(!is_metal && (diffuseMax > 0.0))
-      color += DoEnvmapDiffuse(normalize((vec4(N,0.0) * matView).xyz), diffuse); // trafo back to world for lookup into world space envmap // actually: mul(vec4(N,0.0), matViewInverseInverseTranspose), but optimized to save one matrix
-
-   if((glossyMax > 0.0) || (specularMax > 0.0))
-   {  
-	   vec3 R = (2.0*NdotV)*N - V; // reflect(-V,n);
-	   R = normalize((vec4(R,0.0) * matView).xyz); // trafo back to world for lookup into world space envmap // actually: mul(vec4(R,0.0), matViewInverseInverseTranspose), but optimized to save one matrix
-
-	   vec2 Ruv = vec2( // remap to 2D envmap coords
-			0.5 + atan2_approx_div2PI(R.y, R.x),
-			acos_approx_divPI(R.z));
-          
-#if !enable_VR
-	vec4 colorMip = texture(Texture1, Ruv);
-#else
-      // Abuse mipmaps to reduce shimmering in VR
-      vec4 colorMip;
-      if (is_metal)
-      {
-         // Use low-res mipmap for metallic objects to reduce shimmering in VR
-         // Closer objects we query the lod and add 2 to make it a bit blurrier but always at least 6.0
-         // Far away objects we get smallest lod and divide by 1.6 which is a good trade-off between "metallic enough" and "low shimmer"
-         float mipLevel = min(textureQueryLod(Texture1, Ruv).y+2.0, textureQueryLevels(Texture1)/1.6);
-         if (mipLevel < 6.0)
-            mipLevel = 6.0;
-         colorMip = textureLod(Texture1, Ruv, mipLevel);
-      }
-      else
-      {
-         // For non-metallic objects we use different values
-         //colorMip = texture(Texture1, Ruv);
-         float mipLevel = min(textureQueryLod(Texture1, Ruv).y, textureQueryLevels(Texture1)/2);
-         if (mipLevel < 4.0)
-            mipLevel = 4.0;
-         colorMip = textureLod(Texture1, Ruv, mipLevel);
-      }
-#endif
-         
-      vec3 envTex = colorMip.rgb;
-
-      // EnvmapGlossy
-      if(glossyMax > 0.0)
-        color += glossy * envTex * fenvEmissionScale_TexWidth.x;
-
-      // Envmap2ndLayer
-      if(fix_normal_orientation && specularMax > 0.0)
-      {
-        vec3 w = FresnelSchlick(specular, NdotV, Roughness_WrapL_Edge_Thickness.z);
-        color = mix(color, envTex * fenvEmissionScale_TexWidth.x, w);
-      }
-   }
-
-   return /*Gamma(ToneMap(*/color/*))*/;
-}
-
 //------------------------------------
 //
 // Standard Materials
@@ -409,16 +309,17 @@ void main() {
 
    //color = vec4((N+1.0)*0.5,1.0); return; // visualize normals
 
-   color.xyz = lightLoop(worldPos, N, V, diffuse, glossy, specular, edge, true, is_metal); //!! have a "real" view vector instead that mustn't assume that viewer is directly in front of monitor? (e.g. cab setup) -> viewer is always relative to playfield and/or user definable
-   color.a = clamp(cBase_Alpha.a, 0.0, 1.0);
+   color = vec4(
+      lightLoop(worldPos, N, V, diffuse, glossy, specular, edge, true, is_metal), //!! have a "real" view vector instead that mustn't assume that viewer is directly in front of monitor? (e.g. cab setup) -> viewer is always relative to playfield and/or user definable
+      cBase_Alpha.a);
 
    if (cBase_Alpha.a < 1.0) {
-      color.a = GeometricOpacity(max(dot(N,V), 0.0), color.a);
+      color.a = GeometricOpacity(dot(N,V), color.a, cClearcoat_EdgeAlpha.w, Roughness_WrapL_Edge_Thickness.w);
 
       if (fDisableLighting_top_below.y < 1.0)
           // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
           color.xyz += mix(sqrt(diffuse)*texture(Texture3, vec2(0.5*tex03.xy)+0.5, 0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
-      }
+   }
 
    color *= staticColor_Alpha;
 }
@@ -454,11 +355,11 @@ void main() {
    
    //color = vec4((N+1.0)*0.5,1.0); return; // visualize normals
 
-   color.xyz = lightLoop(worldPos, N, V, diffuse, glossy, specular, edge, !doNormalMapping, is_metal);
+   color.rgb = lightLoop(worldPos, N, V, diffuse, glossy, specular, edge, !doNormalMapping, is_metal);
    color.a = clamp(pixel.a * cBase_Alpha.a, 0.0, 1.0);
 
    if (cBase_Alpha.a < 1.0 && color.a < 1.0) {
-      color.a = GeometricOpacity(max(dot(N,V), 0.0), color.a);
+      color.a = GeometricOpacity(dot(N,V), color.a, cClearcoat_EdgeAlpha.w, Roughness_WrapL_Edge_Thickness.w);
 
       if (fDisableLighting_top_below.y < 1.0)
       {

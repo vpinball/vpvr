@@ -105,6 +105,7 @@ Shader::~Shader()
    //slotTextureList.clear();
    if (m_currentShader == this)
       m_currentShader = nullptr;
+   delete m_nullTexture;
 }
 
 #if DEBUG_LEVEL_LOG > 0
@@ -802,7 +803,12 @@ void Shader::Begin(const unsigned int pass)
 #ifdef TWEAK_GL_SHADER
          auto valueFP = uniformFloatP[uniformName].data;
          if (valueFP)
-            glUniform4f(currentUniform.location, valueFP[0], valueFP[1], valueFP[2], valueFP[3]);
+         {
+             if (uniformFloatP[uniformName].len > 4)
+                 glUniform4fv(currentUniform.location, uniformFloatP[uniformName].len / 4, uniformFloatP[uniformName].data);
+             else
+                 glUniform4f(currentUniform.location, valueFP[0], valueFP[1], valueFP[2], valueFP[3]);
+         }
 #else
          auto valueFP = uniformFloatP.find(uniformName);
          if ((valueFP != uniformFloatP.end()) && valueFP->second.data)
@@ -928,7 +934,7 @@ void Shader::Begin(const unsigned int pass)
          else {
             if (!noTextureMSAA) {
                constexpr unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
-               noTextureMSAA = m_renderDevice->CreateTexture(2, 2, 0, RENDERTARGET_MSAA, RGBA, (void*)&data, 0);
+               noTextureMSAA = m_renderDevice->CreateTexture(2, 2, 0, RENDERTARGET_MSAA, RGBA, (void*)&data, 0, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
             }
             TextureID = noTextureMSAA->texture;
          }
@@ -957,7 +963,7 @@ void Shader::Begin(const unsigned int pass)
          else {
             if (!noTexture) {
                constexpr unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
-               noTexture = m_renderDevice->CreateTexture(2, 2, 0, STATIC, RGBA, (void*)&data, 0);
+               noTexture = m_renderDevice->CreateTexture(2, 2, 0, STATIC, RGBA, (void*)&data, 0, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
             }
             TextureID = noTexture->texture;
          }
@@ -1036,12 +1042,12 @@ void Shader::SetTextureDepth(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *
    }
 }
 
-void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, const bool clamptoedge, const bool force_linear_rgb)
+void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, const TextureFilter filter, const bool clampU, const bool clampV, const bool force_linear_rgb)
 {
    if (!texel || !texel->m_pdsBuffer)
       SetTextureNull(texelName);
    else
-      SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel->m_pdsBuffer, clamptoedge, force_linear_rgb));
+      SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel->m_pdsBuffer, filter, clampU, clampV, force_linear_rgb));
 }
 
 void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel)
@@ -1072,6 +1078,7 @@ void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel
 void Shader::SetTextureNull(const SHADER_UNIFORM_HANDLE texelName)
 {
    //Using an unset texture leads to undefined behavior, so keeping the texture is absolutely fine.
+    SetTexture(texelName, m_nullTexture, TextureFilter::TEXTURE_MODE_NONE, false, false, false);
 }
 
 void Shader::SetTechnique(const SHADER_TECHNIQUE_HANDLE _technique)
