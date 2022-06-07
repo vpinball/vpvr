@@ -5,9 +5,9 @@
 #include "Texture.h"
 #include "stdafx.h"
 #include "typedefs3D.h"
-#include "pin3d.h"
 
 class RenderDevice;
+enum TextureFilter;
 
 class TextureManager
 {

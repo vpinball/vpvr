@@ -2,7 +2,9 @@
 #include "IndexBuffer.h"
 #include "RenderDevice.h"
 
-//Disabled since it still has some bugs
+extern unsigned m_curLockCalls, m_frameLockCalls;
+
+//!! Disabled since it still has some bugs
 #define COMBINE_BUFFERS 0
 
 IndexBuffer* IndexBuffer::m_curIndexBuffer = nullptr; // is also reset before each Player start
@@ -113,6 +115,7 @@ IndexBuffer* IndexBuffer::CreateAndFillIndexBuffer(const std::vector<unsigned in
 
 void IndexBuffer::lock(const unsigned int offsetToLock, const unsigned int sizeToLock, void **dataBuffer, const DWORD flags)
 {
+   m_curLockCalls++;
 #ifdef ENABLE_SDL
    if (sizeToLock == 0)
       this->sizeToLock = size;

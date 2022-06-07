@@ -280,6 +280,9 @@ void ReportError(const char *errorText, const HRESULT hr, const char *file, cons
 #endif
 }
 
+unsigned m_curLockCalls, m_frameLockCalls;
+unsigned int RenderDevice::Perf_GetNumLockCalls() const { return m_frameLockCalls; }
+
 #if 0//def ENABLE_SDL //not used anymore
 void checkGLErrors(const char *file, const int line) {
    GLenum err;
@@ -295,7 +298,7 @@ void checkGLErrors(const char *file, const int line) {
 #endif
 
 // Callback function for printing debug statements
-#ifdef _DEBUG
+#if defined(ENABLE_SDL) && defined(_DEBUG)
 void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id,
                                      GLenum severity, GLsizei length,
                                      const GLchar *msg, const void *data)
@@ -1234,7 +1237,7 @@ RenderDevice::RenderDevice(const int width, const int height, const bool fullscr
    m_curTechniqueChanges = m_frameTechniqueChanges = 0;
    m_curTextureUpdates = m_frameTextureUpdates = 0;
 
-   m_curLockCalls = m_frameLockCalls = 0; //!! meh
+    m_curLockCalls = m_frameLockCalls = 0; //!! meh
 }
 
 void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
@@ -1884,8 +1887,8 @@ void RenderDevice::Flip(const bool vsync)
    m_frameTextureUpdates = m_curTextureUpdates;
    m_curTextureUpdates = 0;
 
-   //m_frameLockCalls = m_curLockCalls;
-   //m_curLockCalls = 0;
+   m_frameLockCalls = m_curLockCalls;
+   m_curLockCalls = 0;
 }
 
 RenderTarget* RenderDevice::DuplicateRenderTarget(RenderTarget* src)
