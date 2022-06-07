@@ -38,7 +38,7 @@ public:
 
    static BaseTexture *CreateFromHBitmap(const HBITMAP hbm, bool with_alpha = true);
    static BaseTexture *CreateFromFile(const string& filename);
-   static BaseTexture *CreateFromFreeImage(FIBITMAP* dib); // also free's/delete's the dib inside!
+   static BaseTexture *CreateFromFreeImage(FIBITMAP *dib, bool resize_on_low_mem); // also free's/delete's the dib inside!
    static BaseTexture *CreateFromData(const void *data, const size_t size);
 };
 
@@ -53,7 +53,7 @@ public:
    virtual bool LoadToken(const int id, BiffReader * const pbr);
 
    HRESULT SaveToStream(IStream *pstream, const PinTable *pt);
-   HRESULT LoadFromStream(IStream *pstream, int version, PinTable *pt);
+   HRESULT LoadFromStream(IStream *pstream, int version, PinTable *pt, bool resize_on_low_mem);
 
    void FreeStuff();
 
@@ -80,6 +80,7 @@ public:
    void ReleaseTextureDC(HDC dc);
 
 private:
+   bool m_resize_on_low_mem;
    bool LoadFromMemory(BYTE * const data, const DWORD size);
 
 public:
