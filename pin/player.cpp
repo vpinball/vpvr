@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#define USE_IMGUI
+//#define USE_IMGUI
 #ifdef USE_IMGUI
  #include "imgui/imgui.h"
  #ifdef ENABLE_SDL
@@ -379,7 +379,7 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
 Player::~Player()
 {
 #ifdef ENABLE_SDL
-   //TODO Render font
+   //!! TODO Render font
 #else
     if (m_fontSprite)
     {
@@ -1123,7 +1123,7 @@ void Player::InitBallShader()
 void Player::CreateDebugFont()
 {
 #ifdef ENABLE_SDL
-   //TODO Init Font for debugging
+   //!! TODO Init Font for debugging
 #else
     int fontSize = 20;
     if (m_width > 1024 && m_width <= 1920)
@@ -1159,7 +1159,7 @@ void Player::CreateDebugFont()
 void Player::SetDebugOutputPosition(const float x, const float y)
 {
 #ifdef ENABLE_SDL
-    //TODO Implement Font for debugging
+    //!! TODO Implement Font for debugging
 #else
     const D3DXVECTOR2 spritePos(x,y);
     const D3DXVECTOR2 spriteCenter(DBG_SPRITE_SIZE/2, DBG_SPRITE_SIZE/2);
@@ -1174,7 +1174,7 @@ void Player::SetDebugOutputPosition(const float x, const float y)
 void Player::DebugPrint(int x, int y, LPCSTR text, bool center /*= false*/)
 {
 #ifdef ENABLE_SDL
-   //TODO Implement Font for debugging
+   //!! TODO Implement Font for debugging
 #else
    if(m_pFont)
    {
@@ -1743,7 +1743,7 @@ void Player::RenderDynamicMirror(const bool onlyBalls)
    m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 
    if (!onlyBalls)
-      UpdateBasicShaderMatrix(); // Camera seems skewed when rendering the flipped elements in VR, something with the matrix? Looks fine in 2D.
+      UpdateBasicShaderMatrix(); //!! Camera seems skewed when rendering the flipped elements in VR, something with the matrix? Looks fine in 2D.
 
    UpdateBallShaderMatrix();
 

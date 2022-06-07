@@ -113,7 +113,7 @@ inline void ref_count_trigger(const ULONG r, const char *file, const int line) /
 }
 
 #ifdef ENABLE_SDL
-//TODO
+//!! TODO
 #define SAFE_RELEASE(p)			{}
 #define SAFE_RELEASE_NO_SET(p)	{}
 #define SAFE_RELEASE_NO_CHECK_NO_SET(p)	{}

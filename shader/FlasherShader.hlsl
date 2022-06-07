@@ -1,13 +1,13 @@
 #include "Helpers.fxh"
 
-#define Filter_None	    0.
-#define Filter_Additive	1.
-#define Filter_Overlay	2.
-#define Filter_Multiply	3.
+#define Filter_None     0.
+#define Filter_Additive 1.
+#define Filter_Overlay  2.
+#define Filter_Multiply 3.
 #define Filter_Screen   4.
 
 // transformation matrices
-float4x4 matWorldViewProj : WORLDVIEWPROJ;
+const float4x4 matWorldViewProj : WORLDVIEWPROJ;
 
 float4 staticColor_Alpha;
 float4 alphaTestValueAB_filterMode_addBlend;      // last one is bool
@@ -44,8 +44,8 @@ struct VS_OUTPUT_2D
    float2 tex0 : TEXCOORD0;
 };
 
-VS_OUTPUT_2D vs_simple_main (in float4 vPosition : POSITION0,
-                             in float2 tc        : TEXCOORD0)
+VS_OUTPUT_2D vs_simple_main (const in float4 vPosition : POSITION0,
+                             const in float2 tc        : TEXCOORD0)
 {
    VS_OUTPUT_2D Out;
 
@@ -55,7 +55,7 @@ VS_OUTPUT_2D vs_simple_main (in float4 vPosition : POSITION0,
    return Out;
 }
 
-float4 ps_main_noLight(in VS_OUTPUT_2D IN) : COLOR
+float4 ps_main_noLight(const in VS_OUTPUT_2D IN) : COLOR
 {
    float4 pixel1,pixel2;
    bool stop = false;

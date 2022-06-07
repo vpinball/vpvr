@@ -5,11 +5,11 @@
 #include "Helpers.fxh"
 
 // transformation matrices
-float4x4 matWorldViewProj : WORLDVIEWPROJ;
-float4x4 matWorldView     : WORLDVIEW;
-float3x4 matWorldViewInverseTranspose;
-float4x3 matView;
-//float4x4 matViewInverseInverseTranspose; // matView used instead and multiplied from other side
+const float4x4 matWorldViewProj : WORLDVIEWPROJ;
+const float4x4 matWorldView     : WORLDVIEW;
+const float3x4 matWorldViewInverseTranspose;
+const float4x3 matView;
+//const float4x4 matViewInverseInverseTranspose; // matView used instead and multiplied from other side
 
 texture Texture0; // base texture
 texture Texture1; // envmap
@@ -19,7 +19,7 @@ texture Texture4; // normal map
 
 sampler2D texSampler0 : TEXUNIT0 = sampler_state // base texture
 {
-    Texture	  = (Texture0);
+    Texture   = (Texture0);
     //MIPFILTER = LINEAR; //!! HACK: not set here as user can choose to override trilinear by anisotropic
     //MAGFILTER = LINEAR;
     //MINFILTER = LINEAR;
@@ -30,7 +30,7 @@ sampler2D texSampler0 : TEXUNIT0 = sampler_state // base texture
 
 sampler2D texSampler1 : TEXUNIT1 = sampler_state // environment
 {
-    Texture	  = (Texture1);
+    Texture   = (Texture1);
     MIPFILTER = LINEAR; //!! ?
     MAGFILTER = LINEAR;
     MINFILTER = LINEAR;
@@ -40,7 +40,7 @@ sampler2D texSampler1 : TEXUNIT1 = sampler_state // environment
 
 sampler2D texSampler2 : TEXUNIT2 = sampler_state // diffuse environment contribution/radiance
 {
-    Texture	  = (Texture2);
+    Texture   = (Texture2);
     MIPFILTER = NONE;
     MAGFILTER = LINEAR;
     MINFILTER = LINEAR;
@@ -50,7 +50,7 @@ sampler2D texSampler2 : TEXUNIT2 = sampler_state // diffuse environment contribu
 
 sampler2D texSamplerBL : TEXUNIT3 = sampler_state // bulb light/transmission buffer texture
 {
-    Texture	  = (Texture3);
+    Texture   = (Texture3);
     MIPFILTER = NONE; //!! ??
     MAGFILTER = LINEAR;
     MINFILTER = LINEAR;
@@ -73,8 +73,8 @@ bool objectSpaceNormalMap;
 
 #include "Material.fxh"
 
-float4 cClearcoat_EdgeAlpha;
-float4 cGlossy_ImageLerp;
+const float4 cClearcoat_EdgeAlpha;
+const float4 cGlossy_ImageLerp;
 //!! No value is under 0.02
 //!! Non-metals value are un-intuitively low: 0.02-0.08
 //!! Gemstones are 0.05-0.17
@@ -145,10 +145,10 @@ float3 normal_map(const float3 N, const float3 V, const float2 uv)
 // Standard Materials
 //
 
-VS_OUTPUT vs_main (in float4 vPosition : POSITION0,  
-                   in float3 vNormal   : NORMAL0,  
-                   in float2 tc        : TEXCOORD0) 
-{ 
+VS_OUTPUT vs_main (const in float4 vPosition : POSITION0,
+                   const in float3 vNormal   : NORMAL0,
+                   const in float2 tc        : TEXCOORD0)
+{
    // trafo all into worldview space (as most of the weird trafos happen in view, world is identity so far)
    const float3 P = mul(vPosition, matWorldView).xyz;
    const float3 N = normalize(mul(vNormal, matWorldViewInverseTranspose).xyz);
@@ -161,9 +161,9 @@ VS_OUTPUT vs_main (in float4 vPosition : POSITION0,
    return Out; 
 }
 
-VS_NOTEX_OUTPUT vs_notex_main (in float4 vPosition : POSITION0,  
-                               in float3 vNormal   : NORMAL0,  
-                               in float2 tc        : TEXCOORD0)
+VS_NOTEX_OUTPUT vs_notex_main (const in float4 vPosition : POSITION0,
+                               const in float3 vNormal   : NORMAL0,
+                               const in float2 tc        : TEXCOORD0)
 {
    // trafo all into worldview space (as most of the weird trafos happen in view, world is identity so far)
    const float3 P = mul(vPosition, matWorldView).xyz;
@@ -181,7 +181,7 @@ VS_NOTEX_OUTPUT vs_notex_main (in float4 vPosition : POSITION0,
    return Out; 
 }
 
-VS_DEPTH_ONLY_NOTEX_OUTPUT vs_depth_only_main_without_texture(in float4 vPosition : POSITION0) 
+VS_DEPTH_ONLY_NOTEX_OUTPUT vs_depth_only_main_without_texture(const in float4 vPosition : POSITION0)
 {
    VS_DEPTH_ONLY_NOTEX_OUTPUT Out;
 
@@ -190,8 +190,8 @@ VS_DEPTH_ONLY_NOTEX_OUTPUT vs_depth_only_main_without_texture(in float4 vPositio
    return Out; 
 }
 
-VS_DEPTH_ONLY_TEX_OUTPUT vs_depth_only_main_with_texture(in float4 vPosition : POSITION0,
-                                                         in float2 tc : TEXCOORD0)
+VS_DEPTH_ONLY_TEX_OUTPUT vs_depth_only_main_with_texture(const in float4 vPosition : POSITION0,
+                                                         const in float2 tc : TEXCOORD0)
 {
    VS_DEPTH_ONLY_TEX_OUTPUT Out;
 
@@ -201,7 +201,7 @@ VS_DEPTH_ONLY_TEX_OUTPUT vs_depth_only_main_with_texture(in float4 vPosition : P
    return Out;
 }
 
-float4 ps_main(in VS_NOTEX_OUTPUT IN, uniform bool is_metal) : COLOR
+float4 ps_main(const in VS_NOTEX_OUTPUT IN, uniform bool is_metal) : COLOR
 {
    const float3 diffuse  = cBase_Alpha.xyz;
    const float3 glossy   = is_metal ? cBase_Alpha.xyz : cGlossy_ImageLerp.xyz*0.08;
@@ -228,7 +228,7 @@ float4 ps_main(in VS_NOTEX_OUTPUT IN, uniform bool is_metal) : COLOR
    return result;
 }
 
-float4 ps_main_texture(in VS_OUTPUT IN, uniform bool is_metal, uniform bool doNormalMapping) : COLOR
+float4 ps_main_texture(const in VS_OUTPUT IN, uniform bool is_metal, uniform bool doNormalMapping) : COLOR
 {
    float4 pixel = tex2D(texSampler0, IN.tex01.xy);
 
@@ -265,12 +265,12 @@ float4 ps_main_texture(in VS_OUTPUT IN, uniform bool is_metal, uniform bool doNo
    return result;
 }
 
-float4 ps_main_depth_only_without_texture(in VS_DEPTH_ONLY_NOTEX_OUTPUT IN) : COLOR
+float4 ps_main_depth_only_without_texture(const in VS_DEPTH_ONLY_NOTEX_OUTPUT IN) : COLOR
 {
     return float4(0.,0.,0.,1.);
 }
 
-float4 ps_main_depth_only_with_texture(in VS_DEPTH_ONLY_TEX_OUTPUT IN) : COLOR
+float4 ps_main_depth_only_with_texture(const in VS_DEPTH_ONLY_TEX_OUTPUT IN) : COLOR
 {
    clip(tex2D(texSampler0, IN.tex0).a <= alphaTestValue ? -1 : 1); // stop the pixel shader if alpha test should reject pixel
 
@@ -280,12 +280,12 @@ float4 ps_main_depth_only_with_texture(in VS_DEPTH_ONLY_TEX_OUTPUT IN) : COLOR
 //------------------------------------------
 // BG-Decal
 
-float4 ps_main_bg_decal(in VS_NOTEX_OUTPUT IN) : COLOR
+float4 ps_main_bg_decal(const in VS_NOTEX_OUTPUT IN) : COLOR
 {
    return float4(InvToneMap(cBase_Alpha.xyz), cBase_Alpha.a);
 }
 
-float4 ps_main_bg_decal_texture(in VS_OUTPUT IN) : COLOR
+float4 ps_main_bg_decal_texture(const in VS_OUTPUT IN) : COLOR
 {
    float4 pixel = tex2D(texSampler0, IN.tex01.xy);
 
@@ -300,11 +300,11 @@ float4 ps_main_bg_decal_texture(in VS_OUTPUT IN) : COLOR
 //------------------------------------------
 // Kicker boolean vertex shader
 
-float fKickerScale;
+const float fKickerScale;
 
-VS_NOTEX_OUTPUT vs_kicker (in float4 vPosition : POSITION0,  
-                           in float3 vNormal   : NORMAL0,  
-                           in float2 tc        : TEXCOORD0) 
+VS_NOTEX_OUTPUT vs_kicker (const in float4 vPosition : POSITION0,
+                           const in float3 vNormal   : NORMAL0,
+                           const in float2 tc        : TEXCOORD0)
 {
     const float3 P = mul(vPosition, matWorldView).xyz;
     const float3 N = normalize(mul(vNormal, matWorldViewInverseTranspose).xyz);

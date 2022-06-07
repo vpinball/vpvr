@@ -6,12 +6,12 @@
 #include "Helpers.fxh"
 
 // transformation matrices
-float4x4 matWorldViewProj : WORLDVIEWPROJ;
-float4x4 matWorldView     : WORLDVIEW;
-float4x3 matWorldViewInverse;
-//float4x4 matWorldViewInverseTranspose; // matWorldViewInverse used instead and multiplied from other side
-float4x3 matView;
-//float4x4 matViewInverseInverseTranspose; // matView used instead and multiplied from other side
+const float4x4 matWorldViewProj : WORLDVIEWPROJ;
+const float4x4 matWorldView     : WORLDVIEW;
+const float4x3 matWorldViewInverse;
+//const float4x4 matWorldViewInverseTranspose; // matWorldViewInverse used instead and multiplied from other side
+const float4x3 matView;
+//const float4x4 matViewInverseInverseTranspose; // matView used instead and multiplied from other side
 
 texture  Texture0; // base texture
 texture  Texture1; // playfield (should be envmap if specular or glossy needed/enabled, see below)
@@ -20,7 +20,7 @@ texture  Texture3; // decal
 
 sampler2D texSampler0 : TEXUNIT0 = sampler_state // base texture
 {
-	Texture	  = (Texture0);
+    Texture   = (Texture0);
     //MIPFILTER = LINEAR; //!! HACK: not set here as user can choose to override trilinear by anisotropic
     //MAGFILTER = LINEAR;
     //MINFILTER = LINEAR;
@@ -30,7 +30,7 @@ sampler2D texSampler0 : TEXUNIT0 = sampler_state // base texture
 
 sampler2D texSampler1 : TEXUNIT1 = sampler_state // playfield (should actually be environment if specular and glossy needed/enabled in lightloop!)
 {
-	Texture	  = (Texture1);
+    Texture   = (Texture1);
     MIPFILTER = LINEAR; //!! ?
     MAGFILTER = LINEAR;
     MINFILTER = LINEAR;
@@ -40,7 +40,7 @@ sampler2D texSampler1 : TEXUNIT1 = sampler_state // playfield (should actually b
 
 sampler2D texSampler2 : TEXUNIT2 = sampler_state // diffuse environment contribution/radiance
 {
-	Texture	  = (Texture2);
+    Texture   = (Texture2);
     MIPFILTER = NONE;
     MAGFILTER = LINEAR;
     MINFILTER = LINEAR;
@@ -50,7 +50,7 @@ sampler2D texSampler2 : TEXUNIT2 = sampler_state // diffuse environment contribu
 
 sampler2D texSampler7 : TEXUNIT3 = sampler_state // ball decal
 {
-	Texture	  = (Texture3);
+    Texture   = (Texture3);
     MIPFILTER = LINEAR;
     MAGFILTER = LINEAR;
     MINFILTER = LINEAR;
@@ -62,11 +62,11 @@ bool     hdrEnvTextures = false;
 
 #include "Material.fxh"
 
-float4   invTableRes_playfield_height_reflection;
+const float4   invTableRes_playfield_height_reflection;
 
-//float    reflection_ball_playfield;
+//const float    reflection_ball_playfield;
 
-float4x3 orientation;
+const float4x3 orientation;
 
 bool     hdrTexture0;
 
@@ -106,7 +106,7 @@ struct voutTrail
 //------------------------------------
 // VERTEX SHADER
 
-vout vsBall( in vin IN )
+vout vsBall( const in vin IN )
 {
 	// apply spinning and move the ball to it's actual position
 	float4 pos = IN.position;
@@ -126,7 +126,7 @@ vout vsBall( in vin IN )
 }
 
 #if 0
-voutReflection vsBallReflection( in vin IN )
+voutReflection vsBallReflection( const in vin IN )
 {
 	// apply spinning and move the ball to it's actual position
 	float4 pos = IN.position;
@@ -152,7 +152,7 @@ voutReflection vsBallReflection( in vin IN )
 }
 #endif
 
-voutTrail vsBallTrail( in vin IN )
+voutTrail vsBallTrail( const in vin IN )
 {
     voutTrail OUT;
     OUT.position = mul(IN.position, matWorldViewProj);
@@ -239,7 +239,7 @@ float3 PFlightLoop(const float3 pos, const float3 N, const float3 diffuse)
 //------------------------------------
 // PIXEL SHADER
 
-float4 psBall( in vout IN, uniform bool cabMode, uniform bool decalMode ) : COLOR
+float4 psBall( const in vout IN, uniform bool cabMode, uniform bool decalMode ) : COLOR
 {
     const float3 v = normalize(/*camera=0,0,0,1*/-IN.worldPos_t0y.xyz);
     const float3 r = reflect(v, normalize(IN.normal_t0x.xyz));
@@ -287,26 +287,26 @@ float4 psBall( in vout IN, uniform bool cabMode, uniform bool decalMode ) : COLO
        //!! magic falloff & weight the rest in from the ballImage
        const float weight = NdotR*NdotR;
        playfieldColor = lerp(ballImageColor,playfieldColor,weight);
-	}
-	else
-	   playfieldColor = ballImageColor;
+    }
+    else
+       playfieldColor = ballImageColor;
 
-	float3 diffuse = cBase_Alpha.xyz*0.075;
-	if(!decalMode)
-	    diffuse *= decalColor; // scratches make the material more rough
+    float3 diffuse = cBase_Alpha.xyz*0.075;
+    if(!decalMode)
+       diffuse *= decalColor; // scratches make the material more rough
     const float3 glossy = max(diffuse*2.0, float3(0.1,0.1,0.1)); //!! meh
     float3 specular = playfieldColor*cBase_Alpha.xyz; //!! meh, too, as only added in ballLightLoop anyhow
-	if(!decalMode)
-	    specular *= float3(1.,1.,1.)-decalColor; // see above
+    if(!decalMode)
+       specular *= float3(1.,1.,1.)-decalColor; // see above
 
     float4 result;
-	result.xyz = ballLightLoop(IN.worldPos_t0y.xyz, IN.normal_t0x.xyz, /*camera=0,0,0,1*/-IN.worldPos_t0y.xyz, diffuse, glossy, specular, 1.0, false);
-	result.a = cBase_Alpha.a;
-	return result;
+    result.xyz = ballLightLoop(IN.worldPos_t0y.xyz, IN.normal_t0x.xyz, /*camera=0,0,0,1*/-IN.worldPos_t0y.xyz, diffuse, glossy, specular, 1.0, false);
+    result.a = cBase_Alpha.a;
+    return result;
 }
 
 #if 0
-float4 psBallReflection( in voutReflection IN ) : COLOR
+float4 psBallReflection( const in voutReflection IN ) : COLOR
 {
    const float2 envTex = cabMode ? float2(IN.r.y*0.5f + 0.5f, -IN.r.x*0.5f + 0.5f) : float2(IN.r.x*0.5f + 0.5f, IN.r.y*0.5f + 0.5f);
    float3 ballImageColor = tex2D(texSampler0, envTex).xyz;
