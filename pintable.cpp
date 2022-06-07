@@ -3516,7 +3516,7 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
                      HRESULT hr;
                      if (SUCCEEDED(hr = pstgData->OpenStream(wszStmName, nullptr, STGM_DIRECT | STGM_READ | STGM_SHARE_EXCLUSIVE, 0, &pstmItem)))
                      {
-                        hr = LoadImageFromStream(pstmItem, i, loadfileversion);
+                        hr = LoadImageFromStream(pstmItem, i, loadfileversion, false);
                         if (FAILED(hr))
                            return;
                         pstmItem->Release();
@@ -3537,7 +3537,7 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
                     HRESULT hr;
                     if (SUCCEEDED(hr = pstgData->OpenStream(wszStmName, nullptr, STGM_DIRECT | STGM_READ | STGM_SHARE_EXCLUSIVE, 0, &pstmItem)))
                     {
-                        hr = LoadImageFromStream(pstmItem, i, loadfileversion);
+                        hr = LoadImageFromStream(pstmItem, i, loadfileversion, true);
                         if (SUCCEEDED(hr))
                         {
                             pstmItem->Release();
@@ -6783,8 +6783,8 @@ bool PinTable::ExportImage(const Texture * const ppi, const char * const szfilen
       if (hFile == INVALID_HANDLE_VALUE)
          return false;
 
-      const unsigned int surfwidth = ppi->m_width;				// texture width 
-      const unsigned int surfheight = ppi->m_height;			// and height		
+      const unsigned int surfwidth  = ppi->m_width;				// texture width
+      const unsigned int surfheight = ppi->m_height;			// and height
 
       const unsigned int bmplnsize = (surfwidth * 4 + 3) & -4;	// line size ... 4 bytes per pixel + pad to 4 byte boundary		
 
@@ -6934,7 +6934,8 @@ int PinTable::AddListImage(HWND hwndListView, Texture * const ppi)
    lvitem.pszText = (LPSTR)ppi->m_szName.c_str();
    lvitem.lParam = (size_t)ppi;
 
-   _snprintf_s(sizeString, MAXTOKEN-1, "%ix%i", ppi->m_realWidth, ppi->m_realHeight);
+   //_snprintf_s(sizeString, MAXTOKEN-1, "%ix%i", ppi->m_realWidth, ppi->m_realHeight);
+   _snprintf_s(sizeString, MAXTOKEN - 1, "%ix%i", ppi->m_width, ppi->m_height);
    const int index = ListView_InsertItem(hwndListView, &lvitem);
 
    ListView_SetItemText(hwndListView, index, 1, (LPSTR)ppi->m_szPath.c_str());
@@ -7500,7 +7501,7 @@ int PinTable::AddListItem(HWND hwndListView, const string& szName, const string&
    return index;
 }
 
-HRESULT PinTable::LoadImageFromStream(IStream *pstm, unsigned int idx, int version)
+HRESULT PinTable::LoadImageFromStream(IStream *pstm, unsigned int idx, int version, bool resize_on_low_mem)
 {
    if (version < 100) // Tech Beta 3 and below
    {
@@ -7511,7 +7512,7 @@ HRESULT PinTable::LoadImageFromStream(IStream *pstm, unsigned int idx, int versi
    {
       Texture * const ppi = new Texture();
 
-      if (ppi->LoadFromStream(pstm, version, this) == S_OK)
+      if (ppi->LoadFromStream(pstm, version, this, resize_on_low_mem) == S_OK)
          m_vimage[idx] = ppi;
       else
          delete ppi;
