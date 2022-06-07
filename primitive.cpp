@@ -593,7 +593,7 @@ void Primitive::AddHitEdge(vector<HitObject*> &pvho, robin_hood::unordered_set< 
 
    if (addedEdges.insert(p).second) // edge not yet added?
       SetupHitObject(pvho, new HitLine3D(vi, vj));
-   }
+}
 
 //
 // end of license:GPLv3+, back to 'old MAME'-like
@@ -1247,7 +1247,7 @@ void Primitive::RenderObject()
          {
             pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
             pd3dDevice->basicShader->SetTexture(SHADER_Texture0, pin, TextureFilter::TEXTURE_MODE_TRILINEAR, false, false, false);
-            pd3dDevice->basicShader->SetTexture(SHADER_Texture4, nMap, TextureFilter::TEXTURE_MODE_TRILINEAR, true, true, true);
+            pd3dDevice->basicShader->SetTexture(SHADER_Texture4, nMap, TextureFilter::TEXTURE_MODE_TRILINEAR, false, false, true);
             pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
             pd3dDevice->basicShader->SetBool(SHADER_objectSpaceNormalMap, m_d.m_objectSpaceNormalMap);
             //g_pplayer->m_pin3d.SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);

@@ -608,6 +608,9 @@ HRESULT Pin3D::InitPin3D()
 
    //
 
+   // Create the "static" color buffer.
+   // This will hold a pre-rendered image of the table and any non-changing elements (ie ramps, decals, etc).
+
    m_pinballEnvTexture.CreateFromResource(IDB_BALL);
    m_aoDitherTexture.CreateFromResource(IDB_AO_DITHER);
 
@@ -615,9 +618,12 @@ HRESULT Pin3D::InitPin3D()
    m_builtinEnvTexture.CreateFromResource(IDB_ENV);
 
    const Texture * const envTex = m_envTexture ? m_envTexture : &m_builtinEnvTexture;
+
    const unsigned int envTexHeight = min(envTex->m_pdsBuffer->height(),256u) / 8;
    const unsigned int envTexWidth = envTexHeight*2;
+
    m_envRadianceTexture = EnvmapPrecalc(envTex, envTexWidth, envTexHeight);
+
    m_pd3dPrimaryDevice->m_texMan.SetDirty(m_envRadianceTexture);
 
    //

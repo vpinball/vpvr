@@ -3,7 +3,9 @@
 #include "RenderDevice.h"
 #include "Shader.h"
 
-// Disabled since it still has some bugs
+extern unsigned m_curLockCalls, m_frameLockCalls;
+
+//!! Disabled since it still has some bugs
 #define COMBINE_BUFFERS 0
 
 static unsigned int fvfToSize(const DWORD fvf)
@@ -59,6 +61,7 @@ void VertexBuffer::CreateVertexBuffer(const unsigned int vertexCount, const DWOR
 
 void VertexBuffer::lock(const unsigned int offsetToLock, const unsigned int sizeToLock, void **dataBuffer, const DWORD flags)
 {
+   m_curLockCalls++;
 #ifdef ENABLE_SDL
    if (sizeToLock == 0)
       this->sizeToLock = size;

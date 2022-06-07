@@ -381,6 +381,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    unsigned int Perf_GetNumParameterChanges() const { return m_frameParameterChanges; }
    unsigned int Perf_GetNumTechniqueChanges() const { return m_frameTechniqueChanges; }
    unsigned int Perf_GetNumTextureUploads() const { return m_frameTextureUpdates; }
+   unsigned int Perf_GetNumLockCalls() const;
 
    void FreeShader();
 

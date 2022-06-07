@@ -105,11 +105,11 @@ public:
    }
    
    virtual ItemTypeEnum HitableGetItemType() const override { return eItemBumper; }
-   
+
    virtual void WriteRegDefaults() override;
-   
+
    BumperData m_d;
-   
+
    BumperHitCircle *m_pbumperhitcircle;
 
 private:
