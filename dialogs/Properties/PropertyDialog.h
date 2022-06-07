@@ -61,7 +61,7 @@ public:
     void UpdateBaseVisuals(ISelect *psel, BaseProperty *property, const int dispid = -1);
 
     const VectorProtected<ISelect>* m_pvsel;
-    static bool               m_disableEvents;
+    static bool m_disableEvents;
 protected:
     virtual INT_PTR DialogProc(UINT msg, WPARAM wparam, LPARAM lparam);
 
