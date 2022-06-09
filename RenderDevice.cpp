@@ -563,7 +563,7 @@ int getDisplayList(std::vector<DisplayConfig>& displays)
    if (pD3D == nullptr)
    {
       ShowError("Could not create D3D9 object.");
-      throw 0;
+      return -1;
    }
    // Map the displays to the DX9 adapter. Otherwise this leads to an performance impact on systems with multiple GPUs
    const int adapterCount = pD3D->GetAdapterCount();
@@ -590,7 +590,7 @@ int getDisplayList(std::vector<DisplayConfig>& displays)
          if(name != nullptr)
             strncpy_s(display->second.GPU_Name, name, sizeof(display->second.GPU_Name) - 1);
          else
-            display->second.GPU_Name[0] = '\0';
+            display->second.GPU_Name[0] = '\0'; //!!
 #endif
          displays.push_back(display->second);
       }
@@ -1433,7 +1433,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_pD3DDeviceEx->QueryInterface(__uuidof(IDirect3DDevice9), reinterpret_cast<void**>(&m_pD3DDevice));
 
       // Get the display mode so that we can report back the actual refresh rate.
-      CHECKD3D(m_pD3DDeviceEx->GetDisplayModeEx(0, &mode, nullptr));
+      CHECKD3D(m_pD3DDeviceEx->GetDisplayModeEx(0, &mode, nullptr)); //!! what is the actual correct value for the swapchain here?
 
       refreshrate = mode.RefreshRate;
    }
