@@ -36,6 +36,7 @@ sampler2D texSampler1 : TEXUNIT1 = sampler_state // environment
     MINFILTER = LINEAR;
     ADDRESSU  = Wrap;
     ADDRESSV  = Clamp;
+    SRGBTexture = true;
 };
 
 sampler2D texSampler2 : TEXUNIT2 = sampler_state // diffuse environment contribution/radiance
@@ -46,6 +47,7 @@ sampler2D texSampler2 : TEXUNIT2 = sampler_state // diffuse environment contribu
     MINFILTER = LINEAR;
     ADDRESSU  = Wrap;
     ADDRESSV  = Clamp;
+    SRGBTexture = true;
 };
 
 sampler2D texSamplerBL : TEXUNIT3 = sampler_state // bulb light/transmission buffer texture
@@ -68,8 +70,7 @@ sampler2D texSamplerN : TEXUNIT4 = sampler_state // normal map texture
     //ADDRESSV  = Wrap;
 };
 
-bool hdrEnvTextures;
-bool objectSpaceNormalMap;
+const bool objectSpaceNormalMap;
 
 #include "Material.fxh"
 
@@ -80,7 +81,8 @@ const float4 cGlossy_ImageLerp;
 //!! Gemstones are 0.05-0.17
 //!! Metals have high specular reflectance: 0.5-1.0
 
-float alphaTestValue;
+const float4 staticColor_Alpha;
+const float alphaTestValue;
 
 struct VS_OUTPUT 
 { 
@@ -225,7 +227,7 @@ float4 ps_main(const in VS_NOTEX_OUTPUT IN, uniform bool is_metal) : COLOR
          result.xyz += lerp(sqrt(diffuse)*tex2Dlod(texSamplerBL, float4(float2(0.5*IN.worldPos_t1x.w,-0.5*IN.normal_t1y.w)+0.5, 0.,0.)).xyz*result.a, 0., fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
    }
 
-   return result;
+   return result * staticColor_Alpha;
 }
 
 float4 ps_main_texture(const in VS_OUTPUT IN, uniform bool is_metal, uniform bool doNormalMapping) : COLOR
@@ -235,7 +237,10 @@ float4 ps_main_texture(const in VS_OUTPUT IN, uniform bool is_metal, uniform boo
    clip(pixel.a <= alphaTestValue ? - 1 : 1); // stop the pixel shader if alpha test should reject pixel
 
    pixel.a *= cBase_Alpha.a;
-   const float3 t = /*InvGamma*/(pixel.xyz); // uses automatic sRGB trafo instead in sampler!
+   if (fDisableLighting_top_below.x < 1.0) // if there is lighting applied, make sure to clamp the values (as it could be coming from a HDR tex)
+      pixel.xyz = saturate(pixel.xyz);
+
+   const float3 t = /*InvGamma*/(pixel.xyz); // uses automatic sRGB trafo instead in sampler! also by now e.g. primitives allow for HDR textures for lightmaps
 
    const float3 diffuse  = t*cBase_Alpha.xyz;
    const float3 glossy   = is_metal ? diffuse : (t*cGlossy_ImageLerp.w + (1.0-cGlossy_ImageLerp.w))*cGlossy_ImageLerp.xyz*0.08; //!! use AO for glossy? specular?
@@ -262,7 +267,7 @@ float4 ps_main_texture(const in VS_OUTPUT IN, uniform bool is_metal, uniform boo
          result.xyz += lerp(sqrt(diffuse)*tex2Dlod(texSamplerBL, float4(float2(0.5*IN.tex01.z,-0.5*IN.tex01.w)+0.5, 0., 0.)).xyz*result.a, 0., fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
    }
 
-   return result;
+   return result * staticColor_Alpha;
 }
 
 float4 ps_main_depth_only_without_texture(const in VS_DEPTH_ONLY_NOTEX_OUTPUT IN) : COLOR
