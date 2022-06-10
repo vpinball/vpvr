@@ -14,8 +14,6 @@
  #include "openvr.h"
 #endif
 
-#include "math/matrix.h"
-
 enum deviceNumber {
    PRIMARY_DEVICE,
    SECONDARY_DEVICE
