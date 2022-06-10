@@ -632,6 +632,7 @@ int getPrimaryDisplay()
 ////////////////////////////////////////////////////////////////////
 
 VertexBuffer* RenderDevice::m_quadVertexBuffer = nullptr;
+VertexBuffer* RenderDevice::m_quadDynVertexBuffer = nullptr;
 unsigned int RenderDevice::m_stats_drawn_triangles = 0;
 
 #ifndef ENABLE_SDL
@@ -1080,6 +1081,11 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_quadVertexBuffer->unlock();
    }
 
+   if (m_quadDynVertexBuffer == nullptr)
+   {
+      VertexBuffer::CreateVertexBuffer(4, USAGE_DYNAMIC, MY_D3DFVF_TEX, &m_quadDynVertexBuffer, PRIMARY_DEVICE); //!!
+   }
+
    SetRenderState(RenderDevice::ZFUNC, RenderDevice::Z_LESSEQUAL);
 }
 
@@ -1104,16 +1110,11 @@ bool RenderDevice::LoadShaders()
    basicShader = new Shader(this);
    shaderCompilationOkay = basicShader->Load("BasicShader.glfx", 0) && shaderCompilationOkay;
 
-   ballShader = new Shader(this);
-   shaderCompilationOkay = ballShader->Load("ballShader.glfx", 0) && shaderCompilationOkay;
-
    DMDShader = new Shader(this);
    if (m_stereo3D == STEREO_VR)
       shaderCompilationOkay = DMDShader->Load("DMDShaderVR.glfx", 0) && shaderCompilationOkay;
    else
       shaderCompilationOkay = DMDShader->Load("DMDShader.glfx", 0) && shaderCompilationOkay;
-   DMDShader->SetVector(SHADER_quadOffsetScale, 0.0f, 0.0f, 1.0f, 1.0f);
-   DMDShader->SetVector(SHADER_quadOffsetScaleTex, 0.0f, 0.0f, 1.0f, 1.0f);
 
    FBShader = new Shader(this);
    shaderCompilationOkay = FBShader->Load("FBShader.glfx", 0) && shaderCompilationOkay;
@@ -1559,9 +1560,6 @@ bool RenderDevice::LoadShaders()
    basicShader = new Shader(this);
    shaderCompilationOkay = basicShader->Load(g_basicShaderCode, sizeof(g_basicShaderCode)) && shaderCompilationOkay;
 
-   ballShader = new Shader(this);
-   ballShader->Load(g_ballShaderCode, sizeof(g_ballShaderCode));
-
    DMDShader = new Shader(this);
    shaderCompilationOkay = DMDShader->Load(g_dmdShaderCode, sizeof(g_dmdShaderCode)) && shaderCompilationOkay;
 
@@ -1610,7 +1608,9 @@ RenderDevice::~RenderDevice()
         m_quadVertexBuffer->release();
     m_quadVertexBuffer = nullptr;
 
-    //m_quadDynVertexBuffer->release();
+    if (m_quadDynVertexBuffer)
+       m_quadDynVertexBuffer->release();
+    m_quadDynVertexBuffer = nullptr;
 
 #ifndef ENABLE_SDL
 #ifndef DISABLE_FORCE_NVIDIA_OPTIMUS
@@ -1740,15 +1740,6 @@ void RenderDevice::FreeShader()
       basicShader->SetTextureNull(SHADER_Texture4);
       delete basicShader;
       basicShader = 0;
-   }
-   if (ballShader)
-   {
-      ballShader->SetTextureNull(SHADER_Texture0);
-      ballShader->SetTextureNull(SHADER_Texture1);
-      ballShader->SetTextureNull(SHADER_Texture2);
-      ballShader->SetTextureNull(SHADER_Texture3);
-      delete ballShader;
-      ballShader = 0;
    }
    if (DMDShader)
    {
@@ -2765,14 +2756,13 @@ void* RenderDevice::AttachZBufferTo(RenderTarget* surf)
 #endif
 }
 
-//Only used for DX9
 void RenderDevice::DrawPrimitive(const PrimitiveTypes type, const DWORD fvf, const void* vertices, const DWORD vertexCount)
 {
 #ifndef ENABLE_SDL
    const unsigned int np = ComputePrimitiveCount(type, vertexCount);
    m_stats_drawn_triangles += np;
 
-   VertexDeclaration * declaration = fvfToDecl(fvf);
+   VertexDeclaration* declaration = fvfToDecl(fvf);
    SetVertexDeclaration(declaration);
 
    HRESULT hr = m_pD3DDevice->DrawPrimitiveUP((D3DPRIMITIVETYPE)type, np, vertices, fvfToSize(fvf));
@@ -2780,16 +2770,28 @@ void RenderDevice::DrawPrimitive(const PrimitiveTypes type, const DWORD fvf, con
    if (FAILED(hr))
       ReportError("Fatal Error: DrawPrimitiveUP failed!", hr, __FILE__, __LINE__);
 
-   VertexBuffer::bindNull();    // DrawPrimitiveUP sets the VB to nullptr
-
+   VertexBuffer::bindNull(); // DrawPrimitiveUP sets the VB to nullptr
    m_curDrawCalls++;
 #endif
 }
 
-//Use this function if you want to render a stereo object
-void RenderDevice::DrawTexturedQuad()
+void RenderDevice::DrawTexturedQuad(const Vertex3D_TexelOnly* vertices)
 {
-   DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_TEX, m_quadVertexBuffer, 0, 4, true);
+#ifdef ENABLE_SDL
+   Vertex3D_TexelOnly* bufvb;
+   m_quadDynVertexBuffer->lock(0, 0, (void**)&bufvb, VertexBuffer::DISCARDCONTENTS);
+   memcpy(bufvb, vertices, 4 * sizeof(Vertex3D_TexelOnly));
+   m_quadDynVertexBuffer->unlock();
+   DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_TEX, m_quadDynVertexBuffer, 0, 4, true);
+#else
+   /*Vertex3D_TexelOnly* bufvb;
+   m_quadDynVertexBuffer->lock(0, 0, (void**)&bufvb, VertexBuffer::DISCARDCONTENTS);
+   memcpy(bufvb,vertices,4*sizeof(Vertex3D_TexelOnly));
+   m_quadDynVertexBuffer->unlock();
+   DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP,MY_D3DFVF_TEX,m_quadDynVertexBuffer,0,4,true);*/
+
+   DrawPrimitive(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_TEX, vertices, 4); // having a VB and lock/copying stuff each time is slower :/
+#endif
 }
 
 //Used for processing a Texture to the next Framebuffer with a shader.

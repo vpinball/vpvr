@@ -343,6 +343,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
 #endif
 
    void DrawTexturedQuad();
+   void DrawTexturedQuad(const Vertex3D_TexelOnly* vertices);
    void DrawTexturedQuadPostProcess();
    
    void DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, const bool stereo);
@@ -510,7 +511,7 @@ public:
 #endif
 
    static VertexBuffer* m_quadVertexBuffer;      // internal vb for rendering quads //!! only on primary device for now!
-   //static VertexBuffer *m_quadDynVertexBuffer; // internal vb for rendering dynamic quads //!!
+   static VertexBuffer *m_quadDynVertexBuffer; // internal vb for rendering dynamic quads //!!
 
    // performance counters
    unsigned int m_curDrawCalls, m_frameDrawCalls;
@@ -520,7 +521,6 @@ public:
    unsigned int m_curTechniqueChanges, m_frameTechniqueChanges;
    unsigned int m_curTextureUpdates, m_frameTextureUpdates;
 
-   Shader *ballShader;
    Shader *basicShader;
    Shader *DMDShader;
    Shader *FBShader;

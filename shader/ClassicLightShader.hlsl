@@ -22,9 +22,9 @@ sampler2D texSampler0 : TEXUNIT0 = sampler_state // base texture
     //MIPFILTER = LINEAR; //!! HACK: not set here as user can choose to override trilinear by anisotropic
     //MAGFILTER = LINEAR;
     //MINFILTER = LINEAR;
-	//ADDRESSU  = Wrap; //!! ?
-	//ADDRESSV  = Wrap;
-	SRGBTexture = true;
+    //ADDRESSU  = Wrap; //!! ?
+    //ADDRESSV  = Wrap;
+    SRGBTexture = true;
 };
 
 sampler2D texSampler1 : TEXUNIT1 = sampler_state // environment
@@ -33,8 +33,9 @@ sampler2D texSampler1 : TEXUNIT1 = sampler_state // environment
     MIPFILTER = LINEAR; //!! ?
     MAGFILTER = LINEAR;
     MINFILTER = LINEAR;
-	ADDRESSU  = Wrap;
-	ADDRESSV  = Clamp;
+    ADDRESSU  = Wrap;
+    ADDRESSV  = Clamp;
+    SRGBTexture = true;
 };
 
 sampler2D texSampler2 : TEXUNIT2 = sampler_state // diffuse environment contribution/radiance
@@ -43,8 +44,9 @@ sampler2D texSampler2 : TEXUNIT2 = sampler_state // diffuse environment contribu
     MIPFILTER = NONE;
     MAGFILTER = LINEAR;
     MINFILTER = LINEAR;
-	ADDRESSU  = Wrap;
-	ADDRESSV  = Clamp;
+    ADDRESSU  = Wrap;
+    ADDRESSV  = Clamp;
+    SRGBTexture = true;
 };
 
 #include "Material.fxh"
@@ -56,17 +58,13 @@ const float3 cClearcoat_EdgeAlpha; // actually doesn't feature edge-alpha
 //!! Gemstones are 0.05-0.17
 //!! Metals have high specular reflectance:  0.5-1.0
 
-//float  alphaTestValue;
-
-bool hdrEnvTextures;
+//const float  alphaTestValue;
 #endif
 
-float4 lightColor_intensity;
-float4 lightColor2_falloff_power;
-float4 lightCenter_maxRange;
-bool lightingOff;
-
-bool hdrTexture0;
+const float4 lightColor_intensity;
+const float4 lightColor2_falloff_power;
+const float4 lightCenter_maxRange;
+const bool lightingOff;
 
 struct VS_LIGHT_OUTPUT
 {

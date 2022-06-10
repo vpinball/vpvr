@@ -218,7 +218,8 @@ void DispReel::RenderDynamic()
    pd3dDevice->SetRenderStateDepthBias(0.0f);
    pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
 
-   pd3dDevice->SetRenderStateAlphaTestFunction(0xE0, RenderDevice::Z_GREATER, true);
+   g_pplayer->m_pin3d.EnableAlphaTestReference(0xE0); //!!
+   pd3dDevice->SetRenderState(RenderDevice::ALPHAFUNC, RenderDevice::Z_GREATER); //!! still necessary?
    g_pplayer->m_pin3d.EnableAlphaBlend(false);
 
    pd3dDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_noDMD);
@@ -227,6 +228,8 @@ void DispReel::RenderDynamic()
    pd3dDevice->DMDShader->SetVector(SHADER_vColor_Intensity, &c);
 
    pd3dDevice->DMDShader->SetTexture(SHADER_Texture0, pin, TextureFilter::TEXTURE_MODE_TRILINEAR, false, false, false);
+
+   pd3dDevice->DMDShader->Begin(0);
 
    // set up all the reel positions within the object frame
    const float renderspacingx = max(0.0f, m_d.m_reelspacing / (float)EDITOR_BG_WIDTH);
@@ -241,17 +244,26 @@ void DispReel::RenderDynamic()
       const float u1 = m_digitTexCoords[m_reelInfo[r].currentValue].u_max;
       const float v1 = m_digitTexCoords[m_reelInfo[r].currentValue].v_max;
 
-      pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScale, x1, y1, m_renderwidth, m_renderheight);
-      pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScaleTex, u0, v0, u1-u0, v1-v0);
-      pd3dDevice->DMDShader->Begin(0);
-      pd3dDevice->DrawTexturedQuad();//(Vertex3D_TexelOnly*)Verts
-      pd3dDevice->DMDShader->End();
+      float Verts[4 * 5] =
+      {
+         1.0f, 1.0f, 0.0f, u1, v1,
+         0.0f, 1.0f, 0.0f, u0, v1,
+         1.0f, 0.0f, 0.0f, u1, v0,
+         0.0f, 0.0f, 0.0f, u0, v0
+      };
+
+      for (unsigned int i = 0; i < 4; ++i)
+      {
+         Verts[i * 5] = (Verts[i * 5] * m_renderwidth + x1)*2.0f - 1.0f;
+         Verts[i * 5 + 1] = 1.0f - (Verts[i * 5 + 1] * m_renderheight + y1)*2.0f;
+      }
+
+      pd3dDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)Verts);
 
       // move to the next reel
       x1 += renderspacingx + m_renderwidth;
    }
-   pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScale, 0.0f, 0.0f, 1.0f, 1.0f);
-   pd3dDevice->DMDShader->SetVector(SHADER_quadOffsetScaleTex, 0.0f, 0.0f, 1.0f, 1.0f);
+   pd3dDevice->DMDShader->End();
 
    //pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE); //!! not necessary anymore
    pd3dDevice->SetRenderState(RenderDevice::ALPHATESTENABLE, RenderDevice::RS_FALSE);
