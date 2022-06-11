@@ -633,7 +633,6 @@ void Player::Shutdown()
 
    SAFE_BUFFER_RELEASE(m_ballVertexBuffer);
    SAFE_BUFFER_RELEASE(m_ballIndexBuffer);
-
    if (m_ballShader)
    {
       m_ballShader->SetTextureNull(SHADER_Texture0);
@@ -993,19 +992,38 @@ void Player::UpdateBasicShaderMatrix(const Matrix3D& objectTrafo)
 #ifdef SEPARATE_CLASSICLIGHTSHADER
    m_pin3d.m_pd3dPrimaryDevice->lightShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matWorldViewProj[0].m[0][0], (eyes + 3) * 16);
 #endif
+
 #else
-   m_ballShader->SetMatrix("matWorldViewProj", &matWorldViewProj);
-   m_ballShader->SetMatrix("matWorldView", &matWorldView);
-   m_ballShader->SetMatrix("matWorldViewInverse", &matWorldViewInv);
-   //m_ballShader->SetMatrix("matWorldViewInverseTranspose", &matWorldViewInvTrans);
-   m_ballShader->SetMatrix("matView", &matView);
+
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix("matWorldViewProj", &matWorldViewProj);
+   m_pin3d.m_pd3dPrimaryDevice->flasherShader->SetMatrix("matWorldViewProj", &matWorldViewProj);
+   m_pin3d.m_pd3dPrimaryDevice->lightShader->SetMatrix("matWorldViewProj", &matWorldViewProj);
+#ifdef SEPARATE_CLASSICLIGHTSHADER
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix("matWorldViewProj", &matWorldViewProj);
+#endif
+
+   m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetMatrix("matWorldViewProj", &matWorldViewProj);
+
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix("matWorldView", &matWorldView);
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix("matWorldViewInverseTranspose", &matWorldViewInvTrans);
+   //m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix("matWorld", &matWorld);
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix("matView", &matView);
+#ifdef SEPARATE_CLASSICLIGHTSHADER
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix("matWorldView", &matWorldView);
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix("matWorldViewInverseTranspose", &matWorldViewInvTrans);
+   //m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix("matWorld", &matWorld);
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix("matView", &matView);
+#endif
 
    //memcpy(temp.m, matView.m, 4 * 4 * sizeof(float));
    //temp.Transpose();
    //D3DXMATRIX matViewInvInvTrans;
    //memcpy(matViewInvInvTrans.m, temp.m, 4 * 4 * sizeof(float));
 
-   //m_ballShader->SetMatrix("matViewInverseInverseTranspose", &matViewInvInvTrans);
+   //m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix("matViewInverseInverseTranspose", &matViewInvInvTrans);
+#ifdef SEPARATE_CLASSICLIGHTSHADER
+   //m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix("matViewInverseInverseTranspose", &matViewInvInvTrans);
+#endif
 #endif
 }
 
@@ -1077,11 +1095,18 @@ void Player::UpdateBallShaderMatrix()
 #ifdef ENABLE_SDL
    m_ballShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matView.m[0][0], (eyes + 3) * 16);
 #else
-   m_pin3d.m_pd3dPrimaryDevice->ballShader->SetMatrix("matWorldViewProj", &matrices.matWorldViewProj[0]);
-   m_pin3d.m_pd3dPrimaryDevice->ballShader->SetMatrix("matWorldView", &matrices.matWorldView);
-   m_pin3d.m_pd3dPrimaryDevice->ballShader->SetMatrix("matWorldViewInverse", &matrices.matWorldViewInverse);
-   //m_pin3d.m_pd3dPrimaryDevice->ballShader->SetMatrix("matWorldViewInverseTranspose", &matWorldViewInvTrans);
-   m_pin3d.m_pd3dPrimaryDevice->ballShader->SetMatrix("matView", &matrices.matView);
+   m_ballShader->SetMatrix("matWorldViewProj", &matWorldViewProj);
+   m_ballShader->SetMatrix("matWorldView", &matWorldView);
+   m_ballShader->SetMatrix("matWorldViewInverse", &matWorldViewInv);
+   //m_ballShader->SetMatrix("matWorldViewInverseTranspose", &matWorldViewInvTrans);
+   m_ballShader->SetMatrix("matView", &matView);
+
+   //memcpy(temp.m, matView.m, 4 * 4 * sizeof(float));
+   //temp.Transpose();
+   //D3DXMATRIX matViewInvInvTrans;
+   //memcpy(matViewInvInvTrans.m, temp.m, 4 * 4 * sizeof(float));
+
+   //m_ballShader->SetMatrix("matViewInverseInverseTranspose", &matViewInvInvTrans);
 #endif
 }
 
@@ -1092,17 +1117,17 @@ void Player::InitBallShader()
 
    UpdateBallShaderMatrix();
 
-   //m_pin3d.m_pd3dPrimaryDevice->ballShader->SetBool("decalMode", m_ptable->m_BallDecalMode);
+   //m_ballShader->SetBool("decalMode", m_ptable->m_BallDecalMode);
    const float rotation = fmodf(m_ptable->m_BG_rotation[m_ptable->m_BG_current_set], 360.f);
    m_cabinetMode = (rotation != 0.f);
 
-   //m_pin3d.m_pd3dPrimaryDevice->ballShader->SetBool("cabMode", rotation != 0.f);
+   //m_ballShader->SetBool("cabMode", rotation != 0.f);
 
    //vec4 cam( matView._41, matView._42, matView._43, 1 );
-   //m_pin3d.m_pd3dPrimaryDevice->ballShader->SetVector("camera", &cam);
+   //m_ballShader->SetVector("camera", &cam);
    const vec4 st(m_ptable->m_envEmissionScale*m_globalEmissionScale, m_pin3d.m_envTexture ? (float)m_pin3d.m_envTexture->m_height/*+m_pin3d.m_envTexture->m_width)*0.5f*/ : (float)m_pin3d.m_builtinEnvTexture.m_height/*+m_pin3d.m_builtinEnvTexture.m_width)*0.5f*/, 0.f, 0.f);
    m_ballShader->SetVector(SHADER_fenvEmissionScale_TexWidth, &st);
-   //m_pin3d.m_pd3dPrimaryDevice->ballShader->SetInt("iLightPointNum",MAX_LIGHT_SOURCES);
+   //m_ballShader->SetInt("iLightPointNum",MAX_LIGHT_SOURCES);
 
    constexpr float Roughness = 0.8f;
    const vec4 rwem(exp2f(10.0f * Roughness + 1.0f), 0.f, 1.f, 0.05f);
