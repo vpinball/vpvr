@@ -480,7 +480,14 @@ bool ExtCapture::GetFrame()
 
    for (int h = 0; h < m_Height; ++h)
    {
-      memcpy_s(ddptr, m_Width * 4, sptr + (m_DispLeft * 4), m_Width * 4);
+      // Copy acquired frame, swapping red and blue channel
+      const uint32_t* src = (const uint32_t*) (sptr + (m_DispLeft * 4));
+      uint32_t* dst = (uint32_t*)(ddptr);
+      for (int w = 0; w < m_Width; ++w)
+      {
+         uint32_t rgba = src[w];
+         dst[w] = (_rotl(rgba, 16) & 0x00ff00ff) | (rgba & 0xff00ff00);
+      }
       sptr += m_pCapOut->m_pitch;
       ddptr += m_Width * 4;
       Sleep(0);
