@@ -475,23 +475,18 @@ bool ExtCapture::GetFrame()
 
    m_bDirty = false;
 
-   const uint8_t* sptr = reinterpret_cast<uint8_t*>(m_pCapOut->m_srcdata) + m_pCapOut->m_pitch * m_DispTop;
-   uint8_t* ddptr = (uint8_t*)m_pData;
+   const uint8_t* __restrict sptr = reinterpret_cast<uint8_t*>(m_pCapOut->m_srcdata) + m_pCapOut->m_pitch * m_DispTop;
+   uint8_t* __restrict ddptr = (uint8_t*)m_pData;
 
    for (int h = 0; h < m_Height; ++h)
    {
       // Copy acquired frame, swapping red and blue channel
-      const uint32_t* src = (const uint32_t*) (sptr + (m_DispLeft * 4));
-      uint32_t* dst = (uint32_t*)(ddptr);
-      for (int w = 0; w < m_Width; ++w)
-      {
-         uint32_t rgba = src[w];
-         dst[w] = (_rotl(rgba, 16) & 0x00ff00ff) | (rgba & 0xff00ff00);
-      }
+      copy_bgra_rgba<false>((unsigned int*)ddptr, (const unsigned int*)sptr + m_DispLeft, m_Width);
       sptr += m_pCapOut->m_pitch;
       ddptr += m_Width * 4;
-      Sleep(0);
+      Sleep(0); //!! ??
    }
+
    return true;
 }
 

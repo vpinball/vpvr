@@ -1065,16 +1065,8 @@ STDMETHODIMP Flasher::put_VideoCapUpdate(BSTR cWinTitle)
         // that's pointed to by lpbitmap.
         GetDIBits(hdcWindow, hbmScreen, 0, (UINT)bmpScreen.bmHeight, lpbitmap, (BITMAPINFO*)&bi, DIB_RGB_COLORS);
 
-        const DWORD* const __restrict pCurrPixel = (DWORD*)lpbitmap;
-        DWORD* const __restrict data = (DWORD*)m_videoCapTex->data();
-
         // copy bitmap pixels to texture, reversing BGR to RGB and adding an opaque alpha channel
-        // A common SSE2 optimized path for BGRA/ARGB conversion could be added (see Angle implementation for example: https://codereview.appspot.com/4465052/patch/12001/9002)
-        for (int i = 0; i < (pWidth * pHeight); i++)
-        {
-           unsigned int rgba = pCurrPixel[i];
-           data[i] = (_rotl(rgba, 16) & 0x00ff00ff) | (rgba & 0xff00ff00) | 0xFF000000u;
-        }
+        copy_bgra_rgba<true>((unsigned int*)(m_videoCapTex->data()), (const unsigned int*)lpbitmap, pWidth * pHeight);
 
         GlobalUnlock(hDIB);
         GlobalFree(hDIB);
