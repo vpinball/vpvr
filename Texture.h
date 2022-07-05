@@ -28,7 +28,7 @@ public:
    BYTE* data()                { return m_data.data(); }
    bool has_alpha() const      { return m_format == RGBA || m_format == SRGBA; }
 
-   BaseTexture *ToBGRA();
+   BaseTexture *ToBGRA(); // swap R and B channels, also tonemaps floating point buffers during conversion and adds an opaque alpha channel (if format with missing alpha)
 
 private:
    unsigned int m_width, m_height;
