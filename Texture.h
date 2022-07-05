@@ -112,7 +112,10 @@ inline void copy_bgra_rgba(unsigned int* const __restrict dst, const unsigned in
     for (; ((reinterpret_cast<size_t>(dst+o) & 15) != 0) && o < size; ++o)
     {
        const unsigned int rgba = src[o];
-       dst[o] = (_rotl(rgba, 16) & 0x00FF00FFu) | (rgba & 0xFF00FF00u);
+       unsigned int tmp = (_rotl(rgba, 16) & 0x00FF00FFu) | (rgba & 0xFF00FF00u);
+       if (opaque)
+          tmp |= 0xFF000000u;
+       dst[o] = tmp;
     }
 
     const __m128i brMask  = _mm_set1_epi32(0x00FF00FFu);
@@ -134,6 +137,9 @@ inline void copy_bgra_rgba(unsigned int* const __restrict dst, const unsigned in
     for (; o < size; ++o)
     {
        const unsigned int rgba = src[o];
-       dst[o] = (_rotl(rgba, 16) & 0x00FF00FFu) | (rgba & 0xFF00FF00u);
+       unsigned int tmp = (_rotl(rgba, 16) & 0x00FF00FFu) | (rgba & 0xFF00FF00u);
+       if (opaque)
+          tmp |= 0xFF000000u;
+       dst[o] = tmp;
     }
 }
