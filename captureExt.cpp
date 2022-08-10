@@ -88,7 +88,7 @@ void captureStartup()
 {
    const std::list<string> dmdlist = { "Virtual DMD", "pygame", "PUPSCREEN1", "formDMD", "PUPSCREEN5" };
    ecDMD.Setup(dmdlist);
-   const std::list<string> puplist = { "PUPSCREEN2", "Form1" };
+   const std::list<string> puplist = { "PUPSCREEN2", "Form1", "B2S Background", "B2S Backglass Server", "B2S DMD" }; // Form1 = old B2S
    ecPUP.Setup(puplist);
    ecDMD.m_ecStage = g_pplayer->m_capExtDMD ? ecSearching : ecFailure;
    ecPUP.m_ecStage = g_pplayer->m_capPUP ? ecSearching : ecFailure;
