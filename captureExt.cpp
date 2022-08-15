@@ -86,9 +86,9 @@ void captureThread()
 
 void captureStartup()
 {
-   const std::list<string> dmdlist = { "Virtual DMD", "pygame", "PUPSCREEN1", "formDMD", "PUPSCREEN5" };
+   const std::vector<string> dmdlist = { "Virtual DMD", "pygame", "PUPSCREEN1", "formDMD", "PUPSCREEN5" };
    ecDMD.Setup(dmdlist);
-   const std::list<string> puplist = { "PUPSCREEN2", "Form1", "B2S Background", "B2S Backglass Server", "B2S DMD" }; // Form1 = old B2S
+   const std::vector<string> puplist = { "PUPSCREEN2", "Form1", "B2S Backglass Server", "B2S Background", "B2S DMD" }; // Form1 = old B2S
    ecPUP.Setup(puplist);
    ecDMD.m_ecStage = g_pplayer->m_capExtDMD ? ecSearching : ecFailure;
    ecPUP.m_ecStage = g_pplayer->m_capPUP ? ecSearching : ecFailure;
@@ -163,7 +163,7 @@ void ExtCapture::SearchWindow()
    }
 }
 
-void ExtCapture::Setup(const std::list<string>& windowlist)
+void ExtCapture::Setup(const std::vector<string>& windowlist)
 {
    m_ecStage = ecUninitialized;
    m_delay = 0;
@@ -257,27 +257,27 @@ bool ExtCapture::SetupCapture(const RECT& inputRect)
          &m_pCapOut->m_d3d_context); /* OUT: the ID3D11DeviceContext that represents the above features. */
 
       if (S_OK != hr) {
-         printf("Error: failed to create the D3D11 Device.\n");
+         ShowError("Capture: Failed to create the D3D11 Device.");
          if (E_INVALIDARG == hr) {
-            printf("Got INVALID arg passed into D3D11CreateDevice. Did you pass a adapter + a driver which is not the UNKNOWN driver?.\n");
+            ShowError("Capture: E_INVALIDARG for D3D11CreateDevice."); // Did you pass an adapter + a driver which is not the UNKNOWN driver?
          }
          return false;
       }
 
       hr = m_Output->QueryInterface(__uuidof(IDXGIOutput1), (void**)&m_Output1);
       if (S_OK != hr) {
-         printf("Error: failed to query the IDXGIOutput1 interface.\n");
+         ShowError("Capture: Failed to query the IDXGIOutput1 interface.");
          return false;
       }
 
       hr = m_Output1->DuplicateOutput(m_pCapOut->m_d3d_device, &m_pCapOut->m_duplication);
       if (S_OK != hr) {
-         printf("Error: failed to create the duplication output.\n");
+         ShowError("Capture: Failed to create the duplication output.");
          return false;
       }
 
       if (nullptr == m_pCapOut->m_duplication) {
-         printf("Error: okay, we shouldn't arrive here but the duplication var is nullptr.\n");
+         ShowError("Capture: Duplication var is nullptr.");
          return false;
       }
       /* Create the staging texture that we need to download the pixels from gpu. */
@@ -296,11 +296,11 @@ bool ExtCapture::SetupCapture(const RECT& inputRect)
 
       hr = m_pCapOut->m_d3d_device->CreateTexture2D(&tex_desc, nullptr, &m_pCapOut->m_staging_tex);
       if (E_INVALIDARG == hr) {
-         printf("Error: received E_INVALIDARG when trying to create the texture.\n");
+         ShowError("Capture: E_INVALIDARG while trying to create the texture.");
          return false;
       }
       else if (S_OK != hr) {
-         printf("Error: failed to create the 2D texture, error: %u.\n", hr);
+         ShowError("Capture: Failed to create the 2D texture, error: " + std::to_string(hr));
          return false;
       }
       m_duplicatormap[idx] = m_pCapOut;
@@ -336,28 +336,28 @@ void ExtCaptureOutput::AcquireFrame()
    HRESULT hr = m_duplication->AcquireNextFrame(2500, &frame_info, &desktop_resource);
 
    if (DXGI_ERROR_ACCESS_LOST == hr) {
-      printf("Received a DXGI_ERROR_ACCESS_LOST.\n");
+      ShowError("Capture: Received DXGI_ERROR_ACCESS_LOST.");
    }
    else if (DXGI_ERROR_WAIT_TIMEOUT == hr) {
-      printf("Received a DXGI_ERROR_WAIT_TIMEOUT.\n");
+      ShowError("Capture: Received DXGI_ERROR_WAIT_TIMEOUT.");
    }
    else if (DXGI_ERROR_INVALID_CALL == hr) {
-      printf("Received a DXGI_ERROR_INVALID_CALL.\n");
+      ShowError("Capture: Received DXGI_ERROR_INVALID_CALL.");
    }
    else if (S_OK == hr) {
       //printf("Yay we got a frame.\n");
       hr = desktop_resource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&tex);
       if (S_OK != hr) {
-         printf("Error: failed to query the ID3D11Texture2D interface on the IDXGIResource we got.\n");
+         ShowError("Capture: Failed to query the ID3D11Texture2D interface on IDXGIResource.");
          exit(EXIT_FAILURE);
       }
       DXGI_MAPPED_RECT mapped_rect;
       hr = m_duplication->MapDesktopSurface(&mapped_rect);
       if (S_OK == hr) {
-         printf("We got access to the desktop surface\n");
+         //printf("We got access to the desktop surface\n");
          hr = m_duplication->UnMapDesktopSurface();
          if (S_OK != hr) {
-            printf("Error: failed to unmap the desktop surface after successfully mapping it.\n");
+            ShowError("Capture: Failed to unmap the desktop surface after successfully mapping it.");
          }
       }
       else if (DXGI_ERROR_UNSUPPORTED == hr) {
@@ -378,22 +378,22 @@ void ExtCaptureOutput::AcquireFrame()
 
          }
          else {
-            printf("Error: failed to map the staging tex. Cannot access the pixels.\n");
+            ShowError("Capture: Failed to map the staging tex. Cannot access the pixels.");
          }
 
          m_d3d_context->Unmap(m_staging_tex, 0);
       }
       else if (DXGI_ERROR_INVALID_CALL == hr) {
-         printf("MapDesktopSurface returned DXGI_ERROR_INVALID_CALL.\n");
+         ShowError("Capture: MapDesktopSurface returned DXGI_ERROR_INVALID_CALL.");
       }
       else if (DXGI_ERROR_ACCESS_LOST == hr) {
-         printf("MapDesktopSurface returned DXGI_ERROR_ACCESS_LOST.\n");
+         ShowError("Capture: MapDesktopSurface returned DXGI_ERROR_ACCESS_LOST.");
       }
       else if (E_INVALIDARG == hr) {
-         printf("MapDesktopSurface returned E_INVALIDARG.\n");
+         ShowError("Capture: MapDesktopSurface returned E_INVALIDARG.");
       }
       else {
-         printf("MapDesktopSurface returned an unknown error.\n");
+         ShowError("Capture: MapDesktopSurface returned an unknown error.");
       }
    }
    UINT BufSize = frame_info.TotalMetadataBufferSize;
