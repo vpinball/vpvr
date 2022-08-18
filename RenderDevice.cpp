@@ -636,12 +636,6 @@ VertexBuffer* RenderDevice::m_quadDynVertexBuffer = nullptr;
 unsigned int RenderDevice::m_stats_drawn_triangles = 0;
 
 #ifndef ENABLE_SDL
-#define CHECKNVAPI(s) { NvAPI_Status hr = (s); if (hr != NVAPI_OK) { NvAPI_ShortString ss; NvAPI_GetErrorMessage(hr,ss); g_pvp->MessageBox(ss, "NVAPI", MB_OK | MB_ICONEXCLAMATION); } }
-static bool NVAPIinit = false; //!! meh
-
-bool RenderDevice::m_INTZ_support = false;
-bool RenderDevice::m_useNvidiaApi = false;
-
 #ifdef USE_D3D9EX
  typedef HRESULT(WINAPI *pD3DC9Ex)(UINT SDKVersion, IDirect3D9Ex**);
  static pD3DC9Ex mDirect3DCreate9Ex = nullptr;
@@ -1163,6 +1157,8 @@ RenderDevice::RenderDevice(const int width, const int height, const bool fullscr
       m_ssRefl(ss_refl), m_disableDwm(disable_dwm), m_BWrendering(BWrendering)
 {
    m_useNvidiaApi = useNvidiaApi;
+   m_INTZ_support = false;
+   NVAPIinit = false;
 
    switch (stereo3D) {
    case STEREO_OFF:
@@ -1301,7 +1297,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    //if (caps.NumSimultaneousRTs < 2)
    //   ShowError("D3D device doesn't support multiple render targets!");
 
-   bool video10bit = LoadValueBoolWithDefault("Player", "Render10Bit", false);
+   bool video10bit = LoadValueBoolWithDefault("Player"s, "Render10Bit"s, false);
 
    if (!m_fullscreen && video10bit)
    {
@@ -1364,11 +1360,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    //m_autogen_mipmap = false; //!! could be done to support correct sRGB/gamma correct generation of mipmaps which is not possible with auto gen mipmap in DX9! at the moment disabled, as the sRGB software path is super slow for similar mipmap filter quality
 
 #ifndef DISABLE_FORCE_NVIDIA_OPTIMUS
-   if (!NVAPIinit)
-   {
-      if (NvAPI_Initialize() == NVAPI_OK)
+   if (!NVAPIinit && NvAPI_Initialize() == NVAPI_OK)
          NVAPIinit = true;
-   }
 #endif
 
    // Determine if INTZ is supported
@@ -1392,7 +1385,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    else
       params.MultiSampleQuality = min(params.MultiSampleQuality, MultiSampleQualityLevels);
 
-   const bool softwareVP = LoadValueBoolWithDefault("Player", "SoftwareVertexProcessing", false);
+   const bool softwareVP = LoadValueBoolWithDefault("Player"s, "SoftwareVertexProcessing"s, false);
    const DWORD flags = softwareVP ? D3DCREATE_SOFTWARE_VERTEXPROCESSING : D3DCREATE_HARDWARE_VERTEXPROCESSING;
 
    // Create the D3D device. This optionally goes to the proper fullscreen mode.
@@ -1701,14 +1694,14 @@ RenderDevice::~RenderDevice()
     if (m_pHMD)
     {
         turnVROff();
-        SaveValueFloat("Player", "VRSlope", m_slope);
-        SaveValueFloat("Player", "VROrientation", m_orientation);
-        SaveValueFloat("Player", "VRTableX", m_tablex);
-        SaveValueFloat("Player", "VRTableY", m_tabley);
-        SaveValueFloat("Player", "VRTableZ", m_tablez);
-        SaveValueFloat("Player", "VRRoomOrientation", m_roomOrientation);
-        SaveValueFloat("Player", "VRRoomX", m_roomx);
-        SaveValueFloat("Player", "VRRoomY", m_roomy);
+        SaveValueFloat("Player"s, "VRSlope"s, m_slope);
+        SaveValueFloat("Player"s, "VROrientation"s, m_orientation);
+        SaveValueFloat("Player"s, "VRTableX"s, m_tablex);
+        SaveValueFloat("Player"s, "VRTableY"s, m_tabley);
+        SaveValueFloat("Player"s, "VRTableZ"s, m_tablez);
+        SaveValueFloat("Player"s, "VRRoomOrientation"s, m_roomOrientation);
+        SaveValueFloat("Player"s, "VRRoomX"s, m_roomx);
+        SaveValueFloat("Player"s, "VRRoomY"s, m_roomy);
     }
 #endif
 

@@ -12,7 +12,7 @@
  #define DebugPrintf(x, ...)
 #endif
 
-#ifdef ENABLE_SDL
+#ifdef ENABLE_SDL //!! Implement for GL
 CGpuProfiler::CGpuProfiler() {}
 CGpuProfiler::~CGpuProfiler() {}
 bool CGpuProfiler::Init(void* const pDevice) { return true; }

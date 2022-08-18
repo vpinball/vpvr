@@ -203,12 +203,12 @@ BOOL TableInfoDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       }
       case IDC_GOWEBSITE:
       {
-         OpenURL(string(m_websiteEdit.GetWindowText()));
+         OpenURL(m_websiteEdit.GetWindowText().c_str());
          break;
       }
       case IDC_SENDMAIL:
       {
-         const string url = string("mailto:") + string(m_emailEdit.GetWindowText()) + string("?subject=") + string(m_tableNameEdit.GetWindowText());
+         const string url = "mailto:"s + m_emailEdit.GetWindowText().c_str() + "?subject=" + m_tableNameEdit.GetWindowText().c_str();
          OpenURL(url);
          break;
       }

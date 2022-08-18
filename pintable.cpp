@@ -92,17 +92,17 @@ STDMETHODIMP ScriptGlobalTable::NudgeGetCalibration(VARIANT *XMax, VARIANT *YMax
 {
 	int tmp;
 
-	if (SUCCEEDED(::LoadValue("Player", "PBWAccelGainX", tmp)))
+	if (SUCCEEDED(::LoadValue("Player"s, "PBWAccelGainX"s, tmp)))
 		CComVariant(tmp).Detach(XGain);
-	if (SUCCEEDED(::LoadValue("Player", "PBWAccelGainY", tmp)))
+	if (SUCCEEDED(::LoadValue("Player"s, "PBWAccelGainY"s, tmp)))
 		CComVariant(tmp).Detach(YGain);
-	if (SUCCEEDED(::LoadValue("Player", "PBWAccelMaxX", tmp)))
+	if (SUCCEEDED(::LoadValue("Player"s, "PBWAccelMaxX"s, tmp)))
 		CComVariant(tmp).Detach(XMax);
-	if (SUCCEEDED(::LoadValue("Player", "PBWAccelMaxY", tmp)))
+	if (SUCCEEDED(::LoadValue("Player"s, "PBWAccelMaxY"s, tmp)))
 		CComVariant(tmp).Detach(YMax);
-	if (SUCCEEDED(::LoadValue("player", "DeadZone", tmp)))
+	if (SUCCEEDED(::LoadValue("player"s, "DeadZone"s, tmp)))
 		CComVariant(tmp).Detach(DeadZone);
-	if (SUCCEEDED(::LoadValue("Player", "TiltSensitivity", tmp)))
+	if (SUCCEEDED(::LoadValue("Player"s, "TiltSensitivity"s, tmp)))
 		CComVariant(tmp).Detach(TiltSensitivty);
 
 	return S_OK;
@@ -114,36 +114,36 @@ STDMETHODIMP ScriptGlobalTable::NudgeSetCalibration(int XMax, int YMax, int XGai
 
 	newvalue = XGain;
 	if ((SSIZE_T)newvalue < 0) { newvalue = 0; }
-	SaveValueInt("Player", "PBWAccelGainX", newvalue);
+	SaveValueInt("Player"s, "PBWAccelGainX"s, newvalue);
 
 	newvalue = YGain;
 	if ((SSIZE_T)newvalue < 0) { newvalue = 0; }
-	SaveValueInt("Player", "PBWAccelGainY", newvalue);
+	SaveValueInt("Player"s, "PBWAccelGainY"s, newvalue);
 
 	newvalue = DeadZone;
 	if ((SSIZE_T)newvalue < 0) { newvalue = 0; }
 	if (newvalue > 100) { newvalue = 100; }
-	SaveValueInt("Player", "DeadZone", newvalue);
+	SaveValueInt("Player"s, "DeadZone"s, newvalue);
 
 	newvalue = XMax;
 	if ((SSIZE_T)newvalue < 0) { newvalue = 0; }
 	if (newvalue > 100) { newvalue = 100; }
-	SaveValueInt("Player", "PBWAccelMaxX", newvalue);
+	SaveValueInt("Player"s, "PBWAccelMaxX"s, newvalue);
 
 	newvalue = YMax;
 	if ((SSIZE_T)newvalue < 0) { newvalue = 0; }
 	if (newvalue > 100) { newvalue = 100; }
-	SaveValueInt("Player", "PBWAccelMaxY", newvalue);
+	SaveValueInt("Player"s, "PBWAccelMaxY"s, newvalue);
 
-	SaveValueBool("Player", "TiltSensCB", TiltSensitivity > 0);
+	SaveValueBool("Player"s, "TiltSensCB"s, TiltSensitivity > 0);
 	if (TiltSensitivity > 0)
 	{
 		newvalue = TiltSensitivity;
-		SaveValueInt("Player", "TiltSensValue", newvalue);
-		SaveValueInt("Player", "TiltSensitivity", newvalue);
+		SaveValueInt("Player"s, "TiltSensValue"s, newvalue);
+		SaveValueInt("Player"s, "TiltSensitivity"s, newvalue);
 	}
 	else
-		DeleteValue("Player", "TiltSensitivity");
+		DeleteValue("Player"s, "TiltSensitivity"s);
 	
 	m_pt->ReadAccelerometerCalibration();
 
@@ -212,7 +212,7 @@ STDMETHODIMP ScriptGlobalTable::PlayMusic(BSTR str, float volume)
       char szT[512];
       WideCharToMultiByteNull(CP_ACP, 0, str, -1, szT, 512, nullptr, nullptr);
 
-      if (!g_pplayer->m_audio->MusicInit(m_vpinball->m_szMyPath + "Music\\" + szT, string("C:\\Visual Pinball\\Music\\") + szT, MusicVolume))
+      if (!g_pplayer->m_audio->MusicInit(m_vpinball->m_szMyPath + "Music\\" + szT, "C:\\Visual Pinball\\Music\\"s + szT, MusicVolume))
       {
          delete g_pplayer->m_audio;
          g_pplayer->m_audio = nullptr;
@@ -424,11 +424,11 @@ STDMETHODIMP ScriptGlobalTable::GetTextFile(BSTR FileName, BSTR *pContents)
       success = GetTextFileFromDirectory(szFileName, "Tables\\", pContents);
    // if that also fails, try the standard installation path
    if (!success)
-      success = GetTextFileFromDirectory((string("C:\\Visual Pinball\\User\\")+szFileName).c_str(), nullptr, pContents);
+      success = GetTextFileFromDirectory(("C:\\Visual Pinball\\User\\"s + szFileName).c_str(), nullptr, pContents);
    if (!success)
-      success = GetTextFileFromDirectory((string("C:\\Visual Pinball\\Scripts\\")+szFileName).c_str(), nullptr, pContents);
+      success = GetTextFileFromDirectory(("C:\\Visual Pinball\\Scripts\\"s + szFileName).c_str(), nullptr, pContents);
    if (!success)
-      success = GetTextFileFromDirectory((string("C:\\Visual Pinball\\Tables\\")+szFileName).c_str(), nullptr, pContents);
+      success = GetTextFileFromDirectory(("C:\\Visual Pinball\\Tables\\"s + szFileName).c_str(), nullptr, pContents);
 
    return success ? S_OK : E_FAIL;
 }
@@ -661,7 +661,7 @@ STDMETHODIMP ScriptGlobalTable::get_ShowFSS(VARIANT_BOOL *pVal)
    if (m_BG_enable_FSS)
       m_BG_current_set = FULL_SINGLE_SCREEN;
    else
-      LoadValue("Player", "BGSet", m_BG_current_set);
+      LoadValue("Player"s, "BGSet"s, m_BG_current_set);
    STOPUNDO
 
    return S_OK;
@@ -1136,7 +1136,7 @@ STDMETHODIMP ScriptGlobalTable::get_RenderingMode(int *pVal)
 PinTable::PinTable()
 {
    m_savingActive = false;
-   m_renderSolid = LoadValueBoolWithDefault("Editor", "RenderSolid", true);
+   m_renderSolid = LoadValueBoolWithDefault("Editor"s, "RenderSolid"s, true);
    ClearMultiSel();
 
    m_hbmOffScreen = nullptr;
@@ -1162,7 +1162,7 @@ PinTable::PinTable()
 
    m_plungerNormalize = 100;  //Mech-Plunger component adjustment or weak spring, aging
    m_plungerFilter = false;
-   m_PhysicsMaxLoops = LoadValueIntWithDefault("Player", "PhysicsMaxLoops", 0xFFFFFFFFu);
+   m_PhysicsMaxLoops = LoadValueIntWithDefault("Player"s, "PhysicsMaxLoops"s, 0xFFFFFFFFu);
 
    m_right = 0.0f;
    m_bottom = 0.0f;
@@ -1170,7 +1170,7 @@ PinTable::PinTable()
    m_glassheight = 210;
    m_tableheight = 0;
 
-   m_BG_current_set = LoadValueIntWithDefault("Player", "BGSet", BG_DESKTOP);
+   m_BG_current_set = LoadValueIntWithDefault("Player"s, "BGSet"s, BG_DESKTOP);
    m_currentBackglassMode = m_BG_current_set;
 
    m_BG_enable_FSS = false;
@@ -1223,31 +1223,31 @@ PinTable::PinTable()
 
    m_numMaterials = 0;
 
-   nudge_set_sensitivity((float)LoadValueIntWithDefault("Player", "NudgeSensitivity", 500) * (float)(1.0/1000.0));
+   nudge_set_sensitivity((float)LoadValueIntWithDefault("Player"s, "NudgeSensitivity"s, 500) * (float)(1.0/1000.0));
 
-   m_globalDifficulty = dequantizeUnsignedPercent(LoadValueIntWithDefault("Player", "GlobalDifficulty", 20)); // easy by default
+   m_globalDifficulty = dequantizeUnsignedPercent(LoadValueIntWithDefault("Player"s, "GlobalDifficulty"s, 20)); // easy by default
 
    ReadAccelerometerCalibration();
 
-   m_tblAutoStart = LoadValueIntWithDefault("Player", "Autostart", 0) * 10;
-   m_tblAutoStartRetry = LoadValueIntWithDefault("Player", "AutostartRetry", 0) * 10;
-   m_tblAutoStartEnabled = LoadValueBoolWithDefault("Player", "asenable", false);
-   m_tblVolmod = (float)LoadValueIntWithDefault("Player", "Volmod", 1000) * (float)(1.0/1000.0);
-   m_tblExitConfirm = LoadValueIntWithDefault("Player", "Exitconfirm", 120) * 1000 / 60;
+   m_tblAutoStart = LoadValueIntWithDefault("Player"s, "Autostart"s, 0) * 10;
+   m_tblAutoStartRetry = LoadValueIntWithDefault("Player"s, "AutostartRetry"s, 0) * 10;
+   m_tblAutoStartEnabled = LoadValueBoolWithDefault("Player"s, "asenable"s, false);
+   m_tblVolmod = (float)LoadValueIntWithDefault("Player"s, "Volmod"s, 1000) * (float)(1.0/1000.0);
+   m_tblExitConfirm = LoadValueIntWithDefault("Player"s, "Exitconfirm"s, 120) * 1000 / 60;
 
-   SaveValue("Version", "VPinball", VP_VERSION_STRING_DIGITS);
+   SaveValue("Version"s, "VPinball"s, VP_VERSION_STRING_DIGITS);
 
-   m_globalDetailLevel = LoadValueIntWithDefault("Player", "AlphaRampAccuracy", 10);
+   m_globalDetailLevel = LoadValueIntWithDefault("Player"s, "AlphaRampAccuracy"s, 10);
    m_userDetailLevel = 10;
    m_overwriteGlobalDetailLevel = false;
 
    m_overwriteGlobalDayNight = true;
 
-   m_global3DZPD = LoadValueFloatWithDefault("Player", "Stereo3DZPD", 0.5f);
+   m_global3DZPD = LoadValueFloatWithDefault("Player"s, "Stereo3DZPD"s, 0.5f);
    m_3DZPD = 0.5f;
-   m_global3DMaxSeparation = LoadValueFloatWithDefault("Player", "Stereo3DMaxSeparation", 0.03f);
+   m_global3DMaxSeparation = LoadValueFloatWithDefault("Player"s, "Stereo3DMaxSeparation"s, 0.03f);
    m_3DmaxSeparation = 0.03f;
-   m_global3DOffset = LoadValueFloatWithDefault("Player", "Stereo3DOffset", 0.f);
+   m_global3DOffset = LoadValueFloatWithDefault("Player"s, "Stereo3DOffset"s, 0.f);
    m_3DOffset = 0.0f;
    m_overwriteGlobalStereo3D = false;
 
@@ -1259,30 +1259,30 @@ PinTable::PinTable()
    m_tblNudgePlumb = Vertex2D(0.f,0.f);
 
 #ifdef UNUSED_TILT
-   m_jolt_amount = LoadValueIntWithDefault("Player", "JoltAmount", 500);
-   m_tilt_amount = LoadValueIntWithDefault("Player", "TiltAmount", 950);
-   m_jolt_trigger_time = LoadValueIntWithDefault("Player", "JoltTriggerTime", 1000);
-   m_tilt_trigger_time = LoadValueIntWithDefault("Player", "TiltTriggerTime", 10000);
+   m_jolt_amount = LoadValueIntWithDefault("Player"s, "JoltAmount"s, 500);
+   m_tilt_amount = LoadValueIntWithDefault("Player"s, "TiltAmount"s, 950);
+   m_jolt_trigger_time = LoadValueIntWithDefault("Player"s, "JoltTriggerTime"s, 1000);
+   m_tilt_trigger_time = LoadValueIntWithDefault("Player"s, "TiltTriggerTime"s, 10000);
 #endif
 }
 
 void PinTable::ReadAccelerometerCalibration()
 {
-	m_tblAccelerometer = LoadValueBoolWithDefault("Player", "PBWEnabled", true); // true if electronic accelerometer enabled
-	m_tblAccelNormalMount = LoadValueBoolWithDefault("Player", "PBWNormalMount", true); // true is normal mounting (left hand coordinates)
+	m_tblAccelerometer = LoadValueBoolWithDefault("Player"s, "PBWEnabled"s, true); // true if electronic accelerometer enabled
+	m_tblAccelNormalMount = LoadValueBoolWithDefault("Player"s, "PBWNormalMount"s, true); // true is normal mounting (left hand coordinates)
 
 	m_tblAccelAngle = 0.0f;			// 0 degrees rotated counterclockwise (GUI is lefthand coordinates)
-	const bool accel = LoadValueBoolWithDefault("Player", "PBWRotationCB", false);
+	const bool accel = LoadValueBoolWithDefault("Player"s, "PBWRotationCB"s, false);
 	if (accel)
-		m_tblAccelAngle = (float)LoadValueIntWithDefault("Player", "PBWRotationValue", 0);
+		m_tblAccelAngle = (float)LoadValueIntWithDefault("Player"s, "PBWRotationValue"s, 0);
 
-	m_tblAccelAmp.x = dequantizeUnsignedPercentNoClamp(LoadValueIntWithDefault("Player", "PBWAccelGainX", 150));
-	m_tblAccelAmp.y = dequantizeUnsignedPercentNoClamp(LoadValueIntWithDefault("Player", "PBWAccelGainY", 150));
-	m_tblAccelMax.x = LoadValueIntWithDefault("Player", "PBWAccelMaxX", 100) * JOYRANGEMX / 100;
-	m_tblAccelMax.y = LoadValueIntWithDefault("Player", "PBWAccelMaxY", 100) * JOYRANGEMX / 100;
+	m_tblAccelAmp.x = dequantizeUnsignedPercentNoClamp(LoadValueIntWithDefault("Player"s, "PBWAccelGainX"s, 150));
+	m_tblAccelAmp.y = dequantizeUnsignedPercentNoClamp(LoadValueIntWithDefault("Player"s, "PBWAccelGainY"s, 150));
+	m_tblAccelMax.x = LoadValueIntWithDefault("Player"s, "PBWAccelMaxX"s, 100) * JOYRANGEMX / 100;
+	m_tblAccelMax.y = LoadValueIntWithDefault("Player"s, "PBWAccelMaxY"s, 100) * JOYRANGEMX / 100;
 
 	// bug!! If tilt sensitivity is not set, it's supposed to disable analog tilting, see KeysConfigDialog.cpp
-	plumb_set_sensitivity((float)LoadValueIntWithDefault("Player", "TiltSensitivity", 400) * (float)(1.0/1000.0));
+	plumb_set_sensitivity((float)LoadValueIntWithDefault("Player"s, "TiltSensitivity"s, 400) * (float)(1.0/1000.0));
 
 	if (g_pplayer)
 		g_pplayer->m_pininput.LoadSettings();
@@ -1479,7 +1479,7 @@ if(!found) \
 
 void PinTable::InitTablePostLoad()
 {
-   ProfileLog("InitTablePostLoad");
+   ProfileLog("InitTablePostLoad"s);
 
    g_pvp->m_ptableActive = (CComObject<PinTable> *)this;
 
@@ -1864,9 +1864,9 @@ void PinTable::Render3DProjection(Sur * const psur)
    pinproj.m_rcviewport.bottom = EDITOR_BG_HEIGHT;
 
    //const float aspect = 4.0f/3.0f;
-   const bool fullscreen = LoadValueBoolWithDefault("Player", "FullScreen", IsWindows10_1803orAbove());
-   const int renderWidth = LoadValueIntWithDefault("Player", "Width", fullscreen ? DEFAULT_PLAYER_FS_WIDTH : DEFAULT_PLAYER_WIDTH);
-   const int renderHeight = LoadValueIntWithDefault("Player", "Height", renderWidth * 9 / 16);
+   const bool fullscreen = LoadValueBoolWithDefault("Player"s, "FullScreen"s, IsWindows10_1803orAbove());
+   const int renderWidth = LoadValueIntWithDefault("Player"s, "Width"s, fullscreen ? DEFAULT_PLAYER_FS_WIDTH : DEFAULT_PLAYER_WIDTH);
+   const int renderHeight = LoadValueIntWithDefault("Player"s, "Height"s, renderWidth * 9 / 16);
    const float aspect = (float)((double)renderWidth / (double)renderHeight); //(float)(4.0/3.0);
 
    pinproj.FitCameraToVertices(vvertex3D, aspect, rotation, inclination, FOV, m_BG_xlatez[m_BG_current_set], m_BG_layback[m_BG_current_set]);
@@ -2019,8 +2019,7 @@ void PinTable::Play(const bool cameraMode)
    EndAutoSaveCounter();
 
    // get the load path from the table filename
-   string szLoadDir;
-   PathFromFilename(m_szFileName, szLoadDir);
+   const string szLoadDir = PathFromFilename(m_szFileName);
    // make sure the load directory is the active directory
    SetCurrentDirectory(szLoadDir.c_str());
 
@@ -2068,29 +2067,29 @@ void PinTable::Play(const bool cameraMode)
          char tmp[256];
 
          sprintf_s(tmp, 256, "TablePhysicsGravityConstant%d", m_overridePhysics - 1);
-         m_fOverrideGravityConstant = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_GRAVITY);
+         m_fOverrideGravityConstant = LoadValueFloatWithDefault("Player"s, tmp, DEFAULT_TABLE_GRAVITY);
          m_fOverrideGravityConstant *= GRAVITYCONST;
 
          sprintf_s(tmp, 256, "TablePhysicsContactFriction%d", m_overridePhysics - 1);
-         m_fOverrideContactFriction = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_CONTACTFRICTION);
+         m_fOverrideContactFriction = LoadValueFloatWithDefault("Player"s, tmp, DEFAULT_TABLE_CONTACTFRICTION);
 
          sprintf_s(tmp, 256, "TablePhysicsElasticity%d", m_overridePhysics - 1);
-         m_fOverrideElasticity = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_ELASTICITY);
+         m_fOverrideElasticity = LoadValueFloatWithDefault("Player"s, tmp, DEFAULT_TABLE_ELASTICITY);
 
          sprintf_s(tmp, 256, "TablePhysicsElasticityFalloff%d", m_overridePhysics - 1);
-         m_fOverrideElasticityFalloff = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_ELASTICITY_FALLOFF);
+         m_fOverrideElasticityFalloff = LoadValueFloatWithDefault("Player"s, tmp, DEFAULT_TABLE_ELASTICITY_FALLOFF);
 
          sprintf_s(tmp, 256, "TablePhysicsScatterAngle%d", m_overridePhysics - 1);
-         m_fOverrideScatterAngle = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_PFSCATTERANGLE);
+         m_fOverrideScatterAngle = LoadValueFloatWithDefault("Player"s, tmp, DEFAULT_TABLE_PFSCATTERANGLE);
 
          sprintf_s(tmp, 256, "TablePhysicsContactScatterAngle%d", m_overridePhysics - 1);
-         fOverrideContactScatterAngle = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_SCATTERANGLE);
+         fOverrideContactScatterAngle = LoadValueFloatWithDefault("Player"s, tmp, DEFAULT_TABLE_SCATTERANGLE);
 
          sprintf_s(tmp, 256, "TablePhysicsMinSlope%d", m_overridePhysics - 1);
-         m_fOverrideMinSlope = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_MIN_SLOPE);
+         m_fOverrideMinSlope = LoadValueFloatWithDefault("Player"s, tmp, DEFAULT_TABLE_MIN_SLOPE);
 
          sprintf_s(tmp, 256, "TablePhysicsMaxSlope%d", m_overridePhysics - 1);
-         m_fOverrideMaxSlope = LoadValueFloatWithDefault("Player", tmp, DEFAULT_TABLE_MAX_SLOPE);
+         m_fOverrideMaxSlope = LoadValueFloatWithDefault("Player"s, tmp, DEFAULT_TABLE_MAX_SLOPE);
       }
 
       c_hardScatter = ANGTORAD(m_overridePhysics ? fOverrideContactScatterAngle : m_defaultScatter);
@@ -2270,7 +2269,7 @@ HRESULT PinTable::Save(const bool saveAs)
       // Or try with the standard last-used dir
       else
       {
-         const HRESULT hr = LoadValue("RecentDir", "LoadDir", szInitialDir);
+         const HRESULT hr = LoadValue("RecentDir"s, "LoadDir"s, szInitialDir);
          if (hr != S_OK)
             szInitialDir = m_vpinball->m_szMyPath + "Tables\\";
       }
@@ -2287,7 +2286,7 @@ HRESULT PinTable::Save(const bool saveAs)
       char szInitialDir[MAXSTRING];
       strncpy_s(szInitialDir, m_szFileName.c_str(), sizeof(szInitialDir)-1);
       szInitialDir[ofn.nFileOffset] = '\0'; // truncate after folder
-      HRESULT hr = SaveValue("RecentDir", "LoadDir", szInitialDir);
+      HRESULT hr = SaveValue("RecentDir"s, "LoadDir"s, szInitialDir);
 
       {
          MAKE_WIDEPTR_FROMANSI(wszCodeFile, m_szFileName.c_str());
@@ -2306,7 +2305,7 @@ HRESULT PinTable::Save(const bool saveAs)
          }
       }
 
-      TitleFromFilename(m_szFileName, m_szTitle);
+      m_szTitle = TitleFromFilename(m_szFileName);
       SetCaption(m_szTitle);
    }
    else
@@ -3063,7 +3062,7 @@ HRESULT PinTable::LoadInfo(IStorage* pstg, HCRYPTHASH hcrypthash, int version)
    SAFE_VECTOR_DELETE(buffer);
 
    // Write the version to the registry.  This will be read later by the front end.
-   SaveValue("Version", m_szTableName, m_szVersion);
+   SaveValue("Version"s, m_szTableName, m_szVersion);
 
    HRESULT hr;
    IStream *pstm;
@@ -3336,7 +3335,7 @@ HRESULT PinTable::LoadGameFromFilename(const string& szFileName)
 
 HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
 {
-   ProfileLog("LoadGameFromStorage");
+   ProfileLog("LoadGameFromStorage"s);
 
    RECT rc;
    ::SendMessage(m_vpinball->m_hwndStatusBar, SB_GETRECT, 2, (size_t)&rc);
@@ -3408,7 +3407,7 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
             if (loadfileversion > CURRENT_FILE_FORMAT_VERSION)
             {
                char errorMsg[MAX_PATH] = { 0 };
-               sprintf_s(errorMsg, "This table was saved with version %i.%02i and is newer than the supported version %i.%02i! You might get problems loading/playing it!", loadfileversion / 100, loadfileversion % 100, CURRENT_FILE_FORMAT_VERSION / 100, CURRENT_FILE_FORMAT_VERSION % 100);
+               sprintf_s(errorMsg, "This table was saved with file version %i.%02i and is newer than the supported file version %i.%02i!\nYou might get problems loading/playing it, so please update to the latest VPX at https://github.com/vpinball/vpinball/releases!", loadfileversion / 100, loadfileversion % 100, CURRENT_FILE_FORMAT_VERSION / 100, CURRENT_FILE_FORMAT_VERSION % 100);
                ShowError(errorMsg);
                /*
                               pstgRoot->Release();
@@ -3446,7 +3445,7 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
 
          if (SUCCEEDED(hr = LoadData(pstmGame, csubobj, csounds, ctextures, cfonts, ccollection, loadfileversion, hch, (loadfileversion < NO_ENCRYPTION_FORMAT_VERSION) ? hkey : NULL)))
          {
-            ProfileLog("LoadData");
+            ProfileLog("LoadData"s);
 
             const int ctotalitems = csubobj + csounds + ctextures + cfonts;
             int cloadeditems = 0;
@@ -3481,7 +3480,7 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
                ::SendMessage(hwndProgressBar, PBM_SETPOS, cloadeditems, 0);
             }
 
-            ProfileLog("GameItem");
+            ProfileLog("GameItem"s);
 
             for (int i = 0; i < csounds; i++)
             {
@@ -3499,7 +3498,7 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
                ::SendMessage(hwndProgressBar, PBM_SETPOS, cloadeditems, 0);
             }
 
-            ProfileLog("Sound");
+            ProfileLog("Sound"s);
 
             assert(m_vimage.empty());
             m_vimage.resize(ctextures); // due to multithreaded loading do pre-allocation
@@ -3562,7 +3561,7 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
                         --i2;
                     }
 
-            ProfileLog("Image");
+            ProfileLog("Image"s);
 
             ::SendMessage(hwndProgressBar, PBM_SETPOS, cloadeditems, 0);
 
@@ -3585,7 +3584,7 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
                ::SendMessage(hwndProgressBar, PBM_SETPOS, cloadeditems, 0);
             }
 
-            ProfileLog("Font");
+            ProfileLog("Font"s);
 
             for (int i = 0; i < ccollection; i++)
             {
@@ -3608,7 +3607,7 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
                ::SendMessage(hwndProgressBar, PBM_SETPOS, cloadeditems, 0);
             }
 
-            ProfileLog("Collection");
+            ProfileLog("Collection"s);
 
             for (size_t i = 0; i < m_vedit.size(); i++)
             {
@@ -3616,7 +3615,7 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
                piedit->InitPostLoad();
             }
 
-            ProfileLog("IEditable PostLoad");
+            ProfileLog("IEditable PostLoad"s);
          }
          pstmGame->Release();
 
@@ -3852,21 +3851,21 @@ bool PinTable::LoadToken(const int id, BiffReader * const pbr)
    {
       int tmp;
       pbr->GetInt(tmp);
-      m_plungerNormalize = LoadValueIntWithDefault("Player", "PlungerNormalize", tmp);
+      m_plungerNormalize = LoadValueIntWithDefault("Player"s, "PlungerNormalize"s, tmp);
       break;
    }
    case FID(MPDF):
    {
       bool tmp;
       pbr->GetBool(tmp);
-      m_plungerFilter = LoadValueBoolWithDefault("Player", "PlungerFilter", tmp);
+      m_plungerFilter = LoadValueBoolWithDefault("Player"s, "PlungerFilter"s, tmp);
       break;
    }
    case FID(PHML):
    {
       pbr->GetInt(m_PhysicsMaxLoops);
       if (m_PhysicsMaxLoops == 0xFFFFFFFF)
-         /*const HRESULT hr =*/ LoadValue("Player", "PhysicsMaxLoops", m_PhysicsMaxLoops);
+         /*const HRESULT hr =*/ LoadValue("Player"s, "PhysicsMaxLoops"s, m_PhysicsMaxLoops);
       break;
    }
    case FID(DECL): pbr->GetBool(m_renderDecals); break;
@@ -3949,7 +3948,7 @@ bool PinTable::LoadToken(const int id, BiffReader * const pbr)
    {
       pbr->GetFloat(m_globalDifficulty);
       int tmp;
-      const HRESULT hr = LoadValue("Player", "GlobalDifficulty", tmp);
+      const HRESULT hr = LoadValue("Player"s, "GlobalDifficulty"s, tmp);
       if (hr == S_OK) m_globalDifficulty = dequantizeUnsignedPercent(tmp);
       break;
    }
@@ -5453,7 +5452,7 @@ void PinTable::ImportBackdropPOV(const string& filename)
     if (filename.empty())
     {
        string szInitialDir;
-       HRESULT hr = LoadValue("RecentDir", "POVDir", szInitialDir);
+       HRESULT hr = LoadValue("RecentDir"s, "POVDir"s, szInitialDir);
        if (hr != S_OK)
           szInitialDir = "c:\\Visual Pinball\\Tables\\";
    
@@ -5462,7 +5461,7 @@ void PinTable::ImportBackdropPOV(const string& filename)
 
        const size_t index = szFileName[0].find_last_of('\\');
        if (index != std::string::npos)
-           hr = SaveValue("RecentDir", "POVDir", szFileName[0].substr(0, index));
+           hr = SaveValue("RecentDir"s, "POVDir"s, szFileName[0].substr(0, index));
     }
     else
        szFileName.push_back(filename);
@@ -5676,132 +5675,102 @@ void PinTable::ExportBackdropPOV(const string& filename)
 
         xml_node<>*desktop = xmlDoc.allocate_node(node_element, "desktop");
         sprintf_s(strBuf, "%f", m_BG_inclination[BG_DESKTOP]);
-        const string dti(strBuf);
-        xml_node<>*dtIncl = xmlDoc.allocate_node(node_element, "inclination", dti.c_str());
+        xml_node<>*dtIncl = xmlDoc.allocate_node(node_element, "inclination", strBuf);
         desktop->append_node(dtIncl);
         sprintf_s(strBuf, "%f", m_BG_FOV[BG_DESKTOP]);
-        const string dtf(strBuf);
-        xml_node<>*dtFov = xmlDoc.allocate_node(node_element, "fov", dtf.c_str());
+        xml_node<>*dtFov = xmlDoc.allocate_node(node_element, "fov", strBuf);
         desktop->append_node(dtFov);
         sprintf_s(strBuf, "%f", m_BG_layback[BG_DESKTOP]);
-        const string dtl(strBuf);
-        xml_node<>*dtLayback = xmlDoc.allocate_node(node_element, "layback", dtl.c_str());
+        xml_node<>*dtLayback = xmlDoc.allocate_node(node_element, "layback", strBuf);
         desktop->append_node(dtLayback);
         sprintf_s(strBuf, "%f", m_BG_rotation[BG_DESKTOP]);
-        const string dtr(strBuf);
-        xml_node<>*dtRotation = xmlDoc.allocate_node(node_element, "rotation", dtr.c_str());
+        xml_node<>*dtRotation = xmlDoc.allocate_node(node_element, "rotation", strBuf);
         desktop->append_node(dtRotation);
         sprintf_s(strBuf, "%f", m_BG_scalex[BG_DESKTOP]);
-        const string dtsx(strBuf);
-        xml_node<>*dtScalex = xmlDoc.allocate_node(node_element, "xscale", dtsx.c_str());
+        xml_node<>*dtScalex = xmlDoc.allocate_node(node_element, "xscale", strBuf);
         desktop->append_node(dtScalex);
         sprintf_s(strBuf, "%f", m_BG_scaley[BG_DESKTOP]);
-        const string dtsy(strBuf);
-        xml_node<>*dtScaley = xmlDoc.allocate_node(node_element, "yscale", dtsy.c_str());
+        xml_node<>*dtScaley = xmlDoc.allocate_node(node_element, "yscale", strBuf);
         desktop->append_node(dtScaley);
         sprintf_s(strBuf, "%f", m_BG_scalez[BG_DESKTOP]);
-        const string dtsz(strBuf);
-        xml_node<>*dtScalez = xmlDoc.allocate_node(node_element, "zscale", dtsz.c_str());
+        xml_node<>*dtScalez = xmlDoc.allocate_node(node_element, "zscale", strBuf);
         desktop->append_node(dtScalez);
         sprintf_s(strBuf, "%f", m_BG_xlatex[BG_DESKTOP]);
-        const string dtox(strBuf);
-        xml_node<>*dtOffsetx = xmlDoc.allocate_node(node_element, "xoffset", dtox.c_str());
+        xml_node<>*dtOffsetx = xmlDoc.allocate_node(node_element, "xoffset", strBuf);
         desktop->append_node(dtOffsetx);
         sprintf_s(strBuf, "%f", m_BG_xlatey[BG_DESKTOP]);
-        const string dtoy(strBuf);
-        xml_node<>*dtOffsety = xmlDoc.allocate_node(node_element, "yoffset", dtoy.c_str());
+        xml_node<>*dtOffsety = xmlDoc.allocate_node(node_element, "yoffset", strBuf);
         desktop->append_node(dtOffsety);
         sprintf_s(strBuf, "%f", m_BG_xlatez[BG_DESKTOP]);
-        const string dtoz(strBuf);
-        xml_node<>*dtOffsetz = xmlDoc.allocate_node(node_element, "zoffset", dtoz.c_str());
+        xml_node<>*dtOffsetz = xmlDoc.allocate_node(node_element, "zoffset", strBuf);
         desktop->append_node(dtOffsetz);
 
         root->append_node(desktop);
 
         xml_node<>*fullscreen = xmlDoc.allocate_node(node_element, "fullscreen");
         sprintf_s(strBuf, "%f", m_BG_inclination[BG_FULLSCREEN]);
-        const string fsi(strBuf);
-        xml_node<>*fsIncl = xmlDoc.allocate_node(node_element, "inclination", fsi.c_str());
+        xml_node<>*fsIncl = xmlDoc.allocate_node(node_element, "inclination", strBuf);
         fullscreen->append_node(fsIncl);
         sprintf_s(strBuf, "%f", m_BG_FOV[BG_FULLSCREEN]);
-        const string fsf(strBuf);
-        xml_node<>*fsFov = xmlDoc.allocate_node(node_element, "fov", fsf.c_str());
+        xml_node<>*fsFov = xmlDoc.allocate_node(node_element, "fov", strBuf);
         fullscreen->append_node(fsFov);
         sprintf_s(strBuf, "%f", m_BG_layback[BG_FULLSCREEN]);
-        const string fsl(strBuf);
-        xml_node<>*fsLayback = xmlDoc.allocate_node(node_element, "layback", fsl.c_str());
+        xml_node<>*fsLayback = xmlDoc.allocate_node(node_element, "layback", strBuf);
         fullscreen->append_node(fsLayback);
         sprintf_s(strBuf, "%f", m_BG_rotation[BG_FULLSCREEN]);
-        const string fsr(strBuf);
-        xml_node<>*fsRotation = xmlDoc.allocate_node(node_element, "rotation", fsr.c_str());
+        xml_node<>*fsRotation = xmlDoc.allocate_node(node_element, "rotation", strBuf);
         fullscreen->append_node(fsRotation);
         sprintf_s(strBuf, "%f", m_BG_scalex[BG_FULLSCREEN]);
-        const string fssx(strBuf);
-        xml_node<>*fsScalex = xmlDoc.allocate_node(node_element, "xscale", fssx.c_str());
+        xml_node<>*fsScalex = xmlDoc.allocate_node(node_element, "xscale", strBuf);
         fullscreen->append_node(fsScalex);
         sprintf_s(strBuf, "%f", m_BG_scaley[BG_FULLSCREEN]);
-        const string fssy(strBuf);
-        xml_node<>*fsScaley = xmlDoc.allocate_node(node_element, "yscale", fssy.c_str());
+        xml_node<>*fsScaley = xmlDoc.allocate_node(node_element, "yscale", strBuf);
         fullscreen->append_node(fsScaley);
         sprintf_s(strBuf, "%f", m_BG_scalez[BG_FULLSCREEN]);
-        const string fssz(strBuf);
-        xml_node<>*fsScalez = xmlDoc.allocate_node(node_element, "zscale", fssz.c_str());
+        xml_node<>*fsScalez = xmlDoc.allocate_node(node_element, "zscale", strBuf);
         fullscreen->append_node(fsScalez);
         sprintf_s(strBuf, "%f", m_BG_xlatex[BG_FULLSCREEN]);
-        const string fsox(strBuf);
-        xml_node<>*fsOffsetx = xmlDoc.allocate_node(node_element, "xoffset", fsox.c_str());
+        xml_node<>*fsOffsetx = xmlDoc.allocate_node(node_element, "xoffset", strBuf);
         fullscreen->append_node(fsOffsetx);
         sprintf_s(strBuf, "%f", m_BG_xlatey[BG_FULLSCREEN]);
-        const string fsoy(strBuf);
-        xml_node<>*fsOffsety = xmlDoc.allocate_node(node_element, "yoffset", fsoy.c_str());
+        xml_node<>*fsOffsety = xmlDoc.allocate_node(node_element, "yoffset", strBuf);
         fullscreen->append_node(fsOffsety);
         sprintf_s(strBuf, "%f", m_BG_xlatez[BG_FULLSCREEN]);
-        const string fsoz(strBuf);
-        xml_node<>*fsOffsetz = xmlDoc.allocate_node(node_element, "zoffset", fsoz.c_str());
+        xml_node<>*fsOffsetz = xmlDoc.allocate_node(node_element, "zoffset", strBuf);
         fullscreen->append_node(fsOffsetz);
 
         root->append_node(fullscreen);
 
         xml_node<>*fullsinglescreen = xmlDoc.allocate_node(node_element, "fullsinglescreen");
         sprintf_s(strBuf, "%f", m_BG_inclination[BG_FSS]);
-        const string fssi(strBuf);
-        xml_node<>*fssIncl = xmlDoc.allocate_node(node_element, "inclination", fssi.c_str());
+        xml_node<>*fssIncl = xmlDoc.allocate_node(node_element, "inclination", strBuf);
         fullsinglescreen->append_node(fssIncl);
         sprintf_s(strBuf, "%f", m_BG_FOV[BG_FSS]);
-        const string fssf(strBuf);
-        xml_node<>*fssFov = xmlDoc.allocate_node(node_element, "fov", fssf.c_str());
+        xml_node<>*fssFov = xmlDoc.allocate_node(node_element, "fov", strBuf);
         fullsinglescreen->append_node(fssFov);
         sprintf_s(strBuf, "%f", m_BG_layback[BG_FSS]);
-        const string fssl(strBuf);
-        xml_node<>*fssLayback = xmlDoc.allocate_node(node_element, "layback", fssl.c_str());
+        xml_node<>*fssLayback = xmlDoc.allocate_node(node_element, "layback", strBuf);
         fullsinglescreen->append_node(fssLayback);
         sprintf_s(strBuf, "%f", m_BG_rotation[BG_FSS]);
-        const string fssr(strBuf);
-        xml_node<>*fssRotation = xmlDoc.allocate_node(node_element, "rotation", fssr.c_str());
+        xml_node<>*fssRotation = xmlDoc.allocate_node(node_element, "rotation", strBuf);
         fullsinglescreen->append_node(fssRotation);
         sprintf_s(strBuf, "%f", m_BG_scalex[BG_FSS]);
-        const string fsssx(strBuf);
-        xml_node<>*fssScalex = xmlDoc.allocate_node(node_element, "xscale", fsssx.c_str());
+        xml_node<>*fssScalex = xmlDoc.allocate_node(node_element, "xscale", strBuf);
         fullsinglescreen->append_node(fssScalex);
         sprintf_s(strBuf, "%f", m_BG_scaley[BG_FSS]);
-        const string fsssy(strBuf);
-        xml_node<>*fssScaley = xmlDoc.allocate_node(node_element, "yscale", fsssy.c_str());
+        xml_node<>*fssScaley = xmlDoc.allocate_node(node_element, "yscale", strBuf);
         fullsinglescreen->append_node(fssScaley);
         sprintf_s(strBuf, "%f", m_BG_scalez[BG_FSS]);
-        const string fsssz(strBuf);
-        xml_node<>*fssScalez = xmlDoc.allocate_node(node_element, "zscale", fsssz.c_str());
+        xml_node<>*fssScalez = xmlDoc.allocate_node(node_element, "zscale", strBuf);
         fullsinglescreen->append_node(fssScalez);
         sprintf_s(strBuf, "%f", m_BG_xlatex[BG_FSS]);
-        const string fssox(strBuf);
-        xml_node<>*fssOffsetx = xmlDoc.allocate_node(node_element, "xoffset", fssox.c_str());
+        xml_node<>*fssOffsetx = xmlDoc.allocate_node(node_element, "xoffset", strBuf);
         fullsinglescreen->append_node(fssOffsetx);
         sprintf_s(strBuf, "%f", m_BG_xlatey[BG_FSS]);
-        const string fssoy(strBuf);
-        xml_node<>*fssOffsety = xmlDoc.allocate_node(node_element, "yoffset", fssoy.c_str());
+        xml_node<>*fssOffsety = xmlDoc.allocate_node(node_element, "yoffset", strBuf);
         fullsinglescreen->append_node(fssOffsety);
         sprintf_s(strBuf, "%f", m_BG_xlatez[BG_FSS]);
-        const string fssoz(strBuf);
-        xml_node<>*fssOffsetz = xmlDoc.allocate_node(node_element, "zoffset", fssoz.c_str());
+        xml_node<>*fssOffsetz = xmlDoc.allocate_node(node_element, "zoffset", strBuf);
         fullsinglescreen->append_node(fssOffsetz);
 
         root->append_node(fullsinglescreen);
@@ -5835,8 +5804,7 @@ void PinTable::ExportBackdropPOV(const string& filename)
         xml_node<>* userTrailBalls = xmlDoc.allocate_node(node_element, "BallTrail", cutb.c_str());
         custom->append_node(userTrailBalls);
         sprintf_s(strBuf, "%f", m_ballTrailStrength);
-        const std::string cubs(strBuf);
-        xml_node<>* userTrailStrength = xmlDoc.allocate_node(node_element, "BallTrailStrength", cubs.c_str());
+        xml_node<> *userTrailStrength = xmlDoc.allocate_node(node_element, "BallTrailStrength", strBuf);
         custom->append_node(userTrailStrength);
         const std::string codn = std::to_string(m_overwriteGlobalDayNight);
         xml_node<>* userOverwriteDayNight = xmlDoc.allocate_node(node_element, "OverwriteNightDay", codn.c_str());
@@ -5845,8 +5813,7 @@ void PinTable::ExportBackdropPOV(const string& filename)
         xml_node<>* userDayNight = xmlDoc.allocate_node(node_element, "NightDayLevel", cndl.c_str());
         custom->append_node(userDayNight);
         sprintf_s(strBuf, "%f", GetGlobalDifficulty());
-        const std::string cgd(strBuf);
-        xml_node<>* userDifficutly = xmlDoc.allocate_node(node_element, "GameplayDifficulty", cgd.c_str());
+        xml_node<>* userDifficutly = xmlDoc.allocate_node(node_element, "GameplayDifficulty", strBuf);
         custom->append_node(userDifficutly);
         const std::string cop = std::to_string(m_overridePhysics);
         xml_node<>* userPhysics = xmlDoc.allocate_node(node_element, "PhysicsSet", cop.c_str());
@@ -6690,7 +6657,7 @@ STDMETHODIMP PinTable::PlaySound(BSTR bstr, int loopcount, float volume, float p
    {
       if (szName[0] && m_pcv && g_pplayer && g_pplayer->m_hwndDebugOutput)
       {
-         const std::string logmsg = std::string("Request to play \"") + szName + "\", but sound not found.";
+         const std::string logmsg = "Request to play \""s + szName + "\", but sound not found.";
          m_pcv->AddToDebugOutput(logmsg.c_str());
       }
       return S_OK;
@@ -6736,8 +6703,7 @@ Texture* PinTable::GetImage(const std::string &szName) const
 
 void PinTable::ReImportImage(Texture * const ppi, const string& filename)
 {
-   string szextension;
-   ExtensionFromFilename(filename, szextension);
+   const string szextension = ExtensionFromFilename(filename);
 
    const bool binary = !!lstrcmpi(szextension.c_str(), "bmp");
 
@@ -6857,7 +6823,7 @@ bool PinTable::ExportImage(const Texture * const ppi, const char * const szfilen
       for (unsigned int i = 0; i < ppi->m_height; i++)
       {
          const BYTE * const pch = (spch -= pitch); // start on previous previous line
-         memcpy(psrc + i * pitch, pch, pitch);
+         memcpy(psrc + i * (ppi->m_width*(ppi->m_pdsBuffer->has_alpha() ? 4:3)), pch, ppi->m_width*(ppi->m_pdsBuffer->has_alpha() ? 4:3));
       }
 
       if (!FreeImage_Save(FreeImage_GetFIFFromFilename(szfilename), dib, szfilename, PNG_Z_BEST_COMPRESSION | JPEG_QUALITYGOOD | BMP_SAVE_RLE))
@@ -6934,8 +6900,10 @@ int PinTable::AddListImage(HWND hwndListView, Texture * const ppi)
    lvitem.pszText = (LPSTR)ppi->m_szName.c_str();
    lvitem.lParam = (size_t)ppi;
 
-   //_snprintf_s(sizeString, MAXTOKEN-1, "%ix%i", ppi->m_realWidth, ppi->m_realHeight);
-   _snprintf_s(sizeString, MAXTOKEN - 1, "%ix%i", ppi->m_width, ppi->m_height);
+   if (ppi->m_realWidth == ppi->m_width && ppi->m_realHeight == ppi->m_height)
+      _snprintf_s(sizeString, MAXTOKEN - 1, "%ix%i", ppi->m_realWidth, ppi->m_realHeight);
+   else
+      _snprintf_s(sizeString, MAXTOKEN - 1, "%ix%i downsized to %ix%i", ppi->m_realWidth, ppi->m_realHeight, ppi->m_width, ppi->m_height);
    const int index = ListView_InsertItem(hwndListView, &lvitem);
 
    ListView_SetItemText(hwndListView, index, 1, (LPSTR)ppi->m_szPath.c_str());
@@ -6973,6 +6941,8 @@ int PinTable::AddListImage(HWND hwndListView, Texture * const ppi)
    {
       ListView_SetItemText(hwndListView, index, 5, "RGB 32F");
    }
+   else
+      assert(!"unknown format");
 
    if ((_stricmp(m_image.c_str(), ppi->m_szName.c_str()) == 0)
     || (_stricmp(m_ballImage.c_str(), ppi->m_szName.c_str()) == 0) 
@@ -8628,7 +8598,7 @@ void PinTable::SetShowFSS(const bool enable)
    if (m_BG_enable_FSS)
       m_BG_current_set = FULL_SINGLE_SCREEN;
    else
-      LoadValue("Player", "BGSet", m_BG_current_set);
+      LoadValue("Player"s, "BGSet"s, m_BG_current_set);
 }
 
 STDMETHODIMP PinTable::get_ShowFSS(VARIANT_BOOL *pVal)
@@ -8883,7 +8853,7 @@ STDMETHODIMP PinTable::get_PlungerNormalize(int *pVal)
 
 void PinTable::SetPlungerNormalize(const int value)
 {
-   m_plungerNormalize = LoadValueIntWithDefault("Player", "PlungerNormalize", value);
+   m_plungerNormalize = LoadValueIntWithDefault("Player"s, "PlungerNormalize"s, value);
 }
 
 STDMETHODIMP PinTable::put_PlungerNormalize(int newVal)
@@ -9327,7 +9297,7 @@ STDMETHODIMP PinTable::ImportPhysics()
    std::vector<std::string> szFileName;
    string szInitialDir;
 
-   HRESULT hr = LoadValue("RecentDir", "PhysicsDir", szInitialDir);
+   HRESULT hr = LoadValue("RecentDir"s, "PhysicsDir"s, szInitialDir);
    if (hr != S_OK)
       szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
@@ -9336,7 +9306,7 @@ STDMETHODIMP PinTable::ImportPhysics()
 
    const size_t index = szFileName[0].find_last_of('\\');
    if (index != std::string::npos)
-       hr = SaveValue("RecentDir", "PhysicsDir", szFileName[0].substr(0, index));
+       hr = SaveValue("RecentDir"s, "PhysicsDir"s, szFileName[0].substr(0, index));
 
    ImportVPP(szFileName[0]);
 
@@ -9611,7 +9581,7 @@ STDMETHODIMP PinTable::ExportPhysics()
    ofn.Flags = OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY;
 
    string szInitialDir;
-   const HRESULT hr = LoadValue("RecentDir", "PhysicsDir", szInitialDir);
+   const HRESULT hr = LoadValue("RecentDir"s, "PhysicsDir"s, szInitialDir);
    if (hr != S_OK)
        szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
@@ -9626,7 +9596,7 @@ STDMETHODIMP PinTable::ExportPhysics()
    if (index != std::string::npos)
    {
        const std::string newInitDir(szFilename.substr(0, index));
-       SaveValue("RecentDir", "PhysicsDir", newInitDir);
+       SaveValue("RecentDir"s, "PhysicsDir"s, newInitDir);
    }
 
    xml_document<> xmlDoc;
@@ -9822,7 +9792,7 @@ float PinTable::GetGlobalDifficulty() const
 void PinTable::SetGlobalDifficulty(const float value)
 {
     int tmp;
-    const HRESULT hr = LoadValue("Player", "GlobalDifficulty", tmp);
+    const HRESULT hr = LoadValue("Player"s, "GlobalDifficulty"s, tmp);
     if (hr == S_OK)
         m_globalDifficulty = dequantizeUnsignedPercent(tmp);
     else
@@ -9903,14 +9873,14 @@ STDMETHODIMP PinTable::put_AccelerometerAngle(float newVal)
 
 STDMETHODIMP PinTable::get_DeadZone(int *pVal)
 {
-   *pVal = LoadValueIntWithDefault("Player", "DeadZone", 0);
+   *pVal = LoadValueIntWithDefault("Player"s, "DeadZone"s, 0);
 
    return S_OK;
 }
 
 STDMETHODIMP PinTable::put_DeadZone(int newVal)
 {
-   SaveValueInt("Player", "DeadZone", clamp(newVal, 0,100));
+   SaveValueInt("Player"s, "DeadZone"s, clamp(newVal, 0,100));
 
    return S_OK;
 }
@@ -10087,7 +10057,7 @@ void PinTable::InvokeBallBallCollisionCallback(const Ball *b1, const Ball *b2, f
 
 void PinTable::OnInitialUpdate()
 {
-    ProfileLog("PinTable OnInitialUpdate");
+    ProfileLog("PinTable OnInitialUpdate"s);
 
     BeginAutoSaveCounter();
     SetWindowText(m_szFileName.c_str());

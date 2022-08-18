@@ -2,14 +2,14 @@
 
 #include <inc/robin_hood.h>
 
-#include "Texture.h"
 #include "stdafx.h"
+#include "Texture.h"
 #include "typedefs3D.h"
 
 class RenderDevice;
 enum TextureFilter;
 
-class TextureManager
+class TextureManager final
 {
 public:
    TextureManager(RenderDevice& rd) : m_rd(rd)

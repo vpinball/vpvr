@@ -11,7 +11,7 @@
 // DispReel
 
 // add data in this class is persisted with the table
-class DispReelData : public BaseProperty
+class DispReelData final : public BaseProperty
 {
 public:
    Vertex2D    m_v1, m_v2;          // position on map (top right corner)
@@ -70,15 +70,15 @@ public:
 
    STANDARD_EDITABLE_DECLARES(DispReel, eItemDispReel, DISPREEL, 2)
 
-   virtual void MoveOffset(const float dx, const float dy) override;
-   virtual void SetObjectPos() override;
+   void MoveOffset(const float dx, const float dy) final;
+   void SetObjectPos() final;
    // Multi-object manipulation
-   virtual Vertex2D GetCenter() const override;
-   virtual void PutCenter(const Vertex2D &pv) override;
+   Vertex2D GetCenter() const final;
+   void PutCenter(const Vertex2D &pv) final;
 
-   virtual ItemTypeEnum HitableGetItemType() const override { return eItemDispReel; }
+   ItemTypeEnum HitableGetItemType() const final { return eItemDispReel; }
 
-   virtual void WriteRegDefaults() override;
+   void WriteRegDefaults() final;
 
    DECLARE_REGISTRY_RESOURCEID(IDR_DISP_REEL)
    // ISupportsErrorInfo
@@ -147,10 +147,10 @@ public:
 
    void    Animate();
 
-   class DispReelAnimObject : public AnimObject
+   class DispReelAnimObject final : public AnimObject
    {
    public:
-      virtual void Animate() override { m_pDispReel->Animate(); } // this function is called every frame to animate the object/reels animation
+      void Animate() final { m_pDispReel->Animate(); } // this function is called every frame to animate the object/reels animation
 
       DispReel *m_pDispReel;
    } m_dispreelanim;

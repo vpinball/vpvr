@@ -2,11 +2,11 @@
 #define FID(A) (int)((unsigned int)(#A[0])|((unsigned int)(#A[1])<<8)|((unsigned int)(#A[2])<<16)|((unsigned int)(#A[3])<<24))
 
 bool Exists(const string& filePath);
-void TitleFromFilename(const string& szfilename, string& sztitle);
-void ExtensionFromFilename(const string& szfilename, string& szextension);
+string TitleFromFilename(const string& szfilename);
+string ExtensionFromFilename(const string& szfilename);
 bool RawReadFromFile(const char * const szfilename, int *const psize, char **pszout);
-void PathFromFilename(const string& szfilename, string& szpath);
-void TitleAndPathFromFilename(const char * const szfilename, char *szpath);
+string PathFromFilename(const string& szfilename);
+string TitleAndPathFromFilename(const char * const szfilename);
 bool ReplaceExtensionFromFilename(string& szfilename, const string& newextension);
 
 class BiffReader;
@@ -17,7 +17,7 @@ public:
    virtual bool LoadToken(const int id, BiffReader * const pbr) = 0;
 };
 
-class BiffWriter
+class BiffWriter final
 {
 public:
    BiffWriter(IStream *pistream, const HCRYPTHASH hcrypthash);
@@ -44,7 +44,7 @@ public:
    HCRYPTHASH m_hcrypthash;
 };
 
-class BiffReader
+class BiffReader final
 {
 public:
    BiffReader(IStream *pistream, ILoadable *piloadable, void *ppassdata, const int version, const HCRYPTHASH hcrypthash, const HCRYPTKEY hcryptkey);

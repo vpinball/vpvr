@@ -7,7 +7,7 @@
 
 #include "resource.h"       // main symbols
 
-class BumperData : public BaseProperty
+class BumperData final : public BaseProperty
 {
 public:
    Vertex2D m_vCenter;
@@ -78,25 +78,25 @@ public:
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
    
-   virtual void MoveOffset(const float dx, const float dy) override;
-   virtual void SetObjectPos() override;
+   void MoveOffset(const float dx, const float dy) final;
+   void SetObjectPos() final;
    
    // Multi-object manipulation
-   virtual Vertex2D GetCenter() const override;
-   virtual void PutCenter(const Vertex2D &pv) override;
+   Vertex2D GetCenter() const final;
+   void PutCenter(const Vertex2D &pv) final;
 
-   virtual void SetDefaultPhysics(bool fromMouseClick) override;
-   virtual void ExportMesh(ObjLoader &loader) override;
-   virtual void RenderBlueprint(Sur *psur, const bool solid) override;
+   void SetDefaultPhysics(bool fromMouseClick) final;
+   void ExportMesh(ObjLoader &loader) final;
+   void RenderBlueprint(Sur *psur, const bool solid) final;
 
-   virtual unsigned long long GetMaterialID() const override
+   unsigned long long GetMaterialID() const final
    {
       if (!m_d.m_baseVisible && m_d.m_capVisible)
          return m_ptable->GetMaterial(m_d.m_szCapMaterial)->hash();
       else
          return 64-3; //!! some constant number
    }
-   virtual unsigned long long GetImageID() const override
+   unsigned long long GetImageID() const final
    {
       if (!m_d.m_baseVisible && m_d.m_capVisible)
          return (unsigned long long)&m_capTexture; //!! meh
@@ -104,9 +104,9 @@ public:
          return 0;
    }
    
-   virtual ItemTypeEnum HitableGetItemType() const override { return eItemBumper; }
+   ItemTypeEnum HitableGetItemType() const final { return eItemBumper; }
 
-   virtual void WriteRegDefaults() override;
+   void WriteRegDefaults() final;
 
    BumperData m_d;
 

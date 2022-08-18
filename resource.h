@@ -1182,13 +1182,9 @@
 #define IDC_STATIC7                     842
 #define IDC_MSAASLIDER_LABEL            843
 #define IDC_STATIC6                     843
-#define IDC_LABEL_INPUT_API             844
 #define IDC_STATIC11                    844
-#define IDC_COMBO_INPUT_API             845
 #define IDC_STATIC1                     845
-#define IDC_COMBO_RUMBLE                846
 #define IDC_STATIC2                     846
-#define IDC_LABEL_RUMBLE                847
 #define IDC_STATIC3                     847
 #define IDC_STATIC4                     848
 #define IDC_STATIC5                     849
@@ -1217,6 +1213,10 @@
 #define IDC_SCRIPT_STOP                 871
 #define IDC_SUPPRESS_ERRORS_CHECK       872
 #define ID_SCRIPT_TOGGLE_LAST_ERROR_VISIBILITY 873
+#define IDC_LABEL_INPUT_API             874
+#define IDC_COMBO_INPUT_API             875
+#define IDC_COMBO_RUMBLE                876
+#define IDC_LABEL_RUMBLE                877
 #define IDC_RESET_WINDOW_POS            878
 #define IDC_3D_STEREO_CONTRAST          879
 #define IDC_3D_STEREO_DESATURATION      880

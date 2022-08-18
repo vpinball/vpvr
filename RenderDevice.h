@@ -15,6 +15,10 @@
 #include <openvr.h>
 #endif
 
+#ifndef ENABLE_SDL
+#define CHECKNVAPI(s) { NvAPI_Status hr = (s); if (hr != NVAPI_OK) { NvAPI_ShortString ss; NvAPI_GetErrorMessage(hr,ss); g_pvp->MessageBox(ss, "NVAPI", MB_OK | MB_ICONEXCLAMATION); } }
+#endif
+
 void ReportFatalError(const HRESULT hr, const char *file, const int line);
 void ReportError(const char *errorText, const HRESULT hr, const char *file, const int line);
 
@@ -83,7 +87,7 @@ enum UsageFlags {
 class TextureManager;
 class Shader;
 
-class RenderDevice
+class RenderDevice final
 {
 public:
 
@@ -476,11 +480,13 @@ private:
    bool m_mag_aniso;
 #endif
 
+public:
    bool m_autogen_mipmap;
    //bool m_RESZ_support;
    bool m_force_aniso;
    bool m_compress_textures;
 
+private:
    bool m_dwm_was_enabled;
    bool m_dwm_enabled;
 
@@ -506,8 +512,9 @@ private:
 
 public:
 #ifndef ENABLE_SDL
-   static bool m_useNvidiaApi;
-   static bool m_INTZ_support;
+   bool m_useNvidiaApi;
+   bool m_INTZ_support;
+   bool NVAPIinit;
 #endif
 
    static VertexBuffer* m_quadVertexBuffer;      // internal vb for rendering quads //!! only on primary device for now!

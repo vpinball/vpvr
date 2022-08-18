@@ -130,7 +130,7 @@ void Pin3D::TransformVertices(const Vertex3D_NoTex2 * const __restrict rgv, cons
 
 BaseTexture* EnvmapPrecalc(const Texture* envTex, const unsigned int rad_env_xres, const unsigned int rad_env_yres)
 {
-   g_pvp->ProfileLog("EnvmapPrecalc Start");
+   g_pvp->ProfileLog("EnvmapPrecalc Start"s);
    const void* __restrict envmap = envTex->m_pdsBuffer->data();
    const unsigned int env_xres = envTex->m_pdsBuffer->width();
    const unsigned int env_yres = envTex->m_pdsBuffer->height();
@@ -467,7 +467,7 @@ BaseTexture* EnvmapPrecalc(const Texture* envTex, const unsigned int rad_env_xre
       free((void*)envmap);
 #endif
 
-   g_pvp->ProfileLog("EnvmapPrecalc End");
+   g_pvp->ProfileLog("EnvmapPrecalc End"s);
    
    return radTex;
 }
@@ -494,10 +494,10 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
    if (!m_pd3dPrimaryDevice->LoadShaders())
       return E_FAIL;
 
-   const bool forceAniso = (stereo3D == STEREO_VR) ? true : LoadValueBoolWithDefault("Player", "ForceAnisotropicFiltering", true);
+   const bool forceAniso = (stereo3D == STEREO_VR) ? true : LoadValueBoolWithDefault("Player"s, "ForceAnisotropicFiltering"s, true);
    m_pd3dPrimaryDevice->ForceAnisotropicFiltering(forceAniso);
 
-   const bool compressTextures = (stereo3D == STEREO_VR) ? false : LoadValueBoolWithDefault("Player", "CompressTextures", false);
+   const bool compressTextures = (stereo3D == STEREO_VR) ? false : LoadValueBoolWithDefault("Player"s, "CompressTextures"s, false);
    m_pd3dPrimaryDevice->CompressTextures(compressTextures);
 
    m_pd3dPrimaryDevice->SetViewport(&m_viewPort);
