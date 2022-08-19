@@ -258,10 +258,10 @@ void ReportFatalError(const HRESULT hr, const char *file, const int line)
 {
    char msg[2048+128];
 #ifdef ENABLE_SDL
-   sprintf_s(msg, "GL Fatal Error 0x%0002X %s in %s:%d", hr, glErrorToString(hr), file, line);
+   sprintf_s(msg, sizeof(msg), "GL Fatal Error 0x%0002X %s in %s:%d", hr, glErrorToString(hr), file, line);
    ShowError(msg);
 #else
-   sprintf_s(msg, "Fatal error %s (0x%x: %s) at %s:%d", DXGetErrorString(hr), hr, DXGetErrorDescription(hr), file, line);
+   sprintf_s(msg, sizeof(msg), "Fatal error %s (0x%x: %s) at %s:%d", DXGetErrorString(hr), hr, DXGetErrorDescription(hr), file, line);
    ShowError(msg);
    exit(-1);
 #endif
@@ -271,10 +271,10 @@ void ReportError(const char *errorText, const HRESULT hr, const char *file, cons
 {
    char msg[2048+128];
 #ifdef ENABLE_SDL
-   sprintf_s(msg, "GL Error 0x%0002X %s in %s:%d\n%s", hr, glErrorToString(hr), file, line, errorText);
+   sprintf_s(msg, sizeof(msg), "GL Error 0x%0002X %s in %s:%d\n%s", hr, glErrorToString(hr), file, line, errorText);
    ShowError(msg);
 #else
-   sprintf_s(msg, "%s %s (0x%x: %s) at %s:%d", errorText, DXGetErrorString(hr), hr, DXGetErrorDescription(hr), file, line);
+   sprintf_s(msg, sizeof(msg), "%s %s (0x%x: %s) at %s:%d", errorText, DXGetErrorString(hr), hr, DXGetErrorDescription(hr), file, line);
    ShowError(msg);
    exit(-1);
 #endif
@@ -893,7 +893,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 
    if (gl_majorVersion < 3 || (gl_majorVersion == 3 && gl_minorVersion < 2)) {
       char errorMsg[256];
-      sprintf_s(errorMsg, 256, "Your graphics card only supports OpenGL %d.%d, but VPVR requires OpenGL 3.2 or newer.", gl_majorVersion, gl_minorVersion);
+      sprintf_s(errorMsg, sizeof(errorMsg), "Your graphics card only supports OpenGL %d.%d, but VPVR requires OpenGL 3.2 or newer.", gl_majorVersion, gl_minorVersion);
       ShowError(errorMsg);
       exit(-1);
    }
@@ -3072,7 +3072,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
             errorCode = "unknown";
             break;
          }
-         sprintf_s(msg, 256, "glCheckFramebufferStatus returned 0x%0002X %s", glCheckFramebufferStatus(tex->framebuffer), errorCode);
+         sprintf_s(msg, sizeof(msg), "glCheckFramebufferStatus returned 0x%0002X %s", glCheckFramebufferStatus(tex->framebuffer), errorCode);
          ShowError(msg);
          exit(-1);
       }

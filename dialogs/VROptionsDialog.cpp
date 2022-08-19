@@ -53,7 +53,7 @@ void VROptionsDialog::ResetVideoPreferences()
 
    char tmp[256];
    constexpr float nudgeStrength = 2e-2f;
-   sprintf_s(tmp, 256, "%f", nudgeStrength);
+   sprintf_s(tmp, sizeof(tmp), "%f", nudgeStrength);
    SetDlgItemTextA(IDC_NUDGE_STRENGTH, tmp);
 
    const bool reflection = LoadValueBoolWithDefault("PlayerVR", "BallReflection", false);
@@ -73,23 +73,23 @@ void VROptionsDialog::ResetVideoPreferences()
    SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
 
    constexpr float vrSlope = 6.5f;
-   sprintf_s(tmp, 256, "%0.1f", vrSlope);
+   sprintf_s(tmp, sizeof(tmp), "%0.1f", vrSlope);
    SetDlgItemTextA(IDC_VR_SLOPE, tmp);
 
    constexpr float vrOrientation = 0.0f;
-   sprintf_s(tmp, 256, "%0.1f", vrOrientation);
+   sprintf_s(tmp, sizeof(tmp), "%0.1f", vrOrientation);
    SetDlgItemTextA(IDC_3D_VR_ORIENTATION, tmp);
 
    constexpr float vrX = 0.0f;
-   sprintf_s(tmp, 256, "%0.1f", vrX);
+   sprintf_s(tmp, sizeof(tmp), "%0.1f", vrX);
    SetDlgItemTextA(IDC_VR_OFFSET_X, tmp);
 
    constexpr float vrY = 0.0f;
-   sprintf_s(tmp, 256, "%0.1f", vrY);
+   sprintf_s(tmp, sizeof(tmp), "%0.1f", vrY);
    SetDlgItemTextA(IDC_VR_OFFSET_Y, tmp);
 
    constexpr float vrZ = 80.0f;
-   sprintf_s(tmp, 256, "%0.1f", vrZ);
+   sprintf_s(tmp, sizeof(tmp), "%0.1f", vrZ);
    SetDlgItemTextA(IDC_VR_OFFSET_Z, tmp);
 
    SendMessage(GetDlgItem(IDC_BLOOM_OFF).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -107,15 +107,15 @@ void VROptionsDialog::ResetVideoPreferences()
 
    scaleRelative = 1.0f;
    scaleAbsolute = 55.0f;
-   sprintf_s(tmp, 256, scaleToFixedWidth ? "%0.1f" : "%0.3f", scaleToFixedWidth ? scaleAbsolute : scaleRelative);
+   sprintf_s(tmp, sizeof(tmp), scaleToFixedWidth ? "%0.1f" : "%0.3f", scaleToFixedWidth ? scaleAbsolute : scaleRelative);
    SetDlgItemTextA(IDC_VR_SCALE, tmp);
 
    constexpr float vrNearPlane = 5.0f;
-   sprintf_s(tmp, 256, "%0.1f", vrNearPlane);
+   sprintf_s(tmp, sizeof(tmp), "%0.1f", vrNearPlane);
    SetDlgItemTextA(IDC_NEAR_PLANE, tmp);
 
    constexpr float vrFarPlane = 5000.0f;
-   sprintf_s(tmp, 256, "%0.1f", vrFarPlane);
+   sprintf_s(tmp, sizeof(tmp), "%0.1f", vrFarPlane);
    SetDlgItemTextA(IDC_FAR_PLANE, tmp);
 
    //AMD Debug
@@ -142,15 +142,15 @@ void VROptionsDialog::FillVideoModesList(const vector<VideoMode>& modes, const V
 
 #ifdef ENABLE_SDL
       if (modes[i].depth) // i.e. is this windowed or not
-         sprintf_s(szT, "%d x %d (%dHz) %s", modes[i].width, modes[i].height, modes[i].refreshrate, (modes[i].depth == 32) ? "32bit" :
+         sprintf_s(szT, sizeof(szT), "%d x %d (%dHz) %s", modes[i].width, modes[i].height, modes[i].refreshrate, (modes[i].depth == 32) ? "32bit" :
             (modes[i].depth == 30) ? "HDR" :
             (modes[i].depth == 16) ? "16bit" : "");
 #else
       if (modes[i].depth)
-         sprintf_s(szT, "%d x %d (%dHz)", modes[i].width, modes[i].height, /*modes[i].depth,*/ modes[i].refreshrate);
+         sprintf_s(szT, sizeof(szT), "%d x %d (%dHz)", modes[i].width, modes[i].height, /*modes[i].depth,*/ modes[i].refreshrate);
 #endif
       else
-         sprintf_s(szT, "%d x %d", modes[i].width, modes[i].height);
+         sprintf_s(szT, sizeof(szT), "%d x %d", modes[i].width, modes[i].height);
 
       SendMessage(hwndList, LB_ADDSTRING, 0, (LPARAM)szT);
       if (curSelMode) {
@@ -208,7 +208,7 @@ BOOL VROptionsDialog::OnInitDialog()
    char tmp[256];
 
    const float nudgeStrength = LoadValueFloatWithDefault("PlayerVR", "NudgeStrength", LoadValueFloatWithDefault("Player", "NudgeStrength", 2e-2f));
-   sprintf_s(tmp, 256, "%f", nudgeStrength);
+   sprintf_s(tmp, sizeof(tmp), "%f", nudgeStrength);
    SetDlgItemTextA(IDC_NUDGE_STRENGTH, tmp);
 
    const float AAfactor = LoadValueFloatWithDefault("PlayerVR", "AAFactor", LoadValueBoolWithDefault("Player", "USEAA", false) ? 1.5f : 1.0f);
@@ -220,7 +220,7 @@ BOOL VROptionsDialog::OnInitDialog()
    SendMessage(hwndSSSlider, TBM_SETTHUMBLENGTH, 5, 0);
    SendMessage(hwndSSSlider, TBM_SETPOS, TRUE, getBestMatchingAAfactorIndex(AAfactor));
    char SSText[32];
-   sprintf_s(SSText, "Supersampling Factor: %.2f", AAfactor);
+   sprintf_s(SSText, sizeof(SSText), "Supersampling Factor: %.2f", AAfactor);
    SetDlgItemText(IDC_SSSLIDER_LABEL, SSText);
 
    const int MSAASamples = LoadValueIntWithDefault("PlayerVR", "MSAASamples", 1);
@@ -235,11 +235,11 @@ BOOL VROptionsDialog::OnInitDialog()
    char MSAAText[52];
    if (MSAASamples == 1)
    {
-      sprintf_s(MSAAText, "MSAA Samples: Disabled");
+      sprintf_s(MSAAText, sizeof(MSAAText), "MSAA Samples: Disabled");
    }
    else
    {
-      sprintf_s(MSAAText, "MSAA Samples: %d", MSAASamples);
+      sprintf_s(MSAAText, sizeof(MSAAText), "MSAA Samples: %d", MSAASamples);
    }
    SetDlgItemText(IDC_MSAASLIDER_LABEL, MSAAText);
 
@@ -279,35 +279,35 @@ BOOL VROptionsDialog::OnInitDialog()
    scaleRelative = LoadValueFloatWithDefault("PlayerVR", "scaleRelative", 1.0f);
    scaleAbsolute = LoadValueFloatWithDefault("PlayerVR", "scaleAbsolute", 55.0f);
 
-   sprintf_s(tmp, 256, scaleToFixedWidth ? "%0.1f" : "%0.3f", scaleToFixedWidth ? scaleAbsolute : scaleRelative);
+   sprintf_s(tmp, sizeof(tmp), scaleToFixedWidth ? "%0.1f" : "%0.3f", scaleToFixedWidth ? scaleAbsolute : scaleRelative);
    SetDlgItemTextA(IDC_VR_SCALE, tmp);
 
    const float vrNearPlane = LoadValueFloatWithDefault("PlayerVR", "nearPlane", 5.0f);
-   sprintf_s(tmp, 256, "%0.1f", vrNearPlane);
+   sprintf_s(tmp, sizeof(tmp), "%0.1f", vrNearPlane);
    SetDlgItemTextA(IDC_NEAR_PLANE, tmp);
 
    const float vrFarPlane = LoadValueFloatWithDefault("PlayerVR", "farPlane", 5000.0f);
-   sprintf_s(tmp, 256, "%0.1f", vrFarPlane);
+   sprintf_s(tmp, sizeof(tmp), "%0.1f", vrFarPlane);
    SetDlgItemTextA(IDC_FAR_PLANE, tmp);
 
    const float vrSlope = LoadValueFloatWithDefault("Player", "VRSlope", 6.5f);
-   sprintf_s(tmp, 256, "%0.2f", vrSlope);
+   sprintf_s(tmp, sizeof(tmp), "%0.2f", vrSlope);
    SetDlgItemTextA(IDC_VR_SLOPE, tmp);
 
    const float vrOrientation = LoadValueFloatWithDefault("Player", "VROrientation", 0.0f);
-   sprintf_s(tmp, 256, "%0.1f", vrOrientation);
+   sprintf_s(tmp, sizeof(tmp), "%0.1f", vrOrientation);
    SetDlgItemTextA(IDC_3D_VR_ORIENTATION, tmp);
 
    const float vrX = LoadValueFloatWithDefault("Player", "VRTableX", 0.0f);
-   sprintf_s(tmp, 256, "%0.1f", vrX);
+   sprintf_s(tmp, sizeof(tmp), "%0.1f", vrX);
    SetDlgItemTextA(IDC_VR_OFFSET_X, tmp);
 
    const float vrY = LoadValueFloatWithDefault("Player", "VRTableY", 0.0f);
-   sprintf_s(tmp, 256, "%0.1f", vrY);
+   sprintf_s(tmp, sizeof(tmp), "%0.1f", vrY);
    SetDlgItemTextA(IDC_VR_OFFSET_Y, tmp);
 
    const float vrZ = LoadValueFloatWithDefault("Player", "VRTableZ", 80.0f);
-   sprintf_s(tmp, 256, "%0.1f", vrZ);
+   sprintf_s(tmp, sizeof(tmp), "%0.1f", vrZ);
    SetDlgItemTextA(IDC_VR_OFFSET_Z, tmp);
 
    const bool bloomOff = LoadValueBoolWithDefault("PlayerVR", "ForceBloomOff", LoadValueBoolWithDefault("Player", "ForceBloomOff", false));
@@ -347,7 +347,7 @@ BOOL VROptionsDialog::OnInitDialog()
       if (display == -1 && dispConf->isPrimary)
          display = dispConf->display;
       char displayName[256];
-      sprintf_s(displayName, "Display %d%s %dx%d %s", dispConf->display + 1, (dispConf->isPrimary) ? "*" : "", dispConf->width, dispConf->height, dispConf->GPU_Name);
+      sprintf_s(displayName, sizeof(displayName), "Display %d%s %dx%d %s", dispConf->display + 1, (dispConf->isPrimary) ? "*" : "", dispConf->width, dispConf->height, dispConf->GPU_Name);
       SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)displayName);
    }
    SendMessage(hwnd, CB_SETCURSEL, display, 0);
@@ -467,7 +467,7 @@ INT_PTR VROptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
          if (mode.height < mode.width) // landscape
          {
-            sprintf_s(szT, "%d x %d (Windowed Fullscreen)", mode.width, mode.height);
+            sprintf_s(szT, sizeof(szT), "%d x %d (Windowed Fullscreen)", mode.width, mode.height);
             SendMessage(hwndList, LB_ADDSTRING, 0, (LPARAM)szT);
             if (indx == -1)
                indexcur = SendMessage(hwndList, LB_GETCOUNT, 0, 0) - 1;
@@ -490,9 +490,9 @@ INT_PTR VROptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                      mode.height = portrait_modes_height[cnt - 1];
 
                      if ((mode.height == screenheight) && (mode.width == screenwidth))
-                        sprintf_s(szT, "%d x %d (Windowed Fullscreen)", mode.width, mode.height);
+                        sprintf_s(szT, sizeof(szT), "%d x %d (Windowed Fullscreen)", mode.width, mode.height);
                      else
-                        sprintf_s(szT, "%d x %d", mode.width, mode.height);
+                        sprintf_s(szT, sizeof(szT), "%d x %d", mode.width, mode.height);
                   }
                   else {
                      memset(&szTx, '\x0', sizeof(szTx));
@@ -519,7 +519,7 @@ INT_PTR VROptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             const size_t posAAfactor = SendMessage(GetDlgItem(IDC_SSSLIDER).GetHwnd(), TBM_GETPOS, 0, 0);//Reading the value from wParam does not work reliable
             const float AAfactor = ((posAAfactor) < AAfactorCount) ? AAfactors[posAAfactor] : 1.0f;
             char newText[32];
-            sprintf_s(newText, "Supersampling Factor: %.2f", AAfactor);
+            sprintf_s(newText, sizeof(newText), "Supersampling Factor: %.2f", AAfactor);
             SetDlgItemText(IDC_SSSLIDER_LABEL, newText);
          }
          else if ((HWND)lParam == GetDlgItem(IDC_MSAASLIDER).GetHwnd()) {
@@ -528,11 +528,11 @@ INT_PTR VROptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             char newText[52];
             if (MSAASampleAmount == 1)
             {
-               sprintf_s(newText, "MSAA Samples: Disabled");
+               sprintf_s(newText, sizeof(newText), "MSAA Samples: Disabled");
             }
             else
             {
-               sprintf_s(newText, "MSAA Samples: %d", MSAASampleAmount);
+               sprintf_s(newText, sizeof(newText), "MSAA Samples: %d", MSAASampleAmount);
             }
             SetDlgItemText(IDC_MSAASLIDER_LABEL, newText);
          }
@@ -582,7 +582,7 @@ BOOL VROptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
          else
             scaleRelative = (float)atof(tmpStr.c_str());
 
-         sprintf_s(tmp, 256, newScaleValue ? "%0.1f" : "%0.3f", newScaleValue ? scaleAbsolute : scaleRelative);
+         sprintf_s(tmp, sizeof(tmp), newScaleValue ? "%0.1f" : "%0.3f", newScaleValue ? scaleAbsolute : scaleRelative);
          SetDlgItemTextA(IDC_VR_SCALE, tmp);
          oldScaleValue = newScaleValue;
       }
