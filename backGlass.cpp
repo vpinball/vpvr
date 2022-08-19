@@ -254,7 +254,7 @@ void BackGlass::Render()
 
    m_pd3dDevice->DMDShader->SetVector(SHADER_vColor_Intensity, 1.0f, 1.0f, 1.0f, 1.0f);
 
-   float Verts[4 * 5] =
+   static constexpr float Verts[4 * 5] =
    {
        1.0f,  1.0f, 0.0f, 1.0f, 0.0f,
       -1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
@@ -329,7 +329,7 @@ void BackGlass::DMDdraw(float DMDposx, float DMDposy, float DMDwidth, float DMDh
 
       for (unsigned int i = 0; i < 4; ++i)
       {
-         DMDVerts[i * 5] = (DMDVerts[i * 5] * DMDwidth + DMDposx)*2.0f - 1.0f;
+         DMDVerts[i * 5    ] =        (DMDVerts[i * 5    ] * DMDwidth  + DMDposx)*2.0f - 1.0f;
          DMDVerts[i * 5 + 1] = 1.0f - (DMDVerts[i * 5 + 1] * DMDheight + DMDposy)*2.0f;
       }
 
