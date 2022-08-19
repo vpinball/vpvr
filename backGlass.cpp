@@ -78,7 +78,7 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice, Texture * backgroundFallbac
 {
 #ifdef ENABLE_VR
    //Check for a directb2s and try to use its backglass data
-   std::string b2sFileName = g_pplayer->m_ptable->m_szFileName;
+   string b2sFileName = g_pplayer->m_ptable->m_szFileName;
    b2sFileName = b2sFileName.substr(0, b2sFileName.find_last_of('.'));
    b2sFileName.append(".directb2s");
    m_backglass_dmd = int2(0,0);
@@ -133,7 +133,7 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice, Texture * backgroundFallbac
                   int size = decode_base64(attrib->value(), data, attrib->value_size(), data_len);
 #ifdef WRITE_BACKGLASS_IMAGES
                   if (WRITE_BACKGLASS_IMAGES > 0 && size > 0) {//Write Image to disk. Also check if the base64 decoder is working...
-                     std::string imageFileName = b2sFileName;
+                     string imageFileName = b2sFileName;
                      imageFileName.append(illuminationNode->name()).append(".bulb").append(std::to_string(bulb)).append(".png");//if it is not a png just rename it...
                      std::ofstream imageFile(imageFileName, std::ios::out | std::ios::binary | std::ios::trunc);
                      if (imageFile.is_open()) {
@@ -168,7 +168,7 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice, Texture * backgroundFallbac
                   }
 #ifdef WRITE_BACKGLASS_IMAGES
                   if (WRITE_BACKGLASS_IMAGES > 0 && size > 0) {//Write Image to disk. Also useful to check if the base64 decoder is working...
-                     std::string imageFileName = b2sFileName;
+                     string imageFileName = b2sFileName;
                      imageFileName.append(imagesNode->name()).append(".png");//if it is not a png just rename it...
                      std::ofstream imageFile(imageFileName, std::ios::out | std::ios::binary | std::ios::trunc);
                      if (imageFile.is_open()) {

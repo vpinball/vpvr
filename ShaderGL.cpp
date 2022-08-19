@@ -16,8 +16,8 @@
 #endif
 
 static std::ofstream* logFile = nullptr;
-std::string Shader::shaderPath;
-std::string Shader::Defines;
+string Shader::shaderPath;
+string Shader::Defines;
 Matrix3D Shader::mWorld, Shader::mView, Shader::mProj[2];
 int Shader::lastShaderProgram = -1;
 D3DTexture* Shader::noTexture = nullptr;
@@ -66,7 +66,7 @@ shaderUniforms Shader::getUniformByName(const string& name) {
       if (name == shaderUniformNames[i])
          return shaderUniforms(i);
 
-   LOG(1, m_shaderCodeName, std::string("getUniformByName Could not find uniform ").append(name).append(" in shaderUniformNames."));
+   LOG(1, m_shaderCodeName, string("getUniformByName Could not find uniform ").append(name).append(" in shaderUniformNames."));
    return SHADER_UNIFORM_INVALID;
 }
 
@@ -75,7 +75,7 @@ shaderAttributes Shader::getAttributeByName(const string& name) {
       if (name == shaderAttributeNames[i])
          return shaderAttributes(i);
 
-   LOG(1, m_shaderCodeName, std::string("getAttributeByName Could not find attribute ").append(name).append(" in shaderAttributeNames."));
+   LOG(1, m_shaderCodeName, string("getAttributeByName Could not find attribute ").append(name).append(" in shaderAttributeNames."));
    return SHADER_ATTRIBUTE_INVALID;
 }
 
@@ -84,7 +84,7 @@ shaderTechniques Shader::getTechniqueByName(const string& name) {
       if (name == shaderTechniqueNames[i])
          return shaderTechniques(i);
 
-   LOG(1, m_shaderCodeName, std::string("getTechniqueByName: Could not find technique ").append(name).append(" in shaderTechniqueNames."));
+   LOG(1, m_shaderCodeName, string("getTechniqueByName: Could not find technique ").append(name).append(" in shaderTechniqueNames."));
    return SHADER_TECHNIQUE_INVALID;
 }
 
@@ -118,7 +118,7 @@ void Shader::LOG(const int level, const string& fileNameRoot, const string& mess
 bla:
          logFile->open(name);
          if (!logFile->is_open()) {
-            const std::wstring wzMkPath = g_pvp->m_wzMyPath + L"glshader";
+            const wstring wzMkPath = g_pvp->m_wzMyPath + L"glshader";
             if (_wmkdir(wzMkPath.c_str()) != 0 || _wmkdir((wzMkPath + L"\\log").c_str()) != 0)
             {
                 char msg[512];
@@ -472,7 +472,7 @@ string Shader::analyzeFunction(const char* shaderCodeName, const string& _techni
    string functionCode = (it != values.end()) ? it->second : string();
    if (end > start + 1) {
       std::stringstream params(functionName.substr(start + 1, end - start - 1));
-      std::string param;
+      string param;
       int paramID = 0;
       while (std::getline(params, param, ',')) {
          functionCode = std::regex_replace(functionCode, std::regex(string("%PARAM").append(std::to_string(paramID)).append("%")), param);
@@ -526,14 +526,14 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
    std::stringstream techniques((it != values.end()) ? it->second : string());
    if (techniques)
    {
-      std::string _technique;
+      string _technique;
       int tecCount = 0;
       while (std::getline(techniques, _technique, '\n')) {//Parse Technique e.g. basic_with_texture:P0:vs_main():gs_optional_main():ps_main_texture()
          if ((_technique.length() > 0) && (_technique.compare(0, 2, "//") != 0))//Skip empty lines and comments
          {
             std::stringstream elements(_technique);
             int elem = 0;
-            std::string element[5];
+            string element[5];
             //Split :
             while ((elem < 5) && std::getline(elements, element[elem], ':')) {
                elem++;

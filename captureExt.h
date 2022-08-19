@@ -33,14 +33,14 @@ private:
 };
 
 typedef std::map<std::tuple<int, int>, ExtCaptureOutput *> outputmaptype;
-typedef std::vector<class ExtCapture*> capturelisttype;
+typedef vector<class ExtCapture*> capturelisttype;
 
 class ExtCapture
 {
 public:
    bool SetupCapture(const RECT& inputRect);
 
-   void Setup(const std::vector<string>& windowlist);
+   void Setup(const vector<string>& windowlist);
    void SearchWindow();
    bool GetFrame();
 
@@ -56,7 +56,7 @@ private:
    friend class ExtCaptureOutput;
 
    static capturelisttype m_allCaptures;
-   std::vector<string> m_searchWindows;
+   vector<string> m_searchWindows;
    int m_delay;
 
    IDXGIAdapter1* m_Adapter = nullptr;

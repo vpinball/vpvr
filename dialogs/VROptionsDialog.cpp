@@ -123,7 +123,7 @@ void VROptionsDialog::ResetVideoPreferences()
    SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_SETCURSEL, 0, 0);
 }
 
-void VROptionsDialog::FillVideoModesList(const std::vector<VideoMode>& modes, const VideoMode* curSelMode)
+void VROptionsDialog::FillVideoModesList(const vector<VideoMode>& modes, const VideoMode* curSelMode)
 {
    const HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
    SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
@@ -334,7 +334,7 @@ BOOL VROptionsDialog::OnInitDialog()
 
    int display;
    const HRESULT hr = LoadValue("PlayerVR", "Display", display);
-   std::vector<DisplayConfig> displays;
+   vector<DisplayConfig> displays;
    getDisplayList(displays);
    if ((hr != S_OK) || ((int)displays.size() <= display) || (display<-1))
       display = -1;
@@ -342,7 +342,7 @@ BOOL VROptionsDialog::OnInitDialog()
    hwnd = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
    SendMessage(hwnd, CB_RESETCONTENT, 0, 0);
 
-   for (std::vector<DisplayConfig>::iterator dispConf = displays.begin(); dispConf != displays.end(); ++dispConf)
+   for (vector<DisplayConfig>::iterator dispConf = displays.begin(); dispConf != displays.end(); ++dispConf)
    {
       if (display == -1 && dispConf->isPrimary)
          display = dispConf->display;

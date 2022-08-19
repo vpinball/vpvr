@@ -16,9 +16,9 @@ protected:
 private:
    void AddToolTip(const char * const text, HWND parentHwnd, HWND toolTipHwnd, HWND controlHwnd);
    void ResetVideoPreferences();
-   void FillVideoModesList(const std::vector<VideoMode>& modes, const VideoMode* curSelMode = nullptr);
+   void FillVideoModesList(const vector<VideoMode>& modes, const VideoMode* curSelMode = nullptr);
 
-   std::vector<VideoMode> allVideoModes;
+   vector<VideoMode> allVideoModes;
 };
 
 #endif

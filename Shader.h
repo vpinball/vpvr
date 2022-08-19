@@ -358,8 +358,8 @@ public:
    void setAttributeFormat(const DWORD fvf);
 
    static void setTextureDirty(const int TextureID);
-   static std::string shaderPath;
-   static std::string Defines;
+   static string shaderPath;
+   static string Defines;
 
 #else
 

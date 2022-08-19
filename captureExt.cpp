@@ -86,9 +86,9 @@ void captureThread()
 
 void captureStartup()
 {
-   const std::vector<string> dmdlist = { "Virtual DMD", "pygame", "PUPSCREEN1", "formDMD", "PUPSCREEN5" };
+   const vector<string> dmdlist = { "Virtual DMD", "pygame", "PUPSCREEN1", "formDMD", "PUPSCREEN5" };
    ecDMD.Setup(dmdlist);
-   const std::vector<string> puplist = { "PUPSCREEN2", "Form1", "B2S Backglass Server", "B2S Background", "B2S DMD" }; // Form1 = old B2S
+   const vector<string> puplist = { "PUPSCREEN2", "Form1", "B2S Backglass Server", "B2S Background", "B2S DMD" }; // Form1 = old B2S
    ecPUP.Setup(puplist);
    ecDMD.m_ecStage = g_pplayer->m_capExtDMD ? ecSearching : ecFailure;
    ecPUP.m_ecStage = g_pplayer->m_capPUP ? ecSearching : ecFailure;
@@ -163,7 +163,7 @@ void ExtCapture::SearchWindow()
    }
 }
 
-void ExtCapture::Setup(const std::vector<string>& windowlist)
+void ExtCapture::Setup(const vector<string>& windowlist)
 {
    m_ecStage = ecUninitialized;
    m_delay = 0;
