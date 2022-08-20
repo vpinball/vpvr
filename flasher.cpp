@@ -99,6 +99,7 @@ HRESULT Flasher::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
 void Flasher::SetDefaults(bool fromMouseClick)
 {
 #define regKey "DefaultProps\\Flasher"s
+
    m_d.m_height = fromMouseClick ? LoadValueFloatWithDefault(regKey, "Height"s, 50.f) : 50.f;
    m_d.m_rotX = fromMouseClick ? LoadValueFloatWithDefault(regKey, "RotX"s, 0.f) : 0.f;
    m_d.m_rotY = fromMouseClick ? LoadValueFloatWithDefault(regKey, "RotY"s, 0.f) : 0.f;

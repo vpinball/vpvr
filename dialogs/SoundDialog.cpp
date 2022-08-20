@@ -252,13 +252,12 @@ void SoundDialog::Import()
    if (pt == nullptr)
       return;
 
-   vector<string> szFileName;
    string szInitialDir;
-
    HRESULT hr = LoadValue( "RecentDir"s, "SoundDir"s, szInitialDir);
    if (hr != S_OK)
       szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
+   vector<string> szFileName;
    if (g_pvp->OpenFileDialog(szInitialDir, szFileName, "Sound Files (.wav/.ogg/.mp3)\0*.wav;*.ogg;*.mp3\0", "mp3", OFN_EXPLORER | OFN_ALLOWMULTISELECT))
    {
       const size_t index = szFileName[0].find_last_of('\\');
@@ -326,12 +325,11 @@ void SoundDialog::ReImportFrom()
         if (ans == IDYES)
         {
             string szInitialDir;
-            vector<string> szFileName;
-
             HRESULT hr = LoadValue("RecentDir", "SoundDir", szInitialDir);
             if (hr != S_OK)
                 szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
+            vector<string> szFileName;
             if (g_pvp->OpenFileDialog(szInitialDir, szFileName, "Sound Files (.wav/.ogg/.mp3)\0*.wav;*.ogg;*.mp3\0", "mp3", 0))
             {
                 LVITEM lvitem;

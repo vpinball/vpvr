@@ -177,6 +177,7 @@ VP 10.7.1 Changelog
 ------------------------
 
 FEATURES:
+
 - add "Assign to Layer" context menu again by showing the first 20 layers.
 
 - expose background and selection color in the script editor preferences
@@ -195,6 +196,7 @@ FEATURES:
 - add new command line parameter "-GLES [value]" which overrides the global emission scale (day/night setting, value range: 0.115..0.925)
 
 FIXES:
+
 - improve very slow layer operations (open/close table, filter/unfilter)
 - fix an issue when hiding all layers
 - assigning an element to a hidden layer, the element will also be set to hidden.

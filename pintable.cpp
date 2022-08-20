@@ -2064,32 +2064,15 @@ void PinTable::Play(const bool cameraMode)
       float fOverrideContactScatterAngle;
       if (m_overridePhysics)
       {
-         char tmp[256];
-
-         sprintf_s(tmp, sizeof(tmp), "TablePhysicsGravityConstant%d", m_overridePhysics - 1);
-         m_fOverrideGravityConstant = LoadValueFloatWithDefault("Player"s, tmp, DEFAULT_TABLE_GRAVITY);
+         m_fOverrideGravityConstant = LoadValueFloatWithDefault("Player"s, "TablePhysicsGravityConstant"+std::to_string(m_overridePhysics - 1), DEFAULT_TABLE_GRAVITY);
          m_fOverrideGravityConstant *= GRAVITYCONST;
-
-         sprintf_s(tmp, sizeof(tmp), "TablePhysicsContactFriction%d", m_overridePhysics - 1);
-         m_fOverrideContactFriction = LoadValueFloatWithDefault("Player"s, tmp, DEFAULT_TABLE_CONTACTFRICTION);
-
-         sprintf_s(tmp, sizeof(tmp), "TablePhysicsElasticity%d", m_overridePhysics - 1);
-         m_fOverrideElasticity = LoadValueFloatWithDefault("Player"s, tmp, DEFAULT_TABLE_ELASTICITY);
-
-         sprintf_s(tmp, sizeof(tmp), "TablePhysicsElasticityFalloff%d", m_overridePhysics - 1);
-         m_fOverrideElasticityFalloff = LoadValueFloatWithDefault("Player"s, tmp, DEFAULT_TABLE_ELASTICITY_FALLOFF);
-
-         sprintf_s(tmp, sizeof(tmp), "TablePhysicsScatterAngle%d", m_overridePhysics - 1);
-         m_fOverrideScatterAngle = LoadValueFloatWithDefault("Player"s, tmp, DEFAULT_TABLE_PFSCATTERANGLE);
-
-         sprintf_s(tmp, sizeof(tmp), "TablePhysicsContactScatterAngle%d", m_overridePhysics - 1);
-         fOverrideContactScatterAngle = LoadValueFloatWithDefault("Player"s, tmp, DEFAULT_TABLE_SCATTERANGLE);
-
-         sprintf_s(tmp, sizeof(tmp), "TablePhysicsMinSlope%d", m_overridePhysics - 1);
-         m_fOverrideMinSlope = LoadValueFloatWithDefault("Player"s, tmp, DEFAULT_TABLE_MIN_SLOPE);
-
-         sprintf_s(tmp, sizeof(tmp), "TablePhysicsMaxSlope%d", m_overridePhysics - 1);
-         m_fOverrideMaxSlope = LoadValueFloatWithDefault("Player"s, tmp, DEFAULT_TABLE_MAX_SLOPE);
+         m_fOverrideContactFriction = LoadValueFloatWithDefault("Player"s, "TablePhysicsContactFriction"+std::to_string(m_overridePhysics - 1), DEFAULT_TABLE_CONTACTFRICTION);
+         m_fOverrideElasticity = LoadValueFloatWithDefault("Player"s, "TablePhysicsElasticity"+std::to_string(m_overridePhysics - 1), DEFAULT_TABLE_ELASTICITY);
+         m_fOverrideElasticityFalloff = LoadValueFloatWithDefault("Player"s, "TablePhysicsElasticityFalloff"+std::to_string(m_overridePhysics - 1), DEFAULT_TABLE_ELASTICITY_FALLOFF);
+         m_fOverrideScatterAngle = LoadValueFloatWithDefault("Player"s, "TablePhysicsScatterAngle"+std::to_string(m_overridePhysics - 1), DEFAULT_TABLE_PFSCATTERANGLE);
+         fOverrideContactScatterAngle = LoadValueFloatWithDefault("Player"s, "TablePhysicsContactScatterAngle"+std::to_string(m_overridePhysics - 1), DEFAULT_TABLE_SCATTERANGLE);
+         m_fOverrideMinSlope = LoadValueFloatWithDefault("Player"s, "TablePhysicsMinSlope"+std::to_string(m_overridePhysics - 1), DEFAULT_TABLE_MIN_SLOPE);
+         m_fOverrideMaxSlope = LoadValueFloatWithDefault("Player"s, "TablePhysicsMaxSlope"+std::to_string(m_overridePhysics - 1), DEFAULT_TABLE_MAX_SLOPE);
       }
 
       c_hardScatter = ANGTORAD(m_overridePhysics ? fOverrideContactScatterAngle : m_defaultScatter);
@@ -9279,13 +9262,12 @@ STDMETHODIMP PinTable::put_OverridePhysicsFlippers(VARIANT_BOOL newVal)
 
 STDMETHODIMP PinTable::ImportPhysics()
 {
-   vector<string> szFileName;
    string szInitialDir;
-
    HRESULT hr = LoadValue("RecentDir"s, "PhysicsDir"s, szInitialDir);
    if (hr != S_OK)
       szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
+   vector<string> szFileName;
    if (!m_vpinball->OpenFileDialog(szInitialDir, szFileName, "Visual Pinball Physics (*.vpp)\0*.vpp\0", "vpp", 0))
        return S_OK;
 

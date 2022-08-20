@@ -1693,11 +1693,7 @@ bool Primitive::LoadToken(const int id, BiffReader * const pbr)
       pbr->GetStruct(c, m_compressedAnimationVertices);
       const int error = uncompress((unsigned char *)frameData.m_frameVerts.data(), &uclen, c, m_compressedAnimationVertices);
       if (error != Z_OK)
-      {
-         char err[128];
-         sprintf_s(err, sizeof(err), "Could not uncompress primitive animation vertex data, error %d", error);
-         ShowError(err);
-      }
+         ShowError("Could not uncompress primitive animation vertex data, error "+std::to_string(error));
       free(c);
       m_mesh.m_animationFrames.push_back(frameData);
       break;
@@ -1763,11 +1759,7 @@ bool Primitive::LoadToken(const int id, BiffReader * const pbr)
 			 mz_ulong uclen2 = uclen;
 			 const int error = uncompress((unsigned char *)m_mesh.m_indices.data(), &uclen2, c, m_compressedIndices);
 			 if (error != Z_OK)
-			 {
-				 char err[128];
-				 sprintf_s(err, sizeof(err), "Could not uncompress (large) primitive index data, error %d", error);
-				 ShowError(err);
-			 }
+				 ShowError("Could not uncompress (large) primitive index data, error "+std::to_string(error));
 			 free(c);
 		 });
       }
@@ -1787,11 +1779,7 @@ bool Primitive::LoadToken(const int id, BiffReader * const pbr)
             mz_ulong uclen2 = uclen;
             const int error = uncompress((unsigned char *)tmp.data(), &uclen2, c, m_compressedIndices);
             if (error != Z_OK)
-            {
-               char err[128];
-               sprintf_s(err, sizeof(err), "Could not uncompress (small) primitive index data, error %d", error);
-               ShowError(err);
-            }
+               ShowError("Could not uncompress (small) primitive index data, error "+std::to_string(error));
             free(c);
             for (int i = 0; i < m_numIndices; ++i)
                m_mesh.m_indices[i] = tmp[i];
@@ -1963,13 +1951,12 @@ INT_PTR CALLBACK Primitive::ObjImportProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
 
             SetForegroundWindow(hwndDlg);
 
-            vector<string> szFileName;
             string szInitialDir;
-
             HRESULT hr = LoadValue("RecentDir"s, "ImportDir"s, szInitialDir);
             if (hr != S_OK)
                szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
+            vector<string> szFileName;
             if (g_pvp->OpenFileDialog(szInitialDir, szFileName, "Wavefront obj file (*.obj)\0*.obj\0", "obj", 0))
             {
                SetDlgItemText(hwndDlg, IDC_FILENAME_EDIT, szFileName[0].c_str());
@@ -2158,7 +2145,6 @@ void Primitive::ExportMeshDialog()
        szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
    vector<string> szFileName;
-   
    if (m_vpinball->SaveFileDialog(szInitialDir, szFileName, "Wavefront obj file (*.obj)\0*.obj\0", "obj", OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY))
    {
       const size_t index = szFileName[0].find_last_of('\\');

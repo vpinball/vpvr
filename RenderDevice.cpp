@@ -1534,7 +1534,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       VertexBuffer::CreateVertexBuffer(4, 0, MY_D3DFVF_TEX, &m_quadVertexBuffer);
       Vertex3D_TexelOnly* bufvb;
       m_quadVertexBuffer->lock(0, 0, (void**)&bufvb, VertexBuffer::WRITEONLY);
-      static const float verts[4 * 5] =
+      static constexpr float verts[4 * 5] =
       {
          1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
          0.0f, 1.0f, 0.0f, 0.0f, 1.0f,

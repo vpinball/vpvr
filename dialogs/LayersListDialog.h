@@ -35,7 +35,7 @@ public:
    HTREEITEM               GetRootItem() { return hRootItem; }
    HTREEITEM               GetCurrentLayerItem() { return hCurrentLayerItem; }
    HTREEITEM               GetFirstLayer() { return GetChild(hRootItem); }
-   string                  GetLayerName(HTREEITEM item) { return string(GetItemText(item)); }
+   string                  GetLayerName(HTREEITEM item) { return string{GetItemText(item)}; }
    bool                    PreTranslateMessage(MSG* msg);
    void                    SetActiveTable(PinTable* ptable) { m_activeTable = ptable; }
    vector<string>          GetAllLayerNames();

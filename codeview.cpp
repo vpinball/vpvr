@@ -1141,7 +1141,6 @@ STDMETHODIMP CodeViewer::OnScriptError(IActiveScriptError *pscripterror)
 
 	// Error log content
 	std::wstringstream errorStream;
-
 	if (isRuntimeError)
 		errorStream << L"Runtime error\r\n";
 	else
@@ -1159,7 +1158,7 @@ STDMETHODIMP CodeViewer::OnScriptError(IActiveScriptError *pscripterror)
 
 	g_pvp->EnableWindow(FALSE);
 
-	const wstring errorStr = errorStream.str();
+	const wstring errorStr{errorStream.str()};
 
 	// Show the error in the last error log
 	AppendLastErrorTextW(errorStr);
@@ -1372,7 +1371,7 @@ STDMETHODIMP CodeViewer::OnScriptErrorDebug(
 	SysFreeString(exception.bstrDescription);
 	SysFreeString(exception.bstrHelpFile);
 
-	const wstring errorStr = errorStream.str();
+	const wstring errorStr{errorStream.str()};
 
 	// Show the error in the last error log
 	AppendLastErrorTextW(errorStr);
@@ -2554,11 +2553,7 @@ bool CodeViewer::ParseOKLineLength(const size_t LineLen)
 {
 	if (LineLen > MAX_LINE_LENGTH)
 	{
-		char szText[128];
-		sprintf_s(szText, sizeof(szText), "The current maximum script line length is %d", MAX_LINE_LENGTH);
-		char szCaption[128];
-		sprintf_s(szCaption, sizeof(szCaption), "Line too long on line %d", (int)LineLen);
-		MessageBox(szText,szCaption, MB_OK);
+		MessageBox(("The current maximum script line length is " + std::to_string(MAX_LINE_LENGTH)).c_str(), ("Line too long on line " + std::to_string(LineLen)).c_str(), MB_OK);
 		return false;
 	}
 	if (LineLen < 3) return false;
@@ -2665,9 +2660,7 @@ bool CodeViewer::ParseStructureName(vector<UserData>& ListIn, UserData ud, const
 				if (!m_stopErrorDisplay)
 				{
 					m_stopErrorDisplay = true;
-					char szCaption[256] = {};
-					sprintf_s(szCaption, sizeof(szCaption), "Parse error on line:%d", Lineno);
-					MessageBox("Construct not closed", szCaption, MB_OK);
+					MessageBox("Construct not closed", ("Parse error on line: " + std::to_string(Lineno)).c_str(), MB_OK);
 				}
 				return true;
 			}
@@ -2688,9 +2681,7 @@ bool CodeViewer::ParseStructureName(vector<UserData>& ListIn, UserData ud, const
 				if (!m_stopErrorDisplay)
 				{
 					m_stopErrorDisplay = true;
-					char szCaption[256] = {};
-					sprintf_s(szCaption, sizeof(szCaption), "Parse error on line:%d", Lineno);
-					MessageBox("Construct not opened", szCaption, MB_OK);
+					MessageBox("Construct not opened", ("Parse error on line: " + std::to_string(Lineno)).c_str(), MB_OK);
 				}
 
 				return true;
@@ -3447,12 +3438,8 @@ INT_PTR CALLBACK CVPrefProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lPara
 			SNDMSG(GetDlgItem(hwndDlg, IDC_CVP_CHKBOX_DISPLAYDWELL), BM_SETCHECK, pcv->m_dwellDisplay ? BST_CHECKED : BST_UNCHECKED, 0L);
 			SNDMSG(GetDlgItem(hwndDlg, IDC_CVP_CHKBOX_HELPWITHDWELL), BM_SETCHECK, pcv->m_dwellHelp ? BST_CHECKED : BST_UNCHECKED, 0L);
 
-			char foo[65];
-			sprintf_s(foo, sizeof(foo), "%i", pcv->m_displayAutoCompleteLength);
-			SetDlgItemText(hwndDlg, IDC_CVP_EDIT_AUTOCHARS, foo);
-		
-			sprintf_s(foo, sizeof(foo), "%i", pcv->m_dwellDisplayTime);
-			SetDlgItemText(hwndDlg, IDC_CVP_EDIT_MOUSEDWELL, foo);
+			SetDlgItemText(hwndDlg, IDC_CVP_EDIT_AUTOCHARS, std::to_string(pcv->m_displayAutoCompleteLength).c_str());
+			SetDlgItemText(hwndDlg, IDC_CVP_EDIT_MOUSEDWELL, std::to_string(pcv->m_dwellDisplayTime).c_str());
 		}
 
 		//SetFocus(hwndDlg);

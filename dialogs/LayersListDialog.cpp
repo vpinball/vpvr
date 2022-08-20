@@ -62,7 +62,7 @@ void LayersListDialog::DeleteLayer()
    {
       hFillLayer = m_layerTreeView.GetNextItem(hFillLayer, TVGN_NEXT);
    }
-   const string fillLayerName(m_layerTreeView.GetItemText(hFillLayer));
+   const string fillLayerName{m_layerTreeView.GetItemText(hFillLayer)};
    m_layerTreeView.SetActiveLayer(fillLayerName);
    for (const HTREEITEM item : allSubItems)
    {
@@ -110,7 +110,7 @@ void LayersListDialog::UpdateLayerList(const string& name)
 
    ClearList();
    const bool checkName = name.empty() ? false : true;
-   string sName = name;
+   string sName{name};
    if (checkName) //transform the name to lower
       std::transform(sName.begin(), sName.end(), sName.begin(), tolower);
 
@@ -124,7 +124,7 @@ void LayersListDialog::UpdateLayerList(const string& name)
          else if (!GetCaseSensitiveFilter())
          {
             //filter obj name and filter to lower
-            string objName = string(m_activeTable->m_vedit[t]->GetName());
+            string objName{m_activeTable->m_vedit[t]->GetName()};
             std::transform(objName.begin(), objName.end(), objName.begin(), tolower);
             if (string(objName).find(sName) != string::npos)
                AddLayer(psel->m_layerName, m_activeTable->m_vedit[t]);
@@ -301,7 +301,7 @@ BOOL LayersListDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 
 void LayersListDialog::OnAssignButton()
 {
-   const string layerName = m_layerTreeView.GetCurrentLayerName();
+   const string layerName{m_layerTreeView.GetCurrentLayerName()};
    if (layerName.empty())
    {
       ShowError("Please select a layer!");
@@ -703,7 +703,7 @@ void LayerTreeView::SetActiveLayer(const string& name)
    HTREEITEM item = GetChild(hRootItem);
    while (item)
    {
-      const string layerName(GetItemText(item));
+      const string layerName{GetItemText(item)};
       if (layerName == name)
       {
          hCurrentLayerItem = item;
@@ -734,7 +734,6 @@ bool LayerTreeView::PreTranslateMessage(MSG* msg)
 
 vector<string> LayerTreeView::GetAllLayerNames()
 {
-   vector<string> layerList;
    vector<HTREEITEM> children;
    HTREEITEM item = GetChild(hRootItem);
    while (item)
@@ -742,10 +741,10 @@ vector<string> LayerTreeView::GetAllLayerNames()
       children.push_back(item);
       item = GetNextItem(item, TVGN_NEXT);
    }
+   vector<string> layerList;
    for (auto& layer : children) 
    { 
-      string name = GetItemText(layer);
-      layerList.push_back(name);
+      layerList.push_back(GetItemText(layer).c_str());
    }
    return layerList;
 }

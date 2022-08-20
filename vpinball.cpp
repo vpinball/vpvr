@@ -929,14 +929,14 @@ void VPinball::DoPlay(const bool _cameraMode)
 
 bool VPinball::LoadFile(const bool updateEditor)
 {
-   vector<string> szFileName;
    string szInitialDir;
-
    HRESULT hr = LoadValue("RecentDir"s, "LoadDir"s, szInitialDir);
    if (hr != S_OK)
       szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
-   if (!OpenFileDialog(szInitialDir, szFileName, "Visual Pinball Tables (*.vpx)\0*.vpx\0Old Visual Pinball Tables(*.vpt)\0*.vpt\0", "vpx", 0, !updateEditor ? "Select a Table to Play or press Cancel to enter Editor-Mode"s : string()))
+   vector<string> szFileName;
+   if (!OpenFileDialog(szInitialDir, szFileName, "Visual Pinball Tables (*.vpx)\0*.vpx\0Old Visual Pinball Tables(*.vpt)\0*.vpt\0", "vpx", 0,
+          !updateEditor ? "Select a Table to Play or press Cancel to enter Editor-Mode"s : string()))
       return false;
 
    const size_t index = szFileName[0].find_last_of('\\');
@@ -1195,12 +1195,8 @@ void VPinball::UpdateRecentFileList(const string& szfilename)
       for (const string &tableName : newList)
       {
          m_recentTableList.push_back(tableName);
-
-         char szRegName[MAX_PATH];
-
          // write entry to the registry
-         sprintf_s(szRegName, sizeof(szRegName), "TableFileName%d", i);
-         SaveValue("RecentDir"s, szRegName, tableName);
+         SaveValue("RecentDir"s, "TableFileName"+std::to_string(i), tableName);
 
          if (++i == LAST_OPENED_TABLE_COUNT)
             break;

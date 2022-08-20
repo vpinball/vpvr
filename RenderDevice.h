@@ -410,7 +410,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    }
 #endif
 
-   HWND getHwnd() { return m_windowHwnd; }
+   HWND getHwnd() const { return m_windowHwnd; }
 
    HWND         m_windowHwnd;
    int          m_width;

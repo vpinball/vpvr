@@ -70,7 +70,7 @@ public:
    void SetName(const string &text) { m_progressName.SetWindowText(text.c_str()); }
 
 protected:
-   virtual BOOL OnInitDialog();
+   BOOL OnInitDialog() final;
 
 private:
    CProgressBar m_progressBar;

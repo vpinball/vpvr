@@ -474,7 +474,7 @@ BaseTexture* EnvmapPrecalc(const Texture* envTex, const unsigned int rad_env_xre
 
 HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
 {
-   const unsigned int display = LoadValueIntWithDefault(stereo3D == STEREO_VR ? "PlayerVR" : "Player", "Display", 0);
+   const unsigned int display = LoadValueIntWithDefault(stereo3D == STEREO_VR ? "PlayerVR"s : "Player"s, "Display"s, 0);
 
    vector<DisplayConfig> displays;
    getDisplayList(displays);
