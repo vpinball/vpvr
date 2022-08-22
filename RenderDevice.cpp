@@ -698,7 +698,7 @@ bool RenderDevice::isVRturnedOn()
       if (!m_pHMD)
          m_pHMD = vr::VR_Init(&VRError, vr::VRApplication_Background);
       if (VRError == vr::VRInitError_None && vr::VRCompositor()) {
-         for (int device = 0; device < vr::k_unMaxTrackedDeviceCount; device++) {
+         for (uint32_t device = 0; device < vr::k_unMaxTrackedDeviceCount; device++) {
             if ((m_pHMD->GetTrackedDeviceClass(device) == vr::TrackedDeviceClass_HMD)) {
                vr::VR_Shutdown();
                m_pHMD = nullptr;
@@ -2820,7 +2820,7 @@ void RenderDevice::DrawIndexedPrimitiveVB(const PrimitiveTypes type, const DWORD
 
    const unsigned int np = ComputePrimitiveCount(type, indexCount);
    m_stats_drawn_triangles += np;
-   vb->bind();
+   vb->bind(); // do not change order, this calls glBindVertexArray in GL, which must come before GL_ELEMENT_ARRAY_BUFFER!
    ib->bind();
 #ifdef ENABLE_SDL
    const int offset = ib->getOffset() + (ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? 2 : 4) * startIndex;
