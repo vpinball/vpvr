@@ -320,7 +320,7 @@ HRESULT Primitive::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
 
 void Primitive::SetDefaults(bool fromMouseClick)
 {
-#define strKeyName "DefaultProps\\Primitive"s
+#define strKeyName regKey[RegName::DefaultPropsPrimitive]
 
    m_d.m_useAsPlayfield = false;
    m_d.m_use3DMesh = false;
@@ -393,12 +393,13 @@ void Primitive::SetDefaults(bool fromMouseClick)
    m_d.m_backfacesEnabled = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "BackfacesEnabled"s, false) : false;
    m_d.m_displayTexture = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "DisplayTexture"s, false) : false;
    m_d.m_objectSpaceNormalMap = fromMouseClick ? LoadValueBoolWithDefault(strKeyName, "ObjectSpaceNormalMap"s, false) : false;
+
 #undef strKeyName
 }
 
 void Primitive::WriteRegDefaults()
 {
-#define strKeyName "DefaultProps\\Primitive"s
+#define strKeyName regKey[RegName::DefaultPropsPrimitive]
 
    SaveValueInt(strKeyName, "SideColor"s, m_d.m_SideColor);
    SaveValueBool(strKeyName, "Visible"s, m_d.m_visible);
@@ -446,6 +447,7 @@ void Primitive::WriteRegDefaults()
    SaveValueBool(strKeyName, "BackfacesEnabled"s, m_d.m_backfacesEnabled);
    SaveValueBool(strKeyName, "DisplayTexture"s, m_d.m_displayTexture);
    SaveValueBool(strKeyName, "ObjectSpaceNormalMap"s, m_d.m_objectSpaceNormalMap);
+
 #undef strKeyName
 }
 
@@ -1952,7 +1954,7 @@ INT_PTR CALLBACK Primitive::ObjImportProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
             SetForegroundWindow(hwndDlg);
 
             string szInitialDir;
-            HRESULT hr = LoadValue("RecentDir"s, "ImportDir"s, szInitialDir);
+            HRESULT hr = LoadValue(regKey[RegName::RecentDir], "ImportDir"s, szInitialDir);
             if (hr != S_OK)
                szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
@@ -1964,7 +1966,7 @@ INT_PTR CALLBACK Primitive::ObjImportProc(HWND hwndDlg, UINT uMsg, WPARAM wParam
                size_t index = szFileName[0].find_last_of('\\');
                if (index != string::npos)
                {
-                  hr = SaveValue("RecentDir"s, "ImportDir"s, szFileName[0].substr(0, index));
+                  hr = SaveValue(regKey[RegName::RecentDir], "ImportDir"s, szFileName[0].substr(0, index));
                   index++;
                   prim->m_d.m_meshFileName = szFileName[0].substr(index, szFileName[0].length() - index);
                }
@@ -2006,7 +2008,7 @@ bool Primitive::BrowseFor3DMeshFile()
    ofn.lpstrDefExt = "obj";
    ofn.Flags = OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY;
 
-   const HRESULT hr = LoadValue("RecentDir"s, "ImportDir"s, szInitialDir);
+   const HRESULT hr = LoadValue(regKey[RegName::RecentDir], "ImportDir"s, szInitialDir);
    if (hr != S_OK)
        szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
@@ -2021,7 +2023,7 @@ bool Primitive::BrowseFor3DMeshFile()
    if (index != string::npos)
    {
       const string newInitDir(szFilename.substr(0, index));
-      SaveValue("RecentDir"s, "ImportDir"s, newInitDir);
+      SaveValue(regKey[RegName::RecentDir], "ImportDir"s, newInitDir);
       index++;
       m_d.m_meshFileName = filename.substr(index, filename.length() - index);
    }
@@ -2140,7 +2142,7 @@ bool Primitive::LoadMeshDialog()
 void Primitive::ExportMeshDialog()
 {
    string szInitialDir;
-   HRESULT hr = LoadValue("RecentDir"s, "ImportDir"s, szInitialDir);
+   HRESULT hr = LoadValue(regKey[RegName::RecentDir], "ImportDir"s, szInitialDir);
    if (hr != S_OK)
        szInitialDir = "c:\\Visual Pinball\\Tables\\";
 
@@ -2151,7 +2153,7 @@ void Primitive::ExportMeshDialog()
       if (index != string::npos)
       {
          const string newInitDir(szFileName[0].substr(0, index));
-         hr = SaveValue("RecentDir"s, "ImportDir"s, newInitDir);
+         hr = SaveValue(regKey[RegName::RecentDir], "ImportDir"s, newInitDir);
       }
 
       char name[sizeof(m_wzName) / sizeof(m_wzName[0])];
@@ -2970,11 +2972,13 @@ STDMETHODIMP Primitive::ShowFrame(float frame)
 
 void Primitive::SetDefaultPhysics(bool fromMouseClick)
 {
-#define strKeyName "DefaultProps\\Primitive"s
+#define strKeyName regKey[RegName::DefaultPropsPrimitive]
+
    m_d.m_elasticity = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "Elasticity"s, 0.3f) : 0.3f;
    m_d.m_elasticityFalloff = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "ElasticityFalloff"s, 0.5f) : 0.5f;
    m_d.m_friction = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "Friction"s, 0.3f) : 0.3f;
    m_d.m_scatter = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "Scatter"s, 0) : 0;
+
 #undef strKeyName
 }
 

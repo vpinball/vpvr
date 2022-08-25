@@ -759,8 +759,8 @@ void RenderDevice::InitVR() {
 
    matEye2Head.Invert();
 
-   const float nearPlane = LoadValueFloatWithDefault("PlayerVR", "nearPlane", 5.0f) / 100.0f;
-   const float farPlane = 5000.0f;//LoadValueFloatWithDefault("PlayerVR", "farPlane", 5000.0f) / 100.0f;
+   const float nearPlane = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "nearPlane"s, 5.0f) / 100.0f;
+   const float farPlane = 5000.0f;//LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "farPlane"s, 5000.0f) / 100.0f;
 
    vr::HmdMatrix44_t mat44 = m_pHMD->GetProjectionMatrix(vr::Eye_Left, nearPlane, farPlane);//5cm to 50m should be a reasonable range
    mat44.m[2][2] = -1.0f;
@@ -799,14 +799,14 @@ void RenderDevice::InitVR() {
       throw(noDevicesFound);
    }
 
-   m_slope = LoadValueFloatWithDefault("Player", "VRSlope", 6.5f);
-   m_orientation = LoadValueFloatWithDefault("Player", "VROrientation", 0.0f);
-   m_tablex = LoadValueFloatWithDefault("Player", "VRTableX", 0.0f);
-   m_tabley = LoadValueFloatWithDefault("Player", "VRTableY", 0.0f);
-   m_tablez = LoadValueFloatWithDefault("Player", "VRTableZ", 80.0f);
-   m_roomOrientation = LoadValueFloatWithDefault("Player", "VRRoomOrientation", 0.0f);
-   m_roomx = LoadValueFloatWithDefault("Player", "VRRoomX", 0.0f);
-   m_roomy = LoadValueFloatWithDefault("Player", "VRRoomY", 0.0f);
+   m_slope = LoadValueFloatWithDefault(regKey[RegName::Player], "VRSlope"s, 6.5f);
+   m_orientation = LoadValueFloatWithDefault(regKey[RegName::Player], "VROrientation"s, 0.0f);
+   m_tablex = LoadValueFloatWithDefault(regKey[RegName::Player], "VRTableX"s, 0.0f);
+   m_tabley = LoadValueFloatWithDefault(regKey[RegName::Player], "VRTableY"s, 0.0f);
+   m_tablez = LoadValueFloatWithDefault(regKey[RegName::Player], "VRTableZ"s, 80.0f);
+   m_roomOrientation = LoadValueFloatWithDefault(regKey[RegName::Player], "VRRoomOrientation"s, 0.0f);
+   m_roomx = LoadValueFloatWithDefault(regKey[RegName::Player], "VRRoomX"s, 0.0f);
+   m_roomy = LoadValueFloatWithDefault(regKey[RegName::Player], "VRRoomY"s, 0.0f);
 
    updateTableMatrix();
 
@@ -861,7 +861,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    int disp_x, disp_y, disp_w, disp_h;
    getDisplaySetupByID(m_adapter, disp_x, disp_y, disp_w, disp_h);
 
-   const bool disableVRPreview = (m_stereo3D == STEREO_VR) && LoadValueBoolWithDefault("PlayerVR", "VRPreviewDisabled", false);
+   const bool disableVRPreview = (m_stereo3D == STEREO_VR) && LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "VRPreviewDisabled"s, false);
 
    if (!disableVRPreview)
       m_sdl_playfieldHwnd = SDL_CreateWindow(
@@ -944,13 +944,13 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       break;
 #ifdef ENABLE_VR
    case STEREO_VR:
-      if (LoadValueBoolWithDefault("PlayerVR", "scaleToFixedWidth", false)) {
+      if (LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "scaleToFixedWidth"s, false)) {
          float width;
          g_pplayer->m_ptable->get_Width(&width);
-         m_scale = LoadValueFloatWithDefault("PlayerVR", "scaleAbsolute", 55.0f) * 0.01f / width;
+         m_scale = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "scaleAbsolute"s, 55.0f) * 0.01f / width;
       }
       else
-         m_scale = 0.000540425f * LoadValueFloatWithDefault("PlayerVR", "scaleRelative", 1.0f);
+         m_scale = 0.000540425f * LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "scaleRelative"s, 1.0f);
       if (m_scale <= 0.f)
          m_scale = 0.000540425f;// Scale factor for VPUnits to Meters
       InitVR();
@@ -1010,7 +1010,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    if (m_stereo3D == STEREO_VR) {
       //AMD Debugging
       colorFormat renderBufferFormatVR;
-      const int textureModeVR = LoadValueIntWithDefault("Player", "textureModeVR", 1);
+      const int textureModeVR = LoadValueIntWithDefault(regKey[RegName::Player], "textureModeVR"s, 1);
       switch (textureModeVR) {
       case 0:
          renderBufferFormatVR = RGB8;
@@ -1297,7 +1297,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    //if (caps.NumSimultaneousRTs < 2)
    //   ShowError("D3D device doesn't support multiple render targets!");
 
-   bool video10bit = LoadValueBoolWithDefault("Player"s, "Render10Bit"s, false);
+   bool video10bit = LoadValueBoolWithDefault(regKey[RegName::Player], "Render10Bit"s, false);
 
    if (!m_fullscreen && video10bit)
    {
@@ -1385,7 +1385,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    else
       params.MultiSampleQuality = min(params.MultiSampleQuality, MultiSampleQualityLevels);
 
-   const bool softwareVP = LoadValueBoolWithDefault("Player"s, "SoftwareVertexProcessing"s, false);
+   const bool softwareVP = LoadValueBoolWithDefault(regKey[RegName::Player], "SoftwareVertexProcessing"s, false);
    const DWORD flags = softwareVP ? D3DCREATE_SOFTWARE_VERTEXPROCESSING : D3DCREATE_HARDWARE_VERTEXPROCESSING;
 
    // Create the D3D device. This optionally goes to the proper fullscreen mode.
@@ -1694,14 +1694,14 @@ RenderDevice::~RenderDevice()
     if (m_pHMD)
     {
         turnVROff();
-        SaveValueFloat("Player"s, "VRSlope"s, m_slope);
-        SaveValueFloat("Player"s, "VROrientation"s, m_orientation);
-        SaveValueFloat("Player"s, "VRTableX"s, m_tablex);
-        SaveValueFloat("Player"s, "VRTableY"s, m_tabley);
-        SaveValueFloat("Player"s, "VRTableZ"s, m_tablez);
-        SaveValueFloat("Player"s, "VRRoomOrientation"s, m_roomOrientation);
-        SaveValueFloat("Player"s, "VRRoomX"s, m_roomx);
-        SaveValueFloat("Player"s, "VRRoomY"s, m_roomy);
+        SaveValueFloat(regKey[RegName::Player], "VRSlope"s, m_slope);
+        SaveValueFloat(regKey[RegName::Player], "VROrientation"s, m_orientation);
+        SaveValueFloat(regKey[RegName::Player], "VRTableX"s, m_tablex);
+        SaveValueFloat(regKey[RegName::Player], "VRTableY"s, m_tabley);
+        SaveValueFloat(regKey[RegName::Player], "VRTableZ"s, m_tablez);
+        SaveValueFloat(regKey[RegName::Player], "VRRoomOrientation"s, m_roomOrientation);
+        SaveValueFloat(regKey[RegName::Player], "VRRoomX"s, m_roomx);
+        SaveValueFloat(regKey[RegName::Player], "VRRoomY"s, m_roomy);
     }
 #endif
 
