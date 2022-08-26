@@ -54,7 +54,7 @@ void VROptionsDialog::ResetVideoPreferences()
    char tmp[256];
    constexpr float nudgeStrength = 2e-2f;
    sprintf_s(tmp, sizeof(tmp), "%f", nudgeStrength);
-   SetDlgItemTextA(IDC_NUDGE_STRENGTH, tmp);
+   SetDlgItemText(IDC_NUDGE_STRENGTH, tmp);
 
    const bool reflection = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "BallReflection"s, false);
    SendMessage(GetDlgItem(IDC_GLOBAL_REFLECTION_CHECK).GetHwnd(), BM_SETCHECK, reflection ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -74,23 +74,23 @@ void VROptionsDialog::ResetVideoPreferences()
 
    constexpr float vrSlope = 6.5f;
    sprintf_s(tmp, sizeof(tmp), "%0.1f", vrSlope);
-   SetDlgItemTextA(IDC_VR_SLOPE, tmp);
+   SetDlgItemText(IDC_VR_SLOPE, tmp);
 
    constexpr float vrOrientation = 0.0f;
    sprintf_s(tmp, sizeof(tmp), "%0.1f", vrOrientation);
-   SetDlgItemTextA(IDC_3D_VR_ORIENTATION, tmp);
+   SetDlgItemText(IDC_3D_VR_ORIENTATION, tmp);
 
    constexpr float vrX = 0.0f;
    sprintf_s(tmp, sizeof(tmp), "%0.1f", vrX);
-   SetDlgItemTextA(IDC_VR_OFFSET_X, tmp);
+   SetDlgItemText(IDC_VR_OFFSET_X, tmp);
 
    constexpr float vrY = 0.0f;
    sprintf_s(tmp, sizeof(tmp), "%0.1f", vrY);
-   SetDlgItemTextA(IDC_VR_OFFSET_Y, tmp);
+   SetDlgItemText(IDC_VR_OFFSET_Y, tmp);
 
    constexpr float vrZ = 80.0f;
    sprintf_s(tmp, sizeof(tmp), "%0.1f", vrZ);
-   SetDlgItemTextA(IDC_VR_OFFSET_Z, tmp);
+   SetDlgItemText(IDC_VR_OFFSET_Z, tmp);
 
    SendMessage(GetDlgItem(IDC_BLOOM_OFF).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), CB_SETCURSEL, 1, 0);
@@ -108,15 +108,15 @@ void VROptionsDialog::ResetVideoPreferences()
    scaleRelative = 1.0f;
    scaleAbsolute = 55.0f;
    sprintf_s(tmp, sizeof(tmp), scaleToFixedWidth ? "%0.1f" : "%0.3f", scaleToFixedWidth ? scaleAbsolute : scaleRelative);
-   SetDlgItemTextA(IDC_VR_SCALE, tmp);
+   SetDlgItemText(IDC_VR_SCALE, tmp);
 
    constexpr float vrNearPlane = 5.0f;
    sprintf_s(tmp, sizeof(tmp), "%0.1f", vrNearPlane);
-   SetDlgItemTextA(IDC_NEAR_PLANE, tmp);
+   SetDlgItemText(IDC_NEAR_PLANE, tmp);
 
    constexpr float vrFarPlane = 5000.0f;
    sprintf_s(tmp, sizeof(tmp), "%0.1f", vrFarPlane);
-   SetDlgItemTextA(IDC_FAR_PLANE, tmp);
+   SetDlgItemText(IDC_FAR_PLANE, tmp);
 
    //AMD Debug
    SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_SETCURSEL, 1, 0);
@@ -212,7 +212,7 @@ BOOL VROptionsDialog::OnInitDialog()
 
    const float nudgeStrength = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "NudgeStrength"s, LoadValueFloatWithDefault(regKey[RegName::Player], "NudgeStrength"s, 2e-2f));
    sprintf_s(tmp, sizeof(tmp), "%f", nudgeStrength);
-   SetDlgItemTextA(IDC_NUDGE_STRENGTH, tmp);
+   SetDlgItemText(IDC_NUDGE_STRENGTH, tmp);
 
    const float AAfactor = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "AAFactor", LoadValueBoolWithDefault(regKey[RegName::Player], "USEAA", false) ? 1.5f : 1.0f);
    const HWND hwndSSSlider = GetDlgItem(IDC_SSSLIDER).GetHwnd();
@@ -283,35 +283,35 @@ BOOL VROptionsDialog::OnInitDialog()
    scaleAbsolute = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "scaleAbsolute"s, 55.0f);
 
    sprintf_s(tmp, sizeof(tmp), scaleToFixedWidth ? "%0.1f" : "%0.3f", scaleToFixedWidth ? scaleAbsolute : scaleRelative);
-   SetDlgItemTextA(IDC_VR_SCALE, tmp);
+   SetDlgItemText(IDC_VR_SCALE, tmp);
 
    const float vrNearPlane = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "nearPlane"s, 5.0f);
    sprintf_s(tmp, sizeof(tmp), "%0.1f", vrNearPlane);
-   SetDlgItemTextA(IDC_NEAR_PLANE, tmp);
+   SetDlgItemText(IDC_NEAR_PLANE, tmp);
 
    const float vrFarPlane = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "farPlane"s, 5000.0f);
    sprintf_s(tmp, sizeof(tmp), "%0.1f", vrFarPlane);
-   SetDlgItemTextA(IDC_FAR_PLANE, tmp);
+   SetDlgItemText(IDC_FAR_PLANE, tmp);
 
    const float vrSlope = LoadValueFloatWithDefault(regKey[RegName::Player], "VRSlope"s, 6.5f);
    sprintf_s(tmp, sizeof(tmp), "%0.2f", vrSlope);
-   SetDlgItemTextA(IDC_VR_SLOPE, tmp);
+   SetDlgItemText(IDC_VR_SLOPE, tmp);
 
    const float vrOrientation = LoadValueFloatWithDefault(regKey[RegName::Player], "VROrientation"s, 0.0f);
    sprintf_s(tmp, sizeof(tmp), "%0.1f", vrOrientation);
-   SetDlgItemTextA(IDC_3D_VR_ORIENTATION, tmp);
+   SetDlgItemText(IDC_3D_VR_ORIENTATION, tmp);
 
    const float vrX = LoadValueFloatWithDefault(regKey[RegName::Player], "VRTableX"s, 0.0f);
    sprintf_s(tmp, sizeof(tmp), "%0.1f", vrX);
-   SetDlgItemTextA(IDC_VR_OFFSET_X, tmp);
+   SetDlgItemText(IDC_VR_OFFSET_X, tmp);
 
    const float vrY = LoadValueFloatWithDefault(regKey[RegName::Player], "VRTableY"s, 0.0f);
    sprintf_s(tmp, sizeof(tmp), "%0.1f", vrY);
-   SetDlgItemTextA(IDC_VR_OFFSET_Y, tmp);
+   SetDlgItemText(IDC_VR_OFFSET_Y, tmp);
 
    const float vrZ = LoadValueFloatWithDefault(regKey[RegName::Player], "VRTableZ"s, 80.0f);
    sprintf_s(tmp, sizeof(tmp), "%0.1f", vrZ);
-   SetDlgItemTextA(IDC_VR_OFFSET_Z, tmp);
+   SetDlgItemText(IDC_VR_OFFSET_Z, tmp);
 
    const bool bloomOff = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "ForceBloomOff"s, LoadValueBoolWithDefault(regKey[RegName::Player], "ForceBloomOff"s, false));
    SendMessage(GetDlgItem(IDC_BLOOM_OFF).GetHwnd(), BM_SETCHECK, bloomOff ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -578,16 +578,16 @@ BOOL VROptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       {
          const bool newScaleValue = SendMessage(GetDlgItem(IDC_SCALE_TO_CM).GetHwnd(), BM_GETCHECK, 0, 0) > 0;
          if (oldScaleValue != newScaleValue) {
-            CString tmpStr = GetDlgItemTextA(IDC_VR_SCALE);
+            CString tmpStr = GetDlgItemText(IDC_VR_SCALE);
             tmpStr.Replace(',', '.');
-            char tmp[256];
             if (oldScaleValue)
                scaleAbsolute = (float)atof(tmpStr.c_str());
             else
                scaleRelative = (float)atof(tmpStr.c_str());
-      
+
+            char tmp[256];
             sprintf_s(tmp, sizeof(tmp), newScaleValue ? "%0.1f" : "%0.3f", newScaleValue ? scaleAbsolute : scaleRelative);
-            SetDlgItemTextA(IDC_VR_SCALE, tmp);
+            SetDlgItemText(IDC_VR_SCALE, tmp);
             oldScaleValue = newScaleValue;
          }
          break;
