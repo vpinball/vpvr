@@ -27,7 +27,7 @@ public:
    COLORREF m_color;
 
    COLORREF m_rubbercolor;
-   string  m_szRubberMaterial;
+   string m_szRubberMaterial;
    float m_rubberthickness;
    float m_rubberheight;
    float m_rubberwidth;

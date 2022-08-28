@@ -83,7 +83,7 @@ HRESULT Ramp::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
 void Ramp::SetDefaults(bool fromMouseClick)
 {
 #define strKeyName regKey[RegName::DefaultPropsRamp]
-   
+
    m_d.m_heightbottom = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "HeightBottom"s, 0.0f) : 0.0f;
    m_d.m_heighttop = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "HeightTop"s, 50.0f) : 50.0f;
    m_d.m_widthbottom = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "WidthBottom"s, 75.0f) : 75.0f;

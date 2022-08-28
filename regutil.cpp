@@ -160,10 +160,10 @@ void InitXMLregistry(const string &path)
    {
       xmlNode[i] = root->first_node(regKey[i].c_str());
       if (!xmlNode[i])
-   {
+      {
          xmlNode[i] = xmlDoc.allocate_node(node_element, regKey[i].c_str());
          root->append_node(xmlNode[i]);
-   }
+      }
    }
 
    // load or init registry values for each folder
