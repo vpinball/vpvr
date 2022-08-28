@@ -1031,8 +1031,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    }
 
    // Non-MSAA Buffers for post-processing
-   m_pOffscreenBackBufferPPTexture1 = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, nullptr, 0, TextureFilter::TEXTURE_MODE_NONE, false, false);
-   m_pOffscreenBackBufferPPTexture2 = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, nullptr, 0, TextureFilter::TEXTURE_MODE_NONE, false, false);
+   m_pOffscreenBackBufferPPTexture1 = new RenderTargetObj(this, m_Buf_width, m_Buf_height, renderBufferFormat, true, false, m_stereo3D, "Fatal Error: unable to create frame buffer 1 !");
+   m_pOffscreenBackBufferPPTexture2 = new RenderTargetObj(this, m_Buf_width, m_Buf_height, renderBufferFormat, true, false, m_stereo3D, "Fatal Error: unable to create frame buffer 2 !");
 
    // Use postprocessing buffer instead of separate reflectionbuffer
    /*if (m_ssRefl)
@@ -1642,7 +1642,7 @@ RenderDevice::~RenderDevice()
     m_texMan.UnloadAll();
     delete m_pOffscreenBackBufferTexture;
     SAFE_RELEASE_RENDER_TARGET(m_pOffscreenBackBufferStereoTexture);
-    SAFE_RELEASE_RENDER_TARGET(m_pOffscreenBackBufferPPTexture1);
+    delete m_pOffscreenBackBufferPPTexture1;
     SAFE_RELEASE_RENDER_TARGET(m_pReflectionBufferTexture);
 
     if (g_pplayer)
