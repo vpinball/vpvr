@@ -51,8 +51,8 @@ Pin3D::~Pin3D()
 
    SAFE_BUFFER_RELEASE(m_tableVBuffer);
 
-   SAFE_RELEASE_RENDER_TARGET(m_pddsAOBackBuffer);
-   SAFE_RELEASE_RENDER_TARGET(m_pddsAOBackTmpBuffer);
+   delete m_pddsAOBackBuffer;
+   delete m_pddsAOBackTmpBuffer;
 #ifndef ENABLE_SDL
    if (!m_pd3dPrimaryDevice->m_useNvidiaApi && m_pd3dPrimaryDevice->m_INTZ_support)
    {
@@ -539,10 +539,17 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
 
    if (m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && useAO) 
    {
-      m_pddsAOBackTmpBuffer = m_pd3dPrimaryDevice->CreateTexture(m_pd3dPrimaryDevice->getBufwidth(), m_pd3dPrimaryDevice->getBufheight(), 1, RENDERTARGET, colorFormat::GREY8, nullptr, stereo3D, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
-
-      m_pddsAOBackBuffer = m_pd3dPrimaryDevice->CreateTexture(m_pd3dPrimaryDevice->getBufwidth(), m_pd3dPrimaryDevice->getBufheight(), 1, RENDERTARGET, colorFormat::GREY8, nullptr, stereo3D, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
-
+#ifdef ENABLE_SDL
+      m_pddsAOBackTmpBuffer = new RenderTargetObj(m_pd3dPrimaryDevice, m_pd3dPrimaryDevice->getBufwidth(), m_pd3dPrimaryDevice->getBufheight(), colorFormat::GREY8, false, false, stereo3D,
+         "Unable to create AO buffers!\r\nPlease disable Ambient Occlusion.\r\nOr try to (un)set \"Alternative Depth Buffer processing\" in the video options!");
+      m_pddsAOBackBuffer = new RenderTargetObj(m_pd3dPrimaryDevice, m_pd3dPrimaryDevice->getBufwidth(), m_pd3dPrimaryDevice->getBufheight(), colorFormat::GREY8, false, false, stereo3D,
+         "Unable to create AO buffers!\r\nPlease disable Ambient Occlusion.\r\nOr try to (un)set \"Alternative Depth Buffer processing\" in the video options!");
+#else
+      m_pddsAOBackTmpBuffer = new RenderTarget(m_pd3dPrimaryDevice, m_viewPort.Width, m_viewPort.Height, colorFormat::GREY8, false, false, stereo3D,
+         "Unable to create AO buffers!\r\nPlease disable Ambient Occlusion.\r\nOr try to (un)set \"Alternative Depth Buffer processing\" in the video options!");
+      m_pddsAOBackBuffer = new RenderTarget(m_pd3dPrimaryDevice, m_viewPort.Width, m_viewPort.Height, colorFormat::GREY8, false, false, stereo3D,
+         "Unable to create AO buffers!\r\nPlease disable Ambient Occlusion.\r\nOr try to (un)set \"Alternative Depth Buffer processing\" in the video options!");
+#endif
        if (!m_pddsAOBackBuffer || !m_pddsAOBackTmpBuffer)
           return E_FAIL;
    }
