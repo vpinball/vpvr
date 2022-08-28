@@ -116,8 +116,8 @@ public:
    RenderDevice* m_pd3dPrimaryDevice;
    RenderDevice* m_pd3dSecondaryDevice;
 
-   D3DTexture* m_pddsAOBackBuffer;
-   D3DTexture* m_pddsAOBackTmpBuffer;
+   RenderTargetObj* m_pddsAOBackBuffer;
+   RenderTargetObj* m_pddsAOBackTmpBuffer;
 
    RenderTargetObj* m_pddsBackBuffer;
 

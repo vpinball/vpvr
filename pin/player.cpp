@@ -4205,7 +4205,7 @@ void Player::PostProcess(const bool ambientOcclusion)
       m_pin3d.m_gpu_profiler.Timestamp(GTS_SSR);
 
    if (ambientOcclusion) {
-      m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pddsAOBackTmpBuffer, true);
+      m_pin3d.m_pddsAOBackTmpBuffer->Activate(true);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetColorSampler());
 
@@ -4232,7 +4232,7 @@ void Player::PostProcess(const bool ambientOcclusion)
          m_pin3d.m_gpu_profiler.Timestamp(GTS_AO);
 
       // flip AO buffers (avoids copy)
-      D3DTexture *tmpAO = m_pin3d.m_pddsAOBackBuffer;
+      RenderTargetObj *tmpAO = m_pin3d.m_pddsAOBackBuffer;
       m_pin3d.m_pddsAOBackBuffer = m_pin3d.m_pddsAOBackTmpBuffer;
       m_pin3d.m_pddsAOBackTmpBuffer = tmpAO;
    }
@@ -4251,7 +4251,7 @@ void Player::PostProcess(const bool ambientOcclusion)
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture1, m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture());
 
    if (ambientOcclusion)
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture3, m_pin3d.m_pddsAOBackBuffer);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture3, m_pin3d.m_pddsAOBackBuffer->GetColorSampler());
 
    Texture * const pin = m_ptable->GetImage(m_ptable->m_imageColorGrade);
    if (pin)
