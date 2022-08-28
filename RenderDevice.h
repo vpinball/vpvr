@@ -264,53 +264,23 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
 
    bool SetMaximumPreRenderedFrames(const DWORD frames);
 
-   RenderTargetObj* GetBackBufferTexture() const { return m_pOffscreenBackBufferTexture; }
-   D3DTexture* GetBackBufferTmpTexture() const { return m_pOffscreenBackBufferStereoTexture; }
+   RenderTarget* GetBackBufferTexture() const { return m_pOffscreenBackBufferTexture; }
 #ifdef ENABLE_SDL
-   RenderTargetObj* GetNonMSAABlitTexture(int m_MSAASamples) const { return m_MSAASamples == 1 ? m_pOffscreenBackBufferTexture : m_pOffscreenNonMSAABlitTexture; }
-   RenderTargetObj* GetOffscreenVR(int eye) const { return eye == 0 ? m_pOffscreenVRLeft : m_pOffscreenVRRight; }
+   RenderTarget* GetNonMSAABlitTexture(int m_MSAASamples) const { return m_MSAASamples == 1 ? m_pOffscreenBackBufferTexture : m_pOffscreenNonMSAABlitTexture; }
+   RenderTarget* GetOffscreenVR(int eye) const { return eye == 0 ? m_pOffscreenVRLeft : m_pOffscreenVRRight; }
 #endif
-   RenderTargetObj* GetBackBufferPPTexture1() const { return m_pOffscreenBackBufferPPTexture1; }
-   RenderTargetObj* GetBackBufferPPTexture2() const { return m_pOffscreenBackBufferPPTexture2; }
-   D3DTexture* GetMirrorTmpBufferTexture() const { return m_pMirrorTmpBufferTexture; }
-   D3DTexture* GetReflectionBufferTexture() const { return m_pReflectionBufferTexture; }
-   RenderTargetObj* GetOutputBackBuffer() const { return m_pBackBuffer; }
+   RenderTarget* GetBackBufferPPTexture1() const { return m_pOffscreenBackBufferPPTexture1; }
+   RenderTarget* GetBackBufferPPTexture2() const { return m_pOffscreenBackBufferPPTexture2; }
+   RenderTarget* GetMirrorTmpBufferTexture() const { return m_pMirrorTmpBufferTexture; }
+   RenderTarget* GetOutputBackBuffer() const { return m_pBackBuffer; }
 
-   RenderTargetObj* GetBloomBufferTexture() const { return m_pBloomBufferTexture; }
-   RenderTargetObj* GetBloomTmpBufferTexture() const { return m_pBloomTmpBufferTexture; }
-
-   RenderTarget* DuplicateRenderTarget(RenderTarget* src);
-   D3DTexture* DuplicateTexture(RenderTarget* src);
-   D3DTexture* DuplicateTextureSingleChannel(RenderTarget* src);
-   D3DTexture* DuplicateDepthTexture(RenderTarget* src);
+   RenderTarget* GetBloomBufferTexture() const { return m_pBloomBufferTexture; }
+   RenderTarget* GetBloomTmpBufferTexture() const { return m_pBloomTmpBufferTexture; }
 
 #ifdef ENABLE_SDL
    static bool isVRinstalled();
    static bool isVRturnedOn();
    static void turnVROff();
-#endif
-
-#ifndef ENABLE_SDL
-   void SetRenderTarget(RenderTarget* surf, bool ignoreStereo = false);
-   void SetZBuffer(D3DTexture* surf);
-   void* AttachZBufferTo(D3DTexture* surfTexture);
-#endif
-   void SetRenderTarget(D3DTexture* texture, bool ignoreStereo = false);
-   void SetZBuffer(RenderTarget* surf);
-   void UnSetZBuffer();
-
-   void* AttachZBufferTo(RenderTarget* surf);
-   void CopySurface(RenderTarget* dest, RenderTarget* src);
-#ifdef ENABLE_SDL
-   void CopyDepth(RenderTarget* dest, RenderTarget* src);
-#else
-   void CopySurface(D3DTexture* dest, RenderTarget* src);
-   void CopySurface(RenderTarget* dest, D3DTexture* src);
-   void CopySurface(D3DTexture* dest, D3DTexture* src);
-   void CopySurface(void* dest, void* src);
-   void CopyDepth(D3DTexture* dest, RenderTarget* src);
-   void CopyDepth(D3DTexture* dest, D3DTexture* src);
-   void CopyDepth(D3DTexture* dest, void* src);
 #endif
 
    bool DepthBufferReadBackAvailable() const;
@@ -446,21 +416,19 @@ private:
    IDirect3DDevice9* m_pD3DDevice;
 #endif
 
-   RenderTargetObj* m_pBackBuffer;
+   RenderTarget* m_pBackBuffer;
 
    //If stereo is enabled the right eye is the right/bottom part with 4px in between
-   RenderTargetObj* m_pOffscreenBackBufferTexture;
-   D3DTexture* m_pOffscreenBackBufferStereoTexture; // stereo/FXAA only
-   RenderTargetObj* m_pOffscreenBackBufferPPTexture1; // AA
-   RenderTargetObj* m_pOffscreenBackBufferPPTexture2; // SMAA only
-   RenderTargetObj* m_pOffscreenNonMSAABlitTexture;
-   RenderTargetObj* m_pOffscreenVRLeft;
-   RenderTargetObj* m_pOffscreenVRRight;
+   RenderTarget* m_pOffscreenBackBufferTexture;
+   RenderTarget* m_pOffscreenBackBufferPPTexture1; // AA
+   RenderTarget* m_pOffscreenBackBufferPPTexture2; // SMAA only
+   RenderTarget* m_pOffscreenNonMSAABlitTexture;
+   RenderTarget* m_pOffscreenVRLeft;
+   RenderTarget* m_pOffscreenVRRight;
 
-   RenderTargetObj* m_pBloomBufferTexture;
-   RenderTargetObj* m_pBloomTmpBufferTexture;
-   D3DTexture* m_pMirrorTmpBufferTexture;
-   D3DTexture* m_pReflectionBufferTexture;
+   RenderTarget* m_pBloomBufferTexture;
+   RenderTarget* m_pBloomTmpBufferTexture;
+   RenderTarget* m_pMirrorTmpBufferTexture;
 
    static constexpr DWORD TEXTURE_SAMPLERS = 8;
    static constexpr DWORD TEXTURE_STATE_CACHE_SIZE = 256;

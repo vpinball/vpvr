@@ -7,7 +7,7 @@
 #include "nvapi.h"
 #endif
 
-RenderTargetObj::RenderTargetObj(RenderDevice* rd, int width, int height)
+RenderTarget::RenderTarget(RenderDevice* rd, int width, int height)
 {
    m_rd = rd;
    m_stereo = STEREO_OFF;
@@ -36,7 +36,7 @@ RenderTargetObj::RenderTargetObj(RenderDevice* rd, int width, int height)
 #endif
 }
 
-RenderTargetObj::RenderTargetObj(RenderDevice* rd, const int width, const int height, const colorFormat format, bool with_depth, bool use_MSAA, int stereo, char* failureMessage)
+RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, const colorFormat format, bool with_depth, bool use_MSAA, int stereo, char* failureMessage)
 {
    m_is_back_buffer = false;
    m_rd = rd;
@@ -172,7 +172,7 @@ RenderTargetObj::RenderTargetObj(RenderDevice* rd, const int width, const int he
 #endif
 }
 
-RenderTargetObj::~RenderTargetObj()
+RenderTarget::~RenderTarget()
 {
 #ifdef ENABLE_SDL
 
@@ -206,7 +206,7 @@ RenderTargetObj::~RenderTargetObj()
    delete m_depth_sampler;
 }
    
-void RenderTargetObj::UpdateDepthSampler()
+void RenderTarget::UpdateDepthSampler()
 {
 #if !defined(DISABLE_FORCE_NVIDIA_OPTIMUS) && !defined(ENABLE_SDL)
    if (m_has_depth && m_use_alternate_depth && m_rd->NVAPIinit)
@@ -218,13 +218,13 @@ void RenderTargetObj::UpdateDepthSampler()
 #endif
 }
 
-RenderTargetObj* RenderTargetObj::Duplicate()
+RenderTarget* RenderTarget::Duplicate()
 {
    assert(!m_is_back_buffer);
-   return new RenderTargetObj(m_rd, m_width, m_height, m_format, m_has_depth, m_use_mSAA, m_stereo, "Failed to duplicate render target");
+   return new RenderTarget(m_rd, m_width, m_height, m_format, m_has_depth, m_use_mSAA, m_stereo, "Failed to duplicate render target");
 }
 
-void RenderTargetObj::CopyTo(RenderTarget* dest)
+void RenderTarget::CopyTo(RenderTarget* dest)
 {
 #ifdef ENABLE_SDL
    // FIXME unimplementd (only used to copy render target for static pass)
@@ -235,11 +235,11 @@ void RenderTargetObj::CopyTo(RenderTarget* dest)
 #endif
 }
 
-void RenderTargetObj::Activate(bool ignoreStereo)
+void RenderTarget::Activate(bool ignoreStereo)
 {
 #ifdef ENABLE_SDL
    static GLfloat viewPorts[] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-   static RenderTargetObj* currentFrameBuffer = nullptr;
+   static RenderTarget* currentFrameBuffer = nullptr;
    static int currentStereoMode = -1;
    if (currentFrameBuffer == this && currentStereoMode == ignoreStereo || m_is_back_buffer ? STEREO_OFF : m_stereo)
       return;
