@@ -1763,7 +1763,7 @@ HRESULT Player::Init()
 
 void Player::RenderDynamicMirror(const bool onlyBalls)
 {
-   m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetMirrorTmpBufferTexture());
+   m_pin3d.m_pd3dPrimaryDevice->GetMirrorTmpBufferTexture()->Activate(false);
 
    m_pin3d.m_pd3dPrimaryDevice->Clear(TARGET | ZBUFFER, 0, 1.0f, 0L);
 
@@ -1844,7 +1844,7 @@ void Player::RenderDynamicMirror(const bool onlyBalls)
 void Player::RenderMirrorOverlay()
 {
    // render the mirrored texture over the playfield
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetMirrorTmpBufferTexture()); // When fixing mirroring make sure texture0 is not msaa
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetMirrorTmpBufferTexture()->GetColorSampler()); // When fixing mirroring make sure texture0 is not msaa
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetFloat(SHADER_mirrorFactor, m_ptable->m_playfieldReflectionStrength);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_fb_mirror);
 
@@ -3589,8 +3589,8 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
    case STEREO_VR:
 #ifdef ENABLE_VR
    {
-      RenderTargetObj *leftTexture = m_pin3d.m_pd3dPrimaryDevice->GetOffscreenVR(0);
-      RenderTargetObj *rightTexture = m_pin3d.m_pd3dPrimaryDevice->GetOffscreenVR(1);
+      RenderTarget *leftTexture = m_pin3d.m_pd3dPrimaryDevice->GetOffscreenVR(0);
+      RenderTarget *rightTexture = m_pin3d.m_pd3dPrimaryDevice->GetOffscreenVR(1);
 
       switch (blitMode) {
       case 0:
@@ -4241,7 +4241,7 @@ void Player::PostProcess(const bool ambientOcclusion)
          m_pin3d.m_gpu_profiler.Timestamp(GTS_AO);
 
       // flip AO buffers (avoids copy)
-      RenderTargetObj *tmpAO = m_pin3d.m_pddsAOBackBuffer;
+      RenderTarget *tmpAO = m_pin3d.m_pddsAOBackBuffer;
       m_pin3d.m_pddsAOBackBuffer = m_pin3d.m_pddsAOBackTmpBuffer;
       m_pin3d.m_pddsAOBackTmpBuffer = tmpAO;
    }

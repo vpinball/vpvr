@@ -68,7 +68,8 @@ enum textureUsage {
    DYNAMIC = 1
 };
 
-struct RenderTarget {
+struct D3DTexture
+{
    colorFormat format;
    textureUsage usage;
    GLuint texture = 0, zTexture = 0, framebuffer = 0, zBuffer = 0;
@@ -76,8 +77,6 @@ struct RenderTarget {
    //GLint slot = -1;//Current slot for caching
    int stereo = 0;
 };
-
-typedef RenderTarget D3DTexture;//It's easier to have them equal than saving 8 bytes and have a lot of trouble.
 
 struct ViewPort  {
    union {

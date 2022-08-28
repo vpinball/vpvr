@@ -66,22 +66,6 @@ public:
 
    void Flip(const bool vsync);
 
-#ifdef ENABLE_SDL
-   void SetRenderTarget(RenderDevice * const pd3dDevice, RenderTarget* pddsSurface, void* unused) const;
-   void SetPrimaryRenderTarget(RenderTarget* pddsSurface, void* unused) const;
-   void SetSecondaryRenderTarget(RenderTarget* pddsSurface, void* unused) const;
-#else
-   void SetRenderTarget(RenderDevice * const pd3dDevice, RenderTarget* pddsSurface, RenderTarget* pddsZ) const;
-   void SetRenderTarget(RenderDevice * const pd3dDevice, RenderTarget* pddsSurface, D3DTexture* pddsZ) const;
-   void SetRenderTarget(RenderDevice * const pd3dDevice, RenderTarget* pddsSurface, void* pddsZ) const;
-   void SetPrimaryRenderTarget(RenderTarget* pddsSurface, RenderTarget* pddsZ) const;
-   void SetPrimaryRenderTarget(RenderTarget* pddsSurface, D3DTexture* pddsZ) const;
-   void SetPrimaryRenderTarget(RenderTarget* pddsSurface, void* pddsZ) const;
-   void SetSecondaryRenderTarget(RenderTarget* pddsSurface, RenderTarget* pddsZ) const;
-   void SetSecondaryRenderTarget(RenderTarget* pddsSurface, void* pddsZ) const;
-   void SetSecondaryRenderTarget(RenderTarget* pddsSurface, D3DTexture* pddsZ) const;
-#endif
-
    void SetTextureFilter(RenderDevice * const pd3dDevice, const int TextureNum, const int Mode) const;
    void SetPrimaryTextureFilter(const int TextureNum, const int Mode) const;
    void SetSecondaryTextureFilter(const int TextureNum, const int Mode) const;
@@ -116,12 +100,12 @@ public:
    RenderDevice* m_pd3dPrimaryDevice;
    RenderDevice* m_pd3dSecondaryDevice;
 
-   RenderTargetObj* m_pddsAOBackBuffer;
-   RenderTargetObj* m_pddsAOBackTmpBuffer;
+   RenderTarget* m_pddsAOBackBuffer;
+   RenderTarget* m_pddsAOBackTmpBuffer;
 
-   RenderTargetObj* m_pddsBackBuffer;
+   RenderTarget* m_pddsBackBuffer;
 
-   RenderTargetObj* m_pddsStatic;
+   RenderTarget* m_pddsStatic;
 
    Texture m_pinballEnvTexture; // loaded from Resources
    Texture m_builtinEnvTexture; // loaded from Resources
