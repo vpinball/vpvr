@@ -1,12 +1,12 @@
 #pragma once
 
-#include "stdafx.h"
-
 #include <inc/robin_hood.h>
 #include "typedefs3D.h"
 
 #include "Material.h"
 #include "Texture.h"
+#include "Sampler.h"
+#include "RenderTarget.h"
 #include "IndexBuffer.h"
 #include "VertexBuffer.h"
 #include "TextureManager.h"
@@ -472,6 +472,7 @@ private:
 
    VertexDeclaration *currentDeclaration; // for caching
 
+public:
 #ifdef ENABLE_SDL
    GLfloat m_maxaniso;
    int m_GLversion;
