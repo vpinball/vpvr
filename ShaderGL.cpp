@@ -1015,33 +1015,6 @@ void Shader::End()
    //Nothing to do for GL
 }
 
-void Shader::SetTextureDepth(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel) {
-   if (texel)
-   {
-      if (uniformTex[texelName] == texel->zTexture) return;
-      uniformTex[texelName] = texel->zTexture;
-   }
-   else
-      uniformTex[texelName] = 0;
-   if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
-#ifdef TWEAK_GL_SHADER
-      const auto location = m_currentTechnique->uniformLocation[texelName];
-      if (location.location == -1) return;
-#else
-      auto loc = m_currentTechnique->uniformLocation->find(texelName);
-      if (loc == m_currentTechnique->uniformLocation->end()) return;
-      auto location = loc->second;
-#endif
-      glActiveTexture(GL_TEXTURE0 + nextTextureSlot);
-      if (texel->usage == RENDERTARGET_MSAA || texel->usage == RENDERTARGET_MSAA_DEPTH)
-         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texel->zTexture);
-      else
-         glBindTexture(GL_TEXTURE_2D, texel->zTexture);
-      glUniform1i(location.location, nextTextureSlot);
-      nextTextureSlot = (nextTextureSlot+1) % maxSlots;//TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
-   }
-}
-
 void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, const TextureFilter filter, const bool clampU, const bool clampV, const bool force_linear_rgb)
 {
    if (!texel || !texel->m_pdsBuffer)
@@ -1072,6 +1045,35 @@ void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel
          glBindTexture(GL_TEXTURE_2D, texel->texture);
       glUniform1i(location.location, nextTextureSlot);
       nextTextureSlot = (nextTextureSlot+1) % maxSlots;//TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
+   }
+}
+
+void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Sampler* texel)
+{
+   if (!texel || (uniformTex[texelName] == texel->GetCoreTexture()))
+      return;
+
+   uniformTex[texelName] = texel->GetCoreTexture();
+
+   if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program)
+   {
+#ifdef TWEAK_GL_SHADER
+      const auto location = m_currentTechnique->uniformLocation[texelName];
+      if (location.location == -1)
+         return;
+#else
+      auto loc = m_currentTechnique->uniformLocation->find(texelName);
+      if (loc == m_currentTechnique->uniformLocation->end())
+         return;
+      auto location = loc->second;
+#endif
+      glActiveTexture(GL_TEXTURE0 + nextTextureSlot);
+      if (texel->IsMSAA())
+         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texel->GetCoreTexture());
+      else
+         glBindTexture(GL_TEXTURE_2D, texel->GetCoreTexture());
+      glUniform1i(location.location, nextTextureSlot);
+      nextTextureSlot = (nextTextureSlot + 1) % maxSlots; //TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
    }
 }
 

@@ -81,11 +81,6 @@ void Shader::End()
    CHECKD3D(m_shader->End());
 }
 
-void Shader::SetTextureDepth(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel)
-{
-   SetTexture(texelName, texel, false);
-}
-
 void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, const bool clampU, const bool clampV, const bool force_linear_rgb)
 {
    const unsigned int idx = texelName[strlen(texelName) - 1] - '0'; // current convention: SetTexture gets "TextureX", where X 0..4

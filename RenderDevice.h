@@ -264,10 +264,10 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
 
    bool SetMaximumPreRenderedFrames(const DWORD frames);
 
-   D3DTexture* GetBackBufferTexture() const { return m_pOffscreenBackBufferTexture; }
+   RenderTargetObj* GetBackBufferTexture() const { return m_pOffscreenBackBufferTexture; }
    D3DTexture* GetBackBufferTmpTexture() const { return m_pOffscreenBackBufferStereoTexture; }
 #ifdef ENABLE_SDL
-   D3DTexture* GetNonMSAABlitTexture(int m_MSAASamples) const { return m_MSAASamples == 1 ? m_pOffscreenBackBufferTexture : m_pOffscreenNonMSAABlitTexture; }
+   RenderTargetObj* GetNonMSAABlitTexture(int m_MSAASamples) const { return m_MSAASamples == 1 ? m_pOffscreenBackBufferTexture : m_pOffscreenNonMSAABlitTexture; }
    D3DTexture* GetOffscreenVR(int eye) const { return eye == 0 ? m_pOffscreenVRLeft : m_pOffscreenVRRight;}
 #endif
    D3DTexture* GetBackBufferPPTexture1() const { return m_pOffscreenBackBufferPPTexture1; }
@@ -449,11 +449,11 @@ private:
    RenderTarget* m_pBackBuffer;
 
    //If stereo is enabled the right eye is the right/bottom part with 4px in between
-   D3DTexture* m_pOffscreenBackBufferTexture;
+   RenderTargetObj* m_pOffscreenBackBufferTexture;
    D3DTexture* m_pOffscreenBackBufferStereoTexture; // stereo/FXAA only
    D3DTexture* m_pOffscreenBackBufferPPTexture1; // AA
    D3DTexture* m_pOffscreenBackBufferPPTexture2; // SMAA only
-   D3DTexture* m_pOffscreenNonMSAABlitTexture;
+   RenderTargetObj* m_pOffscreenNonMSAABlitTexture;
    D3DTexture* m_pOffscreenVRLeft;
    D3DTexture* m_pOffscreenVRRight;
 

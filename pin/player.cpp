@@ -1641,7 +1641,7 @@ HRESULT Player::Init()
          }
    }
    // Direct all renders to the back buffer.
-   m_pin3d.SetPrimaryRenderTarget(m_pin3d.m_pddsBackBuffer, m_pin3d.m_pddsZBuffer);
+   m_pin3d.m_pddsBackBuffer->Activate(true);
 
    m_ptable->m_progressDialog.SetProgress(90);
 
@@ -1838,13 +1838,11 @@ void Player::RenderDynamicMirror(const bool onlyBalls)
 
    UpdateBallShaderMatrix();
 
-   m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture());
+   m_pin3d.m_pddsBackBuffer->Activate(false);
 }
 
 void Player::RenderMirrorOverlay()
 {
-   m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture(), true);
-
    // render the mirrored texture over the playfield
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetMirrorTmpBufferTexture()); // When fixing mirroring make sure texture0 is not msaa
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetFloat(SHADER_mirrorFactor, m_ptable->m_playfieldReflectionStrength);
@@ -1863,8 +1861,6 @@ void Player::RenderMirrorOverlay()
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
    m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
-
-   m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture());
 }
 
 void Player::InitStatic()
@@ -3161,7 +3157,7 @@ void Player::DrawBulbLightBuffer()
    }
 
    // switch back to render buffer
-   m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture(), false);
+   m_pin3d.m_pddsBackBuffer->Activate(false);
 
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture3, m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture());
 }
@@ -3181,7 +3177,7 @@ void Player::RenderDynamics()
          reflection_path = 2;
    }
 
-   m_pin3d.SetPrimaryRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture(), m_pin3d.m_pddsZBuffer);
+   m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(true);
 
    UpdateBasicShaderMatrix();
 
@@ -3403,7 +3399,7 @@ void Player::SSRefl()
 {
    m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture2());
 
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples));
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetColorSampler());
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, &m_pin3d.m_aoDitherTexture, TextureFilter::TEXTURE_MODE_NONE, true, true, true); //!!!
 
    const vec4 w_h_height((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheight()), 1.0f/*radical_inverse(m_overall_frames%2048)*/, 1.0f);
@@ -3429,7 +3425,7 @@ void Player::Bloom(float x, float y, float tx, float ty)
       // switch to 'bloom' output buffer to collect clipped framebuffer values
       m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture(), true);
 
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture1, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples));
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture1, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetColorSampler());
 
       const vec4 fb_inv_resolution_05((float)(0.5 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidth()), (float)(0.5 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheight()), 1.0f, 1.0f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution_05);
@@ -3479,16 +3475,16 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
    if (DLAA)
       m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture2(), true);
    else if (SMAA || stereo == STEREO_INT || stereo == STEREO_VR)
-      m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(2), true);
+      m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(2)->Activate(true);
    else
       m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer(), true);
 
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1());
 
    if (ambientOcclusion)
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureDepth(SHADER_Texture4, m_pin3d.m_pdds3DZBuffer);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, m_pin3d.m_pddsBackBuffer->GetDepthSampler());
    else
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureDepth(SHADER_Texture4, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1());
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1());
 
    const vec4 w_h_height((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheight()), (float)m_pin3d.m_pd3dPrimaryDevice->getBufwidth(), ambientOcclusion ? 1.f : 0.f);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &w_h_height);
@@ -3509,12 +3505,12 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
       if (SMAA)
       {
          m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture2(), true);
-         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_edgesTex2D, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(2)); //!! opt.?
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_edgesTex2D, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(2)->GetColorSampler()); //!! opt.?
       }
       else
       {
          if (stereo == STEREO_INT || stereo == STEREO_VR)
-            m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(2), true);
+            m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(2)->Activate(true);
          else
             m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer(), true);
 
@@ -3530,7 +3526,7 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
       if (SMAA)
       {
          if (stereo == STEREO_INT || stereo == STEREO_VR)
-            m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(2), true);
+            m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(2)->Activate(true);
          else
             m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer(), true);
 
@@ -4191,8 +4187,8 @@ void Player::PostProcess(const bool ambientOcclusion)
    // Resolve the MSAA buffer to a Non-MSAA buffer if we are using MSAA
    if (g_pplayer->m_MSAASamples > 1)
    {
-      glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->framebuffer, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->framebuffer,
-         0, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->height - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+      glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetCoreFrameBuffer(), m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetCoreFrameBuffer(),
+         0, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetWidth() - 1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetHeight() - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetWidth() - 1, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetHeight() - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST);
    }
 #endif
 
@@ -4211,7 +4207,7 @@ void Player::PostProcess(const bool ambientOcclusion)
    if (ambientOcclusion) {
       m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pddsAOBackTmpBuffer, true);
 
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples));
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetColorSampler());
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, &m_pin3d.m_aoDitherTexture, TextureFilter::TEXTURE_MODE_NONE, true, true, true);
 #ifndef ENABLE_SDL
@@ -4249,7 +4245,7 @@ void Player::PostProcess(const bool ambientOcclusion)
    if (ss_refl)
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture2());
    else
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples));
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetColorSampler());
 
    if (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff)
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture1, m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture());
@@ -4327,7 +4323,7 @@ void Player::FlipVideoBuffers(const bool vsync) {
 
    // switch to texture output buffer again
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_Texture0);
-   m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pddsBackBuffer);
+   m_pin3d.m_pddsBackBuffer->Activate(true);
 
    m_lastFlipTime = usec();
 }

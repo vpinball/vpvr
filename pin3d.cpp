@@ -17,8 +17,6 @@ Pin3D::Pin3D()
    m_pddsBackBuffer = nullptr;
    m_pddsAOBackBuffer = nullptr;
    m_pddsAOBackTmpBuffer = nullptr;
-   m_pddsZBuffer = nullptr;
-   m_pdds3DZBuffer = nullptr;
    m_pd3dPrimaryDevice = nullptr;
    m_pd3dSecondaryDevice = nullptr;
    m_envRadianceTexture = nullptr;
@@ -68,10 +66,7 @@ Pin3D::~Pin3D()
    }
    m_pddsStaticZ = nullptr;
    SAFE_RELEASE(m_pddsStatic);
-#else
-   assert(m_pddsZBuffer == nullptr);
 #endif
-   m_pddsZBuffer = nullptr;
    SAFE_RELEASE(m_pdds3DZBuffer);
    SAFE_RELEASE_NO_RCC(m_pddsBackBuffer);
 
@@ -502,11 +497,11 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
 
    m_pd3dPrimaryDevice->SetViewport(&m_viewPort);
 
-   m_pddsZBuffer = m_pd3dPrimaryDevice->AttachZBufferTo(m_pd3dPrimaryDevice->GetBackBufferTexture());
-
-#ifdef ENABLE_SDL
    m_pddsBackBuffer = m_pd3dPrimaryDevice->GetBackBufferTexture();
-#else
+
+   m_pddsStatic = m_pddsBackBuffer->Duplicate();
+
+#ifndef ENABLE_SDL
    m_pd3dPrimaryDevice->GetBackBufferTexture()->GetSurfaceLevel(0, &m_pddsBackBuffer);
 
    m_pddsStatic = m_pd3dPrimaryDevice->DuplicateRenderTarget(m_pddsBackBuffer);
@@ -630,8 +625,14 @@ HRESULT Pin3D::InitPin3D()
 
    InitPrimaryRenderState();
 
-   if (m_pddsBackBuffer)
-      SetPrimaryRenderTarget(m_pddsBackBuffer, m_pddsZBuffer);
+   // Direct all renders to the "static" buffer.
+   if (m_pddsStatic)
+      m_pddsStatic->Activate(true);
+   else
+      m_pddsBackBuffer->Activate(true);
+
+   //m_gpu_profiler.Init(m_pd3dDevice->GetCoreDevice()); // done by first BeginFrame() call lazily
+
    return S_OK;
 }
 
