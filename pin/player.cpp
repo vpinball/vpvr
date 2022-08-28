@@ -3589,47 +3589,47 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
    case STEREO_VR:
 #ifdef ENABLE_VR
    {
-      D3DTexture *leftTexture = m_pin3d.m_pd3dPrimaryDevice->GetOffscreenVR(0);
-      D3DTexture *rightTexture = m_pin3d.m_pd3dPrimaryDevice->GetOffscreenVR(1);
+      RenderTargetObj *leftTexture = m_pin3d.m_pd3dPrimaryDevice->GetOffscreenVR(0);
+      RenderTargetObj *rightTexture = m_pin3d.m_pd3dPrimaryDevice->GetOffscreenVR(1);
 
       switch (blitMode) {
       case 0:
          glBindFramebuffer(GL_READ_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->framebuffer);
 
          // srcx0, srcy0, srcx1, srcy1, dstx0, dsty0, dstx1, dstyx1
-         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, leftTexture->framebuffer);
+         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, leftTexture->GetCoreFrameBuffer());
          glBlitFramebuffer(0, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth() / 2, m_pin3d.m_pd3dPrimaryDevice->getBufheight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth() / 2, m_pin3d.m_pd3dPrimaryDevice->getBufheight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rightTexture->framebuffer);
+         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rightTexture->GetCoreFrameBuffer());
          glBlitFramebuffer(m_pin3d.m_pd3dPrimaryDevice->getBufwidth() / 2, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth(), m_pin3d.m_pd3dPrimaryDevice->getBufheight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->getBufwidth() / 2, m_pin3d.m_pd3dPrimaryDevice->getBufheight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
          if (disableVRPreview == 0) {
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, rightTexture->framebuffer);
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, rightTexture->GetCoreFrameBuffer());
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->framebuffer);
-            glBlitFramebuffer(0, 0, rightTexture->width, rightTexture->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            glBlitFramebuffer(0, 0, rightTexture->GetWidth(), rightTexture->GetHeight() - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
          }
          break;
       case 1:
-         glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->framebuffer, leftTexture->framebuffer,
-            0, 0, leftTexture->width, leftTexture->height, 0, 0, leftTexture->width, leftTexture->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-         glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->framebuffer, rightTexture->framebuffer,
-            m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->width - rightTexture->width, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->width, rightTexture->height, 0, 0, rightTexture->width, rightTexture->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+         glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->framebuffer, leftTexture->GetCoreFrameBuffer(),
+            0, 0, leftTexture->GetWidth(), leftTexture->GetHeight(), 0, 0, leftTexture->GetWidth(), leftTexture->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+         glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->framebuffer, rightTexture->GetCoreFrameBuffer(),
+            m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->width - rightTexture->GetWidth(), 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->width, rightTexture->GetHeight(), 0, 0, rightTexture->GetWidth(), rightTexture->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
          if (disableVRPreview == 0) {
-            glBlitNamedFramebuffer(rightTexture->framebuffer, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->framebuffer,
-               0, 0, rightTexture->width, rightTexture->height - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            glBlitNamedFramebuffer(rightTexture->GetCoreFrameBuffer(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->framebuffer,
+               0, 0, rightTexture->GetWidth(), rightTexture->GetHeight() - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
          }
          break;
       default:
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTechnique(SHADER_TECHNIQUE_stereo_AMD_DEBUG);
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1());
 
-         m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(leftTexture);
+         leftTexture->Activate(false);
 
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat(SHADER_eye, 0.0f);
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin(0);
          m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
 
-         m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(rightTexture);
+         rightTexture->Activate(false);
 
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat(SHADER_eye, 1.0f);
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin(0);
@@ -3645,7 +3645,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
          }
          break;
       }
-      vr::Texture_t leftEyeTexture = { (void *)leftTexture->texture, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+      vr::Texture_t leftEyeTexture = { (void *)leftTexture->GetColorSampler()->GetCoreTexture(), vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
       vr::EVRCompositorError error = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
    	  if(error != vr::VRCompositorError_None)
    	  {
@@ -3653,7 +3653,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
          sprintf_s(msg, sizeof(msg), "VRCompositor Submit Left Error %u", error);
          ShowError(msg);
    	  }
-      vr::Texture_t rightEyeTexture = { (void *)rightTexture->texture, vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+        vr::Texture_t rightEyeTexture = { (void *)rightTexture->GetColorSampler()->GetCoreTexture(), vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
       error = vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
    	  if(error != vr::VRCompositorError_None)
    	  {

@@ -1026,8 +1026,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
          renderBufferFormatVR = RGBA8;
          break;
       }
-      m_pOffscreenVRLeft = CreateTexture(m_Buf_width / 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, nullptr, 0, TextureFilter::TEXTURE_MODE_NONE, false, false);
-      m_pOffscreenVRRight = CreateTexture(m_Buf_width / 2, m_Buf_height, 0, RENDERTARGET, renderBufferFormatVR, nullptr, 0, TextureFilter::TEXTURE_MODE_NONE, false, false);
+      m_pOffscreenVRLeft = new RenderTargetObj(this, m_Buf_width / 2, m_Buf_height, renderBufferFormatVR, false, false, m_stereo3D, "Fatal Error: unable to create left eye buffer!");
+      m_pOffscreenVRRight = new RenderTargetObj(this, m_Buf_width / 2, m_Buf_height, renderBufferFormatVR, false, false, m_stereo3D, "Fatal Error: unable to create right eye buffer!");
    }
 
    // Non-MSAA Buffers for post-processing
