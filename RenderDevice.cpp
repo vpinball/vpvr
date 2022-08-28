@@ -975,11 +975,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    m_autogen_mipmap = true;
 
    // Retrieve a reference to the back buffer.
-   m_pBackBuffer = new RenderTarget;
-   m_pBackBuffer->width = fbWidth;
-   m_pBackBuffer->height = fbHeight;
-
-   glGetIntegerv(GL_FRAMEBUFFER_BINDING, (GLint*)(&m_pBackBuffer->framebuffer));
+   m_pBackBuffer = new RenderTargetObj(this, fbWidth, fbHeight);
 
    constexpr colorFormat renderBufferFormat = RGBA16F;
 
@@ -1653,7 +1649,7 @@ RenderDevice::~RenderDevice()
     }
     delete m_pBloomBufferTexture;
     delete m_pBloomTmpBufferTexture;
-    SAFE_RELEASE_RENDER_TARGET(m_pBackBuffer);
+    delete m_pBackBuffer;
 
     SAFE_RELEASE_TEXTURE(m_SMAAareaTexture);
     SAFE_RELEASE_TEXTURE(m_SMAAsearchTexture);
@@ -2518,7 +2514,7 @@ void RenderDevice::SetRenderTarget(D3DTexture* texture, bool ignoreStereo)
    }
    else {
       //currentStereoMode = 0;
-      glViewport(0, 0, m_pBackBuffer->width, m_pBackBuffer->height);
+      glViewport(0, 0, m_pBackBuffer->GetWidth(), m_pBackBuffer->GetHeight());
    }
 #else
    RenderTarget *surf = nullptr;

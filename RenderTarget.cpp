@@ -7,15 +7,15 @@
 #include "nvapi.h"
 #endif
 
-RenderTargetObj::RenderTargetObj(RenderDevice* rd)
+RenderTargetObj::RenderTargetObj(RenderDevice* rd, int width, int height)
 {
    m_rd = rd;
    m_stereo = STEREO_OFF;
    m_is_back_buffer = true;
-   // FIXME we should gather backbuffer informations (but this is not used anywhere)
+   // FIXME we should gather backbuffer informations
    // m_format = ;
-   // m_width = ;
-   // m_height = ;
+   m_width = width;
+   m_height = height;
    m_has_depth = false;
    m_use_mSAA = false;
    m_color_sampler = nullptr;

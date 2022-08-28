@@ -274,7 +274,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    RenderTargetObj* GetBackBufferPPTexture2() const { return m_pOffscreenBackBufferPPTexture2; }
    D3DTexture* GetMirrorTmpBufferTexture() const { return m_pMirrorTmpBufferTexture; }
    D3DTexture* GetReflectionBufferTexture() const { return m_pReflectionBufferTexture; }
-   RenderTarget* GetOutputBackBuffer() const { return m_pBackBuffer; }
+   RenderTargetObj* GetOutputBackBuffer() const { return m_pBackBuffer; }
 
    RenderTargetObj* GetBloomBufferTexture() const { return m_pBloomBufferTexture; }
    RenderTargetObj* GetBloomTmpBufferTexture() const { return m_pBloomTmpBufferTexture; }
@@ -446,7 +446,7 @@ private:
    IDirect3DDevice9* m_pD3DDevice;
 #endif
 
-   RenderTarget* m_pBackBuffer;
+   RenderTargetObj* m_pBackBuffer;
 
    //If stereo is enabled the right eye is the right/bottom part with 4px in between
    RenderTargetObj* m_pOffscreenBackBufferTexture;
