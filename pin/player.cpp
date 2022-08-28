@@ -3486,7 +3486,7 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
    else if (SMAA || stereo == STEREO_INT || stereo == STEREO_VR)
       m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(2)->Activate(true);
    else
-      m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer(), true);
+      m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
 
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->GetColorSampler());
 
@@ -3521,7 +3521,7 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
          if (stereo == STEREO_INT || stereo == STEREO_VR)
             m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(2)->Activate(true);
          else
-            m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer(), true);
+            m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
 
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture2()->GetColorSampler());
       }
@@ -3537,7 +3537,7 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
          if (stereo == STEREO_INT || stereo == STEREO_VR)
             m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(2)->Activate(true);
          else
-            m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer(), true);
+            m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
 
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_edgesTex2D); //!! opt.??
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_blendTex2D, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture2()->GetColorSampler()); //!! opt.?
@@ -3577,7 +3577,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTechnique(SHADER_TECHNIQUE_stereo_Int);
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->GetColorSampler());
 
-      m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
+      m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(false);
 
       {const vec4* width_height_rotated_flipLR = new vec4((float)m_pin3d.m_pd3dPrimaryDevice->getBufwidth(), (float)m_pin3d.m_pd3dPrimaryDevice->getBufheight(), 0.0f, 0.0f);
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetVector(SHADER_width_height_rotated_flipLR, width_height_rotated_flipLR); }
@@ -3604,8 +3604,8 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
 
          if (disableVRPreview == 0) {
             glBindFramebuffer(GL_READ_FRAMEBUFFER, rightTexture->GetCoreFrameBuffer());
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->framebuffer);
-            glBlitFramebuffer(0, 0, rightTexture->GetWidth(), rightTexture->GetHeight() - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetCoreFrameBuffer());
+            glBlitFramebuffer(0, 0, rightTexture->GetWidth(), rightTexture->GetHeight() - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth() - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
          }
          break;
       case 1:
@@ -3614,8 +3614,8 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
          glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->GetCoreFrameBuffer(), rightTexture->GetCoreFrameBuffer(),
             m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->GetWidth() - rightTexture->GetWidth(), 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->GetWidth(), rightTexture->GetHeight(), 0, 0, rightTexture->GetWidth(), rightTexture->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
          if (disableVRPreview == 0) {
-            glBlitNamedFramebuffer(rightTexture->GetCoreFrameBuffer(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->framebuffer,
-               0, 0, rightTexture->GetWidth(), rightTexture->GetHeight() - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->width - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            glBlitNamedFramebuffer(rightTexture->GetCoreFrameBuffer(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetCoreFrameBuffer(),
+               0, 0, rightTexture->GetWidth(), rightTexture->GetHeight() - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth() - 1, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
          }
          break;
       default:
@@ -3637,7 +3637,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
 
          if (disableVRPreview == 0) {
-            m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
+            m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(false);
             m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat(SHADER_eye, 1.0f);
             m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin(0);
             m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
@@ -4247,7 +4247,7 @@ void Player::PostProcess(const bool ambientOcclusion)
    }
 
    if (!((m_stereo3D == STEREO_INT) || (m_stereo3D == STEREO_VR) || SMAA || DLAA || NFAA || FXAA1 || FXAA2 || FXAA3))
-      m_pin3d.m_pd3dPrimaryDevice->SetRenderTarget(m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer(), true);
+      m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
    else
       m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->Activate(true);
 

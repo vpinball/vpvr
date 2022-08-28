@@ -6,7 +6,7 @@ class RenderDevice;
 class RenderTargetObj final
 {
 public:
-   RenderTargetObj(RenderDevice* rd); // Default output render target
+   RenderTargetObj(RenderDevice* rd, int width = -1, int height = -1); // Default output render target
    RenderTargetObj(RenderDevice* rd, const int width, const int height, const colorFormat format, bool with_depth, bool use_MSAA, int stereo, char* failureMessage);
    ~RenderTargetObj();
 
