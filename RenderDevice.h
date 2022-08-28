@@ -276,8 +276,8 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    D3DTexture* GetReflectionBufferTexture() const { return m_pReflectionBufferTexture; }
    RenderTarget* GetOutputBackBuffer() const { return m_pBackBuffer; }
 
-   D3DTexture* GetBloomBufferTexture() const { return m_pBloomBufferTexture; }
-   D3DTexture* GetBloomTmpBufferTexture() const { return m_pBloomTmpBufferTexture; }
+   RenderTargetObj* GetBloomBufferTexture() const { return m_pBloomBufferTexture; }
+   RenderTargetObj* GetBloomTmpBufferTexture() const { return m_pBloomTmpBufferTexture; }
 
    RenderTarget* DuplicateRenderTarget(RenderTarget* src);
    D3DTexture* DuplicateTexture(RenderTarget* src);
@@ -457,8 +457,8 @@ private:
    D3DTexture* m_pOffscreenVRLeft;
    D3DTexture* m_pOffscreenVRRight;
 
-   D3DTexture* m_pBloomBufferTexture;
-   D3DTexture* m_pBloomTmpBufferTexture;
+   RenderTargetObj* m_pBloomBufferTexture;
+   RenderTargetObj* m_pBloomTmpBufferTexture;
    D3DTexture* m_pMirrorTmpBufferTexture;
    D3DTexture* m_pReflectionBufferTexture;
 
