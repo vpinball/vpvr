@@ -996,10 +996,10 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_pMirrorTmpBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, nullptr, m_stereo3D, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
 
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
-   m_pBloomBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, nullptr, m_stereo3D, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
+   m_pBloomBufferTexture = new RenderTargetObj(this, m_Buf_widthBlur, m_Buf_heightBlur, renderBufferFormat, false, false, m_stereo3D, "Fatal Error: unable to create bloom buffer!");
 
    // temporary buffer for gaussian blur
-   m_pBloomTmpBufferTexture = CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 0, RENDERTARGET, renderBufferFormat, nullptr, m_stereo3D, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
+   m_pBloomTmpBufferTexture = new RenderTargetObj(this, m_Buf_widthBlur, m_Buf_heightBlur, renderBufferFormat, false, false, m_stereo3D, "Fatal Error: unable to create blur buffer!");
 
    // alloc temporary buffer for postprocessing, we don't use this anymore
    //if ((m_FXAA > 0) || (m_stereo3D > 0))
@@ -1651,8 +1651,8 @@ RenderDevice::~RenderDevice()
         if ((g_pplayer->m_ptable->m_reflectElementsOnPlayfield /*&& g_pplayer->m_pf_refl*/) || drawBallReflection)
             SAFE_RELEASE_RENDER_TARGET(m_pMirrorTmpBufferTexture);
     }
-    SAFE_RELEASE_RENDER_TARGET(m_pBloomBufferTexture);
-    SAFE_RELEASE_RENDER_TARGET(m_pBloomTmpBufferTexture);
+    delete m_pBloomBufferTexture;
+    delete m_pBloomTmpBufferTexture;
     SAFE_RELEASE_RENDER_TARGET(m_pBackBuffer);
 
     SAFE_RELEASE_TEXTURE(m_SMAAareaTexture);
