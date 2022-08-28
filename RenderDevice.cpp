@@ -1980,7 +1980,7 @@ D3DTexture* RenderDevice::UploadTexture(BaseTexture* surf, int *pTexWidth, int *
 
 void RenderDevice::UploadAndSetSMAATextures()
 {
-   m_SMAAsearchTexture = CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, STATIC, GREY, (void*)&searchTexBytes[0], 0, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
+   m_SMAAsearchTexture = CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, STATIC, GREY8, (void*)&searchTexBytes[0], 0, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
    m_SMAAareaTexture = CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, STATIC, GREY_ALPHA, (void*)&areaTexBytes[0], 0, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
 
    FBShader->SetTexture(SHADER_areaTex2D, m_SMAAareaTexture);
@@ -2334,7 +2334,7 @@ void RenderDevice::UpdateTexture(D3DTexture* const tex, BaseTexture* const surf,
            tex->format = colorFormat::RGBA;
    colorFormat Format = tex->format;
    const GLuint col_type = ((Format == RGBA32F) || (Format == RGB32F)) ? GL_FLOAT : ((Format == RGBA16F) || (Format == RGB16F)) ? GL_HALF_FLOAT : GL_UNSIGNED_BYTE;
-   const GLuint col_format = ((Format == GREY) || (Format == RED16F)) ? GL_RED : ((Format == GREY_ALPHA) || (Format == RG16F)) ? GL_RG : ((Format == RGB) || (Format == RGB8) || (Format == SRGB) || (Format == SRGB8) || (Format == RGB5) || (Format == RGB10) || (Format == RGB16F) || (Format == RGB32F)) ? GL_RGB : GL_RGBA;
+   const GLuint col_format = ((Format == GREY8) || (Format == RED16F)) ? GL_RED : ((Format == GREY_ALPHA) || (Format == RG16F)) ? GL_RG : ((Format == RGB) || (Format == RGB8) || (Format == SRGB) || (Format == SRGB8) || (Format == RGB5) || (Format == RGB10) || (Format == RGB16F) || (Format == RGB32F)) ? GL_RGB : GL_RGBA;
    glBindTexture(GL_TEXTURE_2D, tex->texture);
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, surf->width(), surf->height(), col_format, col_type, surf->data());
@@ -2979,9 +2979,9 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    tex->format = Format;
    //tex->slot = -1;
    const GLuint col_type = ((Format == RGBA32F) || (Format == RGB32F)) ? GL_FLOAT : ((Format == RGBA16F) || (Format == RGB16F)) ? GL_HALF_FLOAT : GL_UNSIGNED_BYTE;
-   const GLuint col_format = ((Format == GREY) || (Format == RED16F)) ? GL_RED : ((Format == GREY_ALPHA) || (Format == RG16F)) ? GL_RG : ((Format == RGB) || (Format == RGB8) 
+   const GLuint col_format = ((Format == GREY8) || (Format == RED16F)) ? GL_RED : ((Format == GREY_ALPHA) || (Format == RG16F)) ? GL_RG : ((Format == RGB) || (Format == RGB8) 
       || (Format == SRGB) || (Format == SRGB8) || (Format == RGB5) || (Format == RGB10) || (Format == RGB16F) || (Format == RGB32F)) ? GL_RGB : GL_RGBA;
-   const bool col_is_linear = (Format == GREY) || (Format == RED16F) || (Format == GREY_ALPHA) || (Format == RG16F) || (Format == RGB5) || (Format == RGB) || (Format == RGB8) || 
+   const bool col_is_linear = (Format == GREY8) || (Format == RED16F) || (Format == GREY_ALPHA) || (Format == RG16F) || (Format == RGB5) || (Format == RGB) || (Format == RGB8) || 
       (Format == RGB10) || (Format == RGB16F) || (Format == RGB32F) || (Format == RGBA16F) || (Format == RGBA32F) || (Format == RGBA) || (Format == RGBA8) || (Format == RGBA10) || 
       (Format == DXT5) || (Format == BC6U) || (Format == BC6S) || (Format == BC7);
 
@@ -3095,7 +3095,7 @@ D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, te
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter == TextureFilter::TEXTURE_MODE_NONE ? GL_NEAREST : GL_LINEAR_MIPMAP_LINEAR); // Use mipmap filtering GL_LINEAR_MIPMAP_LINEAR
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter == TextureFilter::TEXTURE_MODE_NONE ? GL_NEAREST : GL_LINEAR); // MAG Filter does not support mipmaps
 
-   if (Format == GREY) {//Hack so that GL_RED behaves as GL_GREY
+   if (Format == GREY8) {//Hack so that GL_RED behaves as GL_GREY
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
