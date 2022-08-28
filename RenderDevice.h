@@ -268,7 +268,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    D3DTexture* GetBackBufferTmpTexture() const { return m_pOffscreenBackBufferStereoTexture; }
 #ifdef ENABLE_SDL
    RenderTargetObj* GetNonMSAABlitTexture(int m_MSAASamples) const { return m_MSAASamples == 1 ? m_pOffscreenBackBufferTexture : m_pOffscreenNonMSAABlitTexture; }
-   D3DTexture* GetOffscreenVR(int eye) const { return eye == 0 ? m_pOffscreenVRLeft : m_pOffscreenVRRight;}
+   RenderTargetObj* GetOffscreenVR(int eye) const { return eye == 0 ? m_pOffscreenVRLeft : m_pOffscreenVRRight; }
 #endif
    D3DTexture* GetBackBufferPPTexture1() const { return m_pOffscreenBackBufferPPTexture1; }
    D3DTexture* GetBackBufferPPTexture2() const { return m_pOffscreenBackBufferPPTexture2; }
@@ -454,8 +454,8 @@ private:
    D3DTexture* m_pOffscreenBackBufferPPTexture1; // AA
    D3DTexture* m_pOffscreenBackBufferPPTexture2; // SMAA only
    RenderTargetObj* m_pOffscreenNonMSAABlitTexture;
-   D3DTexture* m_pOffscreenVRLeft;
-   D3DTexture* m_pOffscreenVRRight;
+   RenderTargetObj* m_pOffscreenVRLeft;
+   RenderTargetObj* m_pOffscreenVRRight;
 
    RenderTargetObj* m_pBloomBufferTexture;
    RenderTargetObj* m_pBloomTmpBufferTexture;
