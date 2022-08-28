@@ -115,19 +115,13 @@ public:
 
    RenderDevice* m_pd3dPrimaryDevice;
    RenderDevice* m_pd3dSecondaryDevice;
-   RenderTarget* m_pddsBackBuffer;
 
    D3DTexture* m_pddsAOBackBuffer;
    D3DTexture* m_pddsAOBackTmpBuffer;
 
-   D3DTexture* m_pdds3DZBuffer;
+   RenderTargetObj* m_pddsBackBuffer;
 
-   void* m_pddsZBuffer; // D3DTexture* or RenderTarget*, depending on HW support
-
-#ifndef ENABLE_SDL
-   RenderTarget* m_pddsStatic;
-   void* m_pddsStaticZ; // D3DTexture* or RenderTarget*, depending on HW support
-#endif
+   RenderTargetObj* m_pddsStatic;
 
    Texture m_pinballEnvTexture; // loaded from Resources
    Texture m_builtinEnvTexture; // loaded from Resources

@@ -984,11 +984,11 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    constexpr colorFormat renderBufferFormat = RGBA16F;
 
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
-   m_pOffscreenBackBufferTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_MSAA_DEPTH, renderBufferFormat, nullptr, m_stereo3D, TextureFilter::TEXTURE_MODE_NONE, false, false);
+   m_pOffscreenBackBufferTexture = new RenderTargetObj(this, m_Buf_width, m_Buf_height, renderBufferFormat, true, true, m_stereo3D, "Fatal Error: unable to create render buffer!");
 
    // If we are doing MSAA we need a texture with the same dimensions as the Back Buffer to resolve the end result to, can also use it for Post-AA
    if (g_pplayer->m_MSAASamples > 1 || m_FXAA > 0)
-      m_pOffscreenNonMSAABlitTexture = CreateTexture(m_Buf_width, m_Buf_height, 0, RENDERTARGET_DEPTH, renderBufferFormat, nullptr, m_stereo3D, TextureFilter::TEXTURE_MODE_NONE, false, false);
+      m_pOffscreenNonMSAABlitTexture = new RenderTargetObj(this, m_Buf_width, m_Buf_height, renderBufferFormat, true, false, m_stereo3D, "Fatal Error: unable to create render buffer!");
    else
       m_pOffscreenNonMSAABlitTexture = nullptr;
 
@@ -1640,7 +1640,7 @@ RenderDevice::~RenderDevice()
     SAFE_RELEASE(m_pVertexTrafoTexelDeclaration);
 
     m_texMan.UnloadAll();
-    SAFE_RELEASE_RENDER_TARGET(m_pOffscreenBackBufferTexture);
+    delete m_pOffscreenBackBufferTexture;
     SAFE_RELEASE_RENDER_TARGET(m_pOffscreenBackBufferStereoTexture);
     SAFE_RELEASE_RENDER_TARGET(m_pOffscreenBackBufferPPTexture1);
     SAFE_RELEASE_RENDER_TARGET(m_pReflectionBufferTexture);
