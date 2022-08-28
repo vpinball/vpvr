@@ -74,11 +74,11 @@ public:
 
    STANDARD_EDITABLE_DECLARES(Timer, eItemTimer, TIMER, 3)
 
-      //DECLARE_NOT_AGGREGATABLE(Timer)
-      // Remove the comment from the line above if you don't want your object to
-      // support aggregation.
+   //DECLARE_NOT_AGGREGATABLE(Timer)
+   // Remove the comment from the line above if you don't want your object to
+   // support aggregation.
 
-      DECLARE_REGISTRY_RESOURCEID(IDR_TIMER)
+   DECLARE_REGISTRY_RESOURCEID(IDR_TIMER)
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
 

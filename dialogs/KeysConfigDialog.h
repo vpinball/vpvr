@@ -19,4 +19,4 @@ private:
     void SetValue(int nID, const string& regKey, const string& regValue);
     void StartTimer(int nID);
 };
-#endif 
+#endif

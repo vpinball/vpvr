@@ -334,7 +334,7 @@ private:
    string ParseDelimtByColon(string &wholeline);
    void ParseFindConstruct(size_t &Pos, const string &UCLine, WordType &Type, int &ConstructSize);
    bool ParseStructureName(vector<UserData>& ListIn, UserData ud, const string &UCline, const string &line, const int Lineno);
-   
+
    size_t SureFind(const string &LineIn, const string &ToFind);
    void RemoveByVal(string &line); 
    void RemoveNonVBSChars(string &line);

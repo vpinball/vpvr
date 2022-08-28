@@ -37,7 +37,7 @@ INT_PTR AboutDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             std::ifstream file(g_pvp->m_szMyPath + "Changelog.txt");
             if (!file.is_open())
                file = std::ifstream(g_pvp->m_szMyPath + "Doc\\Changelog.txt");
-            string line,text;
+            string line, text;
             while (std::getline(file, line))
             {
                line += "\r\n";

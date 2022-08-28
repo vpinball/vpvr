@@ -2723,8 +2723,8 @@ string CodeViewer::ParseDelimtByColon(string &wholeline)
 	string result;
 	const size_t idx = wholeline.find(':'); 
 	if (idx == string::npos || idx == 0)
-{
-	result = wholeline;
+	{
+		result = wholeline;
 		wholeline.clear();
 	}
 	else
@@ -3267,7 +3267,7 @@ LRESULT CodeViewer::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
          {
             ::SendMessage(pcv->m_hwndStatus, WM_SIZE, wParam, lParam);
 
-			ResizeScintillaAndLastError();
+            ResizeScintillaAndLastError();
          }
          break;
       }
@@ -3697,11 +3697,11 @@ void CodeViewer::AppendLastErrorTextW(const wstring& text)
 	const int requiredLength = ::GetWindowTextLength(m_hwndLastErrorTextArea) + lstrlenW(text.c_str()) + 1;
 	wchar_t* buf = new wchar_t[requiredLength];
 
-    // Get existing text from edit control and put into buffer
-    ::GetWindowTextW(m_hwndLastErrorTextArea, buf, requiredLength);
+	// Get existing text from edit control and put into buffer
+	::GetWindowTextW(m_hwndLastErrorTextArea, buf, requiredLength);
 
-    // Append the new text to the buffer
-    wcscat_s(buf, requiredLength, text.c_str());
+	// Append the new text to the buffer
+	wcscat_s(buf, requiredLength, text.c_str());
 
 	::SetWindowTextW(m_hwndLastErrorTextArea, buf);
 

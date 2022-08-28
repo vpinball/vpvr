@@ -74,13 +74,13 @@ public:
    END_CONNECTION_POINT_MAP()
    
    DECLARE_REGISTRY_RESOURCEID(IDR_BUMPER)
-   
+
    // ISupportsErrorInfo
    STDMETHOD(InterfaceSupportsErrorInfo)(REFIID riid);
-   
+
    void MoveOffset(const float dx, const float dy) final;
    void SetObjectPos() final;
-   
+
    // Multi-object manipulation
    Vertex2D GetCenter() const final;
    void PutCenter(const Vertex2D &pv) final;
@@ -103,7 +103,7 @@ public:
       else
          return 0;
    }
-   
+
    ItemTypeEnum HitableGetItemType() const final { return eItemBumper; }
 
    void WriteRegDefaults() final;
