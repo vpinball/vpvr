@@ -68,16 +68,6 @@ enum textureUsage {
    DYNAMIC = 1
 };
 
-struct D3DTexture
-{
-   colorFormat format;
-   textureUsage usage;
-   GLuint texture = 0, zTexture = 0, framebuffer = 0, zBuffer = 0;
-   GLuint width = 0, height = 0;
-   //GLint slot = -1;//Current slot for caching
-   int stereo = 0;
-};
-
 struct ViewPort  {
    union {
       struct {
@@ -119,9 +109,7 @@ enum clearType {
 #else
 
 typedef LPD3DXFONT FontHandle;
-typedef IDirect3DTexture9 D3DTexture;
 typedef D3DVIEWPORT9 ViewPort;
-typedef IDirect3DSurface9 RenderTarget;
 typedef D3DVERTEXELEMENT9 VertexElement;
 typedef IDirect3DVertexDeclaration9 VertexDeclaration;
 

@@ -20,8 +20,8 @@ string Shader::shaderPath;
 string Shader::Defines;
 Matrix3D Shader::mWorld, Shader::mView, Shader::mProj[2];
 int Shader::lastShaderProgram = -1;
-D3DTexture* Shader::noTexture = nullptr;
-D3DTexture* Shader::noTextureMSAA = nullptr;
+Sampler* Shader::noTexture = nullptr;
+Sampler* Shader::noTextureMSAA = nullptr;
 static const float zeroValues[16] = { 0.0f,0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 const float* Shader::zeroData = zeroValues;
 int Shader::nextTextureSlot = 0;
@@ -934,9 +934,13 @@ void Shader::Begin(const unsigned int pass)
          else {
             if (!noTextureMSAA) {
                constexpr unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
-               noTextureMSAA = m_renderDevice->CreateTexture(2, 2, 0, RENDERTARGET_MSAA, RGBA, (void*)&data, 0, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
+               GLuint glTexture;
+               glGenTextures(1, &glTexture);
+               glBindTexture(GL_TEXTURE_2D, glTexture);
+               glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, g_pplayer->m_MSAASamples, GL_RGBA, 2, 2, GL_TRUE);
+               noTexture = new Sampler(m_renderDevice, glTexture, true, false, false);
             }
-            TextureID = noTextureMSAA->texture;
+            TextureID = noTextureMSAA->GetCoreTexture();
          }
          glActiveTexture(GL_TEXTURE0 + nextTextureSlot);
          glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, TextureID);
@@ -963,9 +967,13 @@ void Shader::Begin(const unsigned int pass)
          else {
             if (!noTexture) {
                constexpr unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
-               noTexture = m_renderDevice->CreateTexture(2, 2, 0, STATIC, RGBA, (void*)&data, 0, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
+               GLuint glTexture;
+               glGenTextures(1, &glTexture);
+               glBindTexture(GL_TEXTURE_2D, glTexture);
+               glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+               noTexture = new Sampler(m_renderDevice, glTexture, true, false, false);
             }
-            TextureID = noTexture->texture;
+            TextureID = noTexture->GetCoreTexture();
          }
 //Texture Cache
 /*         auto slot = slotTextureList.find(TextureID);
@@ -1021,31 +1029,6 @@ void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, c
       SetTextureNull(texelName);
    else
       SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel->m_pdsBuffer, filter, clampU, clampV, force_linear_rgb));
-}
-
-void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel)
-{
-   if (!texel || (uniformTex[texelName] == texel->texture)) return;
-
-   uniformTex[texelName] = texel->texture;
-
-   if (m_currentTechnique && lastShaderProgram == m_currentTechnique->program) {
-#ifdef TWEAK_GL_SHADER
-      const auto location = m_currentTechnique->uniformLocation[texelName];
-      if (location.location == -1) return;
-#else
-      auto loc = m_currentTechnique->uniformLocation->find(texelName);
-      if (loc == m_currentTechnique->uniformLocation->end()) return;
-      auto location = loc->second;
-#endif
-      glActiveTexture(GL_TEXTURE0 + nextTextureSlot);
-      if (texel->usage == RENDERTARGET_MSAA || texel->usage == RENDERTARGET_MSAA_DEPTH)
-         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texel->texture);
-      else
-         glBindTexture(GL_TEXTURE_2D, texel->texture);
-      glUniform1i(location.location, nextTextureSlot);
-      nextTextureSlot = (nextTextureSlot+1) % maxSlots;//TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
-   }
 }
 
 void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Sampler* texel)

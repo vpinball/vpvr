@@ -14,7 +14,7 @@ public:
 private:
    RenderDevice* m_pd3dDevice;
    Texture* m_backgroundFallback;
-   D3DTexture* m_backgroundTexture;
+   Sampler* m_backgroundTexture;
    int2 m_backglass_dmd;
    unsigned int m_backglass_dmd_width;
    unsigned int m_backglass_dmd_height;

@@ -163,8 +163,8 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice, Texture * backgroundFallbac
                   int size = decode_base64(attrib->value(), data, attrib->value_size(), data_len);
                   if ((size > 0) && (strcmp(imagesNode->name(), "BackglassImage") == 0)) {
                      m_backgroundTexture = m_pd3dDevice->m_texMan.LoadTexture(BaseTexture::CreateFromData(data, size), TextureFilter::TEXTURE_MODE_TRILINEAR, true, true, false);
-                     m_backglass_width = m_backgroundTexture->width;
-                     m_backglass_height = m_backgroundTexture->height;
+                     m_backglass_width = m_backgroundTexture->GetWidth();
+                     m_backglass_height = m_backgroundTexture->GetHeight();
                   }
 #ifdef WRITE_BACKGLASS_IMAGES
                   if (WRITE_BACKGLASS_IMAGES > 0 && size > 0) {//Write Image to disk. Also useful to check if the base64 decoder is working...

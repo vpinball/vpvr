@@ -1617,8 +1617,8 @@ RenderDevice::~RenderDevice()
     delete m_pBloomTmpBufferTexture;
     delete m_pBackBuffer;
 
-    SAFE_RELEASE_TEXTURE(m_SMAAareaTexture);
-    SAFE_RELEASE_TEXTURE(m_SMAAsearchTexture);
+    delete m_SMAAareaTexture;
+    delete m_SMAAsearchTexture;
 
 #ifndef ENABLE_SDL
 #ifdef _DEBUG
@@ -1839,38 +1839,68 @@ void RenderDevice::Flip(const bool vsync)
 
 #ifdef ENABLE_SDL
 
-D3DTexture* RenderDevice::UploadTexture(BaseTexture* surf, int *pTexWidth, int *pTexHeight, const TextureFilter filter, const bool clampU, const bool clampV, const bool force_linear_rgb)
-{
-   colorFormat format;
-   if (surf->m_format == BaseTexture::SRGBA)
-       format = colorFormat::SRGBA;
-   else if (surf->m_format == BaseTexture::RGBA)
-       format = colorFormat::RGBA;
-   else if (surf->m_format == BaseTexture::SRGB)
-       format = colorFormat::SRGB;
-   else if (surf->m_format == BaseTexture::RGB)
-       format = colorFormat::RGB;
-   else if (surf->m_format == BaseTexture::RGB_FP16)
-       format = colorFormat::RGB16F;
-   else if (surf->m_format == BaseTexture::RGB_FP32)
-       format = colorFormat::RGB32F;
-   if (force_linear_rgb)
-       if (format == colorFormat::SRGB)
-           format = colorFormat::RGB;
-       else if (format == colorFormat::SRGBA)
-           format = colorFormat::RGBA;
-   D3DTexture *tex = CreateTexture(surf->width(), surf->height(), 0, STATIC, format, surf->data(), 0, filter, clampU, clampV);
-   if (pTexWidth) *pTexWidth = surf->width();
-   if (pTexHeight) *pTexHeight = surf->height();
-   return tex;
-}
-
 void RenderDevice::UploadAndSetSMAATextures()
 {
-   m_SMAAsearchTexture = CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, STATIC, GREY8, (void*)&searchTexBytes[0], 0, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
-   m_SMAAareaTexture = CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, STATIC, GREY_ALPHA, (void*)&areaTexBytes[0], 0, TextureFilter::TEXTURE_MODE_BILINEAR, false, false);
+   GLuint glTexture;
+   int num_mips;
 
+   glGenTextures(1, &glTexture);
+   glBindTexture(GL_TEXTURE_2D, glTexture);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   num_mips = (int)std::log2(float(max(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT))) + 1;
+   if (m_GLversion >= 403)
+      glTexStorage2D(GL_TEXTURE_2D, num_mips, RGB8, SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT);
+   else
+   { // should never be triggered nowadays
+      GLsizei w = SEARCHTEX_WIDTH;
+      GLsizei h = SEARCHTEX_HEIGHT;
+      for (int i = 0; i < num_mips; i++)
+      {
+         glTexImage2D(GL_TEXTURE_2D, i, RGB8, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+         w = max(1, (w / 2));
+         h = max(1, (h / 2));
+      }
+   }
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, GL_RED, GL_UNSIGNED_BYTE, (void*)&searchTexBytes[0]);
+   glGenerateMipmap(GL_TEXTURE_2D); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwise good idea to limit by GL_TEXTURE_MAX_LEVEL
+   m_SMAAsearchTexture = new Sampler(this, glTexture, true, false, false);
    FBShader->SetTexture(SHADER_areaTex2D, m_SMAAareaTexture);
+   
+   glGenTextures(1, &glTexture);
+   glBindTexture(GL_TEXTURE_2D, glTexture);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_GREEN);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+   num_mips = (int)std::log2(float(max(AREATEX_WIDTH, AREATEX_HEIGHT))) + 1;
+   if (m_GLversion >= 403)
+      glTexStorage2D(GL_TEXTURE_2D, num_mips, RGB8, AREATEX_WIDTH, AREATEX_HEIGHT);
+   else
+   { // should never be triggered nowadays
+      GLsizei w = AREATEX_WIDTH;
+      GLsizei h = AREATEX_HEIGHT;
+      for (int i = 0; i < num_mips; i++)
+      {
+         glTexImage2D(GL_TEXTURE_2D, i, RGB8, w, h, 0, GL_RG, GL_UNSIGNED_BYTE, nullptr);
+         w = max(1, (w / 2));
+         h = max(1, (h / 2));
+      }
+   }
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, AREATEX_WIDTH, AREATEX_HEIGHT, GL_RG, GL_UNSIGNED_BYTE, (void*)&searchTexBytes[0]);
+   glGenerateMipmap(GL_TEXTURE_2D); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwise good idea to limit by GL_TEXTURE_MAX_LEVEL
    FBShader->SetTexture(SHADER_searchTex2D, m_SMAAsearchTexture);
 }
 
@@ -2024,42 +2054,6 @@ void RenderDevice::UploadAndSetSMAATextures()
    FBShader->SetTexture(SHADER_searchTex2D, m_SMAAsearchTexture, true);
 }
 #endif
-
-void RenderDevice::UpdateTexture(D3DTexture* const tex, BaseTexture* const surf, const bool force_linear_rgb)
-{
-#ifdef ENABLE_SDL
-   if (surf->m_format == BaseTexture::RGBA)
-      tex->format = colorFormat::RGBA;
-   else if (surf->m_format == BaseTexture::SRGBA)
-      tex->format = colorFormat::SRGBA;
-   else if (surf->m_format == BaseTexture::RGB)
-      tex->format = colorFormat::RGB;
-   else if (surf->m_format == BaseTexture::SRGB)
-      tex->format = colorFormat::SRGB;
-   else if (surf->m_format == BaseTexture::RGB_FP16)
-      tex->format = colorFormat::RGB16F;
-   else if (surf->m_format == BaseTexture::RGB_FP32)
-      tex->format = colorFormat::RGB32F;
-   if (force_linear_rgb)
-       if (tex->format == colorFormat::SRGB)
-           tex->format = colorFormat::RGB;
-       else if (tex->format == colorFormat::SRGBA)
-           tex->format = colorFormat::RGBA;
-   colorFormat Format = tex->format;
-   const GLuint col_type = ((Format == RGBA32F) || (Format == RGB32F)) ? GL_FLOAT : ((Format == RGBA16F) || (Format == RGB16F)) ? GL_HALF_FLOAT : GL_UNSIGNED_BYTE;
-   const GLuint col_format = ((Format == GREY8) || (Format == RED16F)) ? GL_RED : ((Format == GREY_ALPHA) || (Format == RG16F)) ? GL_RG : ((Format == RGB) || (Format == RGB8) || (Format == SRGB) || (Format == SRGB8) || (Format == RGB5) || (Format == RGB10) || (Format == RGB16F) || (Format == RGB32F)) ? GL_RGB : GL_RGBA;
-   glBindTexture(GL_TEXTURE_2D, tex->texture);
-   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, surf->width(), surf->height(), col_format, col_type, surf->data());
-   glGenerateMipmap(GL_TEXTURE_2D); // Generate mip-maps
-   glBindTexture(GL_TEXTURE_2D, 0);
-#else
-   IDirect3DTexture9* sysTex = CreateSystemTexture(surf);
-   m_curTextureUpdates++;
-   CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, tex));
-   SAFE_RELEASE(sysTex);
-#endif
-}
 
 void RenderDevice::SetSamplerState(const DWORD Sampler, const DWORD minFilter, const DWORD magFilter, const SamplerStateValues mipFilter)
 {
@@ -2561,224 +2555,6 @@ void RenderDevice::GetViewport(ViewPort* p1)
 #else
    CHECKD3D(m_pD3DDevice->GetViewport((D3DVIEWPORT9*)p1));
 #endif
-}
-
-D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, void* data, int stereo, const TextureFilter filter, const bool clampU, const bool clampV) {
-#ifdef ENABLE_SDL
-   D3DTexture* tex = new D3DTexture();
-   tex->usage = Usage;
-   tex->width = Width;
-   tex->height = Height;
-   tex->format = Format;
-   //tex->slot = -1;
-   const GLuint col_type = ((Format == RGBA32F) || (Format == RGB32F)) ? GL_FLOAT : ((Format == RGBA16F) || (Format == RGB16F)) ? GL_HALF_FLOAT : GL_UNSIGNED_BYTE;
-   const GLuint col_format = ((Format == GREY8) || (Format == RED16F)) ? GL_RED : ((Format == GREY_ALPHA) || (Format == RG16F)) ? GL_RG : ((Format == RGB) || (Format == RGB8) 
-      || (Format == SRGB) || (Format == SRGB8) || (Format == RGB5) || (Format == RGB10) || (Format == RGB16F) || (Format == RGB32F)) ? GL_RGB : GL_RGBA;
-   const bool col_is_linear = (Format == GREY8) || (Format == RED16F) || (Format == GREY_ALPHA) || (Format == RG16F) || (Format == RGB5) || (Format == RGB) || (Format == RGB8) || 
-      (Format == RGB10) || (Format == RGB16F) || (Format == RGB32F) || (Format == RGBA16F) || (Format == RGBA32F) || (Format == RGBA) || (Format == RGBA8) || (Format == RGBA10) || 
-      (Format == DXT5) || (Format == BC6U) || (Format == BC6S) || (Format == BC7);
-
-   // Create MSAA/Non-MSAA Renderbuffers
-   if ((tex->usage == RENDERTARGET) || (tex->usage == RENDERTARGET_DEPTH) || (tex->usage == RENDERTARGET_MSAA) || (tex->usage == RENDERTARGET_MSAA_DEPTH)) {
-      tex->stereo = stereo;
-      glGenFramebuffers(1, &tex->framebuffer);
-      glBindFramebuffer(GL_FRAMEBUFFER, tex->framebuffer);
-      glGenTextures(1, &tex->texture);
-
-      if (g_pplayer->m_MSAASamples > 1 && (tex->usage == RENDERTARGET_MSAA || tex->usage == RENDERTARGET_MSAA_DEPTH))
-      {
-         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, tex->texture);
-         glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, g_pplayer->m_MSAASamples, Format, Width, Height, GL_TRUE);
-         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, tex->texture, 0);
-
-         if (tex->usage == RENDERTARGET_MSAA_DEPTH)
-         {
-            glGenRenderbuffers(1, &tex->zBuffer);
-            glBindRenderbuffer(GL_RENDERBUFFER, tex->zBuffer);
-            glRenderbufferStorageMultisample(GL_RENDERBUFFER, g_pplayer->m_MSAASamples, GL_DEPTH_COMPONENT, Width, Height);
-            glBindRenderbuffer(GL_RENDERBUFFER, 0);
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, tex->zBuffer);
-         }
-         else
-         {
-            tex->zTexture = 0;
-            tex->zBuffer = 0;
-         }
-      }
-      else // RENDERTARGET & RENDERTARGET_DEPTH
-      {
-         glBindTexture(GL_TEXTURE_2D, tex->texture);
-         glTexImage2D(GL_TEXTURE_2D, 0, Format, Width, Height, 0, GL_RGBA, col_type, nullptr);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter == TextureFilter::TEXTURE_MODE_NONE ? GL_NEAREST : GL_LINEAR);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->texture, 0);
-
-         if (tex->usage == RENDERTARGET_DEPTH || tex->usage == RENDERTARGET_MSAA_DEPTH) {
-            glGenRenderbuffers(1, &tex->zBuffer);
-            glBindRenderbuffer(GL_RENDERBUFFER, tex->zBuffer);
-            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, Width, Height);
-            glBindRenderbuffer(GL_RENDERBUFFER, 0);
-            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, tex->zBuffer);
-         }
-         else
-         {
-            tex->zTexture = 0;
-            tex->zBuffer = 0;
-         }
-      }
-
-      constexpr GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
-      glDrawBuffers(1, DrawBuffers);
-
-      const int status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-      if (status != GL_FRAMEBUFFER_COMPLETE) {
-         char msg[256];
-         const char* errorCode;
-         switch (status) {
-         case GL_FRAMEBUFFER_UNDEFINED:
-            errorCode = "GL_FRAMEBUFFER_UNDEFINED";
-            break;
-         case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
-            errorCode = "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
-            break;
-         case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
-            errorCode = "GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
-            break;
-         case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
-            errorCode = "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER";
-            break;
-         case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
-            errorCode = "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER";
-            break;
-         case GL_FRAMEBUFFER_UNSUPPORTED:
-            errorCode = "GL_FRAMEBUFFER_UNSUPPORTED";
-            break;
-         case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
-            errorCode = "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
-            break;
-         case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
-            errorCode = "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS";
-            break;
-         default:
-            errorCode = "unknown";
-            break;
-         }
-         sprintf_s(msg, sizeof(msg), "glCheckFramebufferStatus returned 0x%0002X %s", glCheckFramebufferStatus(tex->framebuffer), errorCode);
-         ShowError(msg);
-         exit(-1);
-      }
-      return tex;
-   }
-
-   // normal textures:
-
-   tex->framebuffer = 0;
-   tex->zTexture = 0;
-   tex->stereo = 0;
-
-   glGenTextures(1, &tex->texture);
-   glBindTexture(GL_TEXTURE_2D, tex->texture);
-
-   
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clampU ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clampV ? GL_CLAMP_TO_EDGE : GL_REPEAT);
-
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter == TextureFilter::TEXTURE_MODE_NONE ? GL_NEAREST : GL_LINEAR_MIPMAP_LINEAR); // Use mipmap filtering GL_LINEAR_MIPMAP_LINEAR
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter == TextureFilter::TEXTURE_MODE_NONE ? GL_NEAREST : GL_LINEAR); // MAG Filter does not support mipmaps
-
-   if (Format == GREY8) {//Hack so that GL_RED behaves as GL_GREY
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
-      Format = RGB8;
-   }
-   else if (Format == GREY_ALPHA) {//Hack so that GL_RG behaves as GL_GREY_ALPHA
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_GREEN);
-      Format = RGB8;
-   }
-   else {//Default
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_GREEN);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_BLUE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
-
-      // Anisotropic filtering
-      if (m_maxaniso > 0)
-         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, min(max(1.f,m_maxaniso),16.f));
-   }
-
-   colorFormat comp_format = Format;
-   if (m_compress_textures && ((Width & 3) == 0) && ((Height & 3) == 0) && (Width > 256) && (Height > 256))
-   {
-      if (col_type == GL_FLOAT || col_type == GL_HALF_FLOAT)
-      {
-         if (GLAD_GL_ARB_texture_compression_bptc)
-            comp_format = colorFormat::BC6S; // We should use unsigned BC6 but this needs to know before hand if the texture is only positive
-      }
-      else if (GLAD_GL_ARB_texture_compression_bptc)
-         comp_format = col_is_linear ? colorFormat::BC7 : colorFormat::SBC7;
-      else
-         comp_format = col_is_linear ? colorFormat::DXT5 : colorFormat::SDXT5;
-   }
-
-   const int num_mips = (int)std::log2(float(max(Width, Height))) + 1;
-   if (m_GLversion >= 403)
-      glTexStorage2D(GL_TEXTURE_2D, num_mips, comp_format, Width, Height);
-   else { // should never be triggered nowadays
-      GLsizei w = Width;
-      GLsizei h = Height;
-      for (int i = 0; i < num_mips; i++) {
-         glTexImage2D(GL_TEXTURE_2D, i, comp_format, w, h, 0, col_format, col_type, nullptr);
-         w = max(1, (w / 2));
-         h = max(1, (h / 2));
-      }
-   }
-
-   if (data)
-   {
-      glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Width, Height, col_format, col_type, data);
-      glGenerateMipmap(GL_TEXTURE_2D); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwise good idea to limit by GL_TEXTURE_MAX_LEVEL
-   }
-#else //D3DTexture* RenderDevice::CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, void* data) {
-   D3DPOOL Pool;
-   D3DTexture* tex;
-   HRESULT hr;
-
-   switch (Usage) {
-   case RENDERTARGET:
-      //case RENDERTARGET_DEPTH:
-   case DEPTH:
-      Pool = (D3DPOOL)memoryPool::DEFAULT;
-      break;
-   case AUTOMIPMAP:
-   case STATIC:
-   case DYNAMIC:
-   default:
-      Pool = D3DPOOL_SYSTEMMEM;
-      break;
-   }
-
-   hr = m_pD3DDevice->CreateTexture(Width, Height, Levels, Usage, (D3DFORMAT)Format, (D3DPOOL)Pool, &tex, nullptr);
-   if (FAILED(hr))
-   {
-      ShowError("Could not create D3D9 texture.");
-      throw 0;
-   }
-   if (data) {
-      IDirect3DTexture9* sysTex = CreateSystemTexture(Width, Height, (D3DFORMAT)Format, data, Width, false);
-      m_curTextureUpdates++;
-      CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, tex));
-      SAFE_RELEASE(sysTex);
-   }
-#endif
-   return tex;
 }
 
 #ifdef ENABLE_SDL
