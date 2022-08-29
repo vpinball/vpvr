@@ -52,22 +52,7 @@ Pin3D::~Pin3D()
 
    delete m_pddsAOBackBuffer;
    delete m_pddsAOBackTmpBuffer;
-#ifndef ENABLE_SDL
-   if (!m_pd3dPrimaryDevice->m_useNvidiaApi && m_pd3dPrimaryDevice->m_INTZ_support)
-   {
-      SAFE_RELEASE_NO_SET((D3DTexture*)m_pddsStaticZ);
-      SAFE_RELEASE_NO_SET((D3DTexture*)m_pddsZBuffer);
-   }
-   else
-   {
-      SAFE_RELEASE_NO_SET((RenderTarget*)m_pddsStaticZ);
-      SAFE_RELEASE_NO_SET((RenderTarget*)m_pddsZBuffer);
-   }
-   m_pddsStaticZ = nullptr;
-   SAFE_RELEASE(m_pddsStatic);
-#endif
-   SAFE_RELEASE(m_pdds3DZBuffer);
-   SAFE_RELEASE_NO_RCC(m_pddsBackBuffer);
+   delete m_pddsStatic;
 
    SAFE_BUFFER_RELEASE(RenderDevice::m_quadVertexBuffer);
    //SAFE_BUFFER_RELEASE(RenderDevice::m_quadDynVertexBuffer);
@@ -536,7 +521,7 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
    }
 #endif
 
-   if (m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && useAO) 
+   if (m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && useAO)
    {
 #ifdef ENABLE_SDL
       m_pddsAOBackTmpBuffer = new RenderTarget(m_pd3dPrimaryDevice, m_pd3dPrimaryDevice->getBufwidth(), m_pd3dPrimaryDevice->getBufheight(), colorFormat::GREY8, false, false, stereo3D,

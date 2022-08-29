@@ -289,8 +289,6 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    D3DTexture* CreateSystemTexture(BaseTexture* const surf);
    D3DTexture* CreateSystemTexture(const int texwidth, const int texheight, const D3DFORMAT texformat, const void* data, const int pitch);
 #endif
-   D3DTexture* UploadTexture(BaseTexture* const surf, int* const pTexWidth, int* const pTexHeight, const TextureFilter filter, const bool clampU, const bool clampV, const bool force_linear_rgb);
-   void UpdateTexture(D3DTexture* const tex, BaseTexture* const surf, const bool force_linear_rgb);
 
    void SetRenderState(const RenderStates p1, DWORD p2);
    bool SetRenderStateCache(const RenderStates p1, DWORD p2);
@@ -306,9 +304,6 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
 #endif
    void SetSamplerState(const DWORD Sampler, const DWORD minFilter, const DWORD magFilter, const SamplerStateValues mipFilter);
    void SetSamplerAnisotropy(const DWORD Sampler, DWORD Value);
-
-   D3DTexture* CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, void* data, int stereo, const TextureFilter filter, const bool clampU, const bool clampV);
-//   HRESULT CreateTexture(UINT Width, UINT Height, UINT Levels, textureUsage Usage, colorFormat Format, memoryPool Pool, D3DTexture** ppTexture, HANDLE* pSharedHandle);
 
 #ifdef ENABLE_SDL
    HRESULT Create3DFont(INT Height, UINT Width, UINT Weight, UINT MipLevels, BOOL Italic, DWORD CharSet, DWORD OutputPrecision, DWORD Quality, DWORD PitchAndFamily, LPCTSTR pFacename, TTF_Font *ppFont);
@@ -397,8 +392,8 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    int          m_BWrendering;
    UINT         m_adapter;
 
-   D3DTexture* m_SMAAsearchTexture;
-   D3DTexture* m_SMAAareaTexture;
+   Sampler* m_SMAAsearchTexture;
+   Sampler* m_SMAAareaTexture;
 
 private:
    void DrawPrimitive(const PrimitiveTypes type, const DWORD fvf, const void* vertices, const DWORD vertexCount);
