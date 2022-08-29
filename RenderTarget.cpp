@@ -1,7 +1,10 @@
 #include "stdafx.h"
 #include "RenderTarget.h"
 #include "RenderDevice.h"
+
+#ifdef ENABLE_SDL
 #include "Shader.h"
+#endif
 
 #ifndef DISABLE_FORCE_NVIDIA_OPTIMUS
 #include "nvapi.h"

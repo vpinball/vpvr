@@ -442,7 +442,7 @@ public:
 
    bool m_stereo3Denabled;
    bool m_stereo3DY;
-   int m_stereo3D; // 0=off, 1=top/down, 2=interlaced/LG, 3=sidebyside, 4=SteamVR
+   StereoMode m_stereo3D;
 
    bool m_headTracking;
    float m_global3DContrast;

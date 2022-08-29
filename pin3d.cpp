@@ -19,6 +19,7 @@ Pin3D::Pin3D()
    m_pddsAOBackTmpBuffer = nullptr;
    m_pd3dPrimaryDevice = nullptr;
    m_pd3dSecondaryDevice = nullptr;
+   m_pddsStatic = nullptr;
    m_envRadianceTexture = nullptr;
    m_tableVBuffer = nullptr;
    m_backGlass = nullptr;
@@ -447,14 +448,13 @@ BaseTexture* EnvmapPrecalc(const Texture* envTex, const unsigned int rad_env_xre
 #endif
 
    g_pvp->ProfileLog("EnvmapPrecalc End"s);
-   
+
    return radTex;
 }
 
-HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
+HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const StereoMode stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
 {
    const unsigned int display = LoadValueIntWithDefault(stereo3D == STEREO_VR ? regKey[RegName::PlayerVR] : regKey[RegName::Player], "Display"s, 0);
-
    vector<DisplayConfig> displays;
    getDisplayList(displays);
    int adapter = 0;
@@ -534,14 +534,14 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
       m_pddsAOBackBuffer = new RenderTarget(m_pd3dPrimaryDevice, m_viewPort.Width, m_viewPort.Height, colorFormat::GREY8, false, false, stereo3D,
          "Unable to create AO buffers!\r\nPlease disable Ambient Occlusion.\r\nOr try to (un)set \"Alternative Depth Buffer processing\" in the video options!");
 #endif
-       if (!m_pddsAOBackBuffer || !m_pddsAOBackTmpBuffer)
-          return E_FAIL;
+      if (!m_pddsAOBackBuffer || !m_pddsAOBackTmpBuffer)
+         return E_FAIL;
    }
 
    return S_OK;
 }
 
-HRESULT Pin3D::InitRenderDevice(const bool fullScreen, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
+HRESULT Pin3D::InitRenderDevice(const bool fullScreen, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const StereoMode stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
 {
    m_proj.m_stereo3D = m_stereo3D = stereo3D;
    m_AAfactor = AAfactor;
@@ -554,9 +554,8 @@ HRESULT Pin3D::InitRenderDevice(const bool fullScreen, const int width, const in
    m_viewPort.MinZ = 0.0f;
    m_viewPort.MaxZ = 1.0f;
 
-   const HRESULT res = InitPrimary(fullScreen, colordepth, refreshrate, VSync, AAfactor, stereo3D, FXAA, useAO, ss_refl);
-   if (FAILED(res))
-      return res;
+   if (FAILED(InitPrimary(fullScreen, colordepth, refreshrate, VSync, AAfactor, stereo3D, FXAA, useAO, ss_refl)))
+      return E_FAIL;
 
    m_pd3dSecondaryDevice = m_pd3dPrimaryDevice; //!! for now, there is no secondary device :/
    return S_OK;
@@ -724,17 +723,17 @@ void Pin3D::InitLights()
    //m_pd3dPrimaryDevice->classicLightShader->SetInt("iLightPointNum",MAX_LIGHT_SOURCES);
 #endif
 
-   g_pplayer->m_ptable->m_Light[0].pos.x = g_pplayer->m_ptable->m_right * 0.5f;
-   g_pplayer->m_ptable->m_Light[1].pos.x = g_pplayer->m_ptable->m_right * 0.5f;
-   g_pplayer->m_ptable->m_Light[0].pos.y = g_pplayer->m_ptable->m_bottom * (float)(1.0 / 3.0);
-   g_pplayer->m_ptable->m_Light[1].pos.y = g_pplayer->m_ptable->m_bottom * (float)(2.0 / 3.0);
+   g_pplayer->m_ptable->m_Light[0].pos.x = g_pplayer->m_ptable->m_right*0.5f;
+   g_pplayer->m_ptable->m_Light[1].pos.x = g_pplayer->m_ptable->m_right*0.5f;
+   g_pplayer->m_ptable->m_Light[0].pos.y = g_pplayer->m_ptable->m_bottom*(float)(1.0 / 3.0);
+   g_pplayer->m_ptable->m_Light[1].pos.y = g_pplayer->m_ptable->m_bottom*(float)(2.0 / 3.0);
    g_pplayer->m_ptable->m_Light[0].pos.z = g_pplayer->m_ptable->m_lightHeight;
    g_pplayer->m_ptable->m_Light[1].pos.z = g_pplayer->m_ptable->m_lightHeight;
 
    vec4 emission = convertColor(g_pplayer->m_ptable->m_Light[0].emission);
-   emission.x *= g_pplayer->m_ptable->m_lightEmissionScale * g_pplayer->m_globalEmissionScale;
-   emission.y *= g_pplayer->m_ptable->m_lightEmissionScale * g_pplayer->m_globalEmissionScale;
-   emission.z *= g_pplayer->m_ptable->m_lightEmissionScale * g_pplayer->m_globalEmissionScale;
+   emission.x *= g_pplayer->m_ptable->m_lightEmissionScale*g_pplayer->m_globalEmissionScale;
+   emission.y *= g_pplayer->m_ptable->m_lightEmissionScale*g_pplayer->m_globalEmissionScale;
+   emission.z *= g_pplayer->m_ptable->m_lightEmissionScale*g_pplayer->m_globalEmissionScale;
 
    float lightPos[MAX_LIGHT_SOURCES][4] = { 0.f };
    float lightEmission[MAX_LIGHT_SOURCES][4] = { 0.f };
@@ -1106,12 +1105,12 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
        if (pin)
        {
            SetPrimaryTextureFilter(0, TEXTURE_MODE_ANISOTROPIC);
-           m_pd3dPrimaryDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_depth_only_with_texture, mat->m_bIsMetal);
-           m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture0, pin, TextureFilter::TEXTURE_MODE_TRILINEAR, false, false, false);
+           m_pd3dPrimaryDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_depth_only_with_texture);
+           m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture0, pin, TextureFilter::TEXTURE_MODE_TRILINEAR, true, true, false);
            m_pd3dPrimaryDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
        }
        else // No image by that name
-           m_pd3dPrimaryDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_depth_only_without_texture, mat->m_bIsMetal);
+           m_pd3dPrimaryDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_depth_only_without_texture);
    }
    else
    {
@@ -1121,7 +1120,7 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
        {
            SetPrimaryTextureFilter(0, TEXTURE_MODE_ANISOTROPIC);
            m_pd3dPrimaryDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
-           m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture0, pin, TextureFilter::TEXTURE_MODE_TRILINEAR, false, false, false);
+           m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture0, pin, TextureFilter::TEXTURE_MODE_TRILINEAR, true, true, false);
            m_pd3dPrimaryDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
        }
        else // No image by that name

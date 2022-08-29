@@ -84,14 +84,15 @@ enum UsageFlags {
 #endif
 };
 
-class TextureManager;
+enum StereoMode;
+
 class Shader;
 
 class RenderDevice final
 {
 public:
 
-RenderDevice(const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const int stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice = nullptr);
+RenderDevice(const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const StereoMode stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice = nullptr);
 
 #ifdef ENABLE_SDL
    enum RenderStates
@@ -283,12 +284,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    static void turnVROff();
 #endif
 
-   bool DepthBufferReadBackAvailable() const;
-
-#ifndef ENABLE_SDL
-   D3DTexture* CreateSystemTexture(BaseTexture* const surf);
-   D3DTexture* CreateSystemTexture(const int texwidth, const int texheight, const D3DFORMAT texformat, const void* data, const int pitch);
-#endif
+   bool DepthBufferReadBackAvailable();
 
    void SetRenderState(const RenderStates p1, DWORD p2);
    bool SetRenderStateCache(const RenderStates p1, DWORD p2);
