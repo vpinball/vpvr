@@ -1092,8 +1092,8 @@ bool RenderDevice::LoadShaders()
       UploadAndSetSMAATextures();
    else
    {
-      m_SMAAareaTexture = 0;
-      m_SMAAsearchTexture = 0;
+      m_SMAAareaTexture = nullptr;
+      m_SMAAsearchTexture = nullptr;
    }
 
    // Initialize uniform to default value
@@ -1869,7 +1869,7 @@ void RenderDevice::UploadAndSetSMAATextures()
       }
    }
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, GL_RED, GL_UNSIGNED_BYTE, (void*)&searchTexBytes[0]);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, GL_RED, GL_UNSIGNED_BYTE, (void*)searchTexBytes);
    glGenerateMipmap(GL_TEXTURE_2D); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwise good idea to limit by GL_TEXTURE_MAX_LEVEL
    m_SMAAsearchTexture = new Sampler(this, glTexture, true, false, false);
 
@@ -1898,8 +1898,9 @@ void RenderDevice::UploadAndSetSMAATextures()
       }
    }
    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, AREATEX_WIDTH, AREATEX_HEIGHT, GL_RG, GL_UNSIGNED_BYTE, (void*)&searchTexBytes[0]);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, AREATEX_WIDTH, AREATEX_HEIGHT, GL_RG, GL_UNSIGNED_BYTE, (void*)searchTexBytes);
    glGenerateMipmap(GL_TEXTURE_2D); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwise good idea to limit by GL_TEXTURE_MAX_LEVEL
+   m_SMAAareaTexture = new Sampler(this, glTexture, true, false, false);
 }
 #else
 void RenderDevice::UploadAndSetSMAATextures()
