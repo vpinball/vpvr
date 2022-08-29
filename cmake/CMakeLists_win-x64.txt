@@ -487,6 +487,10 @@ add_executable(vpinball WIN32
    regutil.h
    RenderDevice.cpp
    RenderDevice.h
+   RenderTarget.cpp
+   RenderTarget.h
+   Sampler.cpp
+   Sampler.h
    resource.h
    rubber.h
    Shader.h
