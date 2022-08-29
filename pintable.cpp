@@ -144,7 +144,7 @@ STDMETHODIMP ScriptGlobalTable::NudgeSetCalibration(int XMax, int YMax, int XGai
 	}
 	else
 		DeleteValue(regKey[RegName::Player], "TiltSensitivity"s);
-	
+
 	m_pt->ReadAccelerometerCalibration();
 
 	return S_OK;
@@ -1271,9 +1271,9 @@ void PinTable::ReadAccelerometerCalibration()
    m_tblAccelerometer = LoadValueBoolWithDefault(regKey[RegName::Player], "PBWEnabled"s, true); // true if electronic accelerometer enabled
    m_tblAccelNormalMount = LoadValueBoolWithDefault(regKey[RegName::Player], "PBWNormalMount"s, true); // true is normal mounting (left hand coordinates)
 
-	m_tblAccelAngle = 0.0f;			// 0 degrees rotated counterclockwise (GUI is lefthand coordinates)
+   m_tblAccelAngle = 0.0f;			// 0 degrees rotated counterclockwise (GUI is lefthand coordinates)
    const bool accel = LoadValueBoolWithDefault(regKey[RegName::Player], "PBWRotationCB"s, false);
-	if (accel)
+   if (accel)
       m_tblAccelAngle = (float)LoadValueIntWithDefault(regKey[RegName::Player], "PBWRotationValue"s, 0);
 
    m_tblAccelAmp.x = dequantizeUnsignedPercentNoClamp(LoadValueIntWithDefault(regKey[RegName::Player], "PBWAccelGainX"s, 150));
@@ -1284,8 +1284,8 @@ void PinTable::ReadAccelerometerCalibration()
    //!! bug!! If tilt sensitivity is not set, it's supposed to disable analog tilting, see KeysConfigDialog.cpp
    plumb_set_sensitivity((float)LoadValueIntWithDefault(regKey[RegName::Player], "TiltSensitivity"s, 400) * (float)(1.0 / 1000.0));
 
-	if (g_pplayer)
-		g_pplayer->m_pininput.LoadSettings();
+   if (g_pplayer)
+      g_pplayer->m_pininput.LoadSettings();
 }
 
 PinTable::~PinTable()
@@ -5759,41 +5759,41 @@ void PinTable::ExportBackdropPOV(const string& filename)
         root->append_node(fullsinglescreen);
 
         xml_node<>* custom = xmlDoc.allocate_node(node_element, "customsettings");
-        xml_node<>* userSSAA = xmlDoc.allocate_node(node_element, "SSAA", std::to_string(m_useAA).c_str());
+        xml_node<> *userSSAA = xmlDoc.allocate_node(node_element, "SSAA", std::to_string(m_useAA).c_str());
         custom->append_node(userSSAA);
-        xml_node<>* userFXAA = xmlDoc.allocate_node(node_element, "postprocAA", std::to_string(m_useFXAA).c_str());
+        xml_node<> *userFXAA = xmlDoc.allocate_node(node_element, "postprocAA", std::to_string(m_useFXAA).c_str());
         custom->append_node(userFXAA);
-        xml_node<>* userAO = xmlDoc.allocate_node(node_element, "ingameAO", std::to_string(m_useAO).c_str());
+        xml_node<> *userAO = xmlDoc.allocate_node(node_element, "ingameAO", std::to_string(m_useAO).c_str());
         custom->append_node(userAO);
-        xml_node<>* userSSR = xmlDoc.allocate_node(node_element, "ScSpReflect", std::to_string(m_useSSR).c_str());
+        xml_node<> *userSSR = xmlDoc.allocate_node(node_element, "ScSpReflect", std::to_string(m_useSSR).c_str());
         custom->append_node(userSSR);
-        xml_node<>* userFpsLimit = xmlDoc.allocate_node(node_element, "FPSLimiter", std::to_string(m_TableAdaptiveVSync).c_str());
+        xml_node<> *userFpsLimit = xmlDoc.allocate_node(node_element, "FPSLimiter", std::to_string(m_TableAdaptiveVSync).c_str());
         custom->append_node(userFpsLimit);
-        xml_node<>* userOverwriteDetail = xmlDoc.allocate_node(node_element, "OverwriteDetailsLevel", std::to_string(m_overwriteGlobalDetailLevel).c_str());
+        xml_node<> *userOverwriteDetail = xmlDoc.allocate_node(node_element, "OverwriteDetailsLevel", std::to_string(m_overwriteGlobalDetailLevel).c_str());
         custom->append_node(userOverwriteDetail);
-        xml_node<>* userDetail = xmlDoc.allocate_node(node_element, "DetailsLevel", std::to_string(m_userDetailLevel).c_str());
+        xml_node<> *userDetail = xmlDoc.allocate_node(node_element, "DetailsLevel", std::to_string(m_userDetailLevel).c_str());
         custom->append_node(userDetail);
-        xml_node<>* userReflectBall = xmlDoc.allocate_node(node_element, "BallReflection", std::to_string(m_useReflectionForBalls).c_str());
+        xml_node<> *userReflectBall = xmlDoc.allocate_node(node_element, "BallReflection", std::to_string(m_useReflectionForBalls).c_str());
         custom->append_node(userReflectBall);
-        xml_node<>* userTrailBalls = xmlDoc.allocate_node(node_element, "BallTrail", std::to_string(m_useTrailForBalls).c_str());
+        xml_node<> *userTrailBalls = xmlDoc.allocate_node(node_element, "BallTrail", std::to_string(m_useTrailForBalls).c_str());
         custom->append_node(userTrailBalls);
         sprintf_s(strBuf, sizeof(strBuf), "%f", m_ballTrailStrength);
         xml_node<> *userTrailStrength = xmlDoc.allocate_node(node_element, "BallTrailStrength", strBuf);
         custom->append_node(userTrailStrength);
-        xml_node<>* userOverwriteDayNight = xmlDoc.allocate_node(node_element, "OverwriteNightDay", std::to_string(m_overwriteGlobalDayNight).c_str());
+        xml_node<> *userOverwriteDayNight = xmlDoc.allocate_node(node_element, "OverwriteNightDay", std::to_string(m_overwriteGlobalDayNight).c_str());
         custom->append_node(userOverwriteDayNight);
-        xml_node<>* userDayNight = xmlDoc.allocate_node(node_element, "NightDayLevel", std::to_string(GetGlobalEmissionScale()).c_str());
+        xml_node<> *userDayNight = xmlDoc.allocate_node(node_element, "NightDayLevel", std::to_string(GetGlobalEmissionScale()).c_str());
         custom->append_node(userDayNight);
         sprintf_s(strBuf, sizeof(strBuf), "%f", GetGlobalDifficulty());
         xml_node<>* userDifficutly = xmlDoc.allocate_node(node_element, "GameplayDifficulty", strBuf);
         custom->append_node(userDifficutly);
-        xml_node<>* userPhysics = xmlDoc.allocate_node(node_element, "PhysicsSet", std::to_string(m_overridePhysics).c_str());
+        xml_node<> *userPhysics = xmlDoc.allocate_node(node_element, "PhysicsSet", std::to_string(m_overridePhysics).c_str());
         custom->append_node(userPhysics);
-        xml_node<>* userFlipperPhysics = xmlDoc.allocate_node(node_element, "IncludeFlipperPhysics", std::to_string(m_overridePhysicsFlipper).c_str());
+        xml_node<> *userFlipperPhysics = xmlDoc.allocate_node(node_element, "IncludeFlipperPhysics", std::to_string(m_overridePhysicsFlipper).c_str());
         custom->append_node(userFlipperPhysics);
-        xml_node<>* userSoundVol = xmlDoc.allocate_node(node_element, "SoundVolume", std::to_string(GetTableSoundVolume()).c_str()); 
+        xml_node<> *userSoundVol = xmlDoc.allocate_node(node_element, "SoundVolume", std::to_string(GetTableSoundVolume()).c_str());
         custom->append_node(userSoundVol);
-        xml_node<>* userMusicVol = xmlDoc.allocate_node(node_element, "MusicVolume", std::to_string(GetTableMusicVolume()).c_str());
+        xml_node<> *userMusicVol = xmlDoc.allocate_node(node_element, "MusicVolume", std::to_string(GetTableMusicVolume()).c_str());
         custom->append_node(userMusicVol);
 
         root->append_node(custom);

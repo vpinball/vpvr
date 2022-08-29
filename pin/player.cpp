@@ -197,8 +197,8 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
    m_disableAO = LoadValueBoolWithDefault(regKey[RegName::Player], "DisableAO"s, false);
    m_ss_refl = LoadValueBoolWithDefault(regKey[RegName::Player], "SSRefl"s, false);
    m_pf_refl = LoadValueBoolWithDefault(regKey[RegName::Player], "PFRefl"s, true);
-   m_stereo3D = LoadValueIntWithDefault(regKey[RegName::Player], "Stereo3D"s, 0);
-   m_stereo3Denabled = LoadValueBoolWithDefault(regKey[RegName::Player], "Stereo3DEnabled"s, (m_stereo3D != 0));
+   m_stereo3D = (StereoMode)LoadValueIntWithDefault(regKey[RegName::Player], "Stereo3D"s, STEREO_OFF);
+   m_stereo3Denabled = LoadValueBoolWithDefault(regKey[RegName::Player], "Stereo3DEnabled"s, (m_stereo3D != STEREO_OFF));
    m_stereo3DY = LoadValueBoolWithDefault(regKey[RegName::Player], "Stereo3DYAxis"s, false);
    m_global3DContrast = LoadValueFloatWithDefault(regKey[RegName::Player], "Stereo3DContrast"s, 1.0f);
    m_global3DDesaturation = LoadValueFloatWithDefault(regKey[RegName::Player], "Stereo3DDesaturation"s, 0.f);
@@ -232,7 +232,7 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
       //m_reflectionForBalls = false; // Ball reflections work fine but is a performance hog in it's current implementation so force disable for now.
    }
    else {
-      m_stereo3D = LoadValueIntWithDefault(regKey[RegName::Player], "Stereo3D"s, STEREO_OFF);
+      m_stereo3D = (StereoMode)LoadValueIntWithDefault(regKey[RegName::Player], "Stereo3D"s, STEREO_OFF);
       m_maxPrerenderedFrames = LoadValueIntWithDefault(regKey[RegName::Player], "MaxPrerenderedFrames"s, 0);
       m_NudgeShake = LoadValueFloatWithDefault(regKey[RegName::Player], "NudgeStrength"s, 2e-2f);
       m_FXAA = LoadValueIntWithDefault(regKey[RegName::Player], "FXAA"s, Disabled);
