@@ -588,8 +588,10 @@ HRESULT Pin3D::InitPin3D()
       RenderDevice::m_quadVertexBuffer->unlock();
    }
 
-   //m_quadDynVertexBuffer = nullptr;
-   //CreateVertexBuffer(4, USAGE_DYNAMIC, MY_D3DFVF_TEX, &RenderDevice::m_quadDynVertexBuffer);
+   if (RenderDevice::m_quadDynVertexBuffer == nullptr)
+   {
+      VertexBuffer::CreateVertexBuffer(4, USAGE_DYNAMIC, MY_D3DFVF_TEX, &RenderDevice::m_quadDynVertexBuffer, PRIMARY_DEVICE); //!!
+   }
 
    //
 

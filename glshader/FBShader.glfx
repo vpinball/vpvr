@@ -3,8 +3,6 @@
 
 ////VERTEX
 
-uniform vec4 quadOffsetScale;//.xy =>Offset from center .wz =>Scale (1.0 is fullscreen)
-
 ////FRAGMENT
 #include "Helpers.fxh"
 
@@ -183,8 +181,7 @@ out vec2 tex0;
 
 void main()
 { 
-   gl_Position = vec4((vPosition.x*quadOffsetScale.z+quadOffsetScale.x)*2.0-1.0,
-                  1.0-(vPosition.y*quadOffsetScale.w+quadOffsetScale.y)*2.0, 0.0,1.0);
+   gl_Position = vec4(vPosition.x,-vPosition.y,0.0,1.0);
    tex0 = tc;
 }
 
@@ -428,6 +425,47 @@ void main()
    color = vec4(result*w_h_height.z, 1.0);
 }
 
+
+////ps_main_fb_bloom_horiz39x39
+
+in vec2 tex0;
+
+void main()
+{
+    const float offset39x39[10] = { 0.66063, 2.46625, 4.43946, 6.41301, 8.38706, 10.36173, 12.33715, 14.31341, 16.29062, 18.26884
+                                  /*0.66214, 2.47462, 4.45440, 6.43433, 8.41447, 10.39489, 12.37564, 14.35677, 16.33834, 18.32039*/
+                                  /*0.66368, 2.48326, 4.46990, 6.45658, 8.44332, 10.43015, 12.41707, 14.40410, 16.39127, 18.37859*/ }; //no center!
+    const float weight39x39[10] = { 0.13669, 0.15600, 0.10738, 0.05971, 0.02682, 0.00973, 0.00285, 0.00067, 0.00013, 0.00002
+                                  /*0.11904, 0.14115, 0.10650, 0.06841, 0.03741, 0.01742, 0.00690, 0.00233, 0.00067, 0.00016*/
+                                  /*0.09721, 0.11993, 0.09955, 0.07429, 0.04984, 0.03006, 0.01630, 0.00795, 0.00348, 0.00137*/ }; //no center!
+    float3 result = float3(0.0, 0.0, 0.0);
+    for(int i = 0; i < 10; ++i)
+        result += (texture(Texture1, vec2(tex0+w_h_height.xy*0.5+vec2(w_h_height.x*offset39x39[i],0.0))).xyz
+                  +texture(Texture1, vec2(tex0+w_h_height.xy*0.5-vec2(w_h_height.x*offset39x39[i],0.0))).xyz)*weight39x39[i];
+
+    color = float4(result, 1.0);
+}
+
+////ps_main_fb_bloom_vert39x39
+
+in vec2 tex0;
+
+void main()
+{
+    const float offset39x39[10] = { 0.66063, 2.46625, 4.43946, 6.41301, 8.38706, 10.36173, 12.33715, 14.31341, 16.29062, 18.26884
+                                  /*0.66214, 2.47462, 4.45440, 6.43433, 8.41447, 10.39489, 12.37564, 14.35677, 16.33834, 18.32039*/
+                                  /*0.66368, 2.48326, 4.46990, 6.45658, 8.44332, 10.43015, 12.41707, 14.40410, 16.39127, 18.37859*/ }; //no center!
+    const float weight39x39[10] = { 0.13669, 0.15600, 0.10738, 0.05971, 0.02682, 0.00973, 0.00285, 0.00067, 0.00013, 0.00002
+                                  /*0.11904, 0.14115, 0.10650, 0.06841, 0.03741, 0.01742, 0.00690, 0.00233, 0.00067, 0.00016*/
+                                  /*0.09721, 0.11993, 0.09955, 0.07429, 0.04984, 0.03006, 0.01630, 0.00795, 0.00348, 0.00137*/ }; //no center!
+    float3 result = float3(0.0, 0.0, 0.0);
+    for(int i = 0; i < 10; ++i)
+        result += (texture(Texture1, vec2(tex0+w_h_height.xy*0.5+vec2(0.0,w_h_height.y*offset39x39[i]))).xyz
+                  +texture(Texture1, vec2(tex0+w_h_height.xy*0.5-vec2(0.0,w_h_height.y*offset39x39[i]))).xyz)*weight39x39[i];
+
+    color = float4(result*w_h_height.z, 1.0);
+}
+
 ////ps_main_fb_mirror
 // mirror
 in vec2 tex0;
@@ -476,6 +514,8 @@ fb_bloom_horiz19x19h:P0:vs_main_no_trafo():ps_main_fb_bloom_horiz19x19h()
 fb_bloom_vert19x19h:P0:vs_main_no_trafo():ps_main_fb_bloom_vert19x19h()
 //fb_bloom_horiz27x27:P0:vs_main_no_trafo():ps_main_fb_bloom_horiz27x27()
 //fb_bloom_vert27x27:P0:vs_main_no_trafo():ps_main_fb_bloom_vert27x27()
+fb_bloom_horiz39x39:P0:vs_main_no_trafo():ps_main_fb_bloom_horiz39x39()
+fb_bloom_vert39x39:P0:vs_main_no_trafo():ps_main_fb_bloom_vert39x39()
 SSReflection:P0:vs_main_no_trafo():ps_main_fb_ss_refl()
 
 

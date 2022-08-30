@@ -890,8 +890,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    case STEREO_OFF:
       m_Buf_width = fbWidth;
       m_Buf_height = fbHeight;
-      m_Buf_widthBlur = m_Buf_width / 3;
-      m_Buf_heightBlur = m_Buf_height / 3;
+      m_Buf_widthBlur = m_Buf_width / 4;
+      m_Buf_heightBlur = m_Buf_height / 4;
       m_Buf_width = (int)(m_Buf_width * m_AAfactor);
       m_Buf_height = (int)(m_Buf_height * m_AAfactor);
       break;
@@ -899,16 +899,16 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    case STEREO_INT:
       m_Buf_width = fbWidth;
       m_Buf_height = fbHeight * 2;
-      m_Buf_widthBlur = m_Buf_width / 3;
-      m_Buf_heightBlur = m_Buf_height / 3;
+      m_Buf_widthBlur = m_Buf_width / 4;
+      m_Buf_heightBlur = m_Buf_height / 4;
       m_Buf_width = (int)(m_Buf_width * m_AAfactor);
       m_Buf_height = (int)(m_Buf_height * m_AAfactor);
       break;
    case STEREO_SBS:
       m_Buf_width = fbWidth * 2;
       m_Buf_height = fbHeight;
-      m_Buf_widthBlur = m_Buf_width / 3;
-      m_Buf_heightBlur = m_Buf_height / 3;
+      m_Buf_widthBlur = m_Buf_width / 4;
+      m_Buf_heightBlur = m_Buf_height / 4;
       m_Buf_width = (int)(m_Buf_width * m_AAfactor);
       m_Buf_height = (int)(m_Buf_height * m_AAfactor);
       break;
@@ -1014,26 +1014,6 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    m_maxaniso = 0;
    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &m_maxaniso);
 
-   if (m_quadVertexBuffer == nullptr) {
-      VertexBuffer::CreateVertexBuffer(4, USAGE_STATIC, MY_D3DFVF_TEX, &m_quadVertexBuffer, PRIMARY_DEVICE); //!!
-      Vertex3D_TexelOnly* bufvb;
-      m_quadVertexBuffer->lock(0, 0, (void**)&bufvb, USAGE_STATIC);
-      static constexpr float verts[4 * 5] = //GL Texture coordinates
-      {
-         1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-         0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-         1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
-         0.0f, 0.0f, 0.0f, 0.0f, 1.0f
-      };
-      memcpy(bufvb, verts, 4 * sizeof(Vertex3D_TexelOnly));
-      m_quadVertexBuffer->unlock();
-   }
-
-   if (m_quadDynVertexBuffer == nullptr)
-   {
-      VertexBuffer::CreateVertexBuffer(4, USAGE_DYNAMIC, MY_D3DFVF_TEX, &m_quadDynVertexBuffer, PRIMARY_DEVICE); //!!
-   }
-
    SetRenderState(RenderDevice::ZFUNC, RenderDevice::Z_LESSEQUAL);
 }
 
@@ -1067,8 +1047,6 @@ bool RenderDevice::LoadShaders()
    FBShader = new Shader(this);
    shaderCompilationOkay = FBShader->Load("FBShader.glfx", 0) && shaderCompilationOkay;
    shaderCompilationOkay = FBShader->Load("SMAA.glfx", 0) && shaderCompilationOkay;
-   FBShader->SetVector(SHADER_quadOffsetScale, 0.0f, 0.0f, 1.0f, 1.0f);
-   FBShader->SetVector(SHADER_quadOffsetScaleTex, 0.0f, 0.0f, 1.0f, 1.0f);
 
    if (m_stereo3D) {
       StereoShader = new Shader(this);
@@ -1469,21 +1447,6 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_SMAAareaTexture = nullptr;
       m_SMAAsearchTexture = nullptr;
    }
-
-   if (m_quadVertexBuffer == nullptr) {
-      VertexBuffer::CreateVertexBuffer(4, 0, MY_D3DFVF_TEX, &m_quadVertexBuffer);
-      Vertex3D_TexelOnly* bufvb;
-      m_quadVertexBuffer->lock(0, 0, (void**)&bufvb, VertexBuffer::WRITEONLY);
-      static constexpr float verts[4 * 5] =
-      {
-         1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-         0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-         1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-         0.0f, 0.0f, 0.0f, 0.0f, 0.0f
-      };
-      memcpy(bufvb, verts, 4 * sizeof(Vertex3D_TexelOnly));
-      m_quadVertexBuffer->unlock();
-   }
 }
 
 bool RenderDevice::LoadShaders()
@@ -1650,9 +1613,9 @@ RenderDevice::~RenderDevice()
       m_quadVertexBuffer->release();
    m_quadVertexBuffer = nullptr;
 
-    if (m_quadDynVertexBuffer)
-       m_quadDynVertexBuffer->release();
-    m_quadDynVertexBuffer = nullptr;
+   if (m_quadDynVertexBuffer)
+      m_quadDynVertexBuffer->release();
+   m_quadDynVertexBuffer = nullptr;
 
 #ifndef ENABLE_SDL
 #ifndef DISABLE_FORCE_NVIDIA_OPTIMUS
@@ -2260,10 +2223,18 @@ void RenderDevice::DrawTexturedQuad(const Vertex3D_TexelOnly* vertices)
 #endif
 }
 
-//Used for processing a Texture to the next Framebuffer with a shader.
-void RenderDevice::DrawTexturedQuadPostProcess()
+void RenderDevice::DrawFullscreenTexturedQuad()
 {
-   DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_TEX, m_quadVertexBuffer, 0, 4, false);
+   /*static const float verts[4 * 5] =
+   {
+      1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+      -1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+      1.0f, -1.0f, 0.0f, 1.0f, 1.0f,
+      -1.0f, -1.0f, 0.0f, 0.0f, 1.0f
+   };
+   DrawTexturedQuad((Vertex3D_TexelOnly*)verts);*/
+
+   DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP,MY_D3DFVF_TEX,m_quadVertexBuffer,0,4,false);
 }
 
 void RenderDevice::DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, const bool stereo)

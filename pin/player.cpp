@@ -1855,7 +1855,7 @@ void Player::RenderMirrorOverlay()
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
 
    m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin(0);
-   m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+   m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
    m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
 
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
@@ -3130,7 +3130,7 @@ void Player::DrawBulbLightBuffer()
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_fb_bloom_horiz19x19);
 
             m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin(0);
-            m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+            m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
             m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
          }
          {
@@ -3144,7 +3144,7 @@ void Player::DrawBulbLightBuffer()
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_fb_bloom_vert19x19);
 
             m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin(0);
-            m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+            m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
             m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
          }
       }
@@ -3412,11 +3412,11 @@ void Player::SSRefl()
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_SSReflection);
 
    m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin(0);
-   m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+   m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
    m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
 }
 
-void Player::Bloom(float x, float y, float tx, float ty)
+void Player::Bloom()
 {
    if (m_ptable->m_bloom_strength <= 0.0f || m_bloomOff)
    {
@@ -3427,21 +3427,26 @@ void Player::Bloom(float x, float y, float tx, float ty)
       return;
    }
 
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_quadOffsetScale, x, y, 1.0f, 1.0f);
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_quadOffsetScaleTex, tx, ty, 1.0f, 1.0f);
-   //for (int eye = 0;eye < ((m_stereo3D > 0) ? 2 : 1);eye++) {
+   const float shiftedVerts[4 * 5] =
+   {
+       1.0f,  1.0f, 0.0f, 1.0f + (float)(1.0 / (double)m_width), 0.0f + (float)(1.0 / (double)m_height),
+      -1.0f,  1.0f, 0.0f, 0.0f + (float)(1.0 / (double)m_width), 0.0f + (float)(1.0 / (double)m_height),
+       1.0f, -1.0f, 0.0f, 1.0f + (float)(1.0 / (double)m_width), 1.0f + (float)(1.0 / (double)m_height),
+      -1.0f, -1.0f, 0.0f, 0.0f + (float)(1.0 / (double)m_width), 1.0f + (float)(1.0 / (double)m_height)
+   };
+
    {
       // switch to 'bloom' output buffer to collect clipped framebuffer values
       m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->Activate(true);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture1, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetColorSampler());
 
-      const vec4 fb_inv_resolution_05((float)(0.5 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidth()), (float)(0.5 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheight()), 1.0f, 1.0f);
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution_05);
+      const vec4 fb_inv_resolution((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), 1.0f, 1.0f);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_fb_bloom);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin(0);
-      m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+      m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)shiftedVerts);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
    }
    {
@@ -3451,12 +3456,12 @@ void Player::Bloom(float x, float y, float tx, float ty)
       m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->Activate(true);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture1, m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetColorSampler());
-      const vec4 fb_inv_resolution_05((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidthBlur()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheightBlur()), 1.0f, 1.0f);
+      const vec4 fb_inv_resolution_05((float)(4.0 / (double)m_width), (float)(4.0 / (double)m_height), 1.0f, 1.0f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution_05);
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(/*m_low_quality_bloom ? SHADER_TECHNIQUE_fb_bloom_horiz9x9 :*/ SHADER_TECHNIQUE_fb_bloom_horiz19x19h);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(/*m_low_quality_bloom ? SHADER_TECHNIQUE_fb_bloom_horiz9x9 :*/ SHADER_TECHNIQUE_fb_bloom_horiz39x39);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin(0);
-      m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+      m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
       m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
    }
    {
@@ -3466,17 +3471,14 @@ void Player::Bloom(float x, float y, float tx, float ty)
       m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->Activate(true);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture1, m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->GetColorSampler());
-      const vec4 fb_inv_resolution_05((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufwidthBlur()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->getBufheightBlur()), m_ptable->m_bloom_strength, 1.0f);
+      const vec4 fb_inv_resolution_05((float)(4.0 / (double)m_width), (float)(4.0 / (double)m_height), m_ptable->m_bloom_strength, 1.0f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution_05);
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(/*m_low_quality_bloom ? SHADER_TECHNIQUE_fb_bloom_vert9x9 :*/ SHADER_TECHNIQUE_fb_bloom_vert19x19h);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(/*m_low_quality_bloom ? SHADER_TECHNIQUE_fb_bloom_vert9x9 :*/ SHADER_TECHNIQUE_fb_bloom_vert39x39);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin(0);
-      m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+      m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
       m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
    }
-   //}
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_quadOffsetScale, 0.0f, 0.0f, 1.0f, 1.0f);
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_quadOffsetScaleTex, 0.0f, 0.0f, 1.0f, 1.0f);
 }
 
 void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, const bool NFAA, const bool FXAA1, const bool FXAA2, const bool FXAA3, const bool ambientOcclusion) //!! SMAA, luma sharpen, dither?
@@ -3506,7 +3508,7 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
                                                                SHADER_TECHNIQUE_FXAA1)))));
 
    m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin(0);
-   m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+   m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
    m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
 
    if (SMAA || DLAA) // actual SMAA/DLAA filtering pass, above only edge detection
@@ -3529,7 +3531,7 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SMAA ? SHADER_TECHNIQUE_SMAA_BlendWeightCalculation : SHADER_TECHNIQUE_DLAA);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin(0);
-      m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+      m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
       m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
 
       if (SMAA)
@@ -3545,7 +3547,7 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_SMAA_NeighborhoodBlending);
 
          m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin(0);
-         m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+         m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
          m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
 
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_blendTex2D); //!! opt.?
@@ -3583,7 +3585,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetVector(SHADER_width_height_rotated_flipLR, width_height_rotated_flipLR); }
 
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin(0);
-      m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+      m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
       return;
    case STEREO_VR:
@@ -3626,21 +3628,21 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
 
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat(SHADER_eye, 0.0f);
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin(0);
-         m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+         m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
 
          rightTexture->Activate(false);
 
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat(SHADER_eye, 1.0f);
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin(0);
-         m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+         m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
 
          if (disableVRPreview == 0) {
             m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(false);
             m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat(SHADER_eye, 1.0f);
             m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin(0);
-            m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+            m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
             m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
          }
          break;
@@ -4163,6 +4165,18 @@ void Player::UpdateHUD()
 }
 #endif
 
+void Player::FlipVideoBuffers(const bool vsync)
+{
+   // display frame
+   m_pin3d.Flip(vsync);
+
+   // switch to texture output buffer again
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_Texture0);
+   m_pin3d.m_pddsBackBuffer->Activate(true);
+
+   m_lastFlipTime = usec();
+}
+
 void Player::PostProcess(const bool ambientOcclusion)
 {
    const bool useAA = ((m_AAfactor != 1.0) && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
@@ -4201,8 +4215,7 @@ void Player::PostProcess(const bool ambientOcclusion)
    }
 #endif
 
-   if (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff)
-      Bloom(m_ScreenOffset.x, m_ScreenOffset.y, (float)inv_width, (float)inv_height);
+   Bloom();
 
    if (ProfilingMode() == 1)
       m_pin3d.m_gpu_profiler.Timestamp(GTS_Bloom);
@@ -4234,7 +4247,7 @@ void Player::PostProcess(const bool ambientOcclusion)
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_AO);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin(0);
-      m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+      m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
       m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
 
       if (ProfilingMode() == 1)
@@ -4251,11 +4264,18 @@ void Player::PostProcess(const bool ambientOcclusion)
    else
       m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->Activate(true);
 
+   const float shiftedVerts[4 * 5] =
+   {
+       1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / (double)m_width), 0.0f + (float)(1.0 / (double)m_height),
+      -1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / (double)m_width), 0.0f + (float)(1.0 / (double)m_height),
+       1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / (double)m_width), 1.0f + (float)(1.0 / (double)m_height),
+      -1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / (double)m_width), 1.0f + (float)(1.0 / (double)m_height)
+   };
+
    if (ss_refl)
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture2()->GetColorSampler());
    else
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetColorSampler());
-
    if (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff)
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture1, m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetColorSampler());
 
@@ -4288,15 +4308,10 @@ void Player::PostProcess(const bool ambientOcclusion)
                                                          (m_BWrendering == 1 ? SHADER_TECHNIQUE_fb_tonemap_no_filterRG : 
                                                          (m_BWrendering == 2 ? SHADER_TECHNIQUE_fb_tonemap_no_filterR : 
                                                                                SHADER_TECHNIQUE_fb_tonemap_no_filterRGB)));
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_quadOffsetScale, m_ScreenOffset.x, m_ScreenOffset.y, 1.0f, 1.0f);
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_quadOffsetScaleTex, (float)inv_width, (float)inv_height, 1.0f, 1.0f);
 
    m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin(0);
-   m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuadPostProcess();
+   m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuad((Vertex3D_TexelOnly *)shiftedVerts);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
-
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_quadOffsetScale, 0.0f, 0.0f, 1.0f, 1.0f);
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_quadOffsetScaleTex, 0.0f, 0.0f, 1.0f, 1.0f);
 
    bool shaderAA = (SMAA || DLAA || NFAA || FXAA1 || FXAA2 || FXAA3);
    if (shaderAA)
@@ -4324,17 +4339,6 @@ void Player::PostProcess(const bool ambientOcclusion)
 #endif
 
    m_pin3d.m_pd3dPrimaryDevice->EndScene();
-}
-
-void Player::FlipVideoBuffers(const bool vsync) {
-   // display frame
-   m_pin3d.Flip(vsync);
-
-   // switch to texture output buffer again
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_Texture0);
-   m_pin3d.m_pddsBackBuffer->Activate(true);
-
-   m_lastFlipTime = usec();
 }
 
 void Player::SetScreenOffset(const float x, const float y)

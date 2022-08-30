@@ -36,7 +36,7 @@ static const string shaderUniformNames[SHADER_UNIFORM_COUNT]{
    //Vectors and Float Arrays
    "Roughness_WrapL_Edge_Thickness", "cBase_Alpha", "lightCenter_maxRange", "lightColor2_falloff_power", "lightColor_intensity", "matrixBlock", "fenvEmissionScale_TexWidth",
    "invTableRes_playfield_height_reflection", "lightEmission", "lightPos", "orientation", "cAmbient_LightRange", "cClearcoat_EdgeAlpha", "cGlossy_ImageLerp",
-   "fDisableLighting_top_below", "backBoxSize", "quadOffsetScale", "quadOffsetScaleTex", "vColor_Intensity", "w_h_height", "alphaTestValueAB_filterMode_addBlend",
+   "fDisableLighting_top_below", "backBoxSize", "vColor_Intensity", "w_h_height", "alphaTestValueAB_filterMode_addBlend",
    "amount_blend_modulate_vs_add_flasherMode", "staticColor_Alpha", "width_height_rotated_flipLR", "vRes_Alpha_time", "mirrorFactor", "SSR_bumpHeight_fresnelRefl_scale_FS", "AO_scale_timeblur",
    //Integer and Bool
    "ignoreStereo", "disableLighting", "lightSources", "doNormalMapping", "is_metal", "color_grade", "do_bloom", "lightingOff", "objectSpaceNormalMap", "do_dither", //!! disableLighting not wired/used yet in shaders
@@ -56,7 +56,7 @@ static const string shaderTechniqueNames[SHADER_TECHNIQUE_COUNT]{
    "AO", "NFAA", "DLAA_edge", "DLAA", "FXAA1", "FXAA2", "FXAA3", "fb_tonemap", "fb_bloom",
    "fb_AO", "fb_tonemap_AO", "fb_tonemap_AO_static", "fb_tonemap_no_filterRGB", "fb_tonemap_no_filterRG", "fb_tonemap_no_filterR",
    "fb_tonemap_AO_no_filter", "fb_tonemap_AO_no_filter_static", "fb_bloom_horiz9x9", "fb_bloom_vert9x9", "fb_bloom_horiz19x19", "fb_bloom_vert19x19",
-   "fb_bloom_horiz19x19h", "fb_bloom_vert19x19h", "SSReflection", "fb_mirror", "basic_noLight", "bulb_light",
+   "fb_bloom_horiz19x19h", "fb_bloom_vert19x19h", "fb_bloom_horiz39x39", "fb_bloom_vert39x39", "SSReflection", "fb_mirror", "basic_noLight", "bulb_light",
    "SMAA_ColorEdgeDetection", "SMAA_BlendWeightCalculation", "SMAA_NeighborhoodBlending",
    "stereo_TB", "stereo_SBS", "stereo_Int", "stereo_AMD_DEBUG"
 };

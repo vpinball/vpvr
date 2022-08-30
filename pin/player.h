@@ -299,7 +299,7 @@ private:
    void SetClipPlanePlayfield(const bool clip_orientation);
 
    void DrawBulbLightBuffer();
-   void Bloom(float x, float y, float tx, float ty);
+   void Bloom();
    void SSRefl();
    void RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, const bool NFAA, const bool FXAA1, const bool FXAA2, const bool FXAA3, const bool depth_available);
    void RenderStereo(int stereo3D, bool shaderAA);
