@@ -169,7 +169,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
       POINTLIST = GL_POINTS,
       LINELIST = GL_LINES,
       LINESTRIP = GL_LINE_STRIP
-};
+   };
 
    SDL_Window *m_sdl_playfieldHwnd;
    SDL_GLContext  m_sdl_context;
@@ -309,7 +309,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
 
    void DrawTexturedQuad();
    void DrawTexturedQuad(const Vertex3D_TexelOnly* vertices);
-   void DrawTexturedQuadPostProcess();
+   void DrawFullscreenTexturedQuad();
    
    void DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, const bool stereo);
    void DrawIndexedPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, VertexBuffer* vb, const DWORD startVertex, const DWORD vertexCount, IndexBuffer* ib, const DWORD startIndex, const DWORD indexCount);
@@ -379,8 +379,8 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    bool         m_fullscreen;
    int          m_colorDepth;
    int          m_vsync;
+   StereoMode   m_stereo3D;
    float        m_AAfactor;
-   int          m_stereo3D;
    bool         m_ssRefl;
    bool         m_disableDwm;
    bool         m_sharpen;
@@ -388,13 +388,12 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    int          m_BWrendering;
    UINT         m_adapter;
 
-   Sampler* m_SMAAsearchTexture;
-   Sampler* m_SMAAareaTexture;
-
 private:
    void DrawPrimitive(const PrimitiveTypes type, const DWORD fvf, const void* vertices, const DWORD vertexCount);
 
    void UploadAndSetSMAATextures();
+   Sampler* m_SMAAsearchTexture;
+   Sampler* m_SMAAareaTexture;
 
 #ifndef ENABLE_SDL
 #ifdef USE_D3D9EX
