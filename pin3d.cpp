@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+#include "stdafx.h"
 #include "RenderDevice.h"
 #include "Shader.h"
 #include "math\math.h"
