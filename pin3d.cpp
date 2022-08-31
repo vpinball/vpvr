@@ -788,7 +788,8 @@ Matrix3D ComputeLaybackTransform(const float layback)
 void Pin3D::UpdateMatrices()
 {
 #ifdef ENABLE_VR
-   if (m_stereo3D == STEREO_VR) {
+   if (m_stereo3D == STEREO_VR && m_pd3dPrimaryDevice->IsVRReady())
+   {
       m_pd3dPrimaryDevice->SetTransformVR();
       Shader::GetTransform(TRANSFORMSTATE_PROJECTION, m_proj.m_matProj, 2);
       Shader::GetTransform(TRANSFORMSTATE_VIEW, &m_proj.m_matView, 1);

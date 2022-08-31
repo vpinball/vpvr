@@ -307,7 +307,6 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    HRESULT Create3DFont(INT Height, UINT Width, UINT Weight, UINT MipLevels, BOOL Italic, DWORD CharSet, DWORD OutputPrecision, DWORD Quality, DWORD PitchAndFamily, LPCTSTR pFacename, FontHandle *ppFont);
 #endif
 
-   void DrawTexturedQuad();
    void DrawTexturedQuad(const Vertex3D_TexelOnly* vertices);
    void DrawFullscreenTexturedQuad();
    
@@ -316,6 +315,9 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
 
    void SetViewport(const ViewPort*);
    void GetViewport(ViewPort*);
+
+   void SetTransform(const TransformStateType p1, const Matrix3D* p2, const int count = 1);
+   void GetTransform(const TransformStateType p1, Matrix3D* p2, const int count = 1);
 
    void ForceAnisotropicFiltering(const bool enable) { m_force_aniso = enable; }
    void CompressTextures(const bool enable) { m_compress_textures = enable; }
@@ -327,6 +329,7 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
 
    //VR stuff
 #ifdef ENABLE_VR
+   bool IsVRReady() { return m_pHMD != nullptr; }
    void SetTransformVR();
    void UpdateVRPosition();
    void tableUp();
