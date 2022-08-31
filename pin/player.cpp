@@ -1641,7 +1641,7 @@ HRESULT Player::Init()
          }
    }
    // Direct all renders to the back buffer.
-   m_pin3d.m_pddsBackBuffer->Activate(true);
+   m_pin3d.m_pddsBackBuffer->Activate(false);
 
    m_ptable->m_progressDialog.SetProgress(90);
 
@@ -1838,11 +1838,13 @@ void Player::RenderDynamicMirror(const bool onlyBalls)
 
    UpdateBallShaderMatrix();
 
-   m_pin3d.m_pddsBackBuffer->Activate(false);
+   m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(true);
 }
 
 void Player::RenderMirrorOverlay()
 {
+   m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(true);
+   
    // render the mirrored texture over the playfield
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetMirrorTmpBufferTexture()->GetColorSampler()); // When fixing mirroring make sure texture0 is not msaa
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetFloat(SHADER_mirrorFactor, m_ptable->m_playfieldReflectionStrength);
@@ -1861,6 +1863,8 @@ void Player::RenderMirrorOverlay()
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
    m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
+
+   m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(false);
 }
 
 void Player::InitStatic()
@@ -3157,7 +3161,7 @@ void Player::DrawBulbLightBuffer()
    }
 
    // switch back to render buffer
-   m_pin3d.m_pddsBackBuffer->Activate(false);
+   m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(false);
 
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture3, m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetColorSampler());
 }
@@ -3177,7 +3181,7 @@ void Player::RenderDynamics()
          reflection_path = 2;
    }
 
-   m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(true);
+   m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(false);
 
    UpdateBasicShaderMatrix();
 
@@ -4172,7 +4176,7 @@ void Player::FlipVideoBuffers(const bool vsync)
 
    // switch to texture output buffer again
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_Texture0);
-   m_pin3d.m_pddsBackBuffer->Activate(true);
+   m_pin3d.m_pddsBackBuffer->Activate(false);
 
    m_lastFlipTime = usec();
 }
