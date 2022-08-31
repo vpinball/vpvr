@@ -54,7 +54,7 @@ RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, 
    const GLuint col_format = ((format == GREY8) || (format == RED16F))                                                                                                      ? GL_RED
       : ((format == GREY_ALPHA) || (format == RG16F))                                                                                                                       ? GL_RG
       : ((format == RGB) || (format == RGB8) || (format == SRGB) || (format == SRGB8) || (format == RGB5) || (format == RGB10) || (format == RGB16F) || (format == RGB32F)) ? GL_RGB
-                                                                                                                                                                            : GL_RGBA;
+                                                                                                                                                                              : GL_RGBA;
    const bool col_is_linear = (format == GREY8) || (format == RED16F) || (format == GREY_ALPHA) || (format == RG16F) || (format == RGB5) || (format == RGB) || (format == RGB8)
       || (format == RGB10) || (format == RGB16F) || (format == RGB32F) || (format == RGBA16F) || (format == RGBA32F) || (format == RGBA) || (format == RGBA8) || (format == RGBA10)
       || (format == DXT5) || (format == BC6U) || (format == BC6S) || (format == BC7);
@@ -244,7 +244,7 @@ void RenderTarget::Activate(bool ignoreStereo)
    static GLfloat viewPorts[] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
    static RenderTarget* currentFrameBuffer = nullptr;
    static int currentStereoMode = -1;
-   if (currentFrameBuffer == this && currentStereoMode == ignoreStereo || m_is_back_buffer ? STEREO_OFF : m_stereo)
+   if (currentFrameBuffer == this && currentStereoMode == (ignoreStereo || m_is_back_buffer ? STEREO_OFF : m_stereo))
       return;
    currentFrameBuffer = this;
    currentStereoMode = ignoreStereo || m_is_back_buffer ? STEREO_OFF : m_stereo;
