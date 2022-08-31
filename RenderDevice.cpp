@@ -703,61 +703,83 @@ void RenderDevice::InitVR() {
          char buf[1024];
          sprintf_s(buf, sizeof(buf), "Unable to init VR runtime: %s", vr::VR_GetVRInitErrorAsEnglishDescription(VRError));
          ShowError(buf);
-         std::runtime_error vrInitFailed(buf);
-         throw(vrInitFailed);
+      } 
+      else if (!vr::VRCompositor())
+      /*if (VRError != vr::VRInitError_None)*/ {
+         m_pHMD = nullptr;
+         char buf[1024];
+         sprintf_s(buf, sizeof(buf), "Unable to init VR compositor");// :% s", vr::VR_GetVRInitErrorAsEnglishDescription(VRError));
+         ShowError(buf);
       }
-      if (!vr::VRCompositor())
-         /*if (VRError != vr::VRInitError_None)*/ {
-            m_pHMD = nullptr;
-            char buf[1024];
-            sprintf_s(buf, sizeof(buf), "Unable to init VR compositor");// :% s", vr::VR_GetVRInitErrorAsEnglishDescription(VRError));
-            ShowError(buf);
-            std::runtime_error vrInitFailed(buf);
-            throw(vrInitFailed);
+   }
+
+   const float nearPlane = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "nearPlane"s, 5.0f) / 100.0f;
+   const float farPlane = 5000.0f; //LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "farPlane"s, 5000.0f) / 100.0f;
+
+   vr::HmdMatrix34_t left_eye_pos, right_eye_pos;
+   vr::HmdMatrix44_t left_eye_proj, right_eye_proj;
+   if (m_pHMD == nullptr)
+   {
+      m_Buf_width = 640;
+      m_Buf_height = 480;
+      Matrix3D left, right;
+      left.SetIdentity(); // TODO find sensible value and use them instead of the desktop projection
+      right.SetIdentity();
+      for (int i = 0; i < 3; i++)
+         for (int j = 0; j < 4; j++)
+         {
+            left_eye_pos.m[i][j] = left.m[j][i];
+            right_eye_pos.m[i][j] = right.m[j][i];
+         }
+      for (int i = 0; i < 4; i++)
+         for (int j = 0; j < 4; j++)
+         {
+            left_eye_proj.m[i][j] = left.m[j][i];
+            right_eye_proj.m[i][j] = right.m[j][i];
          }
    }
-   m_pHMD->GetRecommendedRenderTargetSize(&m_Buf_width, &m_Buf_height);
+   else
+   {
+      m_pHMD->GetRecommendedRenderTargetSize(&m_Buf_width, &m_Buf_height);
+      left_eye_pos = m_pHMD->GetEyeToHeadTransform(vr::Eye_Left);
+      right_eye_pos = m_pHMD->GetEyeToHeadTransform(vr::Eye_Right);
+      left_eye_proj = m_pHMD->GetProjectionMatrix(vr::Eye_Left, nearPlane, farPlane); //5cm to 50m should be a reasonable range
+      right_eye_proj = m_pHMD->GetProjectionMatrix(vr::Eye_Right, nearPlane, farPlane); //5cm to 500m should be a reasonable range
+   }
 
    //Calculate left EyeProjection Matrix relative to HMD position
-   vr::HmdMatrix34_t mat34 = m_pHMD->GetEyeToHeadTransform(vr::Eye_Left);
    Matrix3D matEye2Head;
    for (int i = 0;i < 3;i++)
       for (int j = 0;j < 4;j++)
-         matEye2Head.m[j][i] = mat34.m[i][j];
+         matEye2Head.m[j][i] = left_eye_pos.m[i][j];
    for (int j = 0;j < 4;j++)
       matEye2Head.m[j][3] = (j == 3) ? 1.0f : 0.0f;
 
    matEye2Head.Invert();
 
-   const float nearPlane = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "nearPlane"s, 5.0f) / 100.0f;
-   const float farPlane = 5000.0f;//LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "farPlane"s, 5000.0f) / 100.0f;
-
-   vr::HmdMatrix44_t mat44 = m_pHMD->GetProjectionMatrix(vr::Eye_Left, nearPlane, farPlane);//5cm to 50m should be a reasonable range
-   mat44.m[2][2] = -1.0f;
-   mat44.m[2][3] = -nearPlane;
+   left_eye_proj.m[2][2] = -1.0f;
+   left_eye_proj.m[2][3] = -nearPlane;
    Matrix3D matProjection;
    for (int i = 0;i < 4;i++)
       for (int j = 0;j < 4;j++)
-            matProjection.m[j][i] = mat44.m[i][j];
+         matProjection.m[j][i] = left_eye_proj.m[i][j];
 
    m_matProj[0] = matEye2Head * matProjection;
 
    //Calculate right EyeProjection Matrix relative to HMD position
-   mat34 = m_pHMD->GetEyeToHeadTransform(vr::Eye_Right);
    for (int i = 0;i < 3;i++)
       for (int j = 0;j < 4;j++)
-         matEye2Head.m[j][i] = mat34.m[i][j];
+         matEye2Head.m[j][i] = right_eye_pos.m[i][j];
    for (int j = 0;j < 4;j++)
       matEye2Head.m[j][3] = (j == 3) ? 1.0f : 0.0f;
 
    matEye2Head.Invert();
 
-   mat44 = m_pHMD->GetProjectionMatrix(vr::Eye_Right, nearPlane, farPlane);//5cm to 500m should be a reasonable range
-   mat44.m[2][2] = -1.0f;
-   mat44.m[2][3] = -nearPlane;
+   right_eye_proj.m[2][2] = -1.0f;
+   right_eye_proj.m[2][3] = -nearPlane;
    for (int i = 0;i < 4;i++)
       for (int j = 0;j < 4;j++)
-            matProjection.m[j][i] = mat44.m[i][j];
+         matProjection.m[j][i] = right_eye_proj.m[i][j];
 
    m_matProj[1] = matEye2Head * matProjection;
 
@@ -2372,6 +2394,16 @@ void RenderDevice::SetTransformVR()
    Shader::SetTransform(TRANSFORMSTATE_VIEW, &m_matView, 1);
 }
 #endif
+
+void RenderDevice::SetTransform(const TransformStateType p1, const Matrix3D * p2, const int count)
+{
+   Shader::SetTransform(p1, p2, count);
+}
+
+void RenderDevice::GetTransform(const TransformStateType p1, Matrix3D* p2, const int count)
+{
+   Shader::GetTransform(p1, p2, count);
+}
 
 void RenderDevice::Clear(const DWORD flags, const D3DCOLOR color, const D3DVALUE z, const DWORD stencil)
 {
