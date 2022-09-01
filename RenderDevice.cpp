@@ -854,9 +854,9 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    int disp_x, disp_y, disp_w, disp_h;
    getDisplaySetupByID(m_adapter, disp_x, disp_y, disp_w, disp_h);
 
-   const VRPreviewMode vrPreview = m_stereo3D != STEREO_VR ? VRPREVIEW_DISABLED : (VRPreviewMode) LoadValueIntWithDefault(regKey[RegName::PlayerVR], "VRPreview"s, VRPREVIEW_LEFT);
+   const VRPreviewMode vrPreview = (VRPreviewMode) LoadValueIntWithDefault(regKey[RegName::PlayerVR], "VRPreview"s, VRPREVIEW_LEFT);
 
-   if (vrPreview != VRPREVIEW_DISABLED)
+   if ((m_stereo3D != STEREO_VR) || (vrPreview != VRPREVIEW_DISABLED))
       m_sdl_playfieldHwnd = SDL_CreateWindow(
          "Visual Pinball Player SDL", disp_x + (disp_w - m_width) / 2, disp_y + (disp_h - m_height) / 2, m_width, m_height,
          SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (m_fullscreen ? SDL_WINDOW_FULLSCREEN : 0));
