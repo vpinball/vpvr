@@ -322,11 +322,6 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    void ForceAnisotropicFiltering(const bool enable) { m_force_aniso = enable; }
    void CompressTextures(const bool enable) { m_compress_textures = enable; }
 
-   unsigned int getBufwidth() const { return m_Buf_width; }
-   unsigned int getBufheight() const { return m_Buf_height; }
-   unsigned int getBufwidthBlur() const { return m_Buf_widthBlur; }
-   unsigned int getBufheightBlur() const { return m_Buf_heightBlur; }
-
    //VR stuff
 #ifdef ENABLE_VR
    bool IsVRReady() { return m_pHMD != nullptr; }
@@ -451,15 +446,6 @@ public:
 private:
    bool m_dwm_was_enabled;
    bool m_dwm_enabled;
-
-   unsigned int m_Buf_width;
-   unsigned int m_Buf_height;
-
-   unsigned int m_Buf_widthBlur;
-   unsigned int m_Buf_heightBlur;
-
-   unsigned int m_Buf_widthSS;
-   unsigned int m_Buf_heightSS;
 
    //VR/Stereo Stuff
 #ifdef ENABLE_VR
