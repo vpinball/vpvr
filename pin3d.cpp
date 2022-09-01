@@ -523,17 +523,11 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
 
    if (m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && useAO)
    {
-#ifdef ENABLE_SDL
-      m_pddsAOBackTmpBuffer = new RenderTarget(m_pd3dPrimaryDevice, m_pd3dPrimaryDevice->getBufwidth(), m_pd3dPrimaryDevice->getBufheight(), colorFormat::GREY8, false, false, stereo3D,
-         "Unable to create AO buffers!\r\nPlease disable Ambient Occlusion.\r\nOr try to (un)set \"Alternative Depth Buffer processing\" in the video options!");
-      m_pddsAOBackBuffer = new RenderTarget(m_pd3dPrimaryDevice, m_pd3dPrimaryDevice->getBufwidth(), m_pd3dPrimaryDevice->getBufheight(), colorFormat::GREY8, false, false, stereo3D,
-         "Unable to create AO buffers!\r\nPlease disable Ambient Occlusion.\r\nOr try to (un)set \"Alternative Depth Buffer processing\" in the video options!");
-#else
+      // FIXME the width must be the one the backbuffer (not the one of the preview vieport) but since AO is currently broken, this will be part of the AO fix
       m_pddsAOBackTmpBuffer = new RenderTarget(m_pd3dPrimaryDevice, m_viewPort.Width, m_viewPort.Height, colorFormat::GREY8, false, false, stereo3D,
          "Unable to create AO buffers!\r\nPlease disable Ambient Occlusion.\r\nOr try to (un)set \"Alternative Depth Buffer processing\" in the video options!");
       m_pddsAOBackBuffer = new RenderTarget(m_pd3dPrimaryDevice, m_viewPort.Width, m_viewPort.Height, colorFormat::GREY8, false, false, stereo3D,
          "Unable to create AO buffers!\r\nPlease disable Ambient Occlusion.\r\nOr try to (un)set \"Alternative Depth Buffer processing\" in the video options!");
-#endif
       if (!m_pddsAOBackBuffer || !m_pddsAOBackTmpBuffer)
          return E_FAIL;
    }
@@ -925,12 +919,14 @@ void Pin3D::InitLayout(const bool FSS_mode, const float xpixoff, const float ypi
    for (size_t i = 0; i < g_pplayer->m_ptable->m_vedit.size(); ++i)
       g_pplayer->m_ptable->m_vedit[i]->GetBoundingVertices(vvertex3D);
 
+   int buf_width = m_stereo3D == STEREO_VR ? m_viewPort.Width / 2 : m_viewPort.Width;
+
    m_proj.m_rcviewport.left = 0;
    m_proj.m_rcviewport.top = 0;
-   m_proj.m_rcviewport.right = m_viewPort.Width;
+   m_proj.m_rcviewport.right = buf_width;
    m_proj.m_rcviewport.bottom = m_viewPort.Height;
 
-   const float aspect = ((float)m_viewPort.Width) / ((float)m_viewPort.Height); //(float)(4.0/3.0);
+   const float aspect = ((float)buf_width) / ((float)m_viewPort.Height); //(float)(4.0/3.0);
 
    // next 4 def values for layout portrait(game vert) in landscape(screen horz)
    // for FSS, force an offset to camy which drops the table down 1/3 of the way.
@@ -1380,9 +1376,9 @@ void PinProjection::ComputeNearFarPlane(const vector<Vertex3Ds>& verts)
    slintf("m_rznear: %f\n", m_rznear);
    slintf("m_rzfar : %f\n", m_rzfar);
 
-   // beware the div-0 problem
-   if (m_rznear < 0.001f)
-      m_rznear = 0.001f;
+   // beware the div-0 problem, also avoid near plane below 1 which result in loss of precision and z rendering artefacts
+   if (m_rznear < 1.0f)
+      m_rznear = 1.0f;
    //m_rznear *= 0.89f; //!! magic, influences also stereo3D code
    m_rzfar *= 1.01f;
 }

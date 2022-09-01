@@ -3,7 +3,6 @@
 #include "VROptionsDialog.h"
 
 #define GET_WINDOW_MODES		(WM_USER+100)
-#define RESET_SIZELIST_CONTENT	(WM_USER+102)
 
 static constexpr int rgwindowsize[] = { 640, 720, 800, 912, 1024, 1152, 1280, 1360, 1366, 1400, 1440, 1600, 1680, 1920, 2048, 2560, 3440, 3840, 4096, 5120, 6400, 7680, 8192, 11520, 15360 };  // windowed resolutions for selection list
 
@@ -46,11 +45,6 @@ void VROptionsDialog::AddToolTip(const char * const text, HWND parentHwnd, HWND 
 
 void VROptionsDialog::ResetVideoPreferences()
 {
-   const int widthcur = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "Width"s, DEFAULT_PLAYER_WIDTH);
-   const int heightcur = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "Height"s, widthcur * 9 / 16);
-
-   SendMessage(GetHwnd(), GET_WINDOW_MODES, widthcur << 16, heightcur << 16 | 32);
-
    char tmp[256];
    constexpr float nudgeStrength = 2e-2f;
    sprintf_s(tmp, sizeof(tmp), "%f", nudgeStrength);
@@ -94,12 +88,11 @@ void VROptionsDialog::ResetVideoPreferences()
 
    SendMessage(GetDlgItem(IDC_BLOOM_OFF).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_TURN_VR_ON).GetHwnd(), CB_SETCURSEL, 1, 0);
-   SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_SETCURSEL, 0, 0);
 
    SendMessage(GetDlgItem(IDC_DMD_SOURCE).GetHwnd(), CB_SETCURSEL, 1, 0);
    SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_SETCURSEL, 1, 0);
 
-   SendMessage(GetDlgItem(IDC_VR_DISABLE_PREVIEW).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
+   SendMessage(GetDlgItem(IDC_VR_PREVIEW).GetHwnd(), CB_SETCURSEL, 0, 0);
 
    constexpr bool scaleToFixedWidth = false;
    oldScaleValue = scaleToFixedWidth;
@@ -121,55 +114,6 @@ void VROptionsDialog::ResetVideoPreferences()
    //AMD Debug
    SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_SETCURSEL, 1, 0);
    SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_SETCURSEL, 0, 0);
-}
-
-void VROptionsDialog::FillVideoModesList(const vector<VideoMode>& modes, const VideoMode* curSelMode)
-{
-   const HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
-   SendMessage(hwndList, WM_SETREDRAW, FALSE, 0); // to speed up adding the entries :/
-   SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
-   SendMessage(hwndList, LB_INITSTORAGE, modes.size(), modes.size() * 128); // *128 is artificial
-
-   int bestMatch = 0; // to find closest matching res
-   int bestMatchingPoints = 0; // dto.
-
-   int screenwidth, screenheight;
-   int x, y;
-   const int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
-   getDisplaySetupByID(display, x, y, screenwidth, screenheight);
-
-   for (size_t i = 0; i < modes.size(); ++i)
-   {
-      char szT[128];
-
-#ifdef ENABLE_SDL
-      if (modes[i].depth) // i.e. is this windowed or not
-         sprintf_s(szT, sizeof(szT), "%d x %d (%dHz) %s", modes[i].width, modes[i].height, modes[i].refreshrate, (modes[i].depth == 32) ? "32bit" :
-            (modes[i].depth == 30) ? "HDR" :
-            (modes[i].depth == 16) ? "16bit" : "");
-#else
-      if (modes[i].depth)
-         sprintf_s(szT, sizeof(szT), "%d x %d (%dHz)", modes[i].width, modes[i].height, /*modes[i].depth,*/ modes[i].refreshrate);
-#endif
-      else
-         sprintf_s(szT, sizeof(szT), "%d x %d", modes[i].width, modes[i].height);
-
-      SendMessage(hwndList, LB_ADDSTRING, 0, (LPARAM)szT);
-      if (curSelMode) {
-         int matchingPoints = 0;
-         if (modes[i].width == curSelMode->width) matchingPoints += 100;
-         if (modes[i].height == curSelMode->height) matchingPoints += 100;
-         if (modes[i].depth == curSelMode->depth) matchingPoints += 50;
-         if (modes[i].width == screenwidth) matchingPoints += 3;
-         if (modes[i].height == screenheight) matchingPoints += 3;
-         if (matchingPoints > bestMatchingPoints) {
-            bestMatch = (int)i;
-            bestMatchingPoints = matchingPoints;
-         }
-      }
-   }
-   SendMessage(hwndList, LB_SETCURSEL, bestMatch, 0);
-   SendMessage(hwndList, WM_SETREDRAW, TRUE, 0);
 }
 
 BOOL VROptionsDialog::OnInitDialog()
@@ -195,12 +139,12 @@ BOOL VROptionsDialog::OnInitDialog()
       AddToolTip("(Currently broken and disabled in VPVR)\r\n\r\nActivate this to enable Ambient Occlusion.\r\nThis enables contact shadows between objects.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_FXAACB).GetHwnd();
       AddToolTip("Enables post-processed Anti-Aliasing.\r\n\r\nThese settings can make the image quality a bit smoother at cost of performance and a slight blurring.", hwndDlg, toolTipHwnd, controlHwnd);
+      controlHwnd = GetDlgItem(IDC_VR_PREVIEW).GetHwnd();
+      AddToolTip("Select which eye(s) to be displayed on the computer screen.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_SSSLIDER).GetHwnd();
       AddToolTip("Enables brute-force Up/Downsampling.\r\n\r\nThis delivers very good quality but has a significant impact on performance.\r\n\r\n2.0 means twice the resolution to be handled while rendering.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_MSAASLIDER).GetHwnd();
       AddToolTip("Set the amount of MSAA samples.\r\n\r\nMSAA can help reduce geometry aliasing in VR at the cost of performance and GPU memory.\r\n\r\nThis can really help improve image quality when not using supersampling.", hwndDlg, toolTipHwnd, controlHwnd);
-      controlHwnd = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
-      AddToolTip("Select Display for Video output.", hwndDlg, toolTipHwnd, controlHwnd);
       //AMD Debug
       controlHwnd = GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd();
       AddToolTip("Pixel format for VR Rendering.", hwndDlg, toolTipHwnd, controlHwnd);
@@ -272,8 +216,13 @@ BOOL VROptionsDialog::OnInitDialog()
    const bool scaleFX_DMD = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "ScaleFXDMD"s, LoadValueBoolWithDefault(regKey[RegName::Player], "ScaleFXDMD"s, false));
    SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_SETCHECK, scaleFX_DMD ? BST_CHECKED : BST_UNCHECKED, 0);
 
-   const bool disableVRPreview = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "VRPreviewDisabled"s, false);
-   SendMessage(GetDlgItem(IDC_VR_DISABLE_PREVIEW).GetHwnd(), BM_SETCHECK, disableVRPreview ? BST_CHECKED : BST_UNCHECKED, 0);
+   const VRPreviewMode vrPreview = (VRPreviewMode)LoadValueIntWithDefault(regKey[RegName::PlayerVR], "VRPreview"s, VRPREVIEW_LEFT);
+   hwnd = GetDlgItem(IDC_VR_PREVIEW).GetHwnd();
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM) "Disabled");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM) "Left Eye");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM) "Right Eye");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM) "Both Eyes");
+   SendMessage(hwnd, CB_SETCURSEL, (int)vrPreview, 0);
 
    const bool scaleToFixedWidth = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "scaleToFixedWidth"s, false);
    oldScaleValue = scaleToFixedWidth;
@@ -335,31 +284,6 @@ BOOL VROptionsDialog::OnInitDialog()
    SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"SharedMemory API");
    SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_SETCURSEL, BGsource, 0);
 
-   int display;
-   const HRESULT hr = LoadValue(regKey[RegName::PlayerVR], "Display"s, display);
-   vector<DisplayConfig> displays;
-   getDisplayList(displays);
-   if ((hr != S_OK) || ((int)displays.size() <= display) || (display<-1))
-      display = -1;
-
-   hwnd = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
-   SendMessage(hwnd, CB_RESETCONTENT, 0, 0);
-
-   for (vector<DisplayConfig>::iterator dispConf = displays.begin(); dispConf != displays.end(); ++dispConf)
-   {
-      if (display == -1 && dispConf->isPrimary)
-         display = dispConf->display;
-      char displayName[256];
-      sprintf_s(displayName, sizeof(displayName), "Display %d%s %dx%d %s", dispConf->display + 1, (dispConf->isPrimary) ? "*" : "", dispConf->width, dispConf->height, dispConf->GPU_Name);
-      SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)displayName);
-   }
-   SendMessage(hwnd, CB_SETCURSEL, display, 0);
-
-   const int widthcur = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "Width"s, DEFAULT_PLAYER_WIDTH);
-   const int heightcur = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "Height"s, widthcur * 9 / 16);
-
-   SendMessage(hwndDlg, GET_WINDOW_MODES, widthcur, heightcur);
-
    //AMD Debugging
    SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"RGB 8");
    SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_ADDSTRING, 0, (LPARAM)"RGBA 8 (Recommended)");
@@ -381,142 +305,6 @@ INT_PTR VROptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
    switch (uMsg)
    {
-      case GET_WINDOW_MODES:
-      {
-         size_t indexcur = -1;
-         size_t indx = -1;
-         const int widthcur  = (int)wParam;
-         const int heightcur = (int)lParam;
-
-         SendMessage(GetHwnd(), RESET_SIZELIST_CONTENT, 0, 0);
-         const HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
-         //indx = SendMessage(hwndList, LB_GETCURSEL, 0L, 0L);
-         //if (indx == LB_ERR)
-         //  indx = 0;
-
-         constexpr size_t csize = sizeof(rgwindowsize) / sizeof(int);
-         int screenwidth;
-         int screenheight;
-         int x, y;
-         const int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
-         getDisplaySetupByID(display, x, y, screenwidth, screenheight);
-
-         //if (indx != -1)
-         //  indexcur = indx;
-
-         allVideoModes.clear();
-         size_t cnt = 0;
-
-         // test video modes first on list
-
-         // add some (windowed) portrait play modes
-
-         // 16:10 aspect ratio resolutions: 1280*800, 1440*900, 1680*1050, 1920*1200 and 2560*1600
-         // 16:9 aspect ratio resolutions:  1280*720, 1366*768, 1600*900, 1920*1080, 2560*1440 and 3840*2160
-         // 21:9 aspect ratio resolution:   3440*1440
-         // 4:3  aspect ratio resolutions:  1280*1024
-         constexpr unsigned int num_portrait_modes = 15;
-         constexpr int portrait_modes_width[num_portrait_modes] = { 720, 720, 1024, 768, 800, 900, 900,1050,1050,1080,1200,1440,1440,1600,2160 };
-         constexpr int portrait_modes_height[num_portrait_modes] = { 1024,1280, 1280,1366,1280,1440,1600,1600,1680,1920,1920,2560,3440,2560,3840 };
-
-         for (unsigned int i = 0; i < num_portrait_modes; ++i)
-            if ((portrait_modes_width[i] <= screenwidth) && (portrait_modes_height[i] <= screenheight))
-            {
-               VideoMode mode;
-               mode.width = portrait_modes_width[i];
-               mode.height = portrait_modes_height[i];
-               mode.depth = 0;
-               mode.refreshrate = 0;
-
-               allVideoModes.push_back(mode);
-               if (heightcur > widthcur)
-                  if ((portrait_modes_width[i] == widthcur) && (portrait_modes_height[i] == heightcur))
-                     indx = i;
-               cnt++;
-            }
-
-         // add landscape play modes
-
-         for (size_t i = 0; i < csize; ++i)
-         {
-            const int xsize = rgwindowsize[i];
-            if ((xsize <= screenwidth) && ((xsize * 3 / 4) <= screenheight))
-            {
-               if ((xsize == widthcur) && ((xsize * 3 / 4) == heightcur))
-                  indx = i + cnt;
-
-               VideoMode mode;
-               mode.width = xsize;
-               mode.height = xsize * 3 / 4;
-               mode.depth = 0;
-               mode.refreshrate = 0;
-
-               allVideoModes.push_back(mode);
-            }
-         }
-
-         FillVideoModesList(allVideoModes);
-
-         // set up windowed fullscreen mode
-         VideoMode mode;
-         mode.width = screenwidth;
-         mode.height = screenheight;
-         mode.depth = 0;
-         mode.refreshrate = 0;
-         allVideoModes.push_back(mode);
-
-         char szT[128];
-         //if (indexcur == -1)
-         //  indexcur = indx;
-
-         if (mode.height < mode.width) // landscape
-         {
-            sprintf_s(szT, sizeof(szT), "%d x %d (Windowed Fullscreen)", mode.width, mode.height);
-            SendMessage(hwndList, LB_ADDSTRING, 0, (LPARAM)szT);
-            if (indx == -1)
-               indexcur = SendMessage(hwndList, LB_GETCOUNT, 0, 0) - 1;
-            else
-               indexcur = indx;
-         }
-         else { // portrait
-            if ((indx == -1) || (indx < num_portrait_modes))
-            {
-               indexcur = indx;
-               if (cnt > 0)
-               {
-                  char szTx[128];
-                  SendMessage(hwndList, LB_GETTEXT, cnt - 1, (LPARAM)szTx);
-                  SendMessage(hwndList, LB_DELETESTRING, cnt - 1, 0L);
-
-                  if (cnt - 1 < num_portrait_modes)
-                  {
-                     mode.width = portrait_modes_width[cnt - 1];
-                     mode.height = portrait_modes_height[cnt - 1];
-
-                     if ((mode.height == screenheight) && (mode.width == screenwidth))
-                        sprintf_s(szT, sizeof(szT), "%d x %d (Windowed Fullscreen)", mode.width, mode.height);
-                     else
-                        sprintf_s(szT, sizeof(szT), "%d x %d", mode.width, mode.height);
-                  }
-                  else {
-                     memset(&szTx, '\x0', sizeof(szTx));
-                     strcpy_s(szT, szTx);
-                  }
-
-                  SendMessage(hwndList, LB_INSERTSTRING, cnt - 1, (LPARAM)szT);
-               } // end if cnt > 0
-            } // end if indx
-         } // end if else mode height < width
-
-         SendMessage(hwndList, LB_SETCURSEL, (indexcur != -1) ? indexcur : 0, 0);
-         break;
-      } // end case GET_WINDOW_MODES
-      case RESET_SIZELIST_CONTENT:
-      {
-         const HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
-         SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
-         break;
-      }
       case WM_HSCROLL:
       {
          if ((HWND)lParam == GetDlgItem(IDC_SSSLIDER).GetHwnd()) {
@@ -558,22 +346,6 @@ BOOL VROptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
          ResetVideoPreferences();
          break;
       }
-      case IDC_DISPLAY_ID:
-      {
-         const size_t index = SendMessage(GetDlgItem(IDC_SIZELIST).GetHwnd(), LB_GETCURSEL, 0, 0);
-         if (allVideoModes.empty()) {
-            const HWND hwndDisplay = GetDlgItem(IDC_DISPLAY_ID).GetHwnd();
-            const int display = (int)SendMessage(hwndDisplay, CB_GETCURSEL, 0, 0);
-            EnumerateDisplayModes(display, allVideoModes);
-         }
-         if (allVideoModes.size() > index) {
-            const VideoMode * pvm = &allVideoModes[index];
-            SendMessage(GET_WINDOW_MODES, pvm->width, pvm->height);
-         }
-         else
-            SendMessage(GET_WINDOW_MODES, 0, 0);
-         break;
-      }
       case IDC_SCALE_TO_CM:
       {
          const bool newScaleValue = SendMessage(GetDlgItem(IDC_SCALE_TO_CM).GetHwnd(), BM_GETCHECK, 0, 0) > 0;
@@ -600,14 +372,6 @@ BOOL VROptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
 
 void VROptionsDialog::OnOK()
 {
-   size_t index = SendMessage(GetDlgItem(IDC_SIZELIST).GetHwnd(), LB_GETCURSEL, 0, 0);
-   VideoMode* pvm = &allVideoModes[index];
-   SaveValueInt(regKey[RegName::PlayerVR], "Width"s, pvm->width);
-   SaveValueInt(regKey[RegName::PlayerVR], "Height"s, pvm->height);
-
-   size_t display = SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
-   SaveValueInt(regKey[RegName::PlayerVR], "Display"s, (int)display);
-
    SaveValue(regKey[RegName::PlayerVR], "NudgeStrength"s, GetDlgItemText(IDC_NUDGE_STRENGTH).c_str());
 
    const bool reflection = (SendMessage(GetDlgItem(IDC_GLOBAL_REFLECTION_CHECK).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
@@ -648,8 +412,10 @@ void VROptionsDialog::OnOK()
    const size_t blitModeVR = SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_GETCURSEL, 0, 0);
    SaveValueInt(regKey[RegName::Player], "blitModeVR"s, (int)blitModeVR);
 
-   const bool disableVRPreview = SendMessage(GetDlgItem(IDC_VR_DISABLE_PREVIEW).GetHwnd(), BM_GETCHECK, 0, 0) != 0;
-   SaveValueBool(regKey[RegName::PlayerVR], "VRPreviewDisabled"s, disableVRPreview);
+   size_t vrPreview = SendMessage(GetDlgItem(IDC_VR_PREVIEW).GetHwnd(), CB_GETCURSEL, 0, 0);
+   if (vrPreview == LB_ERR)
+      vrPreview = VRPREVIEW_LEFT;
+   SaveValueInt(regKey[RegName::PlayerVR], "VRPreview"s, (int)vrPreview);
 
    const bool scaleToFixedWidth = SendMessage(GetDlgItem(IDC_SCALE_TO_CM).GetHwnd(), BM_GETCHECK, 0, 0) != 0;
    SaveValueBool(regKey[RegName::PlayerVR], "scaleToFixedWidth"s, scaleToFixedWidth);
@@ -689,6 +455,5 @@ void VROptionsDialog::OnOK()
 
 void VROptionsDialog::OnClose()
 {
-   SendMessage(RESET_SIZELIST_CONTENT, 0, 0);
    CDialog::OnClose();
 }

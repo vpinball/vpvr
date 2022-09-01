@@ -720,8 +720,6 @@ void RenderDevice::InitVR() {
    vr::HmdMatrix44_t left_eye_proj, right_eye_proj;
    if (m_pHMD == nullptr)
    {
-      m_Buf_width = 640;
-      m_Buf_height = 480;
       Matrix3D left, right;
       left.SetIdentity(); // TODO find sensible value and use them instead of the desktop projection
       right.SetIdentity();
@@ -740,7 +738,10 @@ void RenderDevice::InitVR() {
    }
    else
    {
+      uint32_t m_Buf_width, m_Buf_height;
       m_pHMD->GetRecommendedRenderTargetSize(&m_Buf_width, &m_Buf_height);
+      m_width = m_Buf_width * 2;
+      m_height = m_Buf_height;
       left_eye_pos = m_pHMD->GetEyeToHeadTransform(vr::Eye_Left);
       right_eye_pos = m_pHMD->GetEyeToHeadTransform(vr::Eye_Right);
       left_eye_proj = m_pHMD->GetProjectionMatrix(vr::Eye_Left, nearPlane, farPlane); //5cm to 50m should be a reasonable range
@@ -853,9 +854,9 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    int disp_x, disp_y, disp_w, disp_h;
    getDisplaySetupByID(m_adapter, disp_x, disp_y, disp_w, disp_h);
 
-   const bool disableVRPreview = (m_stereo3D == STEREO_VR) && LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "VRPreviewDisabled"s, false);
+   const VRPreviewMode vrPreview = m_stereo3D != STEREO_VR ? VRPREVIEW_DISABLED : (VRPreviewMode) LoadValueIntWithDefault(regKey[RegName::PlayerVR], "VRPreview"s, VRPREVIEW_LEFT);
 
-   if (!disableVRPreview)
+   if (vrPreview != VRPREVIEW_DISABLED)
       m_sdl_playfieldHwnd = SDL_CreateWindow(
          "Visual Pinball Player SDL", disp_x + (disp_w - m_width) / 2, disp_y + (disp_h - m_height) / 2, m_width, m_height,
          SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (m_fullscreen ? SDL_WINDOW_FULLSCREEN : 0));
@@ -908,35 +909,13 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    const int fbWidth = frameBuffer[2];
    const int fbHeight = frameBuffer[3];
 
-   switch (m_stereo3D) {
-   case STEREO_OFF:
-      m_Buf_width = fbWidth;
-      m_Buf_height = fbHeight;
-      m_Buf_widthBlur = m_Buf_width / 4;
-      m_Buf_heightBlur = m_Buf_height / 4;
-      m_Buf_width = (int)(m_Buf_width * m_AAfactor);
-      m_Buf_height = (int)(m_Buf_height * m_AAfactor);
-      break;
-   case STEREO_TB:
-   case STEREO_INT:
-      m_Buf_width = fbWidth;
-      m_Buf_height = fbHeight * 2;
-      m_Buf_widthBlur = m_Buf_width / 4;
-      m_Buf_heightBlur = m_Buf_height / 4;
-      m_Buf_width = (int)(m_Buf_width * m_AAfactor);
-      m_Buf_height = (int)(m_Buf_height * m_AAfactor);
-      break;
-   case STEREO_SBS:
-      m_Buf_width = fbWidth * 2;
-      m_Buf_height = fbHeight;
-      m_Buf_widthBlur = m_Buf_width / 4;
-      m_Buf_heightBlur = m_Buf_height / 4;
-      m_Buf_width = (int)(m_Buf_width * m_AAfactor);
-      m_Buf_height = (int)(m_Buf_height * m_AAfactor);
-      break;
-#ifdef ENABLE_VR
-   case STEREO_VR:
-      if (LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "scaleToFixedWidth"s, false)) {
+   m_width = fbWidth;
+   m_height = fbHeight;
+
+   if (m_stereo3D == STEREO_VR)
+   {
+      if (LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "scaleToFixedWidth"s, false))
+      {
          float width;
          g_pplayer->m_ptable->get_Width(&width);
          m_scale = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "scaleAbsolute"s, 55.0f) * 0.01f / width;
@@ -944,20 +923,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       else
          m_scale = 0.000540425f * LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "scaleRelative"s, 1.0f);
       if (m_scale <= 0.f)
-         m_scale = 0.000540425f;// Scale factor for VPUnits to Meters
+         m_scale = 0.000540425f; // Scale factor for VPUnits to Meters
       InitVR();
-      m_Buf_width = m_Buf_width * 2;
-      m_Buf_widthBlur = m_Buf_width / 3;
-      m_Buf_heightBlur = m_Buf_height / 3;
-      m_Buf_width = (int)(m_Buf_width * m_AAfactor);
-      m_Buf_height = (int)(m_Buf_height * m_AAfactor);
-      break;
-#endif
-   default:
-      char buf[1024];
-      sprintf_s(buf, sizeof(buf), "Unknown stereo Mode id: %d", m_stereo3D);
-      std::runtime_error unknownStereoMode(buf);
-      throw(unknownStereoMode);
    }
 
    if (m_stereo3D == STEREO_VR || m_vsync > refreshrate)
@@ -970,24 +937,26 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    m_pBackBuffer = new RenderTarget(this, fbWidth, fbHeight);
 
    constexpr colorFormat renderBufferFormat = RGBA16F;
+   int m_width_aa = (int)(m_width * m_AAfactor);
+   int m_height_aa = (int)(m_height * m_AAfactor);
 
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
-   m_pOffscreenBackBufferTexture = new RenderTarget(this, m_Buf_width, m_Buf_height, renderBufferFormat, true, true, m_stereo3D, "Fatal Error: unable to create render buffer!");
+   m_pOffscreenBackBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, renderBufferFormat, true, true, m_stereo3D, "Fatal Error: unable to create render buffer!");
 
    // If we are doing MSAA we need a texture with the same dimensions as the Back Buffer to resolve the end result to, can also use it for Post-AA
    if (g_pplayer->m_MSAASamples > 1 || m_FXAA > 0)
-      m_pOffscreenNonMSAABlitTexture = new RenderTarget(this, m_Buf_width, m_Buf_height, renderBufferFormat, true, false, m_stereo3D, "Fatal Error: unable to create render buffer!");
+      m_pOffscreenNonMSAABlitTexture = new RenderTarget(this, m_width_aa, m_height_aa, renderBufferFormat, true, false, m_stereo3D, "Fatal Error: unable to create render buffer!");
    else
       m_pOffscreenNonMSAABlitTexture = nullptr;
 
    if ((g_pplayer != nullptr) && (g_pplayer->m_ptable->m_reflectElementsOnPlayfield || (g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1)))
-      m_pMirrorTmpBufferTexture = new RenderTarget(this, m_Buf_width, m_Buf_height, renderBufferFormat, true, false, m_stereo3D, "Fatal Error: unable to create mirror buffer!");
+      m_pMirrorTmpBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, renderBufferFormat, true, false, m_stereo3D, "Fatal Error: unable to create mirror buffer!");
 
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
-   m_pBloomBufferTexture = new RenderTarget(this, m_Buf_widthBlur, m_Buf_heightBlur, renderBufferFormat, false, false, m_stereo3D, "Fatal Error: unable to create bloom buffer!");
+   m_pBloomBufferTexture = new RenderTarget(this, m_width / 4, m_height / 4, renderBufferFormat, false, false, m_stereo3D, "Fatal Error: unable to create bloom buffer!");
 
    // temporary buffer for gaussian blur
-   m_pBloomTmpBufferTexture = new RenderTarget(this, m_Buf_widthBlur, m_Buf_heightBlur, renderBufferFormat, false, false, m_stereo3D, "Fatal Error: unable to create blur buffer!");
+   m_pBloomTmpBufferTexture = new RenderTarget(this, m_width / 4, m_height / 4, renderBufferFormat, false, false, m_stereo3D, "Fatal Error: unable to create blur buffer!");
 
    if (m_stereo3D == STEREO_VR) {
       //AMD Debugging
@@ -1008,13 +977,13 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
          renderBufferFormatVR = RGBA8;
          break;
       }
-      m_pOffscreenVRLeft = new RenderTarget(this, m_Buf_width / 2, m_Buf_height, renderBufferFormatVR, false, false, m_stereo3D, "Fatal Error: unable to create left eye buffer!");
-      m_pOffscreenVRRight = new RenderTarget(this, m_Buf_width / 2, m_Buf_height, renderBufferFormatVR, false, false, m_stereo3D, "Fatal Error: unable to create right eye buffer!");
+      m_pOffscreenVRLeft = new RenderTarget(this, m_width / 2, m_height, renderBufferFormatVR, false, false, m_stereo3D, "Fatal Error: unable to create left eye buffer!");
+      m_pOffscreenVRRight = new RenderTarget(this, m_width / 2, m_height, renderBufferFormatVR, false, false, m_stereo3D, "Fatal Error: unable to create right eye buffer!");
    }
 
-   // Non-MSAA Buffers for post-processing
-   m_pOffscreenBackBufferPPTexture1 = new RenderTarget(this, m_Buf_width, m_Buf_height, renderBufferFormat, true, false, m_stereo3D, "Fatal Error: unable to create frame buffer 1 !");
-   m_pOffscreenBackBufferPPTexture2 = new RenderTarget(this, m_Buf_width, m_Buf_height, renderBufferFormat, true, false, m_stereo3D, "Fatal Error: unable to create frame buffer 2 !");
+   // Non-MSAA Buffers for post-processing (postprocess is done at scene resoilution and not at full scene AA resolution)
+   m_pOffscreenBackBufferPPTexture1 = new RenderTarget(this, m_width, m_height, renderBufferFormat, true, false, m_stereo3D, "Fatal Error: unable to create frame buffer 1 !");
+   m_pOffscreenBackBufferPPTexture2 = new RenderTarget(this, m_width, m_height, renderBufferFormat, true, false, m_stereo3D, "Fatal Error: unable to create frame buffer 2 !");
 
    if (video10bit && (m_FXAA == Quality_SMAA || m_FXAA == Standard_DLAA))
       ShowError("SMAA or DLAA post-processing AA should not be combined with 10bit-output rendering (will result in visible artifacts)!");
@@ -1113,39 +1082,6 @@ RenderDevice::RenderDevice(const int width, const int height, const bool fullscr
     m_useNvidiaApi = useNvidiaApi;
     m_INTZ_support = false;
     NVAPIinit = false;
-
-   switch (stereo3D) {
-   case STEREO_OFF:
-      m_Buf_width = m_width;
-      m_Buf_height = m_height;
-      m_Buf_widthBlur = m_width / 3;
-      m_Buf_heightBlur = m_height / 3;
-      m_Buf_widthSS = m_width * m_AAfactor;
-      m_Buf_heightSS = m_height * m_AAfactor;
-      break;
-   case STEREO_TB:
-   case STEREO_INT:
-      m_Buf_width = m_width;
-      m_Buf_height = m_height * 2;
-      m_Buf_widthBlur = m_width / 3;
-      m_Buf_heightBlur = m_height * 2 / 3;
-      m_Buf_widthSS = m_width * m_AAfactor;
-      m_Buf_heightSS = m_height * m_AAfactor;
-      break;
-   case STEREO_SBS:
-      m_Buf_width = m_width * 2;
-      m_Buf_height = m_height;
-      m_Buf_widthBlur = m_width * 2 / 3;
-      m_Buf_heightBlur = m_height / 3;
-      m_Buf_widthSS = m_width * m_AAfactor;
-      m_Buf_heightSS = m_height * m_AAfactor;
-      break;
-   default:
-      char buf[1024];
-      sprintf_s(buf, sizeof(buf), "Unknown stereo Mode id: %d", stereo3D);
-      std::runtime_error unknownStereoMode(buf);
-      throw(unknownStereoMode);
-   }
 
     m_stats_drawn_triangles = 0;
 
