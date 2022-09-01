@@ -4698,11 +4698,13 @@ void Player::Render()
    }
 #endif
 
-   m_pin3d.m_pd3dPrimaryDevice->BeginScene();
-   m_pin3d.UpdateMatrices();
-   RenderDynamics();
-
-   m_pin3d.m_pd3dPrimaryDevice->EndScene();
+   if (!RenderStaticOnly())
+   {
+      m_pin3d.m_pd3dPrimaryDevice->BeginScene();
+      m_pin3d.UpdateMatrices();
+      RenderDynamics();
+      m_pin3d.m_pd3dPrimaryDevice->EndScene();
+   }
 
    m_pininput.ProcessKeys(/*sim_msec,*/ -(int)(timeforframe / 1000)); // trigger key events mainly for VPM<->VP rountrip
 
