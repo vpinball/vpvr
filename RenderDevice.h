@@ -92,8 +92,6 @@ class RenderDevice final
 {
 public:
 
-RenderDevice(const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const StereoMode stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice = nullptr);
-
 #ifdef ENABLE_SDL
    enum RenderStates
    {
@@ -251,11 +249,12 @@ RenderDevice(const int width, const int height, const bool fullscreen, const int
    };
 #endif
 
+
+   RenderDevice(const HWND hwnd, const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const StereoMode stereo3D, const unsigned int FXAA, const bool sharpen, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering);
+   ~RenderDevice();
    void CreateDevice(int &refreshrate, UINT adapterIndex = D3DADAPTER_DEFAULT);
    bool LoadShaders();
    void InitVR();
-
-   ~RenderDevice();
 
    void BeginScene();
    void EndScene();
