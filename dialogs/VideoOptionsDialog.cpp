@@ -4,9 +4,6 @@
 
 #define GET_WINDOW_MODES		WM_USER+100
 #define GET_FULLSCREENMODES		WM_USER+101
-#define RESET_SIZELIST_CONTENT	WM_USER+102
-
-static constexpr int rgwindowsize[] = { 640, 720, 800, 912, 1024, 1152, 1280, 1360, 1366, 1400, 1440, 1600, 1680, 1920, 2048, 2560, 3440, 3840, 4096, 5120, 6400, 7680, 8192, 11520, 15360 };  // windowed resolutions for selection list
 
 constexpr float AAfactors[] = { 0.5f, 0.75f, 1.0f, 1.25f, (float)(4.0/3.0), 1.5f, 1.75f, 2.0f }; // factor is applied to width and to height, so 2.0f increases pixel count by 4. Additional values can be added.
 constexpr int AAfactorCount = 8;
@@ -43,18 +40,17 @@ void VideoOptionsDialog::AddToolTip(const char * const text, HWND parentHwnd, HW
 
 void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 = default, 1 = lowend PC, 2 = highend PC
 {
-   SendMessage(GetDlgItem(IDC_FULLSCREEN).GetHwnd(), BM_SETCHECK, true ? BST_CHECKED : BST_UNCHECKED, 0);
-
-   const int depthcur = LoadValueIntWithDefault(regKey[RegName::Player], "ColorDepth"s, 32);
-
-   const int refreshrate = LoadValueIntWithDefault(regKey[RegName::Player], "RefreshRate"s, 0);
-
-   const int widthcur = LoadValueIntWithDefault(regKey[RegName::Player], "Width"s, true ? -1 : DEFAULT_PLAYER_WIDTH);
-   const int heightcur = LoadValueIntWithDefault(regKey[RegName::Player], "Height"s, widthcur * 9 / 16);
-
-   SendMessage(GetHwnd(), true ? GET_FULLSCREENMODES : GET_WINDOW_MODES, (unsigned int)widthcur << 16 | refreshrate, (unsigned int)heightcur << 16 | depthcur);
-
+   if(profile == 0)
+   {
+   const bool fullscreen = IsWindows10_1803orAbove();
+   SendMessage(GetDlgItem(IDC_FULLSCREEN).GetHwnd(), BM_SETCHECK, fullscreen ? BST_CHECKED : BST_UNCHECKED, 0);
+   SendMessage(GetHwnd(), fullscreen ? GET_FULLSCREENMODES : GET_WINDOW_MODES, 0, 0);
+   }
+   if(profile < 2)
+   {
    SendMessage(GetDlgItem(IDC_10BIT_VIDEO).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
+   }
+
    SendMessage(GetDlgItem(IDC_Tex3072).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_Tex1024).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_Tex2048).GetHwnd(), BM_SETCHECK, profile == 1 ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -64,6 +60,9 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
    SendMessage(GetDlgItem(IDC_GLOBAL_DISABLE_LIGHTING_BALLS).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SetDlgItemInt(IDC_ADAPTIVE_VSYNC, 0, FALSE);
    SetDlgItemInt(IDC_MAX_PRE_FRAMES, 0, FALSE);
+
+   if(profile == 0)
+   {
    constexpr float ballAspecRatioOffsetX = 0.0f;
    char tmp[256];
    sprintf_s(tmp, sizeof(tmp), "%f", ballAspecRatioOffsetX);
@@ -80,6 +79,7 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
    constexpr float nudgeStrength = 2e-2f;
    sprintf_s(tmp, sizeof(tmp), "%f", nudgeStrength);
    SetDlgItemText(IDC_NUDGE_STRENGTH, tmp);
+   }
 
    SendMessage(GetDlgItem(IDC_SSSLIDER).GetHwnd(), TBM_SETPOS, TRUE, getBestMatchingAAfactorIndex(1.0f));
    SetDlgItemText(IDC_SSSLIDER_LABEL, "Supersampling Factor: 1.0");
@@ -91,6 +91,9 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
    SendMessage(GetDlgItem(IDC_ENABLE_AO).GetHwnd(), BM_SETCHECK, true ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), BM_SETCHECK, profile == 2 ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_GLOBAL_PFREFLECTION_CHECK).GetHwnd(), BM_SETCHECK, profile != 1 ? BST_CHECKED : BST_UNCHECKED, 0);
+
+   if (profile == 0)
+   {
    SendMessage(GetDlgItem(IDC_OVERWRITE_BALL_IMAGE_CHECK).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SetDlgItemText(IDC_BALL_IMAGE_EDIT, "");
    SetDlgItemText(IDC_BALL_DECAL_EDIT, "");
@@ -101,12 +104,19 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
       ::EnableWindow(GetDlgItem(IDC_BALL_IMAGE_EDIT).GetHwnd(), FALSE);
       ::EnableWindow(GetDlgItem(IDC_BALL_DECAL_EDIT).GetHwnd(), FALSE);
    }
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_SETCURSEL, profile == 1 ? 0 : (profile == 2 ? 3 : 2), 0);
+   }
+
+   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_SETCURSEL, profile == 1 ? Disabled : (profile == 2 ? Quality_FXAA : Standard_FXAA), 0);
+   SendMessage(GetDlgItem(IDC_SHARPENCB).GetHwnd(), CB_SETCURSEL, profile != 2 ? 0 : 2, 0);
    SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
+
+   if (profile == 0)
+   {
    SendMessage(GetDlgItem(IDC_BG_SET).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_3D_STEREO).GetHwnd(), CB_SETCURSEL, 0, 0);
    SendMessage(GetDlgItem(IDC_3D_STEREO_Y).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    constexpr float stereo3DOfs = 0.0f;
+   char tmp[256];
    sprintf_s(tmp, sizeof(tmp), "%f", stereo3DOfs);
    SetDlgItemText(IDC_3D_STEREO_OFS, tmp);
    constexpr float stereo3DMS = 0.03f;
@@ -122,17 +132,28 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
    sprintf_s(tmp, sizeof(tmp), "%f", stereo3DDeSaturation);
    SetDlgItemText(IDC_3D_STEREO_DESATURATION, tmp);
    SendMessage(GetDlgItem(IDC_USE_NVIDIA_API_CHECK).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
+   }
+
    SendMessage(GetDlgItem(IDC_BLOOM_OFF).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
+
+   if (profile == 0)
+   {
    SendMessage(GetDlgItem(IDC_DISABLE_DWM).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
+   }
+
    SendMessage(GetDlgItem(IDC_FORCE_ANISO).GetHwnd(), BM_SETCHECK, profile != 1 ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_TEX_COMPRESS).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_SOFTWARE_VP).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_ARASlider).GetHwnd(), TBM_SETPOS, TRUE, profile == 1 ? 5 : 10);
+
+   if (profile == 0)
+   {
    SendMessage(GetDlgItem(IDC_StretchYes).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_StretchMonitor).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_StretchNo).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);
-   SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_SETCURSEL, 1, 0);
+   //SendMessage(GetDlgItem(IDC_MonitorCombo).GetHwnd(), CB_SETCURSEL, 1, 0);
    SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_SETCURSEL, 0, 0);
+   }
 }
 
 void VideoOptionsDialog::FillVideoModesList(const vector<VideoMode>& modes, const VideoMode* curSelMode)
@@ -260,7 +281,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
       AddToolTip("Enforces 10Bit (WCG) rendering.\r\nRequires a corresponding 10Bit output capable graphics card and monitor.\r\nAlso requires to have exclusive fullscreen mode enforced (for now).", hwndDlg, toolTipHwnd, GetDlgItem(IDC_10BIT_VIDEO).GetHwnd());
       AddToolTip("Switches all tables to use the respective Cabinet display setup.\r\nAlso useful if a 270 degree rotated Desktop monitor is used.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_BG_SET).GetHwnd());
       AddToolTip("Enables post-processed Anti-Aliasing.\r\nThis delivers smoother images, at the cost of slight blurring.\r\n'Quality FXAA' and 'Quality SMAA' are recommended and lead to less artifacts,\nbut will harm performance on low-end graphics cards.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_FXAACB).GetHwnd());
-      //AddToolTip("Enables post-processed Sharpening of the image.\r\n'Bilateral CAS' is recommended,\nbut will harm performance on low-end graphics cards.\r\n'CAS' is less aggressive and faster, but also rather subtle.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_SHARPENCB).GetHwnd());
+      AddToolTip("Enables post-processed Sharpening of the image.\r\n'Bilateral CAS' is recommended,\nbut will harm performance on low-end graphics cards.\r\n'CAS' is less aggressive and faster, but also rather subtle.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_SHARPENCB).GetHwnd());
       AddToolTip("Enables brute-force Up/Downsampling.\r\n\r\nThis delivers very good quality but has a significant impact on performance.\r\n\r\n2.0 means twice the resolution to be handled while rendering.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_SSSLIDER).GetHwnd());
       AddToolTip("Set the amount of MSAA samples.\r\n\r\nMSAA can help reduce geometry aliasing in VR at the cost of performance and GPU memory.\r\n\r\nThis can really help improve image quality when not using supersampling.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_MSAASLIDER).GetHwnd());
       AddToolTip("When checked it overwrites the ball image/decal image(s) for every table.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_OVERWRITE_BALL_IMAGE_CHECK).GetHwnd());
@@ -502,21 +523,8 @@ BOOL VideoOptionsDialog::OnInitDialog()
    SendMessage(hwnd, CB_SETCURSEL, display, 0);
 
    const bool fullscreen = LoadValueBoolWithDefault(regKey[RegName::Player], "FullScreen"s, IsWindows10_1803orAbove());
-
-   const int widthcur = LoadValueIntWithDefault(regKey[RegName::Player], "Width"s, fullscreen ? -1 : DEFAULT_PLAYER_WIDTH);
-   const int heightcur = LoadValueIntWithDefault(regKey[RegName::Player], "Height"s, widthcur * 9 / 16);
-
-   const HWND hwndFullscreen = GetDlgItem(IDC_FULLSCREEN).GetHwnd();
-   if (fullscreen)
-   {
-      SendMessage(hwndDlg, GET_FULLSCREENMODES, (unsigned int)widthcur << 16 | refreshrate, (unsigned int)heightcur << 16 | depthcur);
-      SendMessage(hwndFullscreen, BM_SETCHECK, BST_CHECKED, 0);
-   }
-   else
-   {
-      SendMessage(hwndDlg, GET_WINDOW_MODES, widthcur, heightcur);
-      SendMessage(hwndFullscreen, BM_SETCHECK, BST_UNCHECKED, 0);
-   }
+   SendMessage(hwndDlg, fullscreen ? GET_FULLSCREENMODES : GET_WINDOW_MODES, 0, 0);
+   SendMessage(GetDlgItem(IDC_FULLSCREEN).GetHwnd(), BM_SETCHECK, fullscreen ? BST_CHECKED : BST_UNCHECKED, 0);
 
    const int alphaRampsAccuracy = LoadValueIntWithDefault(regKey[RegName::Player], "AlphaRampAccuracy"s, 10);
    const HWND hwndARASlider = GetDlgItem(IDC_ARASlider).GetHwnd();
@@ -561,29 +569,23 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
    {
       case GET_WINDOW_MODES:
       {
-         size_t indexcur = -1;
          size_t indx = -1;
-         const int widthcur  = (int)wParam;
-         const int heightcur = (int)lParam;
 
-         SendMessage(GetHwnd(), RESET_SIZELIST_CONTENT, 0, 0);
          const HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
+         //SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
          //indx = SendMessage(hwndList, LB_GETCURSEL, 0L, 0L);
          //if (indx == LB_ERR)
          //  indx = 0;
 
-         constexpr size_t csize = sizeof(rgwindowsize) / sizeof(int);
-         int screenwidth;
-         int screenheight;
-         int x, y;
          const int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
+         int screenwidth, screenheight;
+         int x, y;
          getDisplaySetupByID(display, x, y, screenwidth, screenheight);
 
-         //if (indx != -1)
-         //  indexcur = indx;
+         const int widthcur  = LoadValueIntWithDefault(regKey[RegName::Player], "Width"s, DEFAULT_PLAYER_WIDTH);
+         const int heightcur = LoadValueIntWithDefault(regKey[RegName::Player], "Height"s, widthcur * 9 / 16);
 
          allVideoModes.clear();
-         size_t cnt = 0;
 
          // test video modes first on list
 
@@ -594,12 +596,13 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
          // 21:9 aspect ratio resolutions:  3440*1440,2560*1080
          // 21:10 aspect ratio resolution:  3840*1600
          // 4:3  aspect ratio resolutions:  1280*1024
-         constexpr unsigned int num_portrait_modes = 28;
-         constexpr int portrait_modes_width[num_portrait_modes] = { 720, 768, 864, 600, 720, 768, 960,1024, 768, 768, 800,1050, 900, 900,1050,1200,1050,1080,1200,1536,1080,1440,1440,1600,1920,2048,1600,2160 };
-         constexpr int portrait_modes_height[num_portrait_modes] = { 1024,1024,1152,1280,1280,1280,1280,1280,1360,1366,1280,1400,1440,1600,1600,1600,1680,1920,1920,2048,2560,2560,3440,2560,2560,2560,3840,3840 };
+         constexpr unsigned int num_portrait_modes = 33;
+         static constexpr int portrait_modes_width[num_portrait_modes] =  {431, 505, 720, 768, 606, 864, 600, 720, 768, 960,1024, 768, 768, 800,1050, 808, 900, 900,1050,1200,1050,1080,1200,1536,1212,1080,1440,1440,1600,1920,2048,1600,2160};
+         static constexpr int portrait_modes_height[num_portrait_modes] = {768, 900,1024,1024,1080,1152,1280,1280,1280,1280,1280,1360,1366,1280,1400,1440,1440,1600,1600,1600,1680,1920,1920,2048,2160,2560,2560,3440,2560,2560,2560,3840,3840};
 
          for (unsigned int i = 0; i < num_portrait_modes; ++i)
-            if ((portrait_modes_width[i] <= screenwidth) && (portrait_modes_height[i] <= screenheight))
+            if ((portrait_modes_width[i] <= screenwidth) && (portrait_modes_height[i] <= screenheight)
+                && ((portrait_modes_width[i] != screenwidth) || (portrait_modes_height[i] != screenheight))) // windowed fullscreen is added to the end separately
             {
                VideoMode mode;
                mode.width = portrait_modes_width[i];
@@ -607,11 +610,10 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
                mode.depth = 0;
                mode.refreshrate = 0;
 
-               allVideoModes.push_back(mode);
                if (heightcur > widthcur)
                   if ((portrait_modes_width[i] == widthcur) && (portrait_modes_height[i] == heightcur))
-                     indx = i;
-               cnt++;
+                     indx = allVideoModes.size();
+               allVideoModes.push_back(mode);
             }
 
          // add landscape play modes
@@ -651,57 +653,21 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
          FillVideoModesList(allVideoModes);
 
-         // set up windowed fullscreen mode
+         // add windowed fullscreen mode at the end
          VideoMode mode;
          mode.width = screenwidth;
          mode.height = screenheight;
          mode.depth = 0;
          mode.refreshrate = 0;
-         allVideoModes.push_back(mode);
 
          char szT[128];
-         //if (indexcur == -1)
-         //  indexcur = indx;
+         sprintf_s(szT, sizeof(szT), "%d x %d (Windowed Fullscreen)", mode.width, mode.height);
+         SendMessage(hwndList, LB_ADDSTRING, 0, (LPARAM)szT);
+         if (indx == -1 || (mode.width == widthcur && mode.height == heightcur))
+            indx = allVideoModes.size();
+         allVideoModes.push_back(mode);
 
-         if (mode.height < mode.width) // landscape
-         {
-            sprintf_s(szT, sizeof(szT), "%d x %d (Windowed Fullscreen)", mode.width, mode.height);
-            SendMessage(hwndList, LB_ADDSTRING, 0, (LPARAM)szT);
-              if (indx == -1 || (mode.width == widthcur && mode.height == heightcur))
-               indexcur = SendMessage(hwndList, LB_GETCOUNT, 0, 0) - 1;
-            else
-               indexcur = indx;
-         }
-         else { // portrait
-            if ((indx == -1) || (indx < num_portrait_modes))
-            {
-               indexcur = indx;
-               if (cnt > 0)
-               {
-                  char szTx[128];
-                  SendMessage(hwndList, LB_GETTEXT, cnt - 1, (LPARAM)szTx);
-                  SendMessage(hwndList, LB_DELETESTRING, cnt - 1, 0L);
-
-                  if (cnt - 1 < num_portrait_modes)
-                  {
-                     mode.width = portrait_modes_width[cnt - 1];
-                     mode.height = portrait_modes_height[cnt - 1];
-
-                     if ((mode.height == screenheight) && (mode.width == screenwidth))
-                        sprintf_s(szT, sizeof(szT), "%d x %d (Windowed Fullscreen)", mode.width, mode.height);
-                     else
-                        sprintf_s(szT, sizeof(szT), "%d x %d", mode.width, mode.height);
-                  }
-                  else {
-                          strncpy_s(szT, szTx, sizeof(szT)-1);
-                  }
-
-                  SendMessage(hwndList, LB_INSERTSTRING, cnt - 1, (LPARAM)szT);
-               } // end if cnt > 0
-            } // end if indx
-         } // end if else mode height < width
-
-         SendMessage(hwndList, LB_SETCURSEL, (indexcur != -1) ? indexcur : 0, 0);
+         SendMessage(hwndList, LB_SETCURSEL, (indx != -1) ? indx : 0, 0);
          break;
       } // end case GET_WINDOW_MODES
       case GET_FULLSCREENMODES:
@@ -710,22 +676,21 @@ INT_PTR VideoOptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
          const int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
          EnumerateDisplayModes(display, allVideoModes);
 
+         const int depthcur    = LoadValueIntWithDefault(regKey[RegName::Player], "ColorDepth"s, 32);
+         const int refreshrate = LoadValueIntWithDefault(regKey[RegName::Player], "RefreshRate"s, 0);
+         const int widthcur    = LoadValueIntWithDefault(regKey[RegName::Player], "Width"s, -1);
+         const int heightcur   = LoadValueIntWithDefault(regKey[RegName::Player], "Height"s, -1);
+
          VideoMode curSelMode;
-         curSelMode.width = (int)wParam >> 16; //!! is this 64bit safe? especially if res was not setup in video preferences yet! (width should be -1 then here)
-         curSelMode.height = (int)lParam >> 16;
-         curSelMode.depth = (int)lParam & 0xffff;
-         curSelMode.refreshrate = (int)wParam & 0xffff;
+         curSelMode.width = widthcur;
+         curSelMode.height = heightcur;
+         curSelMode.depth = depthcur;
+         curSelMode.refreshrate = refreshrate;
 
          FillVideoModesList(allVideoModes, &curSelMode);
 
          if (SendMessage(hwndList, LB_GETCURSEL, 0, 0) == -1)
             SendMessage(hwndList, LB_SETCURSEL, 0, 0);
-         break;
-      }
-      case RESET_SIZELIST_CONTENT:
-      {
-         const HWND hwndList = GetDlgItem(IDC_SIZELIST).GetHwnd();
-         SendMessage(hwndList, LB_RESETCONTENT, 0, 0);
          break;
       }
       case WM_HSCROLL:
@@ -839,24 +804,6 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
          break;
       }
       case IDC_DISPLAY_ID:
-      {
-         const size_t checked = SendDlgItemMessage(IDC_FULLSCREEN, BM_GETCHECK, 0, 0);
-         const size_t index = SendMessage(GetDlgItem(IDC_SIZELIST).GetHwnd(), LB_GETCURSEL, 0, 0);
-         if (allVideoModes.size() == 0) {
-            const int display = (int)SendMessage(GetDlgItem(IDC_DISPLAY_ID).GetHwnd(), CB_GETCURSEL, 0, 0);
-            EnumerateDisplayModes(display, allVideoModes);
-         }
-         if (allVideoModes.size() > index) {
-            const VideoMode* const pvm = &allVideoModes[index];
-            if (checked)
-               SendMessage(GET_FULLSCREENMODES, (pvm->width << 16) | pvm->refreshrate, (pvm->height << 16) | pvm->depth);
-            else
-               SendMessage(GET_WINDOW_MODES, pvm->width, pvm->height);
-         }
-         else
-            SendMessage(checked ? GET_FULLSCREENMODES : GET_WINDOW_MODES, 0, 0);
-         break;
-      }
       case IDC_FULLSCREEN:
       {
          const size_t checked = SendDlgItemMessage(IDC_FULLSCREEN, BM_GETCHECK, 0, 0);
