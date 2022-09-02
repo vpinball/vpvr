@@ -8,8 +8,6 @@
 #include "BAM\BAM_Tracker.h"
 #endif
 
-extern int logicalNumberOfProcessors;
-
 int NumVideoBytes = 0;
 
 Pin3D::Pin3D()
@@ -58,7 +56,7 @@ Pin3D::~Pin3D()
    SAFE_BUFFER_RELEASE(RenderDevice::m_quadVertexBuffer);
    //SAFE_BUFFER_RELEASE(RenderDevice::m_quadDynVertexBuffer);
 
-   if (m_pd3dSecondaryDevice && (m_pd3dSecondaryDevice != m_pd3dPrimaryDevice))
+   if(m_pd3dPrimaryDevice != m_pd3dSecondaryDevice)
       delete m_pd3dSecondaryDevice;
    delete m_pd3dPrimaryDevice;
    m_pd3dPrimaryDevice = nullptr;
@@ -452,9 +450,9 @@ BaseTexture* EnvmapPrecalc(const Texture* envTex, const unsigned int rad_env_xre
    return radTex;
 }
 
-HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const StereoMode stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
+HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const StereoMode stereo3D, const unsigned int FXAA, const bool sharpen, const bool useAO, const bool ss_refl)
 {
-   const unsigned int display = LoadValueIntWithDefault(stereo3D == STEREO_VR ? regKey[RegName::PlayerVR] : regKey[RegName::Player], "Display"s, 0);
+   const int display = g_pvp->m_primaryDisplay ? 0 : LoadValueIntWithDefault(regKey[RegName::Player], "Display"s, 0);
    vector<DisplayConfig> displays;
    getDisplayList(displays);
    int adapter = 0;
@@ -462,7 +460,7 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
       if (display == dispConf->display)
          adapter = dispConf->adapter;
 
-   m_pd3dPrimaryDevice = new RenderDevice(m_viewPort.Width, m_viewPort.Height, fullScreen, colordepth, VSync, AAfactor, stereo3D, FXAA, ss_refl, g_pplayer->m_useNvidiaApi, g_pplayer->m_disableDWM, g_pplayer->m_BWrendering);
+   m_pd3dPrimaryDevice = new RenderDevice(g_pplayer->GetHwnd(), m_viewPort.Width, m_viewPort.Height, fullScreen, colordepth, VSync, AAfactor, stereo3D, FXAA, sharpen, ss_refl, g_pplayer->m_useNvidiaApi, g_pplayer->m_disableDWM, g_pplayer->m_BWrendering);
    try {
       m_pd3dPrimaryDevice->CreateDevice(refreshrate, adapter);
    }
@@ -473,10 +471,10 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
    if (!m_pd3dPrimaryDevice->LoadShaders())
       return E_FAIL;
 
-   const bool forceAniso = (stereo3D == STEREO_VR) ? true : LoadValueBoolWithDefault(regKey[RegName::Player], "ForceAnisotropicFiltering"s, true);
+   const bool forceAniso = LoadValueBoolWithDefault(regKey[RegName::Player], "ForceAnisotropicFiltering"s, true);
    m_pd3dPrimaryDevice->ForceAnisotropicFiltering(forceAniso);
 
-   const bool compressTextures = (stereo3D == STEREO_VR) ? false : LoadValueBoolWithDefault(regKey[RegName::Player], "CompressTextures"s, false);
+   const bool compressTextures = LoadValueBoolWithDefault(regKey[RegName::Player], "CompressTextures"s, false);
    m_pd3dPrimaryDevice->CompressTextures(compressTextures);
 
    m_pd3dPrimaryDevice->SetViewport(&m_viewPort);
@@ -535,7 +533,7 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
    return S_OK;
 }
 
-HRESULT Pin3D::InitRenderDevice(const bool fullScreen, const int width, const int height, const int colordepth, int &refreshrate, const int VSync, const float AAfactor, const StereoMode stereo3D, const unsigned int FXAA, const bool useAO, const bool ss_refl)
+HRESULT Pin3D::InitPin3D(const bool fullScreen, const int width, const int height, const int colordepth, int& refreshrate, const int VSync, const float AAfactor, const StereoMode stereo3D, const unsigned int FXAA, const bool sharpen, const bool useAO, const bool ss_refl)
 {
    m_proj.m_stereo3D = m_stereo3D = stereo3D;
    m_AAfactor = AAfactor;
@@ -548,16 +546,15 @@ HRESULT Pin3D::InitRenderDevice(const bool fullScreen, const int width, const in
    m_viewPort.MinZ = 0.0f;
    m_viewPort.MaxZ = 1.0f;
 
-   if (FAILED(InitPrimary(fullScreen, colordepth, refreshrate, VSync, AAfactor, stereo3D, FXAA, useAO, ss_refl)))
+   if (FAILED(InitPrimary(fullScreen, colordepth, refreshrate, VSync, AAfactor, stereo3D, FXAA, sharpen, useAO, ss_refl)))
       return E_FAIL;
 
    m_pd3dSecondaryDevice = m_pd3dPrimaryDevice; //!! for now, there is no secondary device :/
-   return S_OK;
-}
 
-HRESULT Pin3D::InitPin3D()
-{
-   m_backGlass = new BackGlass(m_pd3dSecondaryDevice, g_pplayer->m_ptable->GetDecalsEnabled()
+   //
+
+   m_backGlass = new BackGlass(m_pd3dSecondaryDevice,
+      g_pplayer->m_ptable->GetDecalsEnabled()
       ? g_pplayer->m_ptable->GetImage(g_pplayer->m_ptable->m_BG_image[g_pplayer->m_ptable->m_BG_current_set].c_str()) : nullptr);
 #ifndef ENABLE_SDL
    VertexBuffer::setD3DDevice(m_pd3dPrimaryDevice->GetCoreDevice(), m_pd3dSecondaryDevice->GetCoreDevice());

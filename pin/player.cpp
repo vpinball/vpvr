@@ -11,6 +11,10 @@
  #include "imgui/imgui_impl_win32.h"
  #include "imgui/implot/implot.h"
 
+#ifdef ENABLE_SDL
+#include "sdl2/SDL_syswm.h"
+#endif
+
 // utility structure for realtime plot //!! cleanup
 class ScrollingData {
 private:
@@ -527,6 +531,90 @@ void Player::PreCreate(CREATESTRUCT& cs)
     cs.hInstance = g_pvp->theInstance;
     cs.lpszName = "Visual Pinball Player"; // leave as-is as e.g. VPM relies on this
     cs.lpszClass = "VPPlayer"; // leave as-is as e.g. VPM relies on this
+}
+
+void Player::CreateWnd(HWND parent /* = 0 */)
+{
+#ifdef ENABLE_SDL
+   // SDL needs to create the window (as of SDL 2.0.22, SDL_CreateWindowFrom does not support OpenGL contexts) so we create it through SDL and attach it to win32++
+   WNDCLASS wc;
+   ZeroMemory(&wc, sizeof(wc));
+
+   CREATESTRUCT cs;
+   ZeroMemory(&cs, sizeof(cs));
+
+   // Set the WNDCLASS parameters
+   PreRegisterClass(wc);
+   /* TODO use the VPX window class
+   if (wc.lpszClassName)
+   {
+      RegisterClass(wc);
+      cs.lpszClass = wc.lpszClassName;
+   }
+   else
+      cs.lpszClass = _T("Win32++ Window");
+   SDL_RegisterApp(wc.lpszClassName, 0, g_pvp->theInstance); */
+
+   // Set a reasonable default window style.
+   DWORD dwOverlappedStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
+   cs.style = WS_VISIBLE | ((parent) ? WS_CHILD : dwOverlappedStyle);
+
+   // Set a reasonable default window position
+   if (0 == parent)
+   {
+      cs.x = CW_USEDEFAULT;
+      cs.cx = CW_USEDEFAULT;
+      cs.y = CW_USEDEFAULT;
+      cs.cy = CW_USEDEFAULT;
+   }
+
+   // Allow the CREATESTRUCT parameters to be modified.
+   PreCreate(cs);
+
+   DWORD style = cs.style & ~WS_VISIBLE;
+
+   // FIXME implement fullscreen
+
+   const int colordepth = LoadValueIntWithDefault(regKey[RegName::Player], "ColorDepth"s, 32);
+   bool video10bit = LoadValueBoolWithDefault(regKey[RegName::Player], "Render10Bit"s, false);
+   int channelDepth = video10bit ? 10 : ((colordepth == 16) ? 5 : 8);
+   // FIXME this will fail for 10 bits output
+   SDL_GL_SetAttribute(SDL_GL_RED_SIZE, channelDepth);
+   SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, channelDepth);
+   SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, channelDepth);
+   SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
+   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+
+   // Multisampling is performed on the offscreen buffers, not the window framebuffer
+   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
+   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
+
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
+   //SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+   // Create the window.
+   m_sdl_playfieldHwnd = SDL_CreateWindow("Visual Pinball Player SDL", cs.x, cs.y, cs.cx, cs.cy, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN | (m_fullScreen ? SDL_WINDOW_FULLSCREEN : 0));
+   SDL_SysWMinfo wmInfo;
+   SDL_VERSION(&wmInfo.version);
+   SDL_GetWindowWMInfo(m_sdl_playfieldHwnd, &wmInfo);
+
+   // Attach it (raise a WM_CREATE which in turns call OnInitialUpdate)
+   Attach(wmInfo.info.win.window);
+
+   const VRPreviewMode vrPreview = (VRPreviewMode)LoadValueIntWithDefault(regKey[RegName::PlayerVR], "VRPreview"s, VRPREVIEW_LEFT);
+   if (cs.style & WS_VISIBLE && ((m_stereo3D != STEREO_VR) || (vrPreview != VRPREVIEW_DISABLED)))
+   {
+      if (cs.style & WS_MAXIMIZE)
+         ShowWindow(SW_MAXIMIZE);
+      else if (cs.style & WS_MINIMIZE)
+         ShowWindow(SW_MINIMIZE);
+      else
+         ShowWindow();
+   }
+#else
+   Create();
+#endif // ENABLE_SDL
 }
 
 void Player::OnInitialUpdate()
@@ -1245,7 +1333,7 @@ void Player::DebugPrint(int x, int y, LPCSTR text, bool center /*= false*/)
 #endif
 }
 
-HRESULT Player::PreInit()
+/* FIXME remove HRESULT Player::PreInit()
 {
    int vsync = (m_stereo3D == STEREO_VR || m_ptable->m_TableAdaptiveVSync == -1) ? m_VSync : m_ptable->m_TableAdaptiveVSync;
 
@@ -1265,7 +1353,7 @@ HRESULT Player::PreInit()
       ShowError(szFoo);
    }
    return hr;
-}
+}*/
 
 HRESULT Player::Init()
 {
@@ -1318,7 +1406,16 @@ HRESULT Player::Init()
 
    //
 
-   const HRESULT hr = m_pin3d.InitPin3D();
+   const int vsync = (m_ptable->m_TableAdaptiveVSync == -1) ? m_VSync : m_ptable->m_TableAdaptiveVSync;
+
+   const float AAfactor = ((m_ptable->m_useAA == -1) || (m_ptable->m_useAA == 1)) ? m_AAfactor : 1.0f;
+   const unsigned int FXAA = (m_ptable->m_useFXAA == -1) ? m_FXAA : m_ptable->m_useFXAA;
+   const bool ss_refl = (m_ss_refl && (m_ptable->m_useSSR == -1)) || (m_ptable->m_useSSR == 1);
+
+   const int colordepth = LoadValueIntWithDefault(regKey[RegName::Player], "ColorDepth"s, 32);
+
+   // colordepth & refreshrate are only defined if fullscreen is true.
+   const HRESULT hr = m_pin3d.InitPin3D(m_fullScreen, m_width, m_height, colordepth, m_refreshrate, vsync, AAfactor, m_stereo3D, FXAA, !!m_sharpen, !m_disableAO, ss_refl);
    if (hr != S_OK)
    {
       char szFoo[64];
@@ -1329,7 +1426,7 @@ HRESULT Player::Init()
 
 #ifdef ENABLE_SDL
    // SDL Window appears after InitPin3D, set window default position and flags
-
+   /* FIXME remove (new initialization that match SDL <-> DX)
    int x = 0;
    int y = 0;
 
@@ -1377,11 +1474,10 @@ HRESULT Player::Init()
          SetWindowPos(HWND_TOP, xPos, yPos, m_width, m_height, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
          ShowWindow(SW_SHOWNORMAL);
       }
-   }
-#else
+   }*/
+#endif
    if (m_fullScreen)
       SetWindowPos(nullptr, 0, 0, m_width, m_height, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
-#endif
 
    m_pininput.Init(GetHwnd());
 

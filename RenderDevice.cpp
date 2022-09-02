@@ -810,61 +810,80 @@ void RenderDevice::InitVR() {
 #endif
 }
 
-#ifdef ENABLE_SDL
-RenderDevice::RenderDevice(const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const StereoMode stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice)
-   : m_texMan(*this), m_width(width), m_height(height), m_fullscreen(fullscreen),
-   m_colorDepth(colordepth), m_vsync(VSync), m_AAfactor(AAfactor), m_stereo3D(stereo3D), m_FXAA(FXAA),
-   m_ssRefl(ss_refl), m_disableDwm(disable_dwm), m_BWrendering(BWrendering), m_GLversion(0)
+RenderDevice::RenderDevice(const HWND hwnd, const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const StereoMode stereo3D, const unsigned int FXAA, const bool sharpen, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering)
+    : m_windowHwnd(hwnd), m_width(width), m_height(height), m_fullscreen(fullscreen), 
+      m_colorDepth(colordepth), m_vsync(VSync), m_AAfactor(AAfactor), m_stereo3D(stereo3D),
+      m_ssRefl(ss_refl), m_disableDwm(disable_dwm), m_sharpen(sharpen), m_FXAA(FXAA), m_BWrendering(BWrendering), m_texMan(*this)
 {
-   //m_useNvidiaApi = useNvidiaApi;
-
+#ifdef ENABLE_SDL
 #ifdef ENABLE_VR
    m_pHMD = nullptr;
    m_rTrackedDevicePose = nullptr;
 #endif
-   for (int i = 0; i < RENDERSTATE_COUNT; ++i) renderStateCache[i] = 0;
+   for (int i = 0; i < RENDERSTATE_COUNT; ++i)
+      renderStateCache[i] = 0;
+#else
+    m_useNvidiaApi = useNvidiaApi;
+    m_INTZ_support = false;
+    NVAPIinit = false;
+
+    m_adapter = D3DADAPTER_DEFAULT; // for now, always use the default adapter
+
+    mDwmIsCompositionEnabled = (pDICE)GetProcAddress(GetModuleHandle(TEXT("dwmapi.dll")), "DwmIsCompositionEnabled"); //!! remove as soon as win xp support dropped and use static link
+    mDwmEnableComposition = (pDEC)GetProcAddress(GetModuleHandle(TEXT("dwmapi.dll")), "DwmEnableComposition"); //!! remove as soon as win xp support dropped and use static link
+    mDwmFlush = (pDF)GetProcAddress(GetModuleHandle(TEXT("dwmapi.dll")), "DwmFlush"); //!! remove as soon as win xp support dropped and use static link
+
+    if (mDwmIsCompositionEnabled && mDwmEnableComposition)
+    {
+        BOOL dwm = 0;
+        mDwmIsCompositionEnabled(&dwm);
+        m_dwm_enabled = m_dwm_was_enabled = !!dwm;
+
+        if (m_dwm_was_enabled && m_disableDwm && IsWindowsVistaOr7()) // windows 8 and above will not allow do disable it, but will still return S_OK
+        {
+            mDwmEnableComposition(DWM_EC_DISABLECOMPOSITION);
+            m_dwm_enabled = false;
+        }
+    }
+    else
+    {
+        m_dwm_was_enabled = false;
+        m_dwm_enabled = false;
+    }
+#endif
+
+    m_stats_drawn_triangles = 0;
+
+    currentDeclaration = nullptr;
+    //m_curShader = nullptr;
+
+    // fill state caches with dummy values
+    memset(textureStateCache, 0xCC, sizeof(DWORD) * TEXTURE_SAMPLERS * TEXTURE_STATE_CACHE_SIZE);
+    memset(textureSamplerCache, 0xCC, sizeof(DWORD) * TEXTURE_SAMPLERS * TEXTURE_SAMPLER_CACHE_SIZE);
+
+    // initialize performance counters
+    m_curDrawCalls = m_frameDrawCalls = 0;
+    m_curStateChanges = m_frameStateChanges = 0;
+    m_curTextureChanges = m_frameTextureChanges = 0;
+    m_curParameterChanges = m_frameParameterChanges = 0;
+    m_curTechniqueChanges = m_frameTechniqueChanges = 0;
+    m_curTextureUpdates = m_frameTextureUpdates = 0;
+
+    m_curLockCalls = m_frameLockCalls = 0; //!! meh
 }
 
+#ifdef ENABLE_SDL
 void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 {
-   m_stats_drawn_triangles = 0;
-
    const int displays = getNumberOfDisplays();
    if ((int)adapterIndex >= displays)
       m_adapter = 0;
    else
       m_adapter = adapterIndex;
 
-   const bool video10bit = (m_colorDepth == SDL_PIXELFORMAT_ARGB2101010);
+   bool video10bit = LoadValueBoolWithDefault(regKey[RegName::Player], "Render10Bit"s, false);
 
-   //SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-
-/*   SDL_GL_SetAttribute(SDL_GL_RED_SIZE, video10bit ? 10 : 8);
-   SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, video10bit ? 10 : 8);
-   SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, video10bit ? 10 : 8);
-   SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, video10bit ? 2 : 8);
-   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);*/
-
-   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
-   // ATM Supersampling is used. MSAA can be enabled here with useAA ? 0 : 4
-   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
-
-   //SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
-   int disp_x, disp_y, disp_w, disp_h;
-   getDisplaySetupByID(m_adapter, disp_x, disp_y, disp_w, disp_h);
-
-   const VRPreviewMode vrPreview = (VRPreviewMode) LoadValueIntWithDefault(regKey[RegName::PlayerVR], "VRPreview"s, VRPREVIEW_LEFT);
-
-   if ((m_stereo3D != STEREO_VR) || (vrPreview != VRPREVIEW_DISABLED))
-      m_sdl_playfieldHwnd = SDL_CreateWindow(
-         "Visual Pinball Player SDL", disp_x + (disp_w - m_width) / 2, disp_y + (disp_h - m_height) / 2, m_width, m_height,
-         SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (m_fullscreen ? SDL_WINDOW_FULLSCREEN : 0));
-   else
-      m_sdl_playfieldHwnd = SDL_CreateWindow(
-         "Visual Pinball Player SDL", disp_x + (disp_w - 640) / 2, disp_y + (disp_h - 480) / 2, 640, 480,
-         SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
-
+   m_sdl_playfieldHwnd = g_pplayer->m_sdl_playfieldHwnd;
    SDL_SysWMinfo wmInfo;
    SDL_VERSION(&wmInfo.version);
    SDL_GetWindowWMInfo(m_sdl_playfieldHwnd, &wmInfo);
@@ -1073,59 +1092,6 @@ bool RenderDevice::LoadShaders()
 }
 
 #else
-
-RenderDevice::RenderDevice(const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const StereoMode stereo3D, const unsigned int FXAA, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering, const RenderDevice* primaryDevice)
-   : m_texMan(*this), m_windowHwnd(g_pplayer->GetHwnd()), m_width(width), m_height(height), m_fullscreen(fullscreen),
-      m_colorDepth(colordepth), m_vsync(VSync), m_AAfactor(AAfactor), m_stereo3D(stereo3D), m_FXAA(FXAA),
-      m_ssRefl(ss_refl), m_disableDwm(disable_dwm), m_BWrendering(BWrendering)
-{
-    m_useNvidiaApi = useNvidiaApi;
-    m_INTZ_support = false;
-    NVAPIinit = false;
-
-    m_stats_drawn_triangles = 0;
-
-   m_adapter = D3DADAPTER_DEFAULT;     // for now, always use the default adapter
-
-    mDwmIsCompositionEnabled = (pDICE)GetProcAddress(GetModuleHandle(TEXT("dwmapi.dll")), "DwmIsCompositionEnabled"); //!! remove as soon as win xp support dropped and use static link
-    mDwmEnableComposition = (pDEC)GetProcAddress(GetModuleHandle(TEXT("dwmapi.dll")), "DwmEnableComposition"); //!! remove as soon as win xp support dropped and use static link
-    mDwmFlush = (pDF)GetProcAddress(GetModuleHandle(TEXT("dwmapi.dll")), "DwmFlush"); //!! remove as soon as win xp support dropped and use static link
-
-    if (mDwmIsCompositionEnabled && mDwmEnableComposition)
-    {
-        BOOL dwm = 0;
-        mDwmIsCompositionEnabled(&dwm);
-        m_dwm_enabled = m_dwm_was_enabled = !!dwm;
-
-        if (m_dwm_was_enabled && m_disableDwm && IsWindowsVistaOr7()) // windows 8 and above will not allow do disable it, but will still return S_OK
-        {
-            mDwmEnableComposition(DWM_EC_DISABLECOMPOSITION);
-            m_dwm_enabled = false;
-        }
-    }
-    else
-    {
-        m_dwm_was_enabled = false;
-        m_dwm_enabled = false;
-    }
-
-    currentDeclaration = nullptr;
-    //m_curShader = nullptr;
-
-    // fill state caches with dummy values
-    memset(textureStateCache, 0xCC, sizeof(DWORD) * TEXTURE_SAMPLERS * TEXTURE_STATE_CACHE_SIZE);
-    memset(textureSamplerCache, 0xCC, sizeof(DWORD) * TEXTURE_SAMPLERS * TEXTURE_SAMPLER_CACHE_SIZE);
-
-    // initialize performance counters
-    m_curDrawCalls = m_frameDrawCalls = 0;
-    m_curStateChanges = m_frameStateChanges = 0;
-    m_curTextureChanges = m_frameTextureChanges = 0;
-    m_curParameterChanges = m_frameParameterChanges = 0;
-    m_curTechniqueChanges = m_frameTechniqueChanges = 0;
-    m_curTextureUpdates = m_frameTextureUpdates = 0;
-
-    m_curLockCalls = m_frameLockCalls = 0; //!! meh
-}
 
 void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 {
