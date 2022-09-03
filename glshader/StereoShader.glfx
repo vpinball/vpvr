@@ -3,81 +3,33 @@
 
 #include "hlsl_glsl.fxh"
 
-uniform float4 width_height_rotated_flipLR;
-
 ////VERTEX
 
 in vec3 vPosition;
 in vec2 tc;
 
 out vec2 tex0;
-out vec2 tex1;
 
 ////FRAGMENT
 
-uniform sampler2D  Texture0; // Left Eye
-uniform sampler2D  Texture1; // Right Eye
+uniform sampler2D  Texture0; // Render buffer with left eye on the top half, and right eye on the bottom half
 
 in vec2 tex0;
-in vec2 tex1;
 
 out vec4 color;
-
-////vs_main_tb
-
-void main()
-{
-   gl_Position = vec4(vPosition.x*2.0-1.0, 1.0-vPosition.y*2.0,0.0,1.0);
-   tex0 = float2(tc.x,tc.y * 2.0);
-   tex1 = float2(tc.x, tc.y * 2.0 - 1.0);
-}
-
-////ps_main_tb
-
-void main()
-{
-   if (tex0.y<1.0)
-      color = tex2D(Texture0, tex0);
-   else 
-      color = tex2D(Texture1, tex1);
-}
-
-////vs_main_sbs
-
-void main()
-{
-   gl_Position = vec4(vPosition.x*2.0-1.0, 1.0-vPosition.y*2.0,0.0,1.0);
-   tex0 = float2(tc.x * 2.0, tc.y);
-   tex1 = float2(tc.x * 2.0 - 1.0, tc.y);
-}
-
-////ps_main_sbs
-
-void main()
-{
-   if (tex0.x < 1.0) {
-      color = tex2D(Texture0, tex0);
-   } else {
-      color = tex2D(Texture1, tex1);
-   }
-}
 
 ////vs_main_int
 
 void main()
 {
-   float height = width_height_rotated_flipLR.y;
-
-   gl_Position = vec4(vPosition.x*2.0-1.0, 1.0-vPosition.y*2.0,0.0,1.0);
-   tex0 = float2(tc.x, tc.y/* + 0.5/height*/);
-   tex1 = float2(tc.x, tc.y/* - 0.5/height*/);
+   gl_Position = vec4(vPosition.x, -vPosition.y, 0.0, 1.0);
+   tex0 = float2(tc.x, tc.y);
 }
 
 ////ps_main_int
 
 void main()
 {
-   float height = width_height_rotated_flipLR.y;
    if (frac(gl_FragCoord.y*0.5) < 0.5) {
       color = tex2D(Texture0, vec2(tex0.x,0.5*tex0.y));
    }
@@ -86,6 +38,17 @@ void main()
    }
 }
 
+////ps_main_flipped_int
+
+void main()
+{
+   if (frac(gl_FragCoord.y*0.5) < 0.5) {
+      color = tex2D(Texture0, vec2(tex0.x,0.5*tex0.y + 0.5));
+   }
+   else {
+      color = tex2D(Texture0, vec2(tex0.x,0.5*tex0.y));
+   }
+}
 
 ////vs_main_amd
 
@@ -112,7 +75,6 @@ void main()
 
 ////TECHNIQUES
 
-stereo_TB:P0:vs_main_tb():ps_main_tb()
-stereo_SBS:P0:vs_main_sbs():ps_main_sbs()
 stereo_Int:P0:vs_main_int():ps_main_int()
+stereo_Flipped_Int:P0:vs_main_int():ps_main_flipped_int()
 stereo_AMD_DEBUG:P0:vs_main_amd():ps_main_amd()

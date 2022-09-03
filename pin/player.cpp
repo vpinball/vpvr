@@ -594,7 +594,7 @@ void Player::CreateWnd(HWND parent /* = 0 */)
    //SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
    // Create the window.
-   m_sdl_playfieldHwnd = SDL_CreateWindow("Visual Pinball Player SDL", cs.x, cs.y, cs.cx, cs.cy, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN | (m_fullScreen ? SDL_WINDOW_FULLSCREEN : 0));
+   m_sdl_playfieldHwnd = SDL_CreateWindow("Visual Pinball Player SDL", cs.x, cs.y, cs.cx, cs.cy, SDL_WINDOW_OPENGL | SDL_WINDOW_BORDERLESS | SDL_WINDOW_HIDDEN | (m_fullScreen ? SDL_WINDOW_FULLSCREEN : 0));
    SDL_SysWMinfo wmInfo;
    SDL_VERSION(&wmInfo.version);
    SDL_GetWindowWMInfo(m_sdl_playfieldHwnd, &wmInfo);
@@ -3670,19 +3670,22 @@ void Player::RenderStereo(int stereo3D, bool shaderAA) {
    switch (stereo3D) {
    case STEREO_OFF: //Should not happen
       return;
-   case STEREO_TB: //top bottom, not handled here
+   case STEREO_TB: //top bottom, nothing to do
       return;
-   case STEREO_SBS: //side by side, not handled here
+   case STEREO_SBS: //side by side, nothing to do
       return;
    case STEREO_INT: //interlaced, handled in shader
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTechnique(SHADER_TECHNIQUE_stereo_Int);
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->GetColorSampler());
-
       m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(false);
-
-      {const vec4* width_height_rotated_flipLR = new vec4((float)m_width, (float)m_height, 0.0f, 0.0f);
-      m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetVector(SHADER_width_height_rotated_flipLR, width_height_rotated_flipLR); }
-
+      m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin(0);
+      m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
+      m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
+      return;
+   case STEREO_FLIPPED_INT: //flipped interlaced, handled in shader
+      m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTechnique(SHADER_TECHNIQUE_stereo_Flipped_Int);
+      m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->GetColorSampler());
+      m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(false);
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin(0);
       m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();

@@ -270,10 +270,10 @@ void RenderTarget::Activate(bool ignoreStereo)
             glViewport(0, 0, m_width, m_height);
             m_rd->lightShader->SetBool(SHADER_ignoreStereo, true); // For non-stereo lightbulb texture, can't use pre-processor for this
             break;
-         case STEREO_TB:
+         case STEREO_TB: // Render left eye in the upper part, and right eye in the lower part
          case STEREO_INT:
-            glViewport(0, 0, m_width,
-               m_height / 2); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
+         case STEREO_FLIPPED_INT:
+            glViewport(0, 0, m_width, m_height / 2); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
             viewPorts[2] = viewPorts[6] = (float)m_width;
             viewPorts[3] = viewPorts[7] = (float)(m_height * 0.5);
             viewPorts[4] = 0.0f;
@@ -281,10 +281,9 @@ void RenderTarget::Activate(bool ignoreStereo)
             glViewportArrayv(0, 2, viewPorts);
             m_rd->lightShader->SetBool(SHADER_ignoreStereo, false);
             break;
-         case STEREO_SBS:
+         case STEREO_SBS: // Render left eye in the left part, and right eye in the right part
          case STEREO_VR:
-            glViewport(0, 0, m_width / 2,
-               m_height); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
+            glViewport(0, 0, m_width / 2, m_height); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
             viewPorts[2] = viewPorts[6] = (float)(m_width * 0.5);
             viewPorts[3] = viewPorts[7] = (float)m_height;
             viewPorts[4] = (float)(m_width * 0.5);
