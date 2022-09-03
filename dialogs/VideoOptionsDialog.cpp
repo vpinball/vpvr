@@ -287,6 +287,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
       AddToolTip("When checked it overwrites the ball image/decal image(s) for every table.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_OVERWRITE_BALL_IMAGE_CHECK).GetHwnd());
       AddToolTip("Select Display for Video output.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_DISPLAY_ID).GetHwnd());
       AddToolTip("Enable BAM Headtracking. See https://www.ravarcade.pl", hwndDlg, toolTipHwnd, GetDlgItem(IDC_HEADTRACKING).GetHwnd());
+      AddToolTip("Use fake parallax stereo instead of full stereo for better performance", hwndDlg, toolTipHwnd, GetDlgItem(IDC_PARALLAX_STEREO).GetHwnd());
    }
 
    const int maxTexDim = LoadValueIntWithDefault(regKey[RegName::Player], "MaxTexDimension"s, 0); // default: Don't resize textures
@@ -470,6 +471,9 @@ BOOL VideoOptionsDialog::OnInitDialog()
    const bool bamHeadtracking = LoadValueBoolWithDefault(regKey[RegName::Player], "BAMheadTracking"s, false);
    SendMessage(GetDlgItem(IDC_HEADTRACKING).GetHwnd(), BM_SETCHECK, bamHeadtracking ? BST_CHECKED : BST_UNCHECKED, 0);
 
+   const bool parallaxStereo = LoadValueBoolWithDefault(regKey[RegName::Player], "ParallaxStereo"s, true);
+   SendMessage(GetDlgItem(IDC_PARALLAX_STEREO).GetHwnd(), BM_SETCHECK, parallaxStereo ? BST_CHECKED : BST_UNCHECKED, 0);
+
    const float stereo3DContrast = LoadValueFloatWithDefault(regKey[RegName::Player], "Stereo3DContrast"s, 1.0f);
    sprintf_s(tmp, sizeof(tmp), "%f", stereo3DContrast);
    SetDlgItemText(IDC_3D_STEREO_CONTRAST, tmp);
@@ -559,6 +563,17 @@ BOOL VideoOptionsDialog::OnInitDialog()
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"9:21 (R)");
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"21:9");
    SendMessage(hwnd, CB_SETCURSEL, selected, 0);*/
+
+// Disable unsupported features
+#ifdef ENABLE_SDL
+   GetDlgItem(IDC_ENABLE_AO).EnableWindow(false);
+   GetDlgItem(IDC_DYNAMIC_AO).EnableWindow(false);
+   GetDlgItem(IDC_DISABLE_DWM).EnableWindow(false);
+   GetDlgItem(IDC_10BIT_VIDEO).EnableWindow(false);
+#else
+   GetDlgItem(IDC_PARALLAX_STEREO).EnableWindow(false);
+   GetDlgItem(IDC_HEADTRACKING).EnableWindow(false);
+#endif
 
    return TRUE;
 }
@@ -937,6 +952,9 @@ void VideoOptionsDialog::OnOK()
 
    const bool bamHeadtracking = (SendMessage(GetDlgItem(IDC_HEADTRACKING).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
    SaveValueBool(regKey[RegName::Player], "BAMheadTracking"s, bamHeadtracking);
+
+   const bool parallaxStereo = (SendMessage(GetDlgItem(IDC_PARALLAX_STEREO).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
+   SaveValueBool(regKey[RegName::Player], "ParallaxStereo"s, parallaxStereo);
 
    const bool disableDWM = (SendMessage(GetDlgItem(IDC_DISABLE_DWM).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
    SaveValueBool(regKey[RegName::Player], "DisableDWM"s, disableDWM);
