@@ -58,7 +58,7 @@ static const string shaderTechniqueNames[SHADER_TECHNIQUE_COUNT]{
    "fb_tonemap_AO_no_filter", "fb_tonemap_AO_no_filter_static", "fb_bloom_horiz9x9", "fb_bloom_vert9x9", "fb_bloom_horiz19x19", "fb_bloom_vert19x19",
    "fb_bloom_horiz19x19h", "fb_bloom_vert19x19h", "fb_bloom_horiz39x39", "fb_bloom_vert39x39", "SSReflection", "fb_mirror", "basic_noLight", "bulb_light",
    "SMAA_ColorEdgeDetection", "SMAA_BlendWeightCalculation", "SMAA_NeighborhoodBlending",
-   "stereo_TB", "stereo_SBS", "stereo_Int", "stereo_AMD_DEBUG"
+   "stereo_Int", "stereo_Flipped_Int", "stereo_AMD_DEBUG"
 };
 
 shaderUniforms Shader::getUniformByName(const string& name) {

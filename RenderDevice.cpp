@@ -943,6 +943,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
          m_scale = 0.000540425f * LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "scaleRelative"s, 1.0f);
       if (m_scale <= 0.f)
          m_scale = 0.000540425f; // Scale factor for VPUnits to Meters
+      // Initialize VR, this will also override the render buffer size (m_width, m_height) to account for HMD render size and render the 2 eyes simultaneously
       InitVR();
    }
 
