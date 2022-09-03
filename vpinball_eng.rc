@@ -428,7 +428,7 @@ BEGIN
     GROUPBOX        "Fullscreen",IDC_STATIC,150,251,183,43
     LTEXT           "(post-processed Anti-Aliasing)",IDC_STATIC,24,197,101,8
     GROUPBOX        "Anti-Aliasing",IDC_STATIC,7,137,132,74
-    CONTROL         "Use fake parallax stereo (performance)",IDC_PARALLAX_STEREO,
+    CONTROL         "Use fake parallax stereo",IDC_PARALLAX_STEREO,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,386,127,10
     GROUPBOX        "Reflections",IDC_STATIC,244,47,94,44
     GROUPBOX        "Camera position",IDC_STATIC,145,388,193,27

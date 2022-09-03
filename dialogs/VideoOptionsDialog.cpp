@@ -567,12 +567,22 @@ BOOL VideoOptionsDialog::OnInitDialog()
 // Disable unsupported features
 #ifdef ENABLE_SDL
    GetDlgItem(IDC_ENABLE_AO).EnableWindow(false);
+   SendMessage(GetDlgItem(IDC_ENABLE_AO).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
    GetDlgItem(IDC_DYNAMIC_AO).EnableWindow(false);
+   SendMessage(GetDlgItem(IDC_DYNAMIC_AO).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
    GetDlgItem(IDC_DISABLE_DWM).EnableWindow(false);
+   SendMessage(GetDlgItem(IDC_DISABLE_DWM).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
    GetDlgItem(IDC_10BIT_VIDEO).EnableWindow(false);
-#else
+   SendMessage(GetDlgItem(IDC_10BIT_VIDEO).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
+   // Only full stereo is implemented at the moment
    GetDlgItem(IDC_PARALLAX_STEREO).EnableWindow(false);
+   SendMessage(GetDlgItem(IDC_PARALLAX_STEREO).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
+#else
    GetDlgItem(IDC_HEADTRACKING).EnableWindow(false);
+   SendMessage(GetDlgItem(IDC_HEADTRACKING).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
+   // Only fake parallax stereo is implemented at the moment
+   GetDlgItem(IDC_PARALLAX_STEREO).EnableWindow(false);
+   SendMessage(GetDlgItem(IDC_PARALLAX_STEREO).GetHwnd(), BM_SETCHECK, BST_CHECKED, 0);
 #endif
 
    return TRUE;
