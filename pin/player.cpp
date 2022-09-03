@@ -182,8 +182,8 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
    m_dmdstate = 0;
 
    const int vrDetectionMode = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "AskToTurnOn"s, 0);
-   bool useVR = (vrDetectionMode!=2 /* VR Disabled */) && RenderDevice::isVRinstalled();
-   if (useVR && (vrDetectionMode==1) && !RenderDevice::isVRturnedOn())
+   bool useVR = (vrDetectionMode != 2 /* VR Disabled */) && RenderDevice::isVRinstalled();
+   if (useVR && (vrDetectionMode == 1) && !RenderDevice::isVRturnedOn())
       useVR = MessageBox("VR headset detected but SteamVR is not running.\n\nTurn VR on?", "VR Headset Detected", MB_YESNO) == IDYES;
    m_capExtDMD = LoadValueBoolWithDefault(regKey[RegName::Player], "CaptureExternalDMD"s, false);
    m_capPUP = LoadValueBoolWithDefault(regKey[RegName::Player], "CapturePUP"s, false);
@@ -1134,11 +1134,11 @@ void Player::InitShader()
    //m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetVector("camera", &cam);
 #endif
 
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture1, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, TextureFilter::TEXTURE_MODE_BILINEAR, false, true, false);
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture2, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_pin3d.m_envRadianceTexture, TextureFilter::TEXTURE_MODE_NONE, false, true, false));
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture1, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, TextureFilter::TEXTURE_MODE_TRILINEAR, false, true, false);
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_Texture2, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_pin3d.m_envRadianceTexture, TextureFilter::TEXTURE_MODE_BILINEAR, false, true, false));
 #ifdef SEPARATE_CLASSICLIGHTSHADER
-   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_Texture1, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, false);
-   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_Texture2, m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_envRadianceTexture, false, false), false);
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_Texture1, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, TextureFilter::TEXTURE_MODE_TRILINEAR, false, true, false);
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_Texture2, m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_envRadianceTexture, TextureFilter::TEXTURE_MODE_BILINEAR, false, true, false));
 #endif
    const vec4 st(m_ptable->m_envEmissionScale*m_globalEmissionScale, m_pin3d.m_envTexture ? (float)m_pin3d.m_envTexture->m_height/*+m_pin3d.m_envTexture->m_width)*0.5f*/ : (float)m_pin3d.m_builtinEnvTexture.m_height/*+m_pin3d.m_builtinEnvTexture.m_width)*0.5f*/, 0.f, 0.f);
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetVector(SHADER_fenvEmissionScale_TexWidth, &st);
@@ -1223,9 +1223,9 @@ void Player::InitBallShader()
 
    Texture * const playfield = m_ptable->GetImage(m_ptable->m_image);
    if (playfield)
-      m_ballShader->SetTexture(SHADER_Texture1, playfield, TextureFilter::TEXTURE_MODE_BILINEAR, false, false, false);
+      m_ballShader->SetTexture(SHADER_Texture1, playfield, TextureFilter::TEXTURE_MODE_TRILINEAR, false, false, false);
 
-   m_ballShader->SetTexture(SHADER_Texture2, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_pin3d.m_envRadianceTexture, TextureFilter::TEXTURE_MODE_BILINEAR, false, false, false));
+   m_ballShader->SetTexture(SHADER_Texture2, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_pin3d.m_envRadianceTexture, TextureFilter::TEXTURE_MODE_BILINEAR, false, true, false));
 
    assert(m_ballIndexBuffer == nullptr);
    const bool lowDetailBall = (m_ptable->GetDetailLevel() < 10);
@@ -3020,7 +3020,7 @@ void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwi
 
       for (unsigned int i = 0; i < 4; ++i)
       {
-         DMDVerts[i * 5] = (DMDVerts[i * 5] * DMDwidth + DMDposx)*2.0f - 1.0f;
+         DMDVerts[i * 5    ] =        (DMDVerts[i * 5    ] * DMDwidth  + DMDposx)*2.0f - 1.0f;
          DMDVerts[i * 5 + 1] = 1.0f - (DMDVerts[i * 5 + 1] * DMDheight + DMDposy)*2.0f;
       }
 
@@ -3059,7 +3059,7 @@ void Player::Spritedraw(const float posx, const float posy, const float width, c
 
    for (unsigned int i = 0; i < 4; ++i)
    {
-      Verts[i * 5] = (Verts[i * 5] * width + posx)*2.0f - 1.0f;
+      Verts[i * 5    ] =        (Verts[i * 5    ] * width  + posx)*2.0f - 1.0f;
       Verts[i * 5 + 1] = 1.0f - (Verts[i * 5 + 1] * height + posy)*2.0f;
    }
 
@@ -3428,7 +3428,7 @@ void Player::SSRefl()
    m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture2()->Activate(false);
 
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetColorSampler());
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, &m_pin3d.m_aoDitherTexture, TextureFilter::TEXTURE_MODE_NONE, true, true, true); //!!!
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, &m_pin3d.m_aoDitherTexture, TextureFilter::TEXTURE_MODE_NONE, false, false, true); //!!!
 
    // FIXME check if size should not be taken from renderdevice to account for VR (double width) or supersampling
    const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), 1.0f/*radical_inverse(m_overall_frames%2048)*/, 1.0f);
@@ -4321,7 +4321,7 @@ void Player::PostProcess(const bool ambientOcclusion)
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetColorSampler());
 
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, &m_pin3d.m_aoDitherTexture, TextureFilter::TEXTURE_MODE_NONE, true, true, true);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, &m_pin3d.m_aoDitherTexture, TextureFilter::TEXTURE_MODE_NONE, false, false, true);
 #ifndef ENABLE_SDL
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture3, m_pin3d.m_pdds3DZBuffer, true);
 #endif
@@ -4373,7 +4373,7 @@ void Player::PostProcess(const bool ambientOcclusion)
    if (pin)
    {
       // Texture used for LUT color grading must be treated as if they were linear
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, pin, TextureFilter::TEXTURE_MODE_TRILINEAR, false, false, true);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, pin, TextureFilter::TEXTURE_MODE_BILINEAR, true, true, true);
    }
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_color_grade, pin != nullptr);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_do_dither, !m_ditherOff);
@@ -5259,7 +5259,7 @@ void Player::DrawBalls()
          m_ballShader->SetTexture(SHADER_Texture0, pball->m_pinballEnv, TextureFilter::TEXTURE_MODE_TRILINEAR, false, false, false);
 
       if (pball->m_pinballDecal)
-         m_ballShader->SetTexture(SHADER_Texture3, pball->m_pinballDecal, TextureFilter::TEXTURE_MODE_BILINEAR, false, false, false);
+         m_ballShader->SetTexture(SHADER_Texture3, pball->m_pinballDecal, TextureFilter::TEXTURE_MODE_TRILINEAR, false, false, false);
       else
          m_ballShader->SetTextureNull(SHADER_Texture3);
 
