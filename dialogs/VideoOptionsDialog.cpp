@@ -564,7 +564,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"21:9");
    SendMessage(hwnd, CB_SETCURSEL, selected, 0);*/
 
-// Disable unsupported features
+// Disable unsupported features in UI
 #ifdef ENABLE_SDL
    GetDlgItem(IDC_ENABLE_AO).EnableWindow(false);
    SendMessage(GetDlgItem(IDC_ENABLE_AO).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
@@ -577,6 +577,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
    // Only full stereo is implemented at the moment
    GetDlgItem(IDC_PARALLAX_STEREO).EnableWindow(false);
    SendMessage(GetDlgItem(IDC_PARALLAX_STEREO).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
+   GetDlgItem(IDC_3D_STEREO_ZPD).EnableWindow(false);
 #else
    GetDlgItem(IDC_HEADTRACKING).EnableWindow(false);
    SendMessage(GetDlgItem(IDC_HEADTRACKING).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);

@@ -904,7 +904,7 @@ void Pin3D::InitLayoutFS()
 // here is where the tables camera / rotation / scale is setup
 // flashers are ignored in the calculation of boundaries to center the
 // table in the view
-void Pin3D::InitLayout(const bool FSS_mode, const float xpixoff, const float ypixoff)
+void Pin3D::InitLayout(const bool FSS_mode, const float max_separation, const float xpixoff, const float ypixoff)
 {
    TRACE_FUNCTION();
 
@@ -1020,7 +1020,9 @@ void Pin3D::InitLayout(const bool FSS_mode, const float xpixoff, const float ypi
    float left = -right;
    //Create Projection Matrix
    if (m_stereo3D != STEREO_OFF) {
-      float stereoOffset = 0.04f*m_proj.m_rznear;
+      // float stereoOffset = 0.04f*m_proj.m_rznear;
+      // This is not a perfect interpretation of parallax settings but it is somewhat close to what it gives in parallax with ZPD=0.5
+      float stereoOffset = max_separation * 2.0f * m_proj.m_rznear;
       proj = Matrix3D::MatrixPerspectiveOffCenterLH(left + stereoOffset, right + stereoOffset, bottom, top, m_proj.m_rznear, m_proj.m_rzfar);
       proj._41 += 1.4f * stereoOffset;
       memcpy(m_proj.m_matProj[0].m, proj.m, sizeof(float) * 4 * 4);

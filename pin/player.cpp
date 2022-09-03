@@ -573,8 +573,6 @@ void Player::CreateWnd(HWND parent /* = 0 */)
 
    DWORD style = cs.style & ~WS_VISIBLE;
 
-   // FIXME implement fullscreen
-
    const int colordepth = LoadValueIntWithDefault(regKey[RegName::Player], "ColorDepth"s, 32);
    bool video10bit = LoadValueBoolWithDefault(regKey[RegName::Player], "Render10Bit"s, false);
    int channelDepth = video10bit ? 10 : ((colordepth == 16) ? 5 : 8);
@@ -1434,7 +1432,7 @@ HRESULT Player::Init()
    else
        m_toogle_DTFS = false;
 
-   m_pin3d.InitLayout(m_ptable->m_BG_enable_FSS);
+   m_pin3d.InitLayout(m_ptable->m_BG_enable_FSS, m_ptable->GetMaxSeparation());
 #ifdef USE_IMGUI
    IMGUI_CHECKVERSION();
    ImGui::CreateContext();
@@ -4733,13 +4731,13 @@ void Player::Render()
       if (m_pin3d.m_pd3dPrimaryDevice->IsVRReady())
          m_pin3d.m_pd3dPrimaryDevice->UpdateVRPosition();
       else
-         m_pin3d.InitLayout(m_ptable->m_BG_enable_FSS);
+         m_pin3d.InitLayout(m_ptable->m_BG_enable_FSS, m_ptable->GetMaxSeparation());
    } 
    else
 #endif
    if (m_cameraMode)
    {
-      m_pin3d.InitLayout(m_ptable->m_BG_enable_FSS);
+      m_pin3d.InitLayout(m_ptable->m_BG_enable_FSS, m_ptable->GetMaxSeparation());
    }
 #ifdef ENABLE_BAM
    else if ((m_stereo3D != STEREO_VR) && m_headTracking)
