@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ generated include file.
-// Used by vpinball_eng.rc
+// fichier Include Microsoft Visual C++.
+// Utilisé par vpinball_eng.rc
 //
 #define DISPID_Textbox_BackColor        1
 #define DISPID_Textbox_FontColor        2
@@ -873,7 +873,6 @@
 #define IDC_VR_OFFSET_Z                 551
 #define IDS_UNHIDEALL                   552
 #define IDC_VR_PREVIEW                  552
-#define IDC_VR_PREVIEW_LABEL            600
 #define IDS_HIDE                        553
 #define IDC_VR_SCALE                    553
 #define IDC_MODIFY3DSTEREO              554
@@ -912,6 +911,7 @@
 #define IDC_BG_SOURCE                   594
 #define IDC_SHARPENCB                   594
 #define IDC_GET_INPLAYSTATE             595
+#define IDC_VR_PREVIEW_LABEL            600
 #define IDD_PROPRUBBER_PHYSICS          602
 #define IDC_RUBBER                      602
 #define IDD_PROPRUBBER_VISUALS          604
@@ -1008,6 +1008,7 @@
 #define IDC_IMPORT_ANIM_SEQUENCE        727
 #define IDC_DBG_LIGHT_ON_CHECK          727
 #define IDC_DEFAULT_GROUP_COLLECTION_CHECK 727
+#define IDC_PARALLAX_STEREO             727
 #define IDC_CVP_EDIT_AUTOCHARS          728
 #define IDC_DEFAULT_GROUP_COLLECTION_CHECK2 728
 #define IDC_ALWAYSVIEWSCRIPT            728
