@@ -323,7 +323,7 @@ public:
 
    //VR stuff
 #ifdef ENABLE_VR
-   bool IsVRReady() { return m_pHMD != nullptr; }
+   bool IsVRReady() const { return m_pHMD != nullptr; }
    void SetTransformVR();
    void UpdateVRPosition();
    void tableUp();
