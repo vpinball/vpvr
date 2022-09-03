@@ -124,31 +124,21 @@ void main()
 
 void main()
 {
-   if (frac(gl_FragCoord.y*0.5) < 0.5) {
-      color = tex2D(Texture0, vec2(tex0.x,0.5*tex0.y));
-   }
-   else {
-      color = tex2D(Texture0, vec2(tex0.x,0.5*tex0.y + 0.5));
-   }
+   color = tex2D(Texture0, vec2(tex0.x,0.5*tex0.y + ((frac(gl_FragCoord.y*0.5) < 0.5) ? 0.0 : 0.5)));
 }
 
 ////ps_main_flipped_int
 
 void main()
 {
-   if (frac(gl_FragCoord.y*0.5) < 0.5) {
-      color = tex2D(Texture0, vec2(tex0.x,0.5*tex0.y + 0.5));
-   }
-   else {
-      color = tex2D(Texture0, vec2(tex0.x,0.5*tex0.y));
-   }
+   color = tex2D(Texture0, vec2(tex0.x,0.5*tex0.y + ((frac(gl_FragCoord.y*0.5) < 0.5) ? 0.5 : 0.0)));
 }
 
 ////vs_main_amd
 
 void main()
 {
-   gl_Position = vec4(vPosition.x*2.0-1.0, 1.0-vPosition.y*2.0,0.0,1.0);
+   gl_Position = vec4(vPosition.x*2.0-1.0, 1.0-vPosition.y*2.0, 0.0,1.0);
    tex0 = float2(tc.x, tc.y);
 }
 
@@ -158,13 +148,15 @@ uniform float eye;
 
 void main()
 {
+   float x;
    if (eye>1.5) {
-      color = tex2D(Texture0, vec2(tex0.x,tex0.y));
+      x = tex0.x;
    } else if (eye<0.5) {
-      color = tex2D(Texture0, vec2(0.5*tex0.x,tex0.y));
+      x = tex0.x*0.5;
    } else {
-      color = tex2D(Texture0, vec2(0.5+0.5*tex0.x,tex0.y));
+      x = tex0.x*0.5+0.5;
    }
+   color = tex2D(Texture0, vec2(x,tex0.y));
 }
 
 ////ps_main_stereo_anaglyph
@@ -173,10 +165,9 @@ void main()
 {
 	const float3 lcol = tex2D(Texture0, vec2(0.5*tex0.x,tex0.y)).rgb;
 	const float3 rcol = tex2D(Texture0, vec2(0.5*tex0.x+0.5,tex0.y)).rgb;
-	if (ms_zpd_ya_td.w > 11.0) // > 10.0 means: flip the eye color
-		color = float4(anaglyph(rcol, lcol), 1.0);
-	else
-		color = float4(anaglyph(lcol, rcol), 1.0);
+	const float3 l = (ms_zpd_ya_td.w > 11.0) ? rcol : lcol; // > 10.0 means: flip the eye color
+	const float3 r = (ms_zpd_ya_td.w > 11.0) ? lcol : rcol; // > 10.0 means: flip the eye color
+	color = float4(anaglyph(l, r), 1.0);
 }
 
 
