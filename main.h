@@ -216,9 +216,6 @@ inline void ShowError(const string& sz)
 
 #include "editablereg.h"
 
-#include "typedefs3D.h"
-
-
 __forceinline float getBGxmult()
 {
    return g_pplayer->m_AAfactor;

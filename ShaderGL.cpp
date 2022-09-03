@@ -37,7 +37,7 @@ static const string shaderUniformNames[SHADER_UNIFORM_COUNT]{
    "Roughness_WrapL_Edge_Thickness", "cBase_Alpha", "lightCenter_maxRange", "lightColor2_falloff_power", "lightColor_intensity", "matrixBlock", "fenvEmissionScale_TexWidth",
    "invTableRes_playfield_height_reflection", "lightEmission", "lightPos", "orientation", "cAmbient_LightRange", "cClearcoat_EdgeAlpha", "cGlossy_ImageLerp",
    "fDisableLighting_top_below", "backBoxSize", "vColor_Intensity", "w_h_height", "alphaTestValueAB_filterMode_addBlend",
-   "amount_blend_modulate_vs_add_flasherMode", "staticColor_Alpha", "width_height_rotated_flipLR", "vRes_Alpha_time", "mirrorFactor", "SSR_bumpHeight_fresnelRefl_scale_FS", "AO_scale_timeblur",
+   "amount_blend_modulate_vs_add_flasherMode", "staticColor_Alpha", "ms_zpd_ya_td", "Anaglyph_DeSaturation_Contrast", "vRes_Alpha_time", "mirrorFactor", "SSR_bumpHeight_fresnelRefl_scale_FS", "AO_scale_timeblur",
    //Integer and Bool
    "ignoreStereo", "disableLighting", "lightSources", "doNormalMapping", "is_metal", "color_grade", "do_bloom", "lightingOff", "objectSpaceNormalMap", "do_dither", //!! disableLighting not wired/used yet in shaders
    //Textures
@@ -58,7 +58,7 @@ static const string shaderTechniqueNames[SHADER_TECHNIQUE_COUNT]{
    "fb_tonemap_AO_no_filter", "fb_tonemap_AO_no_filter_static", "fb_bloom_horiz9x9", "fb_bloom_vert9x9", "fb_bloom_horiz19x19", "fb_bloom_vert19x19",
    "fb_bloom_horiz19x19h", "fb_bloom_vert19x19h", "fb_bloom_horiz39x39", "fb_bloom_vert39x39", "SSReflection", "fb_mirror", "basic_noLight", "bulb_light",
    "SMAA_ColorEdgeDetection", "SMAA_BlendWeightCalculation", "SMAA_NeighborhoodBlending",
-   "stereo_Int", "stereo_Flipped_Int", "stereo_AMD_DEBUG"
+   "stereo_Int", "stereo_Flipped_Int", "stereo_Anaglyph", "stereo_AMD_DEBUG"
 };
 
 shaderUniforms Shader::getUniformByName(const string& name) {
@@ -283,7 +283,7 @@ bool Shader::compileGLShader(const string& fileNameRoot, const string& shaderCod
 
          glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, errorText);
          LOG(1, fileNameRoot, shaderCodeName + ": Fragment Shader compilation failed with: " + errorText);
-         char msg[2048];
+         char msg[16384];
          sprintf_s(msg, sizeof(msg), "Fatal Error: Fragment Shader compilation of %s:%s failed!\n\n%s", fileNameRoot.c_str(), shaderCodeName.c_str(), errorText);
          ReportError(msg, -1, __FILE__, __LINE__);
          free(errorText);

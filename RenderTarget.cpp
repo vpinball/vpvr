@@ -281,8 +281,7 @@ void RenderTarget::Activate(bool ignoreStereo)
             glViewportArrayv(0, 2, viewPorts);
             m_rd->lightShader->SetBool(SHADER_ignoreStereo, false);
             break;
-         case STEREO_SBS: // Render left eye in the left part, and right eye in the right part
-         case STEREO_VR:
+         default: //For all other stereo mode, render left eye in the left part, and right eye in the right part
             glViewport(0, 0, m_width / 2, m_height); // Set default viewport width/height values of all viewports before we define the array or we get undefined behaviour in shader (flickering viewports).
             viewPorts[2] = viewPorts[6] = (float)(m_width * 0.5);
             viewPorts[3] = viewPorts[7] = (float)m_height;

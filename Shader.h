@@ -31,7 +31,7 @@ enum shaderUniforms {
    SHADER_Roughness_WrapL_Edge_Thickness, SHADER_cBase_Alpha, SHADER_lightCenter_maxRange, SHADER_lightColor2_falloff_power, SHADER_lightColor_intensity, SHADER_matrixBlock, SHADER_fenvEmissionScale_TexWidth,
    SHADER_invTableRes_playfield_height_reflection, SHADER_lightEmission, SHADER_lightPos, SHADER_orientation, SHADER_cAmbient_LightRange, SHADER_cClearcoat_EdgeAlpha, SHADER_cGlossy_ImageLerp,
    SHADER_fDisableLighting_top_below, SHADER_backBoxSize, SHADER_vColor_Intensity, SHADER_w_h_height, SHADER_alphaTestValueAB_filterMode_addBlend,
-   SHADER_amount_blend_modulate_vs_add_flasherMode, SHADER_staticColor_Alpha, SHADER_width_height_rotated_flipLR, SHADER_vRes_Alpha_time, SHADER_mirrorFactor, SHADER_SSR_bumpHeight_fresnelRefl_scale_FS, SHADER_AO_scale_timeblur,
+   SHADER_amount_blend_modulate_vs_add_flasherMode, SHADER_staticColor_Alpha, SHADER_ms_zpd_ya_td, SHADER_Anaglyph_DeSaturation_Contrast, SHADER_vRes_Alpha_time, SHADER_mirrorFactor, SHADER_SSR_bumpHeight_fresnelRefl_scale_FS, SHADER_AO_scale_timeblur,
    //Integer and Bool
    SHADER_ignoreStereo, SHADER_disableLighting, SHADER_lightSources, SHADER_doNormalMapping, SHADER_is_metal, SHADER_color_grade, SHADER_do_bloom, SHADER_lightingOff, SHADER_objectSpaceNormalMap, SHADER_do_dither,
    //Textures
@@ -54,7 +54,7 @@ enum shaderTechniques {
    SHADER_TECHNIQUE_fb_tonemap_AO_no_filter, SHADER_TECHNIQUE_fb_tonemap_AO_no_filter_static, SHADER_TECHNIQUE_fb_bloom_horiz9x9, SHADER_TECHNIQUE_fb_bloom_vert9x9, SHADER_TECHNIQUE_fb_bloom_horiz19x19, SHADER_TECHNIQUE_fb_bloom_vert19x19,
    SHADER_TECHNIQUE_fb_bloom_horiz19x19h, SHADER_TECHNIQUE_fb_bloom_vert19x19h, SHADER_TECHNIQUE_fb_bloom_horiz39x39, SHADER_TECHNIQUE_fb_bloom_vert39x39, SHADER_TECHNIQUE_SSReflection, SHADER_TECHNIQUE_fb_mirror, SHADER_TECHNIQUE_basic_noLight, SHADER_TECHNIQUE_bulb_light,
    SHADER_TECHNIQUE_SMAA_ColorEdgeDetection, SHADER_TECHNIQUE_SMAA_BlendWeightCalculation, SHADER_TECHNIQUE_SMAA_NeighborhoodBlending,
-   SHADER_TECHNIQUE_stereo_Int, SHADER_TECHNIQUE_stereo_Flipped_Int, SHADER_TECHNIQUE_stereo_AMD_DEBUG,
+   SHADER_TECHNIQUE_stereo_Int, SHADER_TECHNIQUE_stereo_Flipped_Int, SHADER_TECHNIQUE_stereo_Anaglyph, SHADER_TECHNIQUE_stereo_AMD_DEBUG,
    SHADER_TECHNIQUE_COUNT, SHADER_TECHNIQUE_INVALID
 };
 
