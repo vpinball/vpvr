@@ -773,7 +773,7 @@ void PinInput::Init(const HWND hwnd)
    m_hwnd = hwnd;
 
 #if defined(ENABLE_SDL_INPUT)
-   SDL_Init(SDL_INIT_JOYSTICK);
+   SDL_InitSubSystem(SDL_INIT_JOYSTICK);
 #endif
 
    HRESULT hr;
@@ -910,7 +910,7 @@ void PinInput::UnInit()
    //{exit (-1500);}
 
 #if defined(ENABLE_SDL_INPUT)
-   SDL_Quit();
+   SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
 #endif
 
 #ifdef USE_DINPUT_FOR_KEYBOARD

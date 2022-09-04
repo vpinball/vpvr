@@ -141,6 +141,16 @@ void Sampler::UpdateTexture(BaseTexture* const surf, const bool force_linear_rgb
 #endif
 }
 
+void Sampler::SetClamp(const SamplerAddressMode clampu, const SamplerAddressMode clampv)
+{
+   m_clampu = clampu;
+   m_clampv = clampv;
+}
+
+void Sampler::SetFilter(const SamplerFilter filter)
+{
+   m_filter = filter;
+}
 
 #ifdef ENABLE_SDL
 GLuint Sampler::CreateTexture(UINT Width, UINT Height, UINT Levels, colorFormat Format, void* data, int stereo)
@@ -218,6 +228,8 @@ GLuint Sampler::CreateTexture(UINT Width, UINT Height, UINT Levels, colorFormat 
    if (data)
    {
       glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+      // This line causes a false GLIntercept error log on OpenGL >= 403 since the image is initialized through TexStorage and not TexImage (expected by GLIntercept)
+      // InterceptImage::SetImageDirtyPost - Flagging an image as dirty when it is not ready/init?
       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Width, Height, col_format, col_type, data);
       glGenerateMipmap(GL_TEXTURE_2D); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwise good idea to limit by GL_TEXTURE_MAX_LEVEL
    }

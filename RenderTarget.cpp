@@ -39,7 +39,7 @@ RenderTarget::RenderTarget(RenderDevice* rd, int width, int height)
 #endif
 }
 
-RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, const colorFormat format, bool with_depth, bool use_MSAA, int stereo, char* failureMessage)
+RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, const colorFormat format, bool with_depth, bool use_MSAA, StereoMode stereo, char* failureMessage)
 {
    m_is_back_buffer = false;
    m_rd = rd;
@@ -230,7 +230,8 @@ RenderTarget* RenderTarget::Duplicate()
 void RenderTarget::CopyTo(RenderTarget* dest)
 {
 #ifdef ENABLE_SDL
-   // FIXME unimplementd (only used to copy render target for static pass)
+   glBlitNamedFramebuffer(GetCoreFrameBuffer(), dest->GetCoreFrameBuffer(), 0, 0, GetWidth(), GetHeight(), 0, 0, dest->GetWidth(), dest->GetHeight(),
+      m_has_depth ? GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT : GL_COLOR_BUFFER_BIT, GL_NEAREST);
 #else
    CHECKD3D(m_rd->GetCoreDevice()->StretchRect(m_color_surface, nullptr, dest->m_color_surface, nullptr, D3DTEXF_NONE));
    if (m_has_depth && dest->m_has_depth)

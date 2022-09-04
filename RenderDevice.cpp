@@ -961,12 +961,12 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    // Retrieve a reference to the back buffer.
    m_pBackBuffer = new RenderTarget(this, fbWidth, fbHeight);
 
-   constexpr colorFormat renderBufferFormat = RGBA16F;
+   constexpr colorFormat renderBufferFormat = RGB16F;
    int m_width_aa = (int)(m_width * m_AAfactor);
    int m_height_aa = (int)(m_height * m_AAfactor);
 
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
-   m_pOffscreenBackBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, renderBufferFormat, true, true, m_stereo3D, "Fatal Error: unable to create render buffer!");
+   m_pOffscreenBackBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, renderBufferFormat, true, g_pplayer->m_MSAASamples > 1, m_stereo3D, "Fatal Error: unable to create render buffer!");
 
    // If we are doing MSAA we need a texture with the same dimensions as the Back Buffer to resolve the end result to, can also use it for Post-AA
    if (g_pplayer->m_MSAASamples > 1 || m_FXAA > 0)
@@ -2069,11 +2069,12 @@ void RenderDevice::SetRenderStateClipPlane0(const bool enabled)
    if (SetRenderStateCache(CLIPPLANEENABLE, enabled ? PLANE0 : 0)) return;
 
 #ifdef ENABLE_SDL
+   // FIXME reimplement clip plane
    // Basicshader already prepared with proper clipplane so just need to enable/disable it
-   if (enabled)
+   /* if (enabled)
       glEnable(GL_CLIP_DISTANCE0);
    else
-      glDisable(GL_CLIP_DISTANCE0);
+      glDisable(GL_CLIP_DISTANCE0);*/
 #else
    CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)CLIPPLANEENABLE, enabled ? PLANE0 : 0));
 #endif 

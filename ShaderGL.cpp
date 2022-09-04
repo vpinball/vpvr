@@ -329,9 +329,12 @@ bool Shader::compileGLShader(const string& fileNameRoot, const string& shaderCod
       shaderCode << fragment;
       shaderCode.close();
    }
-   glDeleteShader(vertexShader);
-   glDeleteShader(geometryShader);
-   glDeleteShader(fragmentShader);
+   if (vertexShader)
+      glDeleteShader(vertexShader);
+   if (geometryShader)
+      glDeleteShader(geometryShader);
+   if (fragmentShader)
+      glDeleteShader(fragmentShader);
    delete [] fragmentSource;
    delete [] geometrySource;
    delete [] vertexSource;
@@ -594,6 +597,14 @@ void Shader::Unload()
    for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i)
       if(uniformFloatP[i].data)
          free(uniformFloatP[i].data);
+   for (int i = 0; i < SHADER_TECHNIQUE_COUNT; i++)
+   {
+      if (shaderList[i].program > 0)
+      {
+         glDeleteProgram(shaderList[i].program);
+         shaderList[i].program = -1;
+      }
+   }
 #else
    //Free all uniform cache pointers
    if (uniformFloatP.size() > 0)
