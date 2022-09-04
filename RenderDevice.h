@@ -383,7 +383,6 @@ public:
    bool         m_sharpen;
    unsigned int m_FXAA;
    int          m_BWrendering;
-   UINT         m_adapter;
 
 private:
    void DrawPrimitive(const PrimitiveTypes type, const DWORD fvf, const void* vertices, const DWORD vertexCount);
@@ -416,6 +415,8 @@ private:
    RenderTarget* m_pBloomBufferTexture;
    RenderTarget* m_pBloomTmpBufferTexture;
    RenderTarget* m_pMirrorTmpBufferTexture;
+
+   UINT m_adapter;      // index of the display adapter to use
 
    static constexpr DWORD TEXTURE_SAMPLERS = 8;
    static constexpr DWORD TEXTURE_STATE_CACHE_SIZE = 256;

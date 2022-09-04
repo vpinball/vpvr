@@ -483,42 +483,6 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
 
    m_pddsStatic = m_pddsBackBuffer->Duplicate();
 
-#ifndef ENABLE_SDL
-   m_pd3dPrimaryDevice->GetBackBufferTexture()->GetSurfaceLevel(0, &m_pddsBackBuffer);
-
-   m_pddsStatic = m_pd3dPrimaryDevice->DuplicateRenderTarget(m_pddsBackBuffer);
-   if(!m_pddsStatic)
-      return E_FAIL;
-
-   m_pddsZBuffer = m_pd3dPrimaryDevice->AttachZBufferTo(m_pddsBackBuffer);
-   m_pddsStaticZ = m_pd3dPrimaryDevice->AttachZBufferTo(m_pddsStatic);
-   if (!m_pddsZBuffer || !m_pddsStaticZ)
-      return E_FAIL;
-
-   if (m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && (stereo3D || useAO || ss_refl))
-      m_pdds3DZBuffer = !m_pd3dPrimaryDevice->m_useNvidiaApi ? (D3DTexture*)m_pd3dPrimaryDevice->AttachZBufferTo(m_pddsBackBuffer) : m_pd3dPrimaryDevice->DuplicateDepthTexture((RenderTarget*)m_pddsZBuffer);
-
-   if (m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && ((stereo3D!=STEREO_OFF) || useAO || ss_refl)) {
-      m_pd3dPrimaryDevice->GetBackBufferTexture()->GetSurfaceLevel(0, &m_pddsBackBuffer);
-      m_pdds3DZBuffer = !m_pd3dPrimaryDevice->m_useNvidiaApi ? (D3DTexture*)m_pd3dPrimaryDevice->AttachZBufferTo(m_pddsBackBuffer) : m_pd3dPrimaryDevice->DuplicateDepthTexture((RenderTarget*)m_pddsZBuffer);
-      if (!m_pdds3DZBuffer)
-      {
-         ShowError("Unable to create depth texture!\r\nTry to (un)set \"Alternative Depth Buffer processing\" in the video options!\r\nOr disable Ambient Occlusion, 3D stereo and/or ScreenSpace Reflections!");
-         return E_FAIL;
-      }
-
-      if (stereo3D != STEREO_OFF) {
-         m_pd3dPrimaryDevice->GetBackBufferTexture()->GetSurfaceLevel(0, &m_pddsBackBuffer);
-         m_pdds3DZBuffer = !m_pd3dPrimaryDevice->m_useNvidiaApi ? (D3DTexture*)m_pd3dPrimaryDevice->AttachZBufferTo(m_pddsBackBuffer) : m_pd3dPrimaryDevice->DuplicateDepthTexture((RenderTarget*)m_pddsZBuffer);
-         if (!m_pdds3DZBuffer)
-         {
-            ShowError("Unable to create depth texture!\r\nTry to (un)set \"Alternative Depth Buffer processing\" in the video options!\r\nOr disable Ambient Occlusion and/or 3D stereo!");
-            return E_FAIL;
-         }
-      }
-   }
-#endif
-
    if (m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && useAO)
    {
       // FIXME the width must be the one the backbuffer (not the one of the preview vieport) but since AO is currently broken, this will be part of the AO fix
@@ -684,7 +648,7 @@ void Pin3D::DrawBackground()
       : nullptr;
    if (pin)
    {
-      m_pd3dPrimaryDevice->Clear(ZBUFFER, 0, 1.0f, 0L);
+      m_pd3dPrimaryDevice->Clear(clearType::ZBUFFER, 0, 1.0f, 0L);
 
       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_FALSE);
@@ -694,7 +658,7 @@ void Pin3D::DrawBackground()
 
       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
 
-      g_pplayer->Spritedraw(0.f, 0.f, 1.f, 1.f, 0xFFFFFFFF, pin, ptable->m_ImageBackdropNightDay ? sqrtf(g_pplayer->m_globalEmissionScale) : 1.0f);
+      g_pplayer->Spritedraw(0.f, 0.f, 1.f, 1.f, 0xFFFFFFFF, pin, ptable->m_ImageBackdropNightDay ? sqrtf(g_pplayer->m_globalEmissionScale) : 1.0f, true);
 
       if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_reflectionEnabled)
          m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
@@ -705,7 +669,7 @@ void Pin3D::DrawBackground()
    else
    {
       const D3DCOLOR d3dcolor = COLORREF_to_D3DCOLOR(ptable->m_colorbackdrop);
-      m_pd3dPrimaryDevice->Clear(TARGET | ZBUFFER, d3dcolor, 1.0f, 0L);
+      m_pd3dPrimaryDevice->Clear(clearType::TARGET | clearType::ZBUFFER, d3dcolor, 1.0f, 0L);
    }
 }
 
@@ -847,7 +811,6 @@ void Pin3D::InitLayoutFS()
    Matrix3D proj;
    //proj = Matrix3D::MatrixPerspectiveFovLH(ANGTORAD(FOV), aspect, m_proj.m_rznear, m_proj.m_rzfar);
    //proj = Matrix3D::MatrixPerspectiveFovLH((float)(M_PI / 4.0), aspect, m_proj.m_rznear, m_proj.m_rzfar);
-   // in-pixel offset for manual oversampling
 
    proj.SetIdentity();
    constexpr float monitorPixel = 1.0f;// 25.4f * 23.3f / sqrt(1920.0f*1920.0f + 1080.0f*1080.0f);
