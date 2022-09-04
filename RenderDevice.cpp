@@ -946,6 +946,11 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       // Initialize VR, this will also override the render buffer size (m_width, m_height) to account for HMD render size and render the 2 eyes simultaneously
       InitVR();
    }
+   else if (m_stereo3D >= STEREO_ANAGLYPH_RC && m_stereo3D <= STEREO_ANAGLYPH_AB)
+   {
+      // For anaglyph stereo mode, we need to double the width since the 2 eye images are mixed by colors, each being at the resolution of the output.
+      m_width = m_width * 2;
+   }
 
    if (m_stereo3D == STEREO_VR || m_vsync > refreshrate)
       m_vsync = 0;
