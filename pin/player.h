@@ -286,8 +286,8 @@ public:
    Player(const bool cameraMode, PinTable * const ptable);
    virtual ~Player();
 
-   void Player::CreateWnd(HWND parent = 0);
-   virtual void PreRegisterClass(WNDCLASS &wc) override;
+   void CreateWnd(HWND parent = 0);
+   virtual void PreRegisterClass(WNDCLASS& wc) override;
    virtual void PreCreate(CREATESTRUCT& cs) override;
    virtual void OnInitialUpdate() override;
    virtual LRESULT WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
