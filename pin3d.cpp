@@ -481,7 +481,9 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
 
    m_pddsBackBuffer = m_pd3dPrimaryDevice->GetBackBufferTexture();
 
-   m_pddsStatic = m_pddsBackBuffer->Duplicate();
+   // Static render target is a copy of the main back buffer without MSAA
+   m_pddsStatic = new RenderTarget(m_pd3dPrimaryDevice, m_pddsBackBuffer->GetWidth(), m_pddsBackBuffer->GetHeight(), m_pddsBackBuffer->GetColorFormat(), m_pddsBackBuffer->HasDepth(),
+      false, m_pddsBackBuffer->GetStereo(), "Failed to create static render target");
 
    if (m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && useAO)
    {
