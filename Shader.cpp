@@ -5,6 +5,132 @@
 #include "typedefs3D.h"
 #include "RenderDevice.h"
 
+#define SHADER_TECHNIQUE(name) #name,
+const string Shader::shaderTechniqueNames[SHADER_TECHNIQUE_COUNT]
+{
+   SHADER_TECHNIQUE(RenderBall)
+   SHADER_TECHNIQUE(RenderBall_DecalMode)
+   SHADER_TECHNIQUE(RenderBall_CabMode)
+   SHADER_TECHNIQUE(RenderBall_CabMode_DecalMode)
+   SHADER_TECHNIQUE(RenderBallTrail)
+   SHADER_TECHNIQUE(basic_without_texture)
+   SHADER_TECHNIQUE(basic_with_texture)
+   SHADER_TECHNIQUE(basic_depth_only_without_texture)
+   SHADER_TECHNIQUE(basic_depth_only_with_texture)
+   SHADER_TECHNIQUE(bg_decal_without_texture)
+   SHADER_TECHNIQUE(bg_decal_with_texture)
+   SHADER_TECHNIQUE(kickerBoolean)
+   SHADER_TECHNIQUE(light_with_texture)
+   SHADER_TECHNIQUE(light_without_texture)
+   SHADER_TECHNIQUE(basic_DMD)
+   SHADER_TECHNIQUE(basic_DMD_ext)
+   SHADER_TECHNIQUE(basic_DMD_world)
+   SHADER_TECHNIQUE(basic_DMD_world_ext)
+   SHADER_TECHNIQUE(basic_noDMD)
+   SHADER_TECHNIQUE(basic_noDMD_world)
+   SHADER_TECHNIQUE(basic_noDMD_notex)
+   SHADER_TECHNIQUE(AO)
+   SHADER_TECHNIQUE(NFAA)
+   SHADER_TECHNIQUE(DLAA_edge)
+   SHADER_TECHNIQUE(DLAA)
+   SHADER_TECHNIQUE(FXAA1)
+   SHADER_TECHNIQUE(FXAA2)
+   SHADER_TECHNIQUE(FXAA3)
+   SHADER_TECHNIQUE(fb_tonemap)
+   SHADER_TECHNIQUE(fb_bloom)
+   SHADER_TECHNIQUE(fb_AO)
+   SHADER_TECHNIQUE(fb_tonemap_AO)
+   SHADER_TECHNIQUE(fb_tonemap_AO_static)
+   SHADER_TECHNIQUE(fb_tonemap_no_filterRGB)
+   SHADER_TECHNIQUE(fb_tonemap_no_filterRG)
+   SHADER_TECHNIQUE(fb_tonemap_no_filterR)
+   SHADER_TECHNIQUE(fb_tonemap_AO_no_filter)
+   SHADER_TECHNIQUE(fb_tonemap_AO_no_filter_static)
+   SHADER_TECHNIQUE(fb_bloom_horiz9x9)
+   SHADER_TECHNIQUE(fb_bloom_vert9x9)
+   SHADER_TECHNIQUE(fb_bloom_horiz19x19)
+   SHADER_TECHNIQUE(fb_bloom_vert19x19)
+   SHADER_TECHNIQUE(fb_bloom_horiz19x19h)
+   SHADER_TECHNIQUE(fb_bloom_vert19x19h)
+   SHADER_TECHNIQUE(fb_bloom_horiz39x39)
+   SHADER_TECHNIQUE(fb_bloom_vert39x39)
+   SHADER_TECHNIQUE(SSReflection)
+   SHADER_TECHNIQUE(fb_mirror)
+   SHADER_TECHNIQUE(basic_noLight)
+   SHADER_TECHNIQUE(bulb_light)
+   SHADER_TECHNIQUE(SMAA_ColorEdgeDetection)
+   SHADER_TECHNIQUE(SMAA_BlendWeightCalculation)
+   SHADER_TECHNIQUE(SMAA_NeighborhoodBlending)
+   SHADER_TECHNIQUE(stereo_Int)
+   SHADER_TECHNIQUE(stereo_Flipped_Int)
+   SHADER_TECHNIQUE(stereo_Anaglyph)
+   SHADER_TECHNIQUE(stereo_AMD_DEBUG)
+};
+#undef SHADER_TECHNIQUE
+
+#define SHADER_UNIFORM(name) { #name, -1 },
+#define SHADER_SAMPLER(name, unit) { #name, unit},
+const Shader::ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT] {
+   //Floats
+   SHADER_UNIFORM(RenderBall)
+   SHADER_UNIFORM(blend_modulate_vs_add)
+   SHADER_UNIFORM(alphaTestValue)
+   SHADER_UNIFORM(eye)
+   SHADER_UNIFORM(fKickerScale)
+   //Vectors and Float Arrays
+   SHADER_UNIFORM(Roughness_WrapL_Edge_Thickness)
+   SHADER_UNIFORM(cBase_Alpha)
+   SHADER_UNIFORM(lightCenter_maxRange)
+   SHADER_UNIFORM(lightColor2_falloff_power)
+   SHADER_UNIFORM(lightColor_intensity)
+   SHADER_UNIFORM(matrixBlock)
+   SHADER_UNIFORM(fenvEmissionScale_TexWidth)
+   SHADER_UNIFORM(invTableRes_playfield_height_reflection)
+   SHADER_UNIFORM(lightEmission)
+   SHADER_UNIFORM(lightPos)
+   SHADER_UNIFORM(orientation)
+   SHADER_UNIFORM(cAmbient_LightRange)
+   SHADER_UNIFORM(cClearcoat_EdgeAlpha)
+   SHADER_UNIFORM(cGlossy_ImageLerp)
+   SHADER_UNIFORM(fDisableLighting_top_below)
+   SHADER_UNIFORM(backBoxSize)
+   SHADER_UNIFORM(vColor_Intensity)
+   SHADER_UNIFORM(w_h_height)
+   SHADER_UNIFORM(alphaTestValueAB_filterMode_addBlend)
+   SHADER_UNIFORM(amount_blend_modulate_vs_add_flasherMode)
+   SHADER_UNIFORM(staticColor_Alpha)
+   SHADER_UNIFORM(ms_zpd_ya_td)
+   SHADER_UNIFORM(Anaglyph_DeSaturation_Contrast)
+   SHADER_UNIFORM(vRes_Alpha_time)
+   SHADER_UNIFORM(mirrorFactor)
+   SHADER_UNIFORM(SSR_bumpHeight_fresnelRefl_scale_FS)
+   SHADER_UNIFORM(AO_scale_timeblur)
+   //Integer and Bool
+   SHADER_UNIFORM(ignoreStereo)
+   SHADER_UNIFORM(disableLighting)
+   SHADER_UNIFORM(lightSources)
+   SHADER_UNIFORM(doNormalMapping)
+   SHADER_UNIFORM(is_metal)
+   SHADER_UNIFORM(color_grade)
+   SHADER_UNIFORM(do_bloom)
+   SHADER_UNIFORM(lightingOff)
+   SHADER_UNIFORM(objectSpaceNormalMap)
+   SHADER_UNIFORM(do_dither)
+   //Texture samplers
+   SHADER_SAMPLER(Texture0, 0)
+   SHADER_SAMPLER(Texture1, 1)
+   SHADER_SAMPLER(Texture2, 2)
+   SHADER_SAMPLER(Texture3, 3)
+   SHADER_SAMPLER(Texture4, 4)
+   SHADER_SAMPLER(edgesTex2D, -1)
+   SHADER_SAMPLER(blendTex2D, -1)
+   SHADER_SAMPLER(areaTex2D, -1)
+   SHADER_SAMPLER(searchTex2D, -1)
+};
+#undef SHADER_UNIFORM
+#undef SHADER_SAMPLER
+
+
 RenderDevice *Shader::m_renderDevice = nullptr;
 
 Shader* Shader::getCurrentShader() {
@@ -14,23 +140,23 @@ Shader* Shader::getCurrentShader() {
 Shader* Shader::m_currentShader = nullptr;
 int Shader::shaderCount = 0;
 
-Shader::Shader(RenderDevice *renderDevice) : currentMaterial(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX,
-   0xCCCCCCCC, 0xCCCCCCCC, 0xCCCCCCCC, false, false, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX)
+Shader::Shader(RenderDevice *renderDevice) : currentMaterial(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, 0xCCCCCCCC, 0xCCCCCCCC, 0xCCCCCCCC, false, false, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX)
 {
    shaderCount++;
+   m_technique = nullptr;
    m_renderDevice = renderDevice;
 #ifndef ENABLE_SDL
    m_shader = 0;
 #else
    m_nullTexture = new Texture(new BaseTexture(1, 1, BaseTexture::RGB));
-#if defined(TWEAK_GL_SHADER)
    for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i) {
       uniformFloat[i] = 0.0f;
       uniformFloatP[i] = { 0, nullptr };
       uniformInt[i] = 0;
       uniformTex[i] = 0;
    }
-#endif
+   for (int i = 0; i < SHADER_TECHNIQUE_COUNT; ++i)
+      m_techniques[i] = nullptr;
 #endif
    for (unsigned int i = 0; i < TEXTURESET_STATE_CACHE_SIZE; ++i)
       currentTexture[i] = 0;
