@@ -24,10 +24,6 @@ Sampler* Shader::noTexture = nullptr;
 Sampler* Shader::noTextureMSAA = nullptr;
 static const float zeroValues[16] = { 0.0f,0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 const float* Shader::zeroData = zeroValues;
-int Shader::nextTextureSlot = 0;
-int* Shader::textureSlotList = nullptr;
-//std::map<int, int> Shader::slotTextureList;
-int Shader::maxSlots = 0;
 
 static const string shaderAttributeNames[SHADER_ATTRIBUTE_COUNT]{
    "vPosition", "vNormal", "tc", "tex0"
@@ -56,14 +52,11 @@ Shader::~Shader()
    shaderCount--;
    this->Unload();
    if (shaderCount == 0) {
-      delete [] textureSlotList;
-      textureSlotList = nullptr;
-      maxSlots = 0;
-      nextTextureSlot = 0;
       delete noTexture;
       noTexture = nullptr;
+      delete noTextureMSAA;
+      noTextureMSAA = nullptr;
    }
-   //slotTextureList.clear();
    if (m_currentShader == this)
       m_currentShader = nullptr;
    delete m_nullTexture;
@@ -424,12 +417,6 @@ string Shader::analyzeFunction(const char* shaderCodeName, const string& _techni
 bool Shader::Load(const char* shaderCodeName, UINT codeSize)
 {
    m_shaderCodeName = shaderCodeName;
-   if (!textureSlotList) {
-      glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxSlots);
-      textureSlotList = new int[maxSlots];
-      for (int i = 0;i < maxSlots;++i)
-         textureSlotList[i] = -2;
-   }
    m_currentShaderProgram = -1;
    LOG(3, (const char*)shaderCodeName, "Start parsing file");
    robin_hood::unordered_map<string, string> values;
@@ -596,243 +583,25 @@ void Shader::setAttributeFormat(DWORD fvf)
 void Shader::Begin(const unsigned int pass)
 {
    m_currentShader = this;
-   char msg[256];
    if (m_technique == nullptr)
    {
+      char msg[256];
       sprintf_s(msg, sizeof(msg), "Could not find shader technique");
       ShowError(msg);
       exit(-1);
    }
    if (m_currentShaderProgram == m_technique->program)
       return;
-
-   nextTextureSlot = 0;
    glUseProgram(m_technique->program);
+   m_nextTextureSlot = 5; // Slots 0 to 4 are used by static texture unit allocation
    m_currentShaderProgram = m_technique->program;
-
-   //Set all uniforms
    for (int uniformName = 0; uniformName < SHADER_UNIFORM_COUNT; ++uniformName)
-   {
-      const uniformLoc currentUniform = m_technique->uniformLocation[uniformName];
-      if (currentUniform.location < 0 || currentUniform.type == 0 || currentUniform.size == 0) continue;
-      switch (currentUniform.type) {
-      case ~0u: {//Uniform blocks
-         const auto valueFP = uniformFloatP[uniformName];
-         glBindBuffer(GL_UNIFORM_BUFFER, currentUniform.blockBuffer);
-         glBufferData(GL_UNIFORM_BUFFER, currentUniform.size, valueFP.data, GL_STREAM_DRAW);
-         glUniformBlockBinding(m_currentShaderProgram, currentUniform.location, 0);
-         glBindBufferRange(GL_UNIFORM_BUFFER, 0, currentUniform.blockBuffer, 0, currentUniform.size);
-      }
-      break;
-      case GL_FLOAT:
-      {
-         const float valueF = uniformFloat[uniformName];
-         glUniform1f(currentUniform.location, valueF);
-      }
-      break;
-      case GL_BOOL:
-      case GL_INT:
-      {
-         const int valueI = uniformInt[uniformName];
-         glUniform1i(currentUniform.location, valueI);
-      }
-      break;
-      case GL_FLOAT_VEC2:
-      {
-         auto valueFP = uniformFloatP[uniformName].data;
-         if (valueFP)
-            glUniform2f(currentUniform.location, valueFP[0], valueFP[1]);
-         else
-            glUniform2f(currentUniform.location, 0.0f, 0.0f);
-      }
-      break;
-      case GL_FLOAT_VEC3:
-      {
-         auto valueFP = uniformFloatP[uniformName].data;
-         if (valueFP)
-            glUniform3f(currentUniform.location, valueFP[0], valueFP[1], valueFP[2]);
-         else
-            glUniform3f(currentUniform.location, 0.0f, 0.0f, 0.0f);
-      }
-      break;
-      case GL_FLOAT_VEC4:
-      {
-         auto valueFP = uniformFloatP[uniformName].data;
-         if (valueFP)
-         {
-             if (uniformFloatP[uniformName].len > 4)
-                 glUniform4fv(currentUniform.location, uniformFloatP[uniformName].len / 4, uniformFloatP[uniformName].data);
-             else
-                 glUniform4f(currentUniform.location, valueFP[0], valueFP[1], valueFP[2], valueFP[3]);
-         }
-         else 
-            glUniform4f(currentUniform.location, 0.0f, 0.0f, 0.0f, 0.0f);
-      }
-      break;
-      case GL_FLOAT_MAT2:
-      {
-         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         glUniformMatrix2fv(currentUniform.location, 1, GL_FALSE, valueFP);
-      }
-      break;
-      case GL_FLOAT_MAT3:
-      {
-         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         glUniformMatrix3fv(currentUniform.location, 1, GL_FALSE, valueFP);
-      }
-      break;
-      case GL_FLOAT_MAT4:
-      {
-         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         glUniformMatrix4fv(currentUniform.location, 1, GL_FALSE, valueFP);
-      }
-      break;
-      case GL_FLOAT_MAT4x3:
-      {
-         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         glUniformMatrix4x3fv(currentUniform.location, 1, GL_FALSE, valueFP);
-      }
-      break;
-      case GL_FLOAT_MAT4x2:
-      {
-         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         glUniformMatrix4x2fv(currentUniform.location, 1, GL_FALSE, valueFP);
-      }
-      break;
-      case GL_FLOAT_MAT3x4:
-      {
-         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         glUniformMatrix3x4fv(currentUniform.location, 1, GL_FALSE, valueFP);
-      }
-      break;
-      case GL_FLOAT_MAT2x4:
-      {
-         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         glUniformMatrix2x4fv(currentUniform.location, 1, GL_FALSE, valueFP);
-      }
-      break;
-      case GL_FLOAT_MAT3x2:
-      {
-         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         glUniformMatrix3x2fv(currentUniform.location, 1, GL_FALSE, valueFP);
-      }
-      break;
-      case GL_FLOAT_MAT2x3:
-      {
-         const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-         glUniformMatrix2x3fv(currentUniform.location, 1, GL_FALSE, valueFP);
-      }
-      break;
-      case GL_SAMPLER_2D_MULTISAMPLE:
-      {
-         int TextureID;
-         if (uniformTex[uniformName]>0) {
-            TextureID = uniformTex[uniformName];
-         }
-         else {
-            if (!noTextureMSAA) {
-               constexpr unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
-               GLuint glTexture;
-               glGenTextures(1, &glTexture);
-               glBindTexture(GL_TEXTURE_2D, glTexture);
-               glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, g_pplayer->m_MSAASamples, GL_RGBA, 2, 2, GL_TRUE);
-               noTexture = new Sampler(m_renderDevice, glTexture, true, false, false);
-            }
-            TextureID = noTextureMSAA->GetCoreTexture();
-         }
-         glActiveTexture(GL_TEXTURE0 + nextTextureSlot);
-         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, TextureID);
-         glUniform1i(currentUniform.location, nextTextureSlot);
-
-         nextTextureSlot = (nextTextureSlot+1) % maxSlots;
-      }
-      break;
-      case GL_SAMPLER_2D:
-      {
-         int TextureID;
-         if (uniformTex[uniformName]>0)
-            TextureID = uniformTex[uniformName];
-         else {
-            if (!noTexture) {
-               constexpr unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
-               GLuint glTexture;
-               glGenTextures(1, &glTexture);
-               glBindTexture(GL_TEXTURE_2D, glTexture);
-               glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-               noTexture = new Sampler(m_renderDevice, glTexture, true, false, false);
-            }
-            TextureID = noTexture->GetCoreTexture();
-         }
-//Texture Cache
-/*         auto slot = slotTextureList.find(TextureID);
-         if ((slot == slotTextureList.end()) || (textureSlotList[slot->second] != TextureID)) {
-            glActiveTexture(GL_TEXTURE0 + nextTextureSlot);
-            glBindTexture(GL_TEXTURE_2D, TextureID);//TODO implement a cache for textures
-            glUniform1i(currentUniform.location, nextTextureSlot);
-            slotTextureList[TextureID] = nextTextureSlot;
-            textureSlotList[nextTextureSlot] = TextureID;
-            nextTextureSlot = (++nextTextureSlot) % maxSlots;
-         }
-         else {
-            glActiveTexture(GL_TEXTURE0 + slot->second);
-            glBindTexture(GL_TEXTURE_2D, TextureID);//TODO implement a cache for textures
-            glUniform1i(currentUniform.location, slot->second);
-         }
-         */
-         glActiveTexture(GL_TEXTURE0 + nextTextureSlot);
-         glBindTexture(GL_TEXTURE_2D, TextureID);//TODO implement a cache for textures
-         glUniform1i(currentUniform.location, nextTextureSlot);
-         nextTextureSlot = (nextTextureSlot+1) % maxSlots;
-      }
-      break;
-      default:
-         sprintf_s(msg, sizeof(msg), "Unknown uniform type 0x%0002X for %s in %s", currentUniform.type, 
-            shaderUniformNames[uniformName].name.c_str(), m_technique->name.c_str());
-         ShowError(msg);
-         break;
-      }
-   }
+      ApplyUniform((ShaderUniforms) uniformName);
 }
 
 void Shader::End()
 {
    //Nothing to do for GL
-}
-
-void Shader::SetTexture(const ShaderUniforms texelName, Texture* texel, const TextureFilter filter, const bool clampU, const bool clampV, const bool force_linear_rgb)
-{
-   if (!texel || !texel->m_pdsBuffer)
-      SetTextureNull(texelName);
-   else
-      SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel->m_pdsBuffer, filter, clampU, clampV, force_linear_rgb));
-}
-
-void Shader::SetTexture(const ShaderUniforms texelName, Sampler* texel)
-{
-   if (!texel || (uniformTex[texelName] == texel->GetCoreTexture()))
-      return;
-
-   uniformTex[texelName] = texel->GetCoreTexture();
-
-   if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-   {
-      const auto location = m_technique->uniformLocation[texelName];
-      if (location.location == -1)
-         return;
-      glActiveTexture(GL_TEXTURE0 + nextTextureSlot);
-      if (texel->IsMSAA())
-         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texel->GetCoreTexture());
-      else
-         glBindTexture(GL_TEXTURE_2D, texel->GetCoreTexture());
-      glUniform1i(location.location, nextTextureSlot);
-      nextTextureSlot = (nextTextureSlot + 1) % maxSlots; //TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
-   }
-}
-
-void Shader::SetTextureNull(const ShaderUniforms texelName)
-{
-   //Using an unset texture leads to undefined behavior, so keeping the texture is absolutely fine.
-    SetTexture(texelName, m_nullTexture, TextureFilter::TEXTURE_MODE_NONE, false, false, false);
 }
 
 void Shader::SetTechnique(ShaderTechniques _technique)
@@ -850,10 +619,33 @@ void Shader::SetTechnique(ShaderTechniques _technique)
    }
 }
 
+void Shader::SetTextureNull(const ShaderUniforms texelName)
+{
+   //Using an unset texture leads to undefined behavior, so keeping the texture is absolutely fine.
+   SetTexture(texelName, m_nullTexture, TextureFilter::TEXTURE_MODE_NONE, false, false, false);
+}
+
 void Shader::SetTechniqueMetal(ShaderTechniques _technique, const bool isMetal)
 {
    SetTechnique(_technique);
    SetBool(SHADER_is_metal, isMetal);
+}
+
+void Shader::SetTexture(const ShaderUniforms texelName, Texture* texel, const TextureFilter filter, const bool clampU, const bool clampV, const bool force_linear_rgb)
+{
+   if (!texel || !texel->m_pdsBuffer)
+      SetTextureNull(texelName);
+   else
+      SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel->m_pdsBuffer, filter, clampU, clampV, force_linear_rgb));
+}
+
+void Shader::SetTexture(const ShaderUniforms texelName, Sampler* texel)
+{
+   if (!texel || (uniformTex[texelName] == texel))
+      return;
+   uniformTex[texelName] = texel;
+   if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
+      ApplyUniform(texelName);
 }
 
 void Shader::SetUniformBlock(const ShaderUniforms hParameter, const float* pMatrix, const size_t size)
@@ -871,14 +663,7 @@ void Shader::SetUniformBlock(const ShaderUniforms hParameter, const float* pMatr
    memcpy(elem.data, pMatrix, size * sizeof(float));
    uniformFloatP[hParameter] = elem;
    if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-   {
-      const auto location = m_technique->uniformLocation[hParameter];
-      if (location.location == -1) return;
-      glBindBuffer(GL_UNIFORM_BUFFER, location.blockBuffer);
-      glBufferData(GL_UNIFORM_BUFFER, sizeof(GLfloat) * size, elem.data, GL_STREAM_DRAW);
-      glUniformBlockBinding(m_technique->program, location.location, 0);
-      glBindBufferRange(GL_UNIFORM_BUFFER, 0, location.blockBuffer, 0, sizeof(GLfloat) * size);
-   }
+      ApplyUniform(hParameter);
 }
 
 void Shader::SetMatrix(const ShaderUniforms hParameter, const Matrix3D* pMatrix)
@@ -896,39 +681,7 @@ void Shader::SetMatrix(const ShaderUniforms hParameter, const Matrix3D* pMatrix)
    memcpy(elem.data, pMatrix->m16, 16 * sizeof(float));
    uniformFloatP[hParameter] = elem;
    if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-   {
-      const auto location = m_technique->uniformLocation[hParameter];
-      if (location.location == -1) return;
-      switch (location.type) {
-      case GL_FLOAT_MAT2:
-         glUniformMatrix2fv(location.location, 1, GL_FALSE, elem.data);
-         break;
-      case GL_FLOAT_MAT3:
-         glUniformMatrix3fv(location.location, 1, GL_FALSE, elem.data);
-         break;
-      case GL_FLOAT_MAT4:
-         glUniformMatrix4fv(location.location, 1, GL_FALSE, elem.data);
-         break;
-      case GL_FLOAT_MAT4x3:
-         glUniformMatrix4x3fv(location.location, 1, GL_FALSE, elem.data);
-         break;
-      case GL_FLOAT_MAT4x2:
-         glUniformMatrix4x2fv(location.location, 1, GL_FALSE, elem.data);
-         break;
-      case GL_FLOAT_MAT3x4:
-         glUniformMatrix3x4fv(location.location, 1, GL_FALSE, elem.data);
-         break;
-      case GL_FLOAT_MAT2x4:
-         glUniformMatrix2x4fv(location.location, 1, GL_FALSE, elem.data);
-         break;
-      case GL_FLOAT_MAT3x2:
-         glUniformMatrix3x2fv(location.location, 1, GL_FALSE, elem.data);
-         break;
-      case GL_FLOAT_MAT2x3:
-         glUniformMatrix2x3fv(location.location, 1, GL_FALSE, elem.data);
-         break;
-      }
-   }
+      ApplyUniform(hParameter);
 }
 
 void Shader::SetVector(const ShaderUniforms hParameter, const vec4* pVector)
@@ -948,21 +701,7 @@ void Shader::SetVector(const ShaderUniforms hParameter, const vec4* pVector)
    memcpy(elem.data, pVector, 4 * sizeof(float));
    uniformFloatP[hParameter] = elem;
    if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-   {
-      const auto location = m_technique->uniformLocation[hParameter];
-      if (location.location == -1) return;
-      switch (location.type) {
-      case GL_FLOAT_VEC2:
-         glUniform2fv(location.location, 1, elem.data);
-         break;
-      case GL_FLOAT_VEC3:
-         glUniform3fv(location.location, 1, elem.data);
-         break;
-      case GL_FLOAT_VEC4:
-         glUniform4fv(location.location, 1, elem.data);
-         break;
-      }
-   }
+      ApplyUniform(hParameter);
 }
 
 void Shader::SetVector(const ShaderUniforms hParameter, const float x, const float y, const float z, const float w)
@@ -985,21 +724,7 @@ void Shader::SetVector(const ShaderUniforms hParameter, const float x, const flo
    elem.data[3] = w;
    uniformFloatP[hParameter] = elem;
    if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-   {
-      const auto location = m_technique->uniformLocation[hParameter];
-      if (location.location == -1) return;
-      switch (location.type) {
-      case GL_FLOAT_VEC2:
-         glUniform2fv(location.location, 1, elem.data);
-         break;
-      case GL_FLOAT_VEC3:
-         glUniform3fv(location.location, 1, elem.data);
-         break;
-      case GL_FLOAT_VEC4:
-         glUniform4fv(location.location, 1, elem.data);
-         break;
-      }
-   }
+      ApplyUniform(hParameter);
 }
 
 void Shader::SetFloat(const ShaderUniforms hParameter, const float f)
@@ -1008,11 +733,7 @@ void Shader::SetFloat(const ShaderUniforms hParameter, const float f)
    if (uniformFloat[hParameter] == f) return;
    uniformFloat[hParameter] = f;
    if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-   {
-      const auto location = m_technique->uniformLocation[hParameter];
-      if (location.location == -1) return;
-      glUniform1f(location.location, f);
-   }
+      ApplyUniform(hParameter);
 }
 
 void Shader::SetInt(const ShaderUniforms hParameter, const int i)
@@ -1021,11 +742,7 @@ void Shader::SetInt(const ShaderUniforms hParameter, const int i)
    if (uniformInt[hParameter] == i) return;
    uniformInt[hParameter] = i;
    if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-   {
-      const auto location = m_technique->uniformLocation[hParameter];
-      if (location.location == -1) return;
-      glUniform1i(location.location, i);
-   }
+      ApplyUniform(hParameter);
 }
 
 void Shader::SetBool(const ShaderUniforms hParameter, const bool b)
@@ -1035,11 +752,7 @@ void Shader::SetBool(const ShaderUniforms hParameter, const bool b)
    if (uniformInt[hParameter] == i) return;
    uniformInt[hParameter] = i;
    if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-   {
-      const auto location = m_technique->uniformLocation[hParameter];
-      if (location.location == -1) return;
-      glUniform1i(location.location, i);
-   }
+      ApplyUniform(hParameter);
 }
 
 void Shader::SetFloatArray(const ShaderUniforms hParameter, const float* pData, const unsigned int count)
@@ -1066,11 +779,7 @@ void Shader::SetFloatArray(const ShaderUniforms hParameter, const float* pData, 
    memcpy(elem.data, pData, count * sizeof(float));
    uniformFloatP[hParameter] = elem;
    if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-   {
-      const auto location = m_technique->uniformLocation[hParameter];
-      if (location.location == -1) return;
-      glUniform4fv(location.location, count, elem.data);
-   }
+      ApplyUniform(hParameter);
 }
 
 void Shader::GetTransform(const TransformStateType p1, Matrix3D* p2, const int count)
@@ -1101,6 +810,204 @@ void Shader::SetTransform(const TransformStateType p1, const Matrix3D * p2, cons
    case TRANSFORMSTATE_PROJECTION:
       for(int i = 0; i < count; ++i)
          Shader::mProj[i] = p2[i];
+      break;
+   }
+}
+
+void Shader::ApplyUniform(const ShaderUniforms uniformName)
+{
+   // FIXME cache bounded uniforms and only apply the one that have changed
+   // FIXME cache sampler states and only apply the ones that actually need it
+   const uniformLoc currentUniform = m_technique->uniformLocation[uniformName];
+   if (currentUniform.location < 0 || currentUniform.type == 0 || currentUniform.size == 0)
+      return;
+   switch (currentUniform.type)
+   {
+   case ~0u:
+   { //Uniform blocks
+      const auto valueFP = uniformFloatP[uniformName];
+      glBindBuffer(GL_UNIFORM_BUFFER, currentUniform.blockBuffer);
+      glBufferData(GL_UNIFORM_BUFFER, currentUniform.size, valueFP.data, GL_STREAM_DRAW);
+      glUniformBlockBinding(m_currentShaderProgram, currentUniform.location, 0);
+      glBindBufferRange(GL_UNIFORM_BUFFER, 0, currentUniform.blockBuffer, 0, currentUniform.size);
+   }
+   break;
+   case GL_FLOAT:
+   {
+      const float valueF = uniformFloat[uniformName];
+      glUniform1f(currentUniform.location, valueF);
+   }
+   break;
+   case GL_BOOL:
+   case GL_INT:
+   {
+      const int valueI = uniformInt[uniformName];
+      glUniform1i(currentUniform.location, valueI);
+   }
+   break;
+   case GL_FLOAT_VEC2:
+   {
+      auto valueFP = uniformFloatP[uniformName].data;
+      if (valueFP)
+         glUniform2f(currentUniform.location, valueFP[0], valueFP[1]);
+      else
+         glUniform2f(currentUniform.location, 0.0f, 0.0f);
+   }
+   break;
+   case GL_FLOAT_VEC3:
+   {
+      auto valueFP = uniformFloatP[uniformName].data;
+      if (valueFP)
+         glUniform3f(currentUniform.location, valueFP[0], valueFP[1], valueFP[2]);
+      else
+         glUniform3f(currentUniform.location, 0.0f, 0.0f, 0.0f);
+   }
+   break;
+   case GL_FLOAT_VEC4:
+   {
+      auto valueFP = uniformFloatP[uniformName].data;
+      if (valueFP)
+      {
+         if (uniformFloatP[uniformName].len > 4)
+            glUniform4fv(currentUniform.location, uniformFloatP[uniformName].len / 4, uniformFloatP[uniformName].data);
+         else
+            glUniform4f(currentUniform.location, valueFP[0], valueFP[1], valueFP[2], valueFP[3]);
+      }
+      else
+         glUniform4f(currentUniform.location, 0.0f, 0.0f, 0.0f, 0.0f);
+   }
+   break;
+   case GL_FLOAT_MAT2:
+   {
+      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+      glUniformMatrix2fv(currentUniform.location, 1, GL_FALSE, valueFP);
+   }
+   break;
+   case GL_FLOAT_MAT3:
+   {
+      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+      glUniformMatrix3fv(currentUniform.location, 1, GL_FALSE, valueFP);
+   }
+   break;
+   case GL_FLOAT_MAT4:
+   {
+      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+      glUniformMatrix4fv(currentUniform.location, 1, GL_FALSE, valueFP);
+   }
+   break;
+   case GL_FLOAT_MAT4x3:
+   {
+      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+      glUniformMatrix4x3fv(currentUniform.location, 1, GL_FALSE, valueFP);
+   }
+   break;
+   case GL_FLOAT_MAT4x2:
+   {
+      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+      glUniformMatrix4x2fv(currentUniform.location, 1, GL_FALSE, valueFP);
+   }
+   break;
+   case GL_FLOAT_MAT3x4:
+   {
+      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+      glUniformMatrix3x4fv(currentUniform.location, 1, GL_FALSE, valueFP);
+   }
+   break;
+   case GL_FLOAT_MAT2x4:
+   {
+      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+      glUniformMatrix2x4fv(currentUniform.location, 1, GL_FALSE, valueFP);
+   }
+   break;
+   case GL_FLOAT_MAT3x2:
+   {
+      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+      glUniformMatrix3x2fv(currentUniform.location, 1, GL_FALSE, valueFP);
+   }
+   break;
+   case GL_FLOAT_MAT2x3:
+   {
+      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
+      glUniformMatrix2x3fv(currentUniform.location, 1, GL_FALSE, valueFP);
+   }
+   break;
+   case GL_SAMPLER_2D:
+   case GL_SAMPLER_2D_MULTISAMPLE:
+   {
+      Sampler* texel = uniformTex[uniformName];
+      if (texel == nullptr)
+      {
+         if (currentUniform.type == GL_SAMPLER_2D_MULTISAMPLE)
+         {
+            if (!noTextureMSAA)
+            {
+               constexpr unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
+               GLuint glTexture;
+               glGenTextures(1, &glTexture);
+               glBindTexture(GL_TEXTURE_2D, glTexture);
+               glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, g_pplayer->m_MSAASamples, GL_RGBA, 2, 2, GL_TRUE);
+               noTextureMSAA = new Sampler(m_renderDevice, glTexture, true, false, false);
+            }
+         }
+         else
+         {
+            if (!noTexture)
+            {
+               constexpr unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
+               GLuint glTexture;
+               glGenTextures(1, &glTexture);
+               glBindTexture(GL_TEXTURE_2D, glTexture);
+               glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+               noTexture = new Sampler(m_renderDevice, glTexture, true, false, false);
+            }
+            texel = noTexture;
+         }
+      }
+      int tex_unit = shaderUniformNames[uniformName].tex_unit;
+      if (tex_unit == -1)
+      {
+         // Texture units are preaffected to avoid collision (copied from DX9 implementation) but somes are not.
+         //TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
+         tex_unit = m_nextTextureSlot;
+         m_nextTextureSlot = m_nextTextureSlot + 1;
+      }
+      glActiveTexture(GL_TEXTURE0 + tex_unit);
+      glBindTexture(texel->IsMSAA() ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, texel->GetCoreTexture());
+      glUniform1i(currentUniform.location, tex_unit);
+      // FIXME initial implementation, entirely unoptimized (we could cache samplers, reuse the ones already bound, avoid setting sampler states,...)
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texel->GetClampU());
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texel->GetClampV());
+      switch (texel->GetFilter())
+      {
+      case SF_NONE: // No mipmapping
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+         break;
+      case SF_POINT: // Point sampled (aka nearest mipmap) texture filtering.
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+         break;
+      case SF_BILINEAR: // Bilinar texture filtering.
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         break;
+      case SF_TRILINEAR: // Trilinar texture filtering.
+         // FIXME cleanup sampler filtering
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         break;
+      case SF_ANISOTROPIC: // Anisotropic texture filtering.
+         // FIXME cleanup sampler filtering
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         break;
+      }
+   }
+   break;
+   default:
+      char msg[256];
+      sprintf_s(msg, sizeof(msg), "Unknown uniform type 0x%0002X for %s in %s", currentUniform.type, shaderUniformNames[uniformName].name.c_str(), m_technique->name.c_str());
+      ShowError(msg);
       break;
    }
 }

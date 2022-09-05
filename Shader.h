@@ -236,7 +236,6 @@ private:
 
 #ifdef ENABLE_SDL
    string m_shaderCodeName;
-   Texture* m_nullTexture;
    struct attributeLoc
    {
       GLenum type;
@@ -273,10 +272,12 @@ private:
    string analyzeFunction(const char* shaderCodeName, const string& technique, const string& functionName, const robin_hood::unordered_map<string, string>& values);
    ShaderTechnique* compileGLShader(const string& fileNameRoot, string& shaderCodeName, const string& vertex, const string& geometry, const string& fragment);
 
+   void ApplyUniform(const ShaderUniforms uniformName);
+   
    float uniformFloat[SHADER_UNIFORM_COUNT];
    floatP uniformFloatP[SHADER_UNIFORM_COUNT];
    int uniformInt[SHADER_UNIFORM_COUNT];
-   int uniformTex[SHADER_UNIFORM_COUNT];
+   Sampler* uniformTex[SHADER_UNIFORM_COUNT];
    
    struct ShaderUniform
    {
@@ -294,12 +295,11 @@ private:
    shaderAttributes getAttributeByName(const string& name);
 
    static Matrix3D mWorld, mView, mProj[2];
+   Texture* m_nullTexture;
    static Sampler* noTexture;
    static Sampler* noTextureMSAA;
    static const float* zeroData;
-   static int nextTextureSlot;
-   static int* textureSlotList;
-   static int maxSlots;
+   int m_nextTextureSlot;
 
 public:
    void setAttributeFormat(const DWORD fvf);
