@@ -2,7 +2,7 @@
 #include "Sampler.h"
 #include "RenderDevice.h"
 
-Sampler::Sampler(RenderDevice* rd, BaseTexture* const surf, const bool force_linear_rgb)
+Sampler::Sampler(RenderDevice* rd, BaseTexture* const surf, const bool force_linear_rgb, const SamplerAddressMode clampu, const SamplerAddressMode clampv, const SamplerFilter filter)
 {
    m_rd = rd;
    m_dirty = false;
@@ -10,6 +10,9 @@ Sampler::Sampler(RenderDevice* rd, BaseTexture* const surf, const bool force_lin
    m_ownTexture = true;
    m_width = surf->width();
    m_height = surf->height();
+   m_clampu = clampu;
+   m_clampv = clampv;
+   m_filter = filter;
 #ifdef ENABLE_SDL
    colorFormat format;
    if (surf->m_format == BaseTexture::SRGBA)
@@ -61,12 +64,15 @@ Sampler::Sampler(RenderDevice* rd, BaseTexture* const surf, const bool force_lin
 }
 
 #ifdef ENABLE_SDL
-Sampler::Sampler(RenderDevice* rd, GLuint glTexture, bool ownTexture, bool isMSAA, bool force_linear_rgb)
+Sampler::Sampler(RenderDevice* rd, GLuint glTexture, bool ownTexture, bool isMSAA, bool force_linear_rgb, const SamplerAddressMode clampu, const SamplerAddressMode clampv, const SamplerFilter filter)
 {
    m_rd = rd;
    m_dirty = false;
    m_isMSAA = isMSAA;
    m_ownTexture = ownTexture;
+   m_clampu = clampu;
+   m_clampv = clampv;
+   m_filter = filter;
    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &m_width);
    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &m_height);
    int internal_format;
@@ -75,12 +81,15 @@ Sampler::Sampler(RenderDevice* rd, GLuint glTexture, bool ownTexture, bool isMSA
    m_texture = glTexture;
 }
 #else
-Sampler::Sampler(RenderDevice* rd, IDirect3DTexture9* dx9Texture, bool ownTexture, bool force_linear_rgb)
+Sampler::Sampler(RenderDevice* rd, IDirect3DTexture9* dx9Texture, bool ownTexture, bool force_linear_rgb, const SamplerAddressMode clampu, const SamplerAddressMode clampv, const SamplerFilter filter)
 {
    m_rd = rd;
    m_dirty = false;
    m_isMSAA = false;
    m_ownTexture = ownTexture;
+   m_clampu = clampu;
+   m_clampv = clampv;
+   m_filter = filter;
    D3DSURFACE_DESC desc;
    dx9Texture->GetLevelDesc(0, &desc);
    m_width = desc.Width;
