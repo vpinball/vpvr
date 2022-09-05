@@ -580,7 +580,7 @@ void Shader::setAttributeFormat(DWORD fvf)
    }
 }
 
-void Shader::Begin(const unsigned int pass)
+void Shader::Begin()
 {
    m_currentShader = this;
    if (m_technique == nullptr)

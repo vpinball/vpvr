@@ -262,7 +262,7 @@ void BackGlass::Render()
       -1.0f, -1.0f, 0.0f, 0.0f, 1.0f
    };
 
-   m_pd3dDevice->DMDShader->Begin(0);
+   m_pd3dDevice->DMDShader->Begin();
    m_pd3dDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)Verts);
    m_pd3dDevice->DMDShader->End();
 
@@ -333,7 +333,7 @@ void BackGlass::DMDdraw(float DMDposx, float DMDposy, float DMDwidth, float DMDh
          DMDVerts[i * 5 + 1] = 1.0f - (DMDVerts[i * 5 + 1] * DMDheight + DMDposy)*2.0f;
       }
 
-      m_pd3dDevice->DMDShader->Begin(0);
+      m_pd3dDevice->DMDShader->Begin();
       m_pd3dDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)DMDVerts);
       m_pd3dDevice->DMDShader->End();
 
