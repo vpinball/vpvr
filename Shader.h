@@ -174,7 +174,7 @@ public:
 #endif
    void Unload();
 
-   void Begin(const unsigned int pass);
+   void Begin();
    void End();
 
    void SetTexture(const ShaderUniforms texelName, Texture* texel, const TextureFilter filter, const bool clampU, const bool clampV, const bool force_linear_rgb);
