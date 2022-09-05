@@ -219,77 +219,77 @@ in vec4 worldPos_t0y;
 void main()
 {
 #if !enable_VR
-    const float3 v = normalize(/*camera=0,0,0,1*/-worldPos_t0y.xyz);
+   const float3 v = normalize(/*camera=0,0,0,1*/-worldPos_t0y.xyz);
 #else
-    const float3 v = normalize(worldPos_t0y.xyz);
+   const float3 v = normalize(worldPos_t0y.xyz);
 #endif
-    const float3 r = reflect(v, normalize(normal_t0x.xyz));
-    // calculate the intermediate value for the final texture coords. found here http://www.ozone3d.net/tutorials/glsl_texturing_p04.php
-    const float  m = (r.z + 1.0 > 0.) ? 0.3535533905932737622 * rsqrt(r.z + 1.0) : 0.; // 0.353...=0.5/sqrt(2)
-    const float edge = dot(v, r);
-    const float lod = (edge > 0.6) ? // edge falloff to reduce aliasing on edges (picks smaller mipmap -> more blur)
-		edge*(6.0*1.0/0.4)-(6.0*0.6/0.4) :
-		0.0;
+   const float3 r = reflect(v, normalize(normal_t0x.xyz));
+   // calculate the intermediate value for the final texture coords. found here http://www.ozone3d.net/tutorials/glsl_texturing_p04.php
+   const float  m = (r.z + 1.0 > 0.) ? 0.3535533905932737622 * rsqrt(r.z + 1.0) : 0.; // 0.353...=0.5/sqrt(2)
+   const float edge = dot(v, r);
+   const float lod = (edge > 0.6) ? // edge falloff to reduce aliasing on edges (picks smaller mipmap -> more blur)
+      edge*(6.0*1.0/0.4)-(6.0*0.6/0.4) :
+      0.0;
 
 #if !enable_VR
-    const float2 uv0 = %PARAM0% ? float2(r.y*-m + 0.5, r.x*-m + 0.5) : float2(r.x*-m + 0.5, r.y*m + 0.5);
+   const float2 uv0 = %PARAM0% ? float2(r.y*-m + 0.5, r.x*-m + 0.5) : float2(r.x*-m + 0.5, r.y*m + 0.5);
 #else
-    const float2 uv0 = %PARAM0% ? float2(r.y*m + 0.5, r.x*m + 0.5) : float2(r.x*m + 0.5, r.y*-m + 0.5);
+   const float2 uv0 = %PARAM0% ? float2(r.y*m + 0.5, r.x*m + 0.5) : float2(r.x*m + 0.5, r.y*-m + 0.5);
 #endif
-	float3 ballImageColor = texture(Texture0, uv0).rgb;
+   float3 ballImageColor = texture(Texture0, uv0).rgb;
 
-	const float4 decalColorT = texture(Texture3, vec2(normal_t0x.w, worldPos_t0y.w));
-	float3 decalColor = decalColorT.xyz;
+   const float4 decalColorT = texture(Texture3, vec2(normal_t0x.w, worldPos_t0y.w));
+   float3 decalColor = decalColorT.xyz;
 
-	if (!%PARAM1%) // decalMode
-	{
-	   // decal texture is an alpha scratch texture and must be added to the ball texture
-	   // the strength of the scratches totally rely on the alpha values.
-	   decalColor *= decalColorT.a;
-	   ballImageColor += decalColor;
-	}
-	else
-       ballImageColor = ScreenHDR(ballImageColor, decalColor);
+   if (!%PARAM1%) // decalMode
+   {
+      // decal texture is an alpha scratch texture and must be added to the ball texture
+      // the strength of the scratches totally rely on the alpha values.
+      decalColor *= decalColorT.a;
+      ballImageColor += decalColor;
+   }
+   else
+      ballImageColor = ScreenHDR(ballImageColor, decalColor);
 
-    if (disableLighting)
-    {
-       color = float4(ballImageColor,cBase_Alpha.a);
-       return;
-    }
+   if (disableLighting)
+   {
+      color = float4(ballImageColor,cBase_Alpha.a);
+      return;
+   }
 
-    if (!%PARAM1%) // decalMode
-       ballImageColor *= fenvEmissionScale_TexWidth.x;
-    else
-       ballImageColor *= 0.5*fenvEmissionScale_TexWidth.x; //!! 0.5=magic
+   if (!%PARAM1%) // decalMode
+      ballImageColor *= fenvEmissionScale_TexWidth.x;
+   else
+      ballImageColor *= 0.5*fenvEmissionScale_TexWidth.x; //!! 0.5=magic
 
    const float3 playfield_normal = normalize((matWorldViewInverseTranspose * vec4(0.,0.,1.,0.)).xyz); //!! normalize necessary? // actually: mul(float4(0.,0.,1.,0.), matWorldViewInverseTranspose), but optimized to save one matrix
 
 #if !enable_VR
-    const float NdotR = dot(playfield_normal,r);
+   const float NdotR = dot(playfield_normal,r);
 #else
-    const float NdotR = -dot(playfield_normal,r);
+   const float NdotR = -dot(playfield_normal,r);
 #endif
 
-    float3 playfieldColor;
-    if(/*(reflection_ball_playfield > 0.0) &&*/ (NdotR > 0.0))
-    {
-       const float3 playfield_p0 = (matWorldView * vec4(/*playfield_pos=*/0.,0.,invTableRes_playfield_height_reflection.z, 1.0)).xyz;
-       const float t = dot(playfield_normal, worldPos_t0y.xyz - playfield_p0) / NdotR;
+   float3 playfieldColor;
+   if(/*(reflection_ball_playfield > 0.0) &&*/ (NdotR > 0.0))
+   {
+      const float3 playfield_p0 = (matWorldView * vec4(/*playfield_pos=*/0.,0.,invTableRes_playfield_height_reflection.z, 1.0)).xyz;
+      const float t = dot(playfield_normal, worldPos_t0y.xyz - playfield_p0) / NdotR;
 #if !enable_VR
-       const float3 playfield_hit = worldPos_t0y.xyz - t*r;
+      const float3 playfield_hit = worldPos_t0y.xyz - t*r;
 #else
-       const float3 playfield_hit = worldPos_t0y.xyz + t*r;
+      const float3 playfield_hit = worldPos_t0y.xyz + t*r;
 #endif
 
       const float2 uv = (inverse(matWorldView) * vec4(playfield_hit, 1.0)).xy * invTableRes_playfield_height_reflection.xy;
       playfieldColor = (t < 0.) ? vec3(0., 0., 0.) // happens for example when inside kicker
-                              : texture(Texture1, uv).xyz*invTableRes_playfield_height_reflection.w; //!! rather use screen space sample from previous frame??
+                                : texture(Texture1, uv).xyz*invTableRes_playfield_height_reflection.w; //!! rather use screen space sample from previous frame??
 
       //!! hack to get some lighting on reflection sample, but only diffuse, the rest is not setup correctly anyhow
-       playfieldColor = PFlightLoop(playfield_hit, playfield_normal, playfieldColor);
-	   // previous VPVR only shading to be removed after tests
-	   // vec3 lightLoop_normal = (matWorldView * vec4(0.,0.,1.,0.)).xyz;
-	   //playfieldColor = PFlightLoop(playfield_hit, lightLoop_normal, playfieldColor);
+      playfieldColor = PFlightLoop(playfield_hit, playfield_normal, playfieldColor);
+      // previous VPVR only shading to be removed after tests
+      // vec3 lightLoop_normal = (matWorldView * vec4(0.,0.,1.,0.)).xyz;
+      //playfieldColor = PFlightLoop(playfield_hit, lightLoop_normal, playfieldColor);
 
       //!! magic falloff & weight the rest in from the ballImage
       float weight = NdotR*NdotR;
@@ -302,13 +302,13 @@ void main()
 
    if(!%PARAM1%) // decalMode
       diffuse *= decalColor; // scratches make the material more rough
-      
+
    vec3 glossy = max(diffuse*2.0, vec3(0.1,0.1,0.1)); //!! meh
    vec3 specular = playfieldColor*cBase_Alpha.xyz; //!! meh, too, as only added in ballLightLoop anyhow
 
    if(!%PARAM1%)
       specular *= vec3(1.,1.,1.)-decalColor; // see above
-        
+
    color.xyz = ballLightLoop(worldPos_t0y.xyz, normal_t0x.xyz, -worldPos_t0y.xyz, diffuse, glossy, specular, 1.0, false);
    color.a = clamp(cBase_Alpha.a, 0.0, 1.0);
 }
