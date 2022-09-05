@@ -81,7 +81,7 @@ void Shader::End()
    CHECKD3D(m_shader->End());
 }
 
-void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, const bool clampU, const bool clampV, const bool force_linear_rgb)
+void Shader::SetTexture(const ShaderUniforms texelName, Texture *texel, const bool clampU, const bool clampV, const bool force_linear_rgb)
 {
    const unsigned int idx = texelName[strlen(texelName) - 1] - '0'; // current convention: SetTexture gets "TextureX", where X 0..4
    const bool cache = idx < TEXTURESET_STATE_CACHE_SIZE;
@@ -107,7 +107,7 @@ void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, Texture *texel, c
    }
 }
 
-void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel)
+void Shader::SetTexture(const ShaderUniforms texelName, D3DTexture *texel)
 {
    const unsigned int idx = texelName[strlen(texelName) - 1] - '0'; // current convention: SetTexture gets "TextureX", where X 0..4
    if (idx < TEXTURESET_STATE_CACHE_SIZE)
@@ -118,7 +118,7 @@ void Shader::SetTexture(const SHADER_UNIFORM_HANDLE texelName, D3DTexture *texel
    m_renderDevice->m_curTextureChanges++;
 }
 
-void Shader::SetTextureNull(const SHADER_UNIFORM_HANDLE texelName)
+void Shader::SetTextureNull(const ShaderUniforms texelName)
 {
    const unsigned int idx = texelName[strlen(texelName) - 1] - '0'; // current convention: SetTexture gets "TextureX", where X 0..4
    const bool cache = idx < TEXTURESET_STATE_CACHE_SIZE;
@@ -131,7 +131,7 @@ void Shader::SetTextureNull(const SHADER_UNIFORM_HANDLE texelName)
    m_renderDevice->m_curTextureChanges++;
 }
 
-void Shader::SetTechnique(const SHADER_TECHNIQUE_HANDLE _technique)
+void Shader::SetTechnique(const ShaderTechniques _technique)
 {
    if (strcmp(currentTechnique, _technique) /*|| (m_renderDevice->m_curShader != this)*/)
    {
@@ -142,43 +142,43 @@ void Shader::SetTechnique(const SHADER_TECHNIQUE_HANDLE _technique)
    }
 }
 
-void Shader::SetMatrix(const SHADER_UNIFORM_HANDLE hParameter, const Matrix3D* pMatrix)
+void Shader::SetMatrix(const ShaderUniforms hParameter, const Matrix3D* pMatrix)
 {
    /*CHECKD3D(*/m_shader->SetMatrix(hParameter, (const D3DXMATRIX*)pMatrix)/*)*/; // leads to invalid calls when setting some of the matrices (as hlsl compiler optimizes some down to less than 4x4)
    m_renderDevice->m_curParameterChanges++;
 }
 
-void Shader::SetVector(const SHADER_UNIFORM_HANDLE hParameter, const vec4* pVector)
+void Shader::SetVector(const ShaderUniforms hParameter, const vec4* pVector)
 {
    CHECKD3D(m_shader->SetVector(hParameter, pVector));
    m_renderDevice->m_curParameterChanges++;
 }
 
-void Shader::SetVector(const SHADER_UNIFORM_HANDLE hParameter, const float x, const float y, const float z, const float w)
+void Shader::SetVector(const ShaderUniforms hParameter, const float x, const float y, const float z, const float w)
 {
    vec4 pVector = vec4(x, y, z, w);
    CHECKD3D(m_shader->SetVector(hParameter, &pVector));
 }
 
-void Shader::SetFloat(const SHADER_UNIFORM_HANDLE hParameter, const float f)
+void Shader::SetFloat(const ShaderUniforms hParameter, const float f)
 {
    CHECKD3D(m_shader->SetFloat(hParameter, f));
    m_renderDevice->m_curParameterChanges++;
 }
 
-void Shader::SetInt(const SHADER_UNIFORM_HANDLE hParameter, const int i)
+void Shader::SetInt(const ShaderUniforms hParameter, const int i)
 {
    CHECKD3D(m_shader->SetInt(hParameter, i));
    m_renderDevice->m_curParameterChanges++;
 }
 
-void Shader::SetBool(const SHADER_UNIFORM_HANDLE hParameter, const bool b)
+void Shader::SetBool(const ShaderUniforms hParameter, const bool b)
 {
    CHECKD3D(m_shader->SetBool(hParameter, b));
    m_renderDevice->m_curParameterChanges++;
 }
 
-void Shader::SetFloatArray(const SHADER_UNIFORM_HANDLE hParameter, const float* pData, const unsigned int count)
+void Shader::SetFloatArray(const ShaderUniforms hParameter, const float* pData, const unsigned int count)
 {
    CHECKD3D(m_shader->SetValue(hParameter, pData, count*sizeof(float)));
    m_renderDevice->m_curParameterChanges++;

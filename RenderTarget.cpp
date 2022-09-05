@@ -256,9 +256,6 @@ void RenderTarget::Activate(bool ignoreStereo)
    }
    else
    {
-      Shader::setTextureDirty(m_color_tex);
-      if (m_has_depth)
-         Shader::setTextureDirty(m_depth_tex);
       if (ignoreStereo)
       {
          glViewport(0, 0, m_width, m_height);
