@@ -1104,7 +1104,7 @@ bool RenderDevice::LoadShaders()
 
    // Initialize uniform to default value
    if (shaderCompilationOkay)
-       basicShader->SetFlasherColorAlpha(vec4(1.0f, 1.0f, 1.0f, 1.0f));
+      basicShader->SetFlasherColorAlpha(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
    return shaderCompilationOkay;
 }

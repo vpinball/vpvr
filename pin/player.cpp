@@ -2016,9 +2016,11 @@ void Player::InitStatic()
    // if rendering static/with heavy oversampling, disable the aniso/trilinear filter to get a sharper/more precise result overall!
    if (!m_dynamicMode)
    {
+#ifdef ENABLE_SDL
       // The code will fail if the static render target is MSAA (the copy operation we are performing are not allowed)
       assert(!m_pin3d.m_pddsStatic->IsMSAA());
       accumulationSurface = m_pin3d.m_pddsStatic->Duplicate();
+#endif
       m_isRenderingStatic = true;
       // set up the texture filter again, so that this is triggered correctly
       m_pin3d.m_pd3dPrimaryDevice->SetTextureFilter(0, TEXTURE_MODE_TRILINEAR);
@@ -2067,9 +2069,10 @@ void Player::InitStatic()
                RenderStaticMirror(false);
 
          // exclude playfield depth as dynamic mirror objects have to be added later-on
-         m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
+         // FIXME disabled since mirror is not yet implemented. This needs to be reactivated in the mirror fix 
+         // m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
          m_pin3d.RenderPlayfieldGraphics(false);
-         m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
+         //m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
 
          if (m_ptable->m_reflectElementsOnPlayfield /*&& m_pf_refl*/)
             RenderMirrorOverlay();
@@ -2126,7 +2129,7 @@ void Player::InitStatic()
       {
 #ifdef ENABLE_SDL
          // Rendering is done to m_pin3d.m_pddsStatic then accumulated to accumulationSurface
-         // We use the framebuffer mirror shader with copy a weighted of the incoming texture
+         // We use the framebuffer mirror shader wich copy a weighted version of the bound texture
          accumulationSurface->Activate(true);
          m_pin3d.m_pd3dPrimaryDevice->BeginScene();
          m_pin3d.EnableAlphaBlend(true);
@@ -4169,7 +4172,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA)
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture(SHADER_tex_stereo_fb, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->GetColorSampler());
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetVector(SHADER_ms_zpd_ya_td, &ms_zpd_ya_td);
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetVector(SHADER_Anaglyph_DeSaturation_Contrast, &a_ds_c);
-      m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(false);
+      m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin();
       m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
@@ -4179,7 +4182,7 @@ void Player::RenderStereo(int stereo3D, bool shaderAA)
       // Interlaced, handled in shader
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTechnique(stereo3D == STEREO_INT ? SHADER_TECHNIQUE_stereo_Int : SHADER_TECHNIQUE_stereo_Flipped_Int);
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture(SHADER_tex_stereo_fb, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferPPTexture1()->GetColorSampler());
-      m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(false);
+      m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin();
       m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
       m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();

@@ -203,7 +203,7 @@ float3 lightLoop(const float3 pos, float3 N, const float3 V, float3 diffuse, flo
          float mipLevel = min(textureQueryLod(tex_env, Ruv).y, textureQueryLevels(tex_env)/2);
          if (mipLevel < 4.0)
             mipLevel = 4.0;
-         colorMip = textureLod(Texture1, Ruv, mipLevel);
+         colorMip = textureLod(tex_env, Ruv, mipLevel);
       }
          
       vec3 envTex = colorMip.rgb;
