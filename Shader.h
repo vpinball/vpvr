@@ -179,6 +179,8 @@ enum ShaderUniforms
    SHADER_SAMPLER(tex_light_color, texSampler0, Texture0, 0, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED) // base texture
    // SHADER_SAMPLER(tex_env, texSampler1, Texture1, 1, SA_REPEAT, SA_CLAMP, SF_TRILINEAR) // environment [Shared with basic]
    // SHADER_SAMPLER(tex_diffuse_env, texSampler2, Texture2, 2, SA_REPEAT, SA_CLAMP, SF_BILINEAR) // diffuse environment contribution/radiance [Shared with basic]
+   // Stereo shader (VPVR only, combine the 2 rendered eyes into a single one)
+   SHADER_SAMPLER(tex_stereo_fb, texSampler0, Texture0, 0, SA_CLAMP, SA_CLAMP, SF_POINT) // Framebuffer (unfiltered)
    // SMAA shader
    // FIXME SMAA shader also use the color and colorGamma samplers. This has to be looked at more deeply for a clean implementation
    SHADER_SAMPLER(smaa_colorTex, colorTex, colorTex, 0, SA_CLAMP, SA_CLAMP, SF_TRILINEAR)
@@ -187,8 +189,6 @@ enum ShaderUniforms
    SHADER_SAMPLER(blendTex, blendTex, blendTex2D, 3, SA_CLAMP, SA_CLAMP, SF_TRILINEAR)
    SHADER_SAMPLER(areaTex, areaTex, areaTex2D, 4, SA_CLAMP, SA_CLAMP, SF_TRILINEAR)
    SHADER_SAMPLER(searchTex, searchTex, searchTex2D, 5, SA_CLAMP, SA_CLAMP, SF_BILINEAR) // Not that this should have a w address mode set to clamp as well
-   // Stereo shader (VPVR only, combine the 2 eyes renders into a single one)
-   SHADER_SAMPLER(tex_stereo_fb, texSampler0, Texture0, 0, SA_CLAMP, SA_CLAMP, SF_POINT) // Framebuffer (unfiltered)
    SHADER_UNIFORM_COUNT, SHADER_UNIFORM_INVALID
 };
 #undef SHADER_UNIFORM

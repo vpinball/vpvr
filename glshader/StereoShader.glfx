@@ -106,7 +106,7 @@ out vec2 tex0;
 
 ////FRAGMENT
 
-uniform sampler2D  tex_stereo_fb; // Render buffer with left eye on the top half, and right eye on the bottom half
+uniform sampler2D  tex_stereo_fb; // Render buffer with the 2 eyes side by side for anaglyph, top/bottom for interlaced
 
 in vec2 tex0;
 

@@ -327,7 +327,16 @@ Shader::ShaderTechnique* Shader::compileGLShader(const string& fileNameRoot, str
                }
             }
             auto uniformIndex = getUniformByName(uniformName);
-            if (uniformIndex < SHADER_UNIFORM_COUNT) shader->uniformLocation[uniformIndex] = newLoc;
+            if (uniformIndex < SHADER_UNIFORM_COUNT)
+            {
+               shader->uniformLocation[uniformIndex] = newLoc;
+               if (shaderUniformNames[uniformIndex].default_tex_unit != -1)
+               { 
+                  // Unlike DirectX, OpenGL won't return 0 if the texture is not bound to a black texture
+                  // This will cause error for static pre-render which, done before bulb light transmission is evaluated and bound
+                  SetTextureNull(uniformIndex); 
+               }
+            }
          }
       }
 
