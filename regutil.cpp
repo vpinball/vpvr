@@ -487,7 +487,7 @@ static HRESULT RegDelnodeRecurse(const HKEY hKeyRoot, char lpSubKey[MAX_PATH * 2
 
    LONG lResult = RegDeleteKey(hKeyRoot, lpSubKey);
 
-   if (lResult == ERROR_SUCCESS)
+   if (lResult == ERROR_SUCCESS || lResult == ERROR_FILE_NOT_FOUND)
       return S_OK;
 
    HKEY hKey;
