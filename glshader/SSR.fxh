@@ -1,6 +1,6 @@
 ////ps_main_fb_ss_refl
 
-// uses Texture4 & Texture0 & w_h_height.xy
+// uses tex_fb_filtered, tex_fb_unfiltered, tex_ao_dither & tex_depth & w_h_height.xy
 
 in vec2 tex0;
 
@@ -10,15 +10,15 @@ vec3 approx_bump_normal(vec2 coords, vec2 offs, float scale, float sharpness)
 {
     vec3 lumw = float3(0.212655,0.715158,0.072187);
 
-    float lpx = dot(textureLod(Texture0, vec2(coords.x+offs.x,coords.y), 0).xyz, lumw);
-    float lmx = dot(textureLod(Texture0, vec2(coords.x-offs.x,coords.y), 0).xyz, lumw);
-    float lpy = dot(textureLod(Texture0, vec2(coords.x,coords.y+offs.y), 0).xyz, lumw);
-    float lmy = dot(textureLod(Texture0, vec2(coords.x,coords.y-offs.y), 0).xyz, lumw);
+    float lpx = dot(textureLod(tex_fb_filtered, vec2(coords.x+offs.x,coords.y), 0).xyz, lumw);
+    float lmx = dot(textureLod(tex_fb_filtered, vec2(coords.x-offs.x,coords.y), 0).xyz, lumw);
+    float lpy = dot(textureLod(tex_fb_filtered, vec2(coords.x,coords.y+offs.y), 0).xyz, lumw);
+    float lmy = dot(textureLod(tex_fb_filtered, vec2(coords.x,coords.y-offs.y), 0).xyz, lumw);
 
-    float dpx = textureLod(Texture0, vec2(coords.x+offs.x,coords.y), 0).x;
-    float dmx = textureLod(Texture0, vec2(coords.x-offs.x,coords.y), 0).x;
-    float dpy = textureLod(Texture0, vec2(coords.x,coords.y+offs.y), 0).x;
-    float dmy = textureLod(Texture0, vec2(coords.x,coords.y-offs.y), 0).x;
+    float dpx = textureLod(tex_depth, vec2(coords.x+offs.x,coords.y), 0).x;
+    float dmx = textureLod(tex_depth, vec2(coords.x-offs.x,coords.y), 0).x;
+    float dpy = textureLod(tex_depth, vec2(coords.x,coords.y+offs.y), 0).x;
+    float dmy = textureLod(tex_depth, vec2(coords.x,coords.y-offs.y), 0).x;
 
     vec2 xymult = max(1.0 - vec2(abs(dmx - dpx), abs(dmy - dpy)) * sharpness, 0.0);
 
@@ -34,7 +34,7 @@ void main()
 {
 	vec2 u = tex0 + w_h_height.xy*0.5;
 
-	vec3 color0 = textureLod(Texture0, u, 0).xyz; // original pixel
+	vec3 color0 = textureLod(tex_fb_unfiltered, u, 0).xyz; // original pixel
 
 	float depth0 = color0.x;
 	if((depth0 == 1.0) || (depth0 == 0.0)) {//!!! early out if depth too large (=BG) or too small (=DMD,etc -> retweak render options (depth write on), otherwise also screwup with stereo)
@@ -67,7 +67,7 @@ void main()
 	float ReflBlurWidth = 2.2; //!! magic, small enough to not collect too much, and large enough to have cool reflection effects
 
 	float ushift = /*hash(IN.tex0) + w_h_height.zw*/ // jitter samples via hash of position on screen and then jitter samples by time //!! see below for non-shifted variant
-	               /*frac(*/textureLod(Texture4, tex0/(64.0*w_h_height.xy), 0).z /*+ w_h_height.z)*/; // use dither texture instead nowadays // 64 is the hardcoded dither texture size for AOdither.bmp
+	               /*frac(*/textureLod(tex_ao_dither, tex0/(64.0*w_h_height.xy), 0).z /*+ w_h_height.z)*/; // use dither texture instead nowadays // 64 is the hardcoded dither texture size for AOdither.bmp
 
 	vec2 offsMul = normal_b.xy * (/*w_h_height.xy*/ vec2(1.0/1920.0,1.0/1080.0) * ReflBlurWidth * (32./float(samples))); //!! makes it more resolution independent?? test with 4xSSAA
 
@@ -77,7 +77,7 @@ void main()
 	for(int i=1; i</*=*/samples; i++) //!! due to jitter
 	{
 		vec2 offs = (float(i)+ushift)*offsMul + u; //!! jitter per pixel (uses blue noise tex)
-		vec3 color = textureLod(Texture0, offs, 0).xyz;
+		vec3 color = textureLod(tex_fb_filtered, offs, 0).xyz;
 		
 		/*if(i==1) // necessary special case as compiler warns/'optimizes' sqrt below into rqsrt?!
 		{

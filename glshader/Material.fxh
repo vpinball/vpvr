@@ -110,7 +110,7 @@ float3 DoEnvmapDiffuse(const float3 N, const float3 diffuse)
 		0.5 + atan2_approx_div2PI(N.y, N.x),
 		acos_approx_divPI(N.z));
 
-   float3 env = textureLod(Texture2, uv, 0).xyz;
+   float3 env = textureLod(tex_diffuse_env, uv, 0).xyz;
    return diffuse * env*fenvEmissionScale_TexWidth.x;
 }
 
@@ -119,7 +119,7 @@ float3 DoEnvmapDiffuse(const float3 N, const float3 diffuse)
 float3 DoEnvmapGlossy(const float3 N, const float3 V, const float2 Ruv, const float3 glossy, const float glossyPower)
 {
    const float mip = min(log2(fenvEmissionScale_TexWidth.y * sqrt(3.0)) - 0.5*log2(glossyPower + 1.0), log2(fenvEmissionScale_TexWidth.y)-1.); //!! do diffuse lookup instead of this limit/min, if too low?? and blend?
-   const float3 env = textureLod(Texture1, Ruv, mip).xyz;
+   const float3 env = textureLod(tex_env, Ruv, mip).xyz;
    return glossy * env*fenvEmissionScale_TexWidth.x;
 }
 
@@ -127,7 +127,7 @@ float3 DoEnvmapGlossy(const float3 N, const float3 V, const float2 Ruv, const fl
 float3 DoEnvmap2ndLayer(const float3 color1stLayer, const float3 pos, const float3 N, const float3 V, const float NdotV, const float2 Ruv, const float3 specular)
 {
    const float3 w = FresnelSchlick(specular, NdotV, Roughness_WrapL_Edge_Thickness.z); //!! ?
-   float3 env = textureLod(Texture1, Ruv, 0.).xyz;
+   float3 env = textureLod(tex_env, Ruv, 0.).xyz;
    return lerp(color1stLayer, env*fenvEmissionScale_TexWidth.x, w); // weight (optional) lower diffuse/glossy layer with clearcoat/specular
 }
 
@@ -191,16 +191,16 @@ float3 lightLoop(const float3 pos, float3 N, const float3 V, float3 diffuse, flo
          // Use low-res mipmap for metallic objects to reduce shimmering in VR
          // Closer objects we query the lod and add 2 to make it a bit blurrier but always at least 6.0
          // Far away objects we get smallest lod and divide by 1.6 which is a good trade-off between "metallic enough" and "low shimmer"
-         float mipLevel = min(textureQueryLod(Texture1, Ruv).y+2.0, textureQueryLevels(Texture1)/1.6);
+         float mipLevel = min(textureQueryLod(tex_env, Ruv).y+2.0, textureQueryLevels(tex_env)/1.6);
          if (mipLevel < 6.0)
             mipLevel = 6.0;
-         colorMip = textureLod(Texture1, Ruv, mipLevel);
+         colorMip = textureLod(tex_env, Ruv, mipLevel);
       }
       else
       {
          // For non-metallic objects we use different values
-         //colorMip = texture(Texture1, Ruv);
-         float mipLevel = min(textureQueryLod(Texture1, Ruv).y, textureQueryLevels(Texture1)/2);
+         //colorMip = texture(tex_env, Ruv);
+         float mipLevel = min(textureQueryLod(tex_env, Ruv).y, textureQueryLevels(tex_env)/2);
          if (mipLevel < 4.0)
             mipLevel = 4.0;
          colorMip = textureLod(Texture1, Ruv, mipLevel);

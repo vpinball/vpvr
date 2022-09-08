@@ -596,7 +596,7 @@ void Shader::Begin()
    m_nextTextureSlot = 5; // Slots 0 to 4 are used by static texture unit allocation
    m_currentShaderProgram = m_technique->program;
    for (int uniformName = 0; uniformName < SHADER_UNIFORM_COUNT; ++uniformName)
-      ApplyUniform((ShaderUniforms) uniformName);
+      ApplyUniform((ShaderUniforms)uniformName);
 }
 
 void Shader::End()
@@ -963,7 +963,7 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
             texel = noTexture;
          }
       }
-      int tex_unit = shaderUniformNames[uniformName].tex_unit;
+      int tex_unit = shaderUniformNames[uniformName].default_tex_unit;
       if (tex_unit == -1)
       {
          // Texture units are preaffected to avoid collision (copied from DX9 implementation) but somes are not.

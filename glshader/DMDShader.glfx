@@ -29,7 +29,8 @@ layout(triangle_strip, max_vertices = 3) out;
 
 ////FRAGMENT
 
-uniform sampler2D Texture0; // base texture
+uniform sampler2D tex_dmd; // base texture for DMD (unfiltered)
+uniform sampler2D tex_sprite; // base texture for sprites (filtered)
 
 out vec4 color;
 
@@ -178,7 +179,7 @@ void main()
 		 
       const float2 uv = tex0 + /*gxi.x*ddxs + gxi.y*ddys; /*/ triangularPDF(xi.x)*ddxs + triangularPDF(xi.y)*ddys; //!! lots of ALU
 
-      const float4 rgba = texture(Texture0, uv, 0.0); //!! lots of tex access by doing this all the time, but (tex) cache should be able to catch all of it
+      const float4 rgba = texture(tex_dmd, uv, 0.0); //!! lots of tex access by doing this all the time, but (tex) cache should be able to catch all of it
 
 
       // simulate dot within the sampled texel
@@ -211,7 +212,7 @@ in vec2 tex0;
 
 void main()
 {
-   vec4 rgba = texture(Texture0, tex0);
+   vec4 rgba = texture(tex_dmd, tex0);
    color.rgb = rgba.rgb;
    color.a = vRes_Alpha_time.z;
 }
@@ -222,7 +223,7 @@ in vec2 tex0;
 
 void main()
 {
-   const float4 l = tex2D(Texture0, tex0);
+   const float4 l = tex2D(tex_sprite, tex0);
 
    color = float4(InvToneMap(/*InvGamma*/(l.xyz * vColor_Intensity.xyz * vColor_Intensity.w)), l.w); //!! meh, this sucks a bit performance-wise, but how to avoid this when doing fullscreen-tonemap/gamma without stencil and depth read?
 }

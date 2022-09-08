@@ -870,6 +870,16 @@ RenderDevice::RenderDevice(const HWND hwnd, const int width, const int height, c
     m_curTextureUpdates = m_frameTextureUpdates = 0;
 
     m_curLockCalls = m_frameLockCalls = 0; //!! meh
+
+    m_pOffscreenBackBufferTexture = nullptr;
+    m_pOffscreenBackBufferPPTexture1 = nullptr;
+    m_pOffscreenBackBufferPPTexture2 = nullptr;
+    m_pOffscreenNonMSAABlitTexture = nullptr;
+    m_pOffscreenVRLeft = nullptr;
+    m_pOffscreenVRRight = nullptr;
+    m_pBloomBufferTexture = nullptr;
+    m_pBloomTmpBufferTexture = nullptr;
+    m_pMirrorTmpBufferTexture = nullptr;
 }
 
 #ifdef ENABLE_SDL
@@ -1480,26 +1490,31 @@ void RenderDevice::FreeShader()
 {
    if (basicShader)
    {
-      basicShader->SetTextureNull(SHADER_Texture0);
-      basicShader->SetTextureNull(SHADER_Texture1);
-      basicShader->SetTextureNull(SHADER_Texture2);
-      basicShader->SetTextureNull(SHADER_Texture3);
-      basicShader->SetTextureNull(SHADER_Texture4);
+      basicShader->SetTextureNull(SHADER_tex_base_color);
+      basicShader->SetTextureNull(SHADER_tex_base_transmission);
+      basicShader->SetTextureNull(SHADER_tex_base_normalmap);
+      basicShader->SetTextureNull(SHADER_tex_env);
+      basicShader->SetTextureNull(SHADER_tex_diffuse_env);
       delete basicShader;
       basicShader = 0;
    }
    if (DMDShader)
    {
-      DMDShader->SetTextureNull(SHADER_Texture0);
+      DMDShader->SetTextureNull(SHADER_tex_dmd);
+      DMDShader->SetTextureNull(SHADER_tex_sprite);
       delete DMDShader;
       DMDShader = 0;
    }
    if (FBShader)
    {
-      FBShader->SetTextureNull(SHADER_Texture0);
-      FBShader->SetTextureNull(SHADER_Texture1);
-      FBShader->SetTextureNull(SHADER_Texture3);
-      FBShader->SetTextureNull(SHADER_Texture4);
+      FBShader->SetTextureNull(SHADER_tex_fb_filtered);
+      FBShader->SetTextureNull(SHADER_tex_fb_unfiltered);
+      FBShader->SetTextureNull(SHADER_tex_mirror);
+      FBShader->SetTextureNull(SHADER_tex_bloom);
+      FBShader->SetTextureNull(SHADER_tex_ao);
+      FBShader->SetTextureNull(SHADER_tex_depth);
+      FBShader->SetTextureNull(SHADER_tex_color_lut);
+      FBShader->SetTextureNull(SHADER_tex_ao_dither);
 
       FBShader->SetTextureNull(SHADER_areaTex2D);
       FBShader->SetTextureNull(SHADER_searchTex2D);
@@ -1509,16 +1524,15 @@ void RenderDevice::FreeShader()
    }
    if (StereoShader)
    {
-      StereoShader->SetTextureNull(SHADER_Texture0);
-      StereoShader->SetTextureNull(SHADER_Texture1);
+      StereoShader->SetTextureNull(SHADER_tex_stereo_fb);
 
       delete StereoShader;
       StereoShader = 0;
    }
    if (flasherShader)
    {
-      flasherShader->SetTextureNull(SHADER_Texture0);
-      flasherShader->SetTextureNull(SHADER_Texture1);
+      flasherShader->SetTextureNull(SHADER_tex_flasher_A);
+      flasherShader->SetTextureNull(SHADER_tex_flasher_B);
       delete flasherShader;
       flasherShader = 0;
    }
@@ -1530,9 +1544,9 @@ void RenderDevice::FreeShader()
 #ifdef SEPARATE_CLASSICLIGHTSHADER
    if (classicLightShader)
    {
-      classicLightShader->SetTextureNull(SHADER_Texture0);
-      classicLightShader->SetTextureNull(SHADER_Texture1);
-      classicLightShader->SetTextureNull(SHADER_Texture2);
+      classicLightShader->SetTextureNull(SHADER_tex_light_base);
+      classicLightShader->SetTextureNull(SHADER_tex_env);
+      classicLightShader->SetTextureNull(SHADER_tex_diffuse_env);
       delete classicLightShader;
       classicLightShader=0;
    }
@@ -1576,7 +1590,7 @@ RenderDevice::~RenderDevice()
 
    m_texMan.UnloadAll();
    delete m_pOffscreenBackBufferTexture;
-    delete m_pOffscreenBackBufferPPTexture1;
+   delete m_pOffscreenBackBufferPPTexture1;
 
    if (g_pplayer)
    {

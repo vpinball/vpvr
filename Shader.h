@@ -84,17 +84,21 @@ enum ShaderTechniques
 
 // Declaration of all uniforms and samplers used in the shaders
 // When changed, this list must also be copied unchanged to Shader.cpp (for its implementation)
+// Samplers defines how to sample a texture. For DX9, they are defined in the effect files, only the texture reference is set through the API.
+// Otherwise, the sampler states can be directly overriden through DX9Device->SetSamplerState (per tex unit), being carefull that the effect
+// framework will also apply the ones defined in the effect file during Technique->Begin call (so either don't define them, or reapply).
 #define SHADER_UNIFORM(name) SHADER_##name,
-#define SHADER_SAMPLER(name, unit) SHADER_##name,
+#define SHADER_TEXTURE(name) SHADER_##name,
+#define SHADER_SAMPLER(name, legacy_name, texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter) SHADER_##name,
 enum ShaderUniforms
 {
-   //Floats
+   // -- Floats --
    SHADER_UNIFORM(RenderBall)
    SHADER_UNIFORM(blend_modulate_vs_add)
    SHADER_UNIFORM(alphaTestValue)
    SHADER_UNIFORM(eye)
    SHADER_UNIFORM(fKickerScale)
-   //Vectors and Float Arrays
+   // -- Vectors and Float Arrays --
    SHADER_UNIFORM(Roughness_WrapL_Edge_Thickness)
    SHADER_UNIFORM(cBase_Alpha)
    SHADER_UNIFORM(lightCenter_maxRange)
@@ -122,7 +126,7 @@ enum ShaderUniforms
    SHADER_UNIFORM(mirrorFactor)
    SHADER_UNIFORM(SSR_bumpHeight_fresnelRefl_scale_FS)
    SHADER_UNIFORM(AO_scale_timeblur)
-   //Integer and Bool
+   // -- Integer and Bool --
    SHADER_UNIFORM(ignoreStereo)
    SHADER_UNIFORM(disableLighting)
    SHADER_UNIFORM(lightSources)
@@ -133,16 +137,58 @@ enum ShaderUniforms
    SHADER_UNIFORM(lightingOff)
    SHADER_UNIFORM(objectSpaceNormalMap)
    SHADER_UNIFORM(do_dither)
-   //Texture samplers
-   SHADER_SAMPLER(Texture0, 0)
-   SHADER_SAMPLER(Texture1, 1)
-   SHADER_SAMPLER(Texture2, 2)
-   SHADER_SAMPLER(Texture3, 3)
-   SHADER_SAMPLER(Texture4, 4)
-   SHADER_SAMPLER(edgesTex2D, -1)
-   SHADER_SAMPLER(blendTex2D, -1)
-   SHADER_SAMPLER(areaTex2D, -1)
-   SHADER_SAMPLER(searchTex2D, -1)
+   SHADER_UNIFORM(imageBackglassMode)
+   // -- Textures --
+   SHADER_TEXTURE(Texture0)
+   SHADER_TEXTURE(Texture1)
+   SHADER_TEXTURE(Texture2)
+   SHADER_TEXTURE(Texture3)
+   SHADER_TEXTURE(Texture4)
+   SHADER_TEXTURE(edgesTex2D)
+   SHADER_TEXTURE(blendTex2D)
+   SHADER_TEXTURE(areaTex2D)
+   SHADER_TEXTURE(searchTex2D)
+   // -- Samplers (a texture reference with sampling configuration) --
+   // DMD shader
+   SHADER_SAMPLER(tex_dmd, texSampler0, Texture0, 0, SA_MIRROR, SA_MIRROR, SF_NONE) // DMD
+   SHADER_SAMPLER(tex_sprite, texSampler1, Texture0, 0, SA_MIRROR, SA_MIRROR, SF_TRILINEAR) // Sprite
+   // Flasher shader
+   SHADER_SAMPLER(tex_flasher_A, texSampler0, Texture0, 0, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED) // base texture
+   SHADER_SAMPLER(tex_flasher_B, texSampler1, Texture1, 1, SA_CLAMP, SA_CLAMP, SF_TRILINEAR) // texB
+   // FB shader
+   SHADER_SAMPLER(tex_fb_unfiltered, texSampler4, Texture0, 0, SA_CLAMP, SA_CLAMP, SF_POINT) // Framebuffer (unfiltered)
+   SHADER_SAMPLER(tex_fb_filtered, texSampler5, Texture0, 0, SA_CLAMP, SA_CLAMP, SF_BILINEAR) // Framebuffer (filtered)
+   SHADER_SAMPLER(tex_mirror, texSamplerMirror, Texture0, 0, SA_CLAMP, SA_CLAMP, SF_BILINEAR) // base mirror texture
+   SHADER_SAMPLER(tex_bloom, texSamplerBloom, Texture1, 1, SA_CLAMP, SA_CLAMP, SF_BILINEAR) // Bloom
+   SHADER_SAMPLER(tex_ao, texSampler3, Texture3, 2, SA_CLAMP, SA_CLAMP, SF_BILINEAR) // AO Result
+   SHADER_SAMPLER(tex_depth, texSamplerDepth, Texture3, 2, SA_CLAMP, SA_CLAMP, SF_NONE) // Depth
+   SHADER_SAMPLER(tex_color_lut, texSampler6, Texture4, 2, SA_CLAMP, SA_CLAMP, SF_BILINEAR) // Color grade LUT
+   SHADER_SAMPLER(tex_ao_dither, texSamplerAOdither, Texture4, 3, SA_REPEAT, SA_REPEAT, SF_NONE) // AO dither
+   // Ball shader
+   SHADER_SAMPLER(tex_ball_color, texSampler0, Texture0, 0, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED) // base texture
+   SHADER_SAMPLER(tex_ball_playfield, texSampler1, Texture1, 1, SA_REPEAT, SA_REPEAT, SF_TRILINEAR) // playfield
+   //SHADER_SAMPLER(tex_diffuse_env, texSampler2, Texture2, 2, SA_REPEAT, SA_CLAMP, SF_BILINEAR) // diffuse environment contribution/radiance [Shared with basic]
+   SHADER_SAMPLER(tex_ball_decal, texSampler7, Texture3, 3, SA_REPEAT, SA_REPEAT, SF_TRILINEAR) // ball decal
+   // Basic shader
+   SHADER_SAMPLER(tex_base_color, texSampler0, Texture0, 0, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED) // base texture
+   SHADER_SAMPLER(tex_env, texSampler1, Texture1, 1, SA_REPEAT, SA_CLAMP, SF_TRILINEAR) // environment
+   SHADER_SAMPLER(tex_diffuse_env, texSampler2, Texture2, 2, SA_REPEAT, SA_CLAMP, SF_BILINEAR) // diffuse environment contribution/radiance
+   SHADER_SAMPLER(tex_base_transmission, texSamplerBL, Texture3, 3, SA_CLAMP, SA_CLAMP, SF_BILINEAR) // bulb light/transmission buffer texture
+   SHADER_SAMPLER(tex_base_normalmap, texSamplerN, Texture4, 4, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED) // normal map texture
+   // Classic light shader
+   SHADER_SAMPLER(tex_light_color, texSampler0, Texture0, 0, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED) // base texture
+   // SHADER_SAMPLER(tex_env, texSampler1, Texture1, 1, SA_REPEAT, SA_CLAMP, SF_TRILINEAR) // environment [Shared with basic]
+   // SHADER_SAMPLER(tex_diffuse_env, texSampler2, Texture2, 2, SA_REPEAT, SA_CLAMP, SF_BILINEAR) // diffuse environment contribution/radiance [Shared with basic]
+   // SMAA shader
+   // FIXME SMAA shader also use the color and colorGamma samplers. This has to be looked at more deeply for a clean implementation
+   SHADER_SAMPLER(smaa_colorTex, colorTex, colorTex, 0, SA_CLAMP, SA_CLAMP, SF_TRILINEAR)
+   SHADER_SAMPLER(smaa_colorGammaTex, colorGammaTex, colorGammaTex, 1, SA_CLAMP, SA_CLAMP, SF_TRILINEAR)
+   SHADER_SAMPLER(edgesTex, edgesTex, edgesTex2D, 2, SA_CLAMP, SA_CLAMP, SF_TRILINEAR)
+   SHADER_SAMPLER(blendTex, blendTex, blendTex2D, 3, SA_CLAMP, SA_CLAMP, SF_TRILINEAR)
+   SHADER_SAMPLER(areaTex, areaTex, areaTex2D, 4, SA_CLAMP, SA_CLAMP, SF_TRILINEAR)
+   SHADER_SAMPLER(searchTex, searchTex, searchTex2D, 5, SA_CLAMP, SA_CLAMP, SF_BILINEAR) // Not that this should have a w address mode set to clamp as well
+   // Stereo shader (VPVR only, combine the 2 eyes renders into a single one)
+   SHADER_SAMPLER(tex_stereo_fb, texSampler0, Texture0, 0, SA_CLAMP, SA_CLAMP, SF_POINT) // Framebuffer (unfiltered)
    SHADER_UNIFORM_COUNT, SHADER_UNIFORM_INVALID
 };
 #undef SHADER_UNIFORM
@@ -282,7 +328,12 @@ private:
    struct ShaderUniform
    {
       string name;
-      int tex_unit;
+      string legacy_name;
+      string texture_ref;
+      int default_tex_unit;
+      SamplerAddressMode default_clampu;
+      SamplerAddressMode default_clampv;
+      SamplerFilter default_filter;
    };
 
    ShaderTechnique* m_techniques[SHADER_TECHNIQUE_COUNT];
