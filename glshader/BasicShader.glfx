@@ -41,11 +41,11 @@ layout(triangle_strip, max_vertices = 3) out;
 //layout(early_fragment_tests) in;
 layout(depth_unchanged) out float gl_FragDepth;
 
-uniform sampler2D Texture0; // base texture
-uniform sampler2D Texture1; // envmap
-uniform sampler2D Texture2; // envmap radiance
-uniform sampler2D Texture3; // bulb light buffer
-uniform sampler2D Texture4; // normal map
+uniform sampler2D tex_base_color; // base texture
+uniform sampler2D tex_env; // envmap
+uniform sampler2D tex_diffuse_env; // envmap radiance
+uniform sampler2D tex_base_transmission; // bulb light buffer
+uniform sampler2D tex_base_normalmap; // normal map
 
 uniform bool objectSpaceNormalMap;
 uniform bool is_metal;
@@ -87,7 +87,7 @@ mat3 TBN_trafo(vec3 N, vec3 V, vec2 uv)
 
 vec3 normal_map(vec3 N, vec3 V, vec2 uv)
 {
-   vec3 tn = texture(Texture4, uv).xyz * (255./127.) - (128./127.); // Note that Blender apparently does export tangent space normalmaps for Z (Blue) at full range, so 0..255 -> 0..1, which misses an option for here!
+   vec3 tn = texture(tex_base_normalmap, uv).xyz * (255./127.) - (128./127.); // Note that Blender apparently does export tangent space normalmaps for Z (Blue) at full range, so 0..255 -> 0..1, which misses an option for here!
 
    if (objectSpaceNormalMap)
    {
@@ -318,7 +318,7 @@ void main() {
 
       if (fDisableLighting_top_below.y < 1.0)
           // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-          color.xyz += mix(sqrt(diffuse)*texture(Texture3, vec2(0.5*tex03.xy)+0.5, 0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
+          color.xyz += mix(sqrt(diffuse)*texture(tex_base_transmission, vec2(0.5*tex03.xy)+0.5, 0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
    }
 
    color *= staticColor_Alpha;
@@ -332,7 +332,7 @@ in vec3 worldPos;
 in vec3 normal;
 
 void main() {
-   vec4 pixel = texture(Texture0, tex01);
+   vec4 pixel = texture(tex_base_color, tex01);
 
    if (pixel.a <= alphaTestValue)
       discard;           //stop the pixel shader if alpha test should reject pixel
@@ -364,7 +364,7 @@ void main() {
       if (fDisableLighting_top_below.y < 1.0)
       {
          // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-         color.xyz += mix(sqrt(diffuse)*texture(Texture3, vec2(0.5*tex03.xy)+0.5).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
+         color.xyz += mix(sqrt(diffuse)*texture(tex_base_transmission, vec2(0.5*tex03.xy)+0.5).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
       }
    }
 
@@ -382,7 +382,7 @@ void main() {
 in vec2 tex0;
 
 void main() {
-   if (textureLod(Texture0, tex0, 0).a <= alphaTestValue)
+   if (textureLod(tex_base_color, tex0, 0).a <= alphaTestValue)
       discard;           //stop the pixel shader if alpha test should reject pixel
 
    color = vec4(0., 0., 0., 1.);
@@ -401,7 +401,7 @@ void main() {
 in vec2 tex01;
 
 void main() {
-   vec4 pixel = texture(Texture0, tex01);
+   vec4 pixel = texture(tex_base_color, tex01);
 
    //if (pixel.a <= alphaTestValue) discard;
 

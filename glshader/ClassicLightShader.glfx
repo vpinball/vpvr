@@ -5,6 +5,8 @@ uniform vec4 lightColor2_falloff_power;
 uniform vec4 lightCenter_maxRange;
 uniform vec2 imageBackglassMode; // actually bool2
 
+uniform sampler2D tex_light_color; // base texture
+
 ////vs_light_main
 
 in vec3 vPosition;
@@ -72,7 +74,8 @@ in vec3 normal;
 
 void main()
 {
-    vec4 pixel = textureLod(Texture0, tex0, 0); //!! IN.tex0 abused in backglass mode
+   // FIXME check tex_light_color declaration
+    vec4 pixel = textureLod(tex_light_color, tex0, 0); //!! IN.tex0 abused in backglass mode
 
     // no lighting if HUD vertices or passthrough mode
     if(imageBackglassMode.x != 0. || imageBackglassMode.y != 0.)

@@ -106,7 +106,7 @@ out vec2 tex0;
 
 ////FRAGMENT
 
-uniform sampler2D  Texture0; // Render buffer with left eye on the top half, and right eye on the bottom half
+uniform sampler2D  tex_stereo_fb; // Render buffer with left eye on the top half, and right eye on the bottom half
 
 in vec2 tex0;
 
@@ -124,14 +124,14 @@ void main()
 
 void main()
 {
-   color = tex2D(Texture0, vec2(tex0.x,0.5*tex0.y + ((frac(gl_FragCoord.y*0.5) < 0.5) ? 0.0 : 0.5)));
+   color = tex2D(tex_stereo_fb, vec2(tex0.x,0.5*tex0.y + ((frac(gl_FragCoord.y*0.5) < 0.5) ? 0.0 : 0.5)));
 }
 
 ////ps_main_flipped_int
 
 void main()
 {
-   color = tex2D(Texture0, vec2(tex0.x,0.5*tex0.y + ((frac(gl_FragCoord.y*0.5) < 0.5) ? 0.5 : 0.0)));
+   color = tex2D(tex_stereo_fb, vec2(tex0.x,0.5*tex0.y + ((frac(gl_FragCoord.y*0.5) < 0.5) ? 0.5 : 0.0)));
 }
 
 ////vs_main_amd
@@ -156,15 +156,15 @@ void main()
    } else {
       x = tex0.x*0.5+0.5;
    }
-   color = tex2D(Texture0, vec2(x,tex0.y));
+   color = tex2D(tex_stereo_fb, vec2(x,tex0.y));
 }
 
 ////ps_main_stereo_anaglyph
 
 void main()
 {
-	const float3 lcol = tex2D(Texture0, vec2(0.5*tex0.x,tex0.y)).rgb;
-	const float3 rcol = tex2D(Texture0, vec2(0.5*tex0.x+0.5,tex0.y)).rgb;
+	const float3 lcol = tex2D(tex_stereo_fb, vec2(0.5*tex0.x,tex0.y)).rgb;
+	const float3 rcol = tex2D(tex_stereo_fb, vec2(0.5*tex0.x+0.5,tex0.y)).rgb;
 	const float3 l = (ms_zpd_ya_td.w > 11.0) ? rcol : lcol; // > 10.0 means: flip the eye color
 	const float3 r = (ms_zpd_ya_td.w > 11.0) ? lcol : rcol; // > 10.0 means: flip the eye color
 	color = float4(anaglyph(l, r), 1.0);

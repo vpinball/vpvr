@@ -16,10 +16,16 @@ uniform bool color_grade;
 uniform bool do_dither;
 uniform bool do_bloom;
 
-uniform sampler2D Texture0; // FB
-uniform sampler2D Texture1; // Bloom
-uniform sampler2D Texture3; // AO Result & DepthBuffer
-uniform sampler2D Texture4; // AO Dither, Color grade and Post Processing
+uniform sampler2D tex_fb_filtered; // Framebuffer (filtered)
+uniform sampler2D tex_fb_unfiltered; // Framebuffer (unfiltered)
+uniform sampler2D tex_mirror; // Base mirror texture
+uniform sampler2D tex_bloom; // Bloom
+uniform sampler2D tex_ao; // AO Result
+uniform sampler2D tex_depth; // Depth
+uniform sampler2D tex_color_lut; // Color grade LUT
+uniform sampler2D tex_ao_dither; // AO dither
+uniform sampler2D tex_normals; // Normals
+
 
 out vec4 color;
 
@@ -163,8 +169,8 @@ vec3 FBColorGrade(vec3 color)
    color.z *= 15.0;
 
    float x = (color.x + floor(color.z))/16.0;
-   vec3 lut1 = textureLod(Texture4, vec2(x,          color.y), 0).xyz; // two lookups to blend/lerp between blue 2D regions
-   vec3 lut2 = textureLod(Texture4, vec2(x+1.0/16.0, color.y), 0).xyz;
+   vec3 lut1 = textureLod(tex_color_lut, vec2(x,          color.y), 0).xyz; // two lookups to blend/lerp between blue 2D regions
+   vec3 lut2 = textureLod(tex_color_lut, vec2(x+1.0/16.0, color.y), 0).xyz;
    return mix(lut1,lut2, frac(color.z));
 }
 
@@ -191,13 +197,13 @@ in vec2 tex0;
 
 void main()
 {
-   //!! float depth0 = tex2Dlod(Texture3, vec4(u, 0.,0.)).x;
+   //!! float depth0 = tex2Dlod(tex_depth, vec4(u, 0.,0.)).x;
    //!! if((depth0 == 1.0) || (depth0 == 0.0)) //!! early out if depth too large (=BG) or too small (=DMD,etc -> retweak render options (depth write on), otherwise also screwup with stereo)
-   //!!   return vec4(tex2Dlod(Texture0, vec4(tex0, 0.,0.)).xyz, 1.0);
+   //!!   return vec4(tex2Dlod(tex_fb_filtered, vec4(tex0, 0.,0.)).xyz, 1.0);
 
-   vec3 result = FBToneMap(textureLod(Texture0, tex0, 0).xyz);
+   vec3 result = FBToneMap(textureLod(tex_fb_filtered, tex0, 0).xyz);
    if (do_bloom)
-      result += textureLod(Texture1, tex0, 0.).xyz; //!! offset?
+      result += textureLod(tex_bloom, tex0, 0.).xyz; //!! offset?
    color = vec4(FBColorGrade(FBGamma(clamp(result, 0.0, 1.0))), 1.0);
 }
 
@@ -207,10 +213,10 @@ in vec2 tex0;
 
 void main()
 {
-   vec3 result = (texture(Texture1, vec2(tex0-w_h_height.xy*0.5)).xyz
-               +  texture(Texture1, vec2(tex0+w_h_height.xy*2.5)).xyz
-               +  texture(Texture1, vec2(tex0+vec2(w_h_height.x*2.5,-w_h_height.y*0.5))).xyz
-               +  texture(Texture1, vec2(tex0+vec2(-w_h_height.x*0.5,w_h_height.y*2.5))).xyz)*0.25; //!! offset for useAA?
+   vec3 result = (texture(tex_fb_filtered, vec2(tex0-w_h_height.xy*0.5)).xyz
+               +  texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*2.5)).xyz
+               +  texture(tex_fb_filtered, vec2(tex0+vec2(w_h_height.x*2.5,-w_h_height.y*0.5))).xyz
+               +  texture(tex_fb_filtered, vec2(tex0+vec2(-w_h_height.x*0.5,w_h_height.y*2.5))).xyz)*0.25; //!! offset for useAA?
    color = vec4(max(FBToneMap(result) - vec3(1., 1., 1.), vec3(0., 0., 0.)), 1.0);
 }
 
@@ -220,7 +226,7 @@ in vec2 tex0;
 
 void main()
 {
-   vec3 result = vec3(textureLod(Texture3, tex0/*-w_h_height.xy*/, 0).x); // omitting the shift blurs over 2x2 window
+   vec3 result = vec3(textureLod(tex_ao, tex0/*-w_h_height.xy*/, 0).x); // omitting the shift blurs over 2x2 window
    color = vec4(FBGamma(saturate(result)), 1.0);
 }
 
@@ -230,10 +236,10 @@ in vec2 tex0;
 
 void main()
 {
-   vec3 result = FBToneMap(textureLod(Texture0, tex0, 0).xyz) // moving AO before tonemap does not really change the look
-                         * textureLod(Texture3, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
+   vec3 result = FBToneMap(textureLod(tex_fb_filtered, tex0, 0).xyz) // moving AO before tonemap does not really change the look
+                         * textureLod(tex_ao, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
    if (do_bloom)
-      result += textureLod(Texture1, tex0, 0).xyz; //!! offset?
+      result += textureLod(tex_bloom, tex0, 0).xyz; //!! offset?
    color = vec4(FBColorGrade(FBGamma(clamp(result, 0.0, 1.0))), 1.0);
 }
 
@@ -243,8 +249,8 @@ in vec2 tex0;
 
 void main()
 {
-   vec3 result = textureLod(Texture0, tex0, 0).xyz
-               * textureLod(Texture3, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
+   vec3 result = textureLod(tex_fb_filtered, tex0, 0).xyz
+               * textureLod(tex_ao, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
    color = vec4(result, 1.0);
 }
 
@@ -254,9 +260,9 @@ in vec2 tex0;
 
 void main()
 {
-   vec3 result = FBToneMap(textureLod(Texture0, tex0+w_h_height.xy, 0).xyz);
+   vec3 result = FBToneMap(textureLod(tex_fb_unfiltered, tex0+w_h_height.xy, 0).xyz);
    if (do_bloom)
-      result += textureLod(Texture1, tex0, 0).xyz; //!! offset?
+      result += textureLod(tex_bloom, tex0, 0).xyz; //!! offset?
    color = vec4(/*FBDither(*/FBColorGrade(FBGamma(clamp(result, 0.0, 1.0))),/*tex0*w_h_height.zw),*/ 1.0);
 }
 
@@ -266,10 +272,10 @@ in vec2 tex0;
 
 void main()
 {
-   //vec3 result = FBToneMap(textureLod(Texture0, tex0+w_h_height.xy, 0).xyz);
-   vec3 result = FBToneMap(textureLod(Texture0, tex0, 0).xyz);
+   //vec3 result = FBToneMap(textureLod(tex_fb_unfiltered, tex0+w_h_height.xy, 0).xyz);
+   vec3 result = FBToneMap(textureLod(tex_fb_unfiltered, tex0, 0).xyz);
    if (do_bloom)
-      result += textureLod(Texture1, tex0, 0).xyz; //!! offset?
+      result += textureLod(tex_bloom, tex0, 0).xyz; //!! offset?
    color = vec4(FBColorGrade(FBGamma(clamp(FBDither(result, tex0), 0.0, 1.0))), 1.0);
 }
 
@@ -279,9 +285,9 @@ in vec2 tex0;
 
 void main()
 {
-   float result = FBToneMap(textureLod(Texture0,tex0+w_h_height.xy, 0).xyz).x;
+   float result = FBToneMap(textureLod(tex_fb_unfiltered,tex0+w_h_height.xy, 0).xyz).x;
    if (do_bloom)
-      result += textureLod(Texture1, tex0, 0).x; //!! offset?
+      result += textureLod(tex_bloom, tex0, 0).x; //!! offset?
    float gray = /*FBDither(*//*FBColorGrade*/(FBGamma(vec3(clamp(result, 0.0, 1.0)))).x/*,tex0*w_h_height.zw)*/;
    color = vec4(gray,gray,gray,1.0);
 }
@@ -292,10 +298,10 @@ in vec2 tex0;
 
 void main()
 {
-   vec3 result = FBToneMap(textureLod(Texture0, tex0+w_h_height.xy, 0).xyz) // moving AO before tonemap does not really change the look
-                         * textureLod(Texture3, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
+   vec3 result = FBToneMap(textureLod(tex_fb_unfiltered, tex0+w_h_height.xy, 0).xyz) // moving AO before tonemap does not really change the look
+                         * textureLod(tex_bloom, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
    if (do_bloom)
-      result += textureLod(Texture1, tex0, 0).xyz;  //!! offset?
+      result += textureLod(tex_bloom, tex0, 0).xyz;  //!! offset?
    color = vec4(FBColorGrade(FBGamma(clamp(result, 0.0, 1.0))), 1.0);
 }
 
@@ -305,10 +311,10 @@ in vec2 tex0;
 
 void main()
 {
-   vec3 result = FBToneMap(textureLod(Texture0, tex0+w_h_height.xy, 0).xyz) // moving AO before tonemap does not really change the look
-                         * textureLod(Texture0, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
+   vec3 result = FBToneMap(textureLod(tex_fb_unfiltered, tex0+w_h_height.xy, 0).xyz) // moving AO before tonemap does not really change the look
+                         * textureLod(tex_fb_unfiltered, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
    if (do_bloom)
-      result += textureLod(Texture1, tex0, 0).xyz;  //!! offset?
+      result += textureLod(tex_bloom, tex0, 0).xyz;  //!! offset?
    color = vec4(FBColorGrade(FBGamma(saturate(FBDither(result, tex0)))), 1.0);
 }
 
@@ -318,8 +324,8 @@ in vec2 tex0;
 
 void main()
 {
-   vec3 result = textureLod(Texture0, tex0 + w_h_height.xy, 0).xyz
-               * textureLod(Texture3, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
+   vec3 result = textureLod(tex_fb_unfiltered, tex0 + w_h_height.xy, 0).xyz
+               * textureLod(tex_ao, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
    color = vec4(result, 1.0);
 }
 
@@ -334,10 +340,10 @@ void main()
 {
    const float offset9x9[3] = float[]( 0.0, 1.3846153846, 3.2307692308 );
    const float weight9x9[3] = float[]( 0.2270270270, 0.3162162162, 0.0702702703 );
-   vec3 result = texture(Texture1, tex0+w_h_height.xy*0.5).xyz*weight9x9[0];
+   vec3 result = texture(tex_fb_filtered, tex0+w_h_height.xy*0.5).xyz*weight9x9[0];
    for (int i = 1; i < 3; ++i)
-      result += (texture(Texture1, vec2(tex0+w_h_height.xy*0.5+vec2(w_h_height.x*offset9x9[i],0.0))).xyz
-                +texture(Texture1, vec2(tex0+w_h_height.xy*0.5-vec2(w_h_height.x*offset9x9[i],0.0))).xyz)*weight9x9[i];
+      result += (texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*0.5+vec2(w_h_height.x*offset9x9[i],0.0))).xyz
+                +texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*0.5-vec2(w_h_height.x*offset9x9[i],0.0))).xyz)*weight9x9[i];
 
    color = vec4(result, 1.0);
 }
@@ -349,10 +355,10 @@ void main()
 {
    const float offset9x9[3] = float[]( 0.0, 1.3846153846, 3.2307692308 );
    const float weight9x9[3] = float[]( 0.2270270270, 0.3162162162, 0.0702702703 );
-   vec3 result = texture(Texture1, vec2(tex0+w_h_height.xy*0.5)).xyz*weight9x9[0];
+   vec3 result = texture(tex_fb_unfiltered, vec2(tex0+w_h_height.xy*0.5)).xyz*weight9x9[0];
    for (int i = 1; i < 3; ++i)
-      result += (texture(Texture1, vec2(tex0+w_h_height.xy*0.5+vec2(0.0,w_h_height.y*offset9x9[i]))).xyz
-                +texture(Texture1, vec2(tex0+w_h_height.xy*0.5-vec2(0.0,w_h_height.y*offset9x9[i]))).xyz)*weight9x9[i];
+      result += (texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*0.5+vec2(0.0,w_h_height.y*offset9x9[i]))).xyz
+                +texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*0.5-vec2(0.0,w_h_height.y*offset9x9[i]))).xyz)*weight9x9[i];
 
    color = vec4(result*w_h_height.z, 1.0);
 }
@@ -366,8 +372,8 @@ void main()
    const float weight19x19[5] = float[]( 0.19923, 0.18937, 0.08396, 0.02337, 0.00408 ); //no center!
    vec3 result = vec3(0.0, 0.0, 0.0);
    for(int i = 0; i < 5; ++i)
-      result += (texture(Texture1, vec2(tex0+w_h_height.xy*0.5+vec2(w_h_height.x*offset19x19[i],0.0))).xyz
-                +texture(Texture1, vec2(tex0+w_h_height.xy*0.5-vec2(w_h_height.x*offset19x19[i],0.0))).xyz)*weight19x19[i];
+      result += (texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*0.5+vec2(w_h_height.x*offset19x19[i],0.0))).xyz
+                +texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*0.5-vec2(w_h_height.x*offset19x19[i],0.0))).xyz)*weight19x19[i];
 
    color = vec4(result, 1.0);
 }
@@ -382,8 +388,8 @@ void main()
    const float weight19x19[5] = float[]( 0.19923, 0.18937, 0.08396, 0.02337, 0.00408 ); //no center!
    vec3 result = vec3(0.0, 0.0, 0.0);
    for(int i = 0; i < 5; ++i)
-      result += (texture(Texture1, vec2(tex0+w_h_height.xy*0.5+vec2(0.0,w_h_height.y*offset19x19[i]))).xyz
-                +texture(Texture1, vec2(tex0+w_h_height.xy*0.5-vec2(0.0,w_h_height.y*offset19x19[i]))).xyz)*weight19x19[i];
+      result += (texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*0.5+vec2(0.0,w_h_height.y*offset19x19[i]))).xyz
+                +texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*0.5-vec2(0.0,w_h_height.y*offset19x19[i]))).xyz)*weight19x19[i];
 
    color = vec4(result*w_h_height.z, 1.0);
 }
@@ -403,8 +409,8 @@ void main()
    const float weight19x19h[5] = float[]( 0.27233, 0.18690, 0.03767, 0.00301, 0.00009 ); //no center!
    vec3 result = vec3(0.0, 0.0, 0.0);
    for(int i = 0; i < 5; ++i)
-      result += (texture(Texture1, vec2(tex0+w_h_height.xy*0.5+vec2(w_h_height.x*offset19x19h[i],0.0))).xyz
-                +texture(Texture1, vec2(tex0+w_h_height.xy*0.5-vec2(w_h_height.x*offset19x19h[i],0.0))).xyz)*weight19x19h[i];
+      result += (texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*0.5+vec2(w_h_height.x*offset19x19h[i],0.0))).xyz
+                +texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*0.5-vec2(w_h_height.x*offset19x19h[i],0.0))).xyz)*weight19x19h[i];
 
    color = vec4(result, 1.0);
 }
@@ -419,8 +425,8 @@ void main()
    const float weight19x19h[5] = float[]( 0.27233, 0.18690, 0.03767, 0.00301, 0.00009 ); //no center!
    vec3 result = vec3(0.0, 0.0, 0.0);
    for(int i = 0; i < 5; ++i)
-      result += (texture(Texture1, vec2(tex0+w_h_height.xy*0.5+vec2(0.0,w_h_height.y*offset19x19h[i]))).xyz
-                +texture(Texture1, vec2(tex0+w_h_height.xy*0.5-vec2(0.0,w_h_height.y*offset19x19h[i]))).xyz)*weight19x19h[i];
+      result += (texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*0.5+vec2(0.0,w_h_height.y*offset19x19h[i]))).xyz
+                +texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*0.5-vec2(0.0,w_h_height.y*offset19x19h[i]))).xyz)*weight19x19h[i];
 
    color = vec4(result*w_h_height.z, 1.0);
 }
@@ -440,8 +446,8 @@ void main()
                                           /*0.09721, 0.11993, 0.09955, 0.07429, 0.04984, 0.03006, 0.01630, 0.00795, 0.00348, 0.00137*/ ); //no center!
     float3 result = float3(0.0, 0.0, 0.0);
     for(int i = 0; i < 10; ++i)
-        result += (texture(Texture1, vec2(tex0+w_h_height.xy*0.5+vec2(w_h_height.x*offset39x39[i],0.0))).xyz
-                  +texture(Texture1, vec2(tex0+w_h_height.xy*0.5-vec2(w_h_height.x*offset39x39[i],0.0))).xyz)*weight39x39[i];
+        result += (texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*0.5+vec2(w_h_height.x*offset39x39[i],0.0))).xyz
+                  +texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*0.5-vec2(w_h_height.x*offset39x39[i],0.0))).xyz)*weight39x39[i];
 
     color = float4(result, 1.0);
 }
@@ -460,8 +466,8 @@ void main()
                                           /*0.09721, 0.11993, 0.09955, 0.07429, 0.04984, 0.03006, 0.01630, 0.00795, 0.00348, 0.00137*/ ); //no center!
     float3 result = float3(0.0, 0.0, 0.0);
     for(int i = 0; i < 10; ++i)
-        result += (texture(Texture1, vec2(tex0+w_h_height.xy*0.5+vec2(0.0,w_h_height.y*offset39x39[i]))).xyz
-                  +texture(Texture1, vec2(tex0+w_h_height.xy*0.5-vec2(0.0,w_h_height.y*offset39x39[i]))).xyz)*weight39x39[i];
+        result += (texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*0.5+vec2(0.0,w_h_height.y*offset39x39[i]))).xyz
+                  +texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*0.5-vec2(0.0,w_h_height.y*offset39x39[i]))).xyz)*weight39x39[i];
 
     color = float4(result*w_h_height.z, 1.0);
 }
@@ -472,7 +478,7 @@ in vec2 tex0;
 
 void main()
 {
-   color = texture(Texture0, tex0) * mirrorFactor;
+   color = texture(tex_mirror, tex0) * mirrorFactor;
 }
 
 
