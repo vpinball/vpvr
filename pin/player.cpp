@@ -1980,8 +1980,6 @@ void Player::RenderMirrorOverlay()
 #endif
 }
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION 
-#include "stb_image_write.h"
 void Player::InitStatic()
 {
    TRACE_FUNCTION();
