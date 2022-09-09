@@ -132,6 +132,10 @@ RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, 
    m_color_sampler = new Sampler(m_rd, m_color_tex, false, use_MSAA, true);
    m_depth_sampler = with_depth ? new Sampler(m_rd, m_depth_tex, false, use_MSAA, true) : nullptr;
 
+   glClearDepthf(1.0f);
+   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 #else
 
    HRESULT hr = m_rd->GetCoreDevice()->CreateTexture(width, height, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)format, (D3DPOOL)memoryPool::DEFAULT, &m_color_tex, nullptr);
