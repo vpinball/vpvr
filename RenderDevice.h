@@ -265,14 +265,15 @@ public:
    bool SetMaximumPreRenderedFrames(const DWORD frames);
 
    RenderTarget* GetBackBufferTexture() const { return m_pOffscreenBackBufferTexture; }
+   RenderTarget* GetBackBufferTmpTexture() const { return m_pOffscreenBackBufferTmpTexture; } // stereo/FXAA only
+   RenderTarget* GetBackBufferTmpTexture2() const { return m_pOffscreenBackBufferTmpTexture2; } // SMAA only
 #ifdef ENABLE_SDL
    RenderTarget* GetNonMSAABlitTexture(int m_MSAASamples) const { return m_MSAASamples == 1 ? m_pOffscreenBackBufferTexture : m_pOffscreenNonMSAABlitTexture; }
    RenderTarget* GetOffscreenVR(int eye) const { return eye == 0 ? m_pOffscreenVRLeft : m_pOffscreenVRRight; }
 #endif
-   RenderTarget* GetBackBufferPPTexture1() const { return m_pOffscreenBackBufferPPTexture1; }
-   RenderTarget* GetBackBufferPPTexture2() const { return m_pOffscreenBackBufferPPTexture2; }
    RenderTarget* GetMirrorTmpBufferTexture() const { return m_pMirrorTmpBufferTexture; }
-   RenderTarget* GetOutputBackBuffer() const { return m_pBackBuffer; }
+   RenderTarget* GetReflectionBufferTexture() const { return m_pReflectionBufferTexture; }
+   RenderTarget* GetOutputBackBuffer() const { return m_pBackBuffer; } // The screen render target
 
    RenderTarget* GetBloomBufferTexture() const { return m_pBloomBufferTexture; }
    RenderTarget* GetBloomTmpBufferTexture() const { return m_pBloomTmpBufferTexture; }
@@ -406,15 +407,18 @@ private:
 
    //If stereo is enabled the right eye is the right/bottom part with 4px in between
    RenderTarget* m_pOffscreenBackBufferTexture;
-   RenderTarget* m_pOffscreenBackBufferPPTexture1; // AA
-   RenderTarget* m_pOffscreenBackBufferPPTexture2; // SMAA only
+   RenderTarget* m_pOffscreenBackBufferTmpTexture; // stereo/FXAA only
+   RenderTarget* m_pOffscreenBackBufferTmpTexture2; // SMAA only
+#ifdef ENABLE_SDL
    RenderTarget* m_pOffscreenNonMSAABlitTexture;
    RenderTarget* m_pOffscreenVRLeft;
    RenderTarget* m_pOffscreenVRRight;
+#endif
 
    RenderTarget* m_pBloomBufferTexture;
    RenderTarget* m_pBloomTmpBufferTexture;
    RenderTarget* m_pMirrorTmpBufferTexture;
+   RenderTarget* m_pReflectionBufferTexture;
 
    UINT m_adapter;      // index of the display adapter to use
 

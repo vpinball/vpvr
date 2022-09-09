@@ -872,8 +872,8 @@ RenderDevice::RenderDevice(const HWND hwnd, const int width, const int height, c
     m_curLockCalls = m_frameLockCalls = 0; //!! meh
 
     m_pOffscreenBackBufferTexture = nullptr;
-    m_pOffscreenBackBufferPPTexture1 = nullptr;
-    m_pOffscreenBackBufferPPTexture2 = nullptr;
+    m_pOffscreenBackBufferTmpTexture = nullptr;
+    m_pOffscreenBackBufferTmpTexture2 = nullptr;
     m_pOffscreenNonMSAABlitTexture = nullptr;
     m_pOffscreenVRLeft = nullptr;
     m_pOffscreenVRRight = nullptr;
@@ -882,9 +882,11 @@ RenderDevice::RenderDevice(const HWND hwnd, const int width, const int height, c
     m_pMirrorTmpBufferTexture = nullptr;
 }
 
-#ifdef ENABLE_SDL
 void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 {
+#ifdef ENABLE_SDL
+   ///////////////////////////////////
+   // OpenGL device initialization
    const int displays = getNumberOfDisplays();
    if ((int)adapterIndex >= displays)
       m_adapter = 0;
@@ -968,151 +970,17 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_vsync = 0;
    SDL_GL_SetSwapInterval(m_vsync);
 
-   m_autogen_mipmap = true;
-
-   // Retrieve a reference to the back buffer.
-   m_pBackBuffer = new RenderTarget(this, fbWidth, fbHeight);
-
-   constexpr colorFormat renderBufferFormat = RGB16F;
-   int m_width_aa = (int)(m_width * m_AAfactor);
-   int m_height_aa = (int)(m_height * m_AAfactor);
-
-   // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
-   m_pOffscreenBackBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, renderBufferFormat, true, g_pplayer->m_MSAASamples > 1, m_stereo3D, "Fatal Error: unable to create render buffer!");
-
-   // If we are doing MSAA we need a texture with the same dimensions as the Back Buffer to resolve the end result to, can also use it for Post-AA
-   if (g_pplayer->m_MSAASamples > 1 || m_FXAA > 0)
-      m_pOffscreenNonMSAABlitTexture = new RenderTarget(this, m_width_aa, m_height_aa, renderBufferFormat, true, false, m_stereo3D, "Fatal Error: unable to create render buffer!");
-   else
-      m_pOffscreenNonMSAABlitTexture = nullptr;
-
-   if ((g_pplayer != nullptr) && (g_pplayer->m_ptable->m_reflectElementsOnPlayfield || (g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1)))
-      m_pMirrorTmpBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, renderBufferFormat, true, false, m_stereo3D, "Fatal Error: unable to create mirror buffer!");
-
-   // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
-   m_pBloomBufferTexture = new RenderTarget(this, m_width / 4, m_height / 4, renderBufferFormat, false, false, m_stereo3D, "Fatal Error: unable to create bloom buffer!");
-
-   // temporary buffer for gaussian blur
-   m_pBloomTmpBufferTexture = new RenderTarget(this, m_width / 4, m_height / 4, renderBufferFormat, false, false, m_stereo3D, "Fatal Error: unable to create blur buffer!");
-
-   if (m_stereo3D == STEREO_VR) {
-      //AMD Debugging
-      colorFormat renderBufferFormatVR;
-      const int textureModeVR = LoadValueIntWithDefault(regKey[RegName::Player], "textureModeVR"s, 1);
-      switch (textureModeVR) {
-      case 0:
-         renderBufferFormatVR = RGB8;
-         break;
-      case 2:
-         renderBufferFormatVR = RGB16F;
-         break;
-      case 3:
-         renderBufferFormatVR = RGBA16F;
-         break;
-      case 1:
-      default:
-         renderBufferFormatVR = RGBA8;
-         break;
-      }
-      m_pOffscreenVRLeft = new RenderTarget(this, m_width / 2, m_height, renderBufferFormatVR, false, false, m_stereo3D, "Fatal Error: unable to create left eye buffer!");
-      m_pOffscreenVRRight = new RenderTarget(this, m_width / 2, m_height, renderBufferFormatVR, false, false, m_stereo3D, "Fatal Error: unable to create right eye buffer!");
-   }
-
-   // Non-MSAA Buffers for post-processing (postprocess is done at scene resoilution and not at full scene AA resolution)
-   m_pOffscreenBackBufferPPTexture1 = new RenderTarget(this, m_width, m_height, renderBufferFormat, true, false, m_stereo3D, "Fatal Error: unable to create frame buffer 1 !");
-   m_pOffscreenBackBufferPPTexture2 = new RenderTarget(this, m_width, m_height, renderBufferFormat, true, false, m_stereo3D, "Fatal Error: unable to create frame buffer 2 !");
-
-   if (video10bit && (m_FXAA == Quality_SMAA || m_FXAA == Standard_DLAA))
-      ShowError("SMAA or DLAA post-processing AA should not be combined with 10bit-output rendering (will result in visible artifacts)!");
-
-   currentDeclaration = nullptr;
-   //m_curShader = nullptr;
-
-   // fill state caches with dummy values
-   memset(textureStateCache, 0xCC, sizeof(DWORD) * 8 * TEXTURE_STATE_CACHE_SIZE);
-   memset(textureSamplerCache, 0xCC, sizeof(DWORD) * 8 * TEXTURE_SAMPLER_CACHE_SIZE);
-
-   // initialize performance counters
-   m_curDrawCalls = m_frameDrawCalls = 0;
-   m_curStateChanges = m_frameStateChanges = 0;
-   m_curTextureChanges = m_frameTextureChanges = 0;
-   m_curParameterChanges = m_frameParameterChanges = 0;
-   m_curTextureUpdates = m_frameTextureUpdates = 0;
-
    m_maxaniso = 0;
    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &m_maxaniso);
 
+   m_autogen_mipmap = true;
+
    SetRenderState(RenderDevice::ZFUNC, RenderDevice::Z_LESSEQUAL);
-}
-
-bool RenderDevice::LoadShaders()
-{
-   bool shaderCompilationOkay = true;
-
-   char glShaderPath[MAX_PATH];
-   /*DWORD length =*/ GetModuleFileName(nullptr, glShaderPath, MAX_PATH);
-
-   if (m_stereo3D == STEREO_OFF) {
-      Shader::Defines = "#define eyes 1\n#define enable_VR 0";
-   } else  if (m_stereo3D == STEREO_VR) {
-      Shader::Defines = "#define eyes 2\n#define enable_VR 1";
-   } else {
-      Shader::Defines = "#define eyes 2\n#define enable_VR 0";
-   }
-
-   Shader::shaderPath = string(glShaderPath);
-   Shader::shaderPath = Shader::shaderPath.substr(0, Shader::shaderPath.find_last_of("\\/"));
-   Shader::shaderPath.append("\\glshader\\");
-   basicShader = new Shader(this);
-   shaderCompilationOkay = basicShader->Load("BasicShader.glfx", 0) && shaderCompilationOkay;
-
-   DMDShader = new Shader(this);
-   if (m_stereo3D == STEREO_VR)
-      shaderCompilationOkay = DMDShader->Load("DMDShaderVR.glfx", 0) && shaderCompilationOkay;
-   else
-      shaderCompilationOkay = DMDShader->Load("DMDShader.glfx", 0) && shaderCompilationOkay;
-
-   FBShader = new Shader(this);
-   shaderCompilationOkay = FBShader->Load("FBShader.glfx", 0) && shaderCompilationOkay;
-   shaderCompilationOkay = FBShader->Load("SMAA.glfx", 0) && shaderCompilationOkay;
-
-   if (m_stereo3D) {
-      StereoShader = new Shader(this);
-      shaderCompilationOkay = StereoShader->Load("StereoShader.glfx", 0) && shaderCompilationOkay;
-   }
-   else
-      StereoShader = nullptr;
-
-   flasherShader = new Shader(this);
-   shaderCompilationOkay = flasherShader->Load("flasherShader.glfx", 0) && shaderCompilationOkay;
-
-   lightShader = new Shader(this);
-   shaderCompilationOkay = lightShader->Load("lightShader.glfx", 0) && shaderCompilationOkay;
-
-#ifdef SEPARATE_CLASSICLIGHTSHADER
-   classicLightShader = new Shader(this);
-   shaderCompilationOkay = classicLightShader->Load("classicLightShader.glfx", 0) && shaderCompilationOkay;
-#endif
-
-   if (shaderCompilationOkay && m_FXAA == Quality_SMAA)
-      UploadAndSetSMAATextures();
-   else
-   {
-      m_SMAAareaTexture = nullptr;
-      m_SMAAsearchTexture = nullptr;
-   }
-
-   // Initialize uniform to default value
-   if (shaderCompilationOkay)
-      basicShader->SetFlasherColorAlpha(vec4(1.0f, 1.0f, 1.0f, 1.0f));
-
-   return shaderCompilationOkay;
-}
 
 #else
+   ///////////////////////////////////
+   // DirectX 9 device initialization
 
-void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
-{
 #ifdef USE_D3D9EX
    m_pD3DEx = nullptr;
    m_pD3DDeviceEx = nullptr;
@@ -1239,12 +1107,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 #endif
 
    // Determine if INTZ is supported
-#ifdef ENABLE_SDL
-   m_INTZ_support = false;
-#else
    m_INTZ_support = (m_pD3D->CheckDeviceFormat( m_adapter, devtype, params.BackBufferFormat,
                      D3DUSAGE_DEPTHSTENCIL, D3DRTYPE_TEXTURE, ((D3DFORMAT)(MAKEFOURCC('I','N','T','Z'))))) == D3D_OK;
-#endif
 
    // check if requested MSAA is possible
    DWORD MultiSampleQualityLevels;
@@ -1330,49 +1194,84 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 
    /*if (m_fullscreen)
        hr = m_pD3DDevice->SetDialogBoxMode(TRUE);*/ // needs D3DPRESENTFLAG_LOCKABLE_BACKBUFFER, but makes rendering slower on some systems :/
+#endif
 
    // Retrieve a reference to the back buffer.
-   m_pBackBuffer = new RenderTarget(this);
+   m_pBackBuffer = new RenderTarget(this, fbWidth, fbHeight);
 
-   const colorFormat render_format = ((m_BWrendering == 1) ? colorFormat::RG16F : ((m_BWrendering == 2) ? colorFormat::RED16F : colorFormat::RGBA16F));
+   const colorFormat render_format = ((m_BWrendering == 1) ? colorFormat::RG16F : ((m_BWrendering == 2) ? colorFormat::RED16F : colorFormat::RGB16F));
+   int m_width_aa = (int)(m_width * m_AAfactor);
+   int m_height_aa = (int)(m_height * m_AAfactor);
 
    // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
-   hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pOffscreenBackBufferTexture, nullptr); //!! colorFormat::RGBA32F?
-   if (FAILED(hr))
-      ReportError("Fatal Error: unable to create render buffer!", hr, __FILE__, __LINE__);
+   m_pOffscreenBackBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, true, g_pplayer->m_MSAASamples > 1, m_stereo3D, "Fatal Error: unable to create render buffer!");
 
+   // If we are doing MSAA we need a texture with the same dimensions as the Back Buffer to resolve the end result to, can also use it for Post-AA
+   if (g_pplayer->m_MSAASamples > 1 || m_FXAA > 0)
+      m_pOffscreenNonMSAABlitTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, true, false, m_stereo3D, "Fatal Error: unable to create render buffer!");
+   else
+      m_pOffscreenNonMSAABlitTexture = nullptr;
+
+   // alloc buffer for screen space fake reflection rendering (optionally 2x2 res for manual super sampling)
+   if (m_ssRefl)
+      m_pReflectionBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, false, false, m_stereo3D, "Fatal Error: unable to create reflection buffer!");
+   else
+      m_pReflectionBufferTexture = nullptr;
+
+   m_pMirrorTmpBufferTexture = nullptr;
    if (g_pplayer != nullptr)
    {
       const bool drawBallReflection = ((g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
       if ((g_pplayer->m_ptable->m_reflectElementsOnPlayfield /*&& g_pplayer->m_pf_refl*/) || drawBallReflection)
-      {
-         hr = m_pD3DDevice->CreateTexture(m_Buf_widthSS, m_Buf_heightSS, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pMirrorTmpBufferTexture, nullptr); //!! colorFormat::RGBA32?
-         if (FAILED(hr))
-            ReportError("Fatal Error: unable to create reflection map!", hr, __FILE__, __LINE__);
-      }
+         m_pMirrorTmpBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, false, false, m_stereo3D, "Fatal Error: unable to create mirror buffer!");
    }
+
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
-   hr = m_pD3DDevice->CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pBloomBufferTexture, nullptr); //!! 8bit enough?
-   if (FAILED(hr))
-      ReportError("Fatal Error: unable to create bloom buffer!", hr, __FILE__, __LINE__);
+   m_pBloomBufferTexture = new RenderTarget(this, m_width / 4, m_height / 4, render_format, false, false, m_stereo3D, "Fatal Error: unable to create bloom buffer!");
 
    // temporary buffer for gaussian blur
-   hr = m_pD3DDevice->CreateTexture(m_Buf_widthBlur, m_Buf_heightBlur, 1, D3DUSAGE_RENDERTARGET, render_format, (D3DPOOL)memoryPool::DEFAULT, &m_pBloomTmpBufferTexture, nullptr); //!! 8bit are enough! //!! but used also for bulb light transmission hack now!
-   if (FAILED(hr))
-      ReportError("Fatal Error: unable to create blur buffer!", hr, __FILE__, __LINE__);
+   m_pBloomTmpBufferTexture = new RenderTarget(this, m_width / 4, m_height / 4, render_format, false, false, m_stereo3D, "Fatal Error: unable to create blur buffer!");
+
+   if (m_stereo3D == STEREO_VR) {
+      //AMD Debugging
+      colorFormat renderBufferFormatVR;
+      const int textureModeVR = LoadValueIntWithDefault(regKey[RegName::Player], "textureModeVR"s, 1);
+      switch (textureModeVR) {
+      case 0:
+         renderBufferFormatVR = RGB8;
+         break;
+      case 2:
+         renderBufferFormatVR = RGB16F;
+         break;
+      case 3:
+         renderBufferFormatVR = RGBA16F;
+         break;
+      case 1:
+      default:
+         renderBufferFormatVR = RGBA8;
+         break;
+      }
+      m_pOffscreenVRLeft = new RenderTarget(this, m_width / 2, m_height, renderBufferFormatVR, false, false, m_stereo3D, "Fatal Error: unable to create left eye buffer!");
+      m_pOffscreenVRRight = new RenderTarget(this, m_width / 2, m_height, renderBufferFormatVR, false, false, m_stereo3D, "Fatal Error: unable to create right eye buffer!");
+   }
+
+   // Non-MSAA Buffers for post-processing (postprocess is done at scene resoilution and not at full scene AA resolution)
+
+   // alloc temporary buffer for stereo3D/post-processing AA/sharpen
+   if ((m_stereo3D != STEREO_OFF) || (m_FXAA > 0) || m_sharpen)
+      m_pOffscreenBackBufferTmpTexture = new RenderTarget(this, m_width, m_height, video10bit ? colorFormat::RGBA10 : colorFormat::RGBA8, false, false, m_stereo3D,
+         "Fatal Error: unable to create stereo3D/post-processing AA/sharpen buffer!");
+   else
+      m_pOffscreenBackBufferTmpTexture = nullptr;
 
    // alloc one more temporary buffer for SMAA
    if (m_FXAA == Quality_SMAA)
-   {
-      hr = m_pD3DDevice->CreateTexture(m_Buf_width, m_Buf_height, 1, D3DUSAGE_RENDERTARGET, (D3DFORMAT)(video10bit ? colorFormat::RGBA10 : colorFormat::RGBA), (D3DPOOL)memoryPool::DEFAULT, &m_pOffscreenBackBufferPPTexture1, nullptr);
-      if (FAILED(hr))
-         ReportError("Fatal Error: unable to create SMAA buffer!", hr, __FILE__, __LINE__);
-   }
+      m_pOffscreenBackBufferTmpTexture2 = new RenderTarget(this, m_width, m_height, video10bit ? colorFormat::RGBA10 : colorFormat::RGBA8, false, false, m_stereo3D, "Fatal Error: unable to create SMAA buffer!");
    else
-      m_pOffscreenBackBufferPPTexture1 = nullptr;
+      m_pOffscreenBackBufferTmpTexture2 = nullptr;
 
    if (video10bit && (m_FXAA == Quality_SMAA || m_FXAA == Standard_DLAA))
-      ShowError("SMAA or DLAA post-processing AA should not be combined with 10Bit-output rendering (will result in visible artifacts)!");
+      ShowError("SMAA or DLAA post-processing AA should not be combined with 10bit-output rendering (will result in visible artifacts)!");
 
    //
 
@@ -1393,33 +1292,51 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 
 bool RenderDevice::LoadShaders()
 {
-   bool shaderCompilationOkay = true;
-
    basicShader = new Shader(this);
-   shaderCompilationOkay = basicShader->Load(g_basicShaderCode, sizeof(g_basicShaderCode)) && shaderCompilationOkay;
-
    DMDShader = new Shader(this);
-   shaderCompilationOkay = DMDShader->Load(g_dmdShaderCode, sizeof(g_dmdShaderCode)) && shaderCompilationOkay;
-
    FBShader = new Shader(this);
-   shaderCompilationOkay = FBShader->Load(g_FBShaderCode, sizeof(g_FBShaderCode)) && shaderCompilationOkay;
+   flasherShader = new Shader(this);
+   lightShader = new Shader(this);
+   StereoShader = nullptr;
 
+   bool shaderCompilationOkay = true;
+#ifdef ENABLE_SDL
+   char glShaderPath[MAX_PATH];
+   /*DWORD length =*/ GetModuleFileName(nullptr, glShaderPath, MAX_PATH);
+   if (m_stereo3D == STEREO_OFF) {
+      Shader::Defines = "#define eyes 1\n#define enable_VR 0";
+   } else  if (m_stereo3D == STEREO_VR) {
+      Shader::Defines = "#define eyes 2\n#define enable_VR 1";
+   } else {
+      Shader::Defines = "#define eyes 2\n#define enable_VR 0";
+   }
+   Shader::shaderPath = string(glShaderPath);
+   Shader::shaderPath = Shader::shaderPath.substr(0, Shader::shaderPath.find_last_of("\\/"));
+   Shader::shaderPath.append("\\glshader\\");
+   shaderCompilationOkay = basicShader->Load("BasicShader.glfx", 0) && shaderCompilationOkay;
+   shaderCompilationOkay = DMDShader->Load(m_stereo3D == STEREO_VR ? "DMDShaderVR.glfx" : "DMDShader.glfx", 0) && shaderCompilationOkay;
+   shaderCompilationOkay = FBShader->Load("FBShader.glfx", 0) && shaderCompilationOkay;
+   shaderCompilationOkay = FBShader->Load("SMAA.glfx", 0) && shaderCompilationOkay;
+   shaderCompilationOkay = flasherShader->Load("flasherShader.glfx", 0) && shaderCompilationOkay;
+   shaderCompilationOkay = lightShader->Load("lightShader.glfx", 0) && shaderCompilationOkay;
    if (m_stereo3D != STEREO_OFF) {
       StereoShader = new Shader(this);
-      shaderCompilationOkay = StereoShader->Load(g_StereoShaderCode, sizeof(g_StereoShaderCode)) && shaderCompilationOkay;
+      shaderCompilationOkay = StereoShader->Load("StereoShader.glfx", 0) && shaderCompilationOkay;
    }
-   else
-      StereoShader = nullptr;
-
-   flasherShader = new Shader(this);
+#ifdef SEPARATE_CLASSICLIGHTSHADER
+   classicLightShader = new Shader(this);
+   shaderCompilationOkay = classicLightShader->Load("classicLightShader.glfx", 0) && shaderCompilationOkay;
+#endif
+#else // ENABLE_SDL
+   shaderCompilationOkay = basicShader->Load(g_basicShaderCode, sizeof(g_basicShaderCode)) && shaderCompilationOkay;
+   shaderCompilationOkay = DMDShader->Load(g_dmdShaderCode, sizeof(g_dmdShaderCode)) && shaderCompilationOkay;
+   shaderCompilationOkay = FBShader->Load(g_FBShaderCode, sizeof(g_FBShaderCode)) && shaderCompilationOkay;
    shaderCompilationOkay = flasherShader->Load(g_flasherShaderCode, sizeof(g_flasherShaderCode)) && shaderCompilationOkay;
-
-   lightShader = new Shader(this);
    shaderCompilationOkay = lightShader->Load(g_lightShaderCode, sizeof(g_lightShaderCode)) && shaderCompilationOkay;
-
 #ifdef SEPARATE_CLASSICLIGHTSHADER
    classicLightShader = new Shader(this);
    shaderCompilationOkay = classicLightShader->Load(g_classicLightShaderCode, sizeof(g_classicLightShaderCode)) && shaderCompilationOkay;
+#endif
 #endif
 
    if (!shaderCompilationOkay)
@@ -1435,6 +1352,7 @@ bool RenderDevice::LoadShaders()
       FBShader->SetTexture(SHADER_areaTex2D, m_SMAAareaTexture);
       FBShader->SetTexture(SHADER_searchTex2D, m_SMAAsearchTexture);
 #else
+      // FIXME Shader rely on texture to be named with a leading texture unit. SetTexture will fail otherwise...
       CHECKD3D(FBShader->Core()->SetTexture(SHADER_areaTex2D, m_SMAAareaTexture->GetCoreTexture()));
       CHECKD3D(FBShader->Core()->SetTexture(SHADER_searchTex2D, m_SMAAsearchTexture->GetCoreTexture()));
 #endif
@@ -1445,7 +1363,6 @@ bool RenderDevice::LoadShaders()
 
    return true;
 }
-#endif
 
 bool RenderDevice::DepthBufferReadBackAvailable()
 {
@@ -1496,14 +1413,14 @@ void RenderDevice::FreeShader()
       basicShader->SetTextureNull(SHADER_tex_env);
       basicShader->SetTextureNull(SHADER_tex_diffuse_env);
       delete basicShader;
-      basicShader = 0;
+      basicShader = nullptr;
    }
    if (DMDShader)
    {
       DMDShader->SetTextureNull(SHADER_tex_dmd);
       DMDShader->SetTextureNull(SHADER_tex_sprite);
       delete DMDShader;
-      DMDShader = 0;
+      DMDShader = nullptr;
    }
    if (FBShader)
    {
@@ -1520,26 +1437,26 @@ void RenderDevice::FreeShader()
       FBShader->SetTextureNull(SHADER_searchTex2D);
 
       delete FBShader;
-      FBShader = 0;
+      FBShader = nullptr;
    }
    if (StereoShader)
    {
       StereoShader->SetTextureNull(SHADER_tex_stereo_fb);
 
       delete StereoShader;
-      StereoShader = 0;
+      StereoShader = nullptr;
    }
    if (flasherShader)
    {
       flasherShader->SetTextureNull(SHADER_tex_flasher_A);
       flasherShader->SetTextureNull(SHADER_tex_flasher_B);
       delete flasherShader;
-      flasherShader = 0;
+      flasherShader = nullptr;
    }
    if (lightShader)
    {
       delete lightShader;
-      lightShader = 0;
+      lightShader = nullptr;
    }
 #ifdef SEPARATE_CLASSICLIGHTSHADER
    if (classicLightShader)
@@ -1548,7 +1465,7 @@ void RenderDevice::FreeShader()
       classicLightShader->SetTextureNull(SHADER_tex_env);
       classicLightShader->SetTextureNull(SHADER_tex_diffuse_env);
       delete classicLightShader;
-      classicLightShader=0;
+      classicLightShader = nullptr;
    }
 #endif
 }
@@ -1590,7 +1507,9 @@ RenderDevice::~RenderDevice()
 
    m_texMan.UnloadAll();
    delete m_pOffscreenBackBufferTexture;
-   delete m_pOffscreenBackBufferPPTexture1;
+   delete m_pOffscreenBackBufferTmpTexture;
+   delete m_pOffscreenBackBufferTmpTexture2;
+   delete m_pReflectionBufferTexture;
 
    if (g_pplayer)
    {
@@ -1747,9 +1666,9 @@ void RenderDevice::Flip(const bool vsync)
    m_curLockCalls = 0;
 }
 
-#ifdef ENABLE_SDL
 void RenderDevice::UploadAndSetSMAATextures()
 {
+#ifdef ENABLE_SDL
    GLuint glTexture;
    int num_mips;
 
@@ -1810,10 +1729,7 @@ void RenderDevice::UploadAndSetSMAATextures()
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, AREATEX_WIDTH, AREATEX_HEIGHT, GL_RG, GL_UNSIGNED_BYTE, (void*)searchTexBytes);
    glGenerateMipmap(GL_TEXTURE_2D); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwise good idea to limit by GL_TEXTURE_MAX_LEVEL
    m_SMAAareaTexture = new Sampler(this, glTexture, true, false, false);
-}
 #else
-void RenderDevice::UploadAndSetSMAATextures()
-{
    {
       IDirect3DTexture9 *sysTex, *tex;
       HRESULT hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREY8, (D3DPOOL)memoryPool::SYSTEM, &sysTex, nullptr);
@@ -1859,8 +1775,8 @@ void RenderDevice::UploadAndSetSMAATextures()
 
       m_SMAAareaTexture = new Sampler(this, tex, true, true);
    }
-}
 #endif
+}
 
 void RenderDevice::SetSamplerState(const DWORD Sampler, const DWORD minFilter, const DWORD magFilter, const SamplerStateValues mipFilter)
 {
@@ -2191,7 +2107,6 @@ void RenderDevice::DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, V
 
    vb->bind();
 #ifdef ENABLE_SDL
-   //glDrawArraysInstanced(type, vb->getOffset() + startVertex, vertexCount, m_stereo3D != STEREO_OFF ? 2 : 1); // Do instancing in geometry shader instead
    Shader::GetCurrentShader()->setAttributeFormat(fvf);
    glDrawArrays(type, vb->getOffset() + startVertex, vertexCount);
 #else
@@ -2216,9 +2131,8 @@ void RenderDevice::DrawIndexedPrimitiveVB(const PrimitiveTypes type, const DWORD
    ib->bind();
 
 #ifdef ENABLE_SDL
-   const int offset = ib->getOffset() + (ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? 2 : 4) * startIndex;
-   //glDrawElementsInstancedBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, m_stereo3D != STEREO_OFF ? 2 : 1, vb->getOffset() + startVertex); // Do instancing in geometry shader instead
    Shader::GetCurrentShader()->setAttributeFormat(fvf);
+   const int offset = ib->getOffset() + (ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? 2 : 4) * startIndex;
    glDrawElementsBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, vb->getOffset() + startVertex);
 #else
    VertexDeclaration* declaration = fvfToDecl(fvf);
