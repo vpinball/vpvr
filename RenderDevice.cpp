@@ -2192,6 +2192,7 @@ void RenderDevice::DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, V
    vb->bind();
 #ifdef ENABLE_SDL
    //glDrawArraysInstanced(type, vb->getOffset() + startVertex, vertexCount, m_stereo3D != STEREO_OFF ? 2 : 1); // Do instancing in geometry shader instead
+   Shader::GetCurrentShader()->setAttributeFormat(fvf);
    glDrawArrays(type, vb->getOffset() + startVertex, vertexCount);
 #else
    VertexDeclaration * declaration = fvfToDecl(fvf);
@@ -2217,6 +2218,7 @@ void RenderDevice::DrawIndexedPrimitiveVB(const PrimitiveTypes type, const DWORD
 #ifdef ENABLE_SDL
    const int offset = ib->getOffset() + (ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? 2 : 4) * startIndex;
    //glDrawElementsInstancedBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, m_stereo3D != STEREO_OFF ? 2 : 1, vb->getOffset() + startVertex); // Do instancing in geometry shader instead
+   Shader::GetCurrentShader()->setAttributeFormat(fvf);
    glDrawElementsBaseVertex(type, indexCount, ib->getIndexFormat() == IndexBuffer::FMT_INDEX16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, (void*)offset, vb->getOffset() + startVertex);
 #else
    VertexDeclaration* declaration = fvfToDecl(fvf);

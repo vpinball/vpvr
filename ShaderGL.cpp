@@ -19,48 +19,6 @@ static std::ofstream* logFile = nullptr;
 string Shader::shaderPath;
 string Shader::Defines;
 Matrix3D Shader::mWorld, Shader::mView, Shader::mProj[2];
-int Shader::m_currentShaderProgram = -1;
-Sampler* Shader::noTexture = nullptr;
-Sampler* Shader::noTextureMSAA = nullptr;
-static const float zeroValues[16] = { 0.0f,0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-const float* Shader::zeroData = zeroValues;
-
-static const string shaderAttributeNames[SHADER_ATTRIBUTE_COUNT]{
-   "vPosition", "vNormal", "tc", "tex0"
-};
-
-ShaderUniforms Shader::getUniformByName(const string& name) {
-   for (int i = 0;i < SHADER_UNIFORM_COUNT; ++i)
-      if (name == shaderUniformNames[i].name)
-         return (ShaderUniforms) i;
-
-   LOG(1, m_shaderCodeName, string("getUniformByName Could not find uniform ").append(name).append(" in shaderUniformNames."));
-   return SHADER_UNIFORM_INVALID;
-}
-
-shaderAttributes Shader::getAttributeByName(const string& name) {
-   for (int i = 0;i < SHADER_ATTRIBUTE_COUNT; ++i)
-      if (name == shaderAttributeNames[i])
-         return shaderAttributes(i);
-
-   LOG(1, m_shaderCodeName, string("getAttributeByName Could not find attribute ").append(name).append(" in shaderAttributeNames."));
-   return SHADER_ATTRIBUTE_INVALID;
-}
-
-Shader::~Shader()
-{
-   shaderCount--;
-   this->Unload();
-   if (shaderCount == 0) {
-      delete noTexture;
-      noTexture = nullptr;
-      delete noTextureMSAA;
-      noTextureMSAA = nullptr;
-   }
-   if (m_currentShader == this)
-      m_currentShader = nullptr;
-   delete m_nullTexture;
-}
 
 #if DEBUG_LEVEL_LOG > 0
 void Shader::LOG(const int level, const string& fileNameRoot, const string& message) {
@@ -296,16 +254,14 @@ Shader::ShaderTechnique* Shader::compileGLShader(const string& fileNameRoot, str
    delete [] vertexSource;
 
    if (success) {
-      int count = 0;
       shader = new ShaderTechnique { -1, shaderCodeName };
       shader->program = shaderprogram;
-      for (int i = 0; i < SHADER_ATTRIBUTE_COUNT; ++i) {
+      for (int i = 0; i < SHADER_ATTRIBUTE_COUNT; ++i)
          shader->attributeLocation[i] = { 0, -1, 0 };
-      }
-      for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i) {
+      for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i)
          shader->uniformLocation[i] = { 0, -1, 0, 0 };
-      }
 
+      int count = 0;
       glGetProgramiv(shaderprogram, GL_ACTIVE_UNIFORMS, &count);
       char uniformName[256];
       for (int i = 0;i < count;++i) {
@@ -314,13 +270,11 @@ Shader::ShaderTechnique* Shader::compileGLShader(const string& fileNameRoot, str
          int length;
          glGetActiveUniform(shader->program, (GLuint)i, 256, &length, &size, &type, uniformName);
          int location = glGetUniformLocation(shader->program, uniformName);
-         if (location >= 0 && size>0) {
-            uniformLoc newLoc = {};
-            newLoc.location = location;
-            newLoc.type = type;
-            //hack for packedLights, but works for all arrays
-            newLoc.size = size;
-            for (int i2 = 0;i2 < length;i2++) {
+         if (location >= 0 && size > 0) {
+            uniformLoc newLoc = { type, location, size, -1 };
+            // hack for packedLights, but works for all arrays
+            for (int i2 = 0; i2 < length; i2++)
+            {
                if (uniformName[i2] == '[') {
                   uniformName[i2] = 0;
                   break;
@@ -348,12 +302,9 @@ Shader::ShaderTechnique* Shader::compileGLShader(const string& fileNameRoot, str
          glGetActiveUniformBlockiv(shader->program, (GLuint)i, GL_UNIFORM_BLOCK_DATA_SIZE, &size);
          int location = glGetUniformBlockIndex(shader->program, uniformName);
          if (location >= 0 && size>0) {
-            uniformLoc newLoc = {};
-            newLoc.location = location;
-            newLoc.type = ~0u;
+            uniformLoc newLoc = { ~0u, location, size, -1 };
             glGenBuffers(1, &newLoc.blockBuffer);
             //hack for packedLights, but works for all arrays - I don't need it for uniform blocks now and I'm not sure if it makes any sense, but maybe someone else in the future?
-            newLoc.size = size;
             for (int i2 = 0;i2 < length;i2++) {
                if (uniformName[i2] == '[') {
                   uniformName[i2] = 0;
@@ -426,10 +377,9 @@ string Shader::analyzeFunction(const char* shaderCodeName, const string& _techni
 bool Shader::Load(const char* shaderCodeName, UINT codeSize)
 {
    m_shaderCodeName = shaderCodeName;
-   m_currentShaderProgram = -1;
    LOG(3, (const char*)shaderCodeName, "Start parsing file");
    robin_hood::unordered_map<string, string> values;
-   const bool parsing = parseFile(m_shaderCodeName, m_shaderCodeName, 0, values, "GLOBAL");
+   const bool parsing = parseFile(shaderCodeName, shaderCodeName, 0, values, "GLOBAL");
    if (!parsing) {
       LOG(1, (const char*)shaderCodeName, "Parsing failed");
       char msg[128];
@@ -546,28 +496,35 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
 
 void Shader::Unload()
 {
-   for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i)
-      if(uniformFloatP[i].data)
-         free(uniformFloatP[i].data);
+   for (int j = 0; j <= SHADER_TECHNIQUE_COUNT; ++j)
+   {
+      for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i)
+      {
+         int type = m_techniques[m_technique]->uniformLocation[i].type;
+         if ((type == ~0u || type == GL_FLOAT_MAT2 || type == GL_FLOAT_MAT3 || type == GL_FLOAT_MAT4x3 || type == GL_FLOAT_MAT4x2 || type == GL_FLOAT_MAT3x4 || type == GL_FLOAT_MAT2x4 || type == GL_FLOAT_MAT3x2) && m_uniformCache[j][i].fp.data)
+            free(m_uniformCache[j][i].fp.data);
+      }
+   }
    for (int i = 0; i < SHADER_TECHNIQUE_COUNT; ++i)
+   {
       if (m_techniques[i] != nullptr)
       {
          glDeleteProgram(m_techniques[i]->program);
          m_techniques[i] = nullptr;
       }
+   }
 }
 
 void Shader::setAttributeFormat(DWORD fvf)
 {
-   if (m_technique == nullptr) {
+   if (m_technique == SHADER_TECHNIQUE_INVALID)
       return;
-   }
    for (int i = 0; i < SHADER_ATTRIBUTE_COUNT; ++i)
    {
-      const int location = m_technique->attributeLocation[i].location;
+      const int location = m_techniques[m_technique]->attributeLocation[i].location;
       if (location >= 0) {
          size_t offset;
-         glEnableVertexAttribArray(m_technique->attributeLocation[i].location);
+         glEnableVertexAttribArray(m_techniques[m_technique]->attributeLocation[i].location);
          switch (i) {
          case SHADER_ATTRIBUTE_POS:
             offset = 0;
@@ -584,54 +541,31 @@ void Shader::setAttributeFormat(DWORD fvf)
             offset = 0;
             break;
          }
-         glVertexAttribPointer(m_technique->attributeLocation[i].location, m_technique->attributeLocation[i].size, GL_FLOAT, GL_FALSE, (fvf == MY_D3DFVF_TEX) ? 20 : 32, (void*)offset);
+         glVertexAttribPointer(m_techniques[m_technique]->attributeLocation[i].location, m_techniques[m_technique]->attributeLocation[i].size, GL_FLOAT, GL_FALSE,
+            (fvf == MY_D3DFVF_TEX) ? 20 : 32, (void*)offset);
       }
    }
 }
 
-void Shader::Begin()
-{
-   m_currentShader = this;
-   if (m_technique == nullptr)
-   {
-      char msg[256];
-      sprintf_s(msg, sizeof(msg), "Could not find shader technique");
-      ShowError(msg);
-      exit(-1);
-   }
-   if (m_currentShaderProgram == m_technique->program)
-      return;
-   glUseProgram(m_technique->program);
-   m_nextTextureSlot = 5; // Slots 0 to 4 are used by static texture unit allocation
-   m_currentShaderProgram = m_technique->program;
-   for (int uniformName = 0; uniformName < SHADER_UNIFORM_COUNT; ++uniformName)
-      ApplyUniform((ShaderUniforms)uniformName);
-}
-
-void Shader::End()
-{
-   //Nothing to do for GL
-}
-
 void Shader::SetTechnique(ShaderTechniques _technique)
 {
+   assert(current_shader != this);
    assert(_technique < SHADER_TECHNIQUE_COUNT);
-   m_renderDevice->m_curTechniqueChanges++;
-   m_technique = m_techniques[_technique];
-   if (m_technique == nullptr)
+   if (m_techniques[m_technique] == nullptr)
    {
-      m_technique = nullptr;
+      m_technique = SHADER_TECHNIQUE_INVALID;
       char msg[256];
       sprintf_s(msg, sizeof(msg), "Fatal Error: Could not find shader technique %s", shaderTechniqueNames[_technique].c_str());
       ShowError(msg);
       exit(-1);
    }
+   m_renderDevice->m_curTechniqueChanges++;
+   m_technique = _technique;
 }
 
 void Shader::SetTextureNull(const ShaderUniforms texelName)
 {
-   //Using an unset texture leads to undefined behavior, so keeping the texture is absolutely fine.
-   SetTexture(texelName, m_nullTexture, TextureFilter::TEXTURE_MODE_NONE, false, false, false);
+   SetTexture(texelName, m_noTexture);
 }
 
 void Shader::SetTechniqueMetal(ShaderTechniques _technique, const bool isMetal)
@@ -650,18 +584,17 @@ void Shader::SetTexture(const ShaderUniforms texelName, Texture* texel, const Te
 
 void Shader::SetTexture(const ShaderUniforms texelName, Sampler* texel)
 {
-   if (!texel || (uniformTex[texelName] == texel))
+   if (!texel)
       return;
-   uniformTex[texelName] = texel;
-   if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-      ApplyUniform(texelName);
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][texelName].sampler = texel;
+   ApplyUniform(texelName);
 }
 
 void Shader::SetUniformBlock(const ShaderUniforms hParameter, const float* pMatrix, const size_t size)
 {
-   floatP elem;
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   auto element = &uniformFloatP[hParameter];
+   floatP elem;
+   auto element = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fp;
    if (element->len < size) {
       free(element->data);
       elem.data = (float*)malloc(size * sizeof(float));
@@ -670,105 +603,61 @@ void Shader::SetUniformBlock(const ShaderUniforms hParameter, const float* pMatr
    else
       elem = *element;
    memcpy(elem.data, pMatrix, size * sizeof(float));
-   uniformFloatP[hParameter] = elem;
-   if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-      ApplyUniform(hParameter);
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fp = elem;
+   ApplyUniform(hParameter);
 }
 
 void Shader::SetMatrix(const ShaderUniforms hParameter, const Matrix3D* pMatrix)
 {
-   floatP elem;
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   auto element = &uniformFloatP[hParameter];
-   if (element->len < 16) {
-      free(element->data);
-      elem.data = (float*)malloc(16 * sizeof(float));
-      elem.len = 16;
-   }
-   else
-      elem = *element;
-   memcpy(elem.data, pMatrix->m16, 16 * sizeof(float));
-   uniformFloatP[hParameter] = elem;
-   if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-      ApplyUniform(hParameter);
+   memcpy(m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fvval, pMatrix->m16, 16 * sizeof(float));
+   ApplyUniform(hParameter);
 }
 
 void Shader::SetVector(const ShaderUniforms hParameter, const vec4* pVector)
 {
-   floatP elem;
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   auto element = &uniformFloatP[hParameter];
-   if (element->len < 4) {
-      free(element->data);
-      elem.data = (float*)malloc(4 * sizeof(float));
-      elem.len = 4;
-   }
-   else {
-      if (element->data[0] == pVector->x && element->data[1] == pVector->y && element->data[2] == pVector->z && element->data[3] == pVector->w) return;
-      elem = *element;
-   }
-   memcpy(elem.data, pVector, 4 * sizeof(float));
-   uniformFloatP[hParameter] = elem;
-   if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-      ApplyUniform(hParameter);
+   memcpy(m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fvval, pVector, 4 * sizeof(float));
+   ApplyUniform(hParameter);
 }
 
 void Shader::SetVector(const ShaderUniforms hParameter, const float x, const float y, const float z, const float w)
 {
-   floatP elem;
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   auto element = &uniformFloatP[hParameter];
-   if (element->len < 4) {
-      free(element->data);
-      elem.data = (float*)malloc(4 * sizeof(float));
-      elem.len = 4;
-   }
-   else {
-      if (element->data[0] == x && element->data[1] == y && element->data[2] == z && element->data[3] == w) return;
-      elem = *element;
-   }
-   elem.data[0] = x;
-   elem.data[1] = y;
-   elem.data[2] = z;
-   elem.data[3] = w;
-   uniformFloatP[hParameter] = elem;
-   if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-      ApplyUniform(hParameter);
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fvval[0] = x;
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fvval[1] = y;
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fvval[2] = z;
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fvval[3] = w;
+   ApplyUniform(hParameter);
 }
 
 void Shader::SetFloat(const ShaderUniforms hParameter, const float f)
 {
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   if (uniformFloat[hParameter] == f) return;
-   uniformFloat[hParameter] = f;
-   if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-      ApplyUniform(hParameter);
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fval = f;
+   ApplyUniform(hParameter);
 }
 
 void Shader::SetInt(const ShaderUniforms hParameter, const int i)
 {
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   if (uniformInt[hParameter] == i) return;
-   uniformInt[hParameter] = i;
-   if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-      ApplyUniform(hParameter);
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].ival = i;
+   ApplyUniform(hParameter);
 }
 
 void Shader::SetBool(const ShaderUniforms hParameter, const bool b)
 {
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
    const int i = b ? 1 : 0;
-   if (uniformInt[hParameter] == i) return;
-   uniformInt[hParameter] = i;
-   if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-      ApplyUniform(hParameter);
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].ival = i;
+   ApplyUniform(hParameter);
 }
 
 void Shader::SetFloatArray(const ShaderUniforms hParameter, const float* pData, const unsigned int count)
 {
    floatP elem;
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   auto element = &uniformFloatP[hParameter];
+   auto element = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fp;
    if (element->len < count) {
       free(element->data);
       elem.data = (float*)malloc(count * sizeof(float));
@@ -786,9 +675,8 @@ void Shader::SetFloatArray(const ShaderUniforms hParameter, const float* pData, 
       elem = *element;
    }
    memcpy(elem.data, pData, count * sizeof(float));
-   uniformFloatP[hParameter] = elem;
-   if (m_technique != nullptr && m_currentShaderProgram == m_technique->program)
-      ApplyUniform(hParameter);
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fp = elem;
+   ApplyUniform(hParameter);
 }
 
 void Shader::GetTransform(const TransformStateType p1, Matrix3D* p2, const int count)
@@ -825,153 +713,81 @@ void Shader::SetTransform(const TransformStateType p1, const Matrix3D * p2, cons
 
 void Shader::ApplyUniform(const ShaderUniforms uniformName)
 {
-   // FIXME cache bounded uniforms and only apply the one that have changed
+   if (current_shader != this)
+      return;
    // FIXME cache sampler states and only apply the ones that actually need it
-   const uniformLoc currentUniform = m_technique->uniformLocation[uniformName];
+   const uniformLoc currentUniform = m_techniques[m_technique]->uniformLocation[uniformName];
    if (currentUniform.location < 0 || currentUniform.type == 0 || currentUniform.size == 0)
       return;
+   bool isCacheInvalid = !m_isCacheValid[m_technique];
+   UniformCache* src = &(m_uniformCache[SHADER_TECHNIQUE_COUNT][uniformName]);
+   UniformCache* dst = &(m_uniformCache[m_technique][uniformName]);
    switch (currentUniform.type)
    {
-   case ~0u:
-   { //Uniform blocks
-      const auto valueFP = uniformFloatP[uniformName];
-      glBindBuffer(GL_UNIFORM_BUFFER, currentUniform.blockBuffer);
-      glBufferData(GL_UNIFORM_BUFFER, currentUniform.size, valueFP.data, GL_STREAM_DRAW);
-      glUniformBlockBinding(m_currentShaderProgram, currentUniform.location, 0);
+   case ~0u: // Uniform blocks (currentUniform.size is in byte, src->fp.len is in number of floats)
+      if (isCacheInvalid || memcmp(src->fp.data, dst->fp.data, currentUniform.size) != 0)
+      {
+         if (dst->fp.data == nullptr)
+         {
+            dst->fp.len = src->fp.len;
+            dst->fp.data = (float*)malloc(currentUniform.size);
+         }
+         memcpy(dst->fp.data, src->fp.data, currentUniform.size);
+         glBindBuffer(GL_UNIFORM_BUFFER, currentUniform.blockBuffer);
+         glBufferData(GL_UNIFORM_BUFFER, currentUniform.size, src->fp.data, GL_STREAM_DRAW);
+      }
+      glUniformBlockBinding(m_techniques[m_technique]->program, currentUniform.location, 0);
       glBindBufferRange(GL_UNIFORM_BUFFER, 0, currentUniform.blockBuffer, 0, currentUniform.size);
-   }
-   break;
+      break;
    case GL_FLOAT:
-   {
-      const float valueF = uniformFloat[uniformName];
-      glUniform1f(currentUniform.location, valueF);
-   }
-   break;
+      if (isCacheInvalid || dst->fval != src->fval)
+      {
+         dst->fval = src->fval;
+         glUniform1f(currentUniform.location, src->fval);
+      }
+      break;
    case GL_BOOL:
    case GL_INT:
-   {
-      const int valueI = uniformInt[uniformName];
-      glUniform1i(currentUniform.location, valueI);
-   }
-   break;
-   case GL_FLOAT_VEC2:
-   {
-      auto valueFP = uniformFloatP[uniformName].data;
-      if (valueFP)
-         glUniform2f(currentUniform.location, valueFP[0], valueFP[1]);
-      else
-         glUniform2f(currentUniform.location, 0.0f, 0.0f);
-   }
-   break;
-   case GL_FLOAT_VEC3:
-   {
-      auto valueFP = uniformFloatP[uniformName].data;
-      if (valueFP)
-         glUniform3f(currentUniform.location, valueFP[0], valueFP[1], valueFP[2]);
-      else
-         glUniform3f(currentUniform.location, 0.0f, 0.0f, 0.0f);
-   }
-   break;
-   case GL_FLOAT_VEC4:
-   {
-      auto valueFP = uniformFloatP[uniformName].data;
-      if (valueFP)
+      if (isCacheInvalid || dst->ival != src->ival)
       {
-         if (uniformFloatP[uniformName].len > 4)
-            glUniform4fv(currentUniform.location, uniformFloatP[uniformName].len / 4, uniformFloatP[uniformName].data);
-         else
-            glUniform4f(currentUniform.location, valueFP[0], valueFP[1], valueFP[2], valueFP[3]);
+         dst->ival = src->ival;
+         glUniform1i(currentUniform.location, src->ival);
       }
-      else
-         glUniform4f(currentUniform.location, 0.0f, 0.0f, 0.0f, 0.0f);
-   }
-   break;
-   case GL_FLOAT_MAT2:
-   {
-      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-      glUniformMatrix2fv(currentUniform.location, 1, GL_FALSE, valueFP);
-   }
-   break;
-   case GL_FLOAT_MAT3:
-   {
-      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-      glUniformMatrix3fv(currentUniform.location, 1, GL_FALSE, valueFP);
-   }
-   break;
+      break;
+   case GL_FLOAT_VEC2:
+      if (isCacheInvalid || memcmp(src, dst, 2 * sizeof(float)) != 0)
+      {
+         memcpy(dst, src, 2 * sizeof(float));
+         glUniform2fv(currentUniform.location, 1, src->fvval);
+      }
+      break;
+   case GL_FLOAT_VEC3:
+      if (isCacheInvalid || memcmp(src, dst, 3 * sizeof(float)) != 0)
+      {
+         memcpy(dst, src, 3 * sizeof(float));
+         glUniform3fv(currentUniform.location, 1, src->fvval);
+      }
+      break;
+   case GL_FLOAT_VEC4:
+      if (isCacheInvalid || memcmp(src, dst, 4 * sizeof(float)) != 0)
+      {
+         memcpy(dst, src, 4 * sizeof(float));
+         glUniform4fv(currentUniform.location, 1, src->fvval);
+      }
+      break;
    case GL_FLOAT_MAT4:
-   {
-      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-      glUniformMatrix4fv(currentUniform.location, 1, GL_FALSE, valueFP);
-   }
-   break;
-   case GL_FLOAT_MAT4x3:
-   {
-      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-      glUniformMatrix4x3fv(currentUniform.location, 1, GL_FALSE, valueFP);
-   }
-   break;
-   case GL_FLOAT_MAT4x2:
-   {
-      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-      glUniformMatrix4x2fv(currentUniform.location, 1, GL_FALSE, valueFP);
-   }
-   break;
-   case GL_FLOAT_MAT3x4:
-   {
-      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-      glUniformMatrix3x4fv(currentUniform.location, 1, GL_FALSE, valueFP);
-   }
-   break;
-   case GL_FLOAT_MAT2x4:
-   {
-      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-      glUniformMatrix2x4fv(currentUniform.location, 1, GL_FALSE, valueFP);
-   }
-   break;
-   case GL_FLOAT_MAT3x2:
-   {
-      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-      glUniformMatrix3x2fv(currentUniform.location, 1, GL_FALSE, valueFP);
-   }
-   break;
-   case GL_FLOAT_MAT2x3:
-   {
-      const auto valueFP = uniformFloatP[uniformName].data ? uniformFloatP[uniformName].data : zeroData;
-      glUniformMatrix2x3fv(currentUniform.location, 1, GL_FALSE, valueFP);
-   }
-   break;
+      if (isCacheInvalid || memcmp(src, dst, 4 * 4 * sizeof(float)) != 0)
+      {
+         memcpy(dst, src, 4 * 4 * sizeof(float));
+         glUniformMatrix4fv(currentUniform.location, 1, GL_FALSE, src->fvval);
+      }
+      break;
    case GL_SAMPLER_2D:
    case GL_SAMPLER_2D_MULTISAMPLE:
    {
-      Sampler* texel = uniformTex[uniformName];
+      Sampler* texel = m_uniformCache[SHADER_TECHNIQUE_COUNT][uniformName].sampler;
       if (texel == nullptr)
-      {
-         if (currentUniform.type == GL_SAMPLER_2D_MULTISAMPLE)
-         {
-            if (!noTextureMSAA)
-            {
-               constexpr unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
-               GLuint glTexture;
-               glGenTextures(1, &glTexture);
-               glBindTexture(GL_TEXTURE_2D, glTexture);
-               glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, g_pplayer->m_MSAASamples, GL_RGBA, 2, 2, GL_TRUE);
-               noTextureMSAA = new Sampler(m_renderDevice, glTexture, true, false, false);
-            }
-         }
-         else
-         {
-            if (!noTexture)
-            {
-               constexpr unsigned int data[4] = { 0xff0000ff, 0xffffff00, 0xffff0000, 0xff00ff00 };
-               GLuint glTexture;
-               glGenTextures(1, &glTexture);
-               glBindTexture(GL_TEXTURE_2D, glTexture);
-               glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-               noTexture = new Sampler(m_renderDevice, glTexture, true, false, false);
-            }
-            texel = noTexture;
-         }
-      }
+         texel = m_noTexture;
       int tex_unit = shaderUniformNames[uniformName].default_tex_unit;
       if (tex_unit == -1)
       {
@@ -1011,12 +827,14 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
          break;
       }
+      break;
    }
-   break;
    default:
+   {
       char msg[256];
-      sprintf_s(msg, sizeof(msg), "Unknown uniform type 0x%0002X for %s in %s", currentUniform.type, shaderUniformNames[uniformName].name.c_str(), m_technique->name.c_str());
+      sprintf_s(msg, sizeof(msg), "Unknown uniform type 0x%0002X for %s in %s", currentUniform.type, shaderUniformNames[uniformName].name.c_str(), m_techniques[m_technique]->name.c_str());
       ShowError(msg);
       break;
+   }
    }
 }
