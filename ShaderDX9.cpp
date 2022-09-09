@@ -61,26 +61,6 @@ void Shader::Unload()
    }
 }
 
-Shader::~Shader()
-{
-   shaderCount--;
-   this->Unload();
-}
-
-void Shader::Begin(const unsigned int pass)
-{
-   m_currentShader = this;
-   unsigned int cPasses;
-   CHECKD3D(m_shader->Begin(&cPasses, 0));
-   CHECKD3D(m_shader->BeginPass(pass));
-}
-
-void Shader::End()
-{
-   CHECKD3D(m_shader->EndPass());
-   CHECKD3D(m_shader->End());
-}
-
 void Shader::SetTexture(const ShaderUniforms texelName, Texture *texel, const bool clampU, const bool clampV, const bool force_linear_rgb)
 {
    const unsigned int idx = texelName[strlen(texelName) - 1] - '0'; // current convention: SetTexture gets "TextureX", where X 0..4
