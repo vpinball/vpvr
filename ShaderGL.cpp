@@ -997,7 +997,7 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
          break;
       case SF_BILINEAR: // Bilinar texture filtering.
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
          break;
       case SF_TRILINEAR: // Trilinar texture filtering.
