@@ -2,7 +2,7 @@
 
 #ifdef _DEBUG
 //Writes all compile/parse errors/warnings to a file. (0=never, 1=only errors, 2=warnings, 3=info)
-#define DEBUG_LEVEL_LOG 1
+#define DEBUG_LEVEL_LOG 3
 //Writes all shaders that are compiled to separate files (e.g. ShaderName_Technique_Pass.vs and .fs) (0=never, 1=only if compile failed, 2=always)
 #define WRITE_SHADER_FILES 1
 #else 
@@ -356,7 +356,6 @@ private:
    int m_nextTextureSlot;
    Sampler* m_noTexture;
    static Matrix3D mWorld, mView, mProj[2];
-   const float* m_zeroData;
 
 public:
    void setAttributeFormat(const DWORD fvf);

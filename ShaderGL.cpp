@@ -496,13 +496,24 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
 
 void Shader::Unload()
 {
-   for (int j = 0; j <= SHADER_TECHNIQUE_COUNT; ++j)
+   for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i)
    {
-      for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i)
+      int type = 0;
+      for (int j = 0; j < SHADER_TECHNIQUE_COUNT; ++j)
       {
-         int type = m_techniques[m_technique]->uniformLocation[i].type;
-         if ((type == ~0u || type == GL_FLOAT_MAT2 || type == GL_FLOAT_MAT3 || type == GL_FLOAT_MAT4x3 || type == GL_FLOAT_MAT4x2 || type == GL_FLOAT_MAT3x4 || type == GL_FLOAT_MAT2x4 || type == GL_FLOAT_MAT3x2) && m_uniformCache[j][i].fp.data)
-            free(m_uniformCache[j][i].fp.data);
+         if (m_techniques[j] != nullptr)
+         {
+            type = m_techniques[j]->uniformLocation[i].type;
+            break;
+         }
+      }
+      if (type == ~0u)
+      {
+         for (int j = 0; j <= SHADER_TECHNIQUE_COUNT; ++j)
+         {
+            if (type == ~0u && m_uniformCache[j][i].fp.data)
+               free(m_uniformCache[j][i].fp.data);
+         }
       }
    }
    for (int i = 0; i < SHADER_TECHNIQUE_COUNT; ++i)
@@ -510,6 +521,7 @@ void Shader::Unload()
       if (m_techniques[i] != nullptr)
       {
          glDeleteProgram(m_techniques[i]->program);
+         delete m_techniques[i];
          m_techniques[i] = nullptr;
       }
    }
