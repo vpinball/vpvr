@@ -2310,6 +2310,7 @@ void Player::InitStatic()
             m_pin3d.m_pddsAOBackTmpBuffer->Activate(false);
 
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pddsAOBackBuffer->GetColorSampler()); //!! ?
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, m_pin3d.m_pddsAOBackBuffer->GetColorSampler()); //!! ?
 
          const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height),
             radical_inverse(i)*(float)(1. / 8.0),
@@ -2326,6 +2327,7 @@ void Player::InitStatic()
          m_pin3d.m_pddsAOBackTmpBuffer = tmpAO;
       }
 
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_tex_depth);
       delete tmpDepth;
 
       m_pin3d.m_pddsStatic->Activate(false);
@@ -4053,11 +4055,11 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
    if (sharpen && (!stereo || (m_stereo3D == STEREO_TB || m_stereo3D == STEREO_SBS)))
 #endif
    {
-      // FIXME implement
       assert(renderedRT != m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
-      assert(false);
-      // FIXME if we process for stereo, then we need to output to an intermediate buffer
-      outputRT = m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
+      if (!stereo || (m_stereo3D == STEREO_TB || m_stereo3D == STEREO_SBS))
+         outputRT = m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
+      else
+         outputRT = m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2();
       outputRT->Activate(true);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, renderedRT->GetColorSampler());
@@ -4068,8 +4070,7 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
       const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), (float)m_width, depth_available ? 1.f : 0.f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &w_h_height);
 
-      // FIXME
-      // m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique((sharpen == 1) ? "CAS" : "BilateralSharp_CAS");
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique((sharpen == 1) ? SHADER_TECHNIQUE_fb_CAS : SHADER_TECHNIQUE_fb_BilateralSharp_CAS);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
       m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();

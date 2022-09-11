@@ -1037,3 +1037,149 @@ void main()
 		}
 	}
 }
+
+////ps_main_CAS
+
+in float2 tex0;
+
+void main()
+{
+	// variant with better diagonals
+
+	const float Contrast   = 0.0; // 0..1, Adjusts the range the shader adapts to high contrast (0 is not all the way off).  Higher values = more high contrast sharpening.
+	const float Sharpening = 1.0; // 0..1, Adjusts sharpening intensity by averaging the original pixels to the sharpened result.  1.0 is the unmodified default.
+
+	const float2 u = tex0 + w_h_height.xy*0.5;
+
+	const float3 e = tex2Dlod(tex_fb_unfiltered, float4(u, 0.,0.)).xyz;
+	if(w_h_height.w == 1.0) // depth buffer available?
+	{
+		const float depth0 = tex2Dlod(tex_depth, float4(u, 0.,0.)).x;
+		if((depth0 == 1.0) || (depth0 == 0.0)) // early out if depth too large (=BG) or too small (=DMD,etc)
+		{
+			color = float4(e, 1.0);
+			return;
+		}
+	}
+
+	// fetch a 3x3 neighborhood around the pixel 'e',
+	//  a b c
+	//  d(e)f
+	//  g h i
+	const float2 um1 = u - w_h_height.xy;
+	const float2 up1 = u + w_h_height.xy;
+
+	const float3 a = tex2Dlod(tex_fb_unfiltered, float4(um1,          0.,0.)).xyz;
+	const float3 b = tex2Dlod(tex_fb_unfiltered, float4(u.x,   um1.y, 0.,0.)).xyz;
+	const float3 c = tex2Dlod(tex_fb_unfiltered, float4(up1.x, um1.y, 0.,0.)).xyz;
+	const float3 d = tex2Dlod(tex_fb_unfiltered, float4(um1.x, u.y,   0.,0.)).xyz;
+	const float3 g = tex2Dlod(tex_fb_unfiltered, float4(um1.x, up1.y, 0.,0.)).xyz; 
+	const float3 f = tex2Dlod(tex_fb_unfiltered, float4(up1.x, u.y,   0.,0.)).xyz;
+	const float3 h = tex2Dlod(tex_fb_unfiltered, float4(u.x,   up1.y, 0.,0.)).xyz;
+	const float3 i = tex2Dlod(tex_fb_unfiltered, float4(up1,          0.,0.)).xyz;
+
+	// Soft min and max.
+	//  a b c             b
+	//  d e f * 0.5  +  d e f * 0.5
+	//  g h i             h
+	// These are 2.0x bigger (factored out the extra multiply).
+	float3 mnRGB = min(min(min(d, e), min(f, b)), h);
+	const float3 mnRGB2 = min(mnRGB, min(min(a, c), min(g, i)));
+	mnRGB += mnRGB2;
+
+	float3 mxRGB = max(max(max(d, e), max(f, b)), h);
+	const float3 mxRGB2 = max(mxRGB, max(max(a, c), max(g, i)));
+	mxRGB += mxRGB2;
+
+	// Smooth minimum distance to signal limit divided by smooth max.
+	const float3 rcpMRGB = float3(1.0) / (mxRGB);
+	float3 ampRGB = saturate(min(mnRGB, 2.0 - mxRGB) * rcpMRGB);
+
+	// Shaping amount of sharpening.
+	ampRGB = rsqrt(ampRGB);
+
+	const float peak = -3.0 * Contrast + 8.0;
+	const float3 wRGB = -float3(1.0) / (ampRGB * peak);
+
+	const float3 rcpWeightRGB = float3(1.0) / (4.0 * wRGB + float3(1.0));
+
+	//                          0 w 0
+	//  Filter shape:           w 1 w
+	//                          0 w 0  
+	const float3 window = (b + d) + (f + h);
+	const float3 outColor = saturate((window * wRGB + e) * rcpWeightRGB);
+
+	color = float4(lerp(e, outColor, Sharpening), 1.);
+	
+	color = vec4(outColor, 1.0);
+}
+
+
+////ps_main_BilateralSharp_CAS
+
+in float2 tex0;
+
+float normpdf(const float3 v, const float sigma)
+{
+	return exp(dot(v,v)*(-0.5/(sigma*sigma)))*(0.39894228040143/sigma);
+}
+
+float LI(const float3 l)
+{
+	return dot(l, float3(0.25,0.5,0.25)); // experimental, red and blue should not suffer too much
+	//return dot(l, float3(0.2126, 0.7152, 0.0722));
+}
+
+void main()
+{
+	const float sharpness = 0.625*3.1;
+
+	const float2 u = tex0 + w_h_height.xy*0.5;
+
+	const float3 e = tex2Dlod(tex_fb_unfiltered, float4(u, 0.,0.)).xyz;
+	if(w_h_height.w == 1.0) // depth buffer available?
+	{
+		const float depth0 = tex2Dlod(tex_depth, float4(u, 0.,0.)).x;
+		if((depth0 == 1.0) || (depth0 == 0.0)) // early out if depth too large (=BG) or too small (=DMD,etc)
+		{
+			color = float4(e, 1.0);
+			return;
+		}
+	}
+
+	// Bilateral Blur (crippled)
+	float3 final_colour = float3(0.,0.,0.);
+	float Z = 0.0;
+	for (int j=-2; j <= 2; ++j) // 2 = kernelradius
+		for (int i=-2; i <= 2; ++i)
+		{
+			const float3 cc = tex2Dlod(tex_fb_unfiltered, float4(u.x + i*(w_h_height.x*0.5), u.y + j*(w_h_height.y*0.5), 0.,0.)).xyz; // *0.5 = 1/kernelradius
+			const float factor = normpdf(cc-e, 0.25); // 0.25 = BSIGMA
+			Z += factor;
+			final_colour += factor*cc;
+		}
+
+	// CAS (without Better Diagonals)
+	const float2 um1 = u - w_h_height.xy;
+	const float2 up1 = u + w_h_height.xy;
+
+	const float b = LI(tex2Dlod(tex_fb_unfiltered, float4(u.x, um1.y, 0.,0.)).xyz);
+	const float d = LI(tex2Dlod(tex_fb_unfiltered, float4(um1.x, u.y, 0.,0.)).xyz);
+	const float f = LI(tex2Dlod(tex_fb_unfiltered, float4(up1.x, u.y, 0.,0.)).xyz);
+	const float h = LI(tex2Dlod(tex_fb_unfiltered, float4(u.x, up1.y, 0.,0.)).xyz);
+	const float e1 = LI(e);
+
+	const float mnRGB = min(min(min(d, e1), min(f, b)), h);
+	const float mxRGB = max(max(max(d, e1), max(f, b)), h);
+
+	// Smooth minimum distance to signal limit divided by smooth max.
+	const float rcpMRGB = 1.0 / mxRGB;
+	const float ampRGB = saturate(min(mnRGB, 1.0 - mxRGB) * rcpMRGB);
+
+	float3 sharpen = (e-final_colour/Z) * sharpness;
+
+	const float gs_sharpen = dot(sharpen, float3(0.333333333333));
+	sharpen = lerp(float3(gs_sharpen), sharpen, 0.5);
+
+	color = float4(lerp(e, sharpen+e, ampRGB*saturate(sharpness)), 1.0);
+}

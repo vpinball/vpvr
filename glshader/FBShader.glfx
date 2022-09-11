@@ -2,6 +2,7 @@
 #version 450 core
 
 ////VERTEX
+uniform vec4 w_h_height; // in bloom w_h_height.z keeps strength
 
 ////FRAGMENT
 #include "Helpers.fxh"
@@ -188,7 +189,8 @@ out vec2 tex0;
 void main()
 { 
    gl_Position = vec4(vPosition.x,-vPosition.y,0.0,1.0);
-   tex0 = tc;
+   // Offset texture coordinates since OpenGL texel center is shifted by half a texel from DirectX texel center
+   tex0 = tc - w_h_height.xy*0.5;
 }
 
 ////ps_main_fb_tonemap
@@ -522,7 +524,7 @@ fb_bloom_vert19x19h:P0:vs_main_no_trafo():ps_main_fb_bloom_vert19x19h()
 //fb_bloom_vert27x27:P0:vs_main_no_trafo():ps_main_fb_bloom_vert27x27()
 fb_bloom_horiz39x39:P0:vs_main_no_trafo():ps_main_fb_bloom_horiz39x39()
 fb_bloom_vert39x39:P0:vs_main_no_trafo():ps_main_fb_bloom_vert39x39()
-SSReflection:P0:vs_main_no_trafo():ps_main_fb_ss_refl()
-
-
 fb_mirror:P0:vs_main_no_trafo():ps_main_fb_mirror()
+fb_CAS:P0:vs_main_no_trafo():ps_main_CAS()
+fb_BilateralSharp_CAS:P0:vs_main_no_trafo():ps_main_BilateralSharp_CAS()
+SSReflection:P0:vs_main_no_trafo():ps_main_fb_ss_refl()
