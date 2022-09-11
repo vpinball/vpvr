@@ -20,7 +20,7 @@ RenderTarget::RenderTarget(RenderDevice* rd, int width, int height)
    m_width = width;
    m_height = height;
    m_has_depth = false;
-   m_use_mSAA = false;
+   m_nMSAASamples = 0;
    m_color_sampler = nullptr;
    m_depth_sampler = nullptr;
 #ifdef ENABLE_SDL
@@ -39,7 +39,7 @@ RenderTarget::RenderTarget(RenderDevice* rd, int width, int height)
 #endif
 }
 
-RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, const colorFormat format, bool with_depth, bool use_MSAA, StereoMode stereo, char* failureMessage)
+RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, const colorFormat format, bool with_depth, int nMSAASamples, StereoMode stereo, char* failureMessage)
 {
    m_is_back_buffer = false;
    m_rd = rd;
@@ -48,7 +48,7 @@ RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, 
    m_height = height;
    m_format = format;
    m_has_depth = with_depth;
-   m_use_mSAA = use_MSAA;
+   m_nMSAASamples = nMSAASamples;
 #ifdef ENABLE_SDL
    const GLuint col_type = ((format == RGBA32F) || (format == RGB32F)) ? GL_FLOAT : ((format == RGBA16F) || (format == RGB16F)) ? GL_HALF_FLOAT : GL_UNSIGNED_BYTE;
    const GLuint col_format = ((format == GREY8) || (format == RED16F))                                                                                                      ? GL_RED
@@ -63,10 +63,10 @@ RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, 
    glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
    glGenTextures(1, &m_color_tex);
 
-   if (g_pplayer->m_MSAASamples > 1 && use_MSAA)
+   if (nMSAASamples > 1)
    {
       glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_color_tex);
-      glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, g_pplayer->m_MSAASamples, format, width, height, GL_TRUE);
+      glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, nMSAASamples, format, width, height, GL_TRUE);
       glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, m_color_tex, 0);
 
@@ -74,7 +74,7 @@ RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, 
       {
          glGenRenderbuffers(1, &m_depth_tex);
          glBindRenderbuffer(GL_RENDERBUFFER, m_depth_tex);
-         glRenderbufferStorageMultisample(GL_RENDERBUFFER, g_pplayer->m_MSAASamples, GL_DEPTH_COMPONENT, width, height);
+         glRenderbufferStorageMultisample(GL_RENDERBUFFER, nMSAASamples, GL_DEPTH_COMPONENT, width, height);
          glBindRenderbuffer(GL_RENDERBUFFER, 0);
          glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depth_tex);
       }
@@ -129,8 +129,8 @@ RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, 
       exit(-1);
    }
 
-   m_color_sampler = new Sampler(m_rd, m_color_tex, false, use_MSAA, true);
-   m_depth_sampler = with_depth ? new Sampler(m_rd, m_depth_tex, false, use_MSAA, true) : nullptr;
+   m_color_sampler = new Sampler(m_rd, m_color_tex, false, nMSAASamples > 1, true);
+   m_depth_sampler = with_depth ? new Sampler(m_rd, m_depth_tex, false, nMSAASamples > 1, true) : nullptr;
 
    glClearDepthf(1.0f);
    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -228,14 +228,14 @@ void RenderTarget::UpdateDepthSampler()
 RenderTarget* RenderTarget::Duplicate()
 {
    assert(!m_is_back_buffer);
-   return new RenderTarget(m_rd, m_width, m_height, m_format, m_has_depth, m_use_mSAA, m_stereo, "Failed to duplicate render target");
+   return new RenderTarget(m_rd, m_width, m_height, m_format, m_has_depth, m_nMSAASamples, m_stereo, "Failed to duplicate render target");
 }
 
 void RenderTarget::CopyTo(RenderTarget* dest)
 {
 #ifdef ENABLE_SDL
    glBlitNamedFramebuffer(GetCoreFrameBuffer(), dest->GetCoreFrameBuffer(), 0, 0, GetWidth(), GetHeight(), 0, 0, dest->GetWidth(), dest->GetHeight(),
-      m_has_depth ? GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT : GL_COLOR_BUFFER_BIT, GL_NEAREST);
+      m_has_depth && dest->m_has_depth  ? GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT : GL_COLOR_BUFFER_BIT, GL_NEAREST);
 #else
    CHECKD3D(m_rd->GetCoreDevice()->StretchRect(m_color_surface, nullptr, dest->m_color_surface, nullptr, D3DTEXF_NONE));
    if (m_has_depth && dest->m_has_depth)
