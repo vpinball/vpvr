@@ -65,11 +65,11 @@ RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, 
 
    if (nMSAASamples > 1)
    {
-      glGenRenderbuffers(1, &m_color_tex);
-      glBindRenderbuffer(GL_RENDERBUFFER, m_color_tex);
-      glRenderbufferStorageMultisample(GL_RENDERBUFFER, nMSAASamples, format, width, height);
-      glBindRenderbuffer(GL_RENDERBUFFER, 0);
-      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_color_tex);
+      glGenTextures(1, &m_color_tex);
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_color_tex);
+      glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, nMSAASamples, format, width, height, GL_TRUE);
+      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, m_color_tex, 0);
       if (with_depth)
       {
          glGenRenderbuffers(1, &m_depth_tex);
