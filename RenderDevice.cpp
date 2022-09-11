@@ -1975,11 +1975,13 @@ void RenderDevice::SetRenderStateCulling(RenderStateValue cull)
    }
 
 #ifdef ENABLE_SDL
-   if (renderStateCache[RenderStates::CULLMODE] == CULL_NONE && (cull != CULL_NONE))
-      glEnable(GL_CULL_FACE);
    if (cull == CULL_NONE)
+   {
       glDisable(GL_CULL_FACE);
-   else {
+   }
+   else
+   {
+      glEnable(GL_CULL_FACE);
       glFrontFace(cull);
       glCullFace(GL_FRONT);
    }
