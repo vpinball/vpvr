@@ -5,6 +5,10 @@
 #include "typedefs3D.h"
 #include "RenderDevice.h"
 
+#if DEBUG_LEVEL_LOG == 0
+#define LOG(a,b,c)
+#endif
+
 #define SHADER_TECHNIQUE(name) #name
 const string Shader::shaderTechniqueNames[SHADER_TECHNIQUE_COUNT]
 {
