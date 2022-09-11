@@ -247,9 +247,9 @@ void Shader::Begin()
    current_shader = this;
 #ifdef ENABLE_SDL
    assert(m_technique != SHADER_TECHNIQUE_INVALID);
-   // FIXME only apply if needed
+   // FIXME only apply program if needed, optimize uniform binding, and optimize sampler & sampler state binding
    glUseProgram(m_techniques[m_technique]->program);
-   m_nextTextureSlot = 5; // Slots 0 to 4 are used by static texture unit allocation
+   m_nextTextureSlot = 0;
    for (int uniformName = 0; uniformName < SHADER_UNIFORM_COUNT; ++uniformName)
       ApplyUniform((ShaderUniforms)uniformName);
    m_isCacheValid[m_technique] = true;
