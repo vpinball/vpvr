@@ -20,7 +20,7 @@ uniform sampler2D tex_fb_filtered; // Framebuffer (filtered)
 uniform sampler2D tex_fb_unfiltered; // Framebuffer (unfiltered)
 uniform sampler2D tex_mirror; // Base mirror texture
 uniform sampler2D tex_bloom; // Bloom
-uniform sampler2D tex_ao; // AO Result
+uniform sampler2D tex_ao; // AO Result (also used as input from the previous frame when computing AO)
 uniform sampler2D tex_depth; // Depth
 uniform sampler2D tex_color_lut; // Color grade LUT
 uniform sampler2D tex_ao_dither; // AO dither
@@ -164,7 +164,7 @@ vec3 FBColorGrade(vec3 color)
 {
    if(!color_grade)
        return color;
-
+	   
    color.xy = color.xy*(15.0/16.0) + 1.0/32.0; // assumes 16x16x16 resolution flattened to 256x16 texture
    color.z *= 15.0;
 
@@ -299,7 +299,7 @@ in vec2 tex0;
 void main()
 {
    vec3 result = FBToneMap(textureLod(tex_fb_unfiltered, tex0+w_h_height.xy, 0).xyz) // moving AO before tonemap does not really change the look
-                         * textureLod(tex_bloom, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
+                         * textureLod(tex_ao, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
    if (do_bloom)
       result += textureLod(tex_bloom, tex0, 0).xyz;  //!! offset?
    color = vec4(FBColorGrade(FBGamma(clamp(result, 0.0, 1.0))), 1.0);
@@ -312,7 +312,7 @@ in vec2 tex0;
 void main()
 {
    vec3 result = FBToneMap(textureLod(tex_fb_unfiltered, tex0+w_h_height.xy, 0).xyz) // moving AO before tonemap does not really change the look
-                         * textureLod(tex_fb_unfiltered, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
+                         * textureLod(tex_ao, tex0/*-w_h_height.xy*/, 0).x; // omitting the shift blurs over 2x2 window
    if (do_bloom)
       result += textureLod(tex_bloom, tex0, 0).xyz;  //!! offset?
    color = vec4(FBColorGrade(FBGamma(saturate(FBDither(result, tex0)))), 1.0);
@@ -506,8 +506,8 @@ fb_tonemap_AO_no_filter:P0:vs_main_no_trafo():ps_main_fb_tonemap_AO_no_filter()
 
 //!! SRGBWriteEnable = true
 fb_tonemap_AO_no_filter_static:P0:vs_main_no_trafo():ps_main_fb_tonemap_AO_no_filter_static()
-// All Bloom variants:
 
+// All Bloom variants:
 fb_bloom_horiz9x9:P0:vs_main_no_trafo():ps_main_fb_bloom_horiz9x9()
 fb_bloom_vert9x9:P0:vs_main_no_trafo():ps_main_fb_bloom_vert9x9()
 //fb_bloom_horiz9x9_4:P0:vs_main_no_trafo():ps_main_fb_bloom_horiz9x9_4()
