@@ -64,6 +64,7 @@ void VROptionsDialog::ResetVideoPreferences()
    SendMessage(GetDlgItem(IDC_GLOBAL_PFREFLECTION_CHECK).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
 
    SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_SETCURSEL, 0, 0);
+   SendMessage(GetDlgItem(IDC_SHARPENCB).GetHwnd(), CB_SETCURSEL, 0, 0);
    SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
 
    constexpr float vrSlope = 6.5f;
@@ -139,6 +140,7 @@ BOOL VROptionsDialog::OnInitDialog()
       AddToolTip("(Currently broken and disabled in VPVR)\r\n\r\nActivate this to enable Ambient Occlusion.\r\nThis enables contact shadows between objects.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_FXAACB).GetHwnd();
       AddToolTip("Enables post-processed Anti-Aliasing.\r\n\r\nThese settings can make the image quality a bit smoother at cost of performance and a slight blurring.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip("Enables post-processed Sharpening of the image.\r\n'Bilateral CAS' is recommended,\nbut will harm performance on low-end graphics cards.\r\n'CAS' is less aggressive and faster, but also rather subtle.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_SHARPENCB).GetHwnd());
       controlHwnd = GetDlgItem(IDC_VR_PREVIEW).GetHwnd();
       AddToolTip("Select which eye(s) to be displayed on the computer screen.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_SSSLIDER).GetHwnd();
@@ -195,6 +197,7 @@ BOOL VROptionsDialog::OnInitDialog()
 
    useAO = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "DisableAO"s, LoadValueBoolWithDefault(regKey[RegName::Player], "DisableAO"s, false));
    SendMessage(GetDlgItem(IDC_ENABLE_AO).GetHwnd(), BM_SETCHECK, useAO ? BST_UNCHECKED : BST_CHECKED, 0); // inverted logic
+   GetDlgItem(IDC_DYNAMIC_AO).EnableWindow(!useAO);
 
    const bool ssreflection = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "SSRefl"s, LoadValueBoolWithDefault(regKey[RegName::Player], "SSRefl"s, false));
    SendMessage(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), BM_SETCHECK, ssreflection ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -212,6 +215,13 @@ BOOL VROptionsDialog::OnInitDialog()
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Standard DLAA");
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Quality SMAA");
    SendMessage(hwnd, CB_SETCURSEL, fxaa, 0);
+
+   const int sharpen = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "Sharpen"s, 0);
+   hwnd = GetDlgItem(IDC_SHARPENCB).GetHwnd();
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM) "Disabled");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM) "CAS");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM) "Bilateral CAS");
+   SendMessage(hwnd, CB_SETCURSEL, sharpen, 0);
 
    const bool scaleFX_DMD = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "ScaleFXDMD"s, LoadValueBoolWithDefault(regKey[RegName::Player], "ScaleFXDMD"s, false));
    SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_SETCHECK, scaleFX_DMD ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -364,6 +374,12 @@ BOOL VROptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
          }
          break;
       }
+      case IDC_ENABLE_AO:
+      {
+         const size_t checked = SendDlgItemMessage(IDC_ENABLE_AO, BM_GETCHECK, 0, 0);
+         GetDlgItem(IDC_DYNAMIC_AO).EnableWindow(checked);
+         break;
+      }
       default:
          return FALSE;
    }
@@ -381,6 +397,11 @@ void VROptionsDialog::OnOK()
    if (fxaa == LB_ERR)
       fxaa = 0;
    SaveValueInt(regKey[RegName::PlayerVR], "FXAA"s, (int)fxaa);
+
+   size_t sharpen = SendMessage(GetDlgItem(IDC_SHARPENCB).GetHwnd(), CB_GETCURSEL, 0, 0);
+   if (sharpen == LB_ERR)
+      sharpen = 0;
+   SaveValueInt(regKey[RegName::PlayerVR], "Sharpen"s, (int)sharpen);
 
    const bool scaleFX_DMD = SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_GETCHECK, 0, 0) != 0;
    SaveValueBool(regKey[RegName::PlayerVR], "ScaleFXDMD"s, scaleFX_DMD);

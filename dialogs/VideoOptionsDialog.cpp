@@ -377,6 +377,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
 
    useAO = LoadValueBoolWithDefault(regKey[RegName::Player], "DisableAO"s, false);
    SendMessage(GetDlgItem(IDC_ENABLE_AO).GetHwnd(), BM_SETCHECK, useAO ? BST_UNCHECKED : BST_CHECKED, 0); // inverted logic
+   GetDlgItem(IDC_DYNAMIC_AO).EnableWindow(!useAO);
 
    const bool ssreflection = LoadValueBoolWithDefault(regKey[RegName::Player], "SSRefl"s, false);
    SendMessage(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), BM_SETCHECK, ssreflection ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -830,6 +831,12 @@ BOOL VideoOptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       {
          const size_t checked = SendDlgItemMessage(IDC_FULLSCREEN, BM_GETCHECK, 0, 0);
          SendMessage(checked ? GET_FULLSCREENMODES : GET_WINDOW_MODES, 0, 0);
+         break;
+      }
+      case IDC_ENABLE_AO:
+      {
+         const size_t checked = SendDlgItemMessage(IDC_ENABLE_AO, BM_GETCHECK, 0, 0);
+         GetDlgItem(IDC_DYNAMIC_AO).EnableWindow(checked);
          break;
       }
       default:
