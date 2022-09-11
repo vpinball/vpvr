@@ -59,17 +59,17 @@ RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, 
       || (format == RGB10) || (format == RGB16F) || (format == RGB32F) || (format == RGBA16F) || (format == RGBA32F) || (format == RGBA) || (format == RGBA8) || (format == RGBA10)
       || (format == DXT5) || (format == BC6U) || (format == BC6S) || (format == BC7);
 
+   m_color_tex = m_depth_tex = 0;
    glGenFramebuffers(1, &m_framebuffer);
    glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
-   glGenTextures(1, &m_color_tex);
 
    if (nMSAASamples > 1)
    {
-      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_color_tex);
-      glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, nMSAASamples, format, width, height, GL_TRUE);
-      glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, m_color_tex, 0);
-
+      glGenRenderbuffers(1, &m_color_tex);
+      glBindRenderbuffer(GL_RENDERBUFFER, m_color_tex);
+      glRenderbufferStorageMultisample(GL_RENDERBUFFER, nMSAASamples, format, width, height);
+      glBindRenderbuffer(GL_RENDERBUFFER, 0);
+      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_color_tex);
       if (with_depth)
       {
          glGenRenderbuffers(1, &m_depth_tex);
@@ -78,29 +78,20 @@ RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, 
          glBindRenderbuffer(GL_RENDERBUFFER, 0);
          glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depth_tex);
       }
-      else
-      {
-         m_depth_tex = 0;
-      }
    }
-   else // RENDERTARGET & RENDERTARGET_DEPTH
+   else
    {
+      glGenTextures(1, &m_color_tex);
       glBindTexture(GL_TEXTURE_2D, m_color_tex);
-      glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, GL_RGBA, col_type, nullptr);
+      glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, col_format, col_type, nullptr);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_color_tex, 0);
-
       if (with_depth)
       {
-         glGenRenderbuffers(1, &m_depth_tex);
-         glBindRenderbuffer(GL_RENDERBUFFER, m_depth_tex);
-         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-         glBindRenderbuffer(GL_RENDERBUFFER, 0);
-         glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depth_tex);
-      }
-      else
-      {
-         m_depth_tex = 0;
+         glGenTextures(1, &m_depth_tex);
+         glBindTexture(GL_TEXTURE_2D, m_depth_tex);
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, col_type, 0);
+         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_depth_tex, 0);
       }
    }
 
@@ -129,8 +120,16 @@ RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, 
       exit(-1);
    }
 
-   m_color_sampler = new Sampler(m_rd, m_color_tex, false, nMSAASamples > 1, true);
-   m_depth_sampler = with_depth ? new Sampler(m_rd, m_depth_tex, false, nMSAASamples > 1, true) : nullptr;
+   if (nMSAASamples > 1)
+   {
+      m_color_sampler = nullptr;
+      m_depth_sampler = nullptr;
+   }
+   else
+   {
+      m_color_sampler = new Sampler(m_rd, m_color_tex, false, nMSAASamples > 1, true);
+      m_depth_sampler = with_depth ? new Sampler(m_rd, m_depth_tex, false, nMSAASamples > 1, true) : nullptr;
+   }
 
    glClearDepthf(1.0f);
    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -181,8 +180,22 @@ RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, 
 
 RenderTarget::~RenderTarget()
 {
+   delete m_color_sampler;
+   delete m_depth_sampler;
 #ifdef ENABLE_SDL
-
+   if (m_nMSAASamples > 1) 
+   { 
+      glDeleteRenderbuffers(1, &m_color_tex);
+      if (m_depth_tex)
+         glDeleteRenderbuffers(1, &m_depth_tex);
+   }
+   else
+   {
+      glDeleteTextures(1, &m_color_tex);
+      if (m_depth_tex)
+         glDeleteTextures(1, &m_depth_tex);
+   }
+   glDeleteFramebuffers(1, &m_framebuffer);
 #else
    // Texture share its refcount with surface, it must be decremented, but it won't be 0 until surface is also released
    SAFE_RELEASE_NO_RCC(m_color_tex);
@@ -209,8 +222,6 @@ RenderTarget::~RenderTarget()
       }
    }
 #endif
-   delete m_color_sampler;
-   delete m_depth_sampler;
 }
    
 void RenderTarget::UpdateDepthSampler()
