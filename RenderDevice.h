@@ -264,19 +264,17 @@ public:
 
    bool SetMaximumPreRenderedFrames(const DWORD frames);
 
-   RenderTarget* GetBackBufferTexture() const { return m_pOffscreenBackBufferTexture; }
+   RenderTarget* GetMSAABackBufferTexture() const { return m_pOffscreenMSAABackBufferTexture; } // Main render target, may be MSAA enabled and not suited for sampling
+   void ResolveMSAA(); // Resolve MSAA back buffer texture to be sample  from back buffer texture
+   RenderTarget* GetBackBufferTexture() const { return m_pOffscreenBackBufferTexture; } // Main render target, with MSAA resolved if any
    RenderTarget* GetBackBufferTmpTexture() const { return m_pOffscreenBackBufferTmpTexture; } // stereo/FXAA only
    RenderTarget* GetBackBufferTmpTexture2() const { return m_pOffscreenBackBufferTmpTexture2; } // SMAA only
-#ifdef ENABLE_SDL
-   RenderTarget* GetNonMSAABlitTexture(int m_MSAASamples) const { return m_MSAASamples == 1 ? m_pOffscreenBackBufferTexture : m_pOffscreenNonMSAABlitTexture; }
    RenderTarget* GetOffscreenVR(int eye) const { return eye == 0 ? m_pOffscreenVRLeft : m_pOffscreenVRRight; }
-#endif
    RenderTarget* GetMirrorTmpBufferTexture() const { return m_pMirrorTmpBufferTexture; }
    RenderTarget* GetReflectionBufferTexture() const { return m_pReflectionBufferTexture; }
-   RenderTarget* GetOutputBackBuffer() const { return m_pBackBuffer; } // The screen render target
-
    RenderTarget* GetBloomBufferTexture() const { return m_pBloomBufferTexture; }
    RenderTarget* GetBloomTmpBufferTexture() const { return m_pBloomTmpBufferTexture; }
+   RenderTarget* GetOutputBackBuffer() const { return m_pBackBuffer; } // The screen render target
 
 #ifdef ENABLE_SDL
    static bool isVRinstalled();
@@ -405,16 +403,12 @@ private:
 
    RenderTarget* m_pBackBuffer;
 
-   //If stereo is enabled the right eye is the right/bottom part with 4px in between
+   RenderTarget* m_pOffscreenMSAABackBufferTexture;
    RenderTarget* m_pOffscreenBackBufferTexture;
    RenderTarget* m_pOffscreenBackBufferTmpTexture; // stereo/FXAA only
    RenderTarget* m_pOffscreenBackBufferTmpTexture2; // SMAA only
-#ifdef ENABLE_SDL
-   RenderTarget* m_pOffscreenNonMSAABlitTexture;
    RenderTarget* m_pOffscreenVRLeft;
    RenderTarget* m_pOffscreenVRRight;
-#endif
-
    RenderTarget* m_pBloomBufferTexture;
    RenderTarget* m_pBloomTmpBufferTexture;
    RenderTarget* m_pMirrorTmpBufferTexture;

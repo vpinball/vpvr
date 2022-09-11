@@ -871,10 +871,10 @@ RenderDevice::RenderDevice(const HWND hwnd, const int width, const int height, c
 
     m_curLockCalls = m_frameLockCalls = 0; //!! meh
 
+    m_pOffscreenMSAABackBufferTexture = nullptr;
     m_pOffscreenBackBufferTexture = nullptr;
     m_pOffscreenBackBufferTmpTexture = nullptr;
     m_pOffscreenBackBufferTmpTexture2 = nullptr;
-    m_pOffscreenNonMSAABlitTexture = nullptr;
     m_pOffscreenVRLeft = nullptr;
     m_pOffscreenVRRight = nullptr;
     m_pBloomBufferTexture = nullptr;
@@ -1203,18 +1203,24 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    int m_width_aa = (int)(m_width * m_AAfactor);
    int m_height_aa = (int)(m_height * m_AAfactor);
 
-   // alloc float buffer for rendering (optionally 2x2 res for manual super sampling)
-   m_pOffscreenBackBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, true, g_pplayer->m_MSAASamples > 1, m_stereo3D, "Fatal Error: unable to create render buffer!");
+   // alloc float buffer for rendering
+   int nMSAASamples = g_pplayer->m_MSAASamples;
+#ifdef ENABLE_SDL
+   int maxSamples;
+   glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
+   nMSAASamples = min(maxSamples, nMSAASamples);
+#endif
+   m_pOffscreenMSAABackBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, true, nMSAASamples, m_stereo3D, "Fatal Error: unable to create render buffer!");
 
    // If we are doing MSAA we need a texture with the same dimensions as the Back Buffer to resolve the end result to, can also use it for Post-AA
-   if (g_pplayer->m_MSAASamples > 1 || m_FXAA > 0)
-      m_pOffscreenNonMSAABlitTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, true, false, m_stereo3D, "Fatal Error: unable to create render buffer!");
+   if (nMSAASamples > 1)
+      m_pOffscreenBackBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, true, 1, STEREO_OFF, "Fatal Error: unable to create MSAA resolve buffer!");
    else
-      m_pOffscreenNonMSAABlitTexture = nullptr;
+      m_pOffscreenBackBufferTexture = m_pOffscreenMSAABackBufferTexture;
 
-   // alloc buffer for screen space fake reflection rendering (optionally 2x2 res for manual super sampling)
+   // alloc buffer for screen space fake reflection rendering
    if (m_ssRefl)
-      m_pReflectionBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, false, false, m_stereo3D, "Fatal Error: unable to create reflection buffer!");
+      m_pReflectionBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, false, 1, STEREO_OFF, "Fatal Error: unable to create reflection buffer!");
    else
       m_pReflectionBufferTexture = nullptr;
 
@@ -1223,14 +1229,14 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    {
       const bool drawBallReflection = ((g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
       if ((g_pplayer->m_ptable->m_reflectElementsOnPlayfield /*&& g_pplayer->m_pf_refl*/) || drawBallReflection)
-         m_pMirrorTmpBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, false, false, m_stereo3D, "Fatal Error: unable to create mirror buffer!");
+         m_pMirrorTmpBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, false, 1, STEREO_OFF, "Fatal Error: unable to create mirror buffer!");
    }
 
    // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
-   m_pBloomBufferTexture = new RenderTarget(this, m_width / 4, m_height / 4, render_format, false, false, m_stereo3D, "Fatal Error: unable to create bloom buffer!");
+   m_pBloomBufferTexture = new RenderTarget(this, m_width / 4, m_height / 4, render_format, false, 1, STEREO_OFF, "Fatal Error: unable to create bloom buffer!");
 
    // temporary buffer for gaussian blur
-   m_pBloomTmpBufferTexture = new RenderTarget(this, m_width / 4, m_height / 4, render_format, false, false, m_stereo3D, "Fatal Error: unable to create blur buffer!");
+   m_pBloomTmpBufferTexture = new RenderTarget(this, m_width / 4, m_height / 4, render_format, false, 1, STEREO_OFF, "Fatal Error: unable to create blur buffer!");
 
    if (m_stereo3D == STEREO_VR) {
       //AMD Debugging
@@ -1251,22 +1257,21 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
          renderBufferFormatVR = RGBA8;
          break;
       }
-      m_pOffscreenVRLeft = new RenderTarget(this, m_width / 2, m_height, renderBufferFormatVR, false, false, m_stereo3D, "Fatal Error: unable to create left eye buffer!");
-      m_pOffscreenVRRight = new RenderTarget(this, m_width / 2, m_height, renderBufferFormatVR, false, false, m_stereo3D, "Fatal Error: unable to create right eye buffer!");
+      m_pOffscreenVRLeft = new RenderTarget(this, m_width / 2, m_height, renderBufferFormatVR, false, 1, STEREO_OFF, "Fatal Error: unable to create left eye buffer!");
+      m_pOffscreenVRRight = new RenderTarget(this, m_width / 2, m_height, renderBufferFormatVR, false, 1, STEREO_OFF, "Fatal Error: unable to create right eye buffer!");
    }
 
-   // Non-MSAA Buffers for post-processing (postprocess is done at scene resoilution and not at full scene AA resolution)
+   // Non-MSAA Buffers for post-processing (postprocess is done at scene resolution without MSAA or full scene supersampling)
 
    // alloc temporary buffer for stereo3D/post-processing AA/sharpen
    if ((m_stereo3D != STEREO_OFF) || (m_FXAA > 0) || m_sharpen)
-      m_pOffscreenBackBufferTmpTexture = new RenderTarget(this, m_width, m_height, video10bit ? colorFormat::RGBA10 : colorFormat::RGBA8, false, false, m_stereo3D,
-         "Fatal Error: unable to create stereo3D/post-processing AA/sharpen buffer!");
+      m_pOffscreenBackBufferTmpTexture = new RenderTarget(this, m_width, m_height, video10bit ? colorFormat::RGBA10 : colorFormat::RGBA8, false, 1, STEREO_OFF, "Fatal Error: unable to create stereo3D/post-processing AA/sharpen buffer!");
    else
       m_pOffscreenBackBufferTmpTexture = nullptr;
 
    // alloc one more temporary buffer for SMAA
    if (m_FXAA == Quality_SMAA)
-      m_pOffscreenBackBufferTmpTexture2 = new RenderTarget(this, m_width, m_height, video10bit ? colorFormat::RGBA10 : colorFormat::RGBA8, false, false, m_stereo3D, "Fatal Error: unable to create SMAA buffer!");
+      m_pOffscreenBackBufferTmpTexture2 = new RenderTarget(this, m_width, m_height, video10bit ? colorFormat::RGBA10 : colorFormat::RGBA8, false, 1, STEREO_OFF, "Fatal Error: unable to create SMAA buffer!");
    else
       m_pOffscreenBackBufferTmpTexture2 = nullptr;
 
@@ -1362,6 +1367,12 @@ bool RenderDevice::LoadShaders()
    basicShader->SetFlasherColorAlpha(vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
    return true;
+}
+
+void RenderDevice::ResolveMSAA()
+{ 
+   if (m_pOffscreenMSAABackBufferTexture != m_pOffscreenBackBufferTexture)
+      m_pOffscreenMSAABackBufferTexture->CopyTo(m_pOffscreenBackBufferTexture);
 }
 
 bool RenderDevice::DepthBufferReadBackAvailable()

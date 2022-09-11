@@ -226,7 +226,7 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
       m_NudgeShake = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "NudgeStrength"s, 2e-2f);
       m_FXAA = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "FXAA"s, Disabled);
       m_MSAASamples = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "MSAASamples"s, 1);
-      m_AAfactor = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "AAFactor"s, LoadValueBoolWithDefault(regKey[RegName::Player], "USEAAs", false) ? 1.5f : 1.0f);
+      m_AAfactor = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "AAFactor"s, LoadValueBoolWithDefault(regKey[RegName::Player], "USEAAs", false) ? 2.0f : 1.0f);
       m_dynamicAO = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "DynamicAO"s, false);
       m_disableAO = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "DisableAO"s, false);
       m_ss_refl = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "SSRefl"s, false);
@@ -246,10 +246,8 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
       m_maxPrerenderedFrames = LoadValueIntWithDefault(regKey[RegName::Player], "MaxPrerenderedFrames"s, 0);
       m_NudgeShake = LoadValueFloatWithDefault(regKey[RegName::Player], "NudgeStrength"s, 2e-2f);
       m_FXAA = LoadValueIntWithDefault(regKey[RegName::Player], "FXAA"s, Disabled);
-      //m_MSAASamples = LoadValueIntWithDefault(regKey[RegName::Player], "MSAASamples"s, 1);
-      m_MSAASamples = 1; // Not much difference in non-VR only performance hog
-      //m_AAfactor = LoadValueFloatWithDefault(regKey[RegName::Player], "AAFactor"s, LoadValueBoolWithDefault(regKey[RegName::Player], "USEAA"s, false) ? 1.5f : 1.0f);
-      m_AAfactor = 1.0f; // Not much difference in non-VR only performance hog
+      m_MSAASamples = LoadValueIntWithDefault(regKey[RegName::Player], "MSAASamples"s, 1);
+      m_AAfactor = LoadValueFloatWithDefault(regKey[RegName::Player], "AAFactor"s, LoadValueBoolWithDefault(regKey[RegName::Player], "USEAAs", false) ? 2.0f : 1.0f);
       m_dynamicAO = LoadValueBoolWithDefault(regKey[RegName::Player], "DynamicAO"s, false);
       m_disableAO = LoadValueBoolWithDefault(regKey[RegName::Player], "DisableAO"s, false);
       m_ss_refl = LoadValueBoolWithDefault(regKey[RegName::Player], "SSRefl"s, false);
@@ -1673,7 +1671,7 @@ HRESULT Player::Init()
          }
    }
    // Direct all renders to the back buffer.
-   m_pin3d.m_pddsBackBuffer->Activate(false);
+   m_pin3d.m_pd3dPrimaryDevice->GetMSAABackBufferTexture()->Activate(false);
 
    m_ptable->m_progressDialog.SetProgress(90);
 
@@ -1949,13 +1947,13 @@ void Player::RenderDynamicMirror(const bool onlyBalls)
 
    UpdateBallShaderMatrix();
 
-   m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(true);
+   m_pin3d.m_pd3dPrimaryDevice->GetMSAABackBufferTexture()->Activate(false);
 }
 
 void Player::RenderMirrorOverlay()
 {
 #ifndef ENABLE_SDL
-   m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(true);
+   m_pin3d.m_pd3dPrimaryDevice->GetMSAABackBufferTexture()->Activate(false);
    
    // render the mirrored texture over the playfield
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_mirror, m_pin3d.m_pd3dPrimaryDevice->GetMirrorTmpBufferTexture()->GetColorSampler()); // When fixing mirroring make sure texture0 is not msaa
@@ -1976,7 +1974,7 @@ void Player::RenderMirrorOverlay()
    m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
 
-   m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(false);
+   m_pin3d.m_pd3dPrimaryDevice->GetMSAABackBufferTexture()->Activate(false);
 #endif
 }
 
@@ -2261,8 +2259,7 @@ void Player::InitStatic()
    {
       const bool useAA = (m_AA && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
 
-#ifndef ENABLE_SDL // FIXME will be part of the AO VPVR fix
-      m_pin3d.m_pddsStatic->CopyTo(m_pin3d.m_pddsBackBuffer); // save Z buffer and render (cannot be called inside BeginScene -> EndScene cycle)
+      m_pin3d.m_pddsStatic->CopyTo(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()); // save Z buffer and render (cannot be called inside BeginScene -> EndScene cycle)
 
       m_pin3d.m_pd3dPrimaryDevice->BeginScene();
       m_pin3d.RenderPlayfieldGraphics(true); // mirror depth buffer only contained static objects, but no playfield yet -> so render depth only to add this
@@ -2271,7 +2268,7 @@ void Player::InitStatic()
       RenderTarget* tmpDepth = m_pin3d.m_pddsStatic->Duplicate();
       m_pin3d.m_pddsStatic->CopyTo(tmpDepth);
 
-      m_pin3d.m_pddsBackBuffer->CopyTo(m_pin3d.m_pddsStatic); // Restore saved Z buffer and render (cannot be called inside BeginScene -> EndScene cycle)
+      m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->CopyTo(m_pin3d.m_pddsStatic); // Restore saved Z buffer and render (cannot be called inside BeginScene -> EndScene cycle)
 
       m_pin3d.m_pd3dPrimaryDevice->BeginScene();
 
@@ -2316,7 +2313,8 @@ void Player::InitStatic()
       m_pin3d.m_pddsStatic->Activate(false);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler());
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(tex_ao, m_pin3d.m_pddsAOBackBuffer->GetColorSampler());
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler());
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_ao, m_pin3d.m_pddsAOBackBuffer->GetColorSampler());
 
       const vec4 fb_inv_resolution_05((float)(0.5 / (double)m_width), (float)(0.5 / (double)m_height), 1.0f, 1.0f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution_05);
@@ -2331,7 +2329,6 @@ void Player::InitStatic()
       m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 
       m_pin3d.m_pd3dPrimaryDevice->EndScene();
-#endif
    }
 }
 
@@ -3613,7 +3610,7 @@ void Player::DrawBulbLightBuffer()
    }
 
    // switch back to render buffer
-   m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(false);
+   m_pin3d.m_pd3dPrimaryDevice->GetMSAABackBufferTexture()->Activate(false);
 
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_base_transmission, m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetColorSampler());
 }
@@ -3633,7 +3630,7 @@ void Player::RenderDynamics()
          reflection_path = 2;
    }
 
-   m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(false);
+   m_pin3d.m_pd3dPrimaryDevice->GetMSAABackBufferTexture()->Activate(false);
 
    UpdateBasicShaderMatrix();
 
@@ -3861,9 +3858,9 @@ void Player::SSRefl()
 {
    m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2()->Activate(false);
 
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetColorSampler());
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetColorSampler());
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_depth, m_pin3d.m_pddsBackBuffer->GetDepthSampler());
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler());
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler());
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_depth, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetDepthSampler());
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_ao_dither, &m_pin3d.m_aoDitherTexture, TextureFilter::TEXTURE_MODE_NONE, false, false, true); //!!!
 
    // FIXME check if size should not be taken from renderdevice to account for VR (double width) or supersampling
@@ -3904,7 +3901,7 @@ void Player::Bloom()
       // switch to 'bloom' output buffer to collect clipped framebuffer values
       m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->Activate(true);
 
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetColorSampler());
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler());
 
       const vec4 fb_inv_resolution((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), 1.0f, 1.0f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution);
@@ -3946,6 +3943,322 @@ void Player::Bloom()
    }
 }
 
+void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool SMAA, const bool DLAA, const bool NFAA, const bool FXAA1, const bool FXAA2, const bool FXAA3, const unsigned int sharpen, const bool depth_available) //!! SMAA, luma sharpen, dither?
+{
+   RenderTarget *outputRT = nullptr;
+
+#ifdef ENABLE_SDL
+   if (SMAA || DLAA || NFAA || FXAA1 || FXAA2 || FXAA3)
+#else
+   // Since DirectX performs stereo as a postprocess parallax step, it implicitly disables FXAA/SMAA/etc
+   if (!stereo && (SMAA || DLAA || NFAA || FXAA1 || FXAA2 || FXAA3))
+#endif
+   {
+      outputRT = (SMAA || DLAA || sharpen || (stereo && m_stereo3D != STEREO_TB && m_stereo3D != STEREO_SBS)) ? m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture() : m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
+      outputRT->Activate(true);
+
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, renderedRT->GetColorSampler());
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, renderedRT->GetColorSampler());
+      if (depth_available) // Depth is always taken from the MSAA resolved render buffer
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_depth, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetDepthSampler());
+      else
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_tex_depth);
+
+      const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), (float)m_width, depth_available ? 1.f : 0.f);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &w_h_height);
+
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SMAA ? SHADER_TECHNIQUE_SMAA_ColorEdgeDetection :
+                                                         (DLAA ? SHADER_TECHNIQUE_DLAA_edge :
+                                                         (NFAA ? SHADER_TECHNIQUE_NFAA :
+                                                         (FXAA3 ? SHADER_TECHNIQUE_FXAA3 :
+                                                         (FXAA2 ? SHADER_TECHNIQUE_FXAA2 :
+                                                                  SHADER_TECHNIQUE_FXAA1)))));
+
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
+      m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
+      renderedRT = outputRT;
+
+      // FIXME this needs a full review (buffer are likely wrong and this is not portable DX/GL)
+      if (SMAA || DLAA) // actual SMAA/DLAA filtering pass, above only edge detection
+      {
+         // FIXME implement
+         assert(false);
+         if (SMAA)
+            m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2()->Activate(true);
+         else
+            m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
+
+         if (SMAA)
+         {
+            // FIXME
+             // CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_edgesTex2D, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler()->GetCoreTexture())); //!! opt.?
+         }
+         else
+            m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler());
+
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SMAA ? SHADER_TECHNIQUE_SMAA_BlendWeightCalculation : SHADER_TECHNIQUE_DLAA);
+
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
+         m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
+
+         if (SMAA)
+         {
+            // FIXME
+            /* CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_edgesTex2D, nullptr)); //!! opt.??
+
+            if (sharpen)
+               m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(true);
+            else
+               m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
+
+            CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_blendTex2D, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2()->GetColorSampler()->GetCoreTexture())); //!! opt.?
+
+            m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_SMAA_NeighborhoodBlending);
+
+            m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin(0);
+            m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
+            m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
+
+            CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_blendTex2D, nullptr)); //!! opt.? */
+         }
+      }
+   }
+
+   //
+
+#ifdef ENABLE_SDL
+   if (sharpen)
+#else
+   // Since DirectX performs stereo as a postprocess parallax step, don't sharpen in interlaced stereo or anaglyph!
+   if (sharpen && (!stereo || (m_stereo3D == STEREO_TB || m_stereo3D == STEREO_SBS)))
+#endif
+   {
+      // FIXME implement
+      assert(renderedRT != m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
+      assert(false);
+      // FIXME if we process for stereo, then we need to output to an intermediate buffer
+      outputRT = m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
+      outputRT->Activate(true);
+
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, renderedRT->GetColorSampler());
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, renderedRT->GetColorSampler());
+      if (depth_available) // Depth is always taken from the MSAA resolved render buffer
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_depth, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetDepthSampler());
+
+      const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), (float)m_width, depth_available ? 1.f : 0.f);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &w_h_height);
+
+      // FIXME
+      // m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique((sharpen == 1) ? "CAS" : "BilateralSharp_CAS");
+
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
+      m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
+      renderedRT = outputRT;
+   }
+
+   // Apply stereo post processing.
+   if (stereo)
+   {
+#ifdef ENABLE_SDL
+      // For STEREO_OFF, STEREO_TB, STEREO_SBS, this won't do anything. The previous postprocess steps should already have written to OutputBackBuffer
+      // For VR, copy each eye to the HMD texture and render the wanted preview if activated
+      if (m_stereo3D == STEREO_VR)
+      {
+#ifdef ENABLE_VR
+         assert(renderedRT != m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
+
+         static int blitMode = -1;
+         if (blitMode == -1)
+         {
+            blitMode = LoadValueIntWithDefault(regKey[RegName::Player], "blitModeVR"s, 0);
+            if (blitMode == 1 && m_pin3d.m_pd3dPrimaryDevice->getGLVersion() < 405)
+               blitMode = 0;
+         }
+
+         RenderTarget *leftTexture = m_pin3d.m_pd3dPrimaryDevice->GetOffscreenVR(0);
+         RenderTarget *rightTexture = m_pin3d.m_pd3dPrimaryDevice->GetOffscreenVR(1);
+
+         switch (blitMode)
+         {
+         case 0:
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, renderedRT->GetCoreFrameBuffer());
+
+            // srcx0, srcy0, srcx1, srcy1, dstx0, dsty0, dstx1, dstyx1
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, leftTexture->GetCoreFrameBuffer());
+            glBlitFramebuffer(0, 0, leftTexture->GetWidth(), leftTexture->GetHeight(), 0, 0, leftTexture->GetWidth(), leftTexture->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rightTexture->GetCoreFrameBuffer());
+            glBlitFramebuffer(leftTexture->GetWidth(), 0, leftTexture->GetWidth() + rightTexture->GetWidth(), rightTexture->GetHeight(), 0, 0, rightTexture->GetWidth(),
+               rightTexture->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+            if (m_vrPreview == VRPREVIEW_LEFT)
+            {
+               glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetCoreFrameBuffer());
+               glBindFramebuffer(GL_READ_FRAMEBUFFER, leftTexture->GetCoreFrameBuffer());
+               glBlitFramebuffer(0, 0, leftTexture->GetWidth(), leftTexture->GetHeight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth(),
+                  m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            }
+            else if (m_vrPreview == VRPREVIEW_RIGHT)
+            {
+               glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetCoreFrameBuffer());
+               glBindFramebuffer(GL_READ_FRAMEBUFFER, rightTexture->GetCoreFrameBuffer());
+               glBlitFramebuffer(0, 0, rightTexture->GetWidth(), rightTexture->GetHeight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth(),
+                  m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            }
+            else if (m_vrPreview == VRPREVIEW_BOTH)
+            {
+               glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetCoreFrameBuffer());
+               glBindFramebuffer(GL_READ_FRAMEBUFFER, leftTexture->GetCoreFrameBuffer());
+               glBlitFramebuffer(0, 0, leftTexture->GetWidth(), leftTexture->GetHeight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth() / 2,
+                  m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+               glBindFramebuffer(GL_READ_FRAMEBUFFER, rightTexture->GetCoreFrameBuffer());
+               glBlitFramebuffer(0, 0, rightTexture->GetWidth(), rightTexture->GetHeight(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth() / 2, 0,
+                  m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            }
+            break;
+         case 1:
+            glBlitNamedFramebuffer(renderedRT->GetCoreFrameBuffer(), leftTexture->GetCoreFrameBuffer(), 0, 0, leftTexture->GetWidth(), leftTexture->GetHeight(), 0, 0, leftTexture->GetWidth(), leftTexture->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            glBlitNamedFramebuffer(renderedRT->GetCoreFrameBuffer(), rightTexture->GetCoreFrameBuffer(), leftTexture->GetWidth(), 0, leftTexture->GetWidth() + rightTexture->GetWidth(), rightTexture->GetHeight(), 0, 0, rightTexture->GetWidth(), rightTexture->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            if (m_vrPreview == VRPREVIEW_LEFT)
+            {
+               glBlitNamedFramebuffer(leftTexture->GetCoreFrameBuffer(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetCoreFrameBuffer(), 0, 0, leftTexture->GetWidth(),
+                  leftTexture->GetHeight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(),
+                  GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            }
+            else if (m_vrPreview == VRPREVIEW_RIGHT)
+            {
+               glBlitNamedFramebuffer(rightTexture->GetCoreFrameBuffer(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetCoreFrameBuffer(), 0, 0, rightTexture->GetWidth(),
+                  rightTexture->GetHeight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(),
+                  GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            }
+            else if (m_vrPreview == VRPREVIEW_BOTH)
+            {
+               glBlitNamedFramebuffer(leftTexture->GetCoreFrameBuffer(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetCoreFrameBuffer(), 0, 0, leftTexture->GetWidth(),
+                  leftTexture->GetHeight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth() / 2, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(),
+                  GL_COLOR_BUFFER_BIT, GL_NEAREST);
+               glBlitNamedFramebuffer(rightTexture->GetCoreFrameBuffer(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetCoreFrameBuffer(), 0, 0, rightTexture->GetWidth(),
+                  rightTexture->GetHeight(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth() / 2, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth(),
+                  m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            }
+            break;
+         default:
+            m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTechnique(SHADER_TECHNIQUE_stereo_AMD_DEBUG);
+            m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture(SHADER_tex_stereo_fb, renderedRT->GetColorSampler());
+
+            leftTexture->Activate(false);
+            m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat(SHADER_eye, 0.0f);
+            m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin();
+            m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
+            m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
+
+            rightTexture->Activate(false);
+            m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat(SHADER_eye, 1.0f);
+            m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin();
+            m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
+            m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
+
+            // FIXME implement other preview modes
+            if (m_vrPreview == VRPREVIEW_RIGHT)
+            {
+               m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(false);
+               m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat(SHADER_eye, 1.0f);
+               m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin();
+               m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
+               m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
+            }
+            break;
+         }
+         if (m_pin3d.m_pd3dPrimaryDevice->IsVRReady())
+         {
+            vr::Texture_t leftEyeTexture = { (void *)leftTexture->GetColorSampler()->GetCoreTexture(), vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+            vr::EVRCompositorError error = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
+            if (error != vr::VRCompositorError_None)
+            {
+               char msg[128];
+               sprintf_s(msg, sizeof(msg), "VRCompositor Submit Left Error %u", error);
+               ShowError(msg);
+            }
+            vr::Texture_t rightEyeTexture = { (void *)rightTexture->GetColorSampler()->GetCoreTexture(), vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+            error = vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
+            if (error != vr::VRCompositorError_None)
+            {
+               char msg[128];
+               sprintf_s(msg, sizeof(msg), "VRCompositor Submit Right Error %u", error);
+               ShowError(msg);
+            }
+            //vr::VRCompositor()->PostPresentHandoff(); // PostPresentHandoff gives mixed results, improved GPU frametime for some, worse CPU frametime for others, troublesome enough to not warrants it's usage for now
+         }
+#endif
+      }
+      else if (m_stereo3D >= STEREO_ANAGLYPH_RC && m_stereo3D <= STEREO_ANAGLYPH_AB)
+      {
+         // Anaglyph
+         assert(renderedRT != m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
+         const vec4 ms_zpd_ya_td(m_ptable->GetMaxSeparation(), m_ptable->GetZPD(), m_stereo3DY ? 1.0f : 0.0f, (float)m_stereo3D);
+         const vec4 a_ds_c(m_global3DDesaturation, m_global3DContrast, 0.f, 0.f);
+         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTechnique(SHADER_TECHNIQUE_stereo_Anaglyph);
+         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture(SHADER_tex_stereo_fb, renderedRT->GetColorSampler());
+         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetVector(SHADER_ms_zpd_ya_td, &ms_zpd_ya_td);
+         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetVector(SHADER_Anaglyph_DeSaturation_Contrast, &a_ds_c);
+         m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
+         m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin();
+         m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
+         m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
+      }
+      else if (m_stereo3D == STEREO_INT || m_stereo3D == STEREO_FLIPPED_INT)
+      {
+         // Interlaced, handled in shader
+         assert(renderedRT != m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
+         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTechnique(m_stereo3D == STEREO_INT ? SHADER_TECHNIQUE_stereo_Int : SHADER_TECHNIQUE_stereo_Flipped_Int);
+         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture(SHADER_tex_stereo_fb, renderedRT->GetColorSampler());
+         m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
+         m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin();
+         m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
+         m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
+      }
+      else
+      {
+         // STEREO_OFF, STEREO_TB: top bottom, STEREO_SBS: side by side : nothing to do
+         assert(renderedRT == m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
+      }
+#else
+      // DirectX doesn't support 'real' stereo, instead of performing 2 renders from each eyes, it fakes stereo using a postprocess parallax filter
+      if (sharpen && (m_stereo3D == STEREO_TB || m_stereo3D == STEREO_SBS)) // don't sharpen in interlaced stereo or anaglyph!
+         m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(true);
+      else
+         m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
+
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->GetColorSampler());
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture3, m_pin3d.m_pddsBackBuffer->GetDepthSampler());
+
+      const bool is_anaglyph = m_stereo3D >= STEREO_ANAGLYPH_RC && m_stereo3D <= STEREO_ANAGLYPH_AB;
+      const vec4 ms_zpd_ya_td(m_ptable->GetMaxSeparation(), m_ptable->GetZPD(), m_stereo3DY ? 1.0f : 0.0f,
+         is_anaglyph ? (float)m_stereo3D
+                     : ((m_stereo3D == STEREO_SBS)     ? 2.0f
+                           : (m_stereo3D == STEREO_TB) ? 1.0f
+                                                       : ((m_stereo3D == STEREO_INT) ? 0.0f : 0.5f)));
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_ms_zpd_ya_td, &ms_zpd_ya_td);
+
+      const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), (float)m_height, m_ptable->Get3DOffset());
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &w_h_height);
+
+      if (is_anaglyph)
+      {
+         const vec4 a_ds_c(m_global3DDesaturation, m_global3DContrast, 0.f, 0.f);
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_Anaglyph_DeSaturation_Contrast, &a_ds_c);
+      }
+
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(is_anaglyph ? "stereo_anaglyph" : "stereo");
+
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
+      m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
+#endif
+   }
+}
+/*
 void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, const bool NFAA, const bool FXAA1, const bool FXAA2, const bool FXAA3, const bool ambientOcclusion) //!! SMAA, luma sharpen, dither?
 {
    if (DLAA)
@@ -4018,177 +4331,7 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_blendTex2D); //!! opt.?
       }
    }
-}
-
-/*
-* Apply stereo post processing.
-* For all render mode with preprocess, read from BackBufferPPTexture1 and output processed buffer in OutputBackBuffer
-* For STEREO_OFF, STEREO_TB, STEREO_SBS, don't do anything, the buffer to be used will still be BackBufferPPTexture1
-*/
-void Player::RenderStereo(int stereo3D, bool shaderAA)
-{
-   // For VR, copy each eye to the HMD texture and render the wanted preview if activated
-   if (stereo3D == STEREO_VR)
-   {
-#ifdef ENABLE_VR
-      static int blitMode = -1;
-      if (blitMode == -1)
-      {
-         blitMode = LoadValueIntWithDefault(regKey[RegName::Player], "blitModeVR"s, 0);
-         if (blitMode == 1 && m_pin3d.m_pd3dPrimaryDevice->getGLVersion() < 405)
-            blitMode = 0;
-      }
-
-      RenderTarget *leftTexture = m_pin3d.m_pd3dPrimaryDevice->GetOffscreenVR(0);
-      RenderTarget *rightTexture = m_pin3d.m_pd3dPrimaryDevice->GetOffscreenVR(1);
-
-      switch (blitMode)
-      {
-      case 0:
-         glBindFramebuffer(GL_READ_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->GetCoreFrameBuffer());
-
-         // srcx0, srcy0, srcx1, srcy1, dstx0, dsty0, dstx1, dstyx1
-         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, leftTexture->GetCoreFrameBuffer());
-         glBlitFramebuffer(0, 0, leftTexture->GetWidth(), leftTexture->GetHeight(), 0, 0, leftTexture->GetWidth(), leftTexture->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rightTexture->GetCoreFrameBuffer());
-         glBlitFramebuffer(leftTexture->GetWidth(), 0, leftTexture->GetWidth() + rightTexture->GetWidth(), rightTexture->GetHeight(), 0, 0, rightTexture->GetWidth(),
-            rightTexture->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
-         if (m_vrPreview == VRPREVIEW_LEFT)
-         {
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetCoreFrameBuffer());
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, leftTexture->GetCoreFrameBuffer());
-            glBlitFramebuffer(0, 0, leftTexture->GetWidth(), leftTexture->GetHeight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth(),
-               m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-         }
-         else if (m_vrPreview == VRPREVIEW_RIGHT)
-         {
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetCoreFrameBuffer());
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, rightTexture->GetCoreFrameBuffer());
-            glBlitFramebuffer(0, 0, rightTexture->GetWidth(), rightTexture->GetHeight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth(),
-               m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-         }
-         else if (m_vrPreview == VRPREVIEW_BOTH)
-         {
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetCoreFrameBuffer());
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, leftTexture->GetCoreFrameBuffer());
-            glBlitFramebuffer(0, 0, leftTexture->GetWidth(), leftTexture->GetHeight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth() / 2,
-               m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-            glBindFramebuffer(GL_READ_FRAMEBUFFER, rightTexture->GetCoreFrameBuffer());
-            glBlitFramebuffer(0, 0, rightTexture->GetWidth(), rightTexture->GetHeight(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth() / 2, 0,
-               m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-         }
-         break;
-      case 1:
-         glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->GetCoreFrameBuffer(), leftTexture->GetCoreFrameBuffer(), 0, 0, leftTexture->GetWidth(),
-            leftTexture->GetHeight(), 0, 0, leftTexture->GetWidth(), leftTexture->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-         glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->GetCoreFrameBuffer(), rightTexture->GetCoreFrameBuffer(), leftTexture->GetWidth(), 0,
-            leftTexture->GetWidth() + rightTexture->GetWidth(), rightTexture->GetHeight(), 0, 0, rightTexture->GetWidth(), rightTexture->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-         if (m_vrPreview == VRPREVIEW_LEFT)
-         {
-            glBlitNamedFramebuffer(leftTexture->GetCoreFrameBuffer(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetCoreFrameBuffer(), 0, 0, leftTexture->GetWidth(),
-               leftTexture->GetHeight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(),
-               GL_COLOR_BUFFER_BIT, GL_NEAREST);
-         }
-         else if (m_vrPreview == VRPREVIEW_RIGHT)
-         {
-            glBlitNamedFramebuffer(rightTexture->GetCoreFrameBuffer(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetCoreFrameBuffer(), 0, 0, rightTexture->GetWidth(),
-               rightTexture->GetHeight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(),
-               GL_COLOR_BUFFER_BIT, GL_NEAREST);
-         }
-         else if (m_vrPreview == VRPREVIEW_BOTH)
-         {
-            glBlitNamedFramebuffer(leftTexture->GetCoreFrameBuffer(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetCoreFrameBuffer(), 0, 0, leftTexture->GetWidth(),
-               leftTexture->GetHeight(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth() / 2, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(),
-               GL_COLOR_BUFFER_BIT, GL_NEAREST);
-            glBlitNamedFramebuffer(rightTexture->GetCoreFrameBuffer(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetCoreFrameBuffer(), 0, 0, rightTexture->GetWidth(),
-               rightTexture->GetHeight(), m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth() / 2, 0, m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetWidth(),
-               m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->GetHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
-         }
-         break;
-      default:
-         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTechnique(SHADER_TECHNIQUE_stereo_AMD_DEBUG);
-         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture(SHADER_tex_stereo_fb, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->GetColorSampler());
-
-         leftTexture->Activate(false);
-
-         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat(SHADER_eye, 0.0f);
-         m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin();
-         m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
-         m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
-
-         rightTexture->Activate(false);
-
-         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat(SHADER_eye, 1.0f);
-         m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin();
-         m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
-         m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
-
-         // FIXME implement other preview modes
-         if (m_vrPreview == VRPREVIEW_RIGHT)
-         {
-            m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(false);
-            m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat(SHADER_eye, 1.0f);
-            m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin();
-            m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
-            m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
-         }
-         break;
-      }
-      if (m_pin3d.m_pd3dPrimaryDevice->IsVRReady())
-      {
-         vr::Texture_t leftEyeTexture = { (void *)leftTexture->GetColorSampler()->GetCoreTexture(), vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
-         vr::EVRCompositorError error = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
-         if (error != vr::VRCompositorError_None)
-         {
-            char msg[128];
-            sprintf_s(msg, sizeof(msg), "VRCompositor Submit Left Error %u", error);
-            ShowError(msg);
-         }
-         vr::Texture_t rightEyeTexture = { (void *)rightTexture->GetColorSampler()->GetCoreTexture(), vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
-         error = vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
-         if (error != vr::VRCompositorError_None)
-         {
-            char msg[128];
-            sprintf_s(msg, sizeof(msg), "VRCompositor Submit Right Error %u", error);
-            ShowError(msg);
-         }
-         //vr::VRCompositor()->PostPresentHandoff(); // PostPresentHandoff gives mixed results, improved GPU frametime for some, worse CPU frametime for others, troublesome enough to not warrants it's usage for now
-      }
-#endif
-      return;
-   }
-
-   const bool is_anaglyph = m_stereo3D >= STEREO_ANAGLYPH_RC && m_stereo3D <= STEREO_ANAGLYPH_AB;
-   const vec4 ms_zpd_ya_td(m_ptable->GetMaxSeparation(), m_ptable->GetZPD(), m_stereo3DY ? 1.0f : 0.0f,
-         is_anaglyph ? (float)m_stereo3D : ((m_stereo3D == STEREO_SBS) ? 2.0f : (m_stereo3D == STEREO_TB) ? 1.0f : ((m_stereo3D == STEREO_INT) ? 0.0f : 0.5f)));
-   if (is_anaglyph)
-   {
-      // Anaglyph
-      const vec4 a_ds_c(m_global3DDesaturation, m_global3DContrast, 0.f, 0.f);
-      m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTechnique(SHADER_TECHNIQUE_stereo_Anaglyph);
-      m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture(SHADER_tex_stereo_fb, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->GetColorSampler());
-      m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetVector(SHADER_ms_zpd_ya_td, &ms_zpd_ya_td);
-      m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetVector(SHADER_Anaglyph_DeSaturation_Contrast, &a_ds_c);
-      m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
-      m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin();
-      m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
-      m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
-   }
-   else if (stereo3D == STEREO_INT || stereo3D == STEREO_FLIPPED_INT)
-   {
-      // Interlaced, handled in shader
-      m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTechnique(stereo3D == STEREO_INT ? SHADER_TECHNIQUE_stereo_Int : SHADER_TECHNIQUE_stereo_Flipped_Int);
-      m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture(SHADER_tex_stereo_fb, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->GetColorSampler());
-      m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
-      m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin();
-      m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
-      m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
-   }
-   // STEREO_OFF: nothing to do
-   // STEREO_TB: top bottom, nothing to do
-   // STEREO_SBS: side by side, nothing to do
-}
+}*/
 
 #ifdef USE_IMGUI
 // call UpdateHUD_IMGUI outside of m_pin3d.m_pd3dPrimaryDevice->BeginScene()/EndSecene()
@@ -4685,42 +4828,32 @@ void Player::UpdateHUD()
 }
 #endif
 
-void Player::FlipVideoBuffers(const bool vsync)
-{
-   // display frame
-   m_pin3d.Flip(vsync);
-
-   // switch to texture output buffer again
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_Texture0);
-   m_pin3d.m_pddsBackBuffer->Activate(false);
-
-   m_lastFlipTime = usec();
-}
-
-void Player::PostProcess(const bool ambientOcclusion)
+void Player::PrepareVideoBuffersNormal()
 {
    const bool useAA = ((m_AAfactor != 1.0) && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
-   const bool SMAA = (((m_FXAA == Quality_SMAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
-   const bool DLAA = (((m_FXAA == Standard_DLAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_DLAA));
-   const bool NFAA = (((m_FXAA == Fast_NFAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_NFAA));
-   const bool FXAA1 = (((m_FXAA == Fast_FXAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_FXAA));
+   const bool stereo= ((m_stereo3D != STEREO_OFF) && m_stereo3Denabled && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable());
+   const bool SMAA  = (((m_FXAA == Quality_SMAA)  && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
+   const bool DLAA  = (((m_FXAA == Standard_DLAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_DLAA));
+   const bool NFAA  = (((m_FXAA == Fast_NFAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_NFAA));
+   const bool FXAA1 = (((m_FXAA == Fast_FXAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_FXAA));
    const bool FXAA2 = (((m_FXAA == Standard_FXAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_FXAA));
-   const bool FXAA3 = (((m_FXAA == Quality_FXAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_FXAA));
-   const bool ss_refl
-      = (((m_ss_refl && (m_ptable->m_useSSR == -1)) || (m_ptable->m_useSSR == 1)) && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && m_ptable->m_SSRScale > 0.f);
+   const bool FXAA3 = (((m_FXAA == Quality_FXAA)  && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_FXAA));
+   const bool ss_refl = (((m_ss_refl && (m_ptable->m_useSSR == -1)) || (m_ptable->m_useSSR == 1)) && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && m_ptable->m_SSRScale > 0.f);
    const unsigned int sharpen = m_sharpen;
 
-#ifndef ENABLE_SDL
-   if (ambientOcclusion)
-   {
-      m_pin3d.m_pd3dPrimaryDevice->CopyDepth(m_pin3d.m_pdds3DZBuffer, m_pin3d.m_pddsZBuffer); // do not put inside BeginScene/EndScene Block
-      if ((m_stereo3D != STEREO_OFF))
-         m_pin3d.m_pd3dPrimaryDevice->CopyDepth(m_pin3d.m_pdds3DZBuffer, m_pin3d.m_pddsZBuffer);
-   }
-#endif
+   RenderTarget *renderedRT = m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture();
+   RenderTarget *ouputRT = nullptr;
 
-   double inv_width = 1.0 / (double)m_width;
-   double inv_height = 1.0 / (double)m_height;
+   if (stereo || ss_refl)
+      renderedRT->UpdateDepthSampler(); // do not put inside BeginScene/EndScene Block
+
+   const float shiftedVerts[4 * 5] =
+   {
+       1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / (double)m_width), 0.0f + (float)(1.0 / (double)m_height),
+      -1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / (double)m_width), 0.0f + (float)(1.0 / (double)m_height),
+       1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / (double)m_width), 1.0f + (float)(1.0 / (double)m_height),
+      -1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / (double)m_width), 1.0f + (float)(1.0 / (double)m_height)
+   };
 
    m_pin3d.m_pd3dPrimaryDevice->BeginScene();
 
@@ -4729,94 +4862,45 @@ void Player::PostProcess(const bool ambientOcclusion)
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_FALSE);
 
-#ifdef ENABLE_SDL
-   // Resolve the MSAA buffer to a Non-MSAA buffer if we are using MSAA
-   if (g_pplayer->m_MSAASamples > 1)
-   {
-      glBlitNamedFramebuffer(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetCoreFrameBuffer(),
-         m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetCoreFrameBuffer(), 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetWidth() - 1,
-         m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetHeight() - 1, 0, 0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetWidth() - 1,
-         m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetHeight() - 1, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-   }
-#endif
-
    Bloom();
 
    if (ProfilingMode() == 1)
       m_pin3d.m_gpu_profiler.Timestamp(GTS_Bloom);
 
    if (ss_refl)
+   {
       SSRefl();
+      renderedRT = m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2();
+   }
 
    if (ProfilingMode() == 1)
+   {
       m_pin3d.m_gpu_profiler.Timestamp(GTS_SSR);
+      m_pin3d.m_gpu_profiler.Timestamp(GTS_AO);
+   }
 
-   if (ambientOcclusion)
-   {
-      m_pin3d.m_pddsAOBackTmpBuffer->Activate(true);
-
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetColorSampler());
-
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_ao_dither, &m_pin3d.m_aoDitherTexture, TextureFilter::TEXTURE_MODE_NONE, false, false, true);
-#ifndef ENABLE_SDL
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_depth, m_pin3d.m_pdds3DZBuffer, true);
+   // switch to output buffer (main output frame buffer, or a temporary one for postprocessing)
+#ifdef ENABLE_SDL
+   // On OpenGL, simple stereo is rendered directly through multiple viewport/geometry shader feature without needing postprocessing
+   if (SMAA || DLAA || NFAA || FXAA1 || FXAA2 || FXAA3 || sharpen || !(m_stereo3D == STEREO_OFF || m_stereo3D == STEREO_TB || m_stereo3D == STEREO_SBS))
+#else
+   if (SMAA || DLAA || NFAA || FXAA1 || FXAA2 || FXAA3 || sharpen || m_stereo3D != STEREO_OFF)
 #endif
-
-      const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), radical_inverse(m_overall_frames % 2048) * (float)(1. / 8.0),
-         /*sobol*/ radical_inverse<3>(m_overall_frames % 2048) * (float)(1. / 8.0)); // jitter within (64/8)x(64/8) neighborhood of 64x64 tex, good compromise between blotches and noise
-
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &w_h_height);
-      const vec4 ao_s_tb(
-         m_ptable->m_AOScale, 0.4f, 0.f, 0.f); //!! 0.4f: fake global option in video pref? or time dependent? //!! commonly used is 0.1, but would require to clear history for moving stuff
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_AO_scale_timeblur, &ao_s_tb);
-
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_AO);
-
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
-      m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
-
-      if (ProfilingMode() == 1)
-         m_pin3d.m_gpu_profiler.Timestamp(GTS_AO);
-
-      // flip AO buffers (avoids copy)
-      RenderTarget *tmpAO = m_pin3d.m_pddsAOBackBuffer;
-      m_pin3d.m_pddsAOBackBuffer = m_pin3d.m_pddsAOBackTmpBuffer;
-      m_pin3d.m_pddsAOBackTmpBuffer = tmpAO;
-   }
-
-   if ((m_stereo3D == STEREO_OFF) || (m_stereo3D == STEREO_TB) || (m_stereo3D == STEREO_SBS) || SMAA || DLAA || NFAA || FXAA1 || FXAA2 || FXAA3)
-      m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
+      ouputRT = m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture();
    else
-      m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->Activate(true);
+      ouputRT = m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
+   ouputRT->Activate(true);
 
-   const float shiftedVerts[4 * 5] = { 1.0f + m_ScreenOffset.x, 1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / (double)m_width), 0.0f + (float)(1.0 / (double)m_height),
-      -1.0f + m_ScreenOffset.x, 1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / (double)m_width), 0.0f + (float)(1.0 / (double)m_height), 1.0f + m_ScreenOffset.x,
-      -1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / (double)m_width), 1.0f + (float)(1.0 / (double)m_height), -1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f,
-      0.0f + (float)(1.0 / (double)m_width), 1.0f + (float)(1.0 / (double)m_height) };
-
-   if (ss_refl)
-   {
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2()->GetColorSampler());
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2()->GetColorSampler());
-   }
-   else
-   {
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetColorSampler());
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(g_pplayer->m_MSAASamples)->GetColorSampler());
-   }
+   // copy framebuffer over from texture and tonemap/gamma (SS reflection outputs to GetBackBufferTmpTexture2)
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, renderedRT->GetColorSampler());
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, renderedRT->GetColorSampler());
    if (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff)
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_bloom, m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetColorSampler());
 
-   if (ambientOcclusion)
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_ao, m_pin3d.m_pddsAOBackBuffer->GetColorSampler());
-
+   // Texture used for LUT color grading must be treated as if they were linear
    Texture *const pin = m_ptable->GetImage(m_ptable->m_imageColorGrade);
    if (pin)
-   {
-      // Texture used for LUT color grading must be treated as if they were linear
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_color_lut, pin, TextureFilter::TEXTURE_MODE_BILINEAR, true, true, true);
-   }
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_color_grade, pin != nullptr);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_do_dither, !m_ditherOff);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_do_bloom, (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff));
@@ -4828,23 +4912,181 @@ void Player::PostProcess(const bool ambientOcclusion)
       jitter, //radical_inverse(jittertime)*11.0f,
       jitter); //sobol(jittertime)*13.0f); // jitter for dither pattern
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution_05);
-   if (ambientOcclusion)
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(RenderAOOnly() ? SHADER_TECHNIQUE_fb_AO : (useAA ? SHADER_TECHNIQUE_fb_tonemap_AO : SHADER_TECHNIQUE_fb_tonemap_AO_no_filter));
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(useAA ? SHADER_TECHNIQUE_fb_tonemap : (m_BWrendering == 1 ? SHADER_TECHNIQUE_fb_tonemap_no_filterRG : (m_BWrendering == 2 ? SHADER_TECHNIQUE_fb_tonemap_no_filterR : SHADER_TECHNIQUE_fb_tonemap_no_filterRGB)));
+
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
+   m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)shiftedVerts);
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
+   renderedRT = ouputRT;
+
+   StereoFXAA(renderedRT, stereo, SMAA, DLAA, NFAA, FXAA1, FXAA2, FXAA3, sharpen, false);
+
+   if (ProfilingMode() == 1)
+      m_pin3d.m_gpu_profiler.Timestamp(GTS_PostProcess);
+
+   m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_TRUE);
+   m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
+   m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
+
+   if (m_cameraMode)
+      UpdateCameraModeDisplay();
+
+#ifdef USE_IMGUI
+   RenderHUD_IMGUI();
+#else
+   UpdateHUD();
+#endif
+
+   m_pin3d.m_pd3dPrimaryDevice->EndScene();
+}
+
+void Player::FlipVideoBuffers(const bool vsync)
+{
+   // display frame
+   m_pin3d.Flip(vsync);
+
+   // switch to texture output buffer again
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_Texture0);
+   m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(false);
+
+   m_lastFlipTime = usec();
+}
+
+void Player::PrepareVideoBuffersAO()
+{
+   const bool useAA = ((m_AAfactor != 1.0) && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
+   const bool stereo= ((m_stereo3D != STEREO_OFF) && m_stereo3Denabled && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable());
+   const bool SMAA  = (((m_FXAA == Quality_SMAA)  && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
+   const bool DLAA  = (((m_FXAA == Standard_DLAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_DLAA));
+   const bool NFAA  = (((m_FXAA == Fast_NFAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_NFAA));
+   const bool FXAA1 = (((m_FXAA == Fast_FXAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_FXAA));
+   const bool FXAA2 = (((m_FXAA == Standard_FXAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_FXAA));
+   const bool FXAA3 = (((m_FXAA == Quality_FXAA)  && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_FXAA));
+   const bool ss_refl = (((m_ss_refl && (m_ptable->m_useSSR == -1)) || (m_ptable->m_useSSR == 1)) && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && m_ptable->m_SSRScale > 0.f);
+   const unsigned int sharpen = m_sharpen;
+
+   RenderTarget *renderedRT = m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture();
+   RenderTarget *ouputRT = nullptr;
+
+   renderedRT->UpdateDepthSampler(); // do not put inside BeginScene/EndScene Block
+
+   m_pin3d.m_pd3dPrimaryDevice->BeginScene();
+
+   m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
+   m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
+   m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
+   m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_FALSE);
+
+   Bloom();
+
+   if (ProfilingMode() == 1)
+      m_pin3d.m_gpu_profiler.Timestamp(GTS_Bloom);
+
+   if (ss_refl)
+   {
+      SSRefl();
+      renderedRT = m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2();
+   }
+
+   if (ProfilingMode() == 1)
+      m_pin3d.m_gpu_profiler.Timestamp(GTS_SSR);
+
+   // separate normal generation pass, currently roughly same perf or even much worse
+   /*m_pin3d.m_pd3dDevice->GetBackBufferTmpTexture()->Activate(false); //!! expects stereo or FXAA enabled
+
+   m_pin3d.m_pd3dDevice->FBShader->SetTexture(SHADER_Texture3, m_pin3d.m_pdds3DZBuffer, true);
+
+   const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height),
+      radical_inverse(m_overall_frames%2048)*(float)(1. / 8.0),
+      sobol(m_overall_frames%2048)*(float)(5. / 8.0)); // jitter within lattice cell //!! ?
+   m_pin3d.m_pd3dDevice->FBShader->SetVector(SHADER_w_h_height, &w_h_height);
+
+   m_pin3d.m_pd3dDevice->FBShader->SetTechnique("normals");
+
+   m_pin3d.m_pd3dDevice->FBShader->Begin();
+   m_pin3d.m_pd3dDevice->DrawFullscreenTexturedQuad();
+   m_pin3d.m_pd3dDevice->FBShader->End();*/
+
+   m_pin3d.m_pddsAOBackTmpBuffer->Activate(true);
+
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pddsAOBackBuffer->GetColorSampler());
+   //m_pin3d.m_pd3dDevice->FBShader->SetTexture(SHADER_Texture1, m_pin3d.m_pd3dDevice->GetBackBufferTmpTexture()); // temporary normals
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_ao_dither, &m_pin3d.m_aoDitherTexture, TextureFilter::TEXTURE_MODE_NONE, false, false, true);
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_depth, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetDepthSampler());
+
+   const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height),
+      radical_inverse(m_overall_frames%2048)*(float)(1. / 8.0),
+      /*sobol*/radical_inverse<3>(m_overall_frames%2048)*(float)(1. / 8.0)); // jitter within (64/8)x(64/8) neighborhood of 64x64 tex, good compromise between blotches and noise
+
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &w_h_height);
+   const vec4 ao_s_tb(m_ptable->m_AOScale, 0.4f, 0.f,0.f); //!! 0.4f: fake global option in video pref? or time dependent? //!! commonly used is 0.1, but would require to clear history for moving stuff
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_AO_scale_timeblur, &ao_s_tb);
+
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_AO);
+
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
+   m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
+
+   if (ProfilingMode() == 1)
+      m_pin3d.m_gpu_profiler.Timestamp(GTS_AO);
+
+   // flip AO buffers (avoids copy)
+   RenderTarget *tmpAO = m_pin3d.m_pddsAOBackBuffer;
+   m_pin3d.m_pddsAOBackBuffer = m_pin3d.m_pddsAOBackTmpBuffer;
+   m_pin3d.m_pddsAOBackTmpBuffer = tmpAO;
+
+   // switch to output buffer (main output frame buffer, or a temporary one for postprocessing)
+#ifdef ENABLE_SDL
+   // On OpenGL, simple stereo is rendered directly through multiple viewport/geometry shader feature without needing postprocessing
+   if (SMAA || DLAA || NFAA || FXAA1 || FXAA2 || FXAA3 || sharpen || !(m_stereo3D == STEREO_OFF || m_stereo3D == STEREO_TB || m_stereo3D == STEREO_SBS))
+#else
+   if (SMAA || DLAA || NFAA || FXAA1 || FXAA2 || FXAA3 || sharpen || m_stereo3D != STEREO_OFF)
+#endif
+      ouputRT = m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture();
    else
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(useAA
-            ? SHADER_TECHNIQUE_fb_tonemap
-            : (m_BWrendering == 1 ? SHADER_TECHNIQUE_fb_tonemap_no_filterRG : (m_BWrendering == 2 ? SHADER_TECHNIQUE_fb_tonemap_no_filterR : SHADER_TECHNIQUE_fb_tonemap_no_filterRGB)));
+      ouputRT = m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
+   ouputRT->Activate(true);
+
+   const float shiftedVerts[4 * 5] =
+   {
+       1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / (double)m_width), 0.0f + (float)(1.0 / (double)m_height),
+      -1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / (double)m_width), 0.0f + (float)(1.0 / (double)m_height),
+       1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / (double)m_width), 1.0f + (float)(1.0 / (double)m_height),
+      -1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / (double)m_width), 1.0f + (float)(1.0 / (double)m_height)
+   };
+
+   // copy framebuffer over from texture and tonemap/gamma (SS reflection outputs to GetBackBufferTmpTexture2)
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, renderedRT->GetColorSampler());
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, renderedRT->GetColorSampler());
+   if (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff)
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_bloom, m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetColorSampler());
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_ao, m_pin3d.m_pddsAOBackBuffer->GetColorSampler());
+
+   // Texture used for LUT color grading must be treated as if they were linear
+   Texture *const pin = m_ptable->GetImage(m_ptable->m_imageColorGrade);
+   if (pin)
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_color_lut, pin, TextureFilter::TEXTURE_MODE_BILINEAR, true, true, true);
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_color_grade, pin != nullptr);
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_do_dither, !m_ditherOff);
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_do_bloom, (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff));
+
+   //const unsigned int jittertime = (unsigned int)((U64)msec()*90/1000);
+   const float jitter = (float)((msec()&2047)/1000.0);
+   const vec4 fb_inv_resolution_05((float)(0.5 / (double)m_width), (float)(0.5 / (double)m_height),
+      //1.0f, 1.0f);
+      jitter, //radical_inverse(jittertime)*11.0f,
+      jitter);//sobol(jittertime)*13.0f); // jitter for dither pattern
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution_05);
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(RenderAOOnly() ? SHADER_TECHNIQUE_fb_AO :
+                                                (useAA ? SHADER_TECHNIQUE_fb_tonemap_AO : SHADER_TECHNIQUE_fb_tonemap_AO_no_filter));
 
    m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
    m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuad((Vertex3D_TexelOnly *)shiftedVerts);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
+   renderedRT = ouputRT;
 
-   bool shaderAA = (SMAA || DLAA || NFAA || FXAA1 || FXAA2 || FXAA3);
-   if (shaderAA)
-      RenderFXAA(m_stereo3D, SMAA, DLAA, NFAA, FXAA1, FXAA2, FXAA3, ambientOcclusion);
-
-   if (m_stereo3D != STEREO_OFF)
-      RenderStereo(m_stereo3D, shaderAA);
+   StereoFXAA(renderedRT, stereo, SMAA, DLAA, NFAA, FXAA1, FXAA2, FXAA3, sharpen, true);
 
    if (ProfilingMode() == 1)
       m_pin3d.m_gpu_profiler.Timestamp(GTS_PostProcess);
@@ -5105,6 +5347,10 @@ void Player::LockForegroundWindow(const bool enable)
 
 void Player::Render()
 {
+   // Rendering outputs to m_pd3dPrimaryDevice->GetBackBufferTexture(). If MSAA is used, it is resolved as part of the rendering (i.e. this surface is NOT the MSAA rneder surface but its resolved copy)
+   // Then it is tonemapped/bloom/dither/... to m_pd3dPrimaryDevice->GetBackBufferTmpTexture() if needed for postprocessing (sharpen, FXAA,...), or directly to the main output framebuffer otherwise
+   // The optional postprocessing is done from m_pd3dPrimaryDevice->GetBackBufferTmpTexture() to the main output framebuffer
+
    U64 timeforframe = usec();
 
    m_pininput.ProcessKeys(/*sim_msec,*/ -(int)(timeforframe / 1000)); // trigger key events mainly for VPM<->VP rountrip
@@ -5146,8 +5392,8 @@ void Player::Render()
 
    RenderDevice::m_stats_drawn_triangles = 0;
 
-   // copy static buffers to back buffer and z buffer
-   m_pin3d.m_pddsStatic->CopyTo(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()); // cannot be called inside BeginScene -> EndScene cycle
+   // copy static buffers to back buffer including z buffer
+   m_pin3d.m_pddsStatic->CopyTo(m_pin3d.m_pd3dPrimaryDevice->GetMSAABackBufferTexture()); // cannot be called inside BeginScene -> EndScene cycle
 
    // Physics/Timer updates, done at the last moment, especially to handle key input (VP<->VPM rountrip) and animation triggers
    //if ( !cameraMode )
@@ -5192,7 +5438,10 @@ void Player::Render()
       m_pin3d.UpdateMatrices();
       RenderDynamics();
       m_pin3d.m_pd3dPrimaryDevice->EndScene();
-   } 
+   }
+
+   // Resolve MSAA buffer to a normal one (noop if not using MSAA), allowing sampling it for postprocessing
+   m_pin3d.m_pd3dPrimaryDevice->ResolveMSAA();
 
    m_pininput.ProcessKeys(/*sim_msec,*/ -(int)(timeforframe / 1000)); // trigger key events mainly for VPM<->VP rountrip
 
@@ -5211,14 +5460,16 @@ void Player::Render()
          if (m_fps > localvsync*ADAPT_VSYNC_FACTOR)
             vsync = true;
 
-   const bool useAO = false;
-   //const bool useAO = ((m_dynamicAO && (m_ptable->m_useAO == -1)) || (m_ptable->m_useAO == 1)) && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && (m_ptable->m_AOScale > 0.f);
+   const bool useAO = ((m_dynamicAO && (m_ptable->m_useAO == -1)) || (m_ptable->m_useAO == 1)) && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && (m_ptable->m_AOScale > 0.f);
 
 #ifdef USE_IMGUI
    UpdateHUD_IMGUI();
 #endif
 
-   PostProcess(useAO && !m_disableAO);
+   if (useAO && !m_disableAO)
+      PrepareVideoBuffersAO();
+   else
+      PrepareVideoBuffersNormal();
 
    // DJRobX's crazy latency-reduction code active? Insert some Physics updates before vsync'ing
    if (m_minphyslooptime > 0)

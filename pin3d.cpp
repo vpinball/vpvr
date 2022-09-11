@@ -12,7 +12,6 @@ int NumVideoBytes = 0;
 
 Pin3D::Pin3D()
 {
-   m_pddsBackBuffer = nullptr;
    m_pddsAOBackBuffer = nullptr;
    m_pddsAOBackTmpBuffer = nullptr;
    m_pd3dPrimaryDevice = nullptr;
@@ -479,19 +478,15 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
 
    m_pd3dPrimaryDevice->SetViewport(&m_viewPort);
 
-   m_pddsBackBuffer = m_pd3dPrimaryDevice->GetBackBufferTexture();
-
-   // Static render target is a copy of the main back buffer without MSAA
-   m_pddsStatic = new RenderTarget(m_pd3dPrimaryDevice, m_pddsBackBuffer->GetWidth(), m_pddsBackBuffer->GetHeight(), m_pddsBackBuffer->GetColorFormat(), m_pddsBackBuffer->HasDepth(),
-      false, m_pddsBackBuffer->GetStereo(), "Failed to create static render target");
+   // Static render target is a copy of the main back buffer (without MSAA since static prerender is done with custom antialiasing)
+   m_pddsStatic = m_pd3dPrimaryDevice->GetBackBufferTexture()->Duplicate();
 
    if (m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && useAO)
    {
       // FIXME the width must be the one the backbuffer (not the one of the preview vieport) but since AO is currently broken, this will be part of the AO fix
-      m_pddsAOBackTmpBuffer = new RenderTarget(m_pd3dPrimaryDevice, m_viewPort.Width, m_viewPort.Height, colorFormat::GREY8, false, false, stereo3D,
+      m_pddsAOBackBuffer = new RenderTarget(m_pd3dPrimaryDevice, m_viewPort.Width, m_viewPort.Height, colorFormat::GREY8, false, 1, STEREO_OFF,
          "Unable to create AO buffers!\r\nPlease disable Ambient Occlusion.\r\nOr try to (un)set \"Alternative Depth Buffer processing\" in the video options!");
-      m_pddsAOBackBuffer = new RenderTarget(m_pd3dPrimaryDevice, m_viewPort.Width, m_viewPort.Height, colorFormat::GREY8, false, false, stereo3D,
-         "Unable to create AO buffers!\r\nPlease disable Ambient Occlusion.\r\nOr try to (un)set \"Alternative Depth Buffer processing\" in the video options!");
+      m_pddsAOBackTmpBuffer = m_pddsAOBackBuffer->Duplicate();
       if (!m_pddsAOBackBuffer || !m_pddsAOBackTmpBuffer)
          return E_FAIL;
    }
@@ -578,7 +573,7 @@ HRESULT Pin3D::InitPin3D(const bool fullScreen, const int width, const int heigh
    if (m_pddsStatic)
       m_pddsStatic->Activate(true);
    else
-      m_pddsBackBuffer->Activate(true);
+      m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(true);
 
    //m_gpu_profiler.Init(m_pd3dDevice->GetCoreDevice()); // done by first BeginFrame() call lazily
 

@@ -8,7 +8,7 @@ class RenderTarget final
 {
 public:
    RenderTarget(RenderDevice* rd, int width = -1, int height = -1); // Default output render target
-   RenderTarget(RenderDevice* rd, const int width, const int height, const colorFormat format, bool with_depth, bool use_MSAA, StereoMode stereo, char* failureMessage);
+   RenderTarget(RenderDevice* rd, const int width, const int height, const colorFormat format, bool with_depth, int nMSAASamples, StereoMode stereo, char* failureMessage);
    ~RenderTarget();
 
    void Activate(bool ignoreStereo);
@@ -23,7 +23,7 @@ public:
    int GetWidth() const { return m_width; }
    int GetHeight() const { return m_height; }
    StereoMode GetStereo() const { return m_stereo; }
-   bool IsMSAA() const { return m_use_mSAA; }
+   bool IsMSAA() const { return m_nMSAASamples > 1; }
    bool HasDepth() const { return m_has_depth; }
    colorFormat GetColorFormat() const { return m_format; }
 
@@ -43,7 +43,7 @@ private:
    Sampler* m_depth_sampler;
    bool m_is_back_buffer;
    bool m_has_depth;
-   bool m_use_mSAA;
+   int m_nMSAASamples;
 
 #ifdef ENABLE_SDL
    GLuint m_framebuffer;
