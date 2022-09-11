@@ -856,14 +856,32 @@ void Player::ToggleFPS()
    m_pin3d.m_gpu_profiler.Shutdown(); // Kill it so that it cannot influence standard rendering performance (and otherwise if just switching profile modes to not falsify counters and query info)
 }
 
-unsigned int Player::ProfilingMode() const
+InfoMode Player::GetInfoMode() const
+{
+   const unsigned int modes = (m_showFPS % 9);
+   switch (modes)
+   {
+   case 0: return InfoMode::IF_NONE;
+   case 1: return InfoMode::IF_FPS;
+   case 2: return InfoMode::IF_PROFILING;
+   case 3: return InfoMode::IF_NONE;
+   case 4: return InfoMode::IF_PROFILING_SPLIT_RENDERING;
+   case 5: return InfoMode::IF_NONE;
+   case 6: return InfoMode::IF_STATIC_ONLY;
+   case 7: return InfoMode::IF_NONE;
+   case 8: return InfoMode::IF_AO_ONLY;
+   }
+}
+
+ProfilingMode Player::GetProfilingMode() const
 {
    const unsigned int modes = (m_showFPS % 9);
    if (modes == 3)
-      return 1;
+      return ProfilingMode::PF_ENABLED;
    else if (modes == 4)
-      return 2;
-   else return 0;
+      return ProfilingMode::PF_SPLIT_RENDERING;
+   else
+      return ProfilingMode::PF_DISABLED;
 }
 
 bool Player::ShowFPSonly() const
@@ -3685,10 +3703,10 @@ void Player::RenderDynamics()
          }
    }
 
-   if (ProfilingMode() == 1)
+   if (GetProfilingMode() == PF_ENABLED)
       m_pin3d.m_gpu_profiler.Timestamp(GTS_PlayfieldGraphics);
 
-   if (ProfilingMode() != 2) // normal rendering path for standard gameplay
+   if (GetProfilingMode() != PF_SPLIT_RENDERING) // normal rendering path for standard gameplay
    {
       m_dmdstate = 0;
       // Draw non-transparent objects. No DMD's
@@ -3704,7 +3722,7 @@ void Player::RenderDynamics()
 
       DrawBalls();
 
-      if (ProfilingMode() == 1)
+      if (GetProfilingMode() == PF_ENABLED)
          m_pin3d.m_gpu_profiler.Timestamp(GTS_NonTransparent);
 
 #ifndef ENABLE_SDL
@@ -3713,7 +3731,7 @@ void Player::RenderDynamics()
 
       DrawBulbLightBuffer();
 
-      if (ProfilingMode() == 1)
+      if (GetProfilingMode() == PF_ENABLED)
          m_pin3d.m_gpu_profiler.Timestamp(GTS_LightBuffer);
 
       m_dmdstate = 0;
@@ -3728,7 +3746,7 @@ void Player::RenderDynamics()
         if(m_vHitNonTrans[i]->IsDMD())
           m_vHitNonTrans[i]->RenderDynamic();
 
-      if (ProfilingMode() == 1)
+      if (GetProfilingMode() == PF_ENABLED)
          m_pin3d.m_gpu_profiler.Timestamp(GTS_Transparent);
    }
    else // special profiling path by doing separate items, will not be accurate, both perf and rendering wise, but better than nothing
@@ -4337,9 +4355,11 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
 // call UpdateHUD_IMGUI outside of m_pin3d.m_pd3dPrimaryDevice->BeginScene()/EndSecene()
 void Player::UpdateHUD_IMGUI()
 {
-   static bool profiling = false;
-   if (!ShowStats() || m_cameraMode || m_closeDown)
-      return;
+   InfoMode infoMode = GetInfoMode();
+   static bool profiling = true;
+   if (infoMode == IF_NONE || m_closeDown)
+   //if (!ShowStats() || m_cameraMode || m_closeDown)
+         return;
 
 #ifdef ENABLE_SDL
    ImGui_ImplOpenGL3_NewFrame();
@@ -4348,12 +4368,25 @@ void Player::UpdateHUD_IMGUI()
 #endif
    ImGui_ImplWin32_NewFrame();
    ImGui::NewFrame();
-   ImGui::SetNextWindowSize(ShowFPSonly() ? ImVec2(200, 50) : ImVec2(600, 350), ImGuiCond_FirstUseEver);
+   ImGui::SetNextWindowSize(infoMode != IF_PROFILING && infoMode != IF_PROFILING_SPLIT_RENDERING ? ImVec2(200, 50) : ImVec2(500, 350), ImGuiCond_FirstUseEver);
    ImGui::SetNextWindowPos(ImVec2(10, 10));
-   ImGui::Begin(ShowFPSonly() ? "FPS" : "Statistics");
+
+   switch (infoMode)
+   {
+      case IF_FPS: 
+         ImGui::Begin("FPS"); break;
+      case IF_PROFILING: 
+         ImGui::Begin("Profiling"); break;
+      case IF_PROFILING_SPLIT_RENDERING:
+         ImGui::Begin("Profiling (using split rendering)"); break;
+      case IF_STATIC_ONLY:
+         ImGui::Begin("Display staticly rendered parts"); break;
+      case IF_AO_ONLY:
+         ImGui::Begin("Display ambient occlusion"); break;
+   }
 
    const float fpsAvg = (m_fpsCount == 0) ? 0.0f : m_fpsAvg / m_fpsCount;
-   if (ShowFPSonly())
+   if (infoMode != IF_PROFILING && infoMode != IF_PROFILING_SPLIT_RENDERING)
    {
       ImGui::Text("FPS: %.1f (%.1f avg)", m_fps + 0.01f, fpsAvg + 0.01f);
       ImGui::End();
@@ -4440,43 +4473,30 @@ void Player::UpdateHUD_IMGUI()
 
    if (profiling)
    {
+      ImGui::SetNextWindowSize(ImVec2(500, 350), ImGuiCond_FirstUseEver);
+      ImGui::SetNextWindowPos(ImVec2(10, 370));
       ImGui::Begin("Detailed (approximate) GPU profiling:");
-
       m_pin3d.m_gpu_profiler.WaitForDataAndUpdate();
-
       double dTDrawTotal = 0.0;
       for (GTS gts = GTS_BeginFrame; gts < GTS_EndFrame; gts = GTS(gts + 1))
          dTDrawTotal += m_pin3d.m_gpu_profiler.DtAvg(gts);
-
-      ImGui::Text(" Draw time: %.2f ms", float(1000.0 * dTDrawTotal));
-      for (GTS gts = GTS(GTS_BeginFrame + 1); gts < GTS_EndFrame; gts = GTS(gts + 1))
-         ImGui::Text("   %s: %.2f ms (%4.1f%%)", GTS_name[gts], float(1000.0 * m_pin3d.m_gpu_profiler.DtAvg(gts)), float(100. * m_pin3d.m_gpu_profiler.DtAvg(gts) / dTDrawTotal));
-      ImGui::Text(" Frame time: %.2f ms", float(1000.0 * (dTDrawTotal + m_pin3d.m_gpu_profiler.DtAvg(GTS_EndFrame))));
-
-/*      if (ProfilingMode() == 1)
+      if (GetProfilingMode() == PF_ENABLED)
       {
+         ImGui::Text(" Draw time: %.2f ms", float(1000.0 * dTDrawTotal));
          for (GTS gts = GTS(GTS_BeginFrame + 1); gts < GTS_EndFrame; gts = GTS(gts + 1))
-         {
-            sprintf_s(szFoo, sizeof(szFoo), "   %s: %.2f ms (%4.1f%%)", GTS_name[gts], float(1000.0 * m_pin3d.m_gpu_profiler.DtAvg(gts)), float(100. * m_pin3d.m_gpu_profiler.DtAvg(gts) / dTDrawTotal));
-            DebugPrint(0, 320 + gts * 20, szFoo);
-         }
-         sprintf_s(szFoo, sizeof(szFoo), " Frame time: %.2f ms", float(1000.0 * (dTDrawTotal + m_pin3d.m_gpu_profiler.DtAvg(GTS_EndFrame))));
-         DebugPrint(0, 320 + GTS_EndFrame * 20, szFoo);
+            ImGui::Text("   %s: %.2f ms (%4.1f%%)", GTS_name[gts], float(1000.0 * m_pin3d.m_gpu_profiler.DtAvg(gts)), float(100. * m_pin3d.m_gpu_profiler.DtAvg(gts) / dTDrawTotal));
+         ImGui::Text(" Frame time: %.2f ms", float(1000.0 * (dTDrawTotal + m_pin3d.m_gpu_profiler.DtAvg(GTS_EndFrame))));
       }
       else
       {
          for (GTS gts = GTS(GTS_BeginFrame + 1); gts < GTS_EndFrame; gts = GTS(gts + 1))
-         {
-            sprintf_s(szFoo, sizeof(szFoo), " %s: %.2f ms (%4.1f%%)", GTS_name_item[gts], float(1000.0 * m_pin3d.m_gpu_profiler.DtAvg(gts)), float(100. * m_pin3d.m_gpu_profiler.DtAvg(gts) / dTDrawTotal));
-            DebugPrint(0, 300 + gts * 20, szFoo);
-         }
+            ImGui::Text("   %s: %.2f ms (%4.1f%%)", GTS_name[gts], float(1000.0 * m_pin3d.m_gpu_profiler.DtAvg(gts)), float(100. * m_pin3d.m_gpu_profiler.DtAvg(gts) / dTDrawTotal));
       }
-      */
       ImGui::End();
    }
 
    ImGui::SetNextWindowSize(ImVec2(530, 550), ImGuiCond_FirstUseEver);
-   ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_FirstUseEver);
+   ImGui::SetNextWindowPos(ImVec2(m_width - 530 - 10, 10), ImGuiCond_FirstUseEver);
    ImGui::Begin("Plots");
        //!! This example assumes 60 FPS. Higher FPS requires larger buffer size.
        static ScrollingData sdata1, sdata2, sdata3, sdata4, sdata5, sdata6;
@@ -4695,7 +4715,7 @@ void Player::UpdateHUD()
 
 	// Draw performance readout - at end of CPU frame, so hopefully the previous frame
 	//  (whose data we're getting) will have finished on the GPU by now.
-	if (ProfilingMode() != 0 && !m_closeDown && !m_cameraMode)
+	if (GetProfilingMode() != PF_DISABLED && !m_closeDown && !m_cameraMode)
 	{
 		DebugPrint(0, 300, "Detailed (approximate) GPU profiling:");
 
@@ -4706,7 +4726,7 @@ void Player::UpdateHUD()
 			dTDrawTotal += m_pin3d.m_gpu_profiler.DtAvg(gts);
 
 		char szFoo[256];
-		if (ProfilingMode() == 1)
+      if (GetProfilingMode() == PF_ENABLED)
 		{
 			sprintf_s(szFoo, sizeof(szFoo), " Draw time: %.2f ms", float(1000.0 * dTDrawTotal));
 			DebugPrint(0, 320, szFoo);
@@ -4864,7 +4884,7 @@ void Player::PrepareVideoBuffersNormal()
 
    Bloom();
 
-   if (ProfilingMode() == 1)
+   if (GetProfilingMode() == PF_ENABLED)
       m_pin3d.m_gpu_profiler.Timestamp(GTS_Bloom);
 
    if (ss_refl)
@@ -4873,7 +4893,7 @@ void Player::PrepareVideoBuffersNormal()
       renderedRT = m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2();
    }
 
-   if (ProfilingMode() == 1)
+   if (GetProfilingMode() == PF_ENABLED)
    {
       m_pin3d.m_gpu_profiler.Timestamp(GTS_SSR);
       m_pin3d.m_gpu_profiler.Timestamp(GTS_AO);
@@ -4921,7 +4941,7 @@ void Player::PrepareVideoBuffersNormal()
 
    StereoFXAA(renderedRT, stereo, SMAA, DLAA, NFAA, FXAA1, FXAA2, FXAA3, sharpen, false);
 
-   if (ProfilingMode() == 1)
+   if (GetProfilingMode() == PF_ENABLED)
       m_pin3d.m_gpu_profiler.Timestamp(GTS_PostProcess);
 
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_TRUE);
@@ -4979,7 +4999,7 @@ void Player::PrepareVideoBuffersAO()
 
    Bloom();
 
-   if (ProfilingMode() == 1)
+   if (GetProfilingMode() == PF_ENABLED)
       m_pin3d.m_gpu_profiler.Timestamp(GTS_Bloom);
 
    if (ss_refl)
@@ -4988,7 +5008,7 @@ void Player::PrepareVideoBuffersAO()
       renderedRT = m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2();
    }
 
-   if (ProfilingMode() == 1)
+   if (GetProfilingMode() == PF_ENABLED)
       m_pin3d.m_gpu_profiler.Timestamp(GTS_SSR);
 
    // separate normal generation pass, currently roughly same perf or even much worse
@@ -5028,7 +5048,7 @@ void Player::PrepareVideoBuffersAO()
    m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
    m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
 
-   if (ProfilingMode() == 1)
+   if (GetProfilingMode() == PF_ENABLED)
       m_pin3d.m_gpu_profiler.Timestamp(GTS_AO);
 
    // flip AO buffers (avoids copy)
@@ -5088,7 +5108,7 @@ void Player::PrepareVideoBuffersAO()
 
    StereoFXAA(renderedRT, stereo, SMAA, DLAA, NFAA, FXAA1, FXAA2, FXAA3, sharpen, true);
 
-   if (ProfilingMode() == 1)
+   if (GetProfilingMode() == PF_ENABLED)
       m_pin3d.m_gpu_profiler.Timestamp(GTS_PostProcess);
 
    //
@@ -5406,7 +5426,7 @@ void Player::Render()
    for (size_t l = 0; l < m_vanimate.size(); ++l)
       m_vanimate[l]->Animate();
 
-   if (ProfilingMode() == 1)
+   if (GetProfilingMode() == PF_ENABLED)
       m_pin3d.m_gpu_profiler.BeginFrame(m_pin3d.m_pd3dPrimaryDevice->GetCoreDevice());
 
    // Update camera point of view
@@ -5479,7 +5499,7 @@ void Player::Render()
    }
    FlipVideoBuffers(vsync);
 
-   if (ProfilingMode() != 0)
+   if (GetProfilingMode() != PF_DISABLED)
       m_pin3d.m_gpu_profiler.EndFrame();
 
 #ifndef ACCURATETIMERS
