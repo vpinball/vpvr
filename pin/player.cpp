@@ -4355,8 +4355,9 @@ void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, cons
 // call UpdateHUD_IMGUI outside of m_pin3d.m_pd3dPrimaryDevice->BeginScene()/EndSecene()
 void Player::UpdateHUD_IMGUI()
 {
-   InfoMode infoMode = GetInfoMode();
    static bool profiling = true;
+
+   InfoMode infoMode = GetInfoMode();
    if (infoMode == IF_NONE || m_closeDown)
    //if (!ShowStats() || m_cameraMode || m_closeDown)
          return;
@@ -4566,7 +4567,9 @@ void Player::UpdateHUD_IMGUI()
 
 void Player::RenderHUD_IMGUI()
 {
-   if (!ShowStats() || m_cameraMode || m_closeDown)
+   InfoMode infoMode = GetInfoMode();
+   if (infoMode == IF_NONE || m_closeDown)
+   //if (!ShowStats() || m_cameraMode || m_closeDown)
       return;
 
    ImGui::Render();
