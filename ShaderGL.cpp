@@ -800,43 +800,44 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
       Sampler* texel = m_uniformCache[SHADER_TECHNIQUE_COUNT][uniformName].sampler;
       if (texel == nullptr)
          texel = m_noTexture;
-      int tex_unit = shaderUniformNames[uniformName].default_tex_unit;
-      if (tex_unit == -1)
-      {
-         // Texture units are preaffected to avoid collision (copied from DX9 implementation) but somes are not.
-         //TODO might cause problems if we overwrite an already bound texture => could be fixed with the texture cache, too
-         tex_unit = m_nextTextureSlot;
-         m_nextTextureSlot = m_nextTextureSlot + 1;
-      }
+      // Preaffected texture units from DX9 can not be used for OpenGL since they are preaffected for textures and not samplers, causing some collisions.
+      // FIXME optimize texture unit allocation and texture binding caching
+      int tex_unit = m_nextTextureSlot;
+      m_nextTextureSlot = m_nextTextureSlot + 1;
       glActiveTexture(GL_TEXTURE0 + tex_unit);
       glBindTexture(texel->IsMSAA() ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, texel->GetCoreTexture());
       glUniform1i(currentUniform.location, tex_unit);
       // FIXME initial implementation, entirely unoptimized (we could cache samplers, reuse the ones already bound, avoid setting sampler states,...)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texel->GetClampU());
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texel->GetClampV());
-      switch (texel->GetFilter())
+      // FIXME cleanup sampler filtering: use default values, cache filters,...
+      switch (shaderUniformNames[uniformName].default_filter)
+      //switch (texel->GetFilter())
       {
       case SF_NONE: // No mipmapping
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 1.0f);
          break;
       case SF_POINT: // Point sampled (aka nearest mipmap) texture filtering.
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 1.0f);
          break;
       case SF_BILINEAR: // Bilinar texture filtering.
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 1.0f);
          break;
       case SF_TRILINEAR: // Trilinar texture filtering.
-         // FIXME cleanup sampler filtering
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 1.0f);
          break;
       case SF_ANISOTROPIC: // Anisotropic texture filtering.
-         // FIXME cleanup sampler filtering
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, m_renderDevice->m_maxaniso);
          break;
       }
       break;
