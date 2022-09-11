@@ -768,6 +768,7 @@
 #define IDC_ASPECT_RATIO_EDIT           461
 #define IDC_FXAACB                      462
 #define IDC_ABOUT_VERSION               463
+#define IDC_FXAACB2                     463
 #define DISPID_PluFrames                464
 #define DISPID_Width                    465
 #define DISPID_ZAdjust                  466
@@ -905,12 +906,12 @@
 #define IDC_ENABLE_SSR                  590
 #define IDC_BLOOM_OFF                   591
 #define IDC_PLUNGERRETRACT              592
-#define IDC_TURN_VR_ON                  592
 #define IDC_DMD_SOURCE                  593
 #define IDC_IMPORT_NO_FORSYTH           593
 #define IDC_BG_SOURCE                   594
-#define IDC_SHARPENCB                   594
 #define IDC_GET_INPLAYSTATE             595
+#define IDC_SHARPENCB                   596
+#define IDC_TURN_VR_ON                  597
 #define IDC_VR_PREVIEW_LABEL            600
 #define IDD_PROPRUBBER_PHYSICS          602
 #define IDC_RUBBER                      602
@@ -1168,6 +1169,7 @@
 #define IDC_MSAASLIDER_LABEL            843
 #define IDC_STATIC6                     843
 #define IDC_STATIC11                    844
+#define IDC_PostProcessAA_Label2        844
 #define IDC_STATIC1                     845
 #define IDC_STATIC2                     846
 #define IDC_STATIC3                     847

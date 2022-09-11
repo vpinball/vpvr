@@ -453,7 +453,6 @@ public:
    int m_maxPrerenderedFrames;
    int m_FXAA;    // =FXAASettings
    int m_sharpen; // 0=off, 1=CAS, 2=bilateral CAS
-   bool m_AA;
    int m_MSAASamples;
    float m_AAfactor;
 

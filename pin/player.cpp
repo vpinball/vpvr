@@ -191,28 +191,15 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
    m_capExtDMD = LoadValueBoolWithDefault(regKey[RegName::Player], "CaptureExternalDMD"s, false);
    m_capPUP = LoadValueBoolWithDefault(regKey[RegName::Player], "CapturePUP"s, false);
 
-   m_VSync = LoadValueIntWithDefault(regKey[RegName::Player], "AdaptiveVSync"s, 0);
-   m_maxPrerenderedFrames = LoadValueIntWithDefault(regKey[RegName::Player], "MaxPrerenderedFrames"s, 0);
-   m_NudgeShake = LoadValueFloatWithDefault(regKey[RegName::Player], "NudgeStrength"s, 2e-2f);
-   m_FXAA = LoadValueIntWithDefault(regKey[RegName::Player], "FXAA"s, Standard_FXAA);
-   m_sharpen = LoadValueIntWithDefault(regKey[RegName::Player], "Sharpen"s, 0);
    m_trailForBalls = LoadValueBoolWithDefault(regKey[RegName::Player], "BallTrail"s, true);
    m_disableLightingForBalls = LoadValueBoolWithDefault(regKey[RegName::Player], "DisableLightingForBalls"s, false);
-   m_reflectionForBalls = LoadValueBoolWithDefault(regKey[RegName::Player], "BallReflection"s, true);
-   m_AA = LoadValueBoolWithDefault(regKey[RegName::Player], "USEAA"s, false);
-   m_dynamicAO = LoadValueBoolWithDefault(regKey[RegName::Player], "DynamicAO"s, false);
-   m_disableAO = LoadValueBoolWithDefault(regKey[RegName::Player], "DisableAO"s, false);
-   m_ss_refl = LoadValueBoolWithDefault(regKey[RegName::Player], "SSRefl"s, false);
-   m_pf_refl = LoadValueBoolWithDefault(regKey[RegName::Player], "PFRefl"s, true);
    m_stereo3D = (StereoMode)LoadValueIntWithDefault(regKey[RegName::Player], "Stereo3D"s, STEREO_OFF);
    m_stereo3Denabled = LoadValueBoolWithDefault(regKey[RegName::Player], "Stereo3DEnabled"s, (m_stereo3D != STEREO_OFF));
    m_stereo3DY = LoadValueBoolWithDefault(regKey[RegName::Player], "Stereo3DYAxis"s, false);
    m_global3DContrast = LoadValueFloatWithDefault(regKey[RegName::Player], "Stereo3DContrast"s, 1.0f);
    m_global3DDesaturation = LoadValueFloatWithDefault(regKey[RegName::Player], "Stereo3DDesaturation"s, 0.f);
-   m_scaleFX_DMD = LoadValueBoolWithDefault(regKey[RegName::Player], "ScaleFXDMD"s, false);
    m_disableDWM = LoadValueBoolWithDefault(regKey[RegName::Player], "DisableDWM"s, false);
    m_useNvidiaApi = LoadValueBoolWithDefault(regKey[RegName::Player], "UseNVidiaAPI"s, false);
-   m_bloomOff = LoadValueBoolWithDefault(regKey[RegName::Player], "ForceBloomOff"s, false);
    m_ditherOff = LoadValueBoolWithDefault(regKey[RegName::Player], "Render10Bit"s, false); // if rendering at 10bit output resolution, disable dithering
    m_BWrendering = LoadValueIntWithDefault(regKey[RegName::Player], "BWRendering"s, 0);
    m_detectScriptHang = LoadValueBoolWithDefault(regKey[RegName::Player], "DetectHang"s, false);
@@ -224,6 +211,7 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
       m_dynamicMode = true; // VR mode => camera will be dynamic, disable static pre-rendering
       m_maxPrerenderedFrames = 0;
       m_NudgeShake = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "NudgeStrength"s, 2e-2f);
+      m_sharpen = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "Sharpen"s, 0);
       m_FXAA = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "FXAA"s, Disabled);
       m_MSAASamples = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "MSAASamples"s, 1);
       m_AAfactor = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "AAFactor"s, LoadValueBoolWithDefault(regKey[RegName::Player], "USEAAs", false) ? 2.0f : 1.0f);
@@ -233,18 +221,16 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
       m_pf_refl = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "PFRefl"s, true);
       m_pf_refl = false; // Force disable for now, reflections kind of works but the camera is scewed in VR.
       m_scaleFX_DMD = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "ScaleFXDMD"s, false);
-      m_disableDWM = false;
-      m_useNvidiaApi = false;
       m_bloomOff = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "ForceBloomOff"s, false);
-      m_ditherOff = false;
       m_VSync = 0; //Disable VSync for VR
       m_reflectionForBalls = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "BallReflection"s, true);
-      //m_reflectionForBalls = false; // Ball reflections work fine but is a performance hog in it's current implementation so force disable for now.
    }
-   else {
+   else 
+   {
       m_stereo3D = (StereoMode)LoadValueIntWithDefault(regKey[RegName::Player], "Stereo3D"s, STEREO_OFF);
       m_maxPrerenderedFrames = LoadValueIntWithDefault(regKey[RegName::Player], "MaxPrerenderedFrames"s, 0);
       m_NudgeShake = LoadValueFloatWithDefault(regKey[RegName::Player], "NudgeStrength"s, 2e-2f);
+      m_sharpen = LoadValueIntWithDefault(regKey[RegName::Player], "Sharpen"s, 0);
       m_FXAA = LoadValueIntWithDefault(regKey[RegName::Player], "FXAA"s, Disabled);
       m_MSAASamples = LoadValueIntWithDefault(regKey[RegName::Player], "MSAASamples"s, 1);
       m_AAfactor = LoadValueFloatWithDefault(regKey[RegName::Player], "AAFactor"s, LoadValueBoolWithDefault(regKey[RegName::Player], "USEAAs", false) ? 2.0f : 1.0f);
@@ -255,10 +241,7 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
       m_stereo3Denabled = LoadValueBoolWithDefault(regKey[RegName::Player], "Stereo3DEnabled"s, (m_stereo3D != STEREO_OFF));
       m_stereo3DY = LoadValueBoolWithDefault(regKey[RegName::Player], "Stereo3DYAxis"s, false);
       m_scaleFX_DMD = LoadValueBoolWithDefault(regKey[RegName::Player], "ScaleFXDMD"s, false);
-      m_disableDWM = LoadValueBoolWithDefault(regKey[RegName::Player], "DisableDWM"s, false);
-      m_useNvidiaApi = LoadValueBoolWithDefault(regKey[RegName::Player], "UseNVidiaAPI"s, false);
       m_bloomOff = LoadValueBoolWithDefault(regKey[RegName::Player], "ForceBloomOff"s, false);
-      m_ditherOff = false;//LoadValueBoolWithDefault(regKey[RegName::Player], "Render10Bit"s, false); // if rendering at 10bit output resolution, disable dithering
       m_VSync = LoadValueIntWithDefault(regKey[RegName::Player], "AdaptiveVSync"s, 0);
       m_reflectionForBalls = LoadValueBoolWithDefault(regKey[RegName::Player], "BallReflection"s, true);
    }
@@ -1974,7 +1957,7 @@ void Player::RenderMirrorOverlay()
    m_pin3d.m_pd3dPrimaryDevice->GetMSAABackBufferTexture()->Activate(false);
    
    // render the mirrored texture over the playfield
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_mirror, m_pin3d.m_pd3dPrimaryDevice->GetMirrorTmpBufferTexture()->GetColorSampler()); // When fixing mirroring make sure texture0 is not msaa
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_mirror, m_pin3d.m_pd3dPrimaryDevice->GetMirrorTmpBufferTexture()->GetColorSampler());
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetFloat(SHADER_mirrorFactor, m_ptable->m_playfieldReflectionStrength);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_fb_mirror);
 
@@ -2275,7 +2258,7 @@ void Player::InitStatic()
    const bool useAO = ((m_dynamicAO && (m_ptable->m_useAO == -1)) || (m_ptable->m_useAO == 1));
    if (!m_disableAO && !useAO && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && (m_ptable->m_AOScale > 0.f))
    {
-      const bool useAA = (m_AA && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
+      const bool useAA = ((m_AAfactor != 1.0) && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
 
       m_pin3d.m_pddsStatic->CopyTo(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()); // save Z buffer and render (cannot be called inside BeginScene -> EndScene cycle)
 
@@ -3876,7 +3859,7 @@ void Player::SetClipPlanePlayfield(const bool clip_orientation)
 
 void Player::SSRefl()
 {
-   m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2()->Activate(false);
+   m_pin3d.m_pd3dPrimaryDevice->GetReflectionBufferTexture()->Activate(false);
 
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler());
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler());
@@ -3974,7 +3957,8 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
    if (!stereo && (SMAA || DLAA || NFAA || FXAA1 || FXAA2 || FXAA3))
 #endif
    {
-      outputRT = (SMAA || DLAA || sharpen || (stereo && m_stereo3D != STEREO_TB && m_stereo3D != STEREO_SBS)) ? m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture() : m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
+      outputRT = (SMAA || DLAA || sharpen || (stereo && m_stereo3D != STEREO_TB && m_stereo3D != STEREO_SBS)) ? m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()
+                                                                                                              : m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
       outputRT->Activate(true);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, renderedRT->GetColorSampler());
@@ -3999,23 +3983,19 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
       renderedRT = outputRT;
 
-      // FIXME this needs a full review (buffer are likely wrong and this is not portable DX/GL)
       if (SMAA || DLAA) // actual SMAA/DLAA filtering pass, above only edge detection
       {
-         // FIXME implement
-         assert(false);
-         if (SMAA)
-            m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2()->Activate(true);
-         else
-            m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
+         outputRT = (SMAA || sharpen || (stereo && m_stereo3D != STEREO_TB && m_stereo3D != STEREO_SBS)) ? m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2()
+                                                                                                         : m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
+         outputRT->Activate(true);
 
          if (SMAA)
          {
-            // FIXME
-             // CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_edgesTex2D, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler()->GetCoreTexture())); //!! opt.?
+            // FIXME this needs a full review (buffer are likely wrong and this is not portable DX/GL)
+            // CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_edgesTex2D, renderedRT->GetColorSampler()->GetCoreTexture())); //!! opt.?
          }
          else
-            m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler());
+            m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, renderedRT->GetColorSampler());
 
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SMAA ? SHADER_TECHNIQUE_SMAA_BlendWeightCalculation : SHADER_TECHNIQUE_DLAA);
 
@@ -4025,7 +4005,8 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
 
          if (SMAA)
          {
-            // FIXME
+            // FIXME (re)implement SMAA
+            assert(false);
             /* CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_edgesTex2D, nullptr)); //!! opt.??
 
             if (sharpen)
@@ -4277,80 +4258,6 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
 #endif
    }
 }
-/*
-void Player::RenderFXAA(const int stereo, const bool SMAA, const bool DLAA, const bool NFAA, const bool FXAA1, const bool FXAA2, const bool FXAA3, const bool ambientOcclusion) //!! SMAA, luma sharpen, dither?
-{
-   if (DLAA)
-      m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2()->Activate(true);
-   else if (SMAA || stereo == STEREO_INT || stereo == STEREO_VR)
-      m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(2)->Activate(true);
-   else
-      m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
-
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->GetColorSampler());
-
-   if (ambientOcclusion)
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, m_pin3d.m_pddsBackBuffer->GetDepthSampler());
-   else
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture4, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->GetColorSampler());
-
-   const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), (float)m_width, ambientOcclusion ? 1.f : 0.f);
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &w_h_height);
-
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SMAA  ? SHADER_TECHNIQUE_SMAA_ColorEdgeDetection : 
-                                                      (DLAA  ? SHADER_TECHNIQUE_DLAA_edge : 
-                                                      (NFAA  ? SHADER_TECHNIQUE_NFAA : 
-                                                      (FXAA3 ? SHADER_TECHNIQUE_FXAA3 : 
-                                                      (FXAA2 ? SHADER_TECHNIQUE_FXAA2 : 
-                                                               SHADER_TECHNIQUE_FXAA1)))));
-
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
-   m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
-
-   if (SMAA || DLAA) // actual SMAA/DLAA filtering pass, above only edge detection
-   {
-      if (SMAA)
-      {
-         m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2()->Activate(true);
-         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_edgesTex2D, m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(2)->GetColorSampler()); //!! opt.?
-      }
-      else
-      {
-         if (stereo == STEREO_INT || stereo == STEREO_VR)
-            m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(2)->Activate(true);
-         else
-            m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
-
-         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture1, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2()->GetColorSampler());
-      }
-
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SMAA ? SHADER_TECHNIQUE_SMAA_BlendWeightCalculation : SHADER_TECHNIQUE_DLAA);
-
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
-      m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
-
-      if (SMAA)
-      {
-         if (stereo == STEREO_INT || stereo == STEREO_VR)
-            m_pin3d.m_pd3dPrimaryDevice->GetNonMSAABlitTexture(2)->Activate(true);
-         else
-            m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
-
-         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_edgesTex2D); //!! opt.??
-         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_blendTex2D, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2()->GetColorSampler()); //!! opt.?
-
-         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_SMAA_NeighborhoodBlending);
-
-         m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
-         m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
-         m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
-
-         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_blendTex2D); //!! opt.?
-      }
-   }
-}*/
 
 #ifdef USE_IMGUI
 // call UpdateHUD_IMGUI outside of m_pin3d.m_pd3dPrimaryDevice->BeginScene()/EndSecene()
@@ -4360,7 +4267,6 @@ void Player::UpdateHUD_IMGUI()
 
    InfoMode infoMode = GetInfoMode();
    if (infoMode == IF_NONE || m_closeDown)
-   //if (!ShowStats() || m_cameraMode || m_closeDown)
          return;
 
 #ifdef ENABLE_SDL
@@ -4570,7 +4476,6 @@ void Player::RenderHUD_IMGUI()
 {
    InfoMode infoMode = GetInfoMode();
    if (infoMode == IF_NONE || m_closeDown)
-   //if (!ShowStats() || m_cameraMode || m_closeDown)
       return;
 
    ImGui::Render();
@@ -4894,7 +4799,7 @@ void Player::PrepareVideoBuffersNormal()
    if (ss_refl)
    {
       SSRefl();
-      renderedRT = m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2();
+      renderedRT = m_pin3d.m_pd3dPrimaryDevice->GetReflectionBufferTexture();
    }
 
    if (GetProfilingMode() == PF_ENABLED)
