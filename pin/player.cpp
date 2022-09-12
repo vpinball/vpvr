@@ -4915,7 +4915,7 @@ void Player::PrepareVideoBuffersAO()
    if (ss_refl)
    {
       SSRefl();
-      renderedRT = m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2();
+      renderedRT = m_pin3d.m_pd3dPrimaryDevice->GetReflectionBufferTexture();
    }
 
    if (GetProfilingMode() == PF_ENABLED)
