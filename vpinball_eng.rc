@@ -14,7 +14,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Anglais (États-Unis) resources
+// English (United States) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
@@ -400,13 +400,13 @@ BEGIN
     CONTROL         "2048",IDC_Tex2048,"Button",BS_AUTORADIOBUTTON,246,309,32,10
     CONTROL         "1024",IDC_Tex1024,"Button",BS_AUTORADIOBUTTON,285,309,32,10
     CONTROL         "",IDC_ARASlider,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,146,338,191,18
-    CONTROL         "BAM Headtracking",IDC_HEADTRACKING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,151,399,77,10
-    PUSHBUTTON      "Reset to Defaults",IDC_DEFAULTS,145,368,61,14
-    PUSHBUTTON      "Set for LowEnd PC",IDC_DEFAULTS_LOW,207,368,65,14
-    PUSHBUTTON      "Set for HighEnd PC",IDC_DEFAULTS_HIGH,273,368,65,14
-    PUSHBUTTON      "Reset PlayerWindow Pos",IDC_RESET_WINDOW,149,455,88,14
-    DEFPUSHBUTTON   "OK",IDOK,240,455,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,292,455,50,14
+    CONTROL         "BAM Headtracking",IDC_HEADTRACKING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,151,376,77,10
+    PUSHBUTTON      "Reset to Defaults",IDC_DEFAULTS,145,438,61,14
+    PUSHBUTTON      "Set for LowEnd PC",IDC_DEFAULTS_LOW,207,438,65,14
+    PUSHBUTTON      "Set for HighEnd PC",IDC_DEFAULTS_HIGH,273,438,65,14
+    PUSHBUTTON      "Reset PlayerWindow Pos",IDC_RESET_WINDOW,145,455,88,14
+    DEFPUSHBUTTON   "OK",IDOK,236,455,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,288,455,50,14
     GROUPBOX        "Display",IDC_STATIC,7,6,132,129
     GROUPBOX        "Ball Rendering",IDC_STATIC,145,7,94,109
     GROUPBOX        "3D Stereo Output",IDC_STATIC,7,334,132,124
@@ -420,7 +420,7 @@ BEGIN
     LTEXT           "(post-processed Anti-Aliasing)",IDC_STATIC,24,242,101,8
     GROUPBOX        "Anti-Aliasing",IDC_STATIC,7,137,132,116
     GROUPBOX        "Reflections",IDC_STATIC,244,47,94,44
-    GROUPBOX        "Camera position",IDC_STATIC,145,388,193,27
+    GROUPBOX        "Camera position",IDC_STATIC,145,365,193,27
 END
 
 IDD_FONTDIALOG DIALOG 0, 0, 316, 167
@@ -2185,7 +2185,7 @@ CAPTION "VR Options"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     COMBOBOX        IDC_TURN_VR_ON,54,8,88,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "VR Mode",IDC_VR_MODE,14,9,38,10
+    LTEXT           "VR Mode",IDC_VR_MODE,14,10,38,10
     CONTROL         "",IDC_MSAASLIDER,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,15,47,122,20
     LTEXT           "MSAA Samples (4x Rec.):",IDC_MSAASLIDER_LABEL,17,39,117,8
     CONTROL         "",IDC_SSSLIDER,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,15,77,122,20
@@ -2194,7 +2194,7 @@ BEGIN
     LTEXT           "Post-processed AA",IDC_PostProcessAA_Label,16,102,61,8
     COMBOBOX        IDC_SHARPENCB,79,116,60,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Sharpen",-1,16,118,61,8
-    CONTROL         "Enable ScaleFX for internal DMD",IDC_SCALE_FX_DMD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,18,132,121,10
+    CONTROL         "Enable ScaleFX for internal DMD",IDC_SCALE_FX_DMD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,132,121,10
     LTEXT           "(post-processed Anti-Aliasing)",-1,28,142,101,8
     GROUPBOX        "Ambient Occlusion",-1,12,158,131,38
     CONTROL         "Enable",IDC_ENABLE_AO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,169,72,10
@@ -2204,11 +2204,11 @@ BEGIN
     CONTROL         "Reflect Dynamic Elements",IDC_GLOBAL_PFREFLECTION_CHECK,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,232,131,10
     LTEXT           "on Playfield (quality)",-1,27,242,118,10
     LTEXT           "Visual Nudge Strength",-1,18,264,80,8
-    EDITTEXT        IDC_NUDGE_STRENGTH,103,262,36,12,ES_RIGHT | ES_AUTOHSCROLL
-    LTEXT           "VR Preview:",IDC_VR_PREVIEW_LABEL,162,10,38,10
-    COMBOBOX        IDC_VR_PREVIEW,204,7,85,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Scale table to width (in cm)",IDC_SCALE_TO_CM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,162,42,119,10
-    LTEXT           "Scaling",IDC_VR_SCALE_LABEL,165,56,50,10
+    EDITTEXT        IDC_NUDGE_STRENGTH,103,262,40,12,ES_RIGHT | ES_AUTOHSCROLL
+    LTEXT           "VR Preview",IDC_VR_PREVIEW_LABEL,157,10,48,10
+    COMBOBOX        IDC_VR_PREVIEW,207,8,85,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Scale table to width (in cm)",IDC_SCALE_TO_CM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,159,41,119,10
+    LTEXT           "Scaling",IDC_VR_SCALE_LABEL,164,56,50,10
     EDITTEXT        IDC_VR_SCALE,241,54,40,12,ES_RIGHT | ES_AUTOHSCROLL
     LTEXT           "VR Slope",IDC_VR_SLOPE_LABEL,164,68,50,10
     EDITTEXT        IDC_VR_SLOPE,241,68,40,12,ES_RIGHT | ES_AUTOHSCROLL
@@ -2220,7 +2220,7 @@ BEGIN
     EDITTEXT        IDC_VR_OFFSET_Y,241,107,40,12,ES_RIGHT | ES_AUTOHSCROLL
     LTEXT           "VR Table Height",IDC_VR_OFFSET_Z_LABEL,164,120,75,10
     EDITTEXT        IDC_VR_OFFSET_Z,241,120,40,12,ES_RIGHT | ES_AUTOHSCROLL
-    GROUPBOX        "Performance and Troubleshooting",-1,154,140,139,96
+    GROUPBOX        "Performance and Troubleshooting",-1,154,140,138,96
     COMBOBOX        IDC_COMBO_TEXTURE,158,152,130,60,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_COMBO_BLIT,158,169,130,60,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     CONTROL         "Force Bloom Filter off (performance)",IDC_BLOOM_OFF,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,159,186,127,10
@@ -2230,11 +2230,11 @@ BEGIN
     EDITTEXT        IDC_FAR_PLANE,210,216,40,12,ES_RIGHT | ES_AUTOHSCROLL
     COMBOBOX        IDC_BG_SOURCE,214,245,78,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     RTEXT           "Backglass source",IDC_BG_MODE,150,247,61,10
-    COMBOBOX        IDC_DMD_SOURCE,214,262,77,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_DMD_SOURCE,214,262,78,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     RTEXT           "DMD source",IDC_DMD_MODE,144,263,67,10
-    PUSHBUTTON      "Reset to Defaults",IDC_DEFAULTS,110,286,63,14
-    DEFPUSHBUTTON   "OK",IDOK,186,286,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,242,286,50,14
+    PUSHBUTTON      "Reset to Defaults",IDC_DEFAULTS,123,286,63,14
+    DEFPUSHBUTTON   "OK",IDOK,190,286,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,243,286,50,14
     GROUPBOX        "Table Setup",-1,154,28,138,108
     GROUPBOX        "Anti-Aliasing",-1,11,28,132,127
     GROUPBOX        "Reflections",-1,12,199,131,57
@@ -3924,7 +3924,7 @@ BEGIN
     IDS_STEP                "Step"
 END
 
-#endif    // Anglais (États-Unis) resources
+#endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
