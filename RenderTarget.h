@@ -11,7 +11,7 @@ public:
    RenderTarget(RenderDevice* rd, const int width, const int height, const colorFormat format, bool with_depth, int nMSAASamples, StereoMode stereo, char* failureMessage);
    ~RenderTarget();
 
-   void Activate(bool ignoreStereo);
+   void Activate(const bool ignoreStereo);
 
    Sampler* GetColorSampler() { return m_color_sampler; }
    void UpdateDepthSampler();

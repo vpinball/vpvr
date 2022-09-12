@@ -301,6 +301,7 @@ private:
    static const ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT];
    ShaderUniforms getUniformByName(const string& name);
    ShaderAttributes getAttributeByName(const string& name);
+   ShaderTechniques getTechniqueByName(const string& name);
 
 #ifdef ENABLE_SDL
    string m_shaderCodeName;
@@ -314,7 +315,7 @@ private:
    struct uniformLoc
    {
       GLenum type;
-      int location;
+      GLint location;
       int size;
       GLuint blockBuffer;
    };
@@ -322,7 +323,7 @@ private:
    {
       int index;
       string& name;
-      int program;
+      GLuint program;
       attributeLoc attributeLocation[SHADER_ATTRIBUTE_COUNT];
       uniformLoc uniformLocation[SHADER_UNIFORM_COUNT];
    };
@@ -332,7 +333,7 @@ private:
 #endif
    bool parseFile(const string& fileNameRoot, const string& fileName, int level, robin_hood::unordered_map<string, string>& values, const string& parentMode);
    string analyzeFunction(const char* shaderCodeName, const string& technique, const string& functionName, const robin_hood::unordered_map<string, string>& values);
-   ShaderTechnique* compileGLShader(const string& fileNameRoot, string& shaderCodeName, const string& vertex, const string& geometry, const string& fragment);
+   ShaderTechnique* compileGLShader(const ShaderTechniques technique, const string& fileNameRoot, string& shaderCodeName, const string& vertex, const string& geometry, const string& fragment);
 
    void ApplyUniform(const ShaderUniforms uniformName);
 
@@ -350,12 +351,11 @@ private:
       floatP fp; // uniform blocks
       Sampler* sampler; // texture samplers
    };
+   std::vector<ShaderUniforms> m_uniforms[SHADER_TECHNIQUE_COUNT];
    bool m_isCacheValid[SHADER_TECHNIQUE_COUNT];
    UniformCache m_uniformCache[SHADER_TECHNIQUE_COUNT + 1][SHADER_UNIFORM_COUNT];
-   
    ShaderTechnique* m_techniques[SHADER_TECHNIQUE_COUNT];
    ShaderTechniques m_technique;
-   int m_nextTextureSlot;
    Sampler* m_noTexture;
    static Matrix3D mWorld, mView, mProj[2];
 

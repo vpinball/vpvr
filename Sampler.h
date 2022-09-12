@@ -1,30 +1,37 @@
 #pragma once
 
+#include <set>
 #include "typedefs3D.h"
+
 class RenderDevice;
 
 enum SamplerFilter
 {
-   SF_UNDEFINED, // Used for undefined default values
    SF_NONE, // No filtering at all. DX: MIPFILTER = NONE; MAGFILTER = POINT; MINFILTER = POINT; / OpenGL Nearest/Nearest
    SF_POINT, // Point sampled (aka nearest mipmap) texture filtering.
    SF_BILINEAR, // Bilinar texture filtering (linear min/mag, no mipmapping). DX: MIPFILTER = NONE; MAGFILTER = LINEAR; MINFILTER = LINEAR;
    SF_TRILINEAR, // Trilinar texture filtering (linear min/mag, with mipmapping). DX: MIPFILTER = LINEAR; MAGFILTER = LINEAR; MINFILTER = LINEAR;
-   SF_ANISOTROPIC // Anisotropic texture filtering.
+   SF_ANISOTROPIC, // Anisotropic texture filtering.
+   SF_UNDEFINED, // Used for undefined default values
 };
 
 enum SamplerAddressMode
 {
-   SA_UNDEFINED, // Used for undefined default values
-#ifdef ENABLE_SDL
-   SA_REPEAT = GL_REPEAT,
-   SA_CLAMP = GL_CLAMP_TO_EDGE,
-   SA_MIRROR = GL_MIRRORED_REPEAT
-#else
    SA_REPEAT,
    SA_CLAMP,
-   SA_MIRROR
-#endif
+   SA_MIRROR,
+   SA_UNDEFINED, // Used for undefined default values
+};
+
+class Sampler;
+struct SamplerBinding
+{
+   int unit;
+   int use_rank;
+   Sampler* sampler;
+   SamplerFilter filter;
+   SamplerAddressMode clamp_u;
+   SamplerAddressMode clamp_v;
 };
 
 class Sampler
@@ -40,6 +47,7 @@ public:
 #endif
    ~Sampler();
 
+   void Unbind();
    void UpdateTexture(BaseTexture* const surf, const bool force_linear_rgb);
    void SetClamp(const SamplerAddressMode clampu, const SamplerAddressMode clampv);
    void SetFilter(const SamplerFilter filter);
@@ -54,6 +62,7 @@ public:
 
 public:
    bool m_dirty;
+   std::set<SamplerBinding*> m_bindings;
 
 private:
    bool m_ownTexture;

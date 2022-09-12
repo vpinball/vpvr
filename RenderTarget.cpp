@@ -63,6 +63,13 @@ RenderTarget::RenderTarget(RenderDevice* rd, const int width, const int height, 
    glGenFramebuffers(1, &m_framebuffer);
    glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
 
+   // Update bind cache
+   auto tex_unit = m_rd->m_samplerBindings.back();
+   if (tex_unit->sampler != nullptr)
+      tex_unit->sampler->m_bindings.erase(tex_unit);
+   tex_unit->sampler = nullptr;
+   glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
+
    if (nMSAASamples > 1)
    {
       glGenTextures(1, &m_color_tex);
@@ -264,6 +271,10 @@ void RenderTarget::Activate(bool ignoreStereo)
       return;
    currentFrameBuffer = this;
    currentStereoMode = ignoreStereo || m_is_back_buffer ? STEREO_OFF : m_stereo;
+   if (m_color_sampler)
+      m_color_sampler->Unbind();
+   if (m_depth_sampler)
+      m_depth_sampler->Unbind();
    glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer);
    if (m_is_back_buffer)
    {

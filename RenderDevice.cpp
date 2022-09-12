@@ -144,6 +144,9 @@ constexpr VertexElement VertexTrafoTexelElement[] =
    D3DDECL_END()*/
 };
 VertexDeclaration* RenderDevice::m_pVertexTrafoTexelDeclaration = (VertexDeclaration*)&VertexTrafoTexelElement;
+
+GLuint RenderDevice::m_samplerStateCache[3 * 3 * 5];
+
 #else
 constexpr VertexElement VertexTexelElement[] =
 {
@@ -895,6 +898,8 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 
    bool video10bit = LoadValueBoolWithDefault(regKey[RegName::Player], "Render10Bit"s, false);
 
+   memset(m_samplerStateCache, 0, 3 * 3 * 5 * sizeof(GLuint));
+
    m_sdl_playfieldHwnd = g_pplayer->m_sdl_playfieldHwnd;
    SDL_SysWMinfo wmInfo;
    SDL_VERSION(&wmInfo.version);
@@ -972,7 +977,21 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 
    m_maxaniso = 0;
    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &m_maxaniso);
-
+   int max_frag_unit, max_combined_unit;
+   glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &max_frag_unit);
+   glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &max_combined_unit);
+   int n_tex_units = min(max_frag_unit, max_combined_unit);
+   for (int i = 0; i < n_tex_units; i++)
+   {
+      SamplerBinding* binding = new SamplerBinding();
+      binding->unit = i;
+      binding->use_rank = i;
+      binding->sampler = nullptr;
+      binding->filter = SF_UNDEFINED;
+      binding->clamp_u = SA_UNDEFINED;
+      binding->clamp_v = SA_UNDEFINED;
+      m_samplerBindings.push_back(binding);
+   }
    m_autogen_mipmap = true;
 
    SetRenderState(RenderDevice::ZFUNC, RenderDevice::Z_LESSEQUAL);
@@ -1582,6 +1601,15 @@ RenderDevice::~RenderDevice()
     }
 #endif
 
+    for (int i = 0; i < 3 * 3 * 5; i++)
+    {
+       if (m_samplerStateCache[i] != 0)
+       {
+          glDeleteSamplers(1, &m_samplerStateCache[i]);
+          m_samplerStateCache[i] = 0;
+       }
+    }
+
     SDL_GL_DeleteContext(m_sdl_context);
     SDL_DestroyWindow(m_sdl_playfieldHwnd);
 #endif
@@ -1682,6 +1710,13 @@ void RenderDevice::UploadAndSetSMAATextures()
 #ifdef ENABLE_SDL
    GLuint glTexture;
    int num_mips;
+
+   // Update bind cache
+   auto tex_unit = m_samplerBindings.back();
+   if (tex_unit->sampler != nullptr)
+      tex_unit->sampler->m_bindings.erase(tex_unit);
+   tex_unit->sampler = nullptr;
+   glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
 
    glGenTextures(1, &glTexture);
    glBindTexture(GL_TEXTURE_2D, glTexture);
@@ -1788,6 +1823,52 @@ void RenderDevice::UploadAndSetSMAATextures()
    }
 #endif
 }
+
+#ifdef ENABLE_SDL
+GLuint RenderDevice::GetSamplerState(SamplerFilter filter, SamplerAddressMode clamp_u, SamplerAddressMode clamp_v)
+{
+   int samplerStateId = min((int)clamp_u, 2) * min((int)clamp_v, 2) * min((int)filter, 4);
+   GLuint sampler_state = m_samplerStateCache[samplerStateId];
+   if (sampler_state == 0)
+   {
+      m_curStateChanges += 5;
+      glGenSamplers(1, &sampler_state);
+      m_samplerStateCache[samplerStateId] = sampler_state;
+      int glAddress[] = { GL_REPEAT, GL_REPEAT, GL_CLAMP_TO_EDGE, GL_MIRRORED_REPEAT };
+      glSamplerParameteri(sampler_state, GL_TEXTURE_WRAP_S, glAddress[clamp_u]);
+      glSamplerParameteri(sampler_state, GL_TEXTURE_WRAP_T, glAddress[clamp_v]);
+      switch (filter)
+      {
+      case SF_NONE: // No mipmapping
+         glSamplerParameteri(sampler_state, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+         glSamplerParameteri(sampler_state, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+         glSamplerParameterf(sampler_state, GL_TEXTURE_MAX_ANISOTROPY, 1.0f);
+         break;
+      case SF_POINT: // Point sampled (aka nearest mipmap) texture filtering.
+         glSamplerParameteri(sampler_state, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+         glSamplerParameteri(sampler_state, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+         glSamplerParameterf(sampler_state, GL_TEXTURE_MAX_ANISOTROPY, 1.0f);
+         break;
+      case SF_BILINEAR: // Bilinar texture filtering.
+         glSamplerParameteri(sampler_state, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+         glSamplerParameteri(sampler_state, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         glSamplerParameterf(sampler_state, GL_TEXTURE_MAX_ANISOTROPY, 1.0f);
+         break;
+      case SF_TRILINEAR: // Trilinar texture filtering.
+         glSamplerParameteri(sampler_state, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+         glSamplerParameteri(sampler_state, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         glSamplerParameterf(sampler_state, GL_TEXTURE_MAX_ANISOTROPY, 1.0f);
+         break;
+      case SF_ANISOTROPIC: // Anisotropic texture filtering.
+         glSamplerParameteri(sampler_state, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+         glSamplerParameteri(sampler_state, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+         glSamplerParameterf(sampler_state, GL_TEXTURE_MAX_ANISOTROPY, m_maxaniso);
+         break;
+      }
+   }
+   return sampler_state;
+}
+#endif
 
 void RenderDevice::SetSamplerState(const DWORD Sampler, const DWORD minFilter, const DWORD magFilter, const SamplerStateValues mipFilter)
 {
@@ -2062,7 +2143,9 @@ void RenderDevice::SetVertexDeclaration(VertexDeclaration * declaration)
 
 void RenderDevice::DrawPrimitive(const PrimitiveTypes type, const DWORD fvf, const void* vertices, const DWORD vertexCount)
 {
-#ifndef ENABLE_SDL
+#ifdef ENABLE_SDL
+   assert(false); // This part is not implemented as it is unused (shoudl be removed ?). This is a guard block, just in case.
+#else
    const unsigned int np = ComputePrimitiveCount(type, vertexCount);
    m_stats_drawn_triangles += np;
 

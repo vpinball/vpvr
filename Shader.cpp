@@ -74,6 +74,16 @@ const string Shader::shaderTechniqueNames[SHADER_TECHNIQUE_COUNT]
 };
 #undef SHADER_TECHNIQUE
 
+ShaderTechniques Shader::getTechniqueByName(const string& name)
+{
+   for (int i = 0; i < SHADER_TECHNIQUE_COUNT; ++i)
+      if (name == shaderTechniqueNames[i])
+         return ShaderTechniques(i);
+
+   LOG(1, m_shaderCodeName, string("getTechniqueByName Could not find technique ").append(name).append(" in shaderTechniqueNames."));
+   return SHADER_TECHNIQUE_INVALID;
+}
+
 #define SHADER_UNIFORM(name) { #name, #name, ""s, -1, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED }
 #define SHADER_TEXTURE(name) { #name, #name, ""s, -1, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED }
 #define SHADER_SAMPLER(name, legacy_name, texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter) { #name, #legacy_name, #texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter }
@@ -253,11 +263,20 @@ void Shader::Begin()
    current_shader = this;
 #ifdef ENABLE_SDL
    assert(m_technique != SHADER_TECHNIQUE_INVALID);
-   // FIXME only apply program if needed, optimize uniform binding, and optimize sampler & sampler state binding
-   glUseProgram(m_techniques[m_technique]->program);
-   m_nextTextureSlot = 0;
-   for (int uniformName = 0; uniformName < SHADER_UNIFORM_COUNT; ++uniformName)
-      ApplyUniform((ShaderUniforms)uniformName);
+   static ShaderTechniques bound_technique = ShaderTechniques::SHADER_TECHNIQUE_INVALID;
+   if (bound_technique != m_technique)
+   {
+      m_renderDevice->m_curTechniqueChanges++;
+      // OutputDebugString(""s.append(std::to_string(m_renderDevice->m_curTechniqueChanges)).append(" [Swap] ").append(shaderTechniqueNames[m_technique]).append("\n").c_str());
+      glUseProgram(m_techniques[m_technique]->program);
+      bound_technique = m_technique;
+   }
+   else
+   {
+      // OutputDebugString(""s.append(std::to_string(m_renderDevice->m_curTechniqueChanges)).append(" [....] ").append(shaderTechniqueNames[m_technique]).append("\n").c_str());
+   }
+   for (auto uniformName : m_uniforms[m_technique])
+      ApplyUniform(uniformName);
    m_isCacheValid[m_technique] = true;
 #else
    unsigned int cPasses;
