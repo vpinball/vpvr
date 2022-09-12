@@ -442,7 +442,7 @@ STDMETHODIMP ScriptGlobalTable::get_UserDirectory(BSTR *pVal)
 }
 
 #ifdef _WIN64
-STDMETHODIMP ScriptGlobalTable::get_GetPlayerHWnd(size_t *pVal)
+STDMETHODIMP ScriptGlobalTable::get_GetPlayerHWnd(SIZE_T *pVal)
 #else
 STDMETHODIMP ScriptGlobalTable::get_GetPlayerHWnd(long *pVal)
 #endif

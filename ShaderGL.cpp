@@ -271,7 +271,7 @@ Shader::ShaderTechnique* Shader::compileGLShader(const string& fileNameRoot, str
          glGetActiveUniform(shader->program, (GLuint)i, 256, &length, &size, &type, uniformName);
          int location = glGetUniformLocation(shader->program, uniformName);
          if (location >= 0 && size > 0) {
-            uniformLoc newLoc = { type, location, size, -1 };
+            uniformLoc newLoc = { type, location, size, ~0u };
             // hack for packedLights, but works for all arrays
             for (int i2 = 0; i2 < length; i2++)
             {
@@ -302,7 +302,7 @@ Shader::ShaderTechnique* Shader::compileGLShader(const string& fileNameRoot, str
          glGetActiveUniformBlockiv(shader->program, (GLuint)i, GL_UNIFORM_BLOCK_DATA_SIZE, &size);
          int location = glGetUniformBlockIndex(shader->program, uniformName);
          if (location >= 0 && size>0) {
-            uniformLoc newLoc = { ~0u, location, size, -1 };
+            uniformLoc newLoc = { ~0u, location, size, ~0u };
             glGenBuffers(1, &newLoc.blockBuffer);
             //hack for packedLights, but works for all arrays - I don't need it for uniform blocks now and I'm not sure if it makes any sense, but maybe someone else in the future?
             for (int i2 = 0;i2 < length;i2++) {

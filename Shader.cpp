@@ -222,7 +222,7 @@ Shader::Shader(RenderDevice *renderDevice) : currentMaterial(-FLT_MAX, -FLT_MAX,
 #else
    m_technique = SHADER_TECHNIQUE_INVALID;
    BaseTexture* nullTexture = new BaseTexture(1, 1, BaseTexture::RGB);
-   m_noTexture = m_renderDevice->m_texMan.LoadTexture(nullTexture, TextureFilter::TEXTURE_MODE_NONE, SA_CLAMP, SA_CLAMP, true);
+   m_noTexture = m_renderDevice->m_texMan.LoadTexture(nullTexture, TextureFilter::TEXTURE_MODE_NONE, true, true, true);
    memset(m_uniformCache, 0, sizeof(UniformCache) * SHADER_UNIFORM_COUNT * (SHADER_TECHNIQUE_COUNT + 1));
    memset(m_techniques, 0, sizeof(ShaderTechnique*) * SHADER_TECHNIQUE_COUNT);
    memset(m_isCacheValid, 0, sizeof(bool) * SHADER_TECHNIQUE_COUNT);

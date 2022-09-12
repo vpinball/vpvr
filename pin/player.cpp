@@ -384,7 +384,7 @@ Player::~Player()
         m_pFont = nullptr;
     }
 #endif
-   if (m_ballImage)
+    if (m_ballImage)
     {
        delete m_ballImage;
        m_ballImage = nullptr;
@@ -844,6 +844,7 @@ InfoMode Player::GetInfoMode() const
    const unsigned int modes = (m_showFPS % 9);
    switch (modes)
    {
+   default:
    case 0: return InfoMode::IF_NONE;
    case 1: return InfoMode::IF_FPS;
    case 2: return InfoMode::IF_PROFILING;
@@ -4404,7 +4405,7 @@ void Player::UpdateHUD_IMGUI()
    }
 
    ImGui::SetNextWindowSize(ImVec2(530, 550), ImGuiCond_FirstUseEver);
-   ImGui::SetNextWindowPos(ImVec2(m_width - 530 - 10, 10), ImGuiCond_FirstUseEver);
+   ImGui::SetNextWindowPos(ImVec2((float)(m_width - 530 - 10), 10), ImGuiCond_FirstUseEver);
    ImGui::Begin("Plots");
        //!! This example assumes 60 FPS. Higher FPS requires larger buffer size.
        static ScrollingData sdata1, sdata2, sdata3, sdata4, sdata5, sdata6;
@@ -4635,7 +4636,7 @@ void Player::UpdateHUD()
 			dTDrawTotal += m_pin3d.m_gpu_profiler.DtAvg(gts);
 
 		char szFoo[256];
-      if (GetProfilingMode() == PF_ENABLED)
+		if (GetProfilingMode() == PF_ENABLED)
 		{
 			sprintf_s(szFoo, sizeof(szFoo), " Draw time: %.2f ms", float(1000.0 * dTDrawTotal));
 			DebugPrint(0, 320, szFoo);
