@@ -563,7 +563,7 @@ void Shader::SetTechnique(ShaderTechniques _technique)
 {
    assert(current_shader != this);
    assert(_technique < SHADER_TECHNIQUE_COUNT);
-   if (m_techniques[m_technique] == nullptr)
+   if (m_techniques[_technique] == nullptr)
    {
       m_technique = SHADER_TECHNIQUE_INVALID;
       char msg[256];
