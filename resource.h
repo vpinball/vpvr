@@ -1169,7 +1169,6 @@
 #define IDC_MSAASLIDER_LABEL            843
 #define IDC_STATIC6                     843
 #define IDC_STATIC11                    844
-#define IDC_PostProcessAA_Label2        844
 #define IDC_STATIC1                     845
 #define IDC_STATIC2                     846
 #define IDC_STATIC3                     847
