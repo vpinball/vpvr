@@ -118,7 +118,7 @@ bool Shader::parseFile(const string& fileNameRoot, const string& fileName, int l
 }
 
 //compile and link shader. Also write the created shader files
-Shader::ShaderTechnique* Shader::compileGLShader(const string& fileNameRoot, string& shaderCodeName, const string& vertex, const string& geometry, const string& fragment)
+Shader::ShaderTechnique* Shader::compileGLShader(const ShaderTechniques technique, const string& fileNameRoot, string& shaderCodeName, const string& vertex, const string& geometry, const string& fragment)
 {
    bool success = true;
    ShaderTechnique* shader = nullptr;
@@ -266,12 +266,12 @@ Shader::ShaderTechnique* Shader::compileGLShader(const string& fileNameRoot, str
       char uniformName[256];
       for (int i = 0;i < count;++i) {
          GLenum type;
-         int size;
-         int length;
+         GLint size;
+         GLsizei length;
          glGetActiveUniform(shader->program, (GLuint)i, 256, &length, &size, &type, uniformName);
-         int location = glGetUniformLocation(shader->program, uniformName);
+         GLint location = glGetUniformLocation(shader->program, uniformName);
          if (location >= 0 && size > 0) {
-            uniformLoc newLoc = { type, location, size, ~0u };
+            uniformLoc newLoc = { type, location, size, (GLuint) 0 };
             // hack for packedLights, but works for all arrays
             for (int i2 = 0; i2 < length; i2++)
             {
@@ -283,9 +283,11 @@ Shader::ShaderTechnique* Shader::compileGLShader(const string& fileNameRoot, str
             auto uniformIndex = getUniformByName(uniformName);
             if (uniformIndex < SHADER_UNIFORM_COUNT)
             {
+               m_uniforms[technique].push_back(uniformIndex);
                shader->uniformLocation[uniformIndex] = newLoc;
                if (shaderUniformNames[uniformIndex].default_tex_unit != -1)
                { 
+                  // FIXME this is wrong. After checking the specs, OpenGL sample a texture unit bound to texture #0 as (0, 0, 0, 1)
                   // Unlike DirectX, OpenGL won't return 0 if the texture is not bound to a black texture
                   // This will cause error for static pre-render which, done before bulb light transmission is evaluated and bound
                   SetTextureNull(uniformIndex); 
@@ -300,9 +302,9 @@ Shader::ShaderTechnique* Shader::compileGLShader(const string& fileNameRoot, str
          int length;
          glGetActiveUniformBlockName(shader->program, (GLuint)i, 256, &length, uniformName);
          glGetActiveUniformBlockiv(shader->program, (GLuint)i, GL_UNIFORM_BLOCK_DATA_SIZE, &size);
-         int location = glGetUniformBlockIndex(shader->program, uniformName);
+         GLint location = glGetUniformBlockIndex(shader->program, uniformName);
          if (location >= 0 && size>0) {
-            uniformLoc newLoc = { ~0u, location, size, ~0u };
+            uniformLoc newLoc = { ~0u, location, size, (GLuint) 0 };
             glGenBuffers(1, &newLoc.blockBuffer);
             //hack for packedLights, but works for all arrays - I don't need it for uniform blocks now and I'm not sure if it makes any sense, but maybe someone else in the future?
             for (int i2 = 0;i2 < length;i2++) {
@@ -312,7 +314,11 @@ Shader::ShaderTechnique* Shader::compileGLShader(const string& fileNameRoot, str
                }
             }
             auto uniformIndex = getUniformByName(uniformName);
-            if (uniformIndex < SHADER_UNIFORM_COUNT) shader->uniformLocation[uniformIndex] = newLoc;
+            if (uniformIndex < SHADER_UNIFORM_COUNT)
+            {
+               m_uniforms[technique].push_back(uniformIndex);
+               shader->uniformLocation[uniformIndex] = newLoc;
+            }
          }
       }
 
@@ -426,16 +432,8 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
             if (elem < 4) {
                continue;
             }
-            int shaderTechniqueIndex = -1;
-            for (int i = 0; i < SHADER_TECHNIQUE_COUNT; ++i)
-            {
-               if (element[0] == shaderTechniqueNames[i])
-               {
-                  shaderTechniqueIndex = i;
-                  break;
-               }
-            }
-            if (shaderTechniqueIndex == -1)
+            ShaderTechniques technique = getTechniqueByName(element[0]);
+            if (technique == SHADER_TECHNIQUE_INVALID)
             {
                LOG(3, (const char*)shaderCodeName, string("Unexpected technique skipped: ").append(element[0]));
             }
@@ -454,10 +452,10 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
                string fragmentShaderCode = fragment;
                fragmentShaderCode.append("\n//").append(_technique).append("\n//").append(element[elem - 1]).append("\n");
                fragmentShaderCode.append(analyzeFunction(shaderCodeName, _technique, element[elem - 1], values)).append("\0");
-               ShaderTechnique* build = compileGLShader(shaderCodeName, element[0] /*.append("_").append(element[1])*/, vertexShaderCode, geometryShaderCode, fragmentShaderCode);
+               ShaderTechnique* build = compileGLShader(technique, shaderCodeName, element[0] /*.append("_").append(element[1])*/, vertexShaderCode, geometryShaderCode, fragmentShaderCode);
                if (build != nullptr)
                {
-                  m_techniques[shaderTechniqueIndex] = build;
+                  m_techniques[technique] = build;
                   tecCount++;
                }
                else
@@ -561,7 +559,7 @@ void Shader::setAttributeFormat(DWORD fvf)
 
 void Shader::SetTechnique(ShaderTechniques _technique)
 {
-   assert(current_shader != this);
+   assert(current_shader != this); // Changing the technique of a used shader is not allowed (between Begin/End)
    assert(_technique < SHADER_TECHNIQUE_COUNT);
    if (m_techniques[_technique] == nullptr)
    {
@@ -571,19 +569,17 @@ void Shader::SetTechnique(ShaderTechniques _technique)
       ShowError(msg);
       exit(-1);
    }
-   m_renderDevice->m_curTechniqueChanges++;
    m_technique = _technique;
-}
-
-void Shader::SetTextureNull(const ShaderUniforms texelName)
-{
-   SetTexture(texelName, m_noTexture);
 }
 
 void Shader::SetTechniqueMetal(ShaderTechniques _technique, const bool isMetal)
 {
    SetTechnique(_technique);
    SetBool(SHADER_is_metal, isMetal);
+}
+
+void Shader::SetTextureNull(const ShaderUniforms texelName) {
+   SetTexture(texelName, m_noTexture);
 }
 
 void Shader::SetTexture(const ShaderUniforms texelName, Texture* texel, const TextureFilter filter, const bool clampU, const bool clampV, const bool force_linear_rgb)
@@ -725,9 +721,10 @@ void Shader::SetTransform(const TransformStateType p1, const Matrix3D * p2, cons
 
 void Shader::ApplyUniform(const ShaderUniforms uniformName)
 {
+   // FIXME optimize uniform binding, and optimize sampler & sampler state binding
+   // FIXME cache sampler states and only apply the ones that actually need it
    if (current_shader != this)
       return;
-   // FIXME cache sampler states and only apply the ones that actually need it
    const uniformLoc currentUniform = m_techniques[m_technique]->uniformLocation[uniformName];
    if (currentUniform.location < 0 || currentUniform.type == 0 || currentUniform.size == 0)
       return;
@@ -747,6 +744,7 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
          memcpy(dst->fp.data, src->fp.data, currentUniform.size);
          glBindBuffer(GL_UNIFORM_BUFFER, currentUniform.blockBuffer);
          glBufferData(GL_UNIFORM_BUFFER, currentUniform.size, src->fp.data, GL_STREAM_DRAW);
+         m_renderDevice->m_curParameterChanges++;
       }
       glUniformBlockBinding(m_techniques[m_technique]->program, currentUniform.location, 0);
       glBindBufferRange(GL_UNIFORM_BUFFER, 0, currentUniform.blockBuffer, 0, currentUniform.size);
@@ -756,6 +754,7 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
       {
          dst->fval = src->fval;
          glUniform1f(currentUniform.location, src->fval);
+         m_renderDevice->m_curParameterChanges++;
       }
       break;
    case GL_BOOL:
@@ -764,6 +763,7 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
       {
          dst->ival = src->ival;
          glUniform1i(currentUniform.location, src->ival);
+         m_renderDevice->m_curParameterChanges++;
       }
       break;
    case GL_FLOAT_VEC2:
@@ -771,6 +771,7 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
       {
          memcpy(dst, src, 2 * sizeof(float));
          glUniform2fv(currentUniform.location, 1, src->fvval);
+         m_renderDevice->m_curParameterChanges++;
       }
       break;
    case GL_FLOAT_VEC3:
@@ -778,6 +779,7 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
       {
          memcpy(dst, src, 3 * sizeof(float));
          glUniform3fv(currentUniform.location, 1, src->fvval);
+         m_renderDevice->m_curParameterChanges++;
       }
       break;
    case GL_FLOAT_VEC4:
@@ -785,6 +787,7 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
       {
          memcpy(dst, src, 4 * sizeof(float));
          glUniform4fv(currentUniform.location, 1, src->fvval);
+         m_renderDevice->m_curParameterChanges++;
       }
       break;
    case GL_FLOAT_MAT4:
@@ -792,54 +795,69 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
       {
          memcpy(dst, src, 4 * 4 * sizeof(float));
          glUniformMatrix4fv(currentUniform.location, 1, GL_FALSE, src->fvval);
+         m_renderDevice->m_curParameterChanges++;
       }
       break;
    case GL_SAMPLER_2D:
    case GL_SAMPLER_2D_MULTISAMPLE:
    {
+      // DX9 implementation uses preaffected texture units, not samplers, so these can not be used for OpenGL. This would cause some collisions.
       Sampler* texel = m_uniformCache[SHADER_TECHNIQUE_COUNT][uniformName].sampler;
       if (texel == nullptr)
          texel = m_noTexture;
-      // Preaffected texture units from DX9 can not be used for OpenGL since they are preaffected for textures and not samplers, causing some collisions.
-      // FIXME optimize texture unit allocation and texture binding caching
-      int tex_unit = m_nextTextureSlot;
-      m_nextTextureSlot = m_nextTextureSlot + 1;
-      glActiveTexture(GL_TEXTURE0 + tex_unit);
-      glBindTexture(texel->IsMSAA() ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, texel->GetCoreTexture());
-      glUniform1i(currentUniform.location, tex_unit);
-      // FIXME initial implementation, entirely unoptimized (we could cache samplers, reuse the ones already bound, avoid setting sampler states,...)
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texel->GetClampU());
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texel->GetClampV());
-      // FIXME cleanup sampler filtering: use default values, cache filters,...
-      switch (shaderUniformNames[uniformName].default_filter)
-      //switch (texel->GetFilter())
+      auto filter = shaderUniformNames[uniformName].default_filter;
+      auto clampu = shaderUniformNames[uniformName].default_clampu;
+      auto clampv = shaderUniformNames[uniformName].default_clampv;
+      if (filter == SF_UNDEFINED)
+         filter = texel->GetFilter();
+      if (clampu == SA_UNDEFINED)
+         clampu = texel->GetClampU();
+      if (clampv == SA_UNDEFINED)
+         clampv = texel->GetClampV();
+      if (filter == SF_UNDEFINED)
+         filter = SF_NONE;
+      if (clampu == SA_UNDEFINED)
+         clampu = SA_CLAMP;
+      if (clampv == SA_UNDEFINED)
+         clampv = SA_CLAMP;
+
+      SamplerBinding* tex_unit = nullptr;
+      for (auto binding : texel->m_bindings)
       {
-      case SF_NONE: // No mipmapping
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 1.0f);
-         break;
-      case SF_POINT: // Point sampled (aka nearest mipmap) texture filtering.
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 1.0f);
-         break;
-      case SF_BILINEAR: // Bilinar texture filtering.
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 1.0f);
-         break;
-      case SF_TRILINEAR: // Trilinar texture filtering.
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, 1.0f);
-         break;
-      case SF_ANISOTROPIC: // Anisotropic texture filtering.
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, m_renderDevice->m_maxaniso);
-         break;
+         if (binding->filter == filter && binding->clamp_u == clampu && binding->clamp_v == clampv)
+         {
+            tex_unit = binding;
+            break;
+         }
       }
+      if (tex_unit == nullptr)
+      {
+         tex_unit = m_renderDevice->m_samplerBindings.back();
+         if (tex_unit->sampler != nullptr)
+            tex_unit->sampler->m_bindings.erase(tex_unit);
+         tex_unit->sampler = texel;
+         tex_unit->filter = filter;
+         tex_unit->clamp_u = clampu;
+         tex_unit->clamp_v = clampv;
+         texel->m_bindings.insert(tex_unit);
+         glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
+         glBindTexture(texel->IsMSAA() ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, texel->GetCoreTexture());
+         m_renderDevice->m_curTextureChanges++;
+         GLuint sampler_state = m_renderDevice->GetSamplerState(filter, clampu, clampv);
+         glBindSampler(tex_unit->unit, sampler_state);
+         m_renderDevice->m_curStateChanges++;
+      }
+      // Bind the sampler
+      glUniform1i(currentUniform.location, tex_unit->unit);
+      m_renderDevice->m_curParameterChanges++;
+      // Mark this texture unit as the last used one, and age all the others
+      for (int i = tex_unit->use_rank - 1; i >= 0; i--)
+      {
+         m_renderDevice->m_samplerBindings[i]->use_rank++;
+         m_renderDevice->m_samplerBindings[i + 1] = m_renderDevice->m_samplerBindings[i];
+      }
+      tex_unit->use_rank = 0;
+      m_renderDevice->m_samplerBindings[0] = tex_unit;
       break;
    }
    default:

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <list>
 #include <inc/robin_hood.h>
 #include "typedefs3D.h"
 
@@ -426,7 +427,15 @@ private:
 
    VertexDeclaration *currentDeclaration; // for caching
 
+#ifdef ENABLE_SDL
+   static GLuint m_samplerStateCache[3 * 3 * 5];
+#endif
+
 public:
+#ifdef ENABLE_SDL
+   GLuint GetSamplerState(SamplerFilter filter, SamplerAddressMode clamp_u, SamplerAddressMode clamp_v);
+#endif
+
 #ifdef ENABLE_SDL
    GLfloat m_maxaniso;
    int m_GLversion;
@@ -489,6 +498,8 @@ public:
    //Shader* m_curShader; // for caching
 
    TextureManager m_texMan;
+
+   std::vector<SamplerBinding*> m_samplerBindings;
 
    static unsigned int m_stats_drawn_triangles;
 
