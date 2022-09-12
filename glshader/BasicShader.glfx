@@ -245,7 +245,7 @@ void main()
    for (int i=0;i<gl_in.length();i++) {
       //Default
       vec4 P2 = gl_in[i].gl_Position;
-      P2.z -= 30.0f*1.0f; // 1.0f = fKickerScale
+      P2.z -= 30.0*1.0; // 1.0 = fKickerScale
       gl_Position.xyw = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position).xyw;
       gl_Position.z = (matWorldViewProj[gl_InvocationID]*P2).z;
       //Custom
@@ -351,8 +351,8 @@ void main() {
    vec3 N = normalize(normal);
 
    if (doNormalMapping)
-	  N = normal_map(N, normalize(worldPos), tex01);
-   
+      N = normal_map(N, normalize(worldPos), tex01);
+
    //color = vec4((N+1.0)*0.5,1.0); return; // visualize normals
 
    color.rgb = lightLoop(worldPos, N, V, diffuse, glossy, specular, edge, !doNormalMapping, is_metal);

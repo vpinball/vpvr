@@ -237,7 +237,7 @@ vec4 Overlay ( vec4 cBase,  vec4 cBlend)
 	// using color as influence value
 	cNew = mix(cBase*cBlend*2.0, 1.0-2.0*(1.0-cBase)*(1.0-cBlend), cNew);
 
-	//cNew.a = 1.0f;
+	//cNew.a = 1.0;
 	return cNew;
 }
 
@@ -251,7 +251,7 @@ vec4 OverlayHDR ( vec4 cBase,  vec4 cBlend)
 
 	// we pick either solution
 	// depending on pixel
-	
+
 	// first is case of < 0.5
 	// second is case for >= 0.5
 
@@ -259,6 +259,6 @@ vec4 OverlayHDR ( vec4 cBase,  vec4 cBlend)
 	// using color as influence value
 	cNew = max(mix(cBase*cBlend*2.0, 1.0-2.0*(1.0-cBase)*(1.0-cBlend), cNew), vec4(0.,0.,0.,0.));
 
-	//cNew.a = 1.0f;
+	//cNew.a = 1.0;
 	return cNew;
 }

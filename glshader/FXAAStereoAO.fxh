@@ -753,7 +753,7 @@ void main()
 			float pl = pixelOffsetSubpix * lengthSign;
 			if(horzSpan) un.y += pl;
 			else un.x += pl;
-			color = float4(textureLod(tex_fb_filtered, un, 0).xyz, 1.0f);
+			color = float4(textureLod(tex_fb_filtered, un, 0).xyz, 1.0);
 		}
 	}
 }
@@ -813,7 +813,7 @@ void main()
 		float rangeMaxClamped = max(0.0833, rangeMaxScaled); //0.0625 (high quality/faster) .. 0.0312 (visible limit/slower) // reshade: 0.0, fxaa : 0.0833
 		bool earlyExit = range < rangeMaxClamped;
 		if(earlyExit)
-			color = float4(rgbyM, 1.0f);
+			color = float4(rgbyM, 1.0);
 		else {
 			float lumaNS = lumaN + lumaS;
 			float lumaWE = lumaW + lumaE;
@@ -1033,7 +1033,7 @@ void main()
 			float pl = pixelOffsetSubpix * lengthSign;
 			if(horzSpan) un.y += pl;
 			else un.x += pl;
-			color = float4(textureLod(tex_fb_filtered, un, 0).xyz, 1.0f);
+			color = float4(textureLod(tex_fb_filtered, un, 0).xyz, 1.0);
 		}
 	}
 }

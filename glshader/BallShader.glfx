@@ -285,7 +285,7 @@ void main()
 
       const float2 uv = (inverse(matWorldView) * vec4(playfield_hit, 1.0)).xy * invTableRes_playfield_height_reflection.xy;
       playfieldColor = (t < 0.) ? vec3(0., 0., 0.) // happens for example when inside kicker
-                              : texture(tex_ball_playfield, uv).xyz*invTableRes_playfield_height_reflection.w; //!! rather use screen space sample from previous frame??
+                                : texture(tex_ball_playfield, uv).xyz*invTableRes_playfield_height_reflection.w; //!! rather use screen space sample from previous frame??
 
       //!! hack to get some lighting on reflection sample, but only diffuse, the rest is not setup correctly anyhow
       playfieldColor = PFlightLoop(playfield_hit, playfield_normal, playfieldColor);
@@ -318,7 +318,7 @@ void main()
 #if 0
 vec4 psBallReflection( in voutReflection IN ) : COLOR
 {
-   vec2 envTex = /*cabMode*/false ? vec2(r.y*0.5f + 0.5f, -r.x*0.5f + 0.5f) : vec2(r.x*0.5f + 0.5f, r.y*0.5f + 0.5f);
+   vec2 envTex = /*cabMode*/false ? vec2(r.y*0.5 + 0.5, -r.x*0.5 + 0.5) : vec2(r.x*0.5 + 0.5, r.y*0.5 + 0.5);
 
    vec3 ballImageColor = texture(tex_ball_color, envTex).rgb;
 
