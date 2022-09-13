@@ -479,7 +479,10 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
    m_pd3dPrimaryDevice->SetViewport(&m_viewPort);
 
    // Static render target is a copy of the main back buffer (without MSAA since static prerender is done with custom antialiasing)
-   m_pddsStatic = m_pd3dPrimaryDevice->GetBackBufferTexture()->Duplicate();
+   if (m_stereo3D != STEREO_VR)
+      m_pddsStatic = m_pd3dPrimaryDevice->GetBackBufferTexture()->Duplicate();
+   else
+      m_pddsStatic = nullptr;
 
    if (m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && useAO)
    {
@@ -1347,7 +1350,7 @@ void PinProjection::CacheTransform()
    Matrix3D matT;
    m_matProj[0].Multiply(m_matView, matT);        // matT = matView * matProjLeft
    matT.Multiply(m_matWorld, m_matrixTotal[0]);   // total = matWorld * matView * matProj
-   if (m_stereo3D > 0) {
+   if (m_stereo3D != STEREO_OFF ) {
       m_matProj[1].Multiply(m_matView, matT);
       matT.Multiply(m_matWorld, m_matrixTotal[1]);
    }
