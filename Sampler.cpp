@@ -77,7 +77,7 @@ Sampler::Sampler(RenderDevice* rd, GLuint glTexture, bool ownTexture, bool isMSA
    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &m_height);
    int internal_format;
    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_INTERNAL_FORMAT, &internal_format);
-   m_isLinear = !((internal_format == SRGB) && (internal_format == SRGBA) && (internal_format == SDXT5) && (internal_format == SBC7)) || force_linear_rgb;
+   m_isLinear = !((internal_format == SRGB) || (internal_format == SRGBA) || (internal_format == SDXT5) || (internal_format == SBC7)) || force_linear_rgb;
    m_texture = glTexture;
 }
 #else
@@ -141,11 +141,15 @@ void Sampler::UpdateTexture(BaseTexture* const surf, const bool force_linear_rgb
       format = colorFormat::RGB16F;
    else if (surf->m_format == BaseTexture::RGB_FP32)
       format = colorFormat::RGB32F;
+   else
+      assert(false);
    if (force_linear_rgb)
+   {
       if (format == colorFormat::SRGB)
          format = colorFormat::RGB;
       else if (format == colorFormat::SRGBA)
          format = colorFormat::RGBA;
+   }
    const GLuint col_type = ((format == RGBA32F) || (format == RGB32F)) ? GL_FLOAT : ((format == RGBA16F) || (format == RGB16F)) ? GL_HALF_FLOAT : GL_UNSIGNED_BYTE;
    const GLuint col_format = ((format == GREY8) || (format == RED16F))                                                                                                      ? GL_RED
       : ((format == GREY_ALPHA) || (format == RG16F))                                                                                                                       ? GL_RG

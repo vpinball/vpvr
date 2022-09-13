@@ -277,6 +277,7 @@ namespace BAM_Tracker {
 				LeftEye[i] = P[i] - IDP * EyeVec[i];
 				RightEye[i] = P[i] + IDP * EyeVec[i];
 			}
+			return true;
 		}
 	};
 

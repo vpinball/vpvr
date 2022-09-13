@@ -15,7 +15,7 @@ enum ecStage { ecSearching, ecFoundWaiting, ecTexture, ecFailure, ecCapturing, e
 class ExtCaptureOutput
 {
 public:
-   ~ExtCaptureOutput() { delete m_MetaDataBuffer; }
+   ~ExtCaptureOutput() { delete [] m_MetaDataBuffer; }
    void AcquireFrame();
 
    IDXGIOutputDuplication* m_duplication = nullptr;

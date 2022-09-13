@@ -399,7 +399,7 @@ void ExtCaptureOutput::AcquireFrame()
    UINT BufSize = frame_info.TotalMetadataBufferSize;
    if (m_MetaDataBufferSize < BufSize)
    {
-      delete m_MetaDataBuffer;
+      delete [] m_MetaDataBuffer;
       m_MetaDataBuffer = new char[BufSize];
       m_MetaDataBufferSize = BufSize;
    }
