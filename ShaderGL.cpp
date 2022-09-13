@@ -582,10 +582,7 @@ void Shader::SetTextureNull(const ShaderUniforms texelName) {
 
 void Shader::SetTexture(const ShaderUniforms texelName, Texture* texel, const SamplerFilter filter, const SamplerAddressMode clampU, const SamplerAddressMode clampV, const bool force_linear_rgb)
 {
-   if (!texel || !texel->m_pdsBuffer)
-      SetTexture(texelName, (Sampler*)nullptr);
-   else
-      SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel->m_pdsBuffer, filter, clampU, clampV, force_linear_rgb));
+   SetTexture(texelName, texel->m_pdsBuffer, filter, clampU, clampV, force_linear_rgb);
 }
 
 void Shader::SetTexture(const ShaderUniforms texelName, BaseTexture* texel, const SamplerFilter filter, const SamplerAddressMode clampU, const SamplerAddressMode clampV, const bool force_linear_rgb)
@@ -831,9 +828,9 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
       }
       else
       {
-         auto filter = shaderUniformNames[uniformName].default_filter;
-         auto clampu = shaderUniformNames[uniformName].default_clampu;
-         auto clampv = shaderUniformNames[uniformName].default_clampv;
+         SamplerFilter filter = shaderUniformNames[uniformName].default_filter;
+         SamplerAddressMode clampu = shaderUniformNames[uniformName].default_clampu;
+         SamplerAddressMode clampv = shaderUniformNames[uniformName].default_clampv;
          if (filter == SF_UNDEFINED)
             filter = texel->GetFilter();
          if (clampu == SA_UNDEFINED)
