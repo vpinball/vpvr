@@ -1214,7 +1214,7 @@ void Flasher::RenderDynamic()
           pd3dDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD_world_ext);
 
        if (g_pplayer->m_texdmd != nullptr)
-          pd3dDevice->DMDShader->SetTexture(SHADER_tex_dmd, g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(g_pplayer->m_texdmd, TextureFilter::TEXTURE_MODE_NONE, true, true, false));
+          pd3dDevice->DMDShader->SetTexture(SHADER_tex_dmd, g_pplayer->m_texdmd, SF_NONE, SA_CLAMP, SA_CLAMP, false);
 
        pd3dDevice->DMDShader->Begin();
        pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_TEX, m_dynamicVertexBuffer, 0, m_numVertices, m_dynamicIndexBuffer, 0, m_numPolys * 3);
@@ -1243,7 +1243,7 @@ void Flasher::RenderDynamic()
        if (pinA && !pinB)
        {
           flasherMode = 0.f;
-          pd3dDevice->flasherShader->SetTexture(SHADER_tex_flasher_A, pinA, TextureFilter::TEXTURE_MODE_TRILINEAR, true, true, false);
+          pd3dDevice->flasherShader->SetTexture(SHADER_tex_flasher_A, pinA, SF_TRILINEAR, SA_CLAMP, SA_CLAMP, false);
 
           if (!m_d.m_addBlend)
              flasherData.x = pinA->m_alphaTestValue * (float)(1.0/255.0);
@@ -1253,7 +1253,7 @@ void Flasher::RenderDynamic()
        else if (!pinA && pinB)
        {
           flasherMode = 0.f;
-          pd3dDevice->flasherShader->SetTexture(SHADER_tex_flasher_A, pinB, TextureFilter::TEXTURE_MODE_TRILINEAR, true, true, false);
+          pd3dDevice->flasherShader->SetTexture(SHADER_tex_flasher_A, pinB, SF_TRILINEAR, SA_CLAMP, SA_CLAMP, false);
 
           if (!m_d.m_addBlend)
              flasherData.x = pinB->m_alphaTestValue * (float)(1.0/255.0);
@@ -1263,8 +1263,8 @@ void Flasher::RenderDynamic()
        else if (pinA && pinB)
        {
           flasherMode = 1.f;
-          pd3dDevice->flasherShader->SetTexture(SHADER_tex_flasher_A, pinA, TextureFilter::TEXTURE_MODE_TRILINEAR, true, true, false);
-          pd3dDevice->flasherShader->SetTexture(SHADER_tex_flasher_B, pinB, TextureFilter::TEXTURE_MODE_TRILINEAR, true, true, false);
+          pd3dDevice->flasherShader->SetTexture(SHADER_tex_flasher_A, pinA, SF_TRILINEAR, SA_CLAMP, SA_CLAMP, false);
+          pd3dDevice->flasherShader->SetTexture(SHADER_tex_flasher_B, pinB, SF_TRILINEAR, SA_CLAMP, SA_CLAMP, false);
 
           if (!m_d.m_addBlend)
           {

@@ -5,7 +5,7 @@
 #include "Texture.h"
 #include "typedefs3D.h"
 
-Sampler* TextureManager::LoadTexture(BaseTexture* memtex, const TextureFilter filter, const bool clampU, const bool clampV, const bool force_linear_rgb)
+Sampler* TextureManager::LoadTexture(BaseTexture* memtex, const SamplerFilter filter, const SamplerAddressMode clampU, const SamplerAddressMode clampV, const bool force_linear_rgb)
 {
    SamplerFilter sa_filter;
    switch (filter)
