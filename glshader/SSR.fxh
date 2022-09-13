@@ -4,7 +4,7 @@
 
 in vec2 tex0;
 
-const float4 SSR_bumpHeight_fresnelRefl_scale_FS;
+uniform float4 SSR_bumpHeight_fresnelRefl_scale_FS;
 
 float3 approx_bump_normal(const float2 coords, const float2 offs, const float scale, const float sharpness)
 {
@@ -96,6 +96,4 @@ void main()
 	refl = refl * 1.0/float(samples-1); //!! -1 due to jitter
 
 	color = float4(lerp(color0,refl, min(fresnel,1.0)), 1.0);
-	
-	color = float4(1.0, 0.0, 0.0, 1.0);
 }
