@@ -558,7 +558,7 @@ void Kicker::RenderDynamic()
       if (m_d.m_kickertype != KickerHoleSimple)
       {
          pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
-         pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, &m_texture, SF_TRILINEAR, SA_REPEAT, SA_REPEAT, false);
+         pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, &m_texture, SF_TRILINEAR, SA_REPEAT, SA_REPEAT);
       }
       else
          pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_without_texture, mat->m_bIsMetal);
