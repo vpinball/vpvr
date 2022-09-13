@@ -241,7 +241,7 @@ void Plunger::RenderDynamic()
    if (pin)
    {
       pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
-      pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, pin, SF_TRILINEAR, SA_REPEAT, SA_REPEAT);
+      pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, pin);
       pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
    }
    else

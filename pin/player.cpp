@@ -1138,8 +1138,8 @@ void Player::InitShader()
    //m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetVector("camera", &cam);
 #endif
 
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_env, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, SF_TRILINEAR, SA_REPEAT, SA_CLAMP);
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_diffuse_env, m_pin3d.m_envRadianceTexture, SF_BILINEAR, SA_REPEAT, SA_CLAMP);
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_env, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture);
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_diffuse_env, m_pin3d.m_envRadianceTexture);
 #ifdef SEPARATE_CLASSICLIGHTSHADER
    m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_tex_env, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, TextureFilter::TEXTURE_MODE_TRILINEAR, false, true, false);
    m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_tex_diffuse_env, m_envRadianceTexture, TextureFilter::TEXTURE_MODE_BILINEAR, false, true, false);
@@ -1231,9 +1231,9 @@ void Player::InitBallShader()
 
    Texture * const playfield = m_ptable->GetImage(m_ptable->m_image);
    if (playfield)
-      m_ballShader->SetTexture(SHADER_tex_ball_playfield, playfield, SF_TRILINEAR, SA_REPEAT, SA_REPEAT);
+      m_ballShader->SetTexture(SHADER_tex_ball_playfield, playfield);
 
-   m_ballShader->SetTexture(SHADER_tex_diffuse_env, m_pin3d.m_envRadianceTexture, SF_BILINEAR, SA_REPEAT, SA_CLAMP);
+   m_ballShader->SetTexture(SHADER_tex_diffuse_env, m_pin3d.m_envRadianceTexture);
 
    assert(m_ballIndexBuffer == nullptr);
    const bool lowDetailBall = (m_ptable->GetDetailLevel() < 10);
@@ -2295,7 +2295,7 @@ void Player::InitStatic()
       m_pin3d.m_pd3dPrimaryDevice->Clear(clearType::TARGET, 0, 1.0f, 0L);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_depth, tmpDepth->GetDepthSampler());
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_ao_dither, &m_pin3d.m_aoDitherTexture, SF_NONE, SA_REPEAT, SA_REPEAT, true);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_ao_dither, &m_pin3d.m_aoDitherTexture, SF_UNDEFINED, SA_UNDEFINED, SA_UNDEFINED, true); // FIXME the force linear RGB is not honored
       const vec4 ao_s_tb(m_ptable->m_AOScale, 0.1f, 0.f,0.f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_AO_scale_timeblur, &ao_s_tb);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_AO);
@@ -3879,7 +3879,7 @@ void Player::SSRefl()
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler());
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler());
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_depth, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetDepthSampler());
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_ao_dither, &m_pin3d.m_aoDitherTexture, SF_NONE, SA_REPEAT, SA_REPEAT, true); //!!!
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_ao_dither, &m_pin3d.m_aoDitherTexture, SF_UNDEFINED, SA_UNDEFINED, SA_UNDEFINED, true); // FIXME the force linear RGB is not honored
 
    // FIXME check if size should not be taken from renderdevice to account for VR (double width) or supersampling
    const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), 1.0f/*radical_inverse(m_overall_frames%2048)*/, 1.0f);
@@ -4844,7 +4844,7 @@ void Player::PrepareVideoBuffersNormal()
    // Texture used for LUT color grading must be treated as if they were linear
    Texture *const pin = m_ptable->GetImage(m_ptable->m_imageColorGrade);
    if (pin)
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_color_lut, pin, SF_BILINEAR, SA_CLAMP, SA_CLAMP, true);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_color_lut, pin, SF_UNDEFINED, SA_UNDEFINED, SA_UNDEFINED, true); // FIXME honor the linear RGB
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_color_grade, pin != nullptr);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_do_dither, !m_ditherOff);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_do_bloom, (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff));
@@ -4955,7 +4955,7 @@ void Player::PrepareVideoBuffersAO()
 
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pddsAOBackBuffer->GetColorSampler());
    //m_pin3d.m_pd3dDevice->FBShader->SetTexture(SHADER_Texture1, m_pin3d.m_pd3dDevice->GetBackBufferTmpTexture()); // temporary normals
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_ao_dither, &m_pin3d.m_aoDitherTexture, SF_NONE, SA_REPEAT, SA_REPEAT, true);
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_ao_dither, &m_pin3d.m_aoDitherTexture, SF_UNDEFINED, SA_UNDEFINED, SA_UNDEFINED, true); // FIXME the force linear RGB is not honored
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_depth, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetDepthSampler());
 
    const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height),
@@ -5010,7 +5010,7 @@ void Player::PrepareVideoBuffersAO()
    // Texture used for LUT color grading must be treated as if they were linear
    Texture *const pin = m_ptable->GetImage(m_ptable->m_imageColorGrade);
    if (pin)
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_color_lut, pin, SF_BILINEAR, SA_CLAMP, SA_CLAMP, true);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_color_lut, pin, SF_UNDEFINED, SA_UNDEFINED, SA_UNDEFINED, true); // FIXME honor the linear RGB
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_color_grade, pin != nullptr);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_do_dither, !m_ditherOff);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_do_bloom, (m_ptable->m_bloom_strength > 0.0f && !m_bloomOff));
@@ -5901,12 +5901,12 @@ void Player::DrawBalls()
       m_ballShader->SetBool(SHADER_disableLighting, m_disableLightingForBalls);
 
       if (!pball->m_pinballEnv)
-         m_ballShader->SetTexture(SHADER_tex_ball_color, &m_pin3d.m_pinballEnvTexture, SF_TRILINEAR, SA_REPEAT, SA_REPEAT);
+         m_ballShader->SetTexture(SHADER_tex_ball_color, &m_pin3d.m_pinballEnvTexture);
       else
-         m_ballShader->SetTexture(SHADER_tex_ball_color, pball->m_pinballEnv, SF_TRILINEAR, SA_REPEAT, SA_REPEAT);
+         m_ballShader->SetTexture(SHADER_tex_ball_color, pball->m_pinballEnv);
 
       if (pball->m_pinballDecal)
-         m_ballShader->SetTexture(SHADER_tex_ball_decal, pball->m_pinballDecal, SF_TRILINEAR, SA_REPEAT, SA_REPEAT);
+         m_ballShader->SetTexture(SHADER_tex_ball_decal, pball->m_pinballDecal);
       else
          m_ballShader->SetTextureNull(SHADER_tex_ball_decal);
 

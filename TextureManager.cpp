@@ -7,29 +7,10 @@
 
 Sampler* TextureManager::LoadTexture(BaseTexture* memtex, const SamplerFilter filter, const SamplerAddressMode clampU, const SamplerAddressMode clampV, const bool force_linear_rgb)
 {
-   SamplerFilter sa_filter;
-   switch (filter)
-   {
-   case TEXTURE_MODE_NONE:
-      sa_filter = SF_NONE;
-      break;
-   case TEXTURE_MODE_POINT:
-      sa_filter = SF_POINT;
-      break;
-   case TEXTURE_MODE_BILINEAR:
-      sa_filter = SF_BILINEAR;
-      break;
-   case TEXTURE_MODE_TRILINEAR:
-      sa_filter = SF_TRILINEAR;
-      break;
-   case TEXTURE_MODE_ANISOTROPIC:
-      sa_filter = SF_ANISOTROPIC;
-      break;
-   }
    const Iter it = m_map.find(memtex);
    if (it == m_map.end())
    {
-      Sampler* sampler = new Sampler(&m_rd, memtex, force_linear_rgb, clampU ? SA_CLAMP : SA_REPEAT, clampV ? SA_CLAMP : SA_REPEAT, sa_filter);
+      Sampler* sampler = new Sampler(&m_rd, memtex, force_linear_rgb, clampU, clampV, filter);
       sampler->m_dirty = false;
       m_map[memtex] = sampler;
       return sampler;
@@ -42,8 +23,8 @@ Sampler* TextureManager::LoadTexture(BaseTexture* memtex, const SamplerFilter fi
          sampler->UpdateTexture(memtex, force_linear_rgb);
          sampler->m_dirty = false;
       }
-      sampler->SetClamp(clampU ? SA_CLAMP : SA_REPEAT, clampV ? SA_CLAMP : SA_REPEAT);
-      sampler->SetFilter(sa_filter);
+      sampler->SetClamp(clampU, clampV);
+      sampler->SetFilter(filter);
       return sampler;
    }
 }
