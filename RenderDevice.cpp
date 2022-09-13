@@ -1834,11 +1834,13 @@ GLuint RenderDevice::GetSamplerState(SamplerFilter filter, SamplerAddressMode cl
       m_curStateChanges += 5;
       glGenSamplers(1, &sampler_state);
       m_samplerStateCache[samplerStateId] = sampler_state;
-      int glAddress[] = { GL_REPEAT, GL_REPEAT, GL_CLAMP_TO_EDGE, GL_MIRRORED_REPEAT };
+      constexpr int glAddress[] = { GL_REPEAT, GL_REPEAT, GL_CLAMP_TO_EDGE, GL_MIRRORED_REPEAT };
       glSamplerParameteri(sampler_state, GL_TEXTURE_WRAP_S, glAddress[clamp_u]);
       glSamplerParameteri(sampler_state, GL_TEXTURE_WRAP_T, glAddress[clamp_v]);
       switch (filter)
       {
+      default:
+         assert(!"unknown filter");
       case SF_NONE: // No mipmapping
          glSamplerParameteri(sampler_state, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
          glSamplerParameteri(sampler_state, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -2247,7 +2249,7 @@ void RenderDevice::UpdateVRPosition()
 
    vr::VRCompositor()->WaitGetPoses(m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, nullptr, 0);
 
-   for (int device = 0; device < vr::k_unMaxTrackedDeviceCount; device++) {
+   for (unsigned int device = 0; device < vr::k_unMaxTrackedDeviceCount; device++) {
       if ((m_rTrackedDevicePose[device].bPoseIsValid) && (m_pHMD->GetTrackedDeviceClass(device) == vr::TrackedDeviceClass_HMD)) {
          hmdPosition = m_rTrackedDevicePose[device];
          for (int i = 0;i < 3;i++)

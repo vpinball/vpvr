@@ -283,8 +283,7 @@ BOOL KeysConfigDialog::OnInitDialog()
    if (toolTipHwnd)
    {
       SendMessage(toolTipHwnd, TTM_SETMAXTIPWIDTH, 0, 180);
-      HWND controlHwnd = GetDlgItem(IDC_USE_NVIDIA_API_CHECK).GetHwnd();
-      controlHwnd = GetDlgItem(IDC_CAP_EXTDMD).GetHwnd();
+      HWND controlHwnd = GetDlgItem(IDC_CAP_EXTDMD).GetHwnd();
       AddToolTip("Attempt to capture External DMD window such as Freezy, UltraDMD or P-ROC.\r\n\r\nFor Freezy DmdDevice.ini need to have 'stayontop = true'.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_CAP_PUP).GetHwnd();
       AddToolTip("Attempt to capture PUP player window and display it as a Backglass in VR.", hwndDlg, toolTipHwnd, controlHwnd);
@@ -1150,7 +1149,7 @@ HWND KeysConfigDialog::GetItemHwnd(int nID)
 
 void KeysConfigDialog::SetValue(int nID, const string& regKey, const string& regValue)
 {
-    size_t selected = ::SendMessage(GetDlgItem(nID).GetHwnd(), CB_GETCURSEL, 0, 0);
+    LRESULT selected = ::SendMessage(GetDlgItem(nID).GetHwnd(), CB_GETCURSEL, 0, 0);
     if (selected == LB_ERR)
         selected = 2; // assume both as standard
     SaveValueInt(regKey, regValue, (int)selected);

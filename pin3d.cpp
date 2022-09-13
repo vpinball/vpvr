@@ -519,7 +519,7 @@ HRESULT Pin3D::InitPin3D(const bool fullScreen, const int width, const int heigh
 
    m_backGlass = new BackGlass(m_pd3dSecondaryDevice,
       g_pplayer->m_ptable->GetDecalsEnabled()
-      ? g_pplayer->m_ptable->GetImage(g_pplayer->m_ptable->m_BG_image[g_pplayer->m_ptable->m_BG_current_set].c_str()) : nullptr);
+      ? g_pplayer->m_ptable->GetImage(g_pplayer->m_ptable->m_BG_image[g_pplayer->m_ptable->m_BG_current_set]) : nullptr);
 #ifndef ENABLE_SDL
    VertexBuffer::setD3DDevice(m_pd3dPrimaryDevice->GetCoreDevice(), m_pd3dSecondaryDevice->GetCoreDevice());
    IndexBuffer::setD3DDevice(m_pd3dPrimaryDevice->GetCoreDevice(), m_pd3dSecondaryDevice->GetCoreDevice());

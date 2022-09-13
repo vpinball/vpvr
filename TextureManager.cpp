@@ -30,11 +30,8 @@ Sampler* TextureManager::LoadTexture(BaseTexture* memtex, const TextureFilter fi
    if (it == m_map.end())
    {
       Sampler* sampler = new Sampler(&m_rd, memtex, force_linear_rgb, clampU ? SA_CLAMP : SA_REPEAT, clampV ? SA_CLAMP : SA_REPEAT, sa_filter);
-      if (sampler)
-      {
-         sampler->m_dirty = false;
-         m_map[memtex] = sampler;
-      }
+      sampler->m_dirty = false;
+      m_map[memtex] = sampler;
       return sampler;
    }
    else

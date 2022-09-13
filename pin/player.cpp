@@ -3299,7 +3299,7 @@ void Player::UpdatePhysics()
           // If we're 3/4 of the way through the loop, fire a "frame sync" timer event so VPM can react to input.
           // This will effectively double the "-1" timer rate, but the goal, when this option is enabled, is to reduce latency
           // and those "-1" timer calls should be roughly halfway through the cycle
-          if (m_phys_iterations == 750 / ((int)m_fps + 1))
+          if (m_phys_iterations == 750u / ((unsigned int)m_fps + 1))
           {
               first_cycle = true; //!! side effects!?!
               m_script_period = 0; // !!!! SIDE EFFECTS?!?!?!

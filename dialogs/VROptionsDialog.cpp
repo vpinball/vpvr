@@ -4,7 +4,7 @@
 
 #define GET_WINDOW_MODES		(WM_USER+100)
 
-static constexpr int rgwindowsize[] = { 640, 720, 800, 912, 1024, 1152, 1280, 1360, 1366, 1400, 1440, 1600, 1680, 1920, 2048, 2560, 3440, 3840, 4096, 5120, 6400, 7680, 8192, 11520, 15360 };  // windowed resolutions for selection list
+//static constexpr int rgwindowsize[] = { 640, 720, 800, 912, 1024, 1152, 1280, 1360, 1366, 1400, 1440, 1600, 1680, 1920, 2048, 2560, 3440, 3840, 4096, 5120, 6400, 7680, 8192, 11520, 15360 };  // windowed resolutions for selection list
 
 constexpr float AAfactors[] = { 0.5f, 0.75f, 1.0f, 1.25f, (float)(4.0/3.0), 1.5f, 1.75f, 2.0f }; // factor is applied to width and to height, so 2.0f increases pixel count by 4. Additional values can be added.
 constexpr int AAfactorCount = 8;
@@ -377,7 +377,7 @@ BOOL VROptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       case IDC_ENABLE_AO:
       {
          const size_t checked = SendDlgItemMessage(IDC_ENABLE_AO, BM_GETCHECK, 0, 0);
-         GetDlgItem(IDC_DYNAMIC_AO).EnableWindow(checked);
+         GetDlgItem(IDC_DYNAMIC_AO).EnableWindow(checked ? 1 : 0);
          break;
       }
       default:
@@ -393,12 +393,12 @@ void VROptionsDialog::OnOK()
    const bool reflection = (SendMessage(GetDlgItem(IDC_GLOBAL_REFLECTION_CHECK).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
    SaveValueBool(regKey[RegName::PlayerVR], "BallReflection"s, reflection);
 
-   size_t fxaa = SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_GETCURSEL, 0, 0);
+   LRESULT fxaa = SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_GETCURSEL, 0, 0);
    if (fxaa == LB_ERR)
       fxaa = 0;
    SaveValueInt(regKey[RegName::PlayerVR], "FXAA"s, (int)fxaa);
 
-   size_t sharpen = SendMessage(GetDlgItem(IDC_SHARPENCB).GetHwnd(), CB_GETCURSEL, 0, 0);
+   LRESULT sharpen = SendMessage(GetDlgItem(IDC_SHARPENCB).GetHwnd(), CB_GETCURSEL, 0, 0);
    if (sharpen == LB_ERR)
       sharpen = 0;
    SaveValueInt(regKey[RegName::PlayerVR], "Sharpen"s, (int)sharpen);
@@ -433,7 +433,7 @@ void VROptionsDialog::OnOK()
    const size_t blitModeVR = SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_GETCURSEL, 0, 0);
    SaveValueInt(regKey[RegName::Player], "blitModeVR"s, (int)blitModeVR);
 
-   size_t vrPreview = SendMessage(GetDlgItem(IDC_VR_PREVIEW).GetHwnd(), CB_GETCURSEL, 0, 0);
+   LRESULT vrPreview = SendMessage(GetDlgItem(IDC_VR_PREVIEW).GetHwnd(), CB_GETCURSEL, 0, 0);
    if (vrPreview == LB_ERR)
       vrPreview = VRPREVIEW_LEFT;
    SaveValueInt(regKey[RegName::PlayerVR], "VRPreview"s, (int)vrPreview);

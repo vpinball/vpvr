@@ -28,7 +28,7 @@ inline char nextChar(size_t &inPos, const size_t inSize, const char* const inCha
 /*
 returns actual data size if successful or -1 if something went wrong.
 */
-static int decode_base64(const char* const inData, char* const outData, const size_t inSize, const size_t outSize) {
+static size_t decode_base64(const char* const inData, char* const outData, const size_t inSize, const size_t outSize) {
    static constexpr char inChars[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
    static char* outChars = nullptr;
    //Create decode table from encode table
@@ -130,7 +130,7 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice, Texture * backgroundFallbac
                      data_len = attrib->value_size() * 3 / 4 + 1;
                      data = new char[data_len];
                   }
-                  int size = decode_base64(attrib->value(), data, attrib->value_size(), data_len);
+                  size_t size = decode_base64(attrib->value(), data, attrib->value_size(), data_len);
 #ifdef WRITE_BACKGLASS_IMAGES
                   if (WRITE_BACKGLASS_IMAGES > 0 && size > 0) {//Write Image to disk. Also check if the base64 decoder is working...
                      string imageFileName = b2sFileName;
@@ -160,7 +160,7 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice, Texture * backgroundFallbac
                      data_len = attrib->value_size() * 3 / 4 + 1;
                      data = new char[data_len];
                   }
-                  int size = decode_base64(attrib->value(), data, attrib->value_size(), data_len);
+                  size_t size = decode_base64(attrib->value(), data, attrib->value_size(), data_len);
                   if ((size > 0) && (strcmp(imagesNode->name(), "BackglassImage") == 0)) {
                      m_backgroundTexture = m_pd3dDevice->m_texMan.LoadTexture(BaseTexture::CreateFromData(data, size), TextureFilter::TEXTURE_MODE_TRILINEAR, true, true, false);
                      m_backglass_width = m_backgroundTexture->GetWidth();

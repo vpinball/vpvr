@@ -564,9 +564,7 @@ void Shader::SetTechnique(ShaderTechniques _technique)
    if (m_techniques[_technique] == nullptr)
    {
       m_technique = SHADER_TECHNIQUE_INVALID;
-      char msg[256];
-      sprintf_s(msg, sizeof(msg), "Fatal Error: Could not find shader technique %s", shaderTechniqueNames[_technique].c_str());
-      ShowError(msg);
+      ShowError("Fatal Error: Could not find shader technique " + shaderTechniqueNames[_technique]);
       exit(-1);
    }
    m_technique = _technique;
