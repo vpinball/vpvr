@@ -579,21 +579,19 @@ void Shader::SetTechniqueMetal(ShaderTechniques _technique, const bool isMetal)
 }
 
 void Shader::SetTextureNull(const ShaderUniforms texelName) {
-   SetTexture(texelName, m_noTexture);
+   SetTexture(texelName, nullptr);
 }
 
 void Shader::SetTexture(const ShaderUniforms texelName, Texture* texel, const TextureFilter filter, const bool clampU, const bool clampV, const bool force_linear_rgb)
 {
    if (!texel || !texel->m_pdsBuffer)
-      SetTextureNull(texelName);
+      SetTexture(texelName, nullptr);
    else
       SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel->m_pdsBuffer, filter, clampU, clampV, force_linear_rgb));
 }
 
 void Shader::SetTexture(const ShaderUniforms texelName, Sampler* texel)
 {
-   if (!texel)
-      return;
    m_uniformCache[SHADER_TECHNIQUE_COUNT][texelName].sampler = texel;
    ApplyUniform(texelName);
 }
@@ -803,49 +801,70 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
    {
       // DX9 implementation uses preaffected texture units, not samplers, so these can not be used for OpenGL. This would cause some collisions.
       Sampler* texel = m_uniformCache[SHADER_TECHNIQUE_COUNT][uniformName].sampler;
-      if (texel == nullptr)
-         texel = m_noTexture;
-      auto filter = shaderUniformNames[uniformName].default_filter;
-      auto clampu = shaderUniformNames[uniformName].default_clampu;
-      auto clampv = shaderUniformNames[uniformName].default_clampv;
-      if (filter == SF_UNDEFINED)
-         filter = texel->GetFilter();
-      if (clampu == SA_UNDEFINED)
-         clampu = texel->GetClampU();
-      if (clampv == SA_UNDEFINED)
-         clampv = texel->GetClampV();
-      if (filter == SF_UNDEFINED)
-         filter = SF_NONE;
-      if (clampu == SA_UNDEFINED)
-         clampu = SA_CLAMP;
-      if (clampv == SA_UNDEFINED)
-         clampv = SA_CLAMP;
-
       SamplerBinding* tex_unit = nullptr;
-      for (auto binding : texel->m_bindings)
-      {
-         if (binding->filter == filter && binding->clamp_u == clampu && binding->clamp_v == clampv)
+      if (texel == nullptr)
+      { // For null texture, use OpenGL texture 0 which is a predefined texture that always returns (0, 0, 0, 1)
+         for (auto binding : m_renderDevice->m_samplerBindings)
          {
-            tex_unit = binding;
-            break;
+            if (binding->sampler == nullptr)
+            {
+               tex_unit = binding;
+               break;
+            }
+         }
+         if (tex_unit == nullptr)
+         {
+            tex_unit = m_renderDevice->m_samplerBindings.back();
+            if (tex_unit->sampler != nullptr)
+               tex_unit->sampler->m_bindings.erase(tex_unit);
+            tex_unit->sampler = nullptr;
+            glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
+            glBindTexture(texel->IsMSAA() ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0);
+            m_renderDevice->m_curTextureChanges++;
          }
       }
-      if (tex_unit == nullptr)
+      else
       {
-         tex_unit = m_renderDevice->m_samplerBindings.back();
-         if (tex_unit->sampler != nullptr)
-            tex_unit->sampler->m_bindings.erase(tex_unit);
-         tex_unit->sampler = texel;
-         tex_unit->filter = filter;
-         tex_unit->clamp_u = clampu;
-         tex_unit->clamp_v = clampv;
-         texel->m_bindings.insert(tex_unit);
-         glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
-         glBindTexture(texel->IsMSAA() ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, texel->GetCoreTexture());
-         m_renderDevice->m_curTextureChanges++;
-         GLuint sampler_state = m_renderDevice->GetSamplerState(filter, clampu, clampv);
-         glBindSampler(tex_unit->unit, sampler_state);
-         m_renderDevice->m_curStateChanges++;
+         auto filter = shaderUniformNames[uniformName].default_filter;
+         auto clampu = shaderUniformNames[uniformName].default_clampu;
+         auto clampv = shaderUniformNames[uniformName].default_clampv;
+         if (filter == SF_UNDEFINED)
+            filter = texel->GetFilter();
+         if (clampu == SA_UNDEFINED)
+            clampu = texel->GetClampU();
+         if (clampv == SA_UNDEFINED)
+            clampv = texel->GetClampV();
+         if (filter == SF_UNDEFINED)
+            filter = SF_NONE;
+         if (clampu == SA_UNDEFINED)
+            clampu = SA_CLAMP;
+         if (clampv == SA_UNDEFINED)
+            clampv = SA_CLAMP;
+         for (auto binding : texel->m_bindings)
+         {
+            if (binding->filter == filter && binding->clamp_u == clampu && binding->clamp_v == clampv)
+            {
+               tex_unit = binding;
+               break;
+            }
+         }
+         if (tex_unit == nullptr)
+         {
+            tex_unit = m_renderDevice->m_samplerBindings.back();
+            if (tex_unit->sampler != nullptr)
+               tex_unit->sampler->m_bindings.erase(tex_unit);
+            tex_unit->sampler = texel;
+            tex_unit->filter = filter;
+            tex_unit->clamp_u = clampu;
+            tex_unit->clamp_v = clampv;
+            texel->m_bindings.insert(tex_unit);
+            glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
+            glBindTexture(texel->IsMSAA() ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, texel->GetCoreTexture());
+            m_renderDevice->m_curTextureChanges++;
+            GLuint sampler_state = m_renderDevice->GetSamplerState(filter, clampu, clampv);
+            glBindSampler(tex_unit->unit, sampler_state);
+            m_renderDevice->m_curStateChanges++;
+         }
       }
       // Bind the sampler
       glUniform1i(currentUniform.location, tex_unit->unit);

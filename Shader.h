@@ -356,7 +356,6 @@ private:
    UniformCache m_uniformCache[SHADER_TECHNIQUE_COUNT + 1][SHADER_UNIFORM_COUNT];
    ShaderTechnique* m_techniques[SHADER_TECHNIQUE_COUNT];
    ShaderTechniques m_technique;
-   Sampler* m_noTexture;
    static Matrix3D mWorld, mView, mProj[2];
 
 public:
