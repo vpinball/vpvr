@@ -577,15 +577,23 @@ void Shader::SetTechniqueMetal(ShaderTechniques _technique, const bool isMetal)
 }
 
 void Shader::SetTextureNull(const ShaderUniforms texelName) {
-   SetTexture(texelName, nullptr);
+   SetTexture(texelName, (Sampler*) nullptr);
 }
 
-void Shader::SetTexture(const ShaderUniforms texelName, Texture* texel, const TextureFilter filter, const bool clampU, const bool clampV, const bool force_linear_rgb)
+void Shader::SetTexture(const ShaderUniforms texelName, Texture* texel, const SamplerFilter filter, const SamplerAddressMode clampU, const SamplerAddressMode clampV, const bool force_linear_rgb)
 {
    if (!texel || !texel->m_pdsBuffer)
-      SetTexture(texelName, nullptr);
+      SetTexture(texelName, (Sampler*)nullptr);
    else
       SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel->m_pdsBuffer, filter, clampU, clampV, force_linear_rgb));
+}
+
+void Shader::SetTexture(const ShaderUniforms texelName, BaseTexture* texel, const SamplerFilter filter, const SamplerAddressMode clampU, const SamplerAddressMode clampV, const bool force_linear_rgb)
+{
+   if (!texel)
+      SetTexture(texelName, (Sampler*)nullptr);
+   else
+      SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel, filter, clampU, clampV, force_linear_rgb));
 }
 
 void Shader::SetTexture(const ShaderUniforms texelName, Sampler* texel)

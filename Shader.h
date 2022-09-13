@@ -229,7 +229,8 @@ public:
    void Begin();
    void End();
 
-   void SetTexture(const ShaderUniforms texelName, Texture* texel, const TextureFilter filter, const bool clampU, const bool clampV, const bool force_linear_rgb);
+   void SetTexture(const ShaderUniforms texelName, BaseTexture* texel, const SamplerFilter filter = SF_UNDEFINED, const SamplerAddressMode clampU = SA_UNDEFINED, const SamplerAddressMode clampV = SA_UNDEFINED, const bool force_linear_rgb = false);
+   void SetTexture(const ShaderUniforms texelName, Texture* texel, const SamplerFilter filter = SF_UNDEFINED, const SamplerAddressMode clampU = SA_UNDEFINED, const SamplerAddressMode clampV = SA_UNDEFINED, const bool force_linear_rgb = false);
    void SetTexture(const ShaderUniforms texelName, Sampler* texel);
    void SetTextureNull(const ShaderUniforms texelName);
    void SetMaterial(const Material * const mat);
