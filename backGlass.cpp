@@ -241,7 +241,7 @@ void BackGlass::Render()
    if (m_backgroundTexture)
       m_pd3dDevice->DMDShader->SetTexture(SHADER_tex_sprite, m_backgroundTexture);
    else if (m_backgroundFallback)
-      m_pd3dDevice->DMDShader->SetTexture(SHADER_tex_sprite, m_backgroundFallback, SF_TRILINEAR, SA_CLAMP, SA_CLAMP, false);
+      m_pd3dDevice->DMDShader->SetTexture(SHADER_tex_sprite, m_backgroundFallback, SF_TRILINEAR, SA_CLAMP, SA_CLAMP);
    else return;
 
    m_pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
@@ -292,7 +292,7 @@ void BackGlass::DMDdraw(float DMDposx, float DMDposy, float DMDwidth, float DMDh
          m_pd3dDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD_ext);
 
       if (g_pplayer->m_texdmd != nullptr)
-         m_pd3dDevice->DMDShader->SetTexture(SHADER_tex_dmd, g_pplayer->m_texdmd, SF_NONE, SA_CLAMP, SA_CLAMP, false);
+         m_pd3dDevice->DMDShader->SetTexture(SHADER_tex_dmd, g_pplayer->m_texdmd, SF_NONE, SA_CLAMP, SA_CLAMP);
       //      m_pd3dPrimaryDevice->DMDShader->SetVector(SHADER_quadOffsetScale, 0.0f, -1.0f, backglass_scale, backglass_scale*(float)backglass_height / (float)backglass_width);
       bool zDisabled = false;
       m_pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);

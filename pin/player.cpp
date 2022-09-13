@@ -1138,11 +1138,11 @@ void Player::InitShader()
    //m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetVector("camera", &cam);
 #endif
 
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_env, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, SF_TRILINEAR, SA_REPEAT, SA_CLAMP, false);
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_diffuse_env, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_pin3d.m_envRadianceTexture, SF_BILINEAR, SA_REPEAT, SA_CLAMP, false));
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_env, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, SF_TRILINEAR, SA_REPEAT, SA_CLAMP);
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_diffuse_env, m_pin3d.m_envRadianceTexture, SF_BILINEAR, SA_REPEAT, SA_CLAMP);
 #ifdef SEPARATE_CLASSICLIGHTSHADER
    m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_tex_env, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, TextureFilter::TEXTURE_MODE_TRILINEAR, false, true, false);
-   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_tex_diffuse_env, m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_envRadianceTexture, TextureFilter::TEXTURE_MODE_BILINEAR, false, true, false));
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_tex_diffuse_env, m_envRadianceTexture, TextureFilter::TEXTURE_MODE_BILINEAR, false, true, false);
 #endif
    const vec4 st(m_ptable->m_envEmissionScale*m_globalEmissionScale, m_pin3d.m_envTexture ? (float)m_pin3d.m_envTexture->m_height/*+m_pin3d.m_envTexture->m_width)*0.5f*/ : (float)m_pin3d.m_builtinEnvTexture.m_height/*+m_pin3d.m_builtinEnvTexture.m_width)*0.5f*/, 0.f, 0.f);
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetVector(SHADER_fenvEmissionScale_TexWidth, &st);
@@ -1231,9 +1231,9 @@ void Player::InitBallShader()
 
    Texture * const playfield = m_ptable->GetImage(m_ptable->m_image);
    if (playfield)
-      m_ballShader->SetTexture(SHADER_tex_ball_playfield, playfield, SF_TRILINEAR, SA_REPEAT, SA_REPEAT, false);
+      m_ballShader->SetTexture(SHADER_tex_ball_playfield, playfield, SF_TRILINEAR, SA_REPEAT, SA_REPEAT);
 
-   m_ballShader->SetTexture(SHADER_tex_diffuse_env, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_pin3d.m_envRadianceTexture, SF_BILINEAR, SA_REPEAT, SA_CLAMP, false));
+   m_ballShader->SetTexture(SHADER_tex_diffuse_env, m_pin3d.m_envRadianceTexture, SF_BILINEAR, SA_REPEAT, SA_CLAMP);
 
    assert(m_ballIndexBuffer == nullptr);
    const bool lowDetailBall = (m_ptable->GetDetailLevel() < 10);
@@ -3478,7 +3478,7 @@ void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwi
 #endif
       m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetVector(SHADER_vRes_Alpha_time, &r);
 
-      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTexture(SHADER_tex_dmd, m_pin3d.m_pd3dPrimaryDevice->m_texMan.LoadTexture(m_texdmd), false, false);
+      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTexture(SHADER_tex_dmd, m_texdmd, false, false);
 
       m_pin3d.m_pd3dPrimaryDevice->DMDShader->Begin();
       m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)DMDVerts);
@@ -3511,7 +3511,7 @@ void Player::Spritedraw(const float posx, const float posy, const float width, c
    pd3dDevice->DMDShader->SetVector(SHADER_vColor_Intensity, &c);
 
    if (tex)
-      pd3dDevice->DMDShader->SetTexture(SHADER_tex_sprite, tex, SF_NONE, SA_REPEAT, SA_REPEAT, false);
+      pd3dDevice->DMDShader->SetTexture(SHADER_tex_sprite, tex, SF_NONE, SA_REPEAT, SA_REPEAT);
 
    pd3dDevice->DMDShader->Begin();
    pd3dDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)Verts);
@@ -5901,12 +5901,12 @@ void Player::DrawBalls()
       m_ballShader->SetBool(SHADER_disableLighting, m_disableLightingForBalls);
 
       if (!pball->m_pinballEnv)
-         m_ballShader->SetTexture(SHADER_tex_ball_color, &m_pin3d.m_pinballEnvTexture, SF_TRILINEAR, SA_REPEAT, SA_REPEAT, false);
+         m_ballShader->SetTexture(SHADER_tex_ball_color, &m_pin3d.m_pinballEnvTexture, SF_TRILINEAR, SA_REPEAT, SA_REPEAT);
       else
-         m_ballShader->SetTexture(SHADER_tex_ball_color, pball->m_pinballEnv, SF_TRILINEAR, SA_REPEAT, SA_REPEAT, false);
+         m_ballShader->SetTexture(SHADER_tex_ball_color, pball->m_pinballEnv, SF_TRILINEAR, SA_REPEAT, SA_REPEAT);
 
       if (pball->m_pinballDecal)
-         m_ballShader->SetTexture(SHADER_tex_ball_decal, pball->m_pinballDecal, SF_TRILINEAR, SA_REPEAT, SA_REPEAT, false);
+         m_ballShader->SetTexture(SHADER_tex_ball_decal, pball->m_pinballDecal, SF_TRILINEAR, SA_REPEAT, SA_REPEAT);
       else
          m_ballShader->SetTextureNull(SHADER_tex_ball_decal);
 
