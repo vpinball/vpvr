@@ -1038,7 +1038,7 @@ static bool CompareHitableImage(const Hitable* h1, const Hitable* h2)
 
 void Player::UpdateBasicShaderMatrix(const Matrix3D& objectTrafo)
 {
-   const int eyes = m_stereo3D > 0 ? 2 : 1;
+   const int eyes = m_stereo3D != STEREO_OFF ? 2 : 1;
    Matrix3D matWorld;
    Matrix3D matProj[2];
    struct {
@@ -1155,7 +1155,7 @@ void Player::InitShader()
 
 void Player::UpdateBallShaderMatrix()
 {
-   const int eyes = m_stereo3D > 0 ? 2 : 1;
+   const int eyes = m_stereo3D != STEREO_OFF ? 2 : 1;
    Matrix3D matWorld;
    Matrix3D matProj[2];
    struct {
@@ -1992,6 +1992,11 @@ void Player::InitStatic()
    }
 
    m_pin3d.InitPlayfieldGraphics();
+
+   // For VR, we don't use any static pre-rendering
+   if (m_stereo3D == STEREO_VR)
+      return;
+
 #ifdef ENABLE_SDL
    RenderTarget *accumulationSurface = nullptr;
 #else
@@ -2066,11 +2071,15 @@ void Player::InitStatic()
             if (m_ptable->m_reflectElementsOnPlayfield /*&& m_pf_refl*/)
                RenderStaticMirror(false);
 
-         // exclude playfield depth as dynamic mirror objects have to be added later-on
-         // FIXME disabled since mirror is not yet implemented. This needs to be reactivated in the mirror fix 
-         // m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
+#ifdef ENABLE_SDL
+         // FIXME For VPVR, mirror is disabled and will likely be implemented differently (reflection probe)
          m_pin3d.RenderPlayfieldGraphics(false);
-         //m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
+#else
+         // exclude playfield depth as dynamic mirror objects have to be added later-on
+         m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
+         m_pin3d.RenderPlayfieldGraphics(false);
+         m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
+#endif
 
          if (m_ptable->m_reflectElementsOnPlayfield /*&& m_pf_refl*/)
             RenderMirrorOverlay();
@@ -2263,9 +2272,12 @@ void Player::InitStatic()
 
       m_pin3d.m_pddsStatic->CopyTo(m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()); // save Z buffer and render (cannot be called inside BeginScene -> EndScene cycle)
 
+#ifndef ENABLE_SDL
+      // For VPVR, the static buffer already contains the depth of the playfield, so no need to render it afterward like this
       m_pin3d.m_pd3dPrimaryDevice->BeginScene();
       m_pin3d.RenderPlayfieldGraphics(true); // mirror depth buffer only contained static objects, but no playfield yet -> so render depth only to add this
       m_pin3d.m_pd3dPrimaryDevice->EndScene();
+#endif
 
       RenderTarget* tmpDepth = m_pin3d.m_pddsStatic->Duplicate();
       m_pin3d.m_pddsStatic->CopyTo(tmpDepth);
@@ -3634,8 +3646,6 @@ void Player::RenderDynamics()
          reflection_path = 2;
    }
 
-   m_pin3d.m_pd3dPrimaryDevice->GetMSAABackBufferTexture()->Activate(false);
-
    UpdateBasicShaderMatrix();
 
    if (reflection_path != 0)
@@ -3653,10 +3663,14 @@ void Player::RenderDynamics()
       RenderMirrorOverlay();
    }
 
-   // Render the backglass
-   m_pin3d.m_backGlass->Render();
+   // Render the backglass (only for VR, otherwise it will mask the playfield)
+   if (m_stereo3D == STEREO_VR)
+      m_pin3d.m_backGlass->Render();
 
+#ifndef ENABLE_SDL
+   // For VPVR, the static buffer already contains the depth of the playfield, so no need to render it afterward like this
    m_pin3d.RenderPlayfieldGraphics(true); // static depth buffer only contained static (&mirror) objects, but no playfield yet -> so render depth only to add this
+#endif
 
    if (m_dynamicMode)
    {
@@ -4672,7 +4686,7 @@ void Player::UpdateHUD()
     }
     SetDebugOutputPosition(x, y);
 
-    if (!m_closeDown && (m_stereo3D != 0) && !m_stereo3Denabled && (usec() < m_StartTime_usec + 4e+6)) // show for max. 4 seconds
+    if (!m_closeDown && (m_stereo3D != STEREO_OFF  && !m_stereo3Denabled && (usec() < m_StartTime_usec + 4e+6)) // show for max. 4 seconds
         DebugPrint(DBG_SPRITE_SIZE/2, 10, "3D Stereo is enabled but currently toggled off, press F10 to toggle 3D Stereo on", true);
 
     if (!m_closeDown && m_supportsTouch && m_showTouchMessage && (usec() < m_StartTime_usec + 12e+6)) // show for max. 12 seconds
@@ -5322,8 +5336,19 @@ void Player::Render()
 
    RenderDevice::m_stats_drawn_triangles = 0;
 
-   // copy static buffers to back buffer including z buffer
-   m_pin3d.m_pddsStatic->CopyTo(m_pin3d.m_pd3dPrimaryDevice->GetMSAABackBufferTexture()); // cannot be called inside BeginScene -> EndScene cycle
+   if (m_stereo3D == STEREO_VR)
+   {
+      // For VR start from a clear render
+      m_pin3d.m_pd3dPrimaryDevice->GetMSAABackBufferTexture()->Activate(false);
+      m_pin3d.m_pd3dPrimaryDevice->Clear(clearType::TARGET | clearType::ZBUFFER, 0, 1.0f, 0L);
+   }
+   else
+   {
+      // copy static buffers to back buffer including z buffer
+      m_pin3d.m_pddsStatic->CopyTo(m_pin3d.m_pd3dPrimaryDevice->GetMSAABackBufferTexture()); // cannot be called inside BeginScene -> EndScene cycle
+      m_pin3d.m_pd3dPrimaryDevice->GetMSAABackBufferTexture()->Activate(false);
+   }
+
 
    // Physics/Timer updates, done at the last moment, especially to handle key input (VP<->VPM rountrip) and animation triggers
    //if ( !cameraMode )
