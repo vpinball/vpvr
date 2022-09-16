@@ -902,48 +902,48 @@ void Pin3D::InitLayout(const bool FSS_mode, const float max_separation, const fl
 
    if (FSS_mode)
    {
-   //m_proj.m_rcviewport.right = m_viewPort.Height;
-   //m_proj.m_rcviewport.bottom = m_viewPort.Width;
-   const int width = GetSystemMetrics(SM_CXSCREEN);
-   const int height = GetSystemMetrics(SM_CYSCREEN);
+      //m_proj.m_rcviewport.right = m_viewPort.Height;
+      //m_proj.m_rcviewport.bottom = m_viewPort.Width;
+      const int width = GetSystemMetrics(SM_CXSCREEN);
+      const int height = GetSystemMetrics(SM_CYSCREEN);
 
-   // layout landscape(game horz) in lanscape(LCD\LED horz)
-   if ((m_viewPort.Width > m_viewPort.Height) && (height < width))
-   {
-      //inc += 0.1f;       // 0.05-best, 0.1-good, 0.2-bad > (0.2 terrible original)
-      //camy -= 30.0f;     // 70.0f original // 100
-      if (aspect > 1.6f)
-          camz -= 1170.0f; // 700
-      else if (aspect > 1.5f)
-          camz -= 1070.0f; // 650
-      else if (aspect > 1.4f)
-          camz -= 900.0f;  // 580
-      else if (aspect > 1.3f)
-          camz -= 820.0f;  // 500 // 600
-      else
-          camz -= 800.0f;  // 480
-   }
-   else {
-      // layout potrait(game vert) in portrait(LCD\LED vert)
-      if (height > width)
+      // layout landscape(game horz) in lanscape(LCD\LED horz)
+      if ((m_viewPort.Width > m_viewPort.Height) && (height < width))
       {
-         if (aspect > 0.6f) {
-            camz += 10.0f;
-            //camy += 50.0f;
-         }
-         else if (aspect > 0.5f) {
-            camz += 300.0f;
-            //camy += 100.0f;
-         }
-         else {
-            camz += 300.0f;
-            //camy += 200.0f;
-         }
+         //inc += 0.1f;       // 0.05-best, 0.1-good, 0.2-bad > (0.2 terrible original)
+         //camy -= 30.0f;     // 70.0f original // 100
+         if (aspect > 1.6f)
+             camz -= 1170.0f; // 700
+         else if (aspect > 1.5f)
+             camz -= 1070.0f; // 650
+         else if (aspect > 1.4f)
+             camz -= 900.0f;  // 580
+         else if (aspect > 1.3f)
+             camz -= 820.0f;  // 500 // 600
+         else
+             camz -= 800.0f;  // 480
       }
-      // layout landscape(game horz) in portrait(LCD\LED vert), who would but the UI allows for it!
       else {
+         // layout potrait(game vert) in portrait(LCD\LED vert)
+         if (height > width)
+         {
+            if (aspect > 0.6f) {
+               camz += 10.0f;
+               //camy += 50.0f;
+            }
+            else if (aspect > 0.5f) {
+               camz += 300.0f;
+               //camy += 100.0f;
+            }
+            else {
+               camz += 300.0f;
+               //camy += 200.0f;
+            }
+         }
+         // layout landscape(game horz) in portrait(LCD\LED vert), who would but the UI allows for it!
+         else {
+         }
       }
-   }
    }
 
    inclination += inc; // added this to inclination in radians
