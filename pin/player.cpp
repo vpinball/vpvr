@@ -562,12 +562,15 @@ void Player::CreateWnd(HWND parent /* = 0 */)
    const int colordepth = LoadValueIntWithDefault(regKey[RegName::Player], "ColorDepth"s, 32);
    bool video10bit = LoadValueBoolWithDefault(regKey[RegName::Player], "Render10Bit"s, false);
    int channelDepth = video10bit ? 10 : ((colordepth == 16) ? 5 : 8);
-   // FIXME this will fail for 10 bits output
-   SDL_GL_SetAttribute(SDL_GL_RED_SIZE, channelDepth);
-   SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, channelDepth);
-   SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, channelDepth);
-   SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
-   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+   // We only set bit depth for fullscreen desktop modes (otherwise, use the desktop bit depth)
+   if (m_fullScreen)
+   {
+      SDL_GL_SetAttribute(SDL_GL_RED_SIZE, channelDepth);
+      SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, channelDepth);
+      SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, channelDepth);
+      SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 0);
+      SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+   }
 
    // Multisampling is performed on the offscreen buffers, not the window framebuffer
    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
@@ -586,8 +589,7 @@ void Player::CreateWnd(HWND parent /* = 0 */)
    // Attach it (raise a WM_CREATE which in turns call OnInitialUpdate)
    Attach(wmInfo.info.win.window);
 
-   const VRPreviewMode vrPreview = (VRPreviewMode)LoadValueIntWithDefault(regKey[RegName::PlayerVR], "VRPreview"s, VRPREVIEW_LEFT);
-   if (cs.style & WS_VISIBLE && ((m_stereo3D != STEREO_VR) || (vrPreview != VRPREVIEW_DISABLED)))
+   if (cs.style & WS_VISIBLE)
    {
       if (cs.style & WS_MAXIMIZE)
          ShowWindow(SW_MAXIMIZE);
@@ -1761,7 +1763,7 @@ HRESULT Player::Init()
 
    m_ptable->m_progressDialog.Destroy();
 
-   // Show the window.
+   // Show the window (even without preview, we need to create a window).
    ShowWindow(SW_SHOW);
    SetForegroundWindow();
    SetFocus();
@@ -4775,8 +4777,8 @@ void Player::UpdateHUD()
 void Player::PrepareVideoBuffersNormal()
 {
    const bool useAA = ((m_AAfactor != 1.0) && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
-   const bool stereo= ((m_stereo3D != STEREO_OFF) && m_stereo3Denabled && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable());
-   const bool SMAA  = (((m_FXAA == Quality_SMAA)  && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
+   const bool stereo = m_stereo3D == STEREO_VR || ((m_stereo3D != STEREO_OFF) && m_stereo3Denabled && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable());
+   const bool SMAA = (((m_FXAA == Quality_SMAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
    const bool DLAA  = (((m_FXAA == Standard_DLAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_DLAA));
    const bool NFAA  = (((m_FXAA == Fast_NFAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_NFAA));
    const bool FXAA1 = (((m_FXAA == Fast_FXAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_FXAA));
@@ -4899,8 +4901,8 @@ void Player::FlipVideoBuffers(const bool vsync)
 void Player::PrepareVideoBuffersAO()
 {
    const bool useAA = ((m_AAfactor != 1.0) && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
-   const bool stereo= ((m_stereo3D != STEREO_OFF) && m_stereo3Denabled && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable());
-   const bool SMAA  = (((m_FXAA == Quality_SMAA)  && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
+   const bool stereo = m_stereo3D == STEREO_VR || ((m_stereo3D != STEREO_OFF) && m_stereo3Denabled && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable());
+   const bool SMAA = (((m_FXAA == Quality_SMAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
    const bool DLAA  = (((m_FXAA == Standard_DLAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_DLAA));
    const bool NFAA  = (((m_FXAA == Fast_NFAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_NFAA));
    const bool FXAA1 = (((m_FXAA == Fast_FXAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_FXAA));
