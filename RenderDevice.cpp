@@ -1827,7 +1827,9 @@ void RenderDevice::UploadAndSetSMAATextures()
 #ifdef ENABLE_SDL
 GLuint RenderDevice::GetSamplerState(SamplerFilter filter, SamplerAddressMode clamp_u, SamplerAddressMode clamp_v)
 {
-   int samplerStateId = min((int)clamp_u, 2) * min((int)clamp_v, 2) * min((int)filter, 4);
+   int samplerStateId = min((int)clamp_u, 2) * 5 * 3
+                      + min((int)clamp_v, 2) * 5
+                      + min((int)filter, 4);
    GLuint sampler_state = m_samplerStateCache[samplerStateId];
    if (sampler_state == 0)
    {
