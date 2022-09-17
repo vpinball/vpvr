@@ -232,10 +232,6 @@ GLuint Sampler::CreateTexture(UINT Width, UINT Height, UINT Levels, colorFormat 
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_GREEN);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_BLUE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
-
-      // Anisotropic filtering
-      if (m_rd->m_maxaniso > 0)
-         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, min(max(1.f, m_rd->m_maxaniso), 16.f));
    }
 
    colorFormat comp_format = Format;

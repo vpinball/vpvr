@@ -1874,98 +1874,6 @@ GLuint RenderDevice::GetSamplerState(SamplerFilter filter, SamplerAddressMode cl
 }
 #endif
 
-void RenderDevice::SetSamplerState(const DWORD Sampler, const DWORD minFilter, const DWORD magFilter, const SamplerStateValues mipFilter)
-{
-#ifdef ENABLE_SDL
-/*   glSamplerParameteri(Sampler, GL_TEXTURE_MIN_FILTER, minFilter ? (mipFilter ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR) : GL_NEAREST);
-   glSamplerParameteri(Sampler, GL_TEXTURE_MAG_FILTER, magFilter ? (mipFilter ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR) : GL_NEAREST);
-   m_curStateChanges += 2;*/
-#else
-   if (textureSamplerCache[Sampler][D3DSAMP_MINFILTER] != minFilter)
-   {
-      CHECKD3D(m_pD3DDevice->SetSamplerState(Sampler, D3DSAMP_MINFILTER, minFilter));
-      textureSamplerCache[Sampler][D3DSAMP_MINFILTER] = minFilter;
-      m_curStateChanges++;
-   }
-   if (textureSamplerCache[Sampler][D3DSAMP_MAGFILTER] != magFilter)
-   {
-      CHECKD3D(m_pD3DDevice->SetSamplerState(Sampler, D3DSAMP_MAGFILTER, magFilter));
-      textureSamplerCache[Sampler][D3DSAMP_MAGFILTER] = magFilter;
-      m_curStateChanges++;
-   }
-   if (textureSamplerCache[Sampler][D3DSAMP_MIPFILTER] != mipFilter)
-   {
-      CHECKD3D(m_pD3DDevice->SetSamplerState(Sampler, D3DSAMP_MIPFILTER, mipFilter));
-      textureSamplerCache[Sampler][D3DSAMP_MIPFILTER] = mipFilter;
-      m_curStateChanges++;
-   }
-#endif
-}
-
-void RenderDevice::SetSamplerAnisotropy(const DWORD Sampler, DWORD Value)
-{
-#ifndef ENABLE_SDL
-   if (textureSamplerCache[Sampler][D3DSAMP_MAXANISOTROPY] != Value)
-   {
-      CHECKD3D(m_pD3DDevice->SetSamplerState(Sampler, D3DSAMP_MAXANISOTROPY, Value));
-      textureSamplerCache[Sampler][D3DSAMP_MAXANISOTROPY] = Value;
-
-      m_curStateChanges++;
-   }
-#endif
-}
-
-void RenderDevice::RenderDevice::SetTextureAddressMode(const DWORD Sampler, const SamplerStateValues mode)
-{
-#ifndef ENABLE_SDL
-   if (textureSamplerCache[Sampler][D3DSAMP_ADDRESSU] != mode)
-   {
-      CHECKD3D(m_pD3DDevice->SetSamplerState(Sampler, D3DSAMP_ADDRESSU, mode));
-      textureSamplerCache[Sampler][D3DSAMP_ADDRESSU] = mode;
-      m_curStateChanges++;
-   }
-   if (textureSamplerCache[Sampler][D3DSAMP_ADDRESSV] != mode)
-   {
-      CHECKD3D(m_pD3DDevice->SetSamplerState(Sampler, D3DSAMP_ADDRESSV, mode));
-      textureSamplerCache[Sampler][D3DSAMP_ADDRESSV] = mode;
-      m_curStateChanges++;
-   }
-#endif
-}
-
-void RenderDevice::SetTextureFilter(const DWORD texUnit, DWORD mode)
-{
-   // user can override the standard/faster-on-low-end trilinear by aniso filtering
-   if ((mode == TEXTURE_MODE_TRILINEAR) && m_force_aniso)
-      mode = TEXTURE_MODE_ANISOTROPIC;
-
-   switch (mode)
-   {
-   default:
-   case TEXTURE_MODE_POINT:
-      // Don't filter textures, no mipmapping.
-      SetSamplerState(texUnit, POINT, POINT, NONE);
-      break;
-
-   case TEXTURE_MODE_BILINEAR:
-      // Interpolate in 2x2 texels, no mipmapping.
-      SetSamplerState(texUnit, LINEAR, LINEAR, NONE);
-      break;
-
-   case TEXTURE_MODE_TRILINEAR:
-      // Filter textures on 2 mip levels (interpolate in 2x2 texels). And filter between the 2 mip levels.
-      SetSamplerState(texUnit, LINEAR, LINEAR, LINEAR);
-      break;
-
-   case TEXTURE_MODE_ANISOTROPIC:
-      // Full HQ anisotropic Filter. Should lead to driver doing whatever it thinks is best.
-      SetSamplerState(texUnit, LINEAR, LINEAR, LINEAR);
-      //if (m_maxaniso>0) // done on the texture, not the sampler
-   	  //   SetSamplerAnisotropy(texUnit, min(m_maxaniso, (DWORD)16));
-      break;
-   }
-}
-
 #ifndef ENABLE_SDL
 void RenderDevice::SetTextureStageState(const DWORD p1, const D3DTEXTURESTAGESTATETYPE p2, const DWORD p3)
 {
@@ -2345,6 +2253,16 @@ void RenderDevice::SetTransform(const TransformStateType p1, const Matrix3D * p2
 void RenderDevice::GetTransform(const TransformStateType p1, Matrix3D* p2, const int count)
 {
    Shader::GetTransform(p1, p2, count);
+}
+
+void RenderDevice::ForceAnisotropicFiltering(const bool enable)
+{
+   SamplerFilter sf = enable ? SF_ANISOTROPIC : SF_TRILINEAR;
+   Shader::SetDefaultSamplerFilter(SHADER_tex_sprite, sf);
+   Shader::SetDefaultSamplerFilter(SHADER_tex_flasher_A, sf);
+   Shader::SetDefaultSamplerFilter(SHADER_tex_flasher_B, sf);
+   Shader::SetDefaultSamplerFilter(SHADER_tex_base_color, sf);
+   Shader::SetDefaultSamplerFilter(SHADER_tex_base_normalmap, sf);
 }
 
 void RenderDevice::Clear(const DWORD flags, const D3DCOLOR color, const D3DVALUE z, const DWORD stencil)

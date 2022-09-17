@@ -87,7 +87,7 @@ ShaderTechniques Shader::getTechniqueByName(const string& name)
 #define SHADER_UNIFORM(name) { #name, #name, ""s, -1, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED }
 #define SHADER_TEXTURE(name) { #name, #name, ""s, -1, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED }
 #define SHADER_SAMPLER(name, legacy_name, texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter) { #name, #legacy_name, #texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter }
-const Shader::ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT] {
+Shader::ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT] {
    // -- Floats --
    SHADER_UNIFORM(RenderBall),
    SHADER_UNIFORM(blend_modulate_vs_add),
@@ -198,6 +198,11 @@ ShaderUniforms Shader::getUniformByName(const string& name)
 
    LOG(1, m_shaderCodeName, string("getUniformByName Could not find uniform ").append(name).append(" in shaderUniformNames."));
    return SHADER_UNIFORM_INVALID;
+}
+
+void Shader::SetDefaultSamplerFilter(const ShaderUniforms sampler, const SamplerFilter sf)
+{ 
+   Shader::shaderUniformNames[sampler].default_filter = sf;
 }
 
 // When changed, this list must also be copied unchanged to Shader.cpp (for its implementation)

@@ -583,22 +583,6 @@ HRESULT Pin3D::InitPin3D(const bool fullScreen, const int width, const int heigh
    return S_OK;
 }
 
-// Sets the texture filtering state.
-void Pin3D::SetTextureFilter(RenderDevice * const pd3dDevice, const int TextureNum, const int Mode) const
-{
-   pd3dDevice->SetTextureFilter(TextureNum, Mode);
-}
-
-void Pin3D::SetPrimaryTextureFilter(const int TextureNum, const int Mode) const
-{
-   SetTextureFilter(m_pd3dPrimaryDevice, TextureNum, Mode);
-}
-
-void Pin3D::SetSecondaryTextureFilter(const int TextureNum, const int Mode) const
-{
-   SetTextureFilter(m_pd3dSecondaryDevice, TextureNum, Mode);
-}
-
 void Pin3D::InitRenderState(RenderDevice * const pd3dDevice)
 {
    pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
@@ -613,7 +597,6 @@ void Pin3D::InitRenderState(RenderDevice * const pd3dDevice)
    pd3dDevice->SetRenderStateClipPlane0(false);
 
    // initialize first texture stage
-   pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_CLAMP/*WRAP*/);
 #ifndef ENABLE_SDL
    pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
    pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
@@ -622,10 +605,6 @@ void Pin3D::InitRenderState(RenderDevice * const pd3dDevice)
    pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
    pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR); // default tfactor: 1,1,1,1
 #endif
-   SetTextureFilter(pd3dDevice, 0, TEXTURE_MODE_TRILINEAR);
-
-   pd3dDevice->SetTextureAddressMode(4, RenderDevice::TEX_CLAMP/*WRAP*/); // normal maps
-   SetTextureFilter(pd3dDevice, 4, TEXTURE_MODE_TRILINEAR);
 }
 
 void Pin3D::InitPrimaryRenderState()
@@ -640,8 +619,6 @@ void Pin3D::InitSecondaryRenderState()
 
 void Pin3D::DrawBackground()
 {
-   SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
-
    const PinTable * const ptable = g_pplayer->m_ptable;
    Texture * const pin = ptable->GetDecalsEnabled()
       ? ptable->GetImage(ptable->m_BG_image[ptable->m_BG_current_set])
@@ -658,6 +635,7 @@ void Pin3D::DrawBackground()
 
       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
 
+      // FIXME this should be called with a trilinear/anisotropy filtering override
       g_pplayer->Spritedraw(0.f, 0.f, 1.f, 1.f, 0xFFFFFFFF, pin, ptable->m_ImageBackdropNightDay ? sqrtf(g_pplayer->m_globalEmissionScale) : 1.0f, true);
 
       if (g_pplayer->m_ptable->m_tblMirrorEnabled^g_pplayer->m_ptable->m_reflectionEnabled)
@@ -1065,9 +1043,8 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
        // even with depth-only rendering we have to take care of alpha textures (stencil playfield to see underlying objects)
        if (pin)
        {
-           SetPrimaryTextureFilter(0, TEXTURE_MODE_ANISOTROPIC);
            m_pd3dPrimaryDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_depth_only_with_texture);
-           m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_base_color, pin, SF_UNDEFINED, SA_CLAMP, SA_CLAMP);
+           m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_base_color, pin, SF_ANISOTROPIC, SA_CLAMP, SA_CLAMP);
            m_pd3dPrimaryDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
        }
        else // No image by that name
@@ -1079,9 +1056,8 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
 
        if (pin)
        {
-           SetPrimaryTextureFilter(0, TEXTURE_MODE_ANISOTROPIC);
            m_pd3dPrimaryDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
-           m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_base_color, pin, SF_UNDEFINED, SA_CLAMP, SA_CLAMP);
+           m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_base_color, pin, SF_ANISOTROPIC, SA_CLAMP, SA_CLAMP);
            m_pd3dPrimaryDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
        }
        else // No image by that name
@@ -1109,13 +1085,6 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
       pPrim->m_d.m_visible = true;  // temporary enable the otherwise invisible playfield
       pPrim->RenderObject();
       pPrim->m_d.m_visible = false; // restore
-   }
-
-   if (pin)
-   {
-      //m_pd3dPrimaryDevice->basicShader->SetTextureNull(SHADER_tex_base_color);
-      //m_pd3dPrimaryDevice->m_texMan.UnloadTexture(pin->m_pdsBuffer); //!! is used by ball reflection later-on
-      SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
    }
 
    if (depth_only)

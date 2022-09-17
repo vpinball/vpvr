@@ -553,7 +553,8 @@ void Decal::RenderObject()
             pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
          else
             pd3dDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_bg_decal_with_texture);
-         pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, pin);
+         // Set texture to mirror, so the alpha state of the texture blends correctly to the outside
+         pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, pin, SF_UNDEFINED, SA_MIRROR, SA_MIRROR);
          pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
       }
       else
@@ -565,11 +566,6 @@ void Decal::RenderObject()
       }
    }
 
-   // Set texture to mirror, so the alpha state of the texture blends correctly to the outside
-   //!!   pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_MIRROR);
-
-   //Pin3D * const ppin3d = &g_pplayer->m_pin3d;
-   //ppin3d->SetPrimaryTextureFilter ( 0, TEXTURE_MODE_TRILINEAR );
    g_pplayer->m_pin3d.EnableAlphaBlend(false);
 
    if (!m_backglass)
@@ -589,7 +585,6 @@ void Decal::RenderObject()
    pd3dDevice->basicShader->End();
 
    // Set the render state.
-   //pd3dDevice->SetTextureAddressMode(0, RenderDevice::TEX_WRAP);
    //pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE); //!! not necessary anymore
 
    //if(m_backglass && (m_ptable->m_tblMirrorEnabled^m_ptable->m_reflectionEnabled))
