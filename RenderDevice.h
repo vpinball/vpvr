@@ -85,8 +85,6 @@ enum UsageFlags {
 #endif
 };
 
-enum StereoMode;
-
 class Shader;
 
 class RenderDevice final

@@ -2,7 +2,6 @@
 
 #include "typedefs3D.h"
 class RenderDevice;
-enum StereoMode;
 
 class RenderTarget final
 {
