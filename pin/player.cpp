@@ -5828,13 +5828,19 @@ void Player::DrawBalls()
       Light* light_nearest[MAX_BALL_LIGHT_SOURCES];
       search_for_nearest(pball, lights, light_nearest);
 
-      vec4 emission = convertColor(m_ptable->m_Light[0].emission);
-      emission.x *= m_ptable->m_lightEmissionScale*m_globalEmissionScale;
-      emission.y *= m_ptable->m_lightEmissionScale*m_globalEmissionScale;
-      emission.z *= m_ptable->m_lightEmissionScale*m_globalEmissionScale;
-
       float lightPos[MAX_LIGHT_SOURCES + MAX_BALL_LIGHT_SOURCES][4] = { 0.0f, 0.0f, 0.0f, 0.0f };
       float lightEmission[MAX_LIGHT_SOURCES + MAX_BALL_LIGHT_SOURCES][4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+      vec4 emission = convertColor(m_ptable->m_Light[0].emission);
+      emission.x *= m_ptable->m_lightEmissionScale * m_globalEmissionScale;
+      emission.y *= m_ptable->m_lightEmissionScale * m_globalEmissionScale;
+      emission.z *= m_ptable->m_lightEmissionScale * m_globalEmissionScale;
+
+      for (unsigned int i2 = 0; i2 < MAX_LIGHT_SOURCES; ++i2)
+      {
+         memcpy(&lightPos[i2], &m_ptable->m_Light[i2].pos, sizeof(float) * 3);
+         memcpy(&lightEmission[i2], &emission, sizeof(float) * 3);
+      }
 
       for (unsigned int light_i = 0; light_i < MAX_BALL_LIGHT_SOURCES; ++light_i)
          if (light_nearest[light_i] != nullptr)

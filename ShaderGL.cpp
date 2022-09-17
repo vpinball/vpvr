@@ -762,6 +762,7 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
    case GL_INT:
       if (isCacheInvalid || dst->ival != src->ival)
       {
+         assert(currentUniform.size == 1);
          dst->ival = src->ival;
          glUniform1i(currentUniform.location, src->ival);
          m_renderDevice->m_curParameterChanges++;
@@ -770,6 +771,7 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
    case GL_FLOAT_VEC2:
       if (isCacheInvalid || memcmp(src, dst, 2 * sizeof(float)) != 0)
       {
+         assert(currentUniform.size == 1);
          memcpy(dst, src, 2 * sizeof(float));
          glUniform2fv(currentUniform.location, 1, src->fvval);
          m_renderDevice->m_curParameterChanges++;
@@ -778,22 +780,41 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
    case GL_FLOAT_VEC3:
       if (isCacheInvalid || memcmp(src, dst, 3 * sizeof(float)) != 0)
       {
+         assert(currentUniform.size == 1);
          memcpy(dst, src, 3 * sizeof(float));
          glUniform3fv(currentUniform.location, 1, src->fvval);
          m_renderDevice->m_curParameterChanges++;
       }
       break;
    case GL_FLOAT_VEC4:
-      if (isCacheInvalid || memcmp(src, dst, 4 * sizeof(float)) != 0)
+      if (currentUniform.size == 1)
       {
-         memcpy(dst, src, 4 * sizeof(float));
-         glUniform4fv(currentUniform.location, 1, src->fvval);
-         m_renderDevice->m_curParameterChanges++;
+         if (isCacheInvalid || memcmp(src, dst, 4 * sizeof(float)) != 0)
+         {
+            memcpy(dst, src, 4 * sizeof(float));
+            glUniform4fv(currentUniform.location, 1, src->fvval);
+            m_renderDevice->m_curParameterChanges++;
+         }
+      }
+      else
+      {
+         if (isCacheInvalid || memcmp(src->fp.data, dst->fp.data, currentUniform.size) != 0)
+         {
+            if (dst->fp.data == nullptr)
+            {
+               dst->fp.len = src->fp.len;
+               dst->fp.data = (float*)malloc(currentUniform.size);
+            }
+            memcpy(dst->fp.data, src->fp.data, currentUniform.size);
+            glUniform4fv(currentUniform.location, currentUniform.size, src->fp.data);
+            m_renderDevice->m_curParameterChanges++;
+         }
       }
       break;
    case GL_FLOAT_MAT4:
       if (isCacheInvalid || memcmp(src, dst, 4 * 4 * sizeof(float)) != 0)
       {
+         assert(currentUniform.size == 1);
          memcpy(dst, src, 4 * 4 * sizeof(float));
          glUniformMatrix4fv(currentUniform.location, 1, GL_FALSE, src->fvval);
          m_renderDevice->m_curParameterChanges++;
@@ -803,6 +824,7 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
    case GL_SAMPLER_2D_MULTISAMPLE:
    {
       // DX9 implementation uses preaffected texture units, not samplers, so these can not be used for OpenGL. This would cause some collisions.
+      assert(currentUniform.size == 1);
       Sampler* texel = m_uniformCache[SHADER_TECHNIQUE_COUNT][uniformName].sampler;
       SamplerBinding* tex_unit = nullptr;
       if (texel == nullptr)
@@ -831,18 +853,23 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
          SamplerFilter filter = shaderUniformNames[uniformName].default_filter;
          SamplerAddressMode clampu = shaderUniformNames[uniformName].default_clampu;
          SamplerAddressMode clampv = shaderUniformNames[uniformName].default_clampv;
-         if (filter == SF_UNDEFINED)
+         if (filter == SF_UNDEFINED) {
             filter = texel->GetFilter();
+            if (filter == SF_UNDEFINED)
+               filter = SF_NONE;
+         }
          if (clampu == SA_UNDEFINED)
+         {
             clampu = texel->GetClampU();
+            if (clampu == SA_UNDEFINED)
+               clampu = SA_CLAMP;
+         }
          if (clampv == SA_UNDEFINED)
+         {
             clampv = texel->GetClampV();
-         if (filter == SF_UNDEFINED)
-            filter = SF_NONE;
-         if (clampu == SA_UNDEFINED)
-            clampu = SA_CLAMP;
-         if (clampv == SA_UNDEFINED)
-            clampv = SA_CLAMP;
+            if (clampv == SA_UNDEFINED)
+               clampv = SA_CLAMP;
+         }
          for (auto binding : texel->m_bindings)
          {
             if (binding->filter == filter && binding->clamp_u == clampu && binding->clamp_v == clampv)
