@@ -844,7 +844,7 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
                tex_unit->sampler->m_bindings.erase(tex_unit);
             tex_unit->sampler = nullptr;
             glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
-            glBindTexture(texel->IsMSAA() ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 0);
+            glBindTexture(GL_TEXTURE_2D, 0);
             m_renderDevice->m_curTextureChanges++;
          }
       }
