@@ -299,9 +299,9 @@ private:
       SamplerAddressMode default_clampv;
       SamplerFilter default_filter;
    };
-   static const string Shader::shaderTechniqueNames[SHADER_TECHNIQUE_COUNT];
-   static const string Shader::shaderAttributeNames[SHADER_ATTRIBUTE_COUNT];
-   static ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT];
+   static const string shaderTechniqueNames[SHADER_TECHNIQUE_COUNT];
+   static const string shaderAttributeNames[SHADER_ATTRIBUTE_COUNT];
+   static ShaderUniform shaderUniformNames[SHADER_UNIFORM_COUNT];
    ShaderUniforms getUniformByName(const string& name);
    ShaderAttributes getAttributeByName(const string& name);
    ShaderTechniques getTechniqueByName(const string& name);
