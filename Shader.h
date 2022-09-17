@@ -258,6 +258,8 @@ public:
    void SetBool(const ShaderUniforms hParameter, const bool b);
    void SetFloatArray(const ShaderUniforms hParameter, const float* pData, const unsigned int count);
 
+   static void SetDefaultSamplerFilter(const ShaderUniforms sampler, const SamplerFilter sf);
+
    static void SetTransform(const TransformStateType p1, const Matrix3D* p2, const int count);
    static void GetTransform(const TransformStateType p1, Matrix3D* p2, const int count);
 
@@ -299,7 +301,7 @@ private:
    };
    static const string Shader::shaderTechniqueNames[SHADER_TECHNIQUE_COUNT];
    static const string Shader::shaderAttributeNames[SHADER_ATTRIBUTE_COUNT];
-   static const ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT];
+   static ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT];
    ShaderUniforms getUniformByName(const string& name);
    ShaderAttributes getAttributeByName(const string& name);
    ShaderTechniques getTechniqueByName(const string& name);

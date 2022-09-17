@@ -8,7 +8,6 @@
 #include "typedefs3D.h"
 
 class RenderDevice;
-enum TextureFilter;
 
 class TextureManager final
 {

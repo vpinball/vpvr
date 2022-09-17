@@ -1247,8 +1247,6 @@ void Flasher::RenderDynamic()
 
           if (!m_d.m_addBlend)
              flasherData.x = pinA->m_alphaTestValue * (float)(1.0/255.0);
-
-          //ppin3d->SetPrimaryTextureFilter( 0, TEXTURE_MODE_TRILINEAR );
        }
        else if (!pinA && pinB)
        {
@@ -1257,8 +1255,6 @@ void Flasher::RenderDynamic()
 
           if (!m_d.m_addBlend)
              flasherData.x = pinB->m_alphaTestValue * (float)(1.0/255.0);
-
-          //ppin3d->SetPrimaryTextureFilter( 0, TEXTURE_MODE_TRILINEAR );
        }
        else if (pinA && pinB)
        {
@@ -1271,8 +1267,6 @@ void Flasher::RenderDynamic()
              flasherData.x = pinA->m_alphaTestValue * (float)(1.0/255.0);
              flasherData.y = pinB->m_alphaTestValue * (float)(1.0/255.0);
           }
-
-          //ppin3d->SetPrimaryTextureFilter( 0, TEXTURE_MODE_TRILINEAR );
        }
        else
           flasherMode = 2.f;

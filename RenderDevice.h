@@ -292,13 +292,9 @@ public:
    void SetRenderStateClipPlane0(const bool enabled);
    void SetRenderStateAlphaTestFunction(const DWORD testValue, const RenderStateValue testFunction, const bool enabled);
 
-   void SetTextureFilter(const DWORD texUnit, DWORD mode);
-   void SetTextureAddressMode(const DWORD texUnit, const SamplerStateValues mode);
 #ifndef ENABLE_SDL
    void SetTextureStageState(const DWORD stage, const D3DTEXTURESTAGESTATETYPE type, const DWORD value);
 #endif
-   void SetSamplerState(const DWORD Sampler, const DWORD minFilter, const DWORD magFilter, const SamplerStateValues mipFilter);
-   void SetSamplerAnisotropy(const DWORD Sampler, DWORD Value);
 
 #ifdef ENABLE_SDL
    HRESULT Create3DFont(INT Height, UINT Width, UINT Weight, UINT MipLevels, BOOL Italic, DWORD CharSet, DWORD OutputPrecision, DWORD Quality, DWORD PitchAndFamily, LPCTSTR pFacename, TTF_Font *ppFont);
@@ -318,7 +314,7 @@ public:
    void SetTransform(const TransformStateType p1, const Matrix3D* p2, const int count = 1);
    void GetTransform(const TransformStateType p1, Matrix3D* p2, const int count = 1);
 
-   void ForceAnisotropicFiltering(const bool enable) { m_force_aniso = enable; }
+   void ForceAnisotropicFiltering(const bool enable);
    void CompressTextures(const bool enable) { m_compress_textures = enable; }
 
    //VR stuff
@@ -447,7 +443,6 @@ public:
 public:
    bool m_autogen_mipmap;
    //bool m_RESZ_support;
-   bool m_force_aniso;
    bool m_compress_textures;
 
 private:

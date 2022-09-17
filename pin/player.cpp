@@ -1143,8 +1143,8 @@ void Player::InitShader()
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_env, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture);
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_diffuse_env, m_pin3d.m_envRadianceTexture);
 #ifdef SEPARATE_CLASSICLIGHTSHADER
-   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_tex_env, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture, TextureFilter::TEXTURE_MODE_TRILINEAR, false, true, false);
-   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_tex_diffuse_env, m_envRadianceTexture, TextureFilter::TEXTURE_MODE_BILINEAR, false, true, false);
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_tex_env, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture);
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetTexture(SHADER_tex_diffuse_env, m_pin3d.m_envRadianceTexture);
 #endif
    const vec4 st(m_ptable->m_envEmissionScale*m_globalEmissionScale, m_pin3d.m_envTexture ? (float)m_pin3d.m_envTexture->m_height/*+m_pin3d.m_envTexture->m_width)*0.5f*/ : (float)m_pin3d.m_builtinEnvTexture.m_height/*+m_pin3d.m_builtinEnvTexture.m_width)*0.5f*/, 0.f, 0.f);
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetVector(SHADER_fenvEmissionScale_TexWidth, &st);
@@ -2028,8 +2028,7 @@ void Player::InitStatic()
 #endif
       m_isRenderingStatic = true;
       // set up the texture filter again, so that this is triggered correctly
-      m_pin3d.m_pd3dPrimaryDevice->SetTextureFilter(0, TEXTURE_MODE_TRILINEAR);
-      m_pin3d.m_pd3dPrimaryDevice->SetTextureFilter(4, TEXTURE_MODE_TRILINEAR);
+      m_pin3d.m_pd3dPrimaryDevice->ForceAnisotropicFiltering(false);
    }
 
    //#define STATIC_PRERENDER_ITERATIONS_KOROBOV 7.0 // for the (commented out) lattice-based QMC oversampling, 'magic factor', depending on the the number of iterations!
@@ -2200,8 +2199,7 @@ void Player::InitStatic()
    {
       // if rendering static/with heavy oversampling, re-enable the aniso/trilinear filter now for the normal rendering
       m_isRenderingStatic = false;
-      m_pin3d.m_pd3dPrimaryDevice->SetTextureFilter(0, TEXTURE_MODE_TRILINEAR);
-      m_pin3d.m_pd3dPrimaryDevice->SetTextureFilter(4, TEXTURE_MODE_TRILINEAR);
+      m_pin3d.m_pd3dPrimaryDevice->ForceAnisotropicFiltering(false);
 
       // copy back weighted accumulated result to the static render target
 #ifdef ENABLE_SDL
@@ -4176,11 +4174,13 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
             m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
             m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
 
-            // FIXME implement other preview modes
-            if (m_vrPreview == VRPREVIEW_RIGHT)
+            if (m_vrPreview != VRPREVIEW_DISABLED)
             {
                m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(false);
-               m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat(SHADER_eye, 1.0f);
+               if (m_vrPreview != VRPREVIEW_LEFT)
+                  m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat(SHADER_eye, 0.0f);
+               else // FIXME implement both eye preview mode
+                  m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetFloat(SHADER_eye, 1.0f);
                m_pin3d.m_pd3dPrimaryDevice->StereoShader->Begin();
                m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
                m_pin3d.m_pd3dPrimaryDevice->StereoShader->End();
@@ -5774,9 +5774,6 @@ void Player::DrawBalls()
    const bool orgDrawReflection = drawReflection;
    //     if (reflectionOnly && !drawReflection)
    //        return;
-
-   //m_pin3d.m_pd3dPrimaryDevice->SetTextureAddressMode(0, RenderDevice::TEX_CLAMP);
-   //m_pin3d.m_pd3dPrimaryDevice->SetPrimaryTextureFilter(0, TEXTURE_MODE_TRILINEAR);
 
    const Material * const playfield_mat = m_ptable->GetMaterial(m_ptable->m_playfieldMaterial);
    const vec4 playfield_cBaseF = convertColor(playfield_mat->m_cBase);
