@@ -152,15 +152,6 @@ public:
       UNDEFINED
    };
 
-   enum SamplerStateValues {
-      NONE = 0,
-      POINT = 0,
-      LINEAR = 1,
-      TEX_WRAP = GL_REPEAT,
-      TEX_CLAMP = GL_CLAMP_TO_EDGE,
-      TEX_MIRROR = GL_MIRRORED_REPEAT
-   };
-
    enum PrimitiveTypes {
       TRIANGLEFAN = GL_TRIANGLE_FAN,
       TRIANGLESTRIP = GL_TRIANGLE_STRIP,
@@ -231,15 +222,6 @@ public:
       UNDEFINED
    };
 
-   enum SamplerStateValues {
-      NONE = D3DTEXF_NONE,
-      POINT = D3DTEXF_POINT,
-      LINEAR = D3DTEXF_LINEAR,
-      TEX_WRAP = D3DTADDRESS_WRAP,
-      TEX_CLAMP = D3DTADDRESS_CLAMP,
-      TEX_MIRROR = D3DTADDRESS_MIRROR
-   };
-
    enum PrimitiveTypes {
       TRIANGLEFAN = D3DPT_TRIANGLEFAN,
       TRIANGLESTRIP = D3DPT_TRIANGLESTRIP,
@@ -291,10 +273,6 @@ public:
    void SetRenderStateDepthBias(float bias);
    void SetRenderStateClipPlane0(const bool enabled);
    void SetRenderStateAlphaTestFunction(const DWORD testValue, const RenderStateValue testFunction, const bool enabled);
-
-#ifndef ENABLE_SDL
-   void SetTextureStageState(const DWORD stage, const D3DTEXTURESTAGESTATETYPE type, const DWORD value);
-#endif
 
 #ifdef ENABLE_SDL
    HRESULT Create3DFont(INT Height, UINT Width, UINT Weight, UINT MipLevels, BOOL Italic, DWORD CharSet, DWORD OutputPrecision, DWORD Quality, DWORD PitchAndFamily, LPCTSTR pFacename, TTF_Font *ppFont);
@@ -413,13 +391,7 @@ private:
 
    UINT m_adapter;      // index of the display adapter to use
 
-   static constexpr DWORD TEXTURE_SAMPLERS = 8;
-   static constexpr DWORD TEXTURE_STATE_CACHE_SIZE = 256;
-   static constexpr DWORD TEXTURE_SAMPLER_CACHE_SIZE = 14;
-
    DWORD renderStateCache[RENDERSTATE_COUNT];                               // for caching
-   DWORD textureStateCache[TEXTURE_SAMPLERS][TEXTURE_STATE_CACHE_SIZE];     // dto.
-   DWORD textureSamplerCache[TEXTURE_SAMPLERS][TEXTURE_SAMPLER_CACHE_SIZE]; // dto.
 
    VertexDeclaration *currentDeclaration; // for caching
 

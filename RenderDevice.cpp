@@ -860,10 +860,6 @@ RenderDevice::RenderDevice(const HWND hwnd, const int width, const int height, c
     currentDeclaration = nullptr;
     //m_curShader = nullptr;
 
-    // fill state caches with dummy values
-    memset(textureStateCache, 0xCC, sizeof(DWORD) * TEXTURE_SAMPLERS * TEXTURE_STATE_CACHE_SIZE);
-    memset(textureSamplerCache, 0xCC, sizeof(DWORD) * TEXTURE_SAMPLERS * TEXTURE_SAMPLER_CACHE_SIZE);
-
     // initialize performance counters
     m_curDrawCalls = m_frameDrawCalls = 0;
     m_curStateChanges = m_frameStateChanges = 0;
@@ -1871,24 +1867,6 @@ GLuint RenderDevice::GetSamplerState(SamplerFilter filter, SamplerAddressMode cl
       }
    }
    return sampler_state;
-}
-#endif
-
-#ifndef ENABLE_SDL
-void RenderDevice::SetTextureStageState(const DWORD p1, const D3DTEXTURESTAGESTATETYPE p2, const DWORD p3)
-{
-   if ((unsigned int)p2 < TEXTURE_STATE_CACHE_SIZE && p1 < TEXTURE_SAMPLERS)
-   {
-      if (textureStateCache[p1][p2] == p3)
-      {
-         // texture stage state hasn't changed since last call of this function -> do nothing here
-         return;
-      }
-      textureStateCache[p1][p2] = p3;
-   }
-   CHECKD3D(m_pD3DDevice->SetTextureStageState(p1, p2, p3));
-
-   m_curStateChanges++;
 }
 #endif
 
