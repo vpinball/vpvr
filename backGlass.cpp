@@ -91,6 +91,10 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice, Texture * backgroundFallbac
    m_dmd_height = 0;
    m_dmd = Vertex2D(0.f,0.f);
 
+   std::ifstream infile(b2sFileName);
+   if (!infile.good())
+      return;
+
    char* data = nullptr;
 
    try {
