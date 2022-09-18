@@ -232,13 +232,14 @@ Shader* Shader::GetCurrentShader() { return current_shader;  }
 Shader::Shader(RenderDevice *renderDevice) : currentMaterial(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, 0xCCCCCCCC, 0xCCCCCCCC, 0xCCCCCCCC, false, false, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX)
 {
    m_renderDevice = renderDevice;
-#ifndef ENABLE_SDL
-   m_shader = nullptr;
-#else
+#ifdef ENABLE_SDL
+   logFile = nullptr;
    m_technique = SHADER_TECHNIQUE_INVALID;
    memset(m_uniformCache, 0, sizeof(UniformCache) * SHADER_UNIFORM_COUNT * (SHADER_TECHNIQUE_COUNT + 1));
    memset(m_techniques, 0, sizeof(ShaderTechnique*) * SHADER_TECHNIQUE_COUNT);
    memset(m_isCacheValid, 0, sizeof(bool) * SHADER_TECHNIQUE_COUNT);
+#else
+   m_shader = nullptr;
 #endif
    for (unsigned int i = 0; i < TEXTURESET_STATE_CACHE_SIZE; ++i)
       currentTexture[i] = 0;
