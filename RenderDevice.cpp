@@ -1589,6 +1589,9 @@ RenderDevice::~RenderDevice()
    if (m_dwm_was_enabled)
       mDwmEnableComposition(DWM_EC_ENABLECOMPOSITION);
 #else
+   for (auto binding : m_samplerBindings)
+      delete binding;
+   m_samplerBindings.clear();
 #ifdef ENABLE_VR
     if (m_pHMD)
     {

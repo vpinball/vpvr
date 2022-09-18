@@ -331,6 +331,7 @@ private:
       uniformLoc uniformLocation[SHADER_UNIFORM_COUNT];
    };
 
+   std::ofstream* logFile;
 #if DEBUG_LEVEL_LOG > 0
    void LOG(const int level, const string& fileNameRoot, const string& message);
 #endif

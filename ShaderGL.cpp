@@ -15,7 +15,6 @@
 #define LOG(a,b,c)
 #endif
 
-static std::ofstream* logFile = nullptr;
 string Shader::shaderPath;
 string Shader::Defines;
 Matrix3D Shader::mWorld, Shader::mView, Shader::mProj[2];
@@ -392,7 +391,11 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
       sprintf_s(msg, sizeof(msg), "Fatal Error: Shader parsing of %s failed!", shaderCodeName);
       ReportError(msg, -1, __FILE__, __LINE__);
       if (logFile)
+      {
          logFile->close();
+         delete logFile;
+         logFile = nullptr;
+      }
       return false;
    }
    else {
@@ -464,7 +467,11 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
                   sprintf_s(msg, sizeof(msg), "Fatal Error: Shader compilation failed for %s!", shaderCodeName);
                   ReportError(msg, -1, __FILE__, __LINE__);
                   if (logFile)
+                  {
                      logFile->close();
+                     delete logFile;
+                     logFile = nullptr;
+                  }
                   return false;
                }
             }
@@ -478,13 +485,20 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
       sprintf_s(msg, sizeof(msg), "Fatal Error: No shader techniques found in %s!", shaderCodeName);
       ReportError(msg, -1, __FILE__, __LINE__);
       if (logFile)
+      {
          logFile->close();
+         delete logFile;
+         logFile = nullptr;
+      }
       return false;
    }
 
    if (logFile)
+   {
       logFile->close();
-   logFile = nullptr;
+      delete logFile;
+      logFile = nullptr;
+   }
 
    //Set default values from Material.fxh for uniforms.
    SetVector(SHADER_cBase_Alpha, 0.5f, 0.5f, 0.5f, 1.0f);
@@ -496,20 +510,21 @@ void Shader::Unload()
 {
    for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i)
    {
-      int type = 0;
+      int type = 0, size = 0;
       for (int j = 0; j < SHADER_TECHNIQUE_COUNT; ++j)
       {
          if (m_techniques[j] != nullptr)
          {
             type = m_techniques[j]->uniformLocation[i].type;
+            size = m_techniques[j]->uniformLocation[i].size;
             break;
          }
       }
-      if (type == ~0u)
+      if (type == ~0u || (type == GL_FLOAT_VEC4 && size > 1))
       {
          for (int j = 0; j <= SHADER_TECHNIQUE_COUNT; ++j)
          {
-            if (type == ~0u && m_uniformCache[j][i].fp.data)
+            if (m_uniformCache[j][i].fp.data)
                free(m_uniformCache[j][i].fp.data);
          }
       }
