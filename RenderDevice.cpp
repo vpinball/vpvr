@@ -892,7 +892,14 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    else
       m_adapter = adapterIndex;
 
-   bool video10bit = LoadValueBoolWithDefault(regKey[RegName::Player], "Render10Bit"s, false);
+   SDL_DisplayMode mode;
+   if (SDL_GetCurrentDisplayMode(m_adapter, &mode) != 0)
+   {
+      ShowError("Failed to setup SDL output window");
+      exit(-1);
+   }
+   refreshrate = mode.refresh_rate;
+   bool video10bit = mode.format == SDL_PIXELFORMAT_ARGB2101010;
 
    memset(m_samplerStateCache, 0, 3 * 3 * 5 * sizeof(GLuint));
 
