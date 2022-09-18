@@ -3447,11 +3447,38 @@ void Player::UpdatePhysics()
    m_phys_period = (U32)((usec() - delta_frame) - initial_time_usec);
 }
 
-#ifndef ENABLE_SDL
 void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwidth, const float DMDheight, const COLORREF DMDcolor, const float intensity)
 {
+#ifdef ENABLE_SDL
+   if (m_texdmd || captureExternalDMD()) // If DMD capture is enabled check if external DMD exists (for capturing UltraDMD+P-ROC DMD)
+#else
    if (m_texdmd)
+#endif
    {
+      bool zDisabled = false;
+      float x = DMDposx;
+      float y = DMDposy;
+      float w = DMDwidth;
+      float h = DMDheight;
+
+      //const float width = m_pin3d.m_useAA ? 2.0f*(float)m_width : (float)m_width; //!! AA ?? -> should just work
+      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD); //!! DMD_UPSCALE ?? -> should just work
+
+#ifdef ENABLE_SDL
+      // If we're capturing Freezy DMD switch to ext technique to avoid incorrect colorization
+      if (captureExternalDMD())
+         m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD_ext);
+
+      if (m_pin3d.m_backGlass)
+      {
+         m_pin3d.m_backGlass->GetDMDPos(x, y, w, h);
+         m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_FALSE);
+         m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
+         m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_NONE); // FIXME is this really necessary ? it is not balanced by a cull state retsore
+         zDisabled = true;
+      }
+#endif
+
       float DMDVerts[4 * 5] =
       {
          1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
@@ -3462,12 +3489,9 @@ void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwi
 
       for (unsigned int i = 0; i < 4; ++i)
       {
-         DMDVerts[i * 5    ] =        (DMDVerts[i * 5    ] * DMDwidth  + DMDposx)*2.0f - 1.0f;
-         DMDVerts[i * 5 + 1] = 1.0f - (DMDVerts[i * 5 + 1] * DMDheight + DMDposy)*2.0f;
+         DMDVerts[i * 5    ] =        (DMDVerts[i * 5    ] * w + x)*2.0f - 1.0f;
+         DMDVerts[i * 5 + 1] = 1.0f - (DMDVerts[i * 5 + 1] * h + y)*2.0f;
       }
-
-      //const float width = m_pin3d.m_useAA ? 2.0f*(float)m_width : (float)m_width; //!! AA ?? -> should just work
-      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD); //!! DMD_UPSCALE ?? -> should just work
 
       const vec4 c = convertColor(DMDcolor, intensity);
       m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetVector(SHADER_vColor_Intensity, &c);
@@ -3478,14 +3502,19 @@ void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwi
 #endif
       m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetVector(SHADER_vRes_Alpha_time, &r);
 
-      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTexture(SHADER_tex_dmd, m_texdmd, false, false);
+      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTexture(SHADER_tex_dmd, m_texdmd, SF_NONE, SA_CLAMP, SA_CLAMP);
 
       m_pin3d.m_pd3dPrimaryDevice->DMDShader->Begin();
       m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)DMDVerts);
       m_pin3d.m_pd3dPrimaryDevice->DMDShader->End();
+
+      if (zDisabled)
+      {
+         m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
+         m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_TRUE);
+      }
    }
 }
-#endif
 
 void Player::Spritedraw(const float posx, const float posy, const float width, const float height, const COLORREF color, Texture * const tex, const float intensity, const bool backdrop)
 {
@@ -3663,8 +3692,8 @@ void Player::RenderDynamics()
       RenderMirrorOverlay();
    }
 
-   // Render the backglass (only for VR, otherwise it will mask the playfield)
-   if (m_stereo3D == STEREO_VR)
+   // Render the backglass
+   if (m_pin3d.m_backGlass != nullptr)
       m_pin3d.m_backGlass->Render();
 
 #ifndef ENABLE_SDL
@@ -3736,9 +3765,9 @@ void Player::RenderDynamics()
 
       m_dmdstate = 0;
       // Draw transparent objects. No DMD's
-      for (size_t i = 0; i < m_vHitTrans.size(); ++i)
-        if(!m_vHitTrans[i]->IsDMD())
-          m_vHitTrans[i]->RenderDynamic();
+       for (size_t i = 0; i < m_vHitTrans.size(); ++i)
+         if (!m_vHitTrans[i]->IsDMD())
+            m_vHitTrans[i]->RenderDynamic();
 
       m_dmdstate = 1;
       // Draw only transparent DMD's

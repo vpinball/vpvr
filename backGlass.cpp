@@ -76,6 +76,7 @@ static size_t decode_base64(const char* const inData, char* const outData, const
 BackGlass::BackGlass(RenderDevice* const pd3dDevice, Texture * backgroundFallback) :
    m_pd3dDevice(pd3dDevice), m_backgroundFallback(backgroundFallback)
 {
+   m_loaded_image = nullptr;
 #ifdef ENABLE_VR
    //Check for a directb2s and try to use its backglass data
    string b2sFileName = g_pplayer->m_ptable->m_szFileName;
@@ -166,7 +167,8 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice, Texture * backgroundFallbac
                   }
                   size_t size = decode_base64(attrib->value(), data, attrib->value_size(), data_len);
                   if ((size > 0) && (strcmp(imagesNode->name(), "BackglassImage") == 0)) {
-                     m_backgroundTexture = m_pd3dDevice->m_texMan.LoadTexture(BaseTexture::CreateFromData(data, size), SF_TRILINEAR, SA_CLAMP, SA_CLAMP, false);
+                     m_loaded_image = BaseTexture::CreateFromData(data, size);
+                     m_backgroundTexture = m_pd3dDevice->m_texMan.LoadTexture(m_loaded_image, SF_TRILINEAR, SA_CLAMP, SA_CLAMP, false);
                      m_backglass_width = m_backgroundTexture->GetWidth();
                      m_backglass_height = m_backgroundTexture->GetHeight();
                   }
@@ -210,6 +212,7 @@ BackGlass::BackGlass(RenderDevice* const pd3dDevice, Texture * backgroundFallbac
 
 BackGlass::~BackGlass()
 {
+   delete m_loaded_image;
 }
 
 void BackGlass::Render()
@@ -232,7 +235,7 @@ void BackGlass::Render()
 
          m_pd3dDevice->DMDShader->SetVector(SHADER_backBoxSize, tableWidth * (0.5f - m_backglass_scale / 2.0f), glassHeight, m_backglass_scale * tableWidth, m_backglass_scale * tableWidth * (float)(9.0 / 16.0));
 
-         // We lost the grille, so make a nice big DMD.
+         // We lost the grill, so make a nice big DMD.
          m_dmd_width = 0.8f;
          m_dmd_height = m_dmd_width / 4.0f;
          m_dmd.x = tableWidth * (0.5f - m_dmd_width / 2.0f);
@@ -275,76 +278,28 @@ void BackGlass::Render()
    m_pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
 }
 
-void BackGlass::DMDdraw(float DMDposx, float DMDposy, float DMDwidth, float DMDheight, const COLORREF DMDcolor, const float intensity)
+void BackGlass::GetDMDPos(float& DMDposx, float& DMDposy, float& DMDwidth, float& DMDheight)
 {
-   if (g_pplayer->m_texdmd || captureExternalDMD()) // If DMD capture is enabled check if external DMD exists (for capturing UltraDMD+P-ROC DMD)
-   {
-      //const float width = g_pplayer->m_pin3d.m_useAA ? 2.0f*(float)m_width : (float)m_width;
-      m_pd3dDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD); //!! DMD_UPSCALE ?? -> should just work
-
-      const vec4 c = convertColor(DMDcolor, intensity);
-      m_pd3dDevice->DMDShader->SetVector(SHADER_vColor_Intensity, &c);
-#ifdef DMD_UPSCALE
-      const vec4 r((float)(m_dmd.x * 3), (float)(m_dmd.y * 3), 1.f, (float)(g_pplayer->m_overall_frames % 2048));
-#else
-      const vec4 r((float)g_pplayer->m_dmd.x, (float)g_pplayer->m_dmd.y, 1.f, (float)(g_pplayer->m_overall_frames % 2048));
-#endif
-      m_pd3dDevice->DMDShader->SetVector(SHADER_vRes_Alpha_time, &r);
-
-      // If we're capturing Freezy DMD switch to ext technique to avoid incorrect colorization
-      if (captureExternalDMD())
-         m_pd3dDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD_ext);
-
-      if (g_pplayer->m_texdmd != nullptr)
-         m_pd3dDevice->DMDShader->SetTexture(SHADER_tex_dmd, g_pplayer->m_texdmd, SF_NONE, SA_CLAMP, SA_CLAMP);
-      //      m_pd3dPrimaryDevice->DMDShader->SetVector(SHADER_quadOffsetScale, 0.0f, -1.0f, backglass_scale, backglass_scale*(float)backglass_height / (float)backglass_width);
-      bool zDisabled = false;
-      m_pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
-      if (m_backgroundTexture) { //For VR, place it in the backglass
-         if (m_dmd_width == 0.0f || m_dmd_height == 0.0f) {//If file contains no valid VRDMD position
-            if (m_backglass_grill_height > 0) {
-               //DMD is centered in the Grill of the backglass
-               constexpr float scale = 0.5f;// 0.5 => use 50% of the height of the grill.
-               float tableWidth;
-               g_pplayer->m_ptable->get_Width(&tableWidth);
-               tableWidth *= m_backglass_scale;
-               m_dmd_height = m_backglass_scale * scale * (float)m_backglass_grill_height / (float)m_backglass_width;
-               m_dmd_width = m_dmd_height / (float)g_pplayer->m_texdmd->height() * (float)g_pplayer->m_texdmd->width();
-               m_dmd.x = tableWidth * (0.5f - m_dmd_width / 2.0f);
-               m_dmd.y = tableWidth * (float)m_backglass_grill_height*(0.5f - scale / 2.0f) / (float)m_backglass_width;
-            }
+   if (m_backgroundTexture)
+   { // For VR, place DMD in the backglass
+      if (m_dmd_width == 0.0f || m_dmd_height == 0.0f)
+      { // If file contains no valid VRDMD position
+         if (m_backglass_grill_height > 0)
+         {
+            // DMD is centered in the Grill of the backglass
+            constexpr float scale = 0.5f; // 0.5 => use 50% of the height of the grill.
+            float tableWidth;
+            g_pplayer->m_ptable->get_Width(&tableWidth);
+            tableWidth *= m_backglass_scale;
+            m_dmd_height = m_backglass_scale * scale * (float)m_backglass_grill_height / (float)m_backglass_width;
+            m_dmd_width = m_dmd_height / (float)g_pplayer->m_texdmd->height() * (float)g_pplayer->m_texdmd->width();
+            m_dmd.x = tableWidth * (0.5f - m_dmd_width / 2.0f);
+            m_dmd.y = tableWidth * (float)m_backglass_grill_height * (0.5f - scale / 2.0f) / (float)m_backglass_width;
          }
-         m_pd3dDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_FALSE);
-         m_pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
-         zDisabled = true;
-         DMDposx = (float)m_dmd.x;
-         DMDposy = (float)m_dmd.y;
-         DMDwidth = (float)m_dmd_width;
-         DMDheight = (float)m_dmd_height;
       }
-
-      float DMDVerts[4 * 5] =
-      {
-         1.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-         0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
-         1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
-         0.0f, 0.0f, 0.0f, 0.0f, 0.0f
-      };
-
-      for (unsigned int i = 0; i < 4; ++i)
-      {
-         DMDVerts[i * 5    ] =        (DMDVerts[i * 5    ] * DMDwidth  + DMDposx)*2.0f - 1.0f;
-         DMDVerts[i * 5 + 1] = 1.0f - (DMDVerts[i * 5 + 1] * DMDheight + DMDposy)*2.0f;
-      }
-
-      m_pd3dDevice->DMDShader->Begin();
-      m_pd3dDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)DMDVerts);
-      m_pd3dDevice->DMDShader->End();
-
-      if (zDisabled)
-      {
-         m_pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
-         m_pd3dDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_TRUE);
-      }
+      DMDposx = (float)m_dmd.x;
+      DMDposy = (float)m_dmd.y;
+      DMDwidth = (float)m_dmd_width;
+      DMDheight = (float)m_dmd_height;
    }
 }

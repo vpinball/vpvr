@@ -53,7 +53,7 @@ Pin3D::~Pin3D()
    delete m_pddsStatic;
 
    SAFE_BUFFER_RELEASE(RenderDevice::m_quadVertexBuffer);
-   //SAFE_BUFFER_RELEASE(RenderDevice::m_quadDynVertexBuffer);
+   SAFE_BUFFER_RELEASE(RenderDevice::m_quadDynVertexBuffer);
 
    if(m_pd3dPrimaryDevice != m_pd3dSecondaryDevice)
       delete m_pd3dSecondaryDevice;
@@ -61,10 +61,7 @@ Pin3D::~Pin3D()
    m_pd3dPrimaryDevice = nullptr;
    m_pd3dSecondaryDevice = nullptr;
 
-   if (m_backGlass) {
-      delete m_backGlass;
-      m_backGlass = nullptr;
-   }
+   delete m_backGlass;
 }
 
 void Pin3D::TransformVertices(const Vertex3D_NoTex2 * const __restrict rgv, const WORD * const __restrict rgi, const int count, Vertex2D * const __restrict rgvout) const
@@ -517,9 +514,11 @@ HRESULT Pin3D::InitPin3D(const bool fullScreen, const int width, const int heigh
 
    //
 
-   m_backGlass = new BackGlass(m_pd3dSecondaryDevice,
-      g_pplayer->m_ptable->GetDecalsEnabled()
-      ? g_pplayer->m_ptable->GetImage(g_pplayer->m_ptable->m_BG_image[g_pplayer->m_ptable->m_BG_current_set]) : nullptr);
+   if (m_stereo3D == STEREO_VR)
+      m_backGlass = new BackGlass(m_pd3dSecondaryDevice, g_pplayer->m_ptable->GetDecalsEnabled() ? g_pplayer->m_ptable->GetImage(g_pplayer->m_ptable->m_BG_image[g_pplayer->m_ptable->m_BG_current_set]) : nullptr);
+   else
+      m_backGlass = nullptr;
+
 #ifndef ENABLE_SDL
    VertexBuffer::setD3DDevice(m_pd3dPrimaryDevice->GetCoreDevice(), m_pd3dSecondaryDevice->GetCoreDevice());
    IndexBuffer::setD3DDevice(m_pd3dPrimaryDevice->GetCoreDevice(), m_pd3dSecondaryDevice->GetCoreDevice());
