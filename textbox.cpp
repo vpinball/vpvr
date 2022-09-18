@@ -10,6 +10,7 @@ Textbox::Textbox()
 Textbox::~Textbox()
 {
    m_pIFont->Release();
+   m_pIFont = nullptr;
 }
 
 HRESULT Textbox::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
@@ -101,6 +102,8 @@ void Textbox::SetDefaults(bool fromMouseClick)
          m_d.m_sztext.clear();
    }
 
+   if (m_pIFont)
+      m_pIFont->Release();
    OleCreateFontIndirect(&fd, IID_IFont, (void **)&m_pIFont);
    if (free_lpstrName)
       free(fd.lpstrName);
@@ -293,8 +296,8 @@ void Textbox::RenderDynamic()
    if (dmd)
    {
       pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
-      g_pplayer->m_pin3d.m_backGlass->DMDdraw(x, y, width, height,
-                                              m_d.m_fontcolor, m_d.m_intensity_scale); //!! replace??!
+      g_pplayer->DMDdraw(x, y, width, height,
+                         m_d.m_fontcolor, m_d.m_intensity_scale); //!! replace??!
    }
    else
       if (m_texture)

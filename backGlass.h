@@ -9,10 +9,11 @@ public:
    BackGlass(RenderDevice* const device, Texture * backgroundFallback);
    ~BackGlass();
    void Render();
-   void DMDdraw(const float DMDposx, const float DMDposy, const float DMDwidth, const float DMDheight, const COLORREF DMDcolor, const float intensity);
+   void GetDMDPos(float& DMDposx, float& DMDposy, float& DMDwidth, float& DMDheight);
 
 private:
    RenderDevice* m_pd3dDevice;
+   BaseTexture* m_loaded_image; 
    Texture* m_backgroundFallback;
    Sampler* m_backgroundTexture;
    int2 m_backglass_dmd;
