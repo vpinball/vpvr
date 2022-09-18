@@ -343,7 +343,7 @@ private:
    // state of what is actually bound per technique, and what is expected for the next begin/end
    struct floatP
    {
-      size_t len;
+      size_t count;
       float* data;
    };
    union UniformCache

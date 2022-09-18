@@ -602,17 +602,14 @@ void Shader::SetTexture(const ShaderUniforms texelName, Sampler* texel)
 void Shader::SetUniformBlock(const ShaderUniforms hParameter, const float* pMatrix, const size_t size)
 {
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   floatP elem;
-   auto element = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fp;
-   if (element->len < size) {
-      free(element->data);
-      elem.data = (float*)malloc(size * sizeof(float));
-      elem.len = size;
+   floatP* elem = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fp;
+   if (elem->count != size)
+   {
+      free(elem->data);
+      elem->data = (float*)malloc(size * sizeof(float));
+      elem->count = size;
    }
-   else
-      elem = *element;
-   memcpy(elem.data, pMatrix, size * sizeof(float));
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fp = elem;
+   memcpy(elem->data, pMatrix, size * sizeof(float));
    ApplyUniform(hParameter);
 }
 
@@ -664,27 +661,15 @@ void Shader::SetBool(const ShaderUniforms hParameter, const bool b)
 
 void Shader::SetFloatArray(const ShaderUniforms hParameter, const float* pData, const unsigned int count)
 {
-   floatP elem;
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   auto element = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fp;
-   if (element->len < count) {
-      free(element->data);
-      elem.data = (float*)malloc(count * sizeof(float));
-      elem.len = count;
+   floatP* elem = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fp;
+   if (elem->count != count)
+   {
+      free(elem->data);
+      elem->data = (float*)malloc(count * sizeof(float));
+      elem->count = count;
    }
-   else {
-      bool identical = true;
-      for (size_t i = 0;i < count;++i) {
-         if (element->data[i] != pData[i]) {
-            identical = false;
-            break;
-         }
-      }
-      if (identical) return;
-      elem = *element;
-   }
-   memcpy(elem.data, pData, count * sizeof(float));
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fp = elem;
+   memcpy(elem->data, pData, count * sizeof(float));
    ApplyUniform(hParameter);
 }
 
@@ -722,8 +707,6 @@ void Shader::SetTransform(const TransformStateType p1, const Matrix3D * p2, cons
 
 void Shader::ApplyUniform(const ShaderUniforms uniformName)
 {
-   // FIXME optimize uniform binding, and optimize sampler & sampler state binding
-   // FIXME cache sampler states and only apply the ones that actually need it
    if (current_shader != this)
       return;
    const uniformLoc currentUniform = m_techniques[m_technique]->uniformLocation[uniformName];
@@ -734,12 +717,13 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
    UniformCache* dst = &(m_uniformCache[m_technique][uniformName]);
    switch (currentUniform.type)
    {
-   case ~0u: // Uniform blocks (currentUniform.size is in byte, src->fp.len is in number of floats)
+   case ~0u: // Uniform blocks
       if (isCacheInvalid || memcmp(src->fp.data, dst->fp.data, currentUniform.size) != 0)
       {
          if (dst->fp.data == nullptr)
-         {
-            dst->fp.len = src->fp.len;
+         { // (currentUniform.size is in byte, src->fp.count is in number of floats)
+            assert(src->fp.count * sizeof(float) == currentUniform.size);
+            dst->fp.count = src->fp.count;
             dst->fp.data = (float*)malloc(currentUniform.size);
          }
          memcpy(dst->fp.data, src->fp.data, currentUniform.size);
@@ -753,6 +737,7 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
    case GL_FLOAT:
       if (isCacheInvalid || dst->fval != src->fval)
       {
+         assert(currentUniform.size == 1);
          dst->fval = src->fval;
          glUniform1f(currentUniform.location, src->fval);
          m_renderDevice->m_curParameterChanges++;
@@ -798,14 +783,15 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
       }
       else
       {
-         if (isCacheInvalid || memcmp(src->fp.data, dst->fp.data, currentUniform.size) != 0)
+         if (isCacheInvalid || memcmp(src->fp.data, dst->fp.data, currentUniform.size * 4 * sizeof(float)) != 0)
          {
             if (dst->fp.data == nullptr)
-            {
-               dst->fp.len = src->fp.len;
-               dst->fp.data = (float*)malloc(currentUniform.size);
+            { // (currentUniform.size is in number of vec4, src->fp.count is in number of floats)
+               assert(src->fp.count == currentUniform.size * 4);
+               dst->fp.count = src->fp.count;
+               dst->fp.data = (float*)malloc(currentUniform.size * 4 * sizeof(float));
             }
-            memcpy(dst->fp.data, src->fp.data, currentUniform.size);
+            memcpy(dst->fp.data, src->fp.data, currentUniform.size * 4 * sizeof(float));
             glUniform4fv(currentUniform.location, currentUniform.size, src->fp.data);
             m_renderDevice->m_curParameterChanges++;
          }
@@ -822,99 +808,99 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
       break;
    case GL_SAMPLER_2D:
    case GL_SAMPLER_2D_MULTISAMPLE:
-   {
-      // DX9 implementation uses preaffected texture units, not samplers, so these can not be used for OpenGL. This would cause some collisions.
-      assert(currentUniform.size == 1);
-      Sampler* texel = m_uniformCache[SHADER_TECHNIQUE_COUNT][uniformName].sampler;
-      SamplerBinding* tex_unit = nullptr;
-      if (texel == nullptr)
-      { // For null texture, use OpenGL texture 0 which is a predefined texture that always returns (0, 0, 0, 1)
-         for (auto binding : m_renderDevice->m_samplerBindings)
-         {
-            if (binding->sampler == nullptr)
+      {
+         // DX9 implementation uses preaffected texture units, not samplers, so these can not be used for OpenGL. This would cause some collisions.
+         assert(currentUniform.size == 1);
+         Sampler* texel = m_uniformCache[SHADER_TECHNIQUE_COUNT][uniformName].sampler;
+         SamplerBinding* tex_unit = nullptr;
+         if (texel == nullptr)
+         { // For null texture, use OpenGL texture 0 which is a predefined texture that always returns (0, 0, 0, 1)
+            for (auto binding : m_renderDevice->m_samplerBindings)
             {
-               tex_unit = binding;
-               break;
+               if (binding->sampler == nullptr)
+               {
+                  tex_unit = binding;
+                  break;
+               }
+            }
+            if (tex_unit == nullptr)
+            {
+               tex_unit = m_renderDevice->m_samplerBindings.back();
+               if (tex_unit->sampler != nullptr)
+                  tex_unit->sampler->m_bindings.erase(tex_unit);
+               tex_unit->sampler = nullptr;
+               glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
+               glBindTexture(GL_TEXTURE_2D, 0);
+               m_renderDevice->m_curTextureChanges++;
             }
          }
-         if (tex_unit == nullptr)
+         else
          {
-            tex_unit = m_renderDevice->m_samplerBindings.back();
-            if (tex_unit->sampler != nullptr)
-               tex_unit->sampler->m_bindings.erase(tex_unit);
-            tex_unit->sampler = nullptr;
-            glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
-            glBindTexture(GL_TEXTURE_2D, 0);
-            m_renderDevice->m_curTextureChanges++;
-         }
-      }
-      else
-      {
-         SamplerFilter filter = shaderUniformNames[uniformName].default_filter;
-         SamplerAddressMode clampu = shaderUniformNames[uniformName].default_clampu;
-         SamplerAddressMode clampv = shaderUniformNames[uniformName].default_clampv;
-         if (filter == SF_UNDEFINED) {
-            filter = texel->GetFilter();
-            if (filter == SF_UNDEFINED)
-               filter = SF_NONE;
-         }
-         if (clampu == SA_UNDEFINED)
-         {
-            clampu = texel->GetClampU();
+            SamplerFilter filter = shaderUniformNames[uniformName].default_filter;
+            SamplerAddressMode clampu = shaderUniformNames[uniformName].default_clampu;
+            SamplerAddressMode clampv = shaderUniformNames[uniformName].default_clampv;
+            if (filter == SF_UNDEFINED) {
+               filter = texel->GetFilter();
+               if (filter == SF_UNDEFINED)
+                  filter = SF_NONE;
+            }
             if (clampu == SA_UNDEFINED)
-               clampu = SA_CLAMP;
-         }
-         if (clampv == SA_UNDEFINED)
-         {
-            clampv = texel->GetClampV();
-            if (clampv == SA_UNDEFINED)
-               clampv = SA_CLAMP;
-         }
-         for (auto binding : texel->m_bindings)
-         {
-            if (binding->filter == filter && binding->clamp_u == clampu && binding->clamp_v == clampv)
             {
-               tex_unit = binding;
-               break;
+               clampu = texel->GetClampU();
+               if (clampu == SA_UNDEFINED)
+                  clampu = SA_CLAMP;
+            }
+            if (clampv == SA_UNDEFINED)
+            {
+               clampv = texel->GetClampV();
+               if (clampv == SA_UNDEFINED)
+                  clampv = SA_CLAMP;
+            }
+            for (auto binding : texel->m_bindings)
+            {
+               if (binding->filter == filter && binding->clamp_u == clampu && binding->clamp_v == clampv)
+               {
+                  tex_unit = binding;
+                  break;
+               }
+            }
+            if (tex_unit == nullptr)
+            {
+               tex_unit = m_renderDevice->m_samplerBindings.back();
+               if (tex_unit->sampler != nullptr)
+                  tex_unit->sampler->m_bindings.erase(tex_unit);
+               tex_unit->sampler = texel;
+               tex_unit->filter = filter;
+               tex_unit->clamp_u = clampu;
+               tex_unit->clamp_v = clampv;
+               texel->m_bindings.insert(tex_unit);
+               glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
+               glBindTexture(texel->IsMSAA() ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, texel->GetCoreTexture());
+               m_renderDevice->m_curTextureChanges++;
+               GLuint sampler_state = m_renderDevice->GetSamplerState(filter, clampu, clampv);
+               glBindSampler(tex_unit->unit, sampler_state);
+               m_renderDevice->m_curStateChanges++;
             }
          }
-         if (tex_unit == nullptr)
+         // Bind the sampler
+         glUniform1i(currentUniform.location, tex_unit->unit);
+         m_renderDevice->m_curParameterChanges++;
+         // Mark this texture unit as the last used one, and age all the others
+         for (int i = tex_unit->use_rank - 1; i >= 0; i--)
          {
-            tex_unit = m_renderDevice->m_samplerBindings.back();
-            if (tex_unit->sampler != nullptr)
-               tex_unit->sampler->m_bindings.erase(tex_unit);
-            tex_unit->sampler = texel;
-            tex_unit->filter = filter;
-            tex_unit->clamp_u = clampu;
-            tex_unit->clamp_v = clampv;
-            texel->m_bindings.insert(tex_unit);
-            glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
-            glBindTexture(texel->IsMSAA() ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, texel->GetCoreTexture());
-            m_renderDevice->m_curTextureChanges++;
-            GLuint sampler_state = m_renderDevice->GetSamplerState(filter, clampu, clampv);
-            glBindSampler(tex_unit->unit, sampler_state);
-            m_renderDevice->m_curStateChanges++;
+            m_renderDevice->m_samplerBindings[i]->use_rank++;
+            m_renderDevice->m_samplerBindings[i + 1] = m_renderDevice->m_samplerBindings[i];
          }
+         tex_unit->use_rank = 0;
+         m_renderDevice->m_samplerBindings[0] = tex_unit;
+         break;
       }
-      // Bind the sampler
-      glUniform1i(currentUniform.location, tex_unit->unit);
-      m_renderDevice->m_curParameterChanges++;
-      // Mark this texture unit as the last used one, and age all the others
-      for (int i = tex_unit->use_rank - 1; i >= 0; i--)
-      {
-         m_renderDevice->m_samplerBindings[i]->use_rank++;
-         m_renderDevice->m_samplerBindings[i + 1] = m_renderDevice->m_samplerBindings[i];
-      }
-      tex_unit->use_rank = 0;
-      m_renderDevice->m_samplerBindings[0] = tex_unit;
-      break;
-   }
    default:
-   {
-      char msg[256];
-      sprintf_s(msg, sizeof(msg), "Unknown uniform type 0x%0002X for %s in %s", currentUniform.type, shaderUniformNames[uniformName].name.c_str(), m_techniques[m_technique]->name.c_str());
-      ShowError(msg);
-      break;
-   }
+      {
+         char msg[256];
+         sprintf_s(msg, sizeof(msg), "Unknown uniform type 0x%0002X for %s in %s", currentUniform.type, shaderUniformNames[uniformName].name.c_str(), m_techniques[m_technique]->name.c_str());
+         ShowError(msg);
+         break;
+      }
    }
 }
