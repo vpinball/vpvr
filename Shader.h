@@ -266,6 +266,24 @@ public:
 
    static Shader* GetCurrentShader();
 
+#ifdef ENABLE_SDL
+   // state of what is actually bound per technique, and what is expected for the next begin/end
+   struct UniformCache
+   {
+      size_t count; // number of elements for uniform blocks and float vectors
+      size_t capacity; // size of the datablock
+      float* data; // uniform blocks & large float vectors data block
+      union UniformValue
+      {
+         int i; // integer and boolean
+         float f; // float value
+         float fv[16]; // float vectors and matrices
+         Sampler* sampler; // texture samplers
+      } val;
+   };
+   uint32_t CopyUniformCache(const bool copyTo, const ShaderTechniques technique, UniformCache (&m_uniformCache)[SHADER_UNIFORM_COUNT]);
+#endif
+
 private:
    RenderDevice* m_renderDevice;
    static Shader* current_shader;
@@ -292,6 +310,7 @@ private:
 
    struct ShaderUniform
    {
+      bool is_sampler;
       string name;
       string legacy_name;
       string texture_ref;
@@ -342,20 +361,6 @@ private:
 
    void ApplyUniform(const ShaderUniforms uniformName);
 
-   // state of what is actually bound per technique, and what is expected for the next begin/end
-   struct floatP
-   {
-      size_t count;
-      float* data;
-   };
-   union UniformCache
-   {
-      int ival; // integer and booleans
-      float fval; // floats
-      float fvval[16]; // float vectors and matrices
-      floatP fp; // uniform blocks
-      Sampler* sampler; // texture samplers
-   };
    std::vector<ShaderUniforms> m_uniforms[SHADER_TECHNIQUE_COUNT];
    bool m_isCacheValid[SHADER_TECHNIQUE_COUNT];
    UniformCache m_uniformCache[SHADER_TECHNIQUE_COUNT + 1][SHADER_UNIFORM_COUNT];
