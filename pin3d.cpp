@@ -586,17 +586,16 @@ void Pin3D::InitRenderState(RenderDevice * const pd3dDevice)
 {
    pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
 
-   pd3dDevice->SetRenderState(RenderDevice::LIGHTING, RenderDevice::RS_FALSE);
-
    pd3dDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_TRUE);
    pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
    pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 
-   pd3dDevice->SetRenderState(RenderDevice::CLIPPING, RenderDevice::RS_FALSE);
    pd3dDevice->SetRenderStateClipPlane0(false);
 
-   // initialize first texture stage
 #ifndef ENABLE_SDL
+   CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
+   CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_CLIPPING, FALSE);
+   // initialize first texture stage
    CHECKD3D(m_pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1));
    CHECKD3D(m_pD3DDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE));
    CHECKD3D(m_pD3DDevice->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0));
@@ -1038,7 +1037,7 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
 
    if (depth_only)
    {
-       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::COLORWRITEENABLE, 0); //m_pin3d.m_pd3dPrimaryDevice->SetPrimaryRenderTarget(nullptr); // disable color writes
+       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::COLORWRITEENABLE, RenderDevice::RGBMASK_NONE); //m_pin3d.m_pd3dPrimaryDevice->SetPrimaryRenderTarget(nullptr); // disable color writes
        // even with depth-only rendering we have to take care of alpha textures (stencil playfield to see underlying objects)
        if (pin)
        {
@@ -1087,7 +1086,7 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
    }
 
    if (depth_only)
-       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::COLORWRITEENABLE, 0x0000000Fu); // reenable color writes with default value
+      m_pd3dPrimaryDevice->SetRenderState(RenderDevice::COLORWRITEENABLE, RenderDevice::RGBMASK_RGBA); // reenable color writes with default value
 
    // Apparently, releasing the vertex buffer here immediately can cause rendering glitches in
    // later rendering steps, so we keep it around for now.

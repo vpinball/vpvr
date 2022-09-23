@@ -883,6 +883,9 @@ RenderDevice::RenderDevice(const HWND hwnd, const int width, const int height, c
 
 void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 {
+   m_current_renderstate.state = m_renderstate.state = 0;
+   m_current_renderstate.depth_bias = m_renderstate.depth_bias = 0.0f;
+   m_current_renderstate.alpha_ref = m_renderstate.alpha_ref = 0;
 #ifdef ENABLE_SDL
    ///////////////////////////////////
    // OpenGL device initialization
@@ -1878,73 +1881,54 @@ GLuint RenderDevice::GetSamplerState(SamplerFilter filter, SamplerAddressMode cl
 }
 #endif
 
-inline bool RenderDevice::SetRenderStateCache(const RenderStates p1, DWORD p2)
+#define RENDER_STATE(name, bitpos, bitsize)                                                                                                                                                  \
+   const uint32_t RENDER_STATE_SHIFT_##name = bitpos;                                                                                                                                        \
+   const uint32_t RENDER_STATE_MASK_##name = ((0x00000001u << bitsize) - 1) << bitpos;                                                                                                       \
+   const uint32_t RENDER_STATE_CLEAR_MASK_##name = ~(((0x00000001u << bitsize) - 1) << bitpos);
+// These definition must be copy/pasted to RenderDevice.h/cpp when modified to keep the implementation in sync
+RENDER_STATE(ALPHABLENDENABLE, 0, 1) // RS_FALSE or RS_TRUE
+RENDER_STATE(ZENABLE, 1, 1) // RS_FALSE or RS_TRUE
+RENDER_STATE(ALPHATESTENABLE, 2, 1) // RS_FALSE or RS_TRUE
+RENDER_STATE(ALPHAFUNC, 3, 3) // Operation from Z_ALWAYS, Z_LESS, Z_LESSEQUAL, Z_GREATER, Z_GREATEREQUAL
+RENDER_STATE(BLENDOP, 6, 2) // Operation from BLENDOP_MAX, BLENDOP_ADD, BLENDOP_SUB, BLENDOP_REVSUBTRACT
+RENDER_STATE(CLIPPLANEENABLE, 8, 1) // PLANE0 or 0 (for disable)
+RENDER_STATE(CULLMODE, 9, 2) // CULL_NONE, CULL_CW, CULL_CCW
+RENDER_STATE(DESTBLEND, 11, 3) // ZERO, ONE, SRC_ALPHA, DST_ALPHA, INVSRC_ALPHA, INVSRC_COLOR
+RENDER_STATE(SRCBLEND, 14, 3) // ZERO, ONE, SRC_ALPHA, DST_ALPHA, INVSRC_ALPHA, INVSRC_COLOR
+RENDER_STATE(ZFUNC, 17, 3) // Operation from Z_ALWAYS, Z_LESS, Z_LESSEQUAL, Z_GREATER, Z_GREATEREQUAL
+RENDER_STATE(ZWRITEENABLE, 20, 1) // RS_FALSE or RS_TRUE
+RENDER_STATE(COLORWRITEENABLE, 21, 4) // RGBA mask (4 bits)
+#undef RENDER_STATE
+
+#define RENDER_STATE(name, bitpos, bitsize) { RENDER_STATE_SHIFT_##name, RENDER_STATE_MASK_##name, RENDER_STATE_CLEAR_MASK_##name },
+// These definition must be copy/pasted to RenderDevice.h/cpp when modified to keep the implementation in sync
+const RenderDevice::RenderStateMask RenderDevice::render_state_masks[RENDERSTATE_COUNT] {
+   RENDER_STATE(ALPHABLENDENABLE, 0, 1) // RS_FALSE or RS_TRUE
+   RENDER_STATE(ZENABLE, 1, 1) // RS_FALSE or RS_TRUE
+   RENDER_STATE(ALPHATESTENABLE, 2, 1) // RS_FALSE or RS_TRUE
+   RENDER_STATE(ALPHAFUNC, 3, 3) // Operation from Z_ALWAYS, Z_LESS, Z_LESSEQUAL, Z_GREATER, Z_GREATEREQUAL
+   RENDER_STATE(BLENDOP, 6, 2) // Operation from BLENDOP_MAX, BLENDOP_ADD, BLENDOP_SUB, BLENDOP_REVSUBTRACT
+   RENDER_STATE(CLIPPLANEENABLE, 8, 1) // PLANE0 or 0 (for disable)
+   RENDER_STATE(CULLMODE, 9, 2) // CULL_NONE, CULL_CW, CULL_CCW
+   RENDER_STATE(DESTBLEND, 11, 3) // ZERO, ONE, SRC_ALPHA, DST_ALPHA, INVSRC_ALPHA, INVSRC_COLOR
+   RENDER_STATE(SRCBLEND, 14, 3) // ZERO, ONE, SRC_ALPHA, DST_ALPHA, INVSRC_ALPHA, INVSRC_COLOR
+   RENDER_STATE(ZFUNC, 17, 3) // Operation from Z_ALWAYS, Z_LESS, Z_LESSEQUAL, Z_GREATER, Z_GREATEREQUAL
+   RENDER_STATE(ZWRITEENABLE, 20, 1) // RS_FALSE or RS_TRUE
+   RENDER_STATE(COLORWRITEENABLE, 21, 4) // RGBA mask (4 bits)
+};
+#undef RENDER_STATE
+
+void RenderDevice::SetRenderState(const RenderStates p1, const RenderStateValue p2)
 {
-#ifdef DEBUG
-   if (p1 >= RENDERSTATE_COUNT)
-      return false;//Throw error or similar?
-#endif
-   if (renderStateCache[p1] != p2) {
-      renderStateCache[p1] = p2;
-      return false;
-   }
-   return true;
+   assert(((p2 << render_state_masks[p1].shift) & ~render_state_masks[p1].mask) == 0);
+   m_renderstate.state &= render_state_masks[p1].clear_mask;
+   m_renderstate.state |= p2 << render_state_masks[p1].shift;
 }
 
-void RenderDevice::SetRenderState(const RenderStates p1, DWORD p2)
-{
-   if (SetRenderStateCache(p1, p2)) return;
-#ifdef ENABLE_SDL
-   switch (p1) {
-      //glEnable and glDisable functions
-   case ALPHABLENDENABLE:
-      if (p2) glEnable(GL_BLEND); else glDisable(GL_BLEND);
-      break;
-   case ZENABLE:
-      if (p2) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
-      break;
-   case BLENDOP:
-      glBlendEquation(p2);
-      break;
-   case SRCBLEND:
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-      break;
-   case DESTBLEND:
-      glBlendFunc(renderStateCache[SRCBLEND], renderStateCache[DESTBLEND]);
-      break;
-   case ZFUNC:
-      glDepthFunc(p2);
-      break;
-   case ZWRITEENABLE:
-      glDepthMask(p2 ? GL_TRUE : GL_FALSE);
-      break;
-   case COLORWRITEENABLE:
-      glColorMask((p2 & 1) ? GL_TRUE : GL_FALSE, (p2 & 2) ? GL_TRUE : GL_FALSE, (p2 & 4) ? GL_TRUE : GL_FALSE, (p2 & 8) ? GL_TRUE : GL_FALSE);
-      break;
-      //Replaced by specific function
-   case DEPTHBIAS:
-   case CULLMODE:
-   case CLIPPLANEENABLE:
-   case ALPHAFUNC:
-   case ALPHATESTENABLE:
-      //No effect or not implemented in OpenGL 
-   case LIGHTING:
-   case CLIPPING:
-   case ALPHAREF:
-   case SRGBWRITEENABLE:
-   default:
-      break;
-   }
-#else
-   CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)p1, p2));
-#endif
-   m_curStateChanges++;
-}
+void RenderDevice::SetRenderStateClipPlane0(const bool enabled) { SetRenderState(CLIPPLANEENABLE, (RenderStateValue)(enabled ? 1 : 0)); }
 
 void RenderDevice::SetRenderStateCulling(RenderStateValue cull)
 {
-   if (SetRenderStateCache(CULLMODE, cull)) return;
-
    if (g_pplayer && (g_pplayer->m_ptable->m_tblMirrorEnabled ^ g_pplayer->m_ptable->m_reflectionEnabled))
    {
       if (cull == CULL_CCW)
@@ -1952,71 +1936,271 @@ void RenderDevice::SetRenderStateCulling(RenderStateValue cull)
       else if (cull == CULL_CW)
          cull = CULL_CCW;
    }
-
-#ifdef ENABLE_SDL
-   if (cull == CULL_NONE)
-   {
-      glDisable(GL_CULL_FACE);
-   }
-   else
-   {
-      glEnable(GL_CULL_FACE);
-      glFrontFace(cull);
-      glCullFace(GL_FRONT);
-   }
-#else
-   m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)CULLMODE, cull);
-#endif
-   m_curStateChanges++;
+   SetRenderState(CULLMODE, cull);
 }
 
-void RenderDevice::SetRenderStateDepthBias(float bias)
-{
-   if (SetRenderStateCache(DEPTHBIAS, float_as_uint(bias))) return;
-
-#ifdef ENABLE_SDL
-   if (bias == 0.0f)
-      glDisable(GL_POLYGON_OFFSET_FILL);
-   else {
-      glEnable(GL_POLYGON_OFFSET_FILL);
-      glPolygonOffset(0.0f, bias);
-   }
-#else
-   bias *= BASEDEPTHBIAS;
-   CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)DEPTHBIAS, float_as_uint(bias)));
-#endif
-   m_curStateChanges++;
-}
-
-void RenderDevice::SetRenderStateClipPlane0(const bool enabled)
-{
-   if (SetRenderStateCache(CLIPPLANEENABLE, enabled ? PLANE0 : 0)) return;
-
-#ifdef ENABLE_SDL
-   // FIXME reimplement clip plane
-   // Basicshader already prepared with proper clipplane so just need to enable/disable it
-   /* if (enabled)
-      glEnable(GL_CLIP_DISTANCE0);
-   else
-      glDisable(GL_CLIP_DISTANCE0);*/
-#else
-   CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)CLIPPLANEENABLE, enabled ? PLANE0 : 0));
-#endif 
-   m_curStateChanges++;
-}
+void RenderDevice::SetRenderStateDepthBias(float bias) { m_renderstate.depth_bias = bias; }
 
 void RenderDevice::SetRenderStateAlphaTestFunction(const DWORD testValue, const RenderStateValue testFunction, const bool enabled)
 {
+   m_renderstate.alpha_ref = testValue;
+   m_renderstate.state &= RENDER_STATE_CLEAR_MASK_ALPHATESTENABLE;
+   m_renderstate.state |= (enabled ? 1 : 0) << RENDER_STATE_SHIFT_ALPHATESTENABLE;
+   m_renderstate.state &= RENDER_STATE_CLEAR_MASK_ALPHAFUNC;
+   m_renderstate.state |= testFunction << RENDER_STATE_SHIFT_ALPHAFUNC;
+}
+
+void RenderDevice::CopyRenderStates(const bool copyTo, RenderStateCache& state)
+{
+   if (copyTo)
+   {
+      state.state = m_renderstate.state;
+      state.depth_bias = m_renderstate.depth_bias;
+      state.alpha_ref = m_renderstate.alpha_ref;
+   }
+   else
+   {
+      m_renderstate.state = state.state;
+      m_renderstate.depth_bias = state.depth_bias;
+      m_renderstate.alpha_ref = state.alpha_ref;
+   }
+}
+
+void RenderDevice::ApplyRenderStates()
+{
 #ifdef ENABLE_SDL
-   //!! TODO Needs to be done in shader
-#else 
-   if (!SetRenderStateCache(ALPHAREF, testValue))
-      CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)ALPHAREF, testValue));
-   if (!SetRenderStateCache(ALPHATESTENABLE, enabled ? RS_TRUE : RS_FALSE))
-      CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)ALPHATESTENABLE, enabled ? RS_TRUE : RS_FALSE));
-   if (!SetRenderStateCache(ALPHAFUNC, testFunction))
-      CHECKD3D(m_pD3DDevice->SetRenderState((D3DRENDERSTATETYPE)ALPHAFUNC, testFunction));
+   static const int cull_modes[] = { 0, GL_CW, GL_CCW };
+   static const int functions[] = { GL_ALWAYS, GL_LESS, GL_LEQUAL, GL_GREATER, GL_GEQUAL };
+   static const int blend_modes[] = { GL_MAX, GL_FUNC_ADD, GL_FUNC_REVERSE_SUBTRACT };
+   static const int blend_functions[] = { GL_ZERO, GL_ONE, GL_SRC_ALPHA, GL_DST_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR };
+#else
+   static const int cull_modes[] = { D3DCULL_NONE, D3DCULL_CW, D3DCULL_CCW };
+   static const int functions[] = { D3DCMP_ALWAYS, D3DCMP_LESS, D3DCMP_LESSEQUAL, D3DCMP_GREATER, D3DCMP_GREATEREQUAL };
+   static const int blend_modes[] = { D3DBLENDOP_MAX, D3DBLENDOP_ADD, D3DBLENDOP_REVSUBTRACT };
+   static const int blend_functions[] = { D3DBLEND_ZERO, D3DBLEND_ONE, D3DBLEND_SRCALPHA, D3DBLEND_DESTALPHA, D3DBLEND_INVSRCALPHA, D3DBLEND_INVSRCCOLOR };
 #endif
+
+   int val;
+   unsigned renderstate_mask = m_current_renderstate.state ^ m_renderstate.state; // Identify differences
+   while (renderstate_mask)
+   {
+      // Iterate over set bits, starting from the least significant ones
+      unsigned next_difference = renderstate_mask & (-renderstate_mask);
+      switch (next_difference)
+      {
+      case RENDER_STATE_MASK_ALPHABLENDENABLE:
+         renderstate_mask &= RENDER_STATE_CLEAR_MASK_ALPHABLENDENABLE;
+         val = m_renderstate.state & RENDER_STATE_MASK_ALPHABLENDENABLE;
+         m_curStateChanges++;
+#ifdef ENABLE_SDL
+         if (val)
+            glEnable(GL_BLEND);
+         else
+            glDisable(GL_BLEND);
+#else
+         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, val ? TRUE : FALSE));
+#endif
+         break;
+
+      case RENDER_STATE_MASK_ZENABLE:
+         renderstate_mask &= RENDER_STATE_CLEAR_MASK_ZENABLE;
+         val = m_renderstate.state & RENDER_STATE_MASK_ZENABLE;
+         m_curStateChanges++;
+#ifdef ENABLE_SDL
+         if (val)
+            glEnable(GL_DEPTH_TEST);
+         else
+            glDisable(GL_DEPTH_TEST);
+#else
+         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_ZENABLE, val ? TRUE : FALSE));
+#endif
+         break;
+
+      case RENDER_STATE_MASK_ALPHATESTENABLE:
+         renderstate_mask &= RENDER_STATE_CLEAR_MASK_ALPHATESTENABLE;
+         val = m_renderstate.state & RENDER_STATE_MASK_ALPHATESTENABLE;
+         m_curStateChanges++;
+#ifdef ENABLE_SDL
+         // FIXME Needs to be done in shader
+#else
+         // FIXME convert from int to DX9 test function constant
+         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_ALPHAFUNC, functions[val]));
+#endif
+         break;
+
+      // case RENDER_STATE_MASK_ALPHAFUNC:
+      case 0x00000008u:
+      case 0x00000010u:
+      case 0x00000020u:
+         renderstate_mask &= RENDER_STATE_CLEAR_MASK_ALPHAFUNC;
+         val = (m_renderstate.state & RENDER_STATE_MASK_ALPHAFUNC) >> RENDER_STATE_SHIFT_ALPHAFUNC;
+         m_curStateChanges++;
+#ifdef ENABLE_SDL
+         // FIXME Needs to be done in shader
+#else
+         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_ALPHAFUNC, functions[val]));
+#endif
+         break;
+
+      // case RENDER_STATE_MASK_BLENDOP:
+      case 0x00000040u:
+      case 0x00000080u:
+         renderstate_mask &= RENDER_STATE_CLEAR_MASK_BLENDOP;
+         val = (m_renderstate.state & RENDER_STATE_MASK_BLENDOP) >> RENDER_STATE_SHIFT_BLENDOP;
+         m_curStateChanges++;
+#ifdef ENABLE_SDL
+         glBlendEquation(blend_modes[val]);
+#else
+         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_BLENDOP, blend_modes[val]));
+#endif
+         break;
+
+      case RENDER_STATE_MASK_CLIPPLANEENABLE:
+         renderstate_mask &= RENDER_STATE_CLEAR_MASK_CLIPPLANEENABLE;
+         val = m_renderstate.state & RENDER_STATE_MASK_CLIPPLANEENABLE;
+         m_curStateChanges++;
+#ifdef ENABLE_SDL
+         // FIXME reimplement clip plane
+         // Basicshader already prepared with proper clipplane so just need to enable/disable it
+         /* if (val)
+               glEnable(GL_CLIP_DISTANCE0);
+            else
+               glDisable(GL_CLIP_DISTANCE0);*/
+#else
+         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_CLIPPLANEENABLE, val ? PLANE0 : 0));
+#endif
+         break;
+
+      // case RENDER_STATE_MASK_CULLMODE:
+      case 0x00000200u:
+      case 0x00000400u:
+         renderstate_mask &= RENDER_STATE_CLEAR_MASK_CULLMODE;
+         val = (m_renderstate.state & RENDER_STATE_MASK_CULLMODE) >> RENDER_STATE_SHIFT_CULLMODE;
+         m_curStateChanges++;
+#ifdef ENABLE_SDL
+         if (val == 0)
+            glDisable(GL_CULL_FACE);
+         else
+         {
+            glEnable(GL_CULL_FACE);
+            glFrontFace(cull_modes[val]);
+            glCullFace(GL_FRONT);
+         }
+#else
+         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_CULLMODE, cull_modes[val]));
+#endif
+         break;
+
+      // case DESTBLEND:
+      case 0x00000800u:
+      case 0x00001000u:
+      case 0x00002000u: renderstate_mask &= RENDER_STATE_CLEAR_MASK_DESTBLEND;
+#ifdef ENABLE_SDL
+         {
+            renderstate_mask &= RENDER_STATE_CLEAR_MASK_SRCBLEND; // Both are performed together for OpenGL
+            int src = (m_renderstate.state & RENDER_STATE_MASK_SRCBLEND) >> RENDER_STATE_SHIFT_SRCBLEND;
+            int dst = (m_renderstate.state & RENDER_STATE_MASK_DESTBLEND) >> RENDER_STATE_SHIFT_DESTBLEND;
+            glBlendFunc(blend_functions[src], blend_functions[dst]);
+            m_curStateChanges++;
+         }
+#else
+         val = (m_renderstate.state & RENDER_STATE_MASK_DESTBLEND) >> RENDER_STATE_SHIFT_DESTBLEND;
+         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_DESTBLEND, blend_modes[val]));
+         m_curStateChanges++;
+#endif
+         break;
+
+      // case SRCBLEND:
+      case 0x00004000u:
+      case 0x00008000u:
+      case 0x00010000u: renderstate_mask &= RENDER_STATE_CLEAR_MASK_SRCBLEND;
+#ifdef ENABLE_SDL
+         {
+            int src = (m_renderstate.state & RENDER_STATE_MASK_SRCBLEND) >> RENDER_STATE_SHIFT_SRCBLEND;
+            int dst = (m_renderstate.state & RENDER_STATE_MASK_DESTBLEND) >> RENDER_STATE_SHIFT_DESTBLEND;
+            glBlendFunc(blend_functions[src], blend_functions[dst]);
+            m_curStateChanges++;
+         }
+#else
+         val = (m_renderstate.state & RENDER_STATE_MASK_SRCBLEND) >> RENDER_STATE_SHIFT_SRCBLEND;
+         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_SRCBLEND, blend_modes[val]));
+         m_curStateChanges++;
+#endif
+         break;
+
+      // ZFUNC
+      case 0x00020000u:
+      case 0x00040000u:
+      case 0x00080000u:
+         renderstate_mask &= RENDER_STATE_CLEAR_MASK_ZFUNC;
+         val = (m_renderstate.state & RENDER_STATE_MASK_ZFUNC) >> RENDER_STATE_SHIFT_ZFUNC;
+         m_curStateChanges++;
+#ifdef ENABLE_SDL
+         glDepthFunc(functions[val]);
+#else
+         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_ZFUNC, functions[val]));
+#endif
+         break;
+
+      case RENDER_STATE_MASK_ZWRITEENABLE:
+         renderstate_mask &= RENDER_STATE_CLEAR_MASK_ZWRITEENABLE;
+         val = m_renderstate.state & RENDER_STATE_MASK_ZWRITEENABLE;
+         m_curStateChanges++;
+#ifdef ENABLE_SDL
+         glDepthMask(val ? GL_TRUE : GL_FALSE);
+#else
+         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, val ? TRUE : FALSE));
+#endif
+         break;
+
+      // COLORWRITEENABLE
+      case 0x00200000u:
+      case 0x00400000u:
+      case 0x00800000u:
+      case 0x01000000u:
+         renderstate_mask &= RENDER_STATE_CLEAR_MASK_COLORWRITEENABLE;
+         val = (m_renderstate.state & RENDER_STATE_MASK_COLORWRITEENABLE) >> RENDER_STATE_SHIFT_COLORWRITEENABLE;
+         m_curStateChanges++;
+#ifdef ENABLE_SDL
+         glColorMask((val & 1) ? GL_TRUE : GL_FALSE, (val & 2) ? GL_TRUE : GL_FALSE, (val & 4) ? GL_TRUE : GL_FALSE, (val & 8) ? GL_TRUE : GL_FALSE);
+#else
+         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_COLORWRITEENABLE, val));
+#endif
+         break;
+
+      default: // Invalid state mask
+         assert(false);
+      }
+   }
+   m_current_renderstate.state = m_renderstate.state;
+
+   if ((m_renderstate.state & RENDER_STATE_MASK_ALPHATESTENABLE) && m_current_renderstate.alpha_ref != m_renderstate.alpha_ref)
+   {
+      m_current_renderstate.alpha_ref = m_renderstate.alpha_ref;
+      m_curStateChanges++;
+#ifdef ENABLE_SDL
+      // FIXME Needs to be done in shader for OpenGL
+#else
+      CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_ALPHAREF, m_renderstate.alpha_ref));
+#endif
+   }
+
+   if (m_current_renderstate.depth_bias != m_renderstate.depth_bias)
+   {
+      m_current_renderstate.depth_bias = m_renderstate.depth_bias;
+      m_curStateChanges++;
+#ifdef ENABLE_SDL
+      if (m_renderstate.depth_bias == 0.0f)
+         glDisable(GL_POLYGON_OFFSET_FILL);
+      else
+      {
+         glEnable(GL_POLYGON_OFFSET_FILL);
+         glPolygonOffset(0.0f, m_renderstate.depth_bias);
+      }
+#else
+      CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_DEPTHBIAS, float_as_uint(m_renderstate.depth_bias * BASEDEPTHBIAS)));
+#endif
+   }
 }
 
 void RenderDevice::CreateVertexDeclaration(const VertexElement * const element, VertexDeclaration ** declaration)
@@ -2041,6 +2225,8 @@ void RenderDevice::SetVertexDeclaration(VertexDeclaration * declaration)
 
 void RenderDevice::DrawPrimitive(const PrimitiveTypes type, const DWORD fvf, const void* vertices, const DWORD vertexCount)
 {
+   ApplyRenderStates();
+
 #ifdef ENABLE_SDL
    assert(false); // This part is not implemented as it is unused (shoudl be removed ?). This is a guard block, just in case.
 #else
@@ -2099,6 +2285,8 @@ void RenderDevice::DrawPrimitiveVB(const PrimitiveTypes type, const DWORD fvf, V
    const unsigned int np = ComputePrimitiveCount(type, vertexCount);
    m_stats_drawn_triangles += np;
 
+   ApplyRenderStates();
+
    vb->bind();
 #ifdef ENABLE_SDL
    Shader::GetCurrentShader()->setAttributeFormat(fvf);
@@ -2118,6 +2306,8 @@ void RenderDevice::DrawIndexedPrimitiveVB(const PrimitiveTypes type, const DWORD
 {
    if (vb == nullptr || ib == nullptr) //!! happens for primitives that are grouped on player init render call?!?
       return;
+
+   ApplyRenderStates();
 
    const unsigned int np = ComputePrimitiveCount(type, indexCount);
    m_stats_drawn_triangles += np;
@@ -2253,6 +2443,8 @@ void RenderDevice::ForceAnisotropicFiltering(const bool enable)
 
 void RenderDevice::Clear(const DWORD flags, const D3DCOLOR color, const D3DVALUE z, const DWORD stencil)
 {
+   ApplyRenderStates();
+
 #ifdef ENABLE_SDL
    static float clear_r=0.f, clear_g = 0.f, clear_b = 0.f, clear_a = 0.f, clear_z=1.f;//Default OpenGL Values
    static GLint clear_s=0;
