@@ -1257,7 +1257,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
          m_pMirrorTmpBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, false, 1, STEREO_OFF, "Fatal Error: unable to create mirror buffer!");
    }
 
-   // alloc bloom tex at 1/3 x 1/3 res (allows for simple HQ downscale of clipped input while saving memory)
+   // alloc bloom tex at 1/4 x 1/4 res (allows for simple HQ downscale of clipped input while saving memory)
    m_pBloomBufferTexture = new RenderTarget(this, m_width / 4, m_height / 4, render_format, false, 1, STEREO_OFF, "Fatal Error: unable to create bloom buffer!");
 
    // temporary buffer for gaussian blur
@@ -1290,13 +1290,13 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 
    // alloc temporary buffer for stereo3D/post-processing AA/sharpen
    if ((m_stereo3D != STEREO_OFF) || (m_FXAA > 0) || m_sharpen)
-      m_pOffscreenBackBufferTmpTexture = new RenderTarget(this, m_width, m_height, video10bit ? colorFormat::RGBA10 : colorFormat::RGBA8, false, 1, STEREO_OFF, "Fatal Error: unable to create stereo3D/post-processing AA/sharpen buffer!");
+      m_pOffscreenBackBufferTmpTexture = new RenderTarget(this, m_width, m_height, video10bit ? colorFormat::RGB10 : colorFormat::RGB8, false, 1, STEREO_OFF, "Fatal Error: unable to create stereo3D/post-processing AA/sharpen buffer!");
    else
       m_pOffscreenBackBufferTmpTexture = nullptr;
 
    // alloc one more temporary buffer for SMAA
    if (m_FXAA == Quality_SMAA)
-      m_pOffscreenBackBufferTmpTexture2 = new RenderTarget(this, m_width, m_height, video10bit ? colorFormat::RGBA10 : colorFormat::RGBA8, false, 1, STEREO_OFF, "Fatal Error: unable to create SMAA buffer!");
+      m_pOffscreenBackBufferTmpTexture2 = new RenderTarget(this, m_width, m_height, video10bit ? colorFormat::RGB10 : colorFormat::RGB8, false, 1, STEREO_OFF, "Fatal Error: unable to create SMAA buffer!");
    else
       m_pOffscreenBackBufferTmpTexture2 = nullptr;
 
