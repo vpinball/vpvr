@@ -1539,20 +1539,18 @@ RenderDevice::~RenderDevice()
    SAFE_RELEASE(m_pVertexTrafoTexelDeclaration);
 
    m_texMan.UnloadAll();
-   delete m_pOffscreenBackBufferTexture;
-   delete m_pOffscreenBackBufferTmpTexture;
-   delete m_pOffscreenBackBufferTmpTexture2;
+   delete m_pBackBuffer;
+   if (m_pOffscreenBackBufferTexture != m_pOffscreenMSAABackBufferTexture)
+      delete m_pOffscreenBackBufferTexture;
+   delete m_pOffscreenMSAABackBufferTexture;
    delete m_pReflectionBufferTexture;
-
-   if (g_pplayer)
-   {
-      const bool drawBallReflection = ((g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
-      if ((g_pplayer->m_ptable->m_reflectElementsOnPlayfield /*&& g_pplayer->m_pf_refl*/) || drawBallReflection)
-         delete m_pMirrorTmpBufferTexture;
-   }
+   delete m_pMirrorTmpBufferTexture;
    delete m_pBloomBufferTexture;
    delete m_pBloomTmpBufferTexture;
-   delete m_pBackBuffer;
+   delete m_pOffscreenVRLeft;
+   delete m_pOffscreenVRRight;
+   delete m_pOffscreenBackBufferTmpTexture;
+   delete m_pOffscreenBackBufferTmpTexture2;
 
    delete m_SMAAareaTexture;
    delete m_SMAAsearchTexture;
@@ -1593,31 +1591,31 @@ RenderDevice::~RenderDevice()
       delete binding;
    m_samplerBindings.clear();
 #ifdef ENABLE_VR
-    if (m_pHMD)
-    {
-        turnVROff();
-        SaveValueFloat(regKey[RegName::Player], "VRSlope"s, m_slope);
-        SaveValueFloat(regKey[RegName::Player], "VROrientation"s, m_orientation);
-        SaveValueFloat(regKey[RegName::Player], "VRTableX"s, m_tablex);
-        SaveValueFloat(regKey[RegName::Player], "VRTableY"s, m_tabley);
-        SaveValueFloat(regKey[RegName::Player], "VRTableZ"s, m_tablez);
-        SaveValueFloat(regKey[RegName::Player], "VRRoomOrientation"s, m_roomOrientation);
-        SaveValueFloat(regKey[RegName::Player], "VRRoomX"s, m_roomx);
-        SaveValueFloat(regKey[RegName::Player], "VRRoomY"s, m_roomy);
-    }
+   if (m_pHMD)
+   {
+      turnVROff();
+      SaveValueFloat(regKey[RegName::Player], "VRSlope"s, m_slope);
+      SaveValueFloat(regKey[RegName::Player], "VROrientation"s, m_orientation);
+      SaveValueFloat(regKey[RegName::Player], "VRTableX"s, m_tablex);
+      SaveValueFloat(regKey[RegName::Player], "VRTableY"s, m_tabley);
+      SaveValueFloat(regKey[RegName::Player], "VRTableZ"s, m_tablez);
+      SaveValueFloat(regKey[RegName::Player], "VRRoomOrientation"s, m_roomOrientation);
+      SaveValueFloat(regKey[RegName::Player], "VRRoomX"s, m_roomx);
+      SaveValueFloat(regKey[RegName::Player], "VRRoomY"s, m_roomy);
+   }
 #endif
 
-    for (int i = 0; i < 3 * 3 * 5; i++)
-    {
-       if (m_samplerStateCache[i] != 0)
-       {
-          glDeleteSamplers(1, &m_samplerStateCache[i]);
-          m_samplerStateCache[i] = 0;
-       }
-    }
+   for (int i = 0; i < 3 * 3 * 5; i++)
+   {
+      if (m_samplerStateCache[i] != 0)
+      {
+         glDeleteSamplers(1, &m_samplerStateCache[i]);
+         m_samplerStateCache[i] = 0;
+      }
+   }
 
-    SDL_GL_DeleteContext(m_sdl_context);
-    SDL_DestroyWindow(m_sdl_playfieldHwnd);
+   SDL_GL_DeleteContext(m_sdl_context);
+   SDL_DestroyWindow(m_sdl_playfieldHwnd);
 #endif
 }
 
