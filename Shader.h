@@ -248,6 +248,7 @@ public:
 
    void SetTechnique(const ShaderTechniques technique);
    void SetTechniqueMetal(const ShaderTechniques technique, const bool isMetal);
+   ShaderTechniques GetCurrentTechnique() { return m_technique; }
 
    void SetMatrix(const ShaderUniforms hParameter, const Matrix3D* pMatrix);
    void SetUniformBlock(const ShaderUniforms hParameter, const float* pMatrix, const size_t size);

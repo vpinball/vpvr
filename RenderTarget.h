@@ -11,6 +11,7 @@ public:
    ~RenderTarget();
 
    void Activate(const bool ignoreStereo);
+   static RenderTarget* GetCurrentRenderTarget();
 
    Sampler* GetColorSampler() { return m_color_sampler; }
    void UpdateDepthSampler();
@@ -43,6 +44,7 @@ private:
    bool m_is_back_buffer;
    bool m_has_depth;
    int m_nMSAASamples;
+   static RenderTarget* current_render_target;
 
 #ifdef ENABLE_SDL
    GLuint m_framebuffer;
