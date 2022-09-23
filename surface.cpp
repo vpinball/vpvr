@@ -1090,7 +1090,6 @@ void Surface::RenderWallsAtHeight(const bool drop)
    if (m_d.m_topBottomVisible && (m_numPolys > 0))
    {
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szTopMaterial);
-      pd3dDevice->basicShader->SetMaterial(mat);
 
       pd3dDevice->SetRenderStateDepthBias(0.0f);
       pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);

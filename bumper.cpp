@@ -296,9 +296,8 @@ void Bumper::RenderBase(const Material * const baseMaterial)
 {
    RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
-   pd3dDevice->basicShader->SetMaterial(baseMaterial);
+   pd3dDevice->basicShader->SetMaterial(baseMaterial, false);
    pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, &m_baseTexture);
-   g_pplayer->m_pin3d.EnableAlphaBlend(false);
    pd3dDevice->basicShader->SetAlphaTestValue((float)(1.0 / 255.0));
 
    pd3dDevice->basicShader->Begin();
@@ -310,9 +309,8 @@ void Bumper::RenderSocket(const Material * const socketMaterial)
 {
    RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
-   pd3dDevice->basicShader->SetMaterial(socketMaterial);
+   pd3dDevice->basicShader->SetMaterial(socketMaterial, false);
    pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, &m_skirtTexture);
-   g_pplayer->m_pin3d.EnableAlphaBlend(false);
    pd3dDevice->basicShader->SetAlphaTestValue((float)(1.0 / 255.0));
 
    pd3dDevice->basicShader->Begin();
@@ -324,9 +322,8 @@ void Bumper::RenderCap(const Material * const capMaterial)
 {
    RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
 
-   pd3dDevice->basicShader->SetMaterial(capMaterial);
+   pd3dDevice->basicShader->SetMaterial(capMaterial, false);
    pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, &m_capTexture);
-   g_pplayer->m_pin3d.EnableAlphaBlend(false);
    pd3dDevice->basicShader->SetAlphaTestValue((float)(1.0 / 255.0));
 
    pd3dDevice->basicShader->Begin();
@@ -463,7 +460,7 @@ void Bumper::RenderDynamic()
 
       pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_with_texture, ringMaterial.m_bIsMetal);
       pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, &m_ringTexture);
-      pd3dDevice->basicShader->SetMaterial(&ringMaterial);
+      pd3dDevice->basicShader->SetMaterial(&ringMaterial, false);
       pd3dDevice->basicShader->SetAlphaTestValue(-1.0f);
 
       // render ring
