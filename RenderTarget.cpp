@@ -10,6 +10,9 @@
 #include "nvapi.h"
 #endif
 
+RenderTarget* RenderTarget::current_render_target = nullptr;
+RenderTarget* RenderTarget::GetCurrentRenderTarget() { return current_render_target; }
+
 RenderTarget::RenderTarget(RenderDevice* rd, int width, int height)
 {
    m_rd = rd;
@@ -263,6 +266,7 @@ void RenderTarget::CopyTo(RenderTarget* dest)
 
 void RenderTarget::Activate(bool ignoreStereo)
 {
+   current_render_target = this;
 #ifdef ENABLE_SDL
    static GLfloat viewPorts[] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
    static RenderTarget* currentFrameBuffer = nullptr;
