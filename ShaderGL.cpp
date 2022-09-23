@@ -508,34 +508,18 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
 
 void Shader::Unload()
 {
-   for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i)
+   for (int j = 0; j <= SHADER_TECHNIQUE_COUNT; ++j)
    {
-      int type = 0, size = 0;
-      for (int j = 0; j < SHADER_TECHNIQUE_COUNT; ++j)
+      for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i)
       {
-         if (m_techniques[j] != nullptr)
-         {
-            type = m_techniques[j]->uniformLocation[i].type;
-            size = m_techniques[j]->uniformLocation[i].size;
-            break;
-         }
+         if (m_uniformCache[j][i].capacity > 0 && m_uniformCache[j][i].data)
+            free(m_uniformCache[j][i].data);
       }
-      if (type == ~0u || (type == GL_FLOAT_VEC4 && size > 1))
+      if (j < SHADER_TECHNIQUE_COUNT && m_techniques[j] != nullptr)
       {
-         for (int j = 0; j <= SHADER_TECHNIQUE_COUNT; ++j)
-         {
-            if (m_uniformCache[j][i].fp.data)
-               free(m_uniformCache[j][i].fp.data);
-         }
-      }
-   }
-   for (int i = 0; i < SHADER_TECHNIQUE_COUNT; ++i)
-   {
-      if (m_techniques[i] != nullptr)
-      {
-         glDeleteProgram(m_techniques[i]->program);
-         delete m_techniques[i];
-         m_techniques[i] = nullptr;
+         glDeleteProgram(m_techniques[j]->program);
+         delete m_techniques[j];
+         m_techniques[j] = nullptr;
       }
    }
 }
@@ -591,6 +575,37 @@ void Shader::SetTechniqueMetal(ShaderTechniques _technique, const bool isMetal)
    SetBool(SHADER_is_metal, isMetal);
 }
 
+uint32_t Shader::CopyUniformCache(const bool copyTo, const ShaderTechniques technique, UniformCache (&uniformCache)[SHADER_UNIFORM_COUNT])
+{
+   UniformCache* src_cache = copyTo ? m_uniformCache[SHADER_TECHNIQUE_COUNT] : uniformCache;
+   UniformCache* dst_cache = copyTo ? uniformCache : m_uniformCache[SHADER_TECHNIQUE_COUNT];
+   unsigned long sampler_hash = 0L;
+   for (auto uniformName : m_uniforms[technique])
+   { 
+      UniformCache* src = &(src_cache[uniformName]);
+      UniformCache* dst = &(dst_cache[uniformName]);
+      if (src->count == 0)
+      {
+         memcpy(&(dst->val), &(src->val), sizeof(UniformCache::UniformValue));
+      }
+      else
+      {
+         if (dst->capacity < src->count)
+         {
+            if (dst->capacity > 0)
+               free(dst->data);
+            dst->capacity = src->capacity;
+            dst->data = (float*)malloc(dst->capacity * sizeof(float));
+         }
+         dst->count = src->count;
+         memcpy(dst->data, src->data, src->count * sizeof(float));
+      }
+      if (shaderUniformNames[uniformName].is_sampler)
+         sampler_hash += (uint32_t) src->val.sampler;
+   }
+   return sampler_hash;
+}
+
 void Shader::SetTextureNull(const ShaderUniforms texelName) {
    SetTexture(texelName, (Sampler*) nullptr);
 }
@@ -610,20 +625,22 @@ void Shader::SetTexture(const ShaderUniforms texelName, BaseTexture* texel, cons
 
 void Shader::SetTexture(const ShaderUniforms texelName, Sampler* texel)
 {
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][texelName].sampler = texel;
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][texelName].val.sampler = texel;
    ApplyUniform(texelName);
 }
 
 void Shader::SetUniformBlock(const ShaderUniforms hParameter, const float* pMatrix, const size_t size)
 {
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   floatP* elem = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fp;
-   if (elem->count != size)
+   UniformCache* elem = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter];
+   if (elem->capacity < size)
    {
-      free(elem->data);
+      if (elem->capacity > 0)
+         free(elem->data);
       elem->data = (float*)malloc(size * sizeof(float));
-      elem->count = size;
+      elem->capacity = size;
    }
+   elem->count = size;
    memcpy(elem->data, pMatrix, size * sizeof(float));
    ApplyUniform(hParameter);
 }
@@ -631,59 +648,60 @@ void Shader::SetUniformBlock(const ShaderUniforms hParameter, const float* pMatr
 void Shader::SetMatrix(const ShaderUniforms hParameter, const Matrix3D* pMatrix)
 {
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   memcpy(m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fvval, pMatrix->m16, 16 * sizeof(float));
+   memcpy(m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.fv, pMatrix->m16, 16 * sizeof(float));
    ApplyUniform(hParameter);
 }
 
 void Shader::SetVector(const ShaderUniforms hParameter, const vec4* pVector)
 {
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   memcpy(m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fvval, pVector, 4 * sizeof(float));
+   memcpy(m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.fv, pVector, 4 * sizeof(float));
    ApplyUniform(hParameter);
 }
 
 void Shader::SetVector(const ShaderUniforms hParameter, const float x, const float y, const float z, const float w)
 {
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fvval[0] = x;
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fvval[1] = y;
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fvval[2] = z;
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fvval[3] = w;
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.fv[0] = x;
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.fv[1] = y;
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.fv[2] = z;
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.fv[3] = w;
    ApplyUniform(hParameter);
 }
 
 void Shader::SetFloat(const ShaderUniforms hParameter, const float f)
 {
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fval = f;
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.f = f;
    ApplyUniform(hParameter);
 }
 
 void Shader::SetInt(const ShaderUniforms hParameter, const int i)
 {
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].ival = i;
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.i = i;
    ApplyUniform(hParameter);
 }
 
 void Shader::SetBool(const ShaderUniforms hParameter, const bool b)
 {
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   const int i = b ? 1 : 0;
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].ival = i;
+   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.i = b ? 1 : 0;
    ApplyUniform(hParameter);
 }
 
 void Shader::SetFloatArray(const ShaderUniforms hParameter, const float* pData, const unsigned int count)
 {
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   floatP* elem = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].fp;
-   if (elem->count != count)
+   UniformCache* elem = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter];
+   if (elem->capacity < count)
    {
-      free(elem->data);
+      if (elem->capacity > 0)
+         free(elem->data);
       elem->data = (float*)malloc(count * sizeof(float));
-      elem->count = count;
+      elem->capacity = count;
    }
+   elem->count = count;
    memcpy(elem->data, pData, count * sizeof(float));
    ApplyUniform(hParameter);
 }
@@ -733,91 +751,98 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
    switch (currentUniform.type)
    {
    case ~0u: // Uniform blocks
-      if (isCacheInvalid || memcmp(src->fp.data, dst->fp.data, currentUniform.size) != 0)
+      if (isCacheInvalid || memcmp(src->data, dst->data, currentUniform.size) != 0)
       {
-         if (dst->fp.data == nullptr)
-         { // (currentUniform.size is in byte, src->fp.count is in number of floats)
-            assert(src->fp.count * sizeof(float) == currentUniform.size);
-            dst->fp.count = src->fp.count;
-            dst->fp.data = (float*)malloc(currentUniform.size);
+         // (currentUniform.size is in byte, src->fp.count is in number of floats)
+         assert(src->count * sizeof(float) == currentUniform.size);
+         if (dst->capacity < src->count)
+         {
+            if (dst->capacity > 0)
+               free(dst->data);
+            dst->capacity = src->count;
+            dst->data = (float*)malloc(dst->capacity * sizeof(float));
          }
-         memcpy(dst->fp.data, src->fp.data, currentUniform.size);
+         dst->count = src->count;
+         memcpy(dst->data, src->data, currentUniform.size);
          glBindBuffer(GL_UNIFORM_BUFFER, currentUniform.blockBuffer);
-         glBufferData(GL_UNIFORM_BUFFER, currentUniform.size, src->fp.data, GL_STREAM_DRAW);
+         glBufferData(GL_UNIFORM_BUFFER, currentUniform.size, src->data, GL_STREAM_DRAW);
          m_renderDevice->m_curParameterChanges++;
       }
       glUniformBlockBinding(m_techniques[m_technique]->program, currentUniform.location, 0);
       glBindBufferRange(GL_UNIFORM_BUFFER, 0, currentUniform.blockBuffer, 0, currentUniform.size);
       break;
    case GL_FLOAT:
-      if (isCacheInvalid || dst->fval != src->fval)
+      if (isCacheInvalid || dst->val.f != src->val.f)
       {
          assert(currentUniform.size == 1);
-         dst->fval = src->fval;
-         glUniform1f(currentUniform.location, src->fval);
+         dst->val.f = src->val.f;
+         glUniform1f(currentUniform.location, src->val.f);
          m_renderDevice->m_curParameterChanges++;
       }
       break;
    case GL_BOOL:
    case GL_INT:
-      if (isCacheInvalid || dst->ival != src->ival)
+      if (isCacheInvalid || dst->val.i != src->val.i)
       {
          assert(currentUniform.size == 1);
-         dst->ival = src->ival;
-         glUniform1i(currentUniform.location, src->ival);
+         dst->val.i = src->val.i;
+         glUniform1i(currentUniform.location, src->val.i);
          m_renderDevice->m_curParameterChanges++;
       }
       break;
    case GL_FLOAT_VEC2:
-      if (isCacheInvalid || memcmp(src, dst, 2 * sizeof(float)) != 0)
+      if (isCacheInvalid || memcmp(src->val.fv, dst->val.fv, 2 * sizeof(float)) != 0)
       {
          assert(currentUniform.size == 1);
-         memcpy(dst, src, 2 * sizeof(float));
-         glUniform2fv(currentUniform.location, 1, src->fvval);
+         memcpy(dst->val.fv, src->val.fv, 2 * sizeof(float));
+         glUniform2fv(currentUniform.location, 1, src->val.fv);
          m_renderDevice->m_curParameterChanges++;
       }
       break;
    case GL_FLOAT_VEC3:
-      if (isCacheInvalid || memcmp(src, dst, 3 * sizeof(float)) != 0)
+      if (isCacheInvalid || memcmp(src->val.fv, dst->val.fv, 3 * sizeof(float)) != 0)
       {
          assert(currentUniform.size == 1);
-         memcpy(dst, src, 3 * sizeof(float));
-         glUniform3fv(currentUniform.location, 1, src->fvval);
+         memcpy(dst->val.fv, src->val.fv, 3 * sizeof(float));
+         glUniform3fv(currentUniform.location, 1, src->val.fv);
          m_renderDevice->m_curParameterChanges++;
       }
       break;
    case GL_FLOAT_VEC4:
       if (currentUniform.size == 1)
       {
-         if (isCacheInvalid || memcmp(src, dst, 4 * sizeof(float)) != 0)
+         if (isCacheInvalid || memcmp(src->val.fv, dst->val.fv, 4 * sizeof(float)) != 0)
          {
-            memcpy(dst, src, 4 * sizeof(float));
-            glUniform4fv(currentUniform.location, 1, src->fvval);
+            memcpy(dst->val.fv, src->val.fv, 4 * sizeof(float));
+            glUniform4fv(currentUniform.location, 1, src->val.fv);
             m_renderDevice->m_curParameterChanges++;
          }
       }
       else
       {
-         if (isCacheInvalid || memcmp(src->fp.data, dst->fp.data, currentUniform.size * 4 * sizeof(float)) != 0)
+         if (isCacheInvalid || memcmp(src->data, dst->data, currentUniform.size * 4 * sizeof(float)) != 0)
          {
-            if (dst->fp.data == nullptr)
-            { // (currentUniform.size is in number of vec4, src->fp.count is in number of floats)
-               assert(src->fp.count == currentUniform.size * 4);
-               dst->fp.count = src->fp.count;
-               dst->fp.data = (float*)malloc(currentUniform.size * 4 * sizeof(float));
+            assert(src->count == currentUniform.size * 4);
+            if (dst->capacity < src->count)
+            {
+               if (dst->capacity > 0)
+                  free(dst->data);
+               dst->capacity = src->count;
+               dst->data = (float*)malloc(dst->capacity * sizeof(float));
             }
-            memcpy(dst->fp.data, src->fp.data, currentUniform.size * 4 * sizeof(float));
-            glUniform4fv(currentUniform.location, currentUniform.size, src->fp.data);
+            dst->count = src->count;
+            memcpy(dst->data, src->data, currentUniform.size * 4 * sizeof(float));
+            glUniform4fv(currentUniform.location, currentUniform.size, src->data);
             m_renderDevice->m_curParameterChanges++;
          }
       }
       break;
    case GL_FLOAT_MAT4:
-      if (isCacheInvalid || memcmp(src, dst, 4 * 4 * sizeof(float)) != 0)
+      if (isCacheInvalid || memcmp(src->val.fv, dst->val.fv, 4 * 4 * sizeof(float)) != 0)
       {
          assert(currentUniform.size == 1);
-         memcpy(dst, src, 4 * 4 * sizeof(float));
-         glUniformMatrix4fv(currentUniform.location, 1, GL_FALSE, src->fvval);
+         memcpy(dst->val.fv, src->val.fv, 4 * 4 * sizeof(float));
+         glUniformMatrix4fv(currentUniform.location, 1, GL_FALSE, src->val.fv);
          m_renderDevice->m_curParameterChanges++;
       }
       break;
@@ -826,7 +851,7 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
       {
          // DX9 implementation uses preaffected texture units, not samplers, so these can not be used for OpenGL. This would cause some collisions.
          assert(currentUniform.size == 1);
-         Sampler* texel = m_uniformCache[SHADER_TECHNIQUE_COUNT][uniformName].sampler;
+         Sampler* texel = m_uniformCache[SHADER_TECHNIQUE_COUNT][uniformName].val.sampler;
          SamplerBinding* tex_unit = nullptr;
          if (texel == nullptr)
          { // For null texture, use OpenGL texture 0 which is a predefined texture that always returns (0, 0, 0, 1)

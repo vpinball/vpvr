@@ -84,9 +84,9 @@ ShaderTechniques Shader::getTechniqueByName(const string& name)
    return SHADER_TECHNIQUE_INVALID;
 }
 
-#define SHADER_UNIFORM(name) { #name, #name, ""s, -1, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED }
-#define SHADER_TEXTURE(name) { #name, #name, ""s, -1, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED }
-#define SHADER_SAMPLER(name, legacy_name, texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter) { #name, #legacy_name, #texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter }
+#define SHADER_UNIFORM(name) { false, #name, #name, ""s, -1, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED }
+#define SHADER_TEXTURE(name) { true, #name, #name, ""s, -1, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED }
+#define SHADER_SAMPLER(name, legacy_name, texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter) { true, #name, #legacy_name, #texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter }
 Shader::ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT] {
    // -- Floats --
    SHADER_UNIFORM(RenderBall),
@@ -232,9 +232,9 @@ Shader* Shader::GetCurrentShader() { return current_shader;  }
 Shader::Shader(RenderDevice *renderDevice) : currentMaterial(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX, 0xCCCCCCCC, 0xCCCCCCCC, 0xCCCCCCCC, false, false, -FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX)
 {
    m_renderDevice = renderDevice;
+   m_technique = SHADER_TECHNIQUE_INVALID;
 #ifdef ENABLE_SDL
    logFile = nullptr;
-   m_technique = SHADER_TECHNIQUE_INVALID;
    memset(m_uniformCache, 0, sizeof(UniformCache) * SHADER_UNIFORM_COUNT * (SHADER_TECHNIQUE_COUNT + 1));
    memset(m_techniques, 0, sizeof(ShaderTechnique*) * SHADER_TECHNIQUE_COUNT);
    memset(m_isCacheValid, 0, sizeof(bool) * SHADER_TECHNIQUE_COUNT);
@@ -265,8 +265,8 @@ void Shader::Begin()
 {
    assert(current_shader == nullptr);
    current_shader = this;
-#ifdef ENABLE_SDL
    assert(m_technique != SHADER_TECHNIQUE_INVALID);
+#ifdef ENABLE_SDL
    static ShaderTechniques bound_technique = ShaderTechniques::SHADER_TECHNIQUE_INVALID;
    if (bound_technique != m_technique)
    {
@@ -299,7 +299,7 @@ void Shader::End()
 #endif
 }
 
-void Shader::SetMaterial(const Material * const mat, const bool has_alpha)
+void Shader::SetMaterial(const Material* const mat, const bool has_alpha)
 {
    COLORREF cBase, cGlossy, cClearcoat;
    float fWrapLighting, fRoughness, fGlossyImageLerp, fThickness, fEdge, fEdgeAlpha, fOpacity;
