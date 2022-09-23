@@ -141,7 +141,7 @@ enum ShaderUniforms
    SHADER_UNIFORM(objectSpaceNormalMap),
    SHADER_UNIFORM(do_dither),
    SHADER_UNIFORM(imageBackglassMode),
-   // -- Textures --
+   // FIXME -- Legacy Textures (to be removed) --
    SHADER_TEXTURE(Texture0),
    SHADER_TEXTURE(Texture1),
    SHADER_TEXTURE(Texture2),
@@ -233,7 +233,7 @@ public:
    void SetTexture(const ShaderUniforms texelName, Texture* texel, const SamplerFilter filter = SF_UNDEFINED, const SamplerAddressMode clampU = SA_UNDEFINED, const SamplerAddressMode clampV = SA_UNDEFINED, const bool force_linear_rgb = false);
    void SetTexture(const ShaderUniforms texelName, Sampler* texel);
    void SetTextureNull(const ShaderUniforms texelName);
-   void SetMaterial(const Material * const mat);
+   void SetMaterial(const Material * const mat, const bool has_alpha = true);
 
    void SetDisableLighting(const float value); // only set top
    void SetDisableLighting(const vec4& value); // set top and below
