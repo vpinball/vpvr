@@ -1225,7 +1225,6 @@ void Primitive::RenderObject()
    if (!m_d.m_useAsPlayfield)
    {
       const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
-      pd3dDevice->basicShader->SetMaterial(mat);
 
       pd3dDevice->SetRenderStateDepthBias(0.f);
       pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
@@ -1253,6 +1252,7 @@ void Primitive::RenderObject()
             pd3dDevice->basicShader->SetTexture(SHADER_tex_base_normalmap, nMap, SF_UNDEFINED, SA_REPEAT, SA_REPEAT, true);
             pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
             pd3dDevice->basicShader->SetBool(SHADER_objectSpaceNormalMap, m_d.m_objectSpaceNormalMap);
+            pd3dDevice->basicShader->SetMaterial(mat, pin->m_pdsBuffer->has_alpha());
          }
          else if (pin)
          {
@@ -1260,9 +1260,13 @@ void Primitive::RenderObject()
             // accommodate models with UV coords outside of [0,1]
             pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, pin, SF_UNDEFINED, SA_REPEAT, SA_REPEAT);
             pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
+            pd3dDevice->basicShader->SetMaterial(mat, pin->m_pdsBuffer->has_alpha());
          }
          else
+         {
             pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_without_texture, mat->m_bIsMetal);
+            pd3dDevice->basicShader->SetMaterial(mat, false);
+         }
       }
 
       pd3dDevice->basicShader->SetBool(SHADER_doNormalMapping, nMap);
