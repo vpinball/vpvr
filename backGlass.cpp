@@ -76,6 +76,7 @@ static size_t decode_base64(const char* const inData, char* const outData, const
 BackGlass::BackGlass(RenderDevice* const pd3dDevice, Texture * backgroundFallback) :
    m_pd3dDevice(pd3dDevice), m_backgroundFallback(backgroundFallback)
 {
+   m_backgroundTexture = nullptr;
    m_loaded_image = nullptr;
 #ifdef ENABLE_VR
    //Check for a directb2s and try to use its backglass data
@@ -262,13 +263,18 @@ void BackGlass::Render()
    m_pd3dDevice->DMDShader->SetVector(SHADER_vColor_Intensity, 1.0f, 1.0f, 1.0f, 1.0f);
 
    static constexpr float Verts[4 * 5] =
-   {
+      /* {
        1.0f,  1.0f, 0.0f, 1.0f, 0.0f,
       -1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
        1.0f, -1.0f, 0.0f, 1.0f, 1.0f,
       -1.0f, -1.0f, 0.0f, 0.0f, 1.0f
-   };
-
+   };*/
+      {
+         1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+         0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+         1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+         0.0f, 0.0f, 0.0f, 0.0f, 1.0f
+      };
    m_pd3dDevice->DMDShader->Begin();
    m_pd3dDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)Verts);
    m_pd3dDevice->DMDShader->End();

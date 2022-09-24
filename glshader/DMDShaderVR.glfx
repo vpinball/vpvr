@@ -65,7 +65,8 @@ out vec2 tex0_gs;
 void main()
 {
    gl_Position = vec4(vPosition, 1.0);
-   tex0_gs = vec2(tc.x, tc.y) * quadOffsetScaleTex.zw + quadOffsetScaleTex.xy;
+   //tex0_gs = vec2(tc.x, tc.y) * quadOffsetScaleTex.zw + quadOffsetScaleTex.xy;
+   tex0_gs = tc;
 }
 
 ////vs_simple_world
@@ -91,9 +92,12 @@ void main()
    gl_ViewportIndex = gl_InvocationID;
    for (int i=0;i<gl_in.length();i++) {
       //Default
+      //gl_Position = (matWorldViewProj[gl_InvocationID] *
+      //               vec4((gl_in[i].gl_Position.x*backBoxSize.z*quadOffsetScale.z+quadOffsetScale.x+backBoxSize.x),0.0,
+      //               (gl_in[i].gl_Position.y*quadOffsetScale.w*backBoxSize.w+quadOffsetScale.y+backBoxSize.y),1.0));
       gl_Position = (matWorldViewProj[gl_InvocationID] *
-                     vec4((gl_in[i].gl_Position.x*backBoxSize.z*quadOffsetScale.z+quadOffsetScale.x+backBoxSize.x),0.0,
-                     (gl_in[i].gl_Position.y*quadOffsetScale.w*backBoxSize.w+quadOffsetScale.y+backBoxSize.y),1.0));
+                     vec4((gl_in[i].gl_Position.x*backBoxSize.z+backBoxSize.x),0.0,
+                     (gl_in[i].gl_Position.y*backBoxSize.w+backBoxSize.y),1.0));
       //Custom
       tex0 = tex0_gs[i];
       //Default
