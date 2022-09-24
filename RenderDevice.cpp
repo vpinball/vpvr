@@ -2,6 +2,9 @@
 
 #include <DxErr.h>
 
+// Undefine this if you want to debug VR mode without a VR headset
+// #define VR_PREVIEW_TEST
+
 //#include "Dwmapi.h" // use when we get rid of XP at some point, get rid of the manual dll loads in here then
 
 #ifndef DISABLE_FORCE_NVIDIA_OPTIMUS
@@ -653,7 +656,11 @@ static pDEC mDwmEnableComposition = nullptr;
 bool RenderDevice::isVRinstalled()
 {
 #ifdef ENABLE_VR
+#ifdef VR_PREVIEW_TEST
+   return true;
+#else
    return vr::VR_IsRuntimeInstalled();
+#endif
 #else
    return false;
 #endif
@@ -666,7 +673,11 @@ vr::IVRSystem* RenderDevice::m_pHMD = nullptr;
 bool RenderDevice::isVRturnedOn()
 {
 #ifdef ENABLE_VR
-   if (vr::VR_IsHmdPresent()) {
+#ifdef VR_PREVIEW_TEST
+   return true;
+#else
+   if (vr::VR_IsHmdPresent())
+   {
       vr::EVRInitError VRError = vr::VRInitError_None;
       if (!m_pHMD)
          m_pHMD = vr::VR_Init(&VRError, vr::VRApplication_Background);
@@ -681,6 +692,7 @@ bool RenderDevice::isVRturnedOn()
       } else
          m_pHMD = nullptr;
    }
+#endif
 #endif
    return false;
 }
@@ -698,6 +710,9 @@ void RenderDevice::turnVROff()
 
 void RenderDevice::InitVR() {
 #ifdef ENABLE_VR
+#ifdef VR_PREVIEW_TEST
+   m_pHMD = nullptr;
+#else
    vr::EVRInitError VRError = vr::VRInitError_None;
    if (!m_pHMD) {
       m_pHMD = vr::VR_Init(&VRError, vr::VRApplication_Scene);
@@ -715,6 +730,7 @@ void RenderDevice::InitVR() {
          ShowError(buf);
       }
    }
+#endif
 
    const float nearPlane = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "nearPlane"s, 5.0f) / 100.0f;
    const float farPlane = 5000.0f; //LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "farPlane"s, 5000.0f) / 100.0f;
@@ -723,6 +739,10 @@ void RenderDevice::InitVR() {
    vr::HmdMatrix44_t left_eye_proj, right_eye_proj;
    if (m_pHMD == nullptr)
    {
+      // Default debug output
+      uint32_t eye_width = 1080, eye_height = 1200; // Oculus Rift resolution
+      m_width = eye_width * 2;
+      m_height = eye_height;
       Matrix3D left, right;
       left.SetIdentity(); // TODO find sensible value and use them instead of the desktop projection
       right.SetIdentity();
@@ -741,10 +761,10 @@ void RenderDevice::InitVR() {
    }
    else
    {
-      uint32_t m_Buf_width, m_Buf_height;
-      m_pHMD->GetRecommendedRenderTargetSize(&m_Buf_width, &m_Buf_height);
-      m_width = m_Buf_width * 2;
-      m_height = m_Buf_height;
+      uint32_t eye_width, eye_height;
+      m_pHMD->GetRecommendedRenderTargetSize(&eye_width, &eye_height);
+      m_width = eye_width * 2;
+      m_height = eye_height;
       left_eye_pos = m_pHMD->GetEyeToHeadTransform(vr::Eye_Left);
       right_eye_pos = m_pHMD->GetEyeToHeadTransform(vr::Eye_Right);
       left_eye_proj = m_pHMD->GetProjectionMatrix(vr::Eye_Left, nearPlane, farPlane); //5cm to 50m should be a reasonable range
@@ -946,13 +966,14 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_ERROR, GL_DONT_CARE, 0, nullptr, GL_TRUE); // enable only errors
 #endif
 
+   /* This fails on some situations, just keep the requested size
    GLint frameBuffer[4];
    glGetIntegerv(GL_VIEWPORT, frameBuffer);
    const int fbWidth = frameBuffer[2];
    const int fbHeight = frameBuffer[3];
-
    m_width = fbWidth;
    m_height = fbHeight;
+   */
 
    if (m_stereo3D == STEREO_VR)
    {
@@ -1222,7 +1243,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 #endif
 
    // Retrieve a reference to the back buffer.
-   m_pBackBuffer = new RenderTarget(this, fbWidth, fbHeight);
+   m_pBackBuffer = new RenderTarget(this, m_width, m_height);
 
    const colorFormat render_format = ((m_BWrendering == 1) ? colorFormat::RG16F : ((m_BWrendering == 2) ? colorFormat::RED16F : colorFormat::RGB16F));
    int m_width_aa = (int)(m_width * m_AAfactor);
