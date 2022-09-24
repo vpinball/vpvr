@@ -102,7 +102,7 @@ public:
 
    //Vertex3Ds m_viewVec;        // direction the camera is facing
 
-   ViewPort m_viewPort;
+   ViewPort m_viewPort; // Viewport of the screen output (different from render size for VR, anaglyph, superscaling,...)
    float m_AAfactor;
 
 private:
