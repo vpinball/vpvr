@@ -464,6 +464,22 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
       return E_FAIL;
    }
 
+   if (m_stereo3D == STEREO_VR)
+   { // VR mode renders to a double widthed render target => pin3d viewport is the halh of the render buffer
+      m_viewPort.Width = m_pd3dPrimaryDevice->m_width / 2;
+      m_viewPort.Height = m_pd3dPrimaryDevice->m_height;
+   }
+   else if (m_stereo3D >= STEREO_ANAGLYPH_RC && m_stereo3D <= STEREO_ANAGLYPH_AB)
+   { // Anaglyph mode renders to a double widthed render target => pin3d viewport is the halh of the render buffer
+      m_viewPort.Width = m_pd3dPrimaryDevice->m_width / 2;
+      m_viewPort.Height = m_pd3dPrimaryDevice->m_height;
+   }
+   else
+   { // Use the effective size of the created device's window (should be the same as the requested)
+      m_viewPort.Width = m_pd3dPrimaryDevice->m_width;
+      m_viewPort.Height = m_pd3dPrimaryDevice->m_height;
+   }
+
    if (!m_pd3dPrimaryDevice->LoadShaders())
       return E_FAIL;
 
@@ -483,8 +499,8 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
 
    if (m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && useAO)
    {
-      // FIXME the width must be the one the backbuffer (not the one of the preview vieport) but since AO is currently broken, this will be part of the AO fix
-      m_pddsAOBackBuffer = new RenderTarget(m_pd3dPrimaryDevice, m_viewPort.Width, m_viewPort.Height, colorFormat::GREY8, false, 1, STEREO_OFF,
+      // the width must be the one the back render buffer (not the one of the preview viewport)
+      m_pddsAOBackBuffer = new RenderTarget(m_pd3dPrimaryDevice, m_pd3dPrimaryDevice->m_width, m_pd3dPrimaryDevice->m_height, colorFormat::GREY8, false, 1, STEREO_OFF,
          "Unable to create AO buffers!\r\nPlease disable Ambient Occlusion.\r\nOr try to (un)set \"Alternative Depth Buffer processing\" in the video options!");
       m_pddsAOBackTmpBuffer = m_pddsAOBackBuffer->Duplicate();
       if (!m_pddsAOBackBuffer || !m_pddsAOBackTmpBuffer)
@@ -499,7 +515,7 @@ HRESULT Pin3D::InitPin3D(const bool fullScreen, const int width, const int heigh
    m_proj.m_stereo3D = m_stereo3D = stereo3D;
    m_AAfactor = AAfactor;
 
-   // set the viewport for the newly created device
+   // set the expected viewport for the newly created device (it may be modified upon creation)
    m_viewPort.X = 0;
    m_viewPort.Y = 0;
    m_viewPort.Width = width;
@@ -855,14 +871,12 @@ void Pin3D::InitLayout(const bool FSS_mode, const float max_separation, const fl
    for (size_t i = 0; i < g_pplayer->m_ptable->m_vedit.size(); ++i)
       g_pplayer->m_ptable->m_vedit[i]->GetBoundingVertices(vvertex3D);
 
-   int buf_width = m_stereo3D == STEREO_VR ? m_viewPort.Width / 2 : m_viewPort.Width;
-
    m_proj.m_rcviewport.left = 0;
    m_proj.m_rcviewport.top = 0;
-   m_proj.m_rcviewport.right = buf_width;
+   m_proj.m_rcviewport.right = m_viewPort.Width;
    m_proj.m_rcviewport.bottom = m_viewPort.Height;
 
-   const float aspect = ((float)buf_width) / ((float)m_viewPort.Height); //(float)(4.0/3.0);
+   const float aspect = ((float)m_viewPort.Width) / ((float)m_viewPort.Height); //(float)(4.0/3.0);
 
    // next 4 def values for layout portrait(game vert) in landscape(screen horz)
    // for FSS, force an offset to camy which drops the table down 1/3 of the way.

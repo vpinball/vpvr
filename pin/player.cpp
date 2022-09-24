@@ -185,8 +185,8 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
    m_dmdstate = 0;
 
    const int vrDetectionMode = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "AskToTurnOn"s, 0);
-   bool useVR = (vrDetectionMode != 2 /* VR Disabled */) && RenderDevice::isVRinstalled();
-   if (useVR && (vrDetectionMode == 1) && !RenderDevice::isVRturnedOn())
+   bool useVR = vrDetectionMode == 2 /* VR Disabled */  ? false : RenderDevice::isVRinstalled();
+   if (useVR && (vrDetectionMode == 1 /* VR Autodetect => ask to turn on and adapt accordingly */) && !RenderDevice::isVRturnedOn())
       useVR = MessageBox("VR headset detected but SteamVR is not running.\n\nTurn VR on?", "VR Headset Detected", MB_YESNO) == IDYES;
    m_capExtDMD = LoadValueBoolWithDefault(regKey[RegName::Player], "CaptureExternalDMD"s, false);
    m_capPUP = LoadValueBoolWithDefault(regKey[RegName::Player], "CapturePUP"s, false);
@@ -205,7 +205,7 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
    m_detectScriptHang = LoadValueBoolWithDefault(regKey[RegName::Player], "DetectHang"s, false);
 
    m_vrPreview = (VRPreviewMode)LoadValueIntWithDefault(regKey[RegName::PlayerVR], "VRPreview"s, VRPREVIEW_LEFT);
-   if (useVR || (vrDetectionMode == 0 && (m_vrPreview != VRPREVIEW_DISABLED)))
+   if (useVR)
    {
       m_stereo3D = STEREO_VR;
       m_dynamicMode = true; // VR mode => camera will be dynamic, disable static pre-rendering
@@ -435,6 +435,14 @@ void Player::PreCreate(CREATESTRUCT& cs)
         m_height = m_screenheight;
     }
 
+    // VR preview window does not support fullscreen. Its size will be defined from the headset eye render size
+    if (m_stereo3D == STEREO_VR)
+    {
+       m_fullScreen = false;
+       m_width = 640;
+       m_height = 480;
+    }
+
     if (m_fullScreen)
     {
         x = 0;
@@ -559,8 +567,8 @@ void Player::CreateWnd(HWND parent /* = 0 */)
 
    DWORD style = cs.style & ~WS_VISIBLE;
 
-   const int colordepth = LoadValueIntWithDefault(regKey[RegName::Player], "ColorDepth"s, 32);
-   bool video10bit = LoadValueBoolWithDefault(regKey[RegName::Player], "Render10Bit"s, false);
+   const int colordepth = m_stereo3D == STEREO_VR ? 32 : LoadValueIntWithDefault(regKey[RegName::Player], "ColorDepth"s, 32);
+   const bool video10bit = m_stereo3D == STEREO_VR ? false : LoadValueBoolWithDefault(regKey[RegName::Player], "Render10Bit"s, false);
    int channelDepth = video10bit ? 10 : ((colordepth == 16) ? 5 : 8);
    // We only set bit depth for fullscreen desktop modes (otherwise, use the desktop bit depth)
    if (m_fullScreen)
@@ -1401,8 +1409,36 @@ HRESULT Player::Init()
    const int colordepth = LoadValueIntWithDefault(regKey[RegName::Player], "ColorDepth"s, 32);
 
    // colordepth & refreshrate are only defined if fullscreen is true.
+   // width and height may be modified during initialization (for example for VR, they are adapted to the headset resolution)
    const HRESULT hr = m_pin3d.InitPin3D(m_fullScreen, m_width, m_height, colordepth,
                                         m_refreshrate, vsync, AAfactor, m_stereo3D, FXAA, !!m_sharpen, !m_disableAO, ss_refl);
+
+#ifdef ENABLE_SDL
+   if (m_stereo3D == STEREO_VR)
+   {
+      // Adjust stereo preview size to eye aspect ratio and number of eyes previewed
+      if (m_vrPreview == VRPREVIEW_DISABLED)
+      {
+         // Hide window ?
+      }
+      else
+      {
+         int w = m_vrPreview == VRPREVIEW_BOTH ? 2 * m_pin3d.m_viewPort.Width : m_pin3d.m_viewPort.Width;
+         int h = m_pin3d.m_viewPort.Height;
+         if (w > m_screenwidth) { 
+            h = (h * m_screenwidth) / w;
+            w = m_screenwidth;
+         }
+         if (h > m_screenheight)
+         {
+            w = (w * m_screenheight) / h;
+            h = m_screenheight;
+         }
+         SDL_SetWindowSize(m_sdl_playfieldHwnd, w, h);
+         m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->SetSize(w, h);
+      }
+   }
+#endif
 
    if (hr != S_OK)
    {

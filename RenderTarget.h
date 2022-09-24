@@ -20,6 +20,7 @@ public:
    RenderTarget* Duplicate();
    void CopyTo(RenderTarget* dest);
 
+   void SetSize(const int w, const int h) { m_width = w;  m_height = h; }
    int GetWidth() const { return m_width; }
    int GetHeight() const { return m_height; }
    StereoMode GetStereo() const { return m_stereo; }

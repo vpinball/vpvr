@@ -301,8 +301,8 @@ public:
    HWND getHwnd() const { return m_windowHwnd; }
 
    HWND         m_windowHwnd;
-   int          m_width;
-   int          m_height;
+   int          m_width; // Width of the render buffer (not the window width, for example for stereo the render width is doubled, or for VR, the size depends on the headset) 
+   int          m_height; // Height of the render buffer
    bool         m_fullscreen;
    int          m_colorDepth;
    int          m_vsync;
