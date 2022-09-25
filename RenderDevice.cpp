@@ -1827,7 +1827,7 @@ GLuint RenderDevice::GetSamplerState(SamplerFilter filter, SamplerAddressMode cl
       m_curStateChanges += 5;
       glGenSamplers(1, &sampler_state);
       m_samplerStateCache[samplerStateId] = sampler_state;
-      constexpr int glAddress[] = { GL_REPEAT, GL_REPEAT, GL_CLAMP_TO_EDGE, GL_MIRRORED_REPEAT };
+      constexpr int glAddress[] = { GL_REPEAT, GL_CLAMP_TO_EDGE, GL_MIRRORED_REPEAT, GL_REPEAT };
       glSamplerParameteri(sampler_state, GL_TEXTURE_WRAP_S, glAddress[clamp_u]);
       glSamplerParameteri(sampler_state, GL_TEXTURE_WRAP_T, glAddress[clamp_v]);
       switch (filter)
