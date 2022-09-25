@@ -4030,6 +4030,11 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
 {
    RenderTarget *outputRT = nullptr;
 
+   // Stereo and AA are performed on LDR render buffer after tonemapping (RGB8 or RGB10, but nof RGBF).
+   // FIXME GetBackBufferTexture should not be used here as an intermediate buffer since it is RGBF (for performance reasons).
+   // We should ping pong between BackBufferTmpTexture and BackBufferTmpTexture2 instead (which should be renamed for something more explicit)
+   assert(renderedRT == m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()  || renderedRT == m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture());
+
 #ifdef ENABLE_SDL
    if (SMAA || DLAA || NFAA || FXAA1 || FXAA2 || FXAA3)
 #else
@@ -4037,9 +4042,16 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
    if (!stereo && (SMAA || DLAA || NFAA || FXAA1 || FXAA2 || FXAA3))
 #endif
    {
+      assert(renderedRT != m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
       outputRT = (SMAA || DLAA || sharpen || (stereo && m_stereo3D != STEREO_TB && m_stereo3D != STEREO_SBS)) ? m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()
                                                                                                               : m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
       outputRT->Activate(true);
+
+      if (SMAA)
+      {
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_colorTex, renderedRT->GetColorSampler());
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_colorGammaTex, renderedRT->GetColorSampler());
+      }
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, renderedRT->GetColorSampler());
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, renderedRT->GetColorSampler());
@@ -4071,8 +4083,11 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
 
          if (SMAA)
          {
-            // FIXME this needs a full review (buffer are likely wrong and this is not portable DX/GL)
-            // CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_edgesTex2D, renderedRT->GetColorSampler()->GetCoreTexture())); //!! opt.?
+            #ifdef ENABLE_SDL
+            m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_edgesTex2D, renderedRT->GetColorSampler());
+            #else
+            CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_edgesTex2D, renderedRT->GetColorSampler()->GetCoreTexture())); //!! opt.?
+            #endif
          }
          else
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, renderedRT->GetColorSampler());
@@ -4082,27 +4097,32 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
          m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
          m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
          m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
+         renderedRT = outputRT;
 
          if (SMAA)
          {
-            // FIXME (re)implement SMAA
-            assert(false);
-            /* CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_edgesTex2D, nullptr)); //!! opt.??
+            outputRT = (sharpen || (stereo && m_stereo3D != STEREO_TB && m_stereo3D != STEREO_SBS)) ? m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()
+                                                                                                    : m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
+            outputRT->Activate(true);
 
-            if (sharpen)
-               m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(true);
-            else
-               m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate(true);
-
+            #ifdef ENABLE_SDL
+            m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_blendTex2D, renderedRT->GetColorSampler());
+            #else
+            CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_edgesTex2D, nullptr)); //!! opt.??
             CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_blendTex2D, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2()->GetColorSampler()->GetCoreTexture())); //!! opt.?
+            #endif
 
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_SMAA_NeighborhoodBlending);
 
-            m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin(0);
+            m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
             m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
             m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
+            renderedRT = outputRT;
 
+            #ifdef ENABLE_SDL
+            #else
             CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_blendTex2D, nullptr)); //!! opt.? */
+            #endif
          }
       }
    }

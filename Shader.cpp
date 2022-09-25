@@ -179,8 +179,8 @@ Shader::ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT] {
    SHADER_SAMPLER(tex_stereo_fb, texSampler0, Texture0, 0, SA_CLAMP, SA_CLAMP, SF_POINT), // Framebuffer (unfiltered)
    // SMAA shader
    // FIXME SMAA shader also use the color and colorGamma samplers. This has to be looked at more deeply for a clean implementation
-   SHADER_SAMPLER(smaa_colorTex, colorTex, colorTex, 0, SA_CLAMP, SA_CLAMP, SF_TRILINEAR),
-   SHADER_SAMPLER(smaa_colorGammaTex, colorGammaTex, colorGammaTex, 1, SA_CLAMP, SA_CLAMP, SF_TRILINEAR),
+   SHADER_SAMPLER(colorTex, colorTex, colorTex, 0, SA_CLAMP, SA_CLAMP, SF_TRILINEAR),
+   SHADER_SAMPLER(colorGammaTex, colorGammaTex, colorGammaTex, 1, SA_CLAMP, SA_CLAMP, SF_TRILINEAR),
    SHADER_SAMPLER(edgesTex, edgesTex, edgesTex2D, 2, SA_CLAMP, SA_CLAMP, SF_TRILINEAR),
    SHADER_SAMPLER(blendTex, blendTex, blendTex2D, 3, SA_CLAMP, SA_CLAMP, SF_TRILINEAR),
    SHADER_SAMPLER(areaTex, areaTex, areaTex2D, 4, SA_CLAMP, SA_CLAMP, SF_TRILINEAR),
