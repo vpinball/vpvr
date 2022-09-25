@@ -27,6 +27,8 @@ Sampler::Sampler(RenderDevice* rd, BaseTexture* const surf, const bool force_lin
       format = colorFormat::RGB16F;
    else if (surf->m_format == BaseTexture::RGB_FP32)
       format = colorFormat::RGB32F;
+   else if (surf->m_format == BaseTexture::BW)
+      format = colorFormat::GREY8;
    else
       assert(false); // Unsupported image format
    if (force_linear_rgb)
@@ -141,6 +143,8 @@ void Sampler::UpdateTexture(BaseTexture* const surf, const bool force_linear_rgb
       format = colorFormat::RGB16F;
    else if (surf->m_format == BaseTexture::RGB_FP32)
       format = colorFormat::RGB32F;
+   else if (surf->m_format == BaseTexture::BW)
+      format = colorFormat::GREY8;
    else
       assert(false);
    if (force_linear_rgb)
