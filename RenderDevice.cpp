@@ -285,7 +285,6 @@ void ReportError(const char *errorText, const HRESULT hr, const char *file, cons
 unsigned m_curLockCalls, m_frameLockCalls;
 unsigned int RenderDevice::Perf_GetNumLockCalls() const { return m_frameLockCalls; }
 
-#if 0//def ENABLE_SDL //not used anymore
 void checkGLErrors(const char *file, const int line) {
    GLenum err;
    unsigned int count = 0;
@@ -297,7 +296,6 @@ void checkGLErrors(const char *file, const int line) {
       exit(-1);
    }*/
 }
-#endif
 
 // Callback function for printing debug statements
 #if defined(ENABLE_SDL) && defined(_DEBUG)
@@ -1243,7 +1241,14 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 #endif
 
    // Retrieve a reference to the back buffer.
-   m_pBackBuffer = new RenderTarget(this, m_width, m_height);
+   int back_buffer_width, back_buffer_height;
+#ifdef ENABLE_SDL
+   SDL_GL_GetDrawableSize(m_sdl_playfieldHwnd, &back_buffer_width, &back_buffer_height);
+#else
+   back_buffer_width = m_width;
+   back_buffer_height = m_height;
+#endif
+   m_pBackBuffer = new RenderTarget(this, back_buffer_width, back_buffer_height);
 
    const colorFormat render_format = ((m_BWrendering == 1) ? colorFormat::RG16F : ((m_BWrendering == 2) ? colorFormat::RED16F : colorFormat::RGB16F));
    int m_width_aa = (int)(m_width * m_AAfactor);
@@ -1307,16 +1312,16 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_pOffscreenVRRight = new RenderTarget(this, m_width / 2, m_height, renderBufferFormatVR, false, 1, STEREO_OFF, "Fatal Error: unable to create right eye buffer!");
    }
 
-   // Non-MSAA Buffers for post-processing (postprocess is done at scene resolution without MSAA or full scene supersampling)
+   // Buffers for post-processing (postprocess is done at scene resolution, on a LDR render target without MSAA or full scene supersampling)
 
    // alloc temporary buffer for stereo3D/post-processing AA/sharpen
-   if ((m_stereo3D != STEREO_OFF) || (m_FXAA > 0) || m_sharpen)
+   if ((m_stereo3D != STEREO_OFF) || (m_FXAA != FXAASettings::Disabled) || m_sharpen)
       m_pOffscreenBackBufferTmpTexture = new RenderTarget(this, m_width, m_height, video10bit ? colorFormat::RGB10 : colorFormat::RGB8, false, 1, STEREO_OFF, "Fatal Error: unable to create stereo3D/post-processing AA/sharpen buffer!");
    else
       m_pOffscreenBackBufferTmpTexture = nullptr;
 
-   // alloc one more temporary buffer for SMAA
-   if (m_FXAA == Quality_SMAA)
+   // alloc one more temporary buffer for SMAA, DLAA, stereo post processing
+   if ((m_stereo3D != STEREO_OFF) || m_FXAA == Quality_SMAA || m_FXAA == Standard_DLAA)
       m_pOffscreenBackBufferTmpTexture2 = new RenderTarget(this, m_width, m_height, video10bit ? colorFormat::RGB10 : colorFormat::RGB8, false, 1, STEREO_OFF, "Fatal Error: unable to create SMAA buffer!");
    else
       m_pOffscreenBackBufferTmpTexture2 = nullptr;

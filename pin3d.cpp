@@ -589,9 +589,9 @@ HRESULT Pin3D::InitPin3D(const bool fullScreen, const int width, const int heigh
 
    // Direct all renders to the "static" buffer.
    if (m_pddsStatic)
-      m_pddsStatic->Activate(true);
+      m_pddsStatic->Activate();
    else
-      m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(true);
+      m_pd3dPrimaryDevice->GetMSAABackBufferTexture()->Activate();
 
    //m_gpu_profiler.Init(m_pd3dDevice->GetCoreDevice()); // done by first BeginFrame() call lazily
 

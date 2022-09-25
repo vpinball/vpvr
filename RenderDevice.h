@@ -25,8 +25,8 @@ void ReportError(const char *errorText, const HRESULT hr, const char *file, cons
 
 #if 1//def _DEBUG
 #ifdef ENABLE_SDL
-//void checkGLErrors(const char *file, const int line);
-//#define CHECKD3D(s) { s; } //checkGLErrors(__FILE__, __LINE__); } // by now the callback is used instead
+void checkGLErrors(const char *file, const int line);
+#define CHECKD3D(s) { s; } //checkGLErrors(__FILE__, __LINE__); }
 #else //ENABLE_SDL
 #define CHECKD3D(s) { const HRESULT hrTmp = (s); if (FAILED(hrTmp)) ReportFatalError(hrTmp, __FILE__, __LINE__); }
 #endif
@@ -185,11 +185,12 @@ public:
 
    bool SetMaximumPreRenderedFrames(const DWORD frames);
 
-   RenderTarget* GetMSAABackBufferTexture() const { return m_pOffscreenMSAABackBufferTexture; } // Main render target, may be MSAA enabled and not suited for sampling
+   RenderTarget* GetMSAABackBufferTexture() const { return m_pOffscreenMSAABackBufferTexture; } // Main render target, may be MSAA enabled and not suited for sampling, also may have stereo output (2 viewports)
    void ResolveMSAA(); // Resolve MSAA back buffer texture to be sample  from back buffer texture
-   RenderTarget* GetBackBufferTexture() const { return m_pOffscreenBackBufferTexture; } // Main render target, with MSAA resolved if any
-   RenderTarget* GetBackBufferTmpTexture() const { return m_pOffscreenBackBufferTmpTexture; } // stereo/FXAA only
-   RenderTarget* GetBackBufferTmpTexture2() const { return m_pOffscreenBackBufferTmpTexture2; } // SMAA only
+   RenderTarget* GetBackBufferTexture() const { return m_pOffscreenBackBufferTexture; } // Main render target, with MSAA resolved if any, also may have stereo output (2 viewports)
+   RenderTarget* GetBackBufferTmpTexture() const { return m_pOffscreenBackBufferTmpTexture; } // sharpen, stereo & FXAA
+   RenderTarget* GetBackBufferTmpTexture2() const { return m_pOffscreenBackBufferTmpTexture2; } // sharpen & SMAA
+   RenderTarget* GetPostProcessTexture(RenderTarget* renderedRT) const { return renderedRT == m_pOffscreenBackBufferTmpTexture ? m_pOffscreenBackBufferTmpTexture2 : m_pOffscreenBackBufferTmpTexture; }
    RenderTarget* GetOffscreenVR(int eye) const { return eye == 0 ? m_pOffscreenVRLeft : m_pOffscreenVRRight; }
    RenderTarget* GetMirrorTmpBufferTexture() const { return m_pMirrorTmpBufferTexture; }
    RenderTarget* GetReflectionBufferTexture() const { return m_pReflectionBufferTexture; }

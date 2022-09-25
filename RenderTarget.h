@@ -10,7 +10,7 @@ public:
    RenderTarget(RenderDevice* rd, const int width, const int height, const colorFormat format, bool with_depth, int nMSAASamples, StereoMode stereo, char* failureMessage);
    ~RenderTarget();
 
-   void Activate(const bool ignoreStereo);
+   void Activate(const bool ignoreStereo = false);
    static RenderTarget* GetCurrentRenderTarget();
 
    Sampler* GetColorSampler() { return m_color_sampler; }
@@ -20,7 +20,7 @@ public:
    RenderTarget* Duplicate();
    void CopyTo(RenderTarget* dest);
 
-   void SetSize(const int w, const int h) { m_width = w;  m_height = h; }
+   void SetSize(const int w, const int h) { assert(m_is_back_buffer); m_width = w; m_height = h; }
    int GetWidth() const { return m_width; }
    int GetHeight() const { return m_height; }
    StereoMode GetStereo() const { return m_stereo; }
