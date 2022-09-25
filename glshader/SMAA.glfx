@@ -87,8 +87,11 @@ out vec4[3] offset;
 
 void main()
 {
-    gl_Position = vec4(2.0*vPosition.x-1.0,2.0*vPosition.y-1.0, 0.0,1.0);
-    texcoord = vec2(tc.x,1.0-tc.y) + w_h_height.xy*0.5;
+    gl_Position = vec4(vPosition.x,-vPosition.y,0.0,1.0);
+    //gl_Position = vec4(2.0*vPosition.x-1.0,2.0*vPosition.y-1.0, 0.0,1.0);
+    // Offset texture coordinates since OpenGL texel center is shifted by half a texel from DirectX texel center
+    //texcoord = vec2(tc.x,1.0-tc.y) + w_h_height.xy*0.5;
+    texcoord = tc;
     SMAAEdgeDetectionVS(texcoord, offset);
 }
 
@@ -103,8 +106,11 @@ out vec2 pixcoord;
 
 void main()
 {
-    gl_Position = vec4(2.0*vPosition.x-1.0,2.0*vPosition.y-1.0, 0.0,1.0);
-    texcoord = vec2(tc.x,1.0-tc.y) + w_h_height.xy*0.5;
+    gl_Position = vec4(vPosition.x,-vPosition.y,0.0,1.0);
+    //gl_Position = vec4(2.0*vPosition.x-1.0,2.0*vPosition.y-1.0, 0.0,1.0);
+    // Offset texture coordinates since OpenGL texel center is shifted by half a texel from DirectX texel center
+    //texcoord = vec2(tc.x,1.0-tc.y) + w_h_height.xy*0.5;
+    texcoord = tc;
     SMAABlendingWeightCalculationVS(texcoord, pixcoord, offset);
 }
 
@@ -118,8 +124,11 @@ out vec4 offset;
 
 void main()
 {
-    gl_Position = vec4(2.0*vPosition.x-1.0,2.0*vPosition.y-1.0, 0.0,1.0);
-    texcoord = vec2(tc.x,1.0-tc.y) + w_h_height.xy*0.5;
+    gl_Position = vec4(vPosition.x,-vPosition.y,0.0,1.0);
+    // gl_Position = vec4(2.0*vPosition.x-1.0,2.0*vPosition.y-1.0, 0.0,1.0);
+    // Offset texture coordinates since OpenGL texel center is shifted by half a texel from DirectX texel center
+    //texcoord = vec2(tc.x,1.0-tc.y) + w_h_height.xy*0.5;
+    texcoord = tc;
     SMAANeighborhoodBlendingVS(texcoord, offset);
 }
 
