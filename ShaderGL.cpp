@@ -601,7 +601,7 @@ uint32_t Shader::CopyUniformCache(const bool copyTo, const ShaderTechniques tech
          memcpy(dst->data, src->data, src->count * sizeof(float));
       }
       if (shaderUniformNames[uniformName].is_sampler)
-         sampler_hash += (uint32_t) src->val.sampler;
+         sampler_hash += (unsigned long) src->val.sampler;
    }
    return sampler_hash;
 }
