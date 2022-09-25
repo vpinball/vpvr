@@ -427,28 +427,28 @@ void Player::PreCreate(CREATESTRUCT& cs)
     int x, y;
     getDisplaySetupByID(display, x, y, m_screenwidth, m_screenheight);
 
-    m_width = LoadValueIntWithDefault(regKey[RegName::Player], "Width"s, m_fullScreen ? -1 : DEFAULT_PLAYER_WIDTH);
-    m_height = LoadValueIntWithDefault(regKey[RegName::Player], "Height"s, m_width * 9 / 16);
-    if (m_width <= 0)
+    m_wnd_width = LoadValueIntWithDefault(regKey[RegName::Player], "Width"s, m_fullScreen ? -1 : DEFAULT_PLAYER_WIDTH);
+    m_wnd_height = LoadValueIntWithDefault(regKey[RegName::Player], "Height"s, m_wnd_width * 9 / 16);
+    if (m_wnd_width <= 0)
     {
-        m_width = m_screenwidth;
-        m_height = m_screenheight;
+       m_wnd_width = m_screenwidth;
+       m_wnd_height = m_screenheight;
     }
 
     // VR preview window does not support fullscreen. Its size will be defined from the headset eye render size
     if (m_stereo3D == STEREO_VR)
     {
        m_fullScreen = false;
-       m_width = 640;
-       m_height = 480;
+       m_wnd_width = 640;
+       m_wnd_height = 480;
     }
 
     if (m_fullScreen)
     {
         x = 0;
         y = 0;
-        m_screenwidth = m_width;
-        m_screenheight = m_height;
+        m_screenwidth = m_wnd_width;
+        m_screenheight = m_wnd_height;
         m_refreshrate = LoadValueIntWithDefault(regKey[RegName::Player], "RefreshRate"s, 0);
     }
     else
@@ -456,23 +456,23 @@ void Player::PreCreate(CREATESTRUCT& cs)
         m_refreshrate = 0; // The default
 
         // constrain window to screen
-        if (m_width > m_screenwidth)
+        if (m_wnd_width > m_screenwidth)
         {
-            m_width = m_screenwidth;
-            m_height = m_width * 9 / 16;
+           m_wnd_width = m_screenwidth;
+           m_wnd_height = m_wnd_width * 9 / 16;
         }
 
-        if (m_height > m_screenheight)
+        if (m_wnd_height > m_screenheight)
         {
-            m_height = m_screenheight;
-            m_width = m_height * 16 / 9;
+           m_wnd_height = m_screenheight;
+           m_wnd_width = m_wnd_height * 16 / 9;
         }
 
-        x += (m_screenwidth - m_width) / 2;
-        y += (m_screenheight - m_height) / 2;
+        x += (m_screenwidth - m_wnd_width) / 2;
+        y += (m_screenheight - m_wnd_height) / 2;
 
         // is this a non-fullscreen window? -> get previously saved window position
-        if ((m_height != m_screenheight) || (m_width != m_screenwidth))
+        if ((m_wnd_height != m_screenheight) || (m_wnd_width != m_screenwidth))
         {
             const int xn = LoadValueIntWithDefault(regKey[RegName::Player], "WindowPosX"s, x); //!! does this handle multi-display correctly like this?
             const int yn = LoadValueIntWithDefault(regKey[RegName::Player], "WindowPosY"s, y);
@@ -480,8 +480,8 @@ void Player::PreCreate(CREATESTRUCT& cs)
             RECT r;
             r.left = xn;
             r.top = yn;
-            r.right = xn + m_width;
-            r.bottom = yn + m_height;
+            r.right = xn + m_wnd_width;
+            r.bottom = yn + m_wnd_height;
             if (MonitorFromRect(&r, MONITOR_DEFAULTTONULL) != nullptr) // window is visible somewhere, so use the coords from the registry
             {
                 x = xn;
@@ -505,7 +505,7 @@ void Player::PreCreate(CREATESTRUCT& cs)
         //!! does not respect borders so far!!! -> change width/height accordingly ??
         //!! like this the render window is scaled and thus implicitly blurred!
         y -= captionheight;
-        m_height += captionheight;
+        m_wnd_height += captionheight;
     }
     else // No window border, title, or control boxes.
     {
@@ -518,8 +518,8 @@ void Player::PreCreate(CREATESTRUCT& cs)
     ZeroMemory(&cs, sizeof(cs));
     cs.x = x; 
     cs.y = y;
-    cs.cx = m_width;
-    cs.cy = m_height;
+    cs.cx = m_wnd_width;
+    cs.cy = m_wnd_height;
     cs.style = windowflags;
     cs.dwExStyle = windowflagsex;
     cs.hInstance = g_pvp->theInstance;
@@ -1410,11 +1410,8 @@ HRESULT Player::Init()
 
    // colordepth & refreshrate are only defined if fullscreen is true.
    // width and height may be modified during initialization (for example for VR, they are adapted to the headset resolution)
-   const HRESULT hr = m_pin3d.InitPin3D(m_fullScreen, m_width, m_height, colordepth,
+   const HRESULT hr = m_pin3d.InitPin3D(m_fullScreen, m_wnd_width, m_wnd_height, colordepth,
                                         m_refreshrate, vsync, AAfactor, m_stereo3D, FXAA, !!m_sharpen, !m_disableAO, ss_refl);
-
-   // Set the output frame buffer size to the size of the window output
-   m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->SetSize(m_width, m_height);
 
 #ifdef ENABLE_SDL
    if (m_stereo3D == STEREO_VR)
@@ -1426,24 +1423,26 @@ HRESULT Player::Init()
       }
       else
       {
-         int w = m_vrPreview == VRPREVIEW_BOTH ? 2 * m_pin3d.m_viewPort.Width : m_pin3d.m_viewPort.Width;
-         int h = m_pin3d.m_viewPort.Height;
-         if (w > m_screenwidth) { 
-            h = (h * m_screenwidth) / w;
-            w = m_screenwidth;
+         m_wnd_width = m_vrPreview == VRPREVIEW_BOTH ? 2 * m_pin3d.m_viewPort.Width : m_pin3d.m_viewPort.Width;
+         m_wnd_height = m_pin3d.m_viewPort.Height;
+         if (m_wnd_width > m_screenwidth)
+         { 
+            m_wnd_height = (m_wnd_height * m_screenwidth) / m_wnd_width;
+            m_wnd_width = m_screenwidth;
          }
-         if (h > m_screenheight)
+         if (m_wnd_height > m_screenheight)
          {
-            w = (w * m_screenheight) / h;
-            h = m_screenheight;
+            m_wnd_width = (m_wnd_width * m_screenheight) / m_wnd_height;
+            m_wnd_height = m_screenheight;
          }
-         SDL_SetWindowSize(m_sdl_playfieldHwnd, w, h);
-         SDL_SetWindowPosition(m_sdl_playfieldHwnd, (m_screenwidth - w) / 2, (m_screenheight - h) / 2);
-         SDL_GL_GetDrawableSize(m_sdl_playfieldHwnd, &w, &h);
-         m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->SetSize(w, h);
+         SDL_SetWindowSize(m_sdl_playfieldHwnd, m_wnd_width, m_wnd_height);
+         SDL_SetWindowPosition(m_sdl_playfieldHwnd, (m_screenwidth - m_wnd_width) / 2, (m_screenheight - m_wnd_height) / 2);
       }
    }
+   SDL_GL_GetDrawableSize(m_sdl_playfieldHwnd, &m_wnd_width, &m_wnd_height);
 #endif
+   // Set the output frame buffer size to the size of the window output
+   m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->SetSize(m_wnd_width, m_wnd_height);
 
    if (hr != S_OK)
    {
@@ -1454,7 +1453,7 @@ HRESULT Player::Init()
    }
 
    if (m_fullScreen)
-      SetWindowPos(nullptr, 0, 0, m_width, m_height, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
+      SetWindowPos(nullptr, 0, 0, m_wnd_width, m_wnd_height, SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOMOVE);
 
    m_pininput.Init(GetHwnd());
 
@@ -2349,7 +2348,7 @@ void Player::InitStatic()
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pddsAOBackBuffer->GetColorSampler()); //!! ?
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, m_pin3d.m_pddsAOBackBuffer->GetColorSampler()); //!! ?
 
-         const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height),
+         const vec4 w_h_height((float)(1.0 / (double)m_pin3d.m_pddsAOBackBuffer->GetWidth()), (float)(1.0 / (double)m_pin3d.m_pddsAOBackBuffer->GetHeight()),
             radical_inverse(i)*(float)(1. / 8.0),
              /*sobol*/radical_inverse<3>(i)*(float)(1. / 8.0)); // jitter within (64/8)x(64/8) neighborhood of 64x64 tex, good compromise between blotches and noise
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &w_h_height);
@@ -2373,7 +2372,7 @@ void Player::InitStatic()
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler());
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_ao, m_pin3d.m_pddsAOBackBuffer->GetColorSampler());
 
-      const vec4 fb_inv_resolution_05((float)(0.5 / (double)m_width), (float)(0.5 / (double)m_height), 1.0f, 1.0f);
+      const vec4 fb_inv_resolution_05((float)(0.5 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetWidth()), (float)(0.5 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetHeight()), 1.0f, 1.0f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution_05);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(useAA ? SHADER_TECHNIQUE_fb_tonemap_AO_static : SHADER_TECHNIQUE_fb_tonemap_AO_no_filter_static);
 
@@ -2585,7 +2584,7 @@ void Player::CalcBallAspectRatio()
       break;
    case 2:
       m_BallStretch = Vertex2D(scalebackX*c + scalebackY*s, scalebackY*c + scalebackX*s);
-      if (m_fullScreen || (m_width == m_screenwidth && m_height == m_screenheight)) // detect windowed fullscreen
+      if (m_fullScreen || (m_wnd_width == m_screenwidth && m_wnd_height == m_screenheight)) // detect windowed fullscreen
       {
          m_antiStretchBall = true;
          m_BallStretch.x *= (float)(scalebackMonitorX*c + scalebackMonitorY*s);
@@ -3952,7 +3951,7 @@ void Player::SSRefl()
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_ao_dither, &m_pin3d.m_aoDitherTexture, SF_UNDEFINED, SA_UNDEFINED, SA_UNDEFINED, true); // FIXME the force linear RGB is not honored
 
    // FIXME check if size should not be taken from renderdevice to account for VR (double width) or supersampling
-   const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), 1.0f/*radical_inverse(m_overall_frames%2048)*/, 1.0f);
+   const vec4 w_h_height((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetWidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetHeight()), 1.0f/*radical_inverse(m_overall_frames%2048)*/, 1.0f);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &w_h_height);
 
    const float rotation = fmodf(m_ptable->m_BG_rotation[m_ptable->m_BG_current_set], 360.f);
@@ -3977,12 +3976,14 @@ void Player::Bloom()
       return;
    }
 
+   double w = (double)m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetWidth();
+   double h = (double)m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetHeight();
    const float shiftedVerts[4 * 5] =
    {
-       1.0f,  1.0f, 0.0f, 1.0f + (float)(1.0 / (double)m_width), 0.0f + (float)(1.0 / (double)m_height),
-      -1.0f,  1.0f, 0.0f, 0.0f + (float)(1.0 / (double)m_width), 0.0f + (float)(1.0 / (double)m_height),
-       1.0f, -1.0f, 0.0f, 1.0f + (float)(1.0 / (double)m_width), 1.0f + (float)(1.0 / (double)m_height),
-      -1.0f, -1.0f, 0.0f, 0.0f + (float)(1.0 / (double)m_width), 1.0f + (float)(1.0 / (double)m_height)
+       1.0f,  1.0f, 0.0f, 1.0f + (float)(1.0 / w), 0.0f + (float)(1.0 / h),
+      -1.0f,  1.0f, 0.0f, 0.0f + (float)(1.0 / w), 0.0f + (float)(1.0 / h),
+       1.0f, -1.0f, 0.0f, 1.0f + (float)(1.0 / w), 1.0f + (float)(1.0 / h),
+      -1.0f, -1.0f, 0.0f, 0.0f + (float)(1.0 / w), 1.0f + (float)(1.0 / h)
    };
 
    {
@@ -3991,7 +3992,7 @@ void Player::Bloom()
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler());
 
-      const vec4 fb_inv_resolution((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), 1.0f, 1.0f);
+      const vec4 fb_inv_resolution((float)(1.0 / w), (float)(1.0 / h), 1.0f, 1.0f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_fb_bloom);
 
@@ -4006,7 +4007,7 @@ void Player::Bloom()
       m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->Activate();
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetColorSampler());
-      const vec4 fb_inv_resolution_05((float)(4.0 / (double)m_width), (float)(4.0 / (double)m_height), 1.0f, 1.0f);
+      const vec4 fb_inv_resolution_05((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetWidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetHeight()), m_ptable->m_bloom_strength, 1.0f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution_05);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(/*m_low_quality_bloom ? SHADER_TECHNIQUE_fb_bloom_horiz9x9 :*/ SHADER_TECHNIQUE_fb_bloom_horiz39x39);
 
@@ -4021,7 +4022,7 @@ void Player::Bloom()
       m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->Activate();
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->GetColorSampler());
-      const vec4 fb_inv_resolution_05((float)(4.0 / (double)m_width), (float)(4.0 / (double)m_height), m_ptable->m_bloom_strength, 1.0f);
+      const vec4 fb_inv_resolution_05((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->GetWidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->GetHeight()), m_ptable->m_bloom_strength, 1.0f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution_05);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(/*m_low_quality_bloom ? SHADER_TECHNIQUE_fb_bloom_vert9x9 :*/ SHADER_TECHNIQUE_fb_bloom_vert39x39);
 
@@ -4066,7 +4067,7 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
       else
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_tex_depth);
 
-      const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), (float)m_width, depth_available ? 1.f : 0.f);
+      const vec4 w_h_height((float)(1.0 / (double)renderedRT->GetWidth()), (float)(1.0 / (double)renderedRT->GetHeight()), (float)renderedRT->GetWidth(), depth_available ? 1.f : 0.f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &w_h_height);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SMAA ? SHADER_TECHNIQUE_SMAA_ColorEdgeDetection :
@@ -4153,7 +4154,7 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
       if (depth_available) // Depth is always taken from the MSAA resolved render buffer
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_depth, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetDepthSampler());
 
-      const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), (float)m_width, depth_available ? 1.f : 0.f);
+      const vec4 w_h_height((float)(1.0 / (double)renderedRT->GetWidth()), (float)(1.0 / (double)renderedRT->GetHeight()), (float)renderedRT->GetWidth(), depth_available ? 1.f : 0.f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &w_h_height);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique((sharpen == 1) ? SHADER_TECHNIQUE_fb_CAS : SHADER_TECHNIQUE_fb_BilateralSharp_CAS);
@@ -4511,7 +4512,7 @@ void Player::UpdateHUD_IMGUI()
    }
 
    ImGui::SetNextWindowSize(ImVec2(530, 550), ImGuiCond_FirstUseEver);
-   ImGui::SetNextWindowPos(ImVec2((float)(m_width - 530 - 10), 10), ImGuiCond_FirstUseEver);
+   ImGui::SetNextWindowPos(ImVec2((float)(m_wnd_width - 530 - 10), 10), ImGuiCond_FirstUseEver);
    ImGui::Begin("Plots");
        //!! This example assumes 60 FPS. Higher FPS requires larger buffer size.
        static ScrollingData sdata1, sdata2, sdata3, sdata4, sdata5, sdata6;
@@ -4883,12 +4884,13 @@ void Player::PrepareVideoBuffersNormal()
    if (stereo || ss_refl)
       renderedRT->UpdateDepthSampler(); // do not put inside BeginScene/EndScene Block
 
+   double w = (double)renderedRT->GetWidth(), h = (double)renderedRT->GetHeight();
    const float shiftedVerts[4 * 5] =
    {
-       1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / (double)m_width), 0.0f + (float)(1.0 / (double)m_height),
-      -1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / (double)m_width), 0.0f + (float)(1.0 / (double)m_height),
-       1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / (double)m_width), 1.0f + (float)(1.0 / (double)m_height),
-      -1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / (double)m_width), 1.0f + (float)(1.0 / (double)m_height)
+       1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / w), 0.0f + (float)(1.0 / h),
+      -1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / w), 0.0f + (float)(1.0 / h),
+       1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / w), 1.0f + (float)(1.0 / h),
+      -1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / w), 1.0f + (float)(1.0 / h)
    };
 
    m_pin3d.m_pd3dPrimaryDevice->BeginScene();
@@ -4943,7 +4945,7 @@ void Player::PrepareVideoBuffersNormal()
 
    //const unsigned int jittertime = (unsigned int)((U64)msec()*90/1000);
    const float jitter = (float)((msec() & 2047) / 1000.0);
-   const vec4 fb_inv_resolution_05((float)(0.5 / (double)m_width), (float)(0.5 / (double)m_height),
+   const vec4 fb_inv_resolution_05((float)(0.5 / (double)renderedRT->GetWidth()), (float)(0.5 / (double)renderedRT->GetHeight()),
       //1.0f, 1.0f);
       jitter, //radical_inverse(jittertime)*11.0f,
       jitter); //sobol(jittertime)*13.0f); // jitter for dither pattern
@@ -5050,7 +5052,7 @@ void Player::PrepareVideoBuffersAO()
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_ao_dither, &m_pin3d.m_aoDitherTexture, SF_UNDEFINED, SA_UNDEFINED, SA_UNDEFINED, true); // FIXME the force linear RGB is not honored
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_depth, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetDepthSampler());
 
-   const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height),
+   const vec4 w_h_height((float)(1.0 / (double)m_pin3d.m_pddsAOBackBuffer->GetWidth()), (float)(1.0 / (double)m_pin3d.m_pddsAOBackBuffer->GetHeight()),
       radical_inverse(m_overall_frames%2048)*(float)(1. / 8.0),
       /*sobol*/radical_inverse<3>(m_overall_frames%2048)*(float)(1. / 8.0)); // jitter within (64/8)x(64/8) neighborhood of 64x64 tex, good compromise between blotches and noise
 
@@ -5084,12 +5086,13 @@ void Player::PrepareVideoBuffersAO()
       ouputRT = m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
    ouputRT->Activate(true);
 
+   double w = (double)renderedRT->GetWidth(), h = (double)renderedRT->GetHeight();
    const float shiftedVerts[4 * 5] =
    {
-       1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / (double)m_width), 0.0f + (float)(1.0 / (double)m_height),
-      -1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / (double)m_width), 0.0f + (float)(1.0 / (double)m_height),
-       1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / (double)m_width), 1.0f + (float)(1.0 / (double)m_height),
-      -1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / (double)m_width), 1.0f + (float)(1.0 / (double)m_height)
+       1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / w), 0.0f + (float)(1.0 / h),
+      -1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / w), 0.0f + (float)(1.0 / h),
+       1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / w), 1.0f + (float)(1.0 / h),
+      -1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / w), 1.0f + (float)(1.0 / h)
    };
 
    // copy framebuffer over from texture and tonemap/gamma
@@ -5109,7 +5112,7 @@ void Player::PrepareVideoBuffersAO()
 
    //const unsigned int jittertime = (unsigned int)((U64)msec()*90/1000);
    const float jitter = (float)((msec()&2047)/1000.0);
-   const vec4 fb_inv_resolution_05((float)(0.5 / (double)m_width), (float)(0.5 / (double)m_height),
+   const vec4 fb_inv_resolution_05((float)(0.5 / (double)renderedRT->GetWidth()), (float)(0.5 / (double)renderedRT->GetHeight()),
       //1.0f, 1.0f);
       jitter, //radical_inverse(jittertime)*11.0f,
       jitter);//sobol(jittertime)*13.0f); // jitter for dither pattern
@@ -5262,8 +5265,8 @@ void Player::UpdateCameraModeDisplay()
    float x = 0.f, y = 0.f;
    if (m_ptable->m_BG_rotation[m_ptable->m_BG_current_set] == 270.0f)
    {
-       x = (float)(m_width - 256);
-       y = (float)(m_height - DBG_SPRITE_SIZE-10);
+       x = (float)(m_wnd_width - 256);
+       y = (float)(m_wnd_height - DBG_SPRITE_SIZE-10);
    }
    else if (m_ptable->m_BG_rotation[m_ptable->m_BG_current_set] == 90.0f)
        x = (float)(-DBG_SPRITE_SIZE/1.3);
@@ -5623,7 +5626,7 @@ void Player::Render()
          m_closeDownDelay = false;
 
          // add or remove caption, border and buttons (only if in windowed mode)?
-         if (!m_fullScreen && m_height < m_screenheight)
+         if (!m_fullScreen && m_wnd_height < m_screenheight)
          {
             int x, y;
 #ifdef ENABLE_SDL
@@ -6442,7 +6445,7 @@ LRESULT Player::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             {
                 ScreenToClient(pointerInfo.ptPixelLocation);
                 for (unsigned int i = 0; i < 8; ++i)
-                    if ((m_touchregion_pressed[i] != (uMsg == WM_POINTERDOWN)) && Intersect(touchregion[i], m_width, m_height, pointerInfo.ptPixelLocation, fmodf(m_ptable->m_BG_rotation[m_ptable->m_BG_current_set], 360.0f) != 0.f))
+                    if ((m_touchregion_pressed[i] != (uMsg == WM_POINTERDOWN)) && Intersect(touchregion[i], m_wnd_width, m_wnd_height, pointerInfo.ptPixelLocation, fmodf(m_ptable->m_BG_rotation[m_ptable->m_BG_current_set], 360.0f) != 0.f))
                     {
                         m_touchregion_pressed[i] = (uMsg == WM_POINTERDOWN);
 
