@@ -116,8 +116,8 @@ out vec4 color;
 
 void main()
 {
-   gl_Position = vec4(vPosition.x, -vPosition.y, 0.0, 1.0);
-   tex0 = float2(tc.x, tc.y);
+   gl_Position = vec4(vPosition.x, vPosition.y, 0.0, 1.0);
+   tex0 = float2(tc.x, 1.0-tc.y);
 }
 
 ////ps_main_int
@@ -138,8 +138,8 @@ void main()
 
 void main()
 {
-   gl_Position = vec4(vPosition.x*2.0-1.0, 1.0-vPosition.y*2.0, 0.0,1.0);
-   tex0 = float2(tc.x, tc.y);
+   gl_Position = vec4(vPosition.x, vPosition.y, 0.0, 1.0);
+   tex0 = float2(tc.x, 1.0-tc.y);
 }
 
 ////ps_main_amd

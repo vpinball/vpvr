@@ -188,9 +188,9 @@ out vec2 tex0;
 
 void main()
 { 
-   gl_Position = vec4(vPosition.x,-vPosition.y,0.0,1.0);
+   gl_Position = vec4(vPosition.x, vPosition.y,0.0,1.0);
    // Offset texture coordinates since OpenGL texel center is shifted by half a texel from DirectX texel center
-   tex0 = tc - w_h_height.xy*0.5;
+   tex0 = vec2(tc.x-0.5*w_h_height.x, 1.0-tc.y-0.5*w_h_height.y);
 }
 
 ////ps_main_fb_tonemap
