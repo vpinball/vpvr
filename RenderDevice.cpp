@@ -1344,6 +1344,23 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_SMAAareaTexture = nullptr;
       m_SMAAsearchTexture = nullptr;
    }
+
+   // Setup a defined initial render state
+   SetRenderState(ALPHABLENDENABLE, RS_FALSE);
+   SetRenderState(ZENABLE, RS_TRUE);
+   SetRenderState(ALPHATESTENABLE, RS_FALSE);
+   SetRenderState(ALPHAFUNC, Z_LESS);
+   SetRenderState(BLENDOP, BLENDOP_ADD);
+   SetRenderState(CLIPPLANEENABLE, RS_FALSE);
+   SetRenderState(CULLMODE, CULL_NONE);
+   SetRenderState(DESTBLEND, SRC_ALPHA);
+   SetRenderState(SRCBLEND, INVSRC_ALPHA);
+   SetRenderState(ZWRITEENABLE, RS_TRUE);
+   SetRenderState(COLORWRITEENABLE, RGBMASK_RGBA);
+   m_current_renderstate.state = (~m_renderstate.state) & ((1 << 25) - 1);
+   m_current_renderstate.depth_bias = m_renderstate.depth_bias - 1.0f;
+   m_current_renderstate.alpha_ref = m_renderstate.alpha_ref - 1;
+   ApplyRenderStates();
 }
 
 bool RenderDevice::LoadShaders()
@@ -1741,119 +1758,60 @@ void RenderDevice::Flip(const bool vsync)
 void RenderDevice::UploadAndSetSMAATextures()
 {
 #ifdef ENABLE_SDL
-   GLuint glTexture;
-   int num_mips;
+   BaseTexture* searchBaseTex = new BaseTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, BaseTexture::BW);
+   memcpy(searchBaseTex->data(), searchTexBytes, SEARCHTEX_WIDTH * SEARCHTEX_HEIGHT);
+   m_SMAAsearchTexture = new Sampler(this, searchBaseTex, true, SamplerAddressMode::SA_REPEAT, SamplerAddressMode::SA_REPEAT, SamplerFilter::SF_TRILINEAR);
 
-   // Update bind cache
-   auto tex_unit = m_samplerBindings.back();
-   if (tex_unit->sampler != nullptr)
-      tex_unit->sampler->m_bindings.erase(tex_unit);
-   tex_unit->sampler = nullptr;
-   glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
-
-   glGenTextures(1, &glTexture);
-   glBindTexture(GL_TEXTURE_2D, glTexture);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   num_mips = (int)std::log2(float(max(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT))) + 1;
-   if (m_GLversion >= 403)
-      glTexStorage2D(GL_TEXTURE_2D, num_mips, RGB8, SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT);
-   else
-   { // should never be triggered nowadays
-      GLsizei w = SEARCHTEX_WIDTH;
-      GLsizei h = SEARCHTEX_HEIGHT;
-      for (int i = 0; i < num_mips; i++)
-      {
-         glTexImage2D(GL_TEXTURE_2D, i, RGB8, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
-         w = max(1, (w / 2));
-         h = max(1, (h / 2));
-      }
-   }
-   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, GL_RED, GL_UNSIGNED_BYTE, (void*)searchTexBytes);
-   glGenerateMipmap(GL_TEXTURE_2D); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwise good idea to limit by GL_TEXTURE_MAX_LEVEL
-   m_SMAAsearchTexture = new Sampler(this, glTexture, true, false, false);
-
-   glGenTextures(1, &glTexture);
-   glBindTexture(GL_TEXTURE_2D, glTexture);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_RED);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_GREEN);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-   num_mips = (int)std::log2(float(max(AREATEX_WIDTH, AREATEX_HEIGHT))) + 1;
-   if (m_GLversion >= 403)
-      glTexStorage2D(GL_TEXTURE_2D, num_mips, RGB8, AREATEX_WIDTH, AREATEX_HEIGHT);
-   else
-   { // should never be triggered nowadays
-      GLsizei w = AREATEX_WIDTH;
-      GLsizei h = AREATEX_HEIGHT;
-      for (int i = 0; i < num_mips; i++)
-      {
-         glTexImage2D(GL_TEXTURE_2D, i, RGB8, w, h, 0, GL_RG, GL_UNSIGNED_BYTE, nullptr);
-         w = max(1, (w / 2));
-         h = max(1, (h / 2));
-      }
-   }
-   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, AREATEX_WIDTH, AREATEX_HEIGHT, GL_RG, GL_UNSIGNED_BYTE, (void*)searchTexBytes);
-   glGenerateMipmap(GL_TEXTURE_2D); // Generate mip-maps, when using TexStorage will generate same amount as specified in TexStorage, otherwise good idea to limit by GL_TEXTURE_MAX_LEVEL
-   m_SMAAareaTexture = new Sampler(this, glTexture, true, false, false);
+   BaseTexture* areaBaseTex = new BaseTexture(AREATEX_WIDTH, AREATEX_HEIGHT, BaseTexture::BW);
+   memcpy(areaBaseTex->data(), areaTexBytes, AREATEX_WIDTH * AREATEX_HEIGHT);
+   m_SMAAareaTexture = new Sampler(this, areaBaseTex, true, SamplerAddressMode::SA_REPEAT, SamplerAddressMode::SA_REPEAT, SamplerFilter::SF_TRILINEAR);
 #else
-   {
-      IDirect3DTexture9 *sysTex, *tex;
-      HRESULT hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREY8, (D3DPOOL)memoryPool::SYSTEM, &sysTex, nullptr);
-      if (FAILED(hr))
-         ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
-      hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREY8, (D3DPOOL)memoryPool::DEFAULT, &tex, nullptr);
-      if (FAILED(hr))
-         ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
+   // FIXME use standard BaseTexture / Sampler code instead
+      {
+         IDirect3DTexture9 *sysTex, *tex;
+         HRESULT hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREY8, (D3DPOOL)memoryPool::SYSTEM, &sysTex, nullptr);
+         if (FAILED(hr))
+            ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
+         hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREY8, (D3DPOOL)memoryPool::DEFAULT, &tex, nullptr);
+         if (FAILED(hr))
+            ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
 
-      //!! use D3DXLoadSurfaceFromMemory
-      D3DLOCKED_RECT locked;
-      CHECKD3D(sysTex->LockRect(0, &locked, nullptr, 0));
-      void* const pdest = locked.pBits;
-      const void* const psrc = searchTexBytes;
-      memcpy(pdest, psrc, SEARCHTEX_SIZE);
-      CHECKD3D(sysTex->UnlockRect(0));
+         //!! use D3DXLoadSurfaceFromMemory
+         D3DLOCKED_RECT locked;
+         CHECKD3D(sysTex->LockRect(0, &locked, nullptr, 0));
+         void* const pdest = locked.pBits;
+         const void* const psrc = searchTexBytes;
+         memcpy(pdest, psrc, SEARCHTEX_SIZE);
+         CHECKD3D(sysTex->UnlockRect(0));
 
-      CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, tex));
-      SAFE_RELEASE(sysTex);
+         CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, tex));
+         SAFE_RELEASE(sysTex);
 
-      m_SMAAsearchTexture = new Sampler(this, tex, true, true);
-   }
-   //
-   {
-      IDirect3DTexture9 *sysTex, *tex;
-      HRESULT hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREYA8, (D3DPOOL)memoryPool::SYSTEM, &sysTex, nullptr);
-      if (FAILED(hr))
-         ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
-      hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREYA8, (D3DPOOL)memoryPool::DEFAULT, &tex, nullptr);
-      if (FAILED(hr))
-         ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
+         m_SMAAsearchTexture = new Sampler(this, tex, true, true);
+      }
+      //
+      {
+         IDirect3DTexture9 *sysTex, *tex;
+         HRESULT hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREYA8, (D3DPOOL)memoryPool::SYSTEM, &sysTex, nullptr);
+         if (FAILED(hr))
+            ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
+         hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREYA8, (D3DPOOL)memoryPool::DEFAULT, &tex, nullptr);
+         if (FAILED(hr))
+            ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
 
-      //!! use D3DXLoadSurfaceFromMemory
-      D3DLOCKED_RECT locked;
-      CHECKD3D(sysTex->LockRect(0, &locked, nullptr, 0));
-      void* const pdest = locked.pBits;
-      const void* const psrc = areaTexBytes;
-      memcpy(pdest, psrc, AREATEX_SIZE);
-      CHECKD3D(sysTex->UnlockRect(0));
+         //!! use D3DXLoadSurfaceFromMemory
+         D3DLOCKED_RECT locked;
+         CHECKD3D(sysTex->LockRect(0, &locked, nullptr, 0));
+         void* const pdest = locked.pBits;
+         const void* const psrc = areaTexBytes;
+         memcpy(pdest, psrc, AREATEX_SIZE);
+         CHECKD3D(sysTex->UnlockRect(0));
 
-      CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, tex));
-      SAFE_RELEASE(sysTex);
+         CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, tex));
+         SAFE_RELEASE(sysTex);
 
-      m_SMAAareaTexture = new Sampler(this, tex, true, true);
-   }
+         m_SMAAareaTexture = new Sampler(this, tex, true, true);
+      }
 #endif
 }
 
@@ -2090,8 +2048,8 @@ void RenderDevice::ApplyRenderStates()
          // Basicshader already prepared with proper clipplane so just need to enable/disable it
          /* if (val)
                glEnable(GL_CLIP_DISTANCE0);
-            else
-               glDisable(GL_CLIP_DISTANCE0);*/
+            else*/
+         glDisable(GL_CLIP_DISTANCE0);
 #else
          CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_CLIPPLANEENABLE, val ? PLANE0 : 0));
 #endif
