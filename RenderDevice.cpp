@@ -3,7 +3,7 @@
 #include <DxErr.h>
 
 // Undefine this if you want to debug VR mode without a VR headset
-// #define VR_PREVIEW_TEST
+//#define VR_PREVIEW_TEST
 
 //#include "Dwmapi.h" // use when we get rid of XP at some point, get rid of the manual dll loads in here then
 
@@ -1280,7 +1280,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    {
       const bool drawBallReflection = ((g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
       if ((g_pplayer->m_ptable->m_reflectElementsOnPlayfield /*&& g_pplayer->m_pf_refl*/) || drawBallReflection)
-         m_pMirrorTmpBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, false, 1, STEREO_OFF, "Fatal Error: unable to create mirror buffer!");
+         m_pMirrorTmpBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, true, 1, m_stereo3D, "Fatal Error: unable to create mirror buffer!");
    }
 
    // alloc bloom tex at 1/4 x 1/4 res (allows for simple HQ downscale of clipped input while saving memory)
@@ -1977,10 +1977,7 @@ void RenderDevice::ApplyRenderStates()
          val = m_renderstate.state & RENDER_STATE_MASK_ALPHABLENDENABLE;
          m_curStateChanges++;
 #ifdef ENABLE_SDL
-         if (val)
-            glEnable(GL_BLEND);
-         else
-            glDisable(GL_BLEND);
+         if (val) glEnable(GL_BLEND); else glDisable(GL_BLEND);
 #else
          CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, val ? TRUE : FALSE));
 #endif
@@ -1991,10 +1988,7 @@ void RenderDevice::ApplyRenderStates()
          val = m_renderstate.state & RENDER_STATE_MASK_ZENABLE;
          m_curStateChanges++;
 #ifdef ENABLE_SDL
-         if (val)
-            glEnable(GL_DEPTH_TEST);
-         else
-            glDisable(GL_DEPTH_TEST);
+         if (val) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
 #else
          CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_ZENABLE, val ? TRUE : FALSE));
 #endif
@@ -2044,12 +2038,8 @@ void RenderDevice::ApplyRenderStates()
          val = m_renderstate.state & RENDER_STATE_MASK_CLIPPLANEENABLE;
          m_curStateChanges++;
 #ifdef ENABLE_SDL
-         // FIXME reimplement clip plane
          // Basicshader already prepared with proper clipplane so just need to enable/disable it
-         /* if (val)
-               glEnable(GL_CLIP_DISTANCE0);
-            else*/
-         glDisable(GL_CLIP_DISTANCE0);
+         if (val) glEnable(GL_CLIP_DISTANCE0); else glDisable(GL_CLIP_DISTANCE0);
 #else
          CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_CLIPPLANEENABLE, val ? PLANE0 : 0));
 #endif

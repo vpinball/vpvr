@@ -28,6 +28,8 @@ enum ShaderTechniques
    SHADER_TECHNIQUE(RenderBallTrail),
    SHADER_TECHNIQUE(basic_without_texture),
    SHADER_TECHNIQUE(basic_with_texture),
+   SHADER_TECHNIQUE(basic_without_texture_n_mirror),
+   SHADER_TECHNIQUE(basic_with_texture_n_mirror),
    SHADER_TECHNIQUE(basic_depth_only_without_texture),
    SHADER_TECHNIQUE(basic_depth_only_with_texture),
    SHADER_TECHNIQUE(bg_decal_without_texture),
@@ -129,6 +131,8 @@ enum ShaderUniforms
    SHADER_UNIFORM(mirrorFactor),
    SHADER_UNIFORM(SSR_bumpHeight_fresnelRefl_scale_FS),
    SHADER_UNIFORM(AO_scale_timeblur),
+   SHADER_UNIFORM(clip_planes),
+   SHADER_UNIFORM(cWidth_Height_MirrorAmount),
    // -- Integer and Bool --
    SHADER_UNIFORM(ignoreStereo),
    SHADER_UNIFORM(disableLighting),

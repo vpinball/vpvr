@@ -57,7 +57,7 @@ public:
    void EnableAlphaBlend(const bool additiveBlending, const bool set_dest_blend = true, const bool set_blend_op = true) const;
 
    void DrawBackground();
-   void RenderPlayfieldGraphics(const bool depth_only);
+   void RenderPlayfieldGraphics(const float mirror_factor, const bool depth_only);
 
    const Matrix3D& GetWorldTransform() const   { return m_proj.m_matWorld; }
    const Matrix3D& GetViewTransform() const    { return m_proj.m_matView; }

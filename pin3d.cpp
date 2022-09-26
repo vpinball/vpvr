@@ -1045,7 +1045,7 @@ void Pin3D::InitPlayfieldGraphics()
       g_pplayer->m_meshAsPlayfield = true;
 }
 
-void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
+void Pin3D::RenderPlayfieldGraphics(const float mirror_factor, const bool depth_only)
 {
    TRACE_FUNCTION();
 
@@ -1067,18 +1067,23 @@ void Pin3D::RenderPlayfieldGraphics(const bool depth_only)
    }
    else
    {
-       if (pin)
-       {
-           m_pd3dPrimaryDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
-           m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_base_color, pin, SF_ANISOTROPIC, SA_CLAMP, SA_CLAMP);
-           m_pd3dPrimaryDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
-           m_pd3dPrimaryDevice->basicShader->SetMaterial(mat, pin->m_pdsBuffer->has_alpha());
-       }
-       else // No image by that name
-       {
-          m_pd3dPrimaryDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_without_texture, mat->m_bIsMetal);
-          m_pd3dPrimaryDevice->basicShader->SetMaterial(mat, false);
-       }
+      if (mirror_factor > 0.0f)
+      {
+         m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_mirror, m_pd3dPrimaryDevice->GetMirrorTmpBufferTexture()->GetColorSampler());
+         m_pd3dPrimaryDevice->basicShader->SetVector(SHADER_cWidth_Height_MirrorAmount, (float) RenderTarget::GetCurrentRenderTarget()->GetWidth(), (float) RenderTarget::GetCurrentRenderTarget()->GetHeight(), mirror_factor, 0.0f);
+      }
+      if (pin)
+      {
+         m_pd3dPrimaryDevice->basicShader->SetTechniqueMetal(mirror_factor > 0.0f ? SHADER_TECHNIQUE_basic_with_texture_n_mirror : SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
+         m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_base_color, pin, SF_ANISOTROPIC, SA_CLAMP, SA_CLAMP);
+         m_pd3dPrimaryDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
+         m_pd3dPrimaryDevice->basicShader->SetMaterial(mat, pin->m_pdsBuffer->has_alpha());
+      }
+      else // No image by that name
+      {
+         m_pd3dPrimaryDevice->basicShader->SetTechniqueMetal(mirror_factor > 0.0f ? SHADER_TECHNIQUE_basic_without_texture_n_mirror : SHADER_TECHNIQUE_basic_without_texture, mat->m_bIsMetal);
+         m_pd3dPrimaryDevice->basicShader->SetMaterial(mat, false);
+      }
    }
 
    if (!g_pplayer->m_meshAsPlayfield)
