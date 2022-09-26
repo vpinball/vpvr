@@ -219,7 +219,6 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
       m_disableAO = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "DisableAO"s, false);
       m_ss_refl = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "SSRefl"s, false);
       m_pf_refl = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "PFRefl"s, true);
-      m_pf_refl = false; // Force disable for now, reflections kind of works but the camera is scewed in VR.
       m_scaleFX_DMD = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "ScaleFXDMD"s, false);
       m_bloomOff = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "ForceBloomOff"s, false);
       m_VSync = 0; //Disable VSync for VR
@@ -1061,16 +1060,6 @@ void Player::UpdateBasicShaderMatrix(const Matrix3D& objectTrafo)
    Shader::GetTransform(TRANSFORMSTATE_VIEW, &matrices.matView, 1);
    Shader::GetTransform(TRANSFORMSTATE_PROJECTION, matProj, eyes);
 
-   if (m_ptable->m_reflectionEnabled)
-   {
-      Matrix3D matObject;
-      memcpy(matObject.m, objectTrafo.m, 64);
-
-      // *2.0f because every element is calculated that the lowest edge is around z=0 + table height so to get a correct
-      // reflection the translation must be 1x table height + 1x table height to center around table height or 0
-      matObject._43 -= m_ptable->m_tableheight*2.0f;
-      matrices.matWorldView = matObject * matWorld * matrices.matView;
-   }
    matrices.matWorldView = objectTrafo * matWorld * matrices.matView;
    for (int eye = 0;eye<eyes;++eye) matrices.matWorldViewProj[eye] = matrices.matWorldView * matProj[eye];
 
@@ -1919,53 +1908,73 @@ void Player::RenderDynamicMirror(const bool onlyBalls)
 
    m_pin3d.m_pd3dPrimaryDevice->Clear(TARGET | ZBUFFER, 0, 1.0f, 0L);
 
+   SetClipPlanePlayfield(true);
+
    Matrix3D viewMat;
    Shader::GetTransform(TRANSFORMSTATE_VIEW, &viewMat, 1);
    // flip camera
-   viewMat._33 = -viewMat._33;
-   const float rotation = fmodf(m_ptable->m_BG_rotation[m_ptable->m_BG_current_set], 360.f);
-   if (rotation != 0.0f)
-      viewMat._31 = -viewMat._31;
-   else
-      viewMat._32 = -viewMat._32;
+   Matrix3D viewMatCache;
+   memcpy(viewMatCache.m, viewMat.m, 4 * 4 * sizeof(float));
+   // Reflect against reflection plane given by its normal (formula from https://en.wikipedia.org/wiki/Transformation_matrix#Reflection_2)
+   Matrix3D reflect;
+   reflect.SetIdentity();
+   //float nx = 0.0f, ny = 0.0f, nz = 1.0f;
+   //reflect._11 = 1.0f - 2.0f * nx * nx;
+   //reflect._12 = -2.0f * nx * ny;
+   //reflect._13 = -2.0f * nx * nz;
+   //reflect._21 = -2.0f * nx * ny;
+   //reflect._22 = 1.0f - 2.0f * ny * ny;
+   //reflect._23 = -2.0f * ny * nz;
+   //reflect._31 = -2.0f * nx * nz;
+   //reflect._32 = -2.0f * ny * nz;
+   //reflect._33 = 1.0f - 2.0f * nz * nz;
+   reflect._33 = -1.0f;
+   viewMat = reflect * viewMat;
+   // Translate the camera on the other side of the playfield plane
+   reflect.SetTranslation(0.0f, 0.0f, - m_ptable->m_tableheight * 2.0f);
+   viewMat = reflect * viewMat;
    Shader::SetTransform(TRANSFORMSTATE_VIEW, &viewMat, 1);
 
    m_ptable->m_reflectionEnabled = true; // set to let matrices and postrenderstatics know that we need to handle reflections now
    m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_NONE); // re-init/thrash cache entry due to the hacky nature of the table mirroring
    m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
+   m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZFUNC, RenderDevice::Z_LESSEQUAL);
 
    if (!onlyBalls)
       UpdateBasicShaderMatrix(); //!! Camera seems skewed when rendering the flipped elements in VR, something with the matrix? Looks fine in 2D.
 
    UpdateBallShaderMatrix();
 
+   // Draw non-transparent objects.
    if (!onlyBalls)
    {
-      // render mirrored static elements - remove if it makes problems
-      for (size_t i = 0; i < m_ptable->m_vedit.size(); i++)
-         if (m_ptable->m_vedit[i]->GetItemType() != eItemDecal)
+      // FIXME implement static mirror pre rendering if (m_dynamicMode)
+      {
+         for (size_t i = 0; i < m_ptable->m_vedit.size(); i++)
          {
-            Hitable * const ph = m_ptable->m_vedit[i]->GetIHitable();
-            if (ph)
-               ph->RenderStatic();
+            if (m_ptable->m_vedit[i]->GetItemType() != eItemDecal)
+            {
+               Hitable *const ph = m_ptable->m_vedit[i]->GetIHitable();
+               if (ph)
+               {
+                  ph->RenderStatic();
+               }
+            }
          }
-
-      std::stable_sort(m_vHitTrans.begin(), m_vHitTrans.end(), CompareHitableDepthInverse);
-
-      // Draw transparent objects.
-      for (size_t i = 0; i < m_vHitTrans.size(); ++i)
-         m_vHitTrans[i]->RenderDynamic();
-
-      std::stable_sort(m_vHitTrans.begin(), m_vHitTrans.end(), CompareHitableDepth);
+      }
+      for (size_t i = 0; i < m_vHitNonTrans.size(); ++i)
+         m_vHitNonTrans[i]->RenderDynamic();
    }
 
    DrawBalls();
 
+   // Draw transparent objects.
    if (!onlyBalls)
    {
-      // Draw non-transparent objects.
-      for (size_t i = 0; i < m_vHitNonTrans.size(); ++i)
-         m_vHitNonTrans[i]->RenderDynamic();
+      std::stable_sort(m_vHitTrans.begin(), m_vHitTrans.end(), CompareHitableDepthInverse);
+      for (size_t i = 0; i < m_vHitTrans.size(); ++i)
+         m_vHitTrans[i]->RenderDynamic();
+      std::stable_sort(m_vHitTrans.begin(), m_vHitTrans.end(), CompareHitableDepth);
    }
 
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
@@ -1979,11 +1988,7 @@ void Player::RenderDynamicMirror(const bool onlyBalls)
    m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 
    // and flip back camera
-   viewMat._33 = -viewMat._33;
-   if (rotation != 0.0f)
-      viewMat._31 = -viewMat._31;
-   else
-      viewMat._32 = -viewMat._32;
+   memcpy(viewMat.m, viewMatCache.m, 4 * 4 * sizeof(float));
    Shader::SetTransform(TRANSFORMSTATE_VIEW, &viewMat, 1);
 
    if (!onlyBalls)
@@ -2113,12 +2118,13 @@ void Player::InitStatic()
                RenderStaticMirror(false);
 
 #ifdef ENABLE_SDL
-         // FIXME For VPVR, mirror is disabled and will likely be implemented differently (reflection probe)
-         m_pin3d.RenderPlayfieldGraphics(false);
+         // For the time being, playfield is not prerendered, but dynamicly rendered with the reflections
+         // FIXME This should be split between static/dynamic since it breaks AO (no playfield) and slightly impacts performance
+         // m_pin3d.RenderPlayfieldGraphics(0.0f, false);
 #else
          // exclude playfield depth as dynamic mirror objects have to be added later-on
          m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
-         m_pin3d.RenderPlayfieldGraphics(false);
+         m_pin3d.RenderPlayfieldGraphics(0.0f, false);
          m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
 #endif
 
@@ -3704,19 +3710,15 @@ void Player::RenderDynamics()
 {
    TRACE_FUNCTION();
 
-   unsigned int reflection_path = 0;
-   if (!m_dynamicMode)
-   {
-      const bool drawBallReflection = ((m_reflectionForBalls && (m_ptable->m_useReflectionForBalls == -1)) || (m_ptable->m_useReflectionForBalls == 1));
-
-      if (!(m_ptable->m_reflectElementsOnPlayfield && m_pf_refl) && drawBallReflection)
-         reflection_path = 1;
-      else if (m_ptable->m_reflectElementsOnPlayfield && m_pf_refl)
-         reflection_path = 2;
-   }
-
    UpdateBasicShaderMatrix();
+   UpdateBallShaderMatrix();
 
+   unsigned int reflection_path = 0; // No reflection
+   const bool drawBallReflection = ((m_reflectionForBalls && (m_ptable->m_useReflectionForBalls == -1)) || (m_ptable->m_useReflectionForBalls == 1));
+   if (!(m_ptable->m_reflectElementsOnPlayfield && m_pf_refl) && drawBallReflection)
+      reflection_path = 1; // Only ball reflection
+   else if (m_ptable->m_reflectElementsOnPlayfield && m_pf_refl)
+      reflection_path = 2; // Full dynamic element reflections
    if (reflection_path != 0)
    {
       // Create the playfield reflection
@@ -3736,12 +3738,7 @@ void Player::RenderDynamics()
    if (m_pin3d.m_backGlass != nullptr)
       m_pin3d.m_backGlass->Render();
 
-#ifndef ENABLE_SDL
-   // For VPVR, the static buffer already contains the depth of the playfield, so no need to render it afterward like this
-   m_pin3d.RenderPlayfieldGraphics(true); // static depth buffer only contained static (&mirror) objects, but no playfield yet -> so render depth only to add this
-#endif
-
-   if (m_dynamicMode)
+   if (m_cameraMode)
    {
       m_pin3d.InitLights();
 
@@ -3750,10 +3747,20 @@ void Player::RenderDynamics()
 #ifdef SEPARATE_CLASSICLIGHTSHADER
       m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetVector(SHADER_fenvEmissionScale_TexWidth, &st);
 #endif
+   }
 
-      UpdateBallShaderMatrix();
+#ifdef ENABLE_SDL
+   // For VPVR, the playfield is not prerendered since reflections are rendered with it
+   m_pin3d.RenderPlayfieldGraphics(reflection_path == 0 ? 0.0f : m_ptable->m_playfieldReflectionStrength, false);
+#else
+   m_pin3d.RenderPlayfieldGraphics(0.0f, true); // static depth buffer only contained static (&mirror) objects, but no playfield yet -> so render depth only to add this
+#endif
 
-      m_pin3d.RenderPlayfieldGraphics(false);
+   if (m_dynamicMode)
+   {
+#ifndef ENABLE_SDL
+      m_pin3d.RenderPlayfieldGraphics(reflection_path == 0 ? 0.0f : m_ptable->m_playfieldReflectionStrength, false);
+#endif
 
       for (size_t i = 0; i < m_ptable->m_vedit.size(); i++)
          if (m_ptable->m_vedit[i]->GetItemType() != eItemDecal)
@@ -3916,19 +3923,24 @@ void Player::RenderDynamics()
 void Player::SetClipPlanePlayfield(const bool clip_orientation)
 {
 #ifdef ENABLE_SDL
-   //FIXME Reimplement mirroring
-   /*
-   const int eyes = (m_stereo3D != STEREO_OFF);
-   Matrix3D *mT = (Matrix3D*)malloc(sizeof(Matrix3D)*eyes);
-   for (int eye = 0;eye < eyes;++eye) {
-      mT[eye] = m_pin3d.m_proj.m_matrixTotal[eye]; // = world * view * proj
-      mT[eye].Invert();
-      mT[eye].Transpose();
+   const int eyes = m_stereo3D == STEREO_OFF ? 1 : 2;
+   Matrix3D mT;
+   float x = 0.0f;
+   float y = 0.0f;
+   float z = clip_orientation ? -1.0f : 1.0f;
+   float w = clip_orientation ? m_ptable->m_tableheight : -m_ptable->m_tableheight;
+   float clip_planes[2][4];
+   for (int eye = 0; eye < eyes; ++eye)
+   {
+      memcpy(mT.m, m_pin3d.m_proj.m_matrixTotal[eye].m, 64); // = world * view * proj
+      mT.Invert();
+      mT.Transpose();
+      clip_planes[eye][0] = mT._11 * x + mT._21 * y + mT._31 * z + mT._41 * w;
+      clip_planes[eye][1] = mT._12 * x + mT._22 * y + mT._32 * z + mT._42 * w;
+      clip_planes[eye][2] = mT._13 * x + mT._23 * y + mT._33 * z + mT._43 * w;
+      clip_planes[eye][3] = mT._14 * x + mT._24 * y + mT._34 * z + mT._44 * w;
    }
-   D3DXPLANE clipSpacePlane;
-   const D3DXPLANE plane(0.0f, 0.0f, clip_orientation ? -1.0f : 1.0f, clip_orientation ? m_ptable->m_tableheight : -m_ptable->m_tableheight);
-   D3DXPlaneTransform(&clipSpacePlane, &plane, (const D3DXMATRIX*)&mT);
-   m_pin3d.m_pd3dPrimaryDevice->GetCoreDevice()->SetClipPlane(0, clipSpacePlane);*/
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetFloatArray(SHADER_clip_planes, (float *)clip_planes, 4 * eyes);
 #else
    Matrix3D mT = m_pin3d.m_proj.m_matrixTotal; // = world * view * proj
    mT.Invert();
@@ -5887,9 +5899,6 @@ void Player::DrawBalls()
 
       // calculate/adapt height of ball
       float zheight = (!pball->m_d.m_frozen) ? pball->m_d.m_pos.z : (pball->m_d.m_pos.z - pball->m_d.m_radius);
-
-      if (m_ptable->m_reflectionEnabled)
-         zheight -= m_ptable->m_tableheight*2.0f;
 
       const float maxz = (pball->m_d.m_radius + m_ptable->m_tableheight) + 3.0f;
       const float minz = (pball->m_d.m_radius + m_ptable->m_tableheight) - 0.1f;

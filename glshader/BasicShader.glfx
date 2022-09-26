@@ -17,6 +17,8 @@ layout(std140) uniform matrixBlock {
 
 uniform bool ignoreStereo = false; // Must be able to force only one invocation for drawing bulb light texture
 
+uniform vec4 clip_planes[eyes];
+
 ////VERTEX
 
 ////GEOMETRY
@@ -46,6 +48,7 @@ uniform sampler2D tex_env; // envmap
 uniform sampler2D tex_diffuse_env; // envmap radiance
 uniform sampler2D tex_base_transmission; // bulb light buffer
 uniform sampler2D tex_base_normalmap; // normal map
+uniform sampler2D tex_mirror; // reflection probe
 
 uniform bool objectSpaceNormalMap;
 uniform bool is_metal;
@@ -112,12 +115,10 @@ out vec2 tex01_gs;
 out vec2 tex03_gs;
 out vec3 worldPos_gs;
 out vec3 normal_gs;
-out float gl_ClipDistance[1];
 
 void main()
 {
    gl_Position = vec4(vPosition, 1.0);
-   gl_ClipDistance[0] = dot(vPosition, vec3(0, 1, 0)); // For Render Dynamic Mirror when enabling clipping.
    tex01_gs = tc;
    vec4 bulbPos = (matWorldViewProj[0]*vec4(vPosition, 1.0));
    tex03_gs = vec2(bulbPos.xy/bulbPos.w);
@@ -134,12 +135,10 @@ in vec2 tc;
 out vec2 tex03_gs;
 out vec3 worldPos_gs;
 out vec3 normal_gs;
-out float gl_ClipDistance[1];
 
 void main()
 {
    gl_Position = vec4(vPosition, 1.0);
-   gl_ClipDistance[0] = dot(vPosition, vec3(0, 1, 0)); // For Render Dynamic Mirror when enabling clipping.
    vec4 bulbPos = (matWorldViewProj[0]*vec4(vPosition, 1.0));
    tex03_gs = vec2(bulbPos.xy/bulbPos.w);
    worldPos_gs = (matWorldView*vec4(vPosition, 1.0)).xyz;
@@ -188,7 +187,7 @@ void main()
    for (int i=0;i<gl_in.length();i++) {
       //Default
       gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
-      gl_ClipDistance[0] = gl_in[i].gl_ClipDistance[0]; // For Render Dynamic Mirror when enabling clipping.
+      gl_ClipDistance[0] = dot(matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position, clip_planes[i]); // For Render Dynamic Mirror when enabling clipping.
       //Custom
       tex01 = tex01_gs[i];
       tex03 = tex03_gs[i];
@@ -217,7 +216,7 @@ void main()
    for (int i=0;i<gl_in.length();i++) {
       //Default
       gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
-      gl_ClipDistance[0] = gl_in[i].gl_ClipDistance[0];  // For Render Dynamic Mirror when enabling clipping.
+      gl_ClipDistance[0] = dot(matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position, clip_planes[i]); // For Render Dynamic Mirror when enabling clipping.
       //Custom
       tex03 = tex03_gs[i];
       worldPos = worldPos_gs[i];
@@ -371,6 +370,96 @@ void main() {
    color *= staticColor_Alpha;
 }
 
+////ps_main_notex_mirror
+
+uniform vec4 cWidth_Height_MirrorAmount;
+
+in vec2 tex01;
+in vec2 tex03;
+in vec3 worldPos;
+in vec3 normal;
+
+void main() {
+   vec3 diffuse  = cBase_Alpha.xyz;
+   vec3 glossy   = is_metal ? cBase_Alpha.xyz : cGlossy_ImageLerp.xyz*0.08;
+   vec3 specular = cClearcoat_EdgeAlpha.xyz*0.08;
+   float edge    = is_metal ? 1.0 : Roughness_WrapL_Edge_Thickness.z;
+
+   vec3 V = normalize(-worldPos);
+   vec3 N = normalize(normal);
+
+   //color = vec4((N+1.0)*0.5,1.0); return; // visualize normals
+
+   color = vec4(
+      lightLoop(worldPos, N, V, diffuse, glossy, specular, edge, true, is_metal), //!! have a "real" view vector instead that mustn't assume that viewer is directly in front of monitor? (e.g. cab setup) -> viewer is always relative to playfield and/or user definable
+      cBase_Alpha.a);
+
+   if (cBase_Alpha.a < 1.0) {
+      color.a = GeometricOpacity(dot(N,V), color.a, cClearcoat_EdgeAlpha.w, Roughness_WrapL_Edge_Thickness.w);
+
+      if (fDisableLighting_top_below.y < 1.0)
+          // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
+          color.xyz += mix(sqrt(diffuse)*texture(tex_base_transmission, vec2(0.5*tex03.xy)+0.5, 0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
+   }
+
+   // Reflection, faded out on playfield border and cutouts (limits are magic to allow normal mapping), taking in account playfield alpha transparency
+   color.rgb += smoothstep(0.5, 0.9, -N.z) * color.a * cWidth_Height_MirrorAmount.z * texture(tex_mirror, gl_FragCoord.xy / cWidth_Height_MirrorAmount.xy).rgb;
+
+   color *= staticColor_Alpha;
+}
+
+////ps_main_texture_mirror
+
+uniform vec4 cWidth_Height_MirrorAmount;
+
+in vec2 tex01;
+in vec2 tex03;
+in vec3 worldPos;
+in vec3 normal;
+
+void main() {
+   vec4 pixel = texture(tex_base_color, tex01);
+
+   if (pixel.a <= alphaTestValue)
+      discard;           //stop the pixel shader if alpha test should reject pixel
+
+   if (fDisableLighting_top_below.x < 1.0) // if there is lighting applied, make sure to clamp the values (as it could be coming from a HDR tex)
+      pixel.xyz = clamp(pixel.xyz, vec3(0.0,0.0,0.0), vec3(1.0,1.0,1.0));
+
+   vec3 t = pixel.xyz;
+
+   vec3 diffuse  = t*cBase_Alpha.xyz;
+   vec3 glossy   = is_metal ? diffuse : (t*cGlossy_ImageLerp.w + (1.0-cGlossy_ImageLerp.w))*cGlossy_ImageLerp.xyz*0.08; //!! use AO for glossy? specular?
+   vec3 specular = cClearcoat_EdgeAlpha.xyz*0.08;
+   float edge    = is_metal ? 1.0 : Roughness_WrapL_Edge_Thickness.z;
+
+   vec3 V = normalize(-worldPos);
+   vec3 N = normalize(normal);
+
+   if (doNormalMapping)
+      N = normal_map(N, normalize(worldPos), tex01);
+
+   //color = vec4((N+1.0)*0.5,1.0); return; // visualize normals
+
+   color.rgb = lightLoop(worldPos, N, V, diffuse, glossy, specular, edge, !doNormalMapping, is_metal);
+   color.a = clamp(pixel.a * cBase_Alpha.a, 0.0, 1.0);
+
+   if (cBase_Alpha.a < 1.0 && color.a < 1.0) {
+      color.a = GeometricOpacity(dot(N,V), color.a, cClearcoat_EdgeAlpha.w, Roughness_WrapL_Edge_Thickness.w);
+
+      if (fDisableLighting_top_below.y < 1.0)
+      {
+         // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
+         color.xyz += mix(sqrt(diffuse)*texture(tex_base_transmission, vec2(0.5*tex03.xy)+0.5).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
+      }
+   }
+
+   // Reflection, faded out on playfield border and cutouts (limits are magic to allow normal mapping), taking in account playfield alpha transparency
+   color.rgb += smoothstep(0.5, 0.9, -N.z) * color.a * cWidth_Height_MirrorAmount.z * texture(tex_mirror, gl_FragCoord.xy / cWidth_Height_MirrorAmount.xy).rgb;
+
+   color *= staticColor_Alpha;
+}
+
 ////ps_main_depth_only_without_texture
 
 void main() {
@@ -443,9 +532,9 @@ void main() {
 ////TECHNIQUES
 
 basic_without_texture:P0:vs_notex_main():gs_notex_main():ps_main_notex()
-
 basic_with_texture:P0:vs_main():gs_main():ps_main_texture()
-
+basic_without_texture_n_mirror:P0:vs_notex_main():gs_notex_main():ps_main_notex_mirror()
+basic_with_texture_n_mirror:P0:vs_main():gs_main():ps_main_texture_mirror()
 basic_depth_only_without_texture:P0:vs_depth_only_main_without_texture():gs_depth_only_main_without_texture():ps_main_depth_only_without_texture()
 basic_depth_only_with_texture:P0:vs_depth_only_main_with_texture():gs_depth_only_main_with_texture():ps_main_depth_only_with_texture()
 
