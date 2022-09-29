@@ -848,6 +848,10 @@ RenderDevice::RenderDevice(const HWND hwnd, const int width, const int height, c
     m_INTZ_support = false;
     NVAPIinit = false;
 
+    m_current_renderstate.state = m_renderstate.state = 0;
+
+    m_stats_drawn_triangles = 0;
+
     m_adapter = D3DADAPTER_DEFAULT; // for now, always use the default adapter
 
     mDwmIsCompositionEnabled = (pDICE)GetProcAddress(GetModuleHandle(TEXT("dwmapi.dll")), "DwmIsCompositionEnabled"); //!! remove as soon as win xp support dropped and use static link
@@ -1975,7 +1979,6 @@ void RenderDevice::ApplyRenderStates()
       case RENDER_STATE_MASK_ALPHABLENDENABLE:
          renderstate_mask &= RENDER_STATE_CLEAR_MASK_ALPHABLENDENABLE;
          val = m_renderstate.state & RENDER_STATE_MASK_ALPHABLENDENABLE;
-         m_curStateChanges++;
 #ifdef ENABLE_SDL
          if (val) glEnable(GL_BLEND); else glDisable(GL_BLEND);
 #else
@@ -1986,7 +1989,6 @@ void RenderDevice::ApplyRenderStates()
       case RENDER_STATE_MASK_ZENABLE:
          renderstate_mask &= RENDER_STATE_CLEAR_MASK_ZENABLE;
          val = m_renderstate.state & RENDER_STATE_MASK_ZENABLE;
-         m_curStateChanges++;
 #ifdef ENABLE_SDL
          if (val) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
 #else
@@ -1997,11 +1999,9 @@ void RenderDevice::ApplyRenderStates()
       case RENDER_STATE_MASK_ALPHATESTENABLE:
          renderstate_mask &= RENDER_STATE_CLEAR_MASK_ALPHATESTENABLE;
          val = m_renderstate.state & RENDER_STATE_MASK_ALPHATESTENABLE;
-         m_curStateChanges++;
 #ifdef ENABLE_SDL
          // FIXME Needs to be done in shader
 #else
-         // FIXME convert from int to DX9 test function constant
          CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_ALPHAFUNC, functions[val]));
 #endif
          break;
@@ -2012,7 +2012,6 @@ void RenderDevice::ApplyRenderStates()
       case 0x00000020u:
          renderstate_mask &= RENDER_STATE_CLEAR_MASK_ALPHAFUNC;
          val = (m_renderstate.state & RENDER_STATE_MASK_ALPHAFUNC) >> RENDER_STATE_SHIFT_ALPHAFUNC;
-         m_curStateChanges++;
 #ifdef ENABLE_SDL
          // FIXME Needs to be done in shader
 #else
@@ -2025,7 +2024,6 @@ void RenderDevice::ApplyRenderStates()
       case 0x00000080u:
          renderstate_mask &= RENDER_STATE_CLEAR_MASK_BLENDOP;
          val = (m_renderstate.state & RENDER_STATE_MASK_BLENDOP) >> RENDER_STATE_SHIFT_BLENDOP;
-         m_curStateChanges++;
 #ifdef ENABLE_SDL
          glBlendEquation(blend_modes[val]);
 #else
@@ -2036,7 +2034,6 @@ void RenderDevice::ApplyRenderStates()
       case RENDER_STATE_MASK_CLIPPLANEENABLE:
          renderstate_mask &= RENDER_STATE_CLEAR_MASK_CLIPPLANEENABLE;
          val = m_renderstate.state & RENDER_STATE_MASK_CLIPPLANEENABLE;
-         m_curStateChanges++;
 #ifdef ENABLE_SDL
          // Basicshader already prepared with proper clipplane so just need to enable/disable it
          if (val) glEnable(GL_CLIP_DISTANCE0); else glDisable(GL_CLIP_DISTANCE0);
@@ -2050,7 +2047,6 @@ void RenderDevice::ApplyRenderStates()
       case 0x00000400u:
          renderstate_mask &= RENDER_STATE_CLEAR_MASK_CULLMODE;
          val = (m_renderstate.state & RENDER_STATE_MASK_CULLMODE) >> RENDER_STATE_SHIFT_CULLMODE;
-         m_curStateChanges++;
 #ifdef ENABLE_SDL
          if (val == 0)
             glDisable(GL_CULL_FACE);
@@ -2068,37 +2064,35 @@ void RenderDevice::ApplyRenderStates()
       // case DESTBLEND:
       case 0x00000800u:
       case 0x00001000u:
-      case 0x00002000u: renderstate_mask &= RENDER_STATE_CLEAR_MASK_DESTBLEND;
+      case 0x00002000u:
+         renderstate_mask &= RENDER_STATE_CLEAR_MASK_DESTBLEND;
 #ifdef ENABLE_SDL
          {
             renderstate_mask &= RENDER_STATE_CLEAR_MASK_SRCBLEND; // Both are performed together for OpenGL
             int src = (m_renderstate.state & RENDER_STATE_MASK_SRCBLEND) >> RENDER_STATE_SHIFT_SRCBLEND;
             int dst = (m_renderstate.state & RENDER_STATE_MASK_DESTBLEND) >> RENDER_STATE_SHIFT_DESTBLEND;
             glBlendFunc(blend_functions[src], blend_functions[dst]);
-            m_curStateChanges++;
          }
 #else
          val = (m_renderstate.state & RENDER_STATE_MASK_DESTBLEND) >> RENDER_STATE_SHIFT_DESTBLEND;
-         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_DESTBLEND, blend_modes[val]));
-         m_curStateChanges++;
+         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_DESTBLEND, blend_functions[val]));
 #endif
          break;
 
       // case SRCBLEND:
       case 0x00004000u:
       case 0x00008000u:
-      case 0x00010000u: renderstate_mask &= RENDER_STATE_CLEAR_MASK_SRCBLEND;
+      case 0x00010000u:
+         renderstate_mask &= RENDER_STATE_CLEAR_MASK_SRCBLEND;
 #ifdef ENABLE_SDL
          {
             int src = (m_renderstate.state & RENDER_STATE_MASK_SRCBLEND) >> RENDER_STATE_SHIFT_SRCBLEND;
             int dst = (m_renderstate.state & RENDER_STATE_MASK_DESTBLEND) >> RENDER_STATE_SHIFT_DESTBLEND;
             glBlendFunc(blend_functions[src], blend_functions[dst]);
-            m_curStateChanges++;
          }
 #else
          val = (m_renderstate.state & RENDER_STATE_MASK_SRCBLEND) >> RENDER_STATE_SHIFT_SRCBLEND;
-         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_SRCBLEND, blend_modes[val]));
-         m_curStateChanges++;
+         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_SRCBLEND, blend_functions[val]));
 #endif
          break;
 
@@ -2108,7 +2102,6 @@ void RenderDevice::ApplyRenderStates()
       case 0x00080000u:
          renderstate_mask &= RENDER_STATE_CLEAR_MASK_ZFUNC;
          val = (m_renderstate.state & RENDER_STATE_MASK_ZFUNC) >> RENDER_STATE_SHIFT_ZFUNC;
-         m_curStateChanges++;
 #ifdef ENABLE_SDL
          glDepthFunc(functions[val]);
 #else
@@ -2119,7 +2112,6 @@ void RenderDevice::ApplyRenderStates()
       case RENDER_STATE_MASK_ZWRITEENABLE:
          renderstate_mask &= RENDER_STATE_CLEAR_MASK_ZWRITEENABLE;
          val = m_renderstate.state & RENDER_STATE_MASK_ZWRITEENABLE;
-         m_curStateChanges++;
 #ifdef ENABLE_SDL
          glDepthMask(val ? GL_TRUE : GL_FALSE);
 #else
@@ -2134,7 +2126,6 @@ void RenderDevice::ApplyRenderStates()
       case 0x01000000u:
          renderstate_mask &= RENDER_STATE_CLEAR_MASK_COLORWRITEENABLE;
          val = (m_renderstate.state & RENDER_STATE_MASK_COLORWRITEENABLE) >> RENDER_STATE_SHIFT_COLORWRITEENABLE;
-         m_curStateChanges++;
 #ifdef ENABLE_SDL
          glColorMask((val & 1) ? GL_TRUE : GL_FALSE, (val & 2) ? GL_TRUE : GL_FALSE, (val & 4) ? GL_TRUE : GL_FALSE, (val & 8) ? GL_TRUE : GL_FALSE);
 #else
@@ -2145,6 +2136,7 @@ void RenderDevice::ApplyRenderStates()
       default: // Invalid state mask
          assert(false);
       }
+      m_curStateChanges++;
    }
    m_current_renderstate.state = m_renderstate.state;
 

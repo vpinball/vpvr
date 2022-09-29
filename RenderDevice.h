@@ -1,6 +1,5 @@
 #pragma once
 
-#include <list>
 #include <inc/robin_hood.h>
 #include "typedefs3D.h"
 
@@ -347,8 +346,6 @@ private:
    RenderTarget* m_pReflectionBufferTexture;
 
    UINT m_adapter;      // index of the display adapter to use
-
-   DWORD renderStateCache[RENDERSTATE_COUNT];                               // for caching
 
    VertexDeclaration *currentDeclaration; // for caching
 
