@@ -306,97 +306,97 @@ void APIENTRY GLDebugMessageCallback(GLenum source, GLenum type, GLuint id,
     char* _source;
     switch (source) {
         case GL_DEBUG_SOURCE_API:
-        _source = "API";
+        _source = (LPSTR) "API";
         break;
 
         case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
-        _source = "WINDOW SYSTEM";
+        _source = (LPSTR) "WINDOW SYSTEM";
         break;
 
         case GL_DEBUG_SOURCE_SHADER_COMPILER:
-        _source = "SHADER COMPILER";
+        _source = (LPSTR) "SHADER COMPILER";
         break;
 
         case GL_DEBUG_SOURCE_THIRD_PARTY:
-        _source = "THIRD PARTY";
+        _source = (LPSTR) "THIRD PARTY";
         break;
 
         case GL_DEBUG_SOURCE_APPLICATION:
-        _source = "APPLICATION";
+        _source = (LPSTR) "APPLICATION";
         break;
 
         case GL_DEBUG_SOURCE_OTHER:
-        _source = "UNKNOWN";
+        _source = (LPSTR) "UNKNOWN";
         break;
 
         default:
-        _source = "UNHANDLED";
+        _source = (LPSTR) "UNHANDLED";
         break;
     }
 
     char* _type;
     switch (type) {
         case GL_DEBUG_TYPE_ERROR:
-        _type = "ERROR";
+        _type = (LPSTR) "ERROR";
         break;
 
         case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-        _type = "DEPRECATED BEHAVIOR";
+        _type = (LPSTR) "DEPRECATED BEHAVIOR";
         break;
 
         case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-        _type = "UNDEFINED BEHAVIOR";
+        _type = (LPSTR) "UNDEFINED BEHAVIOR";
         break;
 
         case GL_DEBUG_TYPE_PORTABILITY:
-        _type = "PORTABILITY";
+        _type = (LPSTR) "PORTABILITY";
         break;
 
         case GL_DEBUG_TYPE_PERFORMANCE:
-        _type = "PERFORMANCE";
+        _type = (LPSTR) "PERFORMANCE";
         break;
 
         case GL_DEBUG_TYPE_OTHER:
-        _type = "OTHER";
+        _type = (LPSTR) "OTHER";
         break;
 
         case GL_DEBUG_TYPE_MARKER:
-        _type = "MARKER";
+        _type = (LPSTR) "MARKER";
         break;
 
         case GL_DEBUG_TYPE_PUSH_GROUP:
-        _type = "GL_DEBUG_TYPE_PUSH_GROUP";
+        _type = (LPSTR) "GL_DEBUG_TYPE_PUSH_GROUP";
         break;
 
         case GL_DEBUG_TYPE_POP_GROUP:
-        _type = "GL_DEBUG_TYPE_POP_GROUP";
+        _type = (LPSTR) "GL_DEBUG_TYPE_POP_GROUP";
         break;
 
     	default:
-        _type = "UNHANDLED";
+        _type = (LPSTR) "UNHANDLED";
         break;
     }
 
     char* _severity;
     switch (severity) {
         case GL_DEBUG_SEVERITY_HIGH:
-        _severity = "HIGH";
+        _severity = (LPSTR) "HIGH";
         break;
 
         case GL_DEBUG_SEVERITY_MEDIUM:
-        _severity = "MEDIUM";
+        _severity = (LPSTR) "MEDIUM";
         break;
 
         case GL_DEBUG_SEVERITY_LOW:
-        _severity = "LOW";
+        _severity = (LPSTR) "LOW";
         break;
 
         case GL_DEBUG_SEVERITY_NOTIFICATION:
-        _severity = "NOTIFICATION";
+        _severity = (LPSTR) "NOTIFICATION";
         break;
 
         default:
-        _severity = "UNHANDLED";
+        _severity = (LPSTR) "UNHANDLED";
         break;
     }
 
@@ -841,10 +841,10 @@ RenderDevice::RenderDevice(const HWND hwnd, const int width, const int height, c
    m_pHMD = nullptr;
    m_rTrackedDevicePose = nullptr;
 #endif
+#else
    for (int i = 0; i < RENDERSTATE_COUNT; ++i)
       renderStateCache[i] = 0;
-#else
-    m_useNvidiaApi = useNvidiaApi;
+   m_useNvidiaApi = useNvidiaApi;
     m_INTZ_support = false;
     NVAPIinit = false;
 
