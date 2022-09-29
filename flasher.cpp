@@ -1240,15 +1240,18 @@ void Flasher::RenderDynamic()
        pd3dDevice->flasherShader->SetTechnique(SHADER_TECHNIQUE_basic_noLight);
 
        float flasherMode;
-       if (pinA && !pinB)
+       if ((pinA || m_isVideoCap) && !pinB)
        {
           flasherMode = 0.f;
-          pd3dDevice->flasherShader->SetTexture(SHADER_tex_flasher_A, pinA);
+          if (m_isVideoCap)
+             pd3dDevice->flasherShader->SetTexture(SHADER_tex_flasher_A, m_videoCapTex);
+          else
+             pd3dDevice->flasherShader->SetTexture(SHADER_tex_flasher_A, pinA);
 
           if (!m_d.m_addBlend)
-             flasherData.x = pinA->m_alphaTestValue * (float)(1.0/255.0);
+             flasherData.x = !m_isVideoCap ? pinA->m_alphaTestValue * (float)(1.0/255.0) : 0.f;
        }
-       else if (!pinA && pinB)
+       else if (!(pinA || m_isVideoCap) && pinB)
        {
           flasherMode = 0.f;
           pd3dDevice->flasherShader->SetTexture(SHADER_tex_flasher_A, pinB);
@@ -1256,15 +1259,18 @@ void Flasher::RenderDynamic()
           if (!m_d.m_addBlend)
              flasherData.x = pinB->m_alphaTestValue * (float)(1.0/255.0);
        }
-       else if (pinA && pinB)
+       else if ((pinA || m_isVideoCap) && pinB)
        {
           flasherMode = 1.f;
-          pd3dDevice->flasherShader->SetTexture(SHADER_tex_flasher_A, pinA);
+          if (m_isVideoCap)
+             pd3dDevice->flasherShader->SetTexture(SHADER_tex_flasher_A, m_videoCapTex);
+          else
+             pd3dDevice->flasherShader->SetTexture(SHADER_tex_flasher_A, pinA);
           pd3dDevice->flasherShader->SetTexture(SHADER_tex_flasher_B, pinB);
 
           if (!m_d.m_addBlend)
           {
-             flasherData.x = pinA->m_alphaTestValue * (float)(1.0/255.0);
+             flasherData.x = !m_isVideoCap ? pinA->m_alphaTestValue * (float)(1.0/255.0) : 0.f;
              flasherData.y = pinB->m_alphaTestValue * (float)(1.0/255.0);
           }
        }
