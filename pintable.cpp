@@ -3637,8 +3637,8 @@ HRESULT PinTable::LoadGameFromStorage(IStorage *pstgRoot)
             for (size_t i = 0; i < m_vedit.size(); ++i)
                if (m_vedit[i]->GetItemType() == ItemTypeEnum::eItemPrimitive && strcmp(m_vedit[i]->GetName(), "playfield_mesh") == 0)
                {
-                  ((Primitive*)m_vedit[i])->put_IsToy(False);
-                  ((Primitive*)m_vedit[i])->put_Collidable(True);
+                  ((Primitive*)m_vedit[i])->put_IsToy(FTOVB(false));
+                  ((Primitive*)m_vedit[i])->put_Collidable(FTOVB(true));
                }
 
          //////// End Authentication block
@@ -4130,10 +4130,12 @@ int PinTable::AddListSound(HWND hwndListView, PinSound * const pps)
    switch (pps->m_outputTarget)
    {
    case SNDOUT_BACKGLASS:
-	   ListView_SetItemText(hwndListView, index, 2, "Backglass");
+	   ListView_SetItemText(hwndListView, index, 2, (LPSTR)"Backglass");
 	   break;
    default:
-	   ListView_SetItemText(hwndListView, index, 2, "Table");
+	   assert(false);
+   case SNDOUT_TABLE:
+	   ListView_SetItemText(hwndListView, index, 2, (LPSTR)"Table");
 	   break;
    }
    char textBuf[40];
@@ -6888,8 +6890,8 @@ void PinTable::ListImages(HWND hwndListView)
 int PinTable::AddListImage(HWND hwndListView, Texture * const ppi)
 {
    char sizeString[MAXTOKEN];
-   constexpr char * const usedStringYes = "X";
-   constexpr char * const usedStringNo = " ";
+   constexpr char usedStringYes[] = "X";
+   constexpr char usedStringNo[] = " ";
 
    LVITEM lvitem;
    lvitem.mask = LVIF_DI_SETITEM | LVIF_TEXT | LVIF_PARAM;
@@ -6906,30 +6908,26 @@ int PinTable::AddListImage(HWND hwndListView, Texture * const ppi)
 
    ListView_SetItemText(hwndListView, index, 1, (LPSTR)ppi->m_szPath.c_str());
    ListView_SetItemText(hwndListView, index, 2, sizeString);
-   ListView_SetItemText(hwndListView, index, 3, usedStringNo);
+   ListView_SetItemText(hwndListView, index, 3, (LPSTR)usedStringNo);
 
    char *const sizeConv = StrFormatByteSize64(ppi->m_pdsBuffer->height() * ppi->m_pdsBuffer->pitch(), sizeString, MAXTOKEN);
    ListView_SetItemText(hwndListView, index, 4, sizeConv);
 
    if (ppi->m_pdsBuffer == nullptr)
    {
-      ListView_SetItemText(hwndListView, index, 5, "-");
-   }
-   else if (ppi->m_pdsBuffer->m_format == BaseTexture::BW)
-   {
-      ListView_SetItemText(hwndListView, index, 5, "BW");
+      ListView_SetItemText(hwndListView, index, 5, (LPSTR)"-");
    }
    else if (ppi->m_pdsBuffer->m_format == BaseTexture::SRGB)
    {
-      ListView_SetItemText(hwndListView, index, 5, "sRGB");
+      ListView_SetItemText(hwndListView, index, 5, (LPSTR)"sRGB");
    }
    else if (ppi->m_pdsBuffer->m_format == BaseTexture::SRGBA)
    {
-      ListView_SetItemText(hwndListView, index, 5, "sRGBA");
+      ListView_SetItemText(hwndListView, index, 5, (LPSTR)"sRGBA");
    }
    else if (ppi->m_pdsBuffer->m_format == BaseTexture::RGB)
    {
-      ListView_SetItemText(hwndListView, index, 5, "RGB");
+      ListView_SetItemText(hwndListView, index, 5, (LPSTR)"RGB");
    }
    else if (ppi->m_pdsBuffer->m_format == BaseTexture::RGBA)
    {
@@ -6937,11 +6935,11 @@ int PinTable::AddListImage(HWND hwndListView, Texture * const ppi)
    }
    else if (ppi->m_pdsBuffer->m_format == BaseTexture::RGB_FP16)
    {
-      ListView_SetItemText(hwndListView, index, 5, "RGB 16F");
+      ListView_SetItemText(hwndListView, index, 5, (LPSTR)"RGB 16F");
    }
    else if (ppi->m_pdsBuffer->m_format == BaseTexture::RGB_FP32)
    {
-      ListView_SetItemText(hwndListView, index, 5, "RGB 32F");
+      ListView_SetItemText(hwndListView, index, 5, (LPSTR)"RGB 32F");
    }
    else
       assert(!"unknown format");
@@ -6955,7 +6953,7 @@ int PinTable::AddListImage(HWND hwndListView, Texture * const ppi)
     || (_stricmp(m_BG_image[BG_FULLSCREEN].c_str(), ppi->m_szName.c_str()) == 0)
     || (_stricmp(m_imageColorGrade.c_str(), ppi->m_szName.c_str()) == 0))
    {
-       ListView_SetItemText(hwndListView, index, 3, usedStringYes);
+       ListView_SetItemText(hwndListView, index, 3, (LPSTR)usedStringYes);
    }
    else
    {
@@ -7060,7 +7058,7 @@ int PinTable::AddListImage(HWND hwndListView, Texture * const ppi)
 
            if (inUse)
            {
-               ListView_SetItemText(hwndListView, index, 3, usedStringYes);
+               ListView_SetItemText(hwndListView, index, 3, (LPSTR)usedStringYes);
                break;
            }
        }//for
@@ -7218,8 +7216,8 @@ void PinTable::UpdateDbgMaterial()
 
 int PinTable::AddListMaterial(HWND hwndListView, Material * const pmat)
 {
-   constexpr char * const usedStringYes = "X";
-   constexpr char * const usedStringNo = " ";
+   constexpr char usedStringYes[] = "X";
+   constexpr char usedStringNo[] = " ";
 
    LVITEM lvitem;
    lvitem.mask = LVIF_DI_SETITEM | LVIF_TEXT | LVIF_PARAM;
@@ -7229,10 +7227,10 @@ int PinTable::AddListMaterial(HWND hwndListView, Material * const pmat)
    lvitem.lParam = (size_t)pmat;
 
    const int index = ListView_InsertItem(hwndListView, &lvitem);
-   ListView_SetItemText(hwndListView, index, 1, usedStringNo);
+   ListView_SetItemText(hwndListView, index, 1, (LPSTR)usedStringNo);
    if(pmat->m_szName == m_playfieldMaterial)
    {
-      ListView_SetItemText(hwndListView, index, 1, usedStringYes);
+      ListView_SetItemText(hwndListView, index, 1, (LPSTR)usedStringYes);
    }
    else
    {
@@ -7336,7 +7334,7 @@ int PinTable::AddListMaterial(HWND hwndListView, Material * const pmat)
 
          if (inUse)
          {
-            ListView_SetItemText(hwndListView, index, 1, usedStringYes);
+            ListView_SetItemText(hwndListView, index, 1, (LPSTR)usedStringYes);
             break;
          }
       }//for
@@ -7473,7 +7471,7 @@ int PinTable::AddListItem(HWND hwndListView, const string& szName, const string&
    return index;
 }
 
-HRESULT PinTable::LoadImageFromStream(IStream *pstm, unsigned int idx, int version, bool resize_on_low_mem)
+HRESULT PinTable::LoadImageFromStream(IStream *pstm, size_t idx, int version, bool resize_on_low_mem)
 {
    if (version < 100) // Tech Beta 3 and below
    {
@@ -7858,7 +7856,7 @@ STDMETHODIMP PinTable::GetPredefinedValue(DISPID dispID, DWORD dwCookie, VARIANT
    case IDC_EFFECT_COMBO:
    {
       const int idx = (dwCookie == -1) ? 0 : dwCookie;
-      constexpr char * const filterNames[5] = { "None", "Additive", "Multiply", "Overlay", "Screen" };
+      static const char * const filterNames[5] = { "None", "Additive", "Multiply", "Overlay", "Screen" };
       const DWORD cwch = lstrlen(filterNames[idx]) + 1;
       wzDst = (WCHAR *)CoTaskMemAlloc(cwch*sizeof(WCHAR));
 
