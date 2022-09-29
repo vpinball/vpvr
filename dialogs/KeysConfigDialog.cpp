@@ -284,9 +284,9 @@ BOOL KeysConfigDialog::OnInitDialog()
    {
       SendMessage(toolTipHwnd, TTM_SETMAXTIPWIDTH, 0, 180);
       HWND controlHwnd = GetDlgItem(IDC_CAP_EXTDMD).GetHwnd();
-      AddToolTip("Attempt to capture External DMD window such as Freezy, UltraDMD or P-ROC.\r\n\r\nFor Freezy DmdDevice.ini need to have 'stayontop = true'.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip((LPSTR) "Attempt to capture External DMD window such as Freezy, UltraDMD or P-ROC.\r\n\r\nFor Freezy DmdDevice.ini need to have 'stayontop = true'.", hwndDlg, toolTipHwnd, controlHwnd);
       controlHwnd = GetDlgItem(IDC_CAP_PUP).GetHwnd();
-      AddToolTip("Attempt to capture PUP player window and display it as a Backglass in VR.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip((LPSTR) "Attempt to capture PUP player window and display it as a Backglass in VR.", hwndDlg, toolTipHwnd, controlHwnd);
    }
 
     bool on = LoadValueBoolWithDefault(regKey[RegName::Player], "PBWDefaultLayout"s, false);

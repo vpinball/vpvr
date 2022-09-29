@@ -6931,7 +6931,7 @@ int PinTable::AddListImage(HWND hwndListView, Texture * const ppi)
    }
    else if (ppi->m_pdsBuffer->m_format == BaseTexture::RGBA)
    {
-      ListView_SetItemText(hwndListView, index, 5, "RGBA");
+      ListView_SetItemText(hwndListView, index, 5, (LPSTR) "RGBA");
    }
    else if (ppi->m_pdsBuffer->m_format == BaseTexture::RGB_FP16)
    {

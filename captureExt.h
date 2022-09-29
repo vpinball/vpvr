@@ -5,6 +5,9 @@
 #include <string>
 #include <mutex>
 
+#include <d3d11.h>
+#include <dxgi1_2.h>
+
 bool captureExternalDMD();
 bool capturePUP();
 void captureStartup();
