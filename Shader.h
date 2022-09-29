@@ -244,11 +244,13 @@ public:
    void SetAlphaTestValue(const float value);
    void SetFlasherColorAlpha(const vec4& color);
    vec4 GetCurrentFlasherColorAlpha();
-   void SetFlasherData(const vec4& color, const vec4& c2);
+   void SetFlasherData(const vec4& c1, const vec4& c2);
    void SetLightColorIntensity(const vec4& color);
    void SetLightColor2FalloffPower(const vec4& color);
    void SetLightData(const vec4& color);
    void SetLightImageBackglassMode(const bool imageMode, const bool backglassMode);
+
+   //
 
    void SetTechnique(const ShaderTechniques technique);
    void SetTechniqueMetal(const ShaderTechniques technique, const bool isMetal);
@@ -289,10 +291,11 @@ public:
 #endif
 
 private:
-   RenderDevice* m_renderDevice;
+   RenderDevice *m_renderDevice;
    static Shader* current_shader;
 
    // caches:
+
    Material currentMaterial;
 
    vec4 currentDisableLighting; // x and y: top and below, z and w unused
