@@ -377,7 +377,10 @@ void Plunger::RenderSetup()
       for (const char *p = m_d.m_szTipShape; *p != '\0'; ++p)
       {
          if (*p == ';')
-            ++nTip, ++nn;
+         {
+            ++nTip;
+            ++nn;
+         }
       }
 
       // allocate the descriptor and the coordinate array
