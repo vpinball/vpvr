@@ -30,8 +30,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include "typedefs3D.h"
-
 // Enum of GPU timestamps to record
 enum GTS
 {
