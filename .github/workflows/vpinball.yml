@@ -29,6 +29,7 @@ jobs:
           mv tmp/DXSDK DXSDK
           rm -fR DXSDK_Jun10.exe tmp
           ls -Ra DXSDK
+
   version:
     name: Version
     runs-on: ubuntu-latest
@@ -54,7 +55,7 @@ jobs:
 
   build:
     name: Build VPinballX_GL-${{ matrix.config }}-${{ matrix.platform }}
-    runs-on: windows-2022
+    runs-on: windows-latest
     needs: [ dxsdk, version ]
     strategy:
       fail-fast: false
@@ -95,7 +96,7 @@ jobs:
             sdl2-ttf: SDL2_ttf.dll
             sdl2: SDL2.dll
             openvr-api: openvr_api.dll
-            config: Debug  
+            config: Debug
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
