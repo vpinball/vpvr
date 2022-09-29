@@ -113,7 +113,6 @@ add_executable(vpinball WIN32
    captureExt.h
    dialogs/VROptionsDialog.cpp
    dialogs/VROptionsDialog.h
-   ShaderGL.cpp
    Shader.cpp
 
    BlackBox.cpp
