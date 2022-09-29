@@ -297,9 +297,6 @@ void Primitive::CreateRenderGroup(const Collection * const collection)
       }
    }
    m_vertexBuffer->unlock();
-
-   prims.clear();
-   renderedPrims.clear();
 }
 
 HRESULT Primitive::Init(PinTable *ptable, float x, float y, bool fromMouseClick)
@@ -358,17 +355,10 @@ void Primitive::SetDefaults(bool fromMouseClick)
    m_d.m_aRotAndTra[7] = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "RotAndTra7"s, 0.0f) : 0.0f;
    m_d.m_aRotAndTra[8] = fromMouseClick ? LoadValueFloatWithDefault(strKeyName, "RotAndTra8"s, 0.0f) : 0.0f;
 
-   char buf[MAXTOKEN] = { 0 };
-
-   HRESULT hr = LoadValue(strKeyName, "Image"s, buf, MAXTOKEN);
-   if ((hr != S_OK) && fromMouseClick) {
-      m_d.m_isBackGlassImage = false;
+   HRESULT hr = LoadValue(strKeyName, "Image"s, m_d.m_szImage);
+   if ((hr != S_OK) && fromMouseClick)
       m_d.m_szImage.clear();
-   }
-   else {
-      m_d.m_szImage = buf;
-      m_d.m_isBackGlassImage = (_stricmp(buf, "backglassimage") == 0);
-   }
+   m_d.m_isBackGlassImage = (_stricmp(m_d.m_szImage.c_str(), "backglassimage") == 0);
 
    hr = LoadValue(strKeyName, "NormalMap"s, m_d.m_szNormalMap);
    if ((hr != S_OK) && fromMouseClick)
@@ -1712,11 +1702,7 @@ bool Primitive::LoadToken(const int id, BiffReader * const pbr)
 		  mz_ulong uclen2 = uclen;
 		  const int error = uncompress((unsigned char *)m_mesh.m_vertices.data(), &uclen2, c, m_compressedVertices);
 		  if (error != Z_OK)
-		  {
-			  char err[128];
-			  sprintf_s(err, sizeof(err), "Could not uncompress primitive vertex data, error %d", error);
-			  ShowError(err);
-		  }
+			  ShowError("Could not uncompress primitive vertex data, error "+std::to_string(error));
 		  free(c);
 	  });
       break;

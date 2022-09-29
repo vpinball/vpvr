@@ -10,7 +10,6 @@ Textbox::Textbox()
 Textbox::~Textbox()
 {
    m_pIFont->Release();
-   m_pIFont = nullptr;
 }
 
 HRESULT Textbox::Init(PinTable *ptable, float x, float y, bool fromMouseClick)

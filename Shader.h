@@ -2,7 +2,7 @@
 
 #ifdef _DEBUG
 //Writes all compile/parse errors/warnings to a file. (0=never, 1=only errors, 2=warnings, 3=info)
-#define DEBUG_LEVEL_LOG 3
+#define DEBUG_LEVEL_LOG 1
 //Writes all shaders that are compiled to separate files (e.g. ShaderName_Technique_Pass.vs and .fs) (0=never, 1=only if compile failed, 2=always)
 #define WRITE_SHADER_FILES 1
 #else 
@@ -240,7 +240,7 @@ public:
    void SetMaterial(const Material * const mat, const bool has_alpha = true);
 
    void SetDisableLighting(const float value); // only set top
-   void SetDisableLighting(const vec4& value); // set top and below
+   void SetDisableLighting(const vec4& value); // sets the two top and below lighting flags, z and w unused
    void SetAlphaTestValue(const float value);
    void SetFlasherColorAlpha(const vec4& color);
    vec4 GetCurrentFlasherColorAlpha();

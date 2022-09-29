@@ -1,5 +1,3 @@
-//This file should only contain DX9/GL independent shader code. For specific functions see ShaderGL.cpp and ShaderDX9.cpp
-
 #include "stdafx.h"
 #include "Shader.h"
 #include "typedefs3D.h"
@@ -182,7 +180,6 @@ Shader::ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT] {
    // Stereo shader (VPVR only, combine the 2 rendered eyes into a single one)
    SHADER_SAMPLER(tex_stereo_fb, texSampler0, Texture0, 0, SA_CLAMP, SA_CLAMP, SF_POINT), // Framebuffer (unfiltered)
    // SMAA shader
-   // FIXME SMAA shader also use the color and colorGamma samplers. This has to be looked at more deeply for a clean implementation
    SHADER_SAMPLER(colorTex, colorTex, colorTex, 0, SA_CLAMP, SA_CLAMP, SF_TRILINEAR),
    SHADER_SAMPLER(colorGammaTex, colorGammaTex, colorGammaTex, 1, SA_CLAMP, SA_CLAMP, SF_TRILINEAR),
    SHADER_SAMPLER(edgesTex, edgesTex, edgesTex2D, 2, SA_CLAMP, SA_CLAMP, SF_TRILINEAR),
@@ -205,7 +202,7 @@ ShaderUniforms Shader::getUniformByName(const string& name)
 }
 
 void Shader::SetDefaultSamplerFilter(const ShaderUniforms sampler, const SamplerFilter sf)
-{ 
+{
    Shader::shaderUniformNames[sampler].default_filter = sf;
 }
 
@@ -246,7 +243,7 @@ Shader::Shader(RenderDevice *renderDevice) : currentMaterial(-FLT_MAX, -FLT_MAX,
    m_shader = nullptr;
 #endif
    for (unsigned int i = 0; i < TEXTURESET_STATE_CACHE_SIZE; ++i)
-      currentTexture[i] = 0;
+      currentTexture[i] = nullptr;
    currentAlphaTestValue = -FLT_MAX;
    currentDisableLighting = vec4(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
    currentFlasherData = vec4(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
@@ -342,10 +339,7 @@ void Shader::SetMaterial(const Material* const mat, const bool has_alpha)
 
    // bIsMetal is nowadays handled via a separate technique! (so not in here)
 
-   if (fRoughness != currentMaterial.m_fRoughness ||
-      fEdge != currentMaterial.m_fEdge ||
-      fWrapLighting != currentMaterial.m_fWrapLighting ||
-      fThickness != currentMaterial.m_fThickness)
+   if (fRoughness != currentMaterial.m_fRoughness || fEdge != currentMaterial.m_fEdge || fWrapLighting != currentMaterial.m_fWrapLighting || fThickness != currentMaterial.m_fThickness)
    {
       const vec4 rwem(fRoughness, fWrapLighting, fEdge, fThickness);
       SetVector(SHADER_Roughness_WrapL_Edge_Thickness, &rwem);
@@ -365,8 +359,7 @@ void Shader::SetMaterial(const Material* const mat, const bool has_alpha)
    }
 
    if (!bIsMetal) // Metal has no glossy
-      if (cGlossy != currentMaterial.m_cGlossy ||
-         fGlossyImageLerp != currentMaterial.m_fGlossyImageLerp)
+      if (cGlossy != currentMaterial.m_cGlossy || fGlossyImageLerp != currentMaterial.m_fGlossyImageLerp)
       {
          const vec4 cGlossyF = convertColor(cGlossy, fGlossyImageLerp);
          SetVector(SHADER_cGlossy_ImageLerp, &cGlossyF);
@@ -374,8 +367,7 @@ void Shader::SetMaterial(const Material* const mat, const bool has_alpha)
          currentMaterial.m_fGlossyImageLerp = fGlossyImageLerp;
       }
 
-   if (cClearcoat != currentMaterial.m_cClearcoat ||
-      (bOpacityActive && fEdgeAlpha != currentMaterial.m_fEdgeAlpha))
+   if (cClearcoat != currentMaterial.m_cClearcoat || (bOpacityActive && fEdgeAlpha != currentMaterial.m_fEdgeAlpha))
    {
       const vec4 cClearcoatF = convertColor(cClearcoat, fEdgeAlpha);
       SetVector(SHADER_cClearcoat_EdgeAlpha, &cClearcoatF);

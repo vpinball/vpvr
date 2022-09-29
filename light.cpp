@@ -422,7 +422,7 @@ void Light::RenderDynamic()
 
    if (m_backglass && !GetPTable()->GetDecalsEnabled())
       return;
-      
+
    if (m_d.m_BulbLight && m_d.m_showBulbMesh && !m_d.m_staticBulbMesh && g_pplayer->m_current_renderstage == 0)
       RenderBulbMesh();
 
@@ -1010,7 +1010,7 @@ STDMETHODIMP Light::InterfaceSupportsErrorInfo(REFIID riid)
       &IID_ILight,
    };
 
-   for (int i = 0; i < sizeof(arr) / sizeof(arr[0]); i++)
+   for (size_t i = 0; i < sizeof(arr) / sizeof(arr[0]); i++)
    {
       if (InlineIsEqualGUID(*arr[i], riid))
          return S_OK;
