@@ -1261,9 +1261,9 @@ void Player::CreateDebugFont()
    //!! TODO Init Font for debugging
 #else
     int fontSize = 20;
-    if (m_width > 1024 && m_width <= 1920)
+    if (m_wnd_width > 1024 && m_wnd_width <= 1920)
         fontSize = 24;
-    else if (m_width > 1920)
+    else if (m_wnd_width > 1920)
         fontSize = 30;
 
     const HRESULT hr = D3DXCreateFont(m_pin3d.m_pd3dPrimaryDevice->GetCoreDevice(), //device
@@ -3812,9 +3812,9 @@ void Player::RenderDynamics()
 
       m_dmdstate = 0;
       // Draw transparent objects. No DMD's
-       for (size_t i = 0; i < m_vHitTrans.size(); ++i)
-         if (!m_vHitTrans[i]->IsDMD())
-            m_vHitTrans[i]->RenderDynamic();
+      for (size_t i = 0; i < m_vHitTrans.size(); ++i)
+        if(!m_vHitTrans[i]->IsDMD())
+          m_vHitTrans[i]->RenderDynamic();
 
       m_dmdstate = 1;
       // Draw only transparent DMD's
@@ -4139,9 +4139,8 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
             m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
             renderedRT = outputRT;
 
-            #ifdef ENABLE_SDL
-            #else
-            CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_blendTex2D, nullptr)); //!! opt.? */
+            #ifndef ENABLE_SDL
+            CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_blendTex2D, nullptr)); //!! opt.?
             #endif
          }
       }
@@ -4169,7 +4168,7 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
       const vec4 w_h_height((float)(1.0 / (double)renderedRT->GetWidth()), (float)(1.0 / (double)renderedRT->GetHeight()), (float)renderedRT->GetWidth(), depth_available ? 1.f : 0.f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &w_h_height);
 
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique((sharpen == 1) ? SHADER_TECHNIQUE_fb_CAS : SHADER_TECHNIQUE_fb_BilateralSharp_CAS);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique((sharpen == 1) ? SHADER_TECHNIQUE_CAS : SHADER_TECHNIQUE_BilateralSharp_CAS);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
       m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
@@ -4881,7 +4880,7 @@ void Player::PrepareVideoBuffersNormal()
 {
    const bool useAA = ((m_AAfactor != 1.0) && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
    const bool stereo = m_stereo3D == STEREO_VR || ((m_stereo3D != STEREO_OFF) && m_stereo3Denabled && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable());
-   const bool SMAA = (((m_FXAA == Quality_SMAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
+   const bool SMAA  = (((m_FXAA == Quality_SMAA)  && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
    const bool DLAA  = (((m_FXAA == Standard_DLAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_DLAA));
    const bool NFAA  = (((m_FXAA == Fast_NFAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_NFAA));
    const bool FXAA1 = (((m_FXAA == Fast_FXAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_FXAA));
@@ -4948,7 +4947,7 @@ void Player::PrepareVideoBuffersNormal()
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_bloom, m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetColorSampler());
 
    // Texture used for LUT color grading must be treated as if they were linear
-   Texture *const pin = m_ptable->GetImage(m_ptable->m_imageColorGrade);
+   Texture * const pin = m_ptable->GetImage(m_ptable->m_imageColorGrade);
    if (pin)
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_color_lut, pin, SF_UNDEFINED, SA_UNDEFINED, SA_UNDEFINED, true); // FIXME honor the linear RGB
    m_pin3d.m_pd3dPrimaryDevice->FBShader->SetBool(SHADER_color_grade, pin != nullptr);
@@ -4996,7 +4995,8 @@ void Player::FlipVideoBuffers(const bool vsync)
    m_pin3d.Flip(vsync);
 
    // switch to texture output buffer again
-   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_Texture0);
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_tex_fb_filtered);
+   m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_tex_fb_unfiltered);
    m_pin3d.m_pd3dPrimaryDevice->GetMSAABackBufferTexture()->Activate();
 
    m_lastFlipTime = usec();
@@ -5005,8 +5005,8 @@ void Player::FlipVideoBuffers(const bool vsync)
 void Player::PrepareVideoBuffersAO()
 {
    const bool useAA = ((m_AAfactor != 1.0) && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
-   const bool stereo = m_stereo3D == STEREO_VR || ((m_stereo3D != STEREO_OFF) && m_stereo3Denabled && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable());
-   const bool SMAA = (((m_FXAA == Quality_SMAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
+   const bool stereo= m_stereo3D == STEREO_VR || ((m_stereo3D != STEREO_OFF) && m_stereo3Denabled && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable());
+   const bool SMAA  = (((m_FXAA == Quality_SMAA)  && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
    const bool DLAA  = (((m_FXAA == Standard_DLAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_DLAA));
    const bool NFAA  = (((m_FXAA == Fast_NFAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_NFAA));
    const bool FXAA1 = (((m_FXAA == Fast_FXAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_FXAA));
@@ -5082,7 +5082,7 @@ void Player::PrepareVideoBuffersAO()
       m_pin3d.m_gpu_profiler.Timestamp(GTS_AO);
 
    // flip AO buffers (avoids copy)
-   RenderTarget *tmpAO = m_pin3d.m_pddsAOBackBuffer;
+   RenderTarget* tmpAO = m_pin3d.m_pddsAOBackBuffer;
    m_pin3d.m_pddsAOBackBuffer = m_pin3d.m_pddsAOBackTmpBuffer;
    m_pin3d.m_pddsAOBackTmpBuffer = tmpAO;
 
@@ -5133,7 +5133,7 @@ void Player::PrepareVideoBuffersAO()
                                                 (useAA ? SHADER_TECHNIQUE_fb_tonemap_AO : SHADER_TECHNIQUE_fb_tonemap_AO_no_filter));
 
    m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
-   m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuad((Vertex3D_TexelOnly *)shiftedVerts);
+   m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)shiftedVerts);
    m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
    renderedRT = ouputRT;
 
@@ -5479,7 +5479,7 @@ void Player::Render()
          m_pin3d.m_pd3dPrimaryDevice->UpdateVRPosition();
       else
          m_pin3d.InitLayout(m_ptable->m_BG_enable_FSS, m_ptable->GetMaxSeparation());
-   } 
+   }
    else
 #endif
    if (m_dynamicMode)

@@ -848,7 +848,7 @@ STDMETHODIMP ScriptGlobalTable::put_DMDPixels(VARIANT pVal) // assumes VT_UI1 as
       {
          if (g_pplayer->m_texdmd)
          {
-            g_pplayer->m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTextureNull(SHADER_Texture0);
+            g_pplayer->m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTextureNull(SHADER_tex_dmd);
             g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.UnloadTexture(g_pplayer->m_texdmd);
             delete g_pplayer->m_texdmd;
          }
@@ -895,7 +895,7 @@ STDMETHODIMP ScriptGlobalTable::put_DMDColoredPixels(VARIANT pVal) //!! assumes 
       {
          if (g_pplayer->m_texdmd)
          {
-            g_pplayer->m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTextureNull(SHADER_Texture0);
+            g_pplayer->m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTextureNull(SHADER_tex_dmd);
             g_pplayer->m_pin3d.m_pd3dPrimaryDevice->m_texMan.UnloadTexture(g_pplayer->m_texdmd);
             delete g_pplayer->m_texdmd;
          }
@@ -6931,7 +6931,7 @@ int PinTable::AddListImage(HWND hwndListView, Texture * const ppi)
    }
    else if (ppi->m_pdsBuffer->m_format == BaseTexture::RGBA)
    {
-      ListView_SetItemText(hwndListView, index, 5, (LPSTR) "RGBA");
+      ListView_SetItemText(hwndListView, index, 5, (LPSTR)"RGBA");
    }
    else if (ppi->m_pdsBuffer->m_format == BaseTexture::RGB_FP16)
    {
