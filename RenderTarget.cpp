@@ -264,7 +264,7 @@ void RenderTarget::CopyTo(RenderTarget* dest)
 #endif
 }
 
-void RenderTarget::Activate(bool ignoreStereo)
+void RenderTarget::Activate(const bool ignoreStereo)
 {
    current_render_target = this;
 #ifdef ENABLE_SDL

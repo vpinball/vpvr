@@ -28,6 +28,10 @@ enum ShaderTechniques
    SHADER_TECHNIQUE(RenderBallTrail),
    SHADER_TECHNIQUE(basic_without_texture),
    SHADER_TECHNIQUE(basic_with_texture),
+   SHADER_TECHNIQUE(basic_with_texture_normal),
+   SHADER_TECHNIQUE(basic_without_texture_isMetal),
+   SHADER_TECHNIQUE(basic_with_texture_isMetal),
+   SHADER_TECHNIQUE(basic_with_texture_normal_isMetal),
    SHADER_TECHNIQUE(basic_without_texture_n_mirror),
    SHADER_TECHNIQUE(basic_with_texture_n_mirror),
    SHADER_TECHNIQUE(basic_depth_only_without_texture),
@@ -35,8 +39,11 @@ enum ShaderTechniques
    SHADER_TECHNIQUE(bg_decal_without_texture),
    SHADER_TECHNIQUE(bg_decal_with_texture),
    SHADER_TECHNIQUE(kickerBoolean),
+   SHADER_TECHNIQUE(kickerBoolean_isMetal),
    SHADER_TECHNIQUE(light_with_texture),
+   SHADER_TECHNIQUE(light_with_texture_isMetal),
    SHADER_TECHNIQUE(light_without_texture),
+   SHADER_TECHNIQUE(light_without_texture_isMetal),
    SHADER_TECHNIQUE(basic_DMD),
    SHADER_TECHNIQUE(basic_DMD_ext),
    SHADER_TECHNIQUE(basic_DMD_world),
@@ -70,14 +77,15 @@ enum ShaderTechniques
    SHADER_TECHNIQUE(fb_bloom_horiz39x39),
    SHADER_TECHNIQUE(fb_bloom_vert39x39),
    SHADER_TECHNIQUE(fb_mirror),
-   SHADER_TECHNIQUE(fb_CAS),
-   SHADER_TECHNIQUE(fb_BilateralSharp_CAS),
+   SHADER_TECHNIQUE(CAS),
+   SHADER_TECHNIQUE(BilateralSharp_CAS),
    SHADER_TECHNIQUE(SSReflection),
    SHADER_TECHNIQUE(basic_noLight),
    SHADER_TECHNIQUE(bulb_light),
    SHADER_TECHNIQUE(SMAA_ColorEdgeDetection),
    SHADER_TECHNIQUE(SMAA_BlendWeightCalculation),
    SHADER_TECHNIQUE(SMAA_NeighborhoodBlending),
+   SHADER_TECHNIQUE(stereo),
    SHADER_TECHNIQUE(stereo_Int),
    SHADER_TECHNIQUE(stereo_Flipped_Int),
    SHADER_TECHNIQUE(stereo_Anaglyph),
@@ -293,6 +301,7 @@ public:
 private:
    RenderDevice *m_renderDevice;
    static Shader* current_shader;
+   ShaderTechniques m_technique;
 
    // caches:
 
@@ -372,7 +381,6 @@ private:
    bool m_isCacheValid[SHADER_TECHNIQUE_COUNT];
    UniformCache m_uniformCache[SHADER_TECHNIQUE_COUNT + 1][SHADER_UNIFORM_COUNT];
    ShaderTechnique* m_techniques[SHADER_TECHNIQUE_COUNT];
-   ShaderTechniques m_technique;
    static Matrix3D mWorld, mView, mProj[2];
 
 public:
