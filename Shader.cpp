@@ -1395,7 +1395,7 @@ void Shader::ApplyUniform(const ShaderUniforms uniformName)
                tex_unit->clamp_v = clampv;
                texel->m_bindings.insert(tex_unit);
                glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
-               glBindTexture(texel->IsMSAA() ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, texel->GetCoreTexture());
+               glBindTexture(GL_TEXTURE_2D, texel->GetCoreTexture());
                m_renderDevice->m_curTextureChanges++;
                GLuint sampler_state = m_renderDevice->GetSamplerState(filter, clampu, clampv);
                glBindSampler(tex_unit->unit, sampler_state);

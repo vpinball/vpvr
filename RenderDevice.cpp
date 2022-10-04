@@ -1286,12 +1286,13 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    else
       m_pReflectionBufferTexture = nullptr;
 
+   // alloc buffer for dynamic reflections (same buffer as the one used for rendering, without MSAA if any, sharing its depth with the back buffer)
    m_pMirrorTmpBufferTexture = nullptr;
    if (g_pplayer != nullptr)
    {
       const bool drawBallReflection = ((g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
-      if ((g_pplayer->m_ptable->m_reflectElementsOnPlayfield /*&& g_pplayer->m_pf_refl*/) || drawBallReflection)
-         m_pMirrorTmpBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, true, 1, m_stereo3D, "Fatal Error: unable to create mirror buffer!");
+      if ((g_pplayer->m_ptable->m_reflectElementsOnPlayfield && g_pplayer->m_pf_refl) || drawBallReflection)
+         m_pMirrorTmpBufferTexture = m_pOffscreenBackBufferTexture->Duplicate(true);
    }
 
    // alloc bloom tex at 1/4 x 1/4 res (allows for simple HQ downscale of clipped input while saving memory)
@@ -1393,10 +1394,10 @@ bool RenderDevice::LoadShaders()
    FBShader = new Shader(this);
    flasherShader = new Shader(this);
    lightShader = new Shader(this);
-   StereoShader = nullptr;
 
    bool shaderCompilationOkay = true;
 #ifdef ENABLE_SDL
+   StereoShader = nullptr;
    char glShaderPath[MAX_PATH];
    /*DWORD length =*/ GetModuleFileName(nullptr, glShaderPath, MAX_PATH);
    if (m_stereo3D == STEREO_OFF) {
@@ -1583,12 +1584,6 @@ RenderDevice::~RenderDevice()
    m_quadDynVertexBuffer = nullptr;
 
 #ifndef ENABLE_SDL
-#ifndef DISABLE_FORCE_NVIDIA_OPTIMUS
-   if (NVAPIinit) //!! meh
-      CHECKNVAPI(NvAPI_Unload());
-   NVAPIinit = false;
-#endif
-
    //
    m_pD3DDevice->SetStreamSource(0, nullptr, 0, 0);
    m_pD3DDevice->SetIndices(nullptr);
@@ -1608,18 +1603,22 @@ RenderDevice::~RenderDevice()
    SAFE_RELEASE(m_pVertexTrafoTexelDeclaration);
 
    m_texMan.UnloadAll();
-   delete m_pBackBuffer;
-   if (m_pOffscreenBackBufferTexture != m_pOffscreenMSAABackBufferTexture)
-      delete m_pOffscreenBackBufferTexture;
-   delete m_pOffscreenMSAABackBufferTexture;
-   delete m_pReflectionBufferTexture;
-   delete m_pMirrorTmpBufferTexture;
-   delete m_pBloomBufferTexture;
-   delete m_pBloomTmpBufferTexture;
-   delete m_pOffscreenVRLeft;
-   delete m_pOffscreenVRRight;
+   delete m_pOffscreenBackBufferTexture;
    delete m_pOffscreenBackBufferTmpTexture;
    delete m_pOffscreenBackBufferTmpTexture2;
+   delete m_pReflectionBufferTexture;
+
+   if (g_pplayer)
+   {
+      const bool drawBallReflection = ((g_pplayer->m_reflectionForBalls && (g_pplayer->m_ptable->m_useReflectionForBalls == -1)) || (g_pplayer->m_ptable->m_useReflectionForBalls == 1));
+      if ((g_pplayer->m_ptable->m_reflectElementsOnPlayfield /*&& g_pplayer->m_pf_refl*/) || drawBallReflection)
+         delete m_pMirrorTmpBufferTexture;
+   }
+   delete m_pBloomBufferTexture;
+   delete m_pBloomTmpBufferTexture;
+   delete m_pBackBuffer;
+   delete m_pOffscreenVRLeft;
+   delete m_pOffscreenVRRight;
 
    delete m_SMAAareaTexture;
    delete m_SMAAsearchTexture;
@@ -1637,6 +1636,11 @@ RenderDevice::~RenderDevice()
    SAFE_RELEASE(m_pD3DDevice);
 #else
    FORCE_RELEASE(m_pD3DDevice); //!! why is this necessary for some setups? is the refcount still off for some settings?
+#endif
+#ifndef DISABLE_FORCE_NVIDIA_OPTIMUS
+   if (NVAPIinit) //!! meh
+      CHECKNVAPI(NvAPI_Unload());
+   NVAPIinit = false;
 #endif
 #ifdef USE_D3D9EX
    SAFE_RELEASE_NO_RCC(m_pD3DEx);
@@ -1790,51 +1794,51 @@ void RenderDevice::UploadAndSetSMAATextures()
    m_SMAAareaTexture = new Sampler(this, areaBaseTex, true, SamplerAddressMode::SA_REPEAT, SamplerAddressMode::SA_REPEAT, SamplerFilter::SF_TRILINEAR);
 #else
    // FIXME use standard BaseTexture / Sampler code instead
-      {
-         IDirect3DTexture9 *sysTex, *tex;
-         HRESULT hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREY8, (D3DPOOL)memoryPool::SYSTEM, &sysTex, nullptr);
-         if (FAILED(hr))
-            ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
-         hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREY8, (D3DPOOL)memoryPool::DEFAULT, &tex, nullptr);
-         if (FAILED(hr))
-            ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
+   {
+      IDirect3DTexture9 *sysTex, *tex;
+      HRESULT hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREY8, (D3DPOOL)memoryPool::SYSTEM, &sysTex, nullptr);
+      if (FAILED(hr))
+         ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
+      hr = m_pD3DDevice->CreateTexture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREY8, (D3DPOOL)memoryPool::DEFAULT, &tex, nullptr);
+      if (FAILED(hr))
+         ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
 
-         //!! use D3DXLoadSurfaceFromMemory
-         D3DLOCKED_RECT locked;
-         CHECKD3D(sysTex->LockRect(0, &locked, nullptr, 0));
-         void* const pdest = locked.pBits;
-         const void* const psrc = searchTexBytes;
-         memcpy(pdest, psrc, SEARCHTEX_SIZE);
-         CHECKD3D(sysTex->UnlockRect(0));
+      //!! use D3DXLoadSurfaceFromMemory
+      D3DLOCKED_RECT locked;
+      CHECKD3D(sysTex->LockRect(0, &locked, nullptr, 0));
+      void* const pdest = locked.pBits;
+      const void* const psrc = searchTexBytes;
+      memcpy(pdest, psrc, SEARCHTEX_SIZE);
+      CHECKD3D(sysTex->UnlockRect(0));
 
-         CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, tex));
-         SAFE_RELEASE(sysTex);
+      CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, tex));
+      SAFE_RELEASE(sysTex);
 
-         m_SMAAsearchTexture = new Sampler(this, tex, true, true);
-      }
-      //
-      {
-         IDirect3DTexture9 *sysTex, *tex;
-         HRESULT hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREYA8, (D3DPOOL)memoryPool::SYSTEM, &sysTex, nullptr);
-         if (FAILED(hr))
-            ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
-         hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREYA8, (D3DPOOL)memoryPool::DEFAULT, &tex, nullptr);
-         if (FAILED(hr))
-            ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
+      m_SMAAsearchTexture = new Sampler(this, tex, true, true);
+   }
+   //
+   {
+      IDirect3DTexture9 *sysTex, *tex;
+      HRESULT hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREYA8, (D3DPOOL)memoryPool::SYSTEM, &sysTex, nullptr);
+      if (FAILED(hr))
+         ReportError("Fatal Error: unable to create texture!", hr, __FILE__, __LINE__);
+      hr = m_pD3DDevice->CreateTexture(AREATEX_WIDTH, AREATEX_HEIGHT, 0, 0, (D3DFORMAT)colorFormat::GREYA8, (D3DPOOL)memoryPool::DEFAULT, &tex, nullptr);
+      if (FAILED(hr))
+         ReportError("Fatal Error: out of VRAM!", hr, __FILE__, __LINE__);
 
-         //!! use D3DXLoadSurfaceFromMemory
-         D3DLOCKED_RECT locked;
-         CHECKD3D(sysTex->LockRect(0, &locked, nullptr, 0));
-         void* const pdest = locked.pBits;
-         const void* const psrc = areaTexBytes;
-         memcpy(pdest, psrc, AREATEX_SIZE);
-         CHECKD3D(sysTex->UnlockRect(0));
+      //!! use D3DXLoadSurfaceFromMemory
+      D3DLOCKED_RECT locked;
+      CHECKD3D(sysTex->LockRect(0, &locked, nullptr, 0));
+      void* const pdest = locked.pBits;
+      const void* const psrc = areaTexBytes;
+      memcpy(pdest, psrc, AREATEX_SIZE);
+      CHECKD3D(sysTex->UnlockRect(0));
 
-         CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, tex));
-         SAFE_RELEASE(sysTex);
+      CHECKD3D(m_pD3DDevice->UpdateTexture(sysTex, tex));
+      SAFE_RELEASE(sysTex);
 
-         m_SMAAareaTexture = new Sampler(this, tex, true, true);
-      }
+      m_SMAAareaTexture = new Sampler(this, tex, true, true);
+   }
 #endif
 }
 
@@ -1951,10 +1955,8 @@ void RenderDevice::SetRenderStateDepthBias(float bias) { m_renderstate.depth_bia
 void RenderDevice::SetRenderStateAlphaTestFunction(const DWORD testValue, const RenderStateValue testFunction, const bool enabled)
 {
    m_renderstate.alpha_ref = testValue;
-   m_renderstate.state &= RENDER_STATE_CLEAR_MASK_ALPHATESTENABLE;
-   m_renderstate.state |= (enabled ? 1 : 0) << RENDER_STATE_SHIFT_ALPHATESTENABLE;
-   m_renderstate.state &= RENDER_STATE_CLEAR_MASK_ALPHAFUNC;
-   m_renderstate.state |= testFunction << RENDER_STATE_SHIFT_ALPHAFUNC;
+   SetRenderState(ALPHATESTENABLE, enabled ? RS_TRUE : RS_FALSE);
+   SetRenderState(ALPHAFUNC, testFunction);
 }
 
 void RenderDevice::CopyRenderStates(const bool copyTo, RenderStateCache& state)
@@ -1971,6 +1973,45 @@ void RenderDevice::CopyRenderStates(const bool copyTo, RenderStateCache& state)
       m_renderstate.depth_bias = state.depth_bias;
       m_renderstate.alpha_ref = state.alpha_ref;
    }
+}
+
+string RenderDevice::GetRenderStateLog() const
+{
+   auto blend = (m_renderstate.state & RENDER_STATE_MASK_ALPHABLENDENABLE) != 0;
+   auto z_test = (m_renderstate.state & RENDER_STATE_MASK_ZENABLE) != 0;
+   auto alpha_test = (m_renderstate.state & RENDER_STATE_MASK_ALPHATESTENABLE) != 0;
+   auto alpha_func = (m_renderstate.state & RENDER_STATE_MASK_ALPHAFUNC) >> RENDER_STATE_SHIFT_ALPHAFUNC;
+   auto blend_op = (m_renderstate.state & RENDER_STATE_MASK_BLENDOP) >> RENDER_STATE_SHIFT_BLENDOP;
+   auto clip_plane = (m_renderstate.state & RENDER_STATE_MASK_CLIPPLANEENABLE) != 0;
+   auto cull_mode = (m_renderstate.state & RENDER_STATE_MASK_CULLMODE) >> RENDER_STATE_SHIFT_CULLMODE;
+   auto blend_dest = (m_renderstate.state & RENDER_STATE_MASK_DESTBLEND) >> RENDER_STATE_SHIFT_DESTBLEND;
+   auto blend_src = (m_renderstate.state & RENDER_STATE_MASK_SRCBLEND) >> RENDER_STATE_SHIFT_SRCBLEND;
+   auto z_func = (m_renderstate.state & RENDER_STATE_MASK_ZFUNC) >> RENDER_STATE_SHIFT_ZFUNC;
+   auto z_write = (m_renderstate.state & RENDER_STATE_MASK_ZWRITEENABLE) != 0;
+   auto color_write = (m_renderstate.state & RENDER_STATE_MASK_COLORWRITEENABLE) >> RENDER_STATE_SHIFT_COLORWRITEENABLE;
+   string cull_modes[] = { " ___ "s, " CW  "s, " CCW "s };
+   string functions[] = { " __ ", " <  ", " <= ", " >  ", " >= " };
+   string blend_modes[] = { " M ", " A ", " R " };
+   string blend_functions[] = { "  0  ", "  1  ", " SA  ", " DA  ", " RSA ", " RSC " };
+   string s = "Blend: {";
+   s.append(blend ? " B " : " _ ");
+   s.append(blend_modes[blend_op]);
+   s.append(blend_functions[blend_dest]);
+   s.append(blend_functions[blend_src]);
+   s.append("} Depth: {");
+   s.append(z_test ? " Z " : " _ ");
+   s.append(functions[z_func]);
+   s.append(z_write ? " ZW " : " __ ");
+   s.append("} Alpha: {");
+   s.append(alpha_test ? " A " : " _ ");
+   s.append(functions[alpha_func]);
+   s.append("} Clip:");
+   s.append(clip_plane ? " C " : " _ ");
+   s.append("Cull:");
+   s.append(cull_modes[cull_mode]);
+   s.append("Mask: ");
+   s += (char)((color_write < 10 ? 48 : 55) + color_write);
+   return s;
 }
 
 void RenderDevice::ApplyRenderStates()
@@ -2021,7 +2062,7 @@ void RenderDevice::ApplyRenderStates()
 #ifdef ENABLE_SDL
          // FIXME Needs to be done in shader
 #else
-         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_ALPHAFUNC, functions[val]));
+         CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_ALPHATESTENABLE, val ? TRUE : FALSE));
 #endif
          break;
 

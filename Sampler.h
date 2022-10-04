@@ -39,7 +39,7 @@ class Sampler
 public:
    Sampler(RenderDevice* rd, BaseTexture* const surf, const bool force_linear_rgb, const SamplerAddressMode clampu = SA_UNDEFINED, const SamplerAddressMode clampv = SA_UNDEFINED, const SamplerFilter filter = SF_UNDEFINED);
 #ifdef ENABLE_SDL
-   Sampler(RenderDevice* rd, GLuint glTexture, bool ownTexture, bool isMSAA, bool force_linear_rgb, const SamplerAddressMode clampu = SA_UNDEFINED, const SamplerAddressMode clampv = SA_UNDEFINED, const SamplerFilter filter = SF_UNDEFINED);
+   Sampler(RenderDevice* rd, GLuint glTexture, bool ownTexture, bool force_linear_rgb, const SamplerAddressMode clampu = SA_UNDEFINED, const SamplerAddressMode clampv = SA_UNDEFINED, const SamplerFilter filter = SF_UNDEFINED);
    GLuint GetCoreTexture() const { return m_texture; }
 #else
    Sampler(RenderDevice* rd, IDirect3DTexture9* dx9Texture, bool ownTexture, bool force_linear_rgb, const SamplerAddressMode clampu = SA_UNDEFINED, const SamplerAddressMode clampv = SA_UNDEFINED, const SamplerFilter filter = SF_UNDEFINED);
@@ -53,7 +53,6 @@ public:
    void SetFilter(const SamplerFilter filter);
 
    bool IsLinear() const { return m_isLinear; }
-   bool IsMSAA() const { return m_isMSAA; }
    int GetWidth() const { return m_width; }
    int GetHeight() const { return m_height; }
    SamplerFilter GetFilter() const { return m_filter; }
@@ -67,7 +66,6 @@ public:
 private:
    bool m_ownTexture;
    bool m_isLinear;
-   bool m_isMSAA;
    RenderDevice* m_rd;
    int m_width;
    int m_height;
