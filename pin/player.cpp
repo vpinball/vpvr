@@ -224,7 +224,7 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
       m_VSync = 0; //Disable VSync for VR
       m_reflectionForBalls = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "BallReflection"s, true);
    }
-   else 
+   else
    {
       m_stereo3D = (StereoMode)LoadValueIntWithDefault(regKey[RegName::Player], "Stereo3D"s, STEREO_OFF);
       m_maxPrerenderedFrames = LoadValueIntWithDefault(regKey[RegName::Player], "MaxPrerenderedFrames"s, 0);
@@ -1415,7 +1415,7 @@ HRESULT Player::Init()
          m_wnd_width = m_vrPreview == VRPREVIEW_BOTH ? 2 * m_pin3d.m_viewPort.Width : m_pin3d.m_viewPort.Width;
          m_wnd_height = m_pin3d.m_viewPort.Height;
          if (m_wnd_width > m_screenwidth)
-         { 
+         {
             m_wnd_height = (m_wnd_height * m_screenwidth) / m_wnd_width;
             m_wnd_width = m_screenwidth;
          }
@@ -2044,33 +2044,16 @@ void Player::InitStatic()
    if (m_stereo3D == STEREO_VR)
       return;
 
-#ifdef ENABLE_SDL
    RenderTarget *accumulationSurface = nullptr;
-#else
-   // allocate system/CPU memory buffer to copy static rendering buffer to (and accumulation float32 buffer) to do brute force oversampling of the static rendering
-   D3DSURFACE_DESC descStatic;
-   m_pin3d.m_pddsStatic->GetCoreColorSurface()->GetDesc(&descStatic);
-   RECT rectStatic;
-   rectStatic.left = 0;
-   rectStatic.right = descStatic.Width;
-   rectStatic.top = 0;
-   rectStatic.bottom = descStatic.Height;
-
-   float * __restrict const pdestStatic = new float[descStatic.Width*descStatic.Height * 3]; // RGB float32
-   memset(pdestStatic, 0, descStatic.Width*descStatic.Height * 3 * sizeof(float));
-
-   IDirect3DSurface9 *offscreenSurface;
-   CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->GetCoreDevice()->CreateOffscreenPlainSurface(descStatic.Width, descStatic.Height, descStatic.Format, (D3DPOOL)memoryPool::SYSTEM, &offscreenSurface, nullptr));
-#endif
 
    // if rendering static/with heavy oversampling, disable the aniso/trilinear filter to get a sharper/more precise result overall!
    if (!m_dynamicMode)
    {
-#ifdef ENABLE_SDL
       // The code will fail if the static render target is MSAA (the copy operation we are performing are not allowed)
+#ifdef ENABLE_SDL
       assert(!m_pin3d.m_pddsStatic->IsMSAA());
-      accumulationSurface = m_pin3d.m_pddsStatic->Duplicate();
 #endif
+      accumulationSurface = m_pin3d.m_pddsStatic->Duplicate();
       m_isRenderingStatic = true;
       // set up the texture filter again, so that this is triggered correctly
       m_pin3d.m_pd3dPrimaryDevice->ForceAnisotropicFiltering(false);
@@ -2175,69 +2158,31 @@ void Player::InitStatic()
          SetClipPlanePlayfield(true);
       }
 
-      // Finish the frame.
-      m_pin3d.m_pd3dPrimaryDevice->EndScene();
-
-      // Readback static buffer, convert 16bit to 32bit float, and accumulate
-      if (!m_dynamicMode)
+      if (accumulationSurface)
       {
-#ifdef ENABLE_SDL
          // Rendering is done to m_pin3d.m_pddsStatic then accumulated to accumulationSurface
          // We use the framebuffer mirror shader wich copy a weighted version of the bound texture
          accumulationSurface->Activate(true);
-         m_pin3d.m_pd3dPrimaryDevice->BeginScene();
          m_pin3d.EnableAlphaBlend(true);
          m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_FALSE);
          m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
+         m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_fb_mirror);
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetFloat(SHADER_mirrorFactor, 1.0);
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_mirror, m_pin3d.m_pddsStatic->GetColorSampler());
          m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
          m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
          m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
-         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_Texture0);
-         m_pin3d.m_pddsStatic->Activate(false);
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_tex_mirror);
          m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_TRUE);
          m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
-         m_pin3d.m_pd3dPrimaryDevice->EndScene();
-#else
-      CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->GetCoreDevice()->GetRenderTargetData(m_pin3d.m_pddsStatic->GetCoreColorSurface(), offscreenSurface));
-
-      D3DLOCKED_RECT locked;
-      CHECKD3D(offscreenSurface->LockRect(&locked, &rectStatic, D3DLOCK_READONLY));
-
-      const unsigned short * __restrict const psrc = (unsigned short*)locked.pBits;
-      for (unsigned int y = 0; y < descStatic.Height; ++y)
-      {
-         unsigned int ofs0 = y*descStatic.Width*3;
-         unsigned int ofs1 = y*locked.Pitch/2;
-         if (descStatic.Format == (D3DFORMAT)colorFormat::RGBA16F)
-         {
-         for (unsigned int x = 0; x < descStatic.Width; ++x,ofs0+=3,ofs1+=4)
-         {
-            pdestStatic[ofs0  ] += half2float(psrc[ofs1  ]);
-            pdestStatic[ofs0+1] += half2float(psrc[ofs1+1]);
-            pdestStatic[ofs0+2] += half2float(psrc[ofs1+2]);
-         }
-         }
-         else if (descStatic.Format == (D3DFORMAT)colorFormat::RED16F)
-         {
-         for (unsigned int x = 0; x < descStatic.Width; ++x,++ofs0,++ofs1)
-            pdestStatic[ofs0] += half2float(psrc[ofs1]);
-         }
-         else if (descStatic.Format == (D3DFORMAT)colorFormat::RG16F)
-         {
-         for (unsigned int x = 0; x < descStatic.Width; ++x,ofs0+=2,ofs1+=2)
-         {
-            pdestStatic[ofs0  ] += half2float(psrc[ofs1  ]);
-            pdestStatic[ofs0+1] += half2float(psrc[ofs1+1]);
-         }
-         }
+         m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
+         m_pin3d.m_pddsStatic->Activate(false);
       }
 
-      offscreenSurface->UnlockRect();
-#endif
-      }
+      // Finish the frame.
+      m_pin3d.m_pd3dPrimaryDevice->EndScene();
+
       stats_drawn_static_triangles = RenderDevice::m_stats_drawn_triangles;
    }
 
@@ -2248,65 +2193,25 @@ void Player::InitStatic()
       m_pin3d.m_pd3dPrimaryDevice->ForceAnisotropicFiltering(false);
 
       // copy back weighted accumulated result to the static render target
-#ifdef ENABLE_SDL
       m_pin3d.m_pddsStatic->Activate(true);
       m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
       m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_FALSE);
       m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
+      m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_NONE);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_fb_mirror);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetFloat(SHADER_mirrorFactor, (float)(1.0 / STATIC_PRERENDER_ITERATIONS));
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_mirror, accumulationSurface->GetColorSampler());
       m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
       m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
       m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_Texture0);
-      m_pin3d.m_pddsStatic->Activate(false);
-#else
-      // now normalize oversampled result in pdestStatic, convert back to 16bit float, and copy to/overwrite the static GPU buffer
-      D3DLOCKED_RECT locked;
-      CHECKD3D(offscreenSurface->LockRect(&locked, &rectStatic, D3DLOCK_DISCARD));
-
-      unsigned short * __restrict const psrc = (unsigned short*)locked.pBits;
-      for (unsigned int y = 0; y < descStatic.Height; ++y)
-      {
-         unsigned int ofs0 = y*descStatic.Width*3;
-         unsigned int ofs1 = y*locked.Pitch/2;
-         if (descStatic.Format == (D3DFORMAT)colorFormat::RGBA16F)
-         {
-         for (unsigned int x = 0; x < descStatic.Width; ++x,ofs0+=3,ofs1+=4)
-         {
-            psrc[ofs1  ] = float2half(pdestStatic[ofs0  ]*(float)(1.0/STATIC_PRERENDER_ITERATIONS));
-            psrc[ofs1+1] = float2half(pdestStatic[ofs0+1]*(float)(1.0/STATIC_PRERENDER_ITERATIONS));
-            psrc[ofs1+2] = float2half(pdestStatic[ofs0+2]*(float)(1.0/STATIC_PRERENDER_ITERATIONS));
-         }
-         }
-         else if (descStatic.Format == (D3DFORMAT)colorFormat::RED16F)
-         {
-         for (unsigned int x = 0; x < descStatic.Width; ++x,++ofs0,++ofs1)
-            psrc[ofs1] = float2half(pdestStatic[ofs0]*(float)(1.0/STATIC_PRERENDER_ITERATIONS));
-         }
-         else if (descStatic.Format == (D3DFORMAT)colorFormat::RG16F)
-         {
-         for (unsigned int x = 0; x < descStatic.Width; ++x,ofs0+=2,ofs1+=2)
-         {
-            psrc[ofs1  ] = float2half(pdestStatic[ofs0  ]*(float)(1.0/STATIC_PRERENDER_ITERATIONS));
-            psrc[ofs1+1] = float2half(pdestStatic[ofs0+1]*(float)(1.0/STATIC_PRERENDER_ITERATIONS));
-         }
-         }
-      }
-
-      offscreenSurface->UnlockRect();
-
-      CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->GetCoreDevice()->UpdateSurface(offscreenSurface, nullptr, m_pin3d.m_pddsStatic->GetCoreColorSurface(), nullptr));
-#endif
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_tex_mirror);
+      m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_TRUE);
+      m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
+      m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
+      m_pin3d.m_pddsStatic->Activate();
+      m_pin3d.m_pd3dPrimaryDevice->EndScene();
+      delete accumulationSurface;
    }
-
-#ifdef ENABLE_SDL
-   delete accumulationSurface;
-#else
-   delete[] pdestStatic;
-   SAFE_RELEASE(offscreenSurface);
-#endif
 
    // Now finalize static buffer with non-dynamic AO
 
@@ -3345,7 +3250,7 @@ void Player::UpdatePhysics()
           // If we're 3/4 of the way through the loop, fire a "frame sync" timer event so VPM can react to input.
           // This will effectively double the "-1" timer rate, but the goal, when this option is enabled, is to reduce latency
           // and those "-1" timer calls should be roughly halfway through the cycle
-          if (m_phys_iterations == 750u / ((unsigned int)m_fps + 1))
+          if (m_phys_iterations == 750 / ((int)m_fps + 1))
           {
               first_cycle = true; //!! side effects!?!
               m_script_period = 0; // !!!! SIDE EFFECTS?!?!?!
@@ -4317,7 +4222,7 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
          assert(renderedRT != m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
          const vec4 ms_zpd_ya_td(m_ptable->GetMaxSeparation(), m_ptable->GetZPD(), m_stereo3DY ? 1.0f : 0.0f, (float)m_stereo3D);
          const vec4 a_ds_c(m_global3DDesaturation, m_global3DContrast, 0.f, 0.f);
-         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTechnique(SHADER_TECHNIQUE_stereo_Anaglyph);
+         m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTechnique(SHADER_TECHNIQUE_stereo_anaglyph);
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetTexture(SHADER_tex_stereo_fb, renderedRT->GetColorSampler());
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetVector(SHADER_ms_zpd_ya_td, &ms_zpd_ya_td);
          m_pin3d.m_pd3dPrimaryDevice->StereoShader->SetVector(SHADER_Anaglyph_DeSaturation_Contrast, &a_ds_c);
@@ -4400,9 +4305,9 @@ void Player::UpdateHUD_IMGUI()
 
    switch (infoMode)
    {
-      case IF_FPS: 
+      case IF_FPS:
          ImGui::Begin("FPS"); break;
-      case IF_PROFILING: 
+      case IF_PROFILING:
          ImGui::Begin("Profiling"); break;
       case IF_PROFILING_SPLIT_RENDERING:
          ImGui::Begin("Profiling (using split rendering)"); break;
@@ -4614,11 +4519,11 @@ void Player::UpdateHUD()
     if (m_ptable->m_BG_rotation[m_ptable->m_BG_current_set] == 270.0f)
     {
         x = 0.0f;
-        y = (float)(m_height - DBG_SPRITE_SIZE);
+        y = (float)(m_wnd_height - DBG_SPRITE_SIZE);
     }
     else if (m_ptable->m_BG_rotation[m_ptable->m_BG_current_set] == 90.0f)
     {
-        x = (float)(m_width - DBG_SPRITE_SIZE);
+        x = (float)(m_wnd_width - DBG_SPRITE_SIZE);
         y = 0.0f;
     }
     SetDebugOutputPosition(x, y);
@@ -4777,16 +4682,16 @@ void Player::UpdateHUD()
 	}
 
     // set debug output pos for centered text
-    x = (float)(m_width - DBG_SPRITE_SIZE)*0.5f;
+    x = (float)(m_wnd_width - DBG_SPRITE_SIZE)*0.5f;
     if (m_ptable->m_BG_rotation[m_ptable->m_BG_current_set] == 270.0f)
     {
         x = 0.0f;
-        y = (float)(m_height - DBG_SPRITE_SIZE)*0.5f;
+        y = (float)(m_wnd_height - DBG_SPRITE_SIZE)*0.5f;
     }
     else if (m_ptable->m_BG_rotation[m_ptable->m_BG_current_set] == 90.0f)
     {
-        x = (float)(m_width - DBG_SPRITE_SIZE);
-        y = (float)(m_height - DBG_SPRITE_SIZE)*0.5f;
+        x = (float)(m_wnd_width - DBG_SPRITE_SIZE);
+        y = (float)(m_wnd_height - DBG_SPRITE_SIZE)*0.5f;
     }
     SetDebugOutputPosition(x, y);
 
@@ -4802,7 +4707,7 @@ void Player::UpdateHUD()
     }
 
 	if (m_fullScreen && m_closeDown && !IsWindows10_1803orAbove()) // cannot use dialog boxes in exclusive fullscreen on older windows versions, so necessary
-		DebugPrint(DBG_SPRITE_SIZE/2, m_height/2-5, "Press 'Enter' to continue or Press 'Q' to exit", true);
+		DebugPrint(DBG_SPRITE_SIZE/2, m_wnd_height/2-5, "Press 'Enter' to continue or Press 'Q' to exit", true);
 
 	if (m_closeDown) // print table name,author,version and blurb and description in pause mode
 	{
@@ -5044,7 +4949,7 @@ void Player::PrepareVideoBuffersAO()
    // separate normal generation pass, currently roughly same perf or even much worse
    /*m_pin3d.m_pd3dDevice->GetBackBufferTmpTexture()->Activate(); //!! expects stereo or FXAA enabled
 
-   m_pin3d.m_pd3dDevice->FBShader->SetTexture(SHADER_Texture3, m_pin3d.m_pdds3DZBuffer, true);
+   m_pin3d.m_pd3dDevice->FBShader->SetTexture(SHADER_tex_depth, m_pin3d.m_pdds3DZBuffer, true);
 
    const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height),
       radical_inverse(m_overall_frames%2048)*(float)(1. / 8.0),
@@ -5665,7 +5570,7 @@ void Player::Render()
             //!! like this the render window is scaled and thus implicitly blurred though!
             SetWindowLongPtr(GWL_STYLE, windowflags);
             SetWindowLongPtr(GWL_EXSTYLE, windowflagsex);
-            SetWindowPos(nullptr, x, m_showWindowedCaption ? (y + captionheight) : (y - captionheight), m_width, m_height + (m_showWindowedCaption ? 0 : captionheight), SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+            SetWindowPos(nullptr, x, m_showWindowedCaption ? (y + captionheight) : (y - captionheight), m_wnd_width, m_wnd_height + (m_showWindowedCaption ? 0 : captionheight), SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
             ShowWindow(SW_SHOW);
 #endif
             // Save position of non-fullscreen player window to registry, and only if it was potentially moved around (i.e. when caption was already visible)

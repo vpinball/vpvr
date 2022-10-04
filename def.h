@@ -121,18 +121,11 @@ inline void ref_count_trigger(const ULONG r, const char *file, const int line) /
 #define SAFE_RELEASE_NO_CHECK_NO_SET(p)	{}
 #define SAFE_RELEASE_NO_RCC(p)	{}
 
-// Typed releases: these objects have single reference (so no ref counting)
-#define SAFE_RELEASE_TEXTURE(p)			{ if(p) { glDeleteTextures(1, &p->texture); (p)=nullptr;} }
-#define SAFE_RELEASE_RENDER_TARGET(p)	{ if(p) { glDeleteFramebuffers(1, &p->framebuffer); glDeleteTextures(1, &p->texture); if(p->zBuffer) glDeleteRenderbuffers(1, &p->zBuffer); (p)=nullptr;}}
-
 #else
 #define SAFE_RELEASE(p)			{ if(p) { const ULONG rcc = (p)->Release(); if(rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); (p)=nullptr; } }
 #define SAFE_RELEASE_NO_SET(p)	{ if(p) { const ULONG rcc = (p)->Release(); if(rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); } }
 #define SAFE_RELEASE_NO_CHECK_NO_SET(p)	{ const ULONG rcc = (p)->Release(); if(rcc != 0) ref_count_trigger(rcc, __FILE__, __LINE__); }
 #define SAFE_RELEASE_NO_RCC(p)	{ if(p) { (p)->Release(); (p)=nullptr; } } // use for releasing things like surfaces gotten from GetSurfaceLevel (that seem to "share" the refcount with the underlying texture)
-
-#define SAFE_RELEASE_TEXTURE(p)         SAFE_RELEASE(p)
-#define SAFE_RELEASE_RENDER_TARGET(p)   SAFE_RELEASE(p)
 
 #endif
 #define FORCE_RELEASE(p)		{ if(p) { ULONG rcc = 1; while(rcc!=0) {rcc = (p)->Release();} (p)=nullptr; } } // release all references until it is 0
@@ -239,11 +232,18 @@ __forceinline __m128 sseHorizontalAdd(const __m128 &a) // could use dp instructi
 //
 
 #if __cplusplus >= 202002L
-#include <bit>
-#define float_as_int(x) std::bit_cast<int>(x)
-#define float_as_uint(x) std::bit_cast<unsigned int>(x)
-#define int_as_float(x) std::bit_cast<float>(x)
-#define uint_as_float(x) std::bit_cast<float>(x)
+ #ifndef __APPLE__
+  #include <bit>
+  #define float_as_int(x) std::bit_cast<int>(x)
+  #define float_as_uint(x) std::bit_cast<unsigned int>(x)
+  #define int_as_float(x) std::bit_cast<float>(x)
+  #define uint_as_float(x) std::bit_cast<float>(x)
+ #else // for whatever reason apple/clang is special again
+  #define float_as_int(x) __builtin_bit_cast(int, x)
+  #define float_as_uint(x) __builtin_bit_cast(unsigned int, x)
+  #define int_as_float(x) __builtin_bit_cast(float, x)
+  #define uint_as_float(x) __builtin_bit_cast(float, x)
+ #endif
 #else
 __forceinline int float_as_int(const float x)
 {

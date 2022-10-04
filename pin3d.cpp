@@ -469,11 +469,13 @@ HRESULT Pin3D::InitPrimary(const bool fullScreen, const int colordepth, int &ref
       m_viewPort.Width = m_pd3dPrimaryDevice->m_width / 2;
       m_viewPort.Height = m_pd3dPrimaryDevice->m_height;
    }
+#ifdef ENABLE_SDL
    else if (m_stereo3D >= STEREO_ANAGLYPH_RC && m_stereo3D <= STEREO_ANAGLYPH_AB)
    { // Anaglyph mode renders to a double widthed render target => pin3d viewport is the halh of the render buffer
       m_viewPort.Width = m_pd3dPrimaryDevice->m_width / 2;
       m_viewPort.Height = m_pd3dPrimaryDevice->m_height;
    }
+#endif
    else
    { // Use the effective size of the created device's window (should be the same as the requested)
       m_viewPort.Width = m_pd3dPrimaryDevice->m_width;
@@ -613,13 +615,12 @@ void Pin3D::InitRenderState(RenderDevice * const pd3dDevice)
 #ifndef ENABLE_SDL
    CHECKD3D(pd3dDevice->GetCoreDevice()->SetRenderState(D3DRS_LIGHTING, FALSE));
    CHECKD3D(pd3dDevice->GetCoreDevice()->SetRenderState(D3DRS_CLIPPING, FALSE));
-   // initialize first texture stage
-   CHECKD3D(pd3dDevice->GetCoreDevice()->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1));
-   CHECKD3D(pd3dDevice->GetCoreDevice()->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE));
-   CHECKD3D(pd3dDevice->GetCoreDevice()->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0));
-   CHECKD3D(pd3dDevice->GetCoreDevice()->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE));
-   CHECKD3D(pd3dDevice->GetCoreDevice()->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE));
-   CHECKD3D(pd3dDevice->GetCoreDevice()->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR)); // default tfactor: 1,1,1,1
+   pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
+   pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+   pd3dDevice->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0);
+   pd3dDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+   pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+   pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR); // default tfactor: 1,1,1,1
 #endif
 }
 
@@ -967,7 +968,7 @@ void Pin3D::InitLayout(const bool FSS_mode, const float max_separation, const fl
    if (fabsf(inclination) < 0.0075f) //!! magic threshold, otherwise kicker holes are missing for inclination ~0
       m_proj.m_rzfar += 10.f;
    //!! TODO magic: In stereo, we usually have a room made of primitives, but primitive bounding box are not implemented and are not taken in account. So add some space
-   if (m_stereo3D != STEREO_OFF) 
+   if (m_stereo3D != STEREO_OFF)
       m_proj.m_rzfar += 5000.f;
    Matrix3D proj = Matrix3D::MatrixPerspectiveFovLH(ANGTORAD(FOV), aspect, m_proj.m_rznear, m_proj.m_rzfar);
 

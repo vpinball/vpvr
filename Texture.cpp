@@ -88,7 +88,7 @@ BaseTexture* BaseTexture::CreateFromFreeImage(FIBITMAP* dib, bool resize_on_low_
       const bool has_alpha = !rgbf && FreeImage_IsTransparent(dibResized);
       // already in correct format (24bits RGB, 32bits RGBA, 96bits RGBF) ?
       // Note that 8bits BW image are converted to 24bits RGB since they are in sRGB color space and there is no sGREY8 GPU format
-      if (((img_type == FIT_BITMAP) && (FreeImage_GetBPP(dibResized) == (has_alpha ? 32 : 24))) || (img_type == FIT_RGBF))
+      if(((img_type == FIT_BITMAP) && (FreeImage_GetBPP(dibResized) == (has_alpha ? 32 : 24))) || (img_type == FIT_RGBF))
          dibConv = dibResized;
       else
       {
@@ -132,10 +132,8 @@ BaseTexture* BaseTexture::CreateFromFreeImage(FIBITMAP* dib, bool resize_on_low_
          }
          format = (maxval <= 65504.f) ? RGB_FP16 : RGB_FP32;
       }
-      else if (has_alpha)
-         format = SRGBA;
       else
-         format = SRGB;
+          format = has_alpha ? SRGBA : SRGB;
 
       try
       {
@@ -556,11 +554,10 @@ bool Texture::LoadFromMemory(BYTE * const data, const DWORD size)
       unsigned char * const __restrict stbi_data = stbi_load_from_memory(data, size, &x, &y, &channels_in_file, (ok && channels_in_file <= 3) ? 3 : 4);
       if (stbi_data) // will only enter this path for JPG files
       {
-         assert(channels_in_file == 3 || channels_in_file == 4 || channels_in_file == 1);
          BaseTexture* tex = nullptr;
          try
          {
-            tex = new BaseTexture(x, y, channels_in_file == 1 ? BaseTexture::BW : channels_in_file == 4 ? BaseTexture::SRGBA : BaseTexture::SRGB);
+            tex = new BaseTexture(x, y, channels_in_file == 4 ? BaseTexture::SRGBA : BaseTexture::SRGB);
          }
          // failed to get mem?
          catch(...)
