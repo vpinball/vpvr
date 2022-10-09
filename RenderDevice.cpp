@@ -1420,6 +1420,11 @@ bool RenderDevice::LoadShaders()
       StereoShader = new Shader(this);
       shaderCompilationOkay = StereoShader->Load("StereoShader.glfx", 0) && shaderCompilationOkay;
    }
+   if (shaderCompilationOkay)
+   {
+      float clip_planes[2][4];
+      basicShader->SetFloatArray(SHADER_clip_planes, (float*)clip_planes, 4 * 2);
+   }
 #ifdef SEPARATE_CLASSICLIGHTSHADER
    classicLightShader = new Shader(this);
    shaderCompilationOkay = classicLightShader->Load("classicLightShader.glfx", 0) && shaderCompilationOkay;
