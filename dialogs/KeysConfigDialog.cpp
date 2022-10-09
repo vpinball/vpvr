@@ -278,17 +278,6 @@ void KeysConfigDialog::AddToolTip(char *text, HWND parentHwnd, HWND toolTipHwnd,
 
 BOOL KeysConfigDialog::OnInitDialog()
 {
-   const HWND hwndDlg = GetHwnd();
-   const HWND toolTipHwnd = CreateWindowEx(NULL, TOOLTIPS_CLASS, NULL, WS_POPUP | TTS_ALWAYSTIP | TTS_BALLOON, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hwndDlg, NULL, g_pvp->theInstance, NULL);
-   if (toolTipHwnd)
-   {
-      SendMessage(toolTipHwnd, TTM_SETMAXTIPWIDTH, 0, 180);
-      HWND controlHwnd = GetDlgItem(IDC_CAP_EXTDMD).GetHwnd();
-      AddToolTip((LPSTR) "Attempt to capture External DMD window such as Freezy, UltraDMD or P-ROC.\r\n\r\nFor Freezy DmdDevice.ini need to have 'stayontop = true'.", hwndDlg, toolTipHwnd, controlHwnd);
-      controlHwnd = GetDlgItem(IDC_CAP_PUP).GetHwnd();
-      AddToolTip((LPSTR) "Attempt to capture PUP player window and display it as a Backglass in VR.", hwndDlg, toolTipHwnd, controlHwnd);
-   }
-
     bool on = LoadValueBoolWithDefault(regKey[RegName::Player], "PBWDefaultLayout"s, false);
     ::SendMessage(GetDlgItem(IDC_DefaultLayout).GetHwnd(), BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
 
@@ -355,7 +344,7 @@ BOOL KeysConfigDialog::OnInitDialog()
     const float legacyNudgeStrength = LoadValueFloatWithDefault(regKey[RegName::Player], "LegacyNudgeStrength"s, 1.f);
     SetDlgItemInt(IDC_LEGACY_NUDGE_STRENGTH, quantizeUnsignedPercent(legacyNudgeStrength), FALSE);
 
-    for (unsigned int i = 0; i <= 34; ++i)
+    for (unsigned int i = 0; i <= 30; ++i)
     {
         HRESULT hr;
         int item,selected;
@@ -392,10 +381,6 @@ BOOL KeysConfigDialog::OnInitDialog()
             case 28:hr = LoadValue(regKey[RegName::Player], "JoyPMUp"s, selected); item = IDC_JOYPMUP; break;
             case 29:hr = LoadValue(regKey[RegName::Player], "JoyPMEnter"s, selected); item = IDC_JOYPMENTER; break;
             case 30:hr = LoadValue(regKey[RegName::Player], "JoyLockbarKey"s, selected); item = IDC_JOYLOCKBARCOMBO; break;
-            case 31:hr = LoadValue(regKey[RegName::Player], "JoyRoomRecenterKey"s, selected); item = IDC_JOYROOMRECENTER; break;
-            case 32:hr = LoadValue(regKey[RegName::Player], "JoyTableRecenterKey"s, selected); item = IDC_JOYTABLERECENTER; break;
-            case 33:hr = LoadValue(regKey[RegName::Player], "JoyTableUpKey"s, selected); item = IDC_JOYTABLEUP; break;
-            case 34:hr = LoadValue(regKey[RegName::Player], "JoyTableDownKey"s, selected); item = IDC_JOYTABLEDOWN; break;
         }
 
         if (hr != S_OK)
@@ -442,12 +427,6 @@ BOOL KeysConfigDialog::OnInitDialog()
 
     on = LoadValueBoolWithDefault(regKey[RegName::Controller], "ForceDisableB2S"s, false);
     ::SendMessage(GetDlgItem(IDC_DOF_FORCEDISABLE).GetHwnd(), BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
-
-    on = LoadValueBoolWithDefault(regKey[RegName::Player], "CaptureExternalDMD"s, false);
-    ::SendMessage(GetDlgItem(IDC_CAP_EXTDMD).GetHwnd(), BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
-
-    on = LoadValueBoolWithDefault(regKey[RegName::Player], "CapturePUP"s, false);
-    ::SendMessage(GetDlgItem(IDC_CAP_PUP).GetHwnd(), BM_SETCHECK, on ? BST_CHECKED : BST_UNCHECKED, 0);
 
     int selected = LoadValueIntWithDefault(regKey[RegName::Controller], "DOFContactors"s, 2); // assume both as standard
     HWND hwnd = GetDlgItem(IDC_DOF_CONTACTORS).GetHwnd();
@@ -553,7 +532,7 @@ BOOL KeysConfigDialog::OnInitDialog()
     ::SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Slider 2");
     ::SendMessage(hwnd, CB_SETCURSEL, selected, 0);
 
-    for (unsigned int i = 0; i < eCKeys; ++i) if (regkey_idc[i] != -1)
+    for (unsigned int i = eLeftFlipperKey; i <= eLockbarKey; ++i) if (regkey_idc[i] != -1)
     {
         const HRESULT hr = LoadValue(regKey[RegName::Player], regkey_string[i], key);
         if (hr != S_OK || key > 0xdd)
@@ -689,22 +668,6 @@ BOOL KeysConfigDialog::OnInitDialog()
     ::SetWindowLongPtr(hwndButton, GWLP_USERDATA, (size_t)pksw);
 
     hwndButton = GetDlgItem(IDC_JOYCUSTOM4BUTTON).GetHwnd();
-    ::SetWindowLongPtr(hwndButton, GWLP_WNDPROC, (size_t)MyKeyButtonProc);
-    ::SetWindowLongPtr(hwndButton, GWLP_USERDATA, (size_t)pksw);
-
-    hwndButton = GetDlgItem(IDC_BTROOMRECENTER).GetHwnd();
-    ::SetWindowLongPtr(hwndButton, GWLP_WNDPROC, (size_t)MyKeyButtonProc);
-    ::SetWindowLongPtr(hwndButton, GWLP_USERDATA, (size_t)pksw);
-
-    hwndButton = GetDlgItem(IDC_BTTABLERECENTER).GetHwnd();
-    ::SetWindowLongPtr(hwndButton, GWLP_WNDPROC, (size_t)MyKeyButtonProc);
-    ::SetWindowLongPtr(hwndButton, GWLP_USERDATA, (size_t)pksw);
-
-    hwndButton = GetDlgItem(IDC_BTTABLEUP).GetHwnd();
-    ::SetWindowLongPtr(hwndButton, GWLP_WNDPROC, (size_t)MyKeyButtonProc);
-    ::SetWindowLongPtr(hwndButton, GWLP_USERDATA, (size_t)pksw);
-
-    hwndButton = GetDlgItem(IDC_BTTABLEDOWN).GetHwnd();
     ::SetWindowLongPtr(hwndButton, GWLP_WNDPROC, (size_t)MyKeyButtonProc);
     ::SetWindowLongPtr(hwndButton, GWLP_USERDATA, (size_t)pksw);
 
@@ -917,26 +880,6 @@ BOOL KeysConfigDialog::OnCommand(WPARAM wParam, LPARAM lParam)
                 StartTimer(IDC_JOYCUSTOM4);
                 break;
             }
-            case IDC_BTROOMRECENTER:
-            {
-               StartTimer(IDC_ROOMREC_TEXT);
-               break;
-            }
-            case IDC_BTTABLERECENTER:
-            {
-               StartTimer(IDC_TABLEREC_TEXT);
-               break;
-            }
-            case IDC_BTTABLEUP:
-            {
-               StartTimer(IDC_TABLEUP_TEXT);
-               break;
-            }
-            case IDC_BTTABLEDOWN:
-            {
-               StartTimer(IDC_TABLEDOWN_TEXT);
-               break;
-            }
             default:
                 return FALSE;
         }//switch
@@ -986,10 +929,6 @@ void KeysConfigDialog::OnOK()
     SetValue(IDC_PLUNGERAXIS, regKey[RegName::Player], "PlungerAxis"s);
     SetValue(IDC_LRAXISCOMBO, regKey[RegName::Player], "LRAxis"s);
     SetValue(IDC_UDAXISCOMBO, regKey[RegName::Player], "UDAxis"s);
-    SetValue(IDC_JOYROOMRECENTER, regKey[RegName::Player], "JoyRoomRecenterKey");
-    SetValue(IDC_JOYTABLERECENTER, regKey[RegName::Player], "JoyTableRecenterKey");
-    SetValue(IDC_JOYTABLEUP, regKey[RegName::Player], "JoyTableUpKey");
-    SetValue(IDC_JOYTABLEDOWN, regKey[RegName::Player], "JoyTableDownKey");
 
     size_t selected;
     int newvalue;
@@ -1066,7 +1005,7 @@ void KeysConfigDialog::OnOK()
     }
 
     for (unsigned int i = 0; i < eCKeys; ++i) if (regkey_idc[i] != -1)
-    {        
+    {
         const size_t key = ::GetWindowLongPtr(GetDlgItem(regkey_idc[i]).GetHwnd(), GWLP_USERDATA);
         SaveValueInt(regKey[RegName::Player], regkey_string[i], (int)key);
     }
@@ -1102,12 +1041,6 @@ void KeysConfigDialog::OnOK()
 
     selected = ::SendMessage(GetDlgItem(IDC_DOF_FORCEDISABLE).GetHwnd(), BM_GETCHECK, 0, 0);
     SaveValueBool(regKey[RegName::Controller], "ForceDisableB2S"s, selected != 0);
-
-    selected = ::SendMessage(GetDlgItem(IDC_CAP_EXTDMD).GetHwnd(), BM_GETCHECK, 0, 0);
-    SaveValueBool(regKey[RegName::Player], "CaptureExternalDMD"s, selected != 0);
-
-    selected = ::SendMessage(GetDlgItem(IDC_CAP_PUP).GetHwnd(), BM_GETCHECK, 0, 0);
-    SaveValueBool(regKey[RegName::Player], "CapturePUP"s, selected != 0);
 
     int inputApi = (int)SendMessage(GetDlgItem(IDC_COMBO_INPUT_API).GetHwnd(), CB_GETCURSEL, 0, 0);
 #ifndef ENABLE_XINPUT

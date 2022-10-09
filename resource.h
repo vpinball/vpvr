@@ -692,7 +692,7 @@
 #define IDC_JOYDEBUGGERCOMBO            423
 #define IDC_DYNAMIC_AO                  424
 #define IDC_DEBUGBALLSBUTTON2           424
-#define IDC_BTROOMRECENTER              424
+#define IDC_BTROOMRECENTER              884
 #define IDC_FORCE_ANISO                 425
 #define IDC_WIRE_DISTY                  425
 #define IDC_SCALE_BULB_MESH             425
@@ -1169,6 +1169,7 @@
 #define IDC_MSAASLIDER_LABEL            843
 #define IDC_STATIC6                     843
 #define IDC_STATIC11                    844
+#define IDC_CAP_PUP2                    844
 #define IDC_STATIC1                     845
 #define IDC_STATIC2                     846
 #define IDC_STATIC3                     847
@@ -1207,6 +1208,8 @@
 #define IDC_3D_STEREO_CONTRAST          879
 #define IDC_3D_STEREO_DESATURATION      880
 #define IDC_GLOBAL_DISABLE_LIGHTING_BALLS 881
+#define IDC_BACKGLASS_GROUP             882
+#define IDC_BACKGLASS_GROUP2            883
 #define IDC_LAYBACK_EDIT                1040
 #define IDC_3D_STEREO_SEPARATION_EDIT   1041
 #define IDC_3D_STEREO_ZPD_EDIT          1042
@@ -1400,7 +1403,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        669
 #define _APS_NEXT_COMMAND_VALUE         4027
-#define _APS_NEXT_CONTROL_VALUE         882
+#define _APS_NEXT_CONTROL_VALUE         885
 #define _APS_NEXT_SYMED_VALUE           188
 #endif
 #endif
