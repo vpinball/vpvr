@@ -16,7 +16,7 @@
 #define LOG(a,b,c)
 #else
 // FIXME implement clean log
-#define LOG(a, b, c)
+//#define LOG(a, b, c)
 #endif
 
 #define SHADER_TECHNIQUE(name) #name
