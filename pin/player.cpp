@@ -15,6 +15,12 @@
 #include "sdl2/SDL_syswm.h"
 #endif
 
+#if __cplusplus >= 202002L
+using namespace std::ranges;
+#else
+using namespace std;
+#endif
+
 // utility structure for realtime plot //!! cleanup
 class ScrollingData {
 private:
@@ -1674,10 +1680,10 @@ HRESULT Player::Init()
    unsigned long long m;
    if (!m_vHitNonTrans.empty())
    {
-      std::ranges::stable_sort(m_vHitNonTrans.begin(), m_vHitNonTrans.end(), CompareHitableDepthReverse); // stable, so that em reels (=same depth) will keep user defined order
-      std::ranges::stable_sort(m_vHitNonTrans.begin(), m_vHitNonTrans.end(), CompareHitableImage); // stable, so that objects with same images will keep depth order
+      stable_sort(m_vHitNonTrans.begin(), m_vHitNonTrans.end(), CompareHitableDepthReverse); // stable, so that em reels (=same depth) will keep user defined order
+      stable_sort(m_vHitNonTrans.begin(), m_vHitNonTrans.end(), CompareHitableImage); // stable, so that objects with same images will keep depth order
       // sort by vertexbuffer not useful currently
-      std::ranges::stable_sort(m_vHitNonTrans.begin(), m_vHitNonTrans.end(), CompareHitableMaterial); // stable, so that objects with same materials will keep image order
+      stable_sort(m_vHitNonTrans.begin(), m_vHitNonTrans.end(), CompareHitableMaterial); // stable, so that objects with same materials will keep image order
 
       m = m_vHitNonTrans[0]->GetMaterialID();
       for (size_t i = 1; i < m_vHitNonTrans.size(); ++i)
@@ -1690,10 +1696,10 @@ HRESULT Player::Init()
 
    if (!m_vHitTrans.empty())
    {
-      std::ranges::stable_sort(m_vHitTrans.begin(), m_vHitTrans.end(), CompareHitableImage); // see above
+      stable_sort(m_vHitTrans.begin(), m_vHitTrans.end(), CompareHitableImage); // see above
       // sort by vertexbuffer not useful currently
-      std::ranges::stable_sort(m_vHitTrans.begin(), m_vHitTrans.end(), CompareHitableMaterial);
-      std::ranges::stable_sort(m_vHitTrans.begin(), m_vHitTrans.end(), CompareHitableDepth);
+      stable_sort(m_vHitTrans.begin(), m_vHitTrans.end(), CompareHitableMaterial);
+      stable_sort(m_vHitTrans.begin(), m_vHitTrans.end(), CompareHitableDepth);
 
       m = m_vHitTrans[0]->GetMaterialID();
       for (size_t i = 1; i < m_vHitTrans.size(); ++i)
@@ -1971,10 +1977,10 @@ void Player::RenderDynamicMirror(const bool onlyBalls)
    // Draw transparent objects.
    if (!onlyBalls)
    {
-      std::ranges::stable_sort(m_vHitTrans.begin(), m_vHitTrans.end(), CompareHitableDepthInverse);
+      stable_sort(m_vHitTrans.begin(), m_vHitTrans.end(), CompareHitableDepthInverse);
       for (size_t i = 0; i < m_vHitTrans.size(); ++i)
          m_vHitTrans[i]->RenderDynamic();
-      std::ranges::stable_sort(m_vHitTrans.begin(), m_vHitTrans.end(), CompareHitableDepth);
+      stable_sort(m_vHitTrans.begin(), m_vHitTrans.end(), CompareHitableDepth);
    }
 
    m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
@@ -3718,8 +3724,8 @@ void Player::RenderDynamics()
       m_dmdstate = 0;
       // Draw transparent objects. No DMD's
       for (size_t i = 0; i < m_vHitTrans.size(); ++i)
-        if(!m_vHitTrans[i]->IsDMD())
-          m_vHitTrans[i]->RenderDynamic();
+         if (!m_vHitTrans[i]->IsDMD())
+            m_vHitTrans[i]->RenderDynamic();
 
       m_dmdstate = 1;
       // Draw only transparent DMD's
@@ -4784,7 +4790,7 @@ void Player::UpdateHUD()
 void Player::PrepareVideoBuffersNormal()
 {
    const bool useAA = ((m_AAfactor != 1.0f) && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
-   const bool stereo = m_stereo3D == STEREO_VR || ((m_stereo3D != STEREO_OFF) && m_stereo3Denabled && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable());
+   const bool stereo= m_stereo3D == STEREO_VR || ((m_stereo3D != STEREO_OFF) && m_stereo3Denabled && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable());
    const bool SMAA  = (((m_FXAA == Quality_SMAA)  && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
    const bool DLAA  = (((m_FXAA == Standard_DLAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_DLAA));
    const bool NFAA  = (((m_FXAA == Fast_NFAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_NFAA));
