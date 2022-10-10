@@ -208,6 +208,8 @@ FIXES:
 - update internal script representation continuously while typing (please notify us if this makes working in the script editor too slow for a specific table!)
 - implement simple duplicate test for subs/functions, and output these when script is brought into focus as a tooltip
 
+- update image/texture drop down list after importing/deleting images
+
 - fix (ignored) font size handling
 
 - fix animation/fading of lights when not visible/when only visible through reflections 
@@ -220,9 +222,15 @@ FIXES:
 
 - fix showing property dialog if multiple elements were selected
 
+- fix tabbing with multiple selected drag points
+
 - fix registry defaults load/save for EM-Reels
 
+- avoid thrashing of the saved dock/window settings when running in minimized mode
+
 - fix extremely old wire ramp issue (too many triangles created)
+
+- fix Z/depth rendering artefacts in interactive camera/light editing mode (e.g. when launching the table with F6 or the respective menu entry)
 
 - remove 32 entry limitation for collections in context menu
 
@@ -233,14 +241,18 @@ FIXES:
 - decrease main memory usage for textures by using smaller texture formats where possible
 - optimize floating point texture video memory usage/bandwidth (e.g. flasher/primitive and environment textures)
 
-- update FreeImage library to latest 3.18.0 (custom build) (currently disabled)
-- DirectX 8 port for input handling (currently disabled)
+- improved full example table (thanks kiwi!)
 
 - see Changelog_Scripts.txt for the respective core script changes (version 3.59)
 - see CommandReference.txt for the changelog of all the scripting properties/interface changes
 - see Scripts.txt for the actual usage and "documentation" of the scripts that come with VPX
 
 - add Visual Studio 2022 support
+
+VP 10.7.1 Changelog
+------------------------
+
+- internal release only
 
 VP 10.7.0 Changelog
 ------------------------
