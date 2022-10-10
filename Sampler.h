@@ -1,6 +1,6 @@
 #pragma once
 
-#include <set>
+#include <inc/robin_hood.h>
 #include "typedefs3D.h"
 
 class RenderDevice;
@@ -59,9 +59,8 @@ public:
    SamplerAddressMode GetClampU() const { return m_clampu; }
    SamplerAddressMode GetClampV() const { return m_clampv; }
 
-public:
    bool m_dirty;
-   std::set<SamplerBinding*> m_bindings;
+   robin_hood::unordered_set<SamplerBinding*> m_bindings;
 
 private:
    bool m_ownTexture;
@@ -72,6 +71,7 @@ private:
    SamplerAddressMode m_clampu;
    SamplerAddressMode m_clampv;
    SamplerFilter m_filter;
+
 #ifdef ENABLE_SDL
    GLuint m_texture = 0;
    GLuint CreateTexture(UINT Width, UINT Height, UINT Levels, colorFormat Format, void* data, int stereo);
