@@ -47,8 +47,8 @@ uniform sampler2D tex_base_color; // base texture
 uniform sampler2D tex_env; // envmap
 uniform sampler2D tex_diffuse_env; // envmap radiance
 uniform sampler2D tex_base_transmission; // bulb light buffer
+uniform sampler2D tex_playfield_reflection; // playfield reflections
 uniform sampler2D tex_base_normalmap; // normal map
-uniform sampler2D tex_mirror; // reflection probe
 
 uniform bool objectSpaceNormalMap;
 uniform bool is_metal;
@@ -65,8 +65,9 @@ uniform vec4 cGlossy_ImageLerp;
 //!! Metals have high specular reflectance: 0.5-1.0
 
 uniform vec4 staticColor_Alpha;
-
 uniform float alphaTestValue;
+
+uniform float mirrorFactor;
 
 out vec4 color;
 
@@ -100,6 +101,16 @@ vec3 normal_map(vec3 N, vec3 V, vec2 uv)
       return normalize((tn * TBN_trafo(N, V, uv)).xyz);  // !! The order of tn, and TBN_trainfo matters here?  Ship on FishTales gets blown out if you reverse them 
 }
 
+// Compute reflection on playfield from reflection probe (screen space coordinates)
+float3 playfield_reflection(const float2 screenSpace, const float3 N)
+{
+   // Only apply to faces pointing in the direction of the probe (normal = [0,0,-1])
+   // the smoothstep values are *magic* values taken from visual tests
+   // FIXME this is disabled since the normal is transformed by WorldView making this meaningless
+   // return smoothstep(0.5, 0.9, -N.z) * mirrorFactor * tex2D(tex_playfield_reflection, screenSpace).rgb;
+   return mirrorFactor * tex2D(tex_playfield_reflection, screenSpace).rgb;
+}
+
 //------------------------------------
 //
 // Standard Materials
@@ -112,7 +123,7 @@ in vec3 vNormal;
 in vec2 tc;
 
 out vec2 tex01_gs;
-out vec2 tex03_gs;
+noperspective out vec2 tex03_gs;
 out vec3 worldPos_gs;
 out vec3 normal_gs;
 
@@ -121,7 +132,7 @@ void main()
    gl_Position = vec4(vPosition, 1.0);
    tex01_gs = tc;
    vec4 bulbPos = (matWorldViewProj[0]*vec4(vPosition, 1.0));
-   tex03_gs = vec2(bulbPos.xy/bulbPos.w);
+   tex03_gs = 0.5 * vec2(bulbPos.xy/bulbPos.w) + vec2(0.5, 0.5);
    worldPos_gs = (matWorldView*vec4(vPosition, 1.0)).xyz;
    normal_gs = normalize((matWorldViewInverseTranspose*vNormal).xyz);
 }
@@ -132,7 +143,7 @@ in vec3 vPosition;
 in vec3 vNormal;
 in vec2 tc;
 
-out vec2 tex03_gs;
+noperspective out vec2 tex03_gs;
 out vec3 worldPos_gs;
 out vec3 normal_gs;
 
@@ -140,7 +151,7 @@ void main()
 {
    gl_Position = vec4(vPosition, 1.0);
    vec4 bulbPos = (matWorldViewProj[0]*vec4(vPosition, 1.0));
-   tex03_gs = vec2(bulbPos.xy/bulbPos.w);
+   tex03_gs = 0.5 * vec2(bulbPos.xy/bulbPos.w) + vec2(0.5, 0.5);
    worldPos_gs = (matWorldView*vec4(vPosition, 1.0)).xyz;
    normal_gs = normalize((matWorldViewInverseTranspose*vNormal).xyz);
 }
@@ -172,8 +183,8 @@ void main()
 in vec2 tex01_gs[];
 out vec2 tex01;
 
-in vec2 tex03_gs[];
-out vec2 tex03;
+noperspective in vec2 tex03_gs[];
+noperspective out vec2 tex03;
 
 in vec3 worldPos_gs[];
 out vec3 worldPos;
@@ -190,7 +201,8 @@ void main()
       gl_ClipDistance[0] = dot(matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position, clip_planes[i]); // For Render Dynamic Mirror when enabling clipping.
       //Custom
       tex01 = tex01_gs[i];
-      tex03 = tex03_gs[i];
+      //tex03 = tex03_gs[i];
+	  tex03 = 0.5 * (gl_Position.xy / gl_Position.w) + vec2(0.5);
       worldPos = worldPos_gs[i];
       normal = normal_gs[i];
       //Default
@@ -201,8 +213,8 @@ void main()
 
 ////gs_notex_main
 
-in vec2 tex03_gs[];
-out vec2 tex03;
+noperspective in vec2 tex03_gs[];
+noperspective out vec2 tex03;
 
 in vec3 worldPos_gs[];
 out vec3 worldPos;
@@ -218,7 +230,8 @@ void main()
       gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
       gl_ClipDistance[0] = dot(matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position, clip_planes[i]); // For Render Dynamic Mirror when enabling clipping.
       //Custom
-      tex03 = tex03_gs[i];
+      //tex03 = tex03_gs[i];
+	  tex03 = 0.5 * (gl_Position.xy / gl_Position.w) + vec2(0.5);
       worldPos = worldPos_gs[i];
       normal = normal_gs[i];
       //Default
@@ -229,8 +242,8 @@ void main()
 
 ////gs_kicker_main
 
-in vec2 tex03_gs[];
-out vec2 tex03;
+noperspective in vec2 tex03_gs[];
+noperspective out vec2 tex03;
 
 in vec3 worldPos_gs[];
 out vec3 worldPos;
@@ -248,7 +261,8 @@ void main()
       gl_Position.xyw = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position).xyw;
       gl_Position.z = (matWorldViewProj[gl_InvocationID]*P2).z;
       //Custom
-      tex03 = tex03_gs[i];
+      //tex03 = tex03_gs[i];
+	  tex03 = 0.5 * (gl_Position.xy / gl_Position.w) + vec2(0.5);
       worldPos = worldPos_gs[i];
       normal = normal_gs[i];
       //Default
@@ -293,7 +307,7 @@ void main()
 
 ////ps_main_notex
 
-in vec2 tex03;
+noperspective in vec2 tex03;
 in vec3 worldPos;
 in vec3 normal;
 
@@ -317,7 +331,7 @@ void main() {
 
       if (fDisableLighting_top_below.y < 1.0)
           // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-          color.xyz += mix(sqrt(diffuse)*texture(tex_base_transmission, vec2(0.5*tex03.xy)+0.5, 0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
+          color.xyz += mix(sqrt(diffuse)*texture(tex_base_transmission, tex03.xy, 0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
    }
 
    color *= staticColor_Alpha;
@@ -326,7 +340,7 @@ void main() {
 ////ps_main_texture
 
 in vec2 tex01;
-in vec2 tex03;
+noperspective in vec2 tex03;
 in vec3 worldPos;
 in vec3 normal;
 
@@ -363,19 +377,18 @@ void main() {
       if (fDisableLighting_top_below.y < 1.0)
       {
          // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-         color.xyz += mix(sqrt(diffuse)*texture(tex_base_transmission, vec2(0.5*tex03.xy)+0.5).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
+         color.xyz += mix(sqrt(diffuse)*texture(tex_base_transmission, tex03.xy).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
       }
    }
 
    color *= staticColor_Alpha;
 }
 
-////ps_main_notex_mirror
 
-uniform vec4 cWidth_Height_MirrorAmount;
+////ps_main_playfield
 
 in vec2 tex01;
-in vec2 tex03;
+noperspective in vec2 tex03;
 in vec3 worldPos;
 in vec3 normal;
 
@@ -399,21 +412,20 @@ void main() {
 
       if (fDisableLighting_top_below.y < 1.0)
           // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-          color.xyz += mix(sqrt(diffuse)*texture(tex_base_transmission, vec2(0.5*tex03.xy)+0.5, 0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
+          color.xyz += mix(sqrt(diffuse)*texture(tex_base_transmission, tex03.xy, 0).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
    }
 
    // Reflection, faded out on playfield border and cutouts (limits are magic to allow normal mapping), taking in account playfield alpha transparency
-   color.rgb += smoothstep(0.5, 0.9, -N.z) * color.a * cWidth_Height_MirrorAmount.z * texture(tex_mirror, gl_FragCoord.xy / cWidth_Height_MirrorAmount.xy).rgb;
+   color.rgb += playfield_reflection(tex03.xy, N);
 
    color *= staticColor_Alpha;
 }
 
-////ps_main_texture_mirror
 
-uniform vec4 cWidth_Height_MirrorAmount;
+////ps_main_playfield_texture
 
 in vec2 tex01;
-in vec2 tex03;
+noperspective in vec2 tex03;
 in vec3 worldPos;
 in vec3 normal;
 
@@ -450,15 +462,61 @@ void main() {
       if (fDisableLighting_top_below.y < 1.0)
       {
          // add light from "below" from user-flagged bulb lights, pre-rendered/blurred in previous renderpass //!! sqrt = magic
-         color.xyz += mix(sqrt(diffuse)*texture(tex_base_transmission, vec2(0.5*tex03.xy)+0.5).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
+         color.xyz += mix(sqrt(diffuse)*texture(tex_base_transmission, tex03.xy).xyz*color.a, vec3(0.), fDisableLighting_top_below.y); //!! depend on normal of light (unknown though) vs geom normal, too?
       }
    }
 
    // Reflection, faded out on playfield border and cutouts (limits are magic to allow normal mapping), taking in account playfield alpha transparency
-   color.rgb += smoothstep(0.5, 0.9, -N.z) * color.a * cWidth_Height_MirrorAmount.z * texture(tex_mirror, gl_FragCoord.xy / cWidth_Height_MirrorAmount.xy).rgb;
+   color.rgb += playfield_reflection(tex03.xy, N);
 
    color *= staticColor_Alpha;
 }
+
+
+////ps_main_playfield_refl
+
+in vec2 tex01;
+noperspective in vec2 tex03;
+in vec3 worldPos;
+in vec3 normal;
+
+void main() {
+   float3 N = normalize(normal);
+   color.rgb = playfield_reflection(tex03.xy, N);
+   color.a = 1.0;
+   color *= staticColor_Alpha;
+}
+
+
+////ps_main_playfield_refl_texture
+
+in vec2 tex01;
+noperspective in vec2 tex03;
+in vec3 worldPos;
+in vec3 normal;
+
+void main() {
+   float4 result;
+
+   result.a = tex2D(tex_base_color, tex01).a;
+
+   if (result.a <= alphaTestValue)
+      discard;           //stop the pixel shader if alpha test should reject pixel
+
+   result.a *= cBase_Alpha.a;
+
+   float3 N = normalize(normal);
+   result.rgb = playfield_reflection(tex03.xy, N);
+
+   if (cBase_Alpha.a < 1.0 && result.a < 1.0)
+   {
+      const float3 V = normalize(/*camera=0,0,0,1*/ -worldPos);
+      result.a = GeometricOpacity(dot(N, V), result.a, cClearcoat_EdgeAlpha.w, Roughness_WrapL_Edge_Thickness.w);
+   }
+
+   color = result * staticColor_Alpha;
+}
+
 
 ////ps_main_depth_only_without_texture
 
@@ -533,8 +591,12 @@ void main() {
 
 basic_without_texture:P0:vs_notex_main():gs_notex_main():ps_main_notex()
 basic_with_texture:P0:vs_main():gs_main():ps_main_texture()
-basic_without_texture_n_mirror:P0:vs_notex_main():gs_notex_main():ps_main_notex_mirror()
-basic_with_texture_n_mirror:P0:vs_main():gs_main():ps_main_texture_mirror()
+
+playfield_without_texture:P0:vs_notex_main():gs_notex_main():ps_main_playfield()
+playfield_with_texture:P0:vs_main():gs_main():ps_main_playfield_texture()
+playfield_refl_without_texture:P0:vs_notex_main():gs_notex_main():ps_main_playfield_refl()
+playfield_refl_with_texture:P0:vs_main():gs_main():ps_main_playfield_refl_texture()
+
 basic_depth_only_without_texture:P0:vs_depth_only_main_without_texture():gs_depth_only_main_without_texture():ps_main_depth_only_without_texture()
 basic_depth_only_with_texture:P0:vs_depth_only_main_with_texture():gs_depth_only_main_with_texture():ps_main_depth_only_with_texture()
 

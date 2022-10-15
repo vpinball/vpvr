@@ -18,7 +18,6 @@ Pin3D::Pin3D()
    m_pd3dSecondaryDevice = nullptr;
    m_pddsStatic = nullptr;
    m_envRadianceTexture = nullptr;
-   m_tableVBuffer = nullptr;
    m_backGlass = nullptr;
 
    m_cam.x = 0.f;
@@ -45,8 +44,6 @@ Pin3D::~Pin3D()
       delete m_envRadianceTexture;
       m_envRadianceTexture = nullptr;
    }
-
-   SAFE_BUFFER_RELEASE(m_tableVBuffer);
 
    delete m_pddsAOBackBuffer;
    delete m_pddsAOBackTmpBuffer;
@@ -1013,110 +1010,6 @@ void Pin3D::InitLayout(const bool FSS_mode, const float max_separation, const fl
    m_viewVec.Normalize();*/
 
    InitLights();
-}
-
-void Pin3D::InitPlayfieldGraphics()
-{
-   const IEditable * const piEdit = g_pplayer->m_ptable->GetElementByName("playfield_mesh");
-   if (piEdit == nullptr || piEdit->GetItemType() != ItemTypeEnum::eItemPrimitive)
-   {
-      assert(m_tableVBuffer == nullptr);
-      VertexBuffer::CreateVertexBuffer(4, 0, MY_D3DFVF_NOTEX2_VERTEX, &m_tableVBuffer, PRIMARY_DEVICE);
-
-      Vertex3D_NoTex2 *buffer;
-      m_tableVBuffer->lock(0, 0, (void**)&buffer, VertexBuffer::WRITEONLY);
-
-      unsigned int offs = 0;
-      for (unsigned int y = 0; y <= 1; ++y)
-         for (unsigned int x = 0; x <= 1; ++x, ++offs)
-         {
-            buffer[offs].x = (x & 1) ? g_pplayer->m_ptable->m_right  : g_pplayer->m_ptable->m_left;
-            buffer[offs].y = (y & 1) ? g_pplayer->m_ptable->m_bottom : g_pplayer->m_ptable->m_top;
-            buffer[offs].z = g_pplayer->m_ptable->m_tableheight;
-
-            buffer[offs].tu = (x & 1) ? 1.f : 0.f;
-            buffer[offs].tv = (y & 1) ? 1.f : 0.f;
-
-            buffer[offs].nx = 0.f;
-            buffer[offs].ny = 0.f;
-            buffer[offs].nz = 1.f;
-         }
-
-      m_tableVBuffer->unlock();
-   }
-   else
-      g_pplayer->m_meshAsPlayfield = true;
-}
-
-void Pin3D::RenderPlayfieldGraphics(const float mirror_factor, const bool depth_only)
-{
-   TRACE_FUNCTION();
-
-   const Material * const mat = g_pplayer->m_ptable->GetMaterial(g_pplayer->m_ptable->m_playfieldMaterial);
-   Texture * const pin = (depth_only && !mat->m_bOpacityActive) ? nullptr : g_pplayer->m_ptable->GetImage(g_pplayer->m_ptable->m_image);
-
-   if (depth_only)
-   {
-       m_pd3dPrimaryDevice->SetRenderState(RenderDevice::COLORWRITEENABLE, RenderDevice::RGBMASK_NONE); //m_pin3d.m_pd3dPrimaryDevice->SetPrimaryRenderTarget(nullptr); // disable color writes
-       // even with depth-only rendering we have to take care of alpha textures (stencil playfield to see underlying objects)
-       if (pin)
-       {
-           m_pd3dPrimaryDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_depth_only_with_texture);
-           m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_base_color, pin, SF_ANISOTROPIC, SA_CLAMP, SA_CLAMP);
-           m_pd3dPrimaryDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
-       }
-       else // No image by that name
-           m_pd3dPrimaryDevice->basicShader->SetTechnique(SHADER_TECHNIQUE_basic_depth_only_without_texture);
-   }
-   else
-   {
-      if (mirror_factor > 0.0f)
-      {
-         m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_mirror, m_pd3dPrimaryDevice->GetMirrorTmpBufferTexture()->GetColorSampler());
-         m_pd3dPrimaryDevice->basicShader->SetVector(SHADER_cWidth_Height_MirrorAmount, (float) RenderTarget::GetCurrentRenderTarget()->GetWidth(), (float) RenderTarget::GetCurrentRenderTarget()->GetHeight(), mirror_factor, 0.0f);
-      }
-      if (pin)
-      {
-         m_pd3dPrimaryDevice->basicShader->SetTechniqueMetal(mirror_factor > 0.0f ? SHADER_TECHNIQUE_basic_with_texture_n_mirror : SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
-         m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_base_color, pin, SF_ANISOTROPIC, SA_CLAMP, SA_CLAMP);
-         m_pd3dPrimaryDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
-         m_pd3dPrimaryDevice->basicShader->SetMaterial(mat, pin->m_pdsBuffer->has_alpha());
-      }
-      else // No image by that name
-      {
-         m_pd3dPrimaryDevice->basicShader->SetTechniqueMetal(mirror_factor > 0.0f ? SHADER_TECHNIQUE_basic_without_texture_n_mirror : SHADER_TECHNIQUE_basic_without_texture, mat->m_bIsMetal);
-         m_pd3dPrimaryDevice->basicShader->SetMaterial(mat, false);
-      }
-   }
-
-   if (!g_pplayer->m_meshAsPlayfield)
-   {
-      assert(m_tableVBuffer != nullptr);
-      m_pd3dPrimaryDevice->basicShader->Begin();
-      m_pd3dPrimaryDevice->DrawPrimitiveVB(RenderDevice::TRIANGLESTRIP, MY_D3DFVF_NOTEX2_VERTEX, m_tableVBuffer, 0, 4, true);
-      m_pd3dPrimaryDevice->basicShader->End();
-   }
-   else
-   {
-      const IEditable* piEdit = nullptr;
-      for (size_t i = 0; i < g_pplayer->m_ptable->m_vedit.size(); ++i)
-         if (g_pplayer->m_ptable->m_vedit[i]->GetItemType() == ItemTypeEnum::eItemPrimitive && strcmp(g_pplayer->m_ptable->m_vedit[i]->GetName(), "playfield_mesh") == 0)
-         {
-            if (piEdit == nullptr || ((Primitive*)piEdit)->m_d.m_toy || !((Primitive*)piEdit)->m_d.m_collidable) // either the first playfield mesh OR a toy/not-collidable (i.e. only used for visuals)?
-               piEdit = g_pplayer->m_ptable->m_vedit[i];
-         }
-
-      Primitive * const pPrim = (Primitive *)piEdit;
-      pPrim->m_d.m_visible = true;  // temporary enable the otherwise invisible playfield
-      pPrim->RenderObject();
-      pPrim->m_d.m_visible = false; // restore
-   }
-
-   if (depth_only)
-      m_pd3dPrimaryDevice->SetRenderState(RenderDevice::COLORWRITEENABLE, RenderDevice::RGBMASK_RGBA); // reenable color writes with default value
-
-   // Apparently, releasing the vertex buffer here immediately can cause rendering glitches in
-   // later rendering steps, so we keep it around for now.
 }
 
 void Pin3D::EnableAlphaTestReference(const DWORD alphaRefValue) const

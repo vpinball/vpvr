@@ -33,8 +33,14 @@ const string Shader::shaderTechniqueNames[SHADER_TECHNIQUE_COUNT]
    SHADER_TECHNIQUE(basic_without_texture_isMetal),
    SHADER_TECHNIQUE(basic_with_texture_isMetal),
    SHADER_TECHNIQUE(basic_with_texture_normal_isMetal),
-   SHADER_TECHNIQUE(basic_without_texture_n_mirror),
-   SHADER_TECHNIQUE(basic_with_texture_n_mirror),
+   SHADER_TECHNIQUE(playfield_without_texture),
+   SHADER_TECHNIQUE(playfield_with_texture),
+   SHADER_TECHNIQUE(playfield_with_texture_normal),
+   SHADER_TECHNIQUE(playfield_without_texture_isMetal),
+   SHADER_TECHNIQUE(playfield_with_texture_isMetal),
+   SHADER_TECHNIQUE(playfield_with_texture_normal_isMetal),
+   SHADER_TECHNIQUE(playfield_refl_without_texture),
+   SHADER_TECHNIQUE(playfield_refl_with_texture),
    SHADER_TECHNIQUE(basic_depth_only_without_texture),
    SHADER_TECHNIQUE(basic_depth_only_with_texture),
    SHADER_TECHNIQUE(bg_decal_without_texture),
@@ -89,7 +95,7 @@ const string Shader::shaderTechniqueNames[SHADER_TECHNIQUE_COUNT]
    SHADER_TECHNIQUE(stereo),
    SHADER_TECHNIQUE(stereo_Int),
    SHADER_TECHNIQUE(stereo_Flipped_Int),
-   SHADER_TECHNIQUE(stereo_Anaglyph),
+   SHADER_TECHNIQUE(stereo_anaglyph),
    SHADER_TECHNIQUE(stereo_AMD_DEBUG),
 };
 #undef SHADER_TECHNIQUE
@@ -105,7 +111,6 @@ ShaderTechniques Shader::getTechniqueByName(const string& name)
 }
 
 #define SHADER_UNIFORM(name) { false, #name, #name, ""s, -1, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED }
-#define SHADER_TEXTURE(name) { true, #name, #name, ""s, -1, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED }
 #define SHADER_SAMPLER(name, legacy_name, texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter) { true, #name, #legacy_name, #texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter }
 Shader::ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT] {
    // -- Floats --
@@ -143,7 +148,6 @@ Shader::ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT] {
    SHADER_UNIFORM(SSR_bumpHeight_fresnelRefl_scale_FS),
    SHADER_UNIFORM(AO_scale_timeblur),
    SHADER_UNIFORM(clip_planes),
-   SHADER_UNIFORM(cWidth_Height_MirrorAmount),
    // -- Integer and Bool --
    SHADER_UNIFORM(ignoreStereo),
    SHADER_UNIFORM(disableLighting),
@@ -156,16 +160,6 @@ Shader::ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT] {
    SHADER_UNIFORM(objectSpaceNormalMap),
    SHADER_UNIFORM(do_dither),
    SHADER_UNIFORM(imageBackglassMode),
-   // -- Textures --
-   SHADER_TEXTURE(Texture0),
-   SHADER_TEXTURE(Texture1),
-   SHADER_TEXTURE(Texture2),
-   SHADER_TEXTURE(Texture3),
-   SHADER_TEXTURE(Texture4),
-   SHADER_TEXTURE(edgesTex2D),
-   SHADER_TEXTURE(blendTex2D),
-   SHADER_TEXTURE(areaTex2D),
-   SHADER_TEXTURE(searchTex2D),
    // -- Samplers (a texture reference with sampling configuration) --
    // DMD shader
    SHADER_SAMPLER(tex_dmd, texSampler0, Texture0, 0, SA_CLAMP, SA_CLAMP, SF_NONE), // DMD
@@ -192,6 +186,7 @@ Shader::ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT] {
    SHADER_SAMPLER(tex_env, texSampler1, Texture1, 1, SA_REPEAT, SA_CLAMP, SF_TRILINEAR), // environment
    SHADER_SAMPLER(tex_diffuse_env, texSampler2, Texture2, 2, SA_REPEAT, SA_CLAMP, SF_BILINEAR), // diffuse environment contribution/radiance
    SHADER_SAMPLER(tex_base_transmission, texSamplerBL, Texture3, 3, SA_CLAMP, SA_CLAMP, SF_BILINEAR), // bulb light/transmission buffer texture
+   SHADER_SAMPLER(tex_playfield_reflection, texSamplerPFReflections, Texture3, 3, SA_CLAMP, SA_CLAMP, SF_NONE), // playfield reflection
    SHADER_SAMPLER(tex_base_normalmap, texSamplerN, Texture4, 4, SA_REPEAT, SA_REPEAT, SF_TRILINEAR), // normal map texture
    // Classic light shader
    SHADER_SAMPLER(tex_light_color, texSampler0, Texture0, 0, SA_REPEAT, SA_REPEAT, SF_TRILINEAR), // base texture
@@ -208,7 +203,6 @@ Shader::ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT] {
    SHADER_SAMPLER(searchTex, searchTex, searchTex2D, 5, SA_CLAMP, SA_CLAMP, SF_NONE), // Note that this should have a w address mode set to clamp as well
 };
 #undef SHADER_UNIFORM
-#undef SHADER_TEXTURE
 #undef SHADER_SAMPLER
 
 ShaderUniforms Shader::getUniformByName(const string& name)
