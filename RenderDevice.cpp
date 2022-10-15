@@ -3,7 +3,7 @@
 #include <DxErr.h>
 
 // Undefine this if you want to debug VR mode without a VR headset
-#define VR_PREVIEW_TEST
+//#define VR_PREVIEW_TEST
 
 //#include "Dwmapi.h" // use when we get rid of XP at some point, get rid of the manual dll loads in here then
 
