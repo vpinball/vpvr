@@ -318,9 +318,6 @@ void VROptionsDialog::ResetVideoPreferences()
    sprintf_s(tmp, sizeof(tmp), "%f", nudgeStrength);
    SetDlgItemText(IDC_NUDGE_STRENGTH, tmp);
 
-   const bool reflection = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "BallReflection"s, false);
-   SendMessage(GetDlgItem(IDC_GLOBAL_REFLECTION_CHECK).GetHwnd(), BM_SETCHECK, reflection ? BST_CHECKED : BST_UNCHECKED, 0);
-
    SendMessage(GetDlgItem(IDC_SSSLIDER).GetHwnd(), TBM_SETPOS, TRUE, getBestMatchingAAfactorIndex(1.0f));
    SetDlgItemText(IDC_SSSLIDER_LABEL, "Supersampling Factor: 1.0");
    SendMessage(GetDlgItem(IDC_MSAASLIDER).GetHwnd(), TBM_SETPOS, TRUE, 1);
@@ -329,7 +326,6 @@ void VROptionsDialog::ResetVideoPreferences()
    SendMessage(GetDlgItem(IDC_DYNAMIC_AO).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_ENABLE_AO).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
-   SendMessage(GetDlgItem(IDC_GLOBAL_PFREFLECTION_CHECK).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
 
    SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_SETCURSEL, 0, 0);
    SendMessage(GetDlgItem(IDC_SHARPENCB).GetHwnd(), CB_SETCURSEL, 0, 0);
@@ -392,34 +388,23 @@ BOOL VROptionsDialog::OnInitDialog()
    if (toolTipHwnd)
    {
       SendMessage(toolTipHwnd, TTM_SETMAXTIPWIDTH, 0, 180);
-      HWND controlHwnd = GetDlgItem(IDC_BLOOM_OFF).GetHwnd();
-      AddToolTip("Forces the bloom filter to be always off. Only for very low-end graphics cards.", hwndDlg, toolTipHwnd, controlHwnd);
-      controlHwnd = GetDlgItem(IDC_TURN_VR_ON).GetHwnd();
-      AddToolTip("Disable Autodetect if Visual Pinball does not start up.", hwndDlg, toolTipHwnd, controlHwnd);
-      controlHwnd = GetDlgItem(IDC_DMD_SOURCE).GetHwnd();
-      AddToolTip("What sources should be used for DMD?\nOnly internal supplied by script/Text Label/Flasher\nScreenreader (see screenreader.ini)\nFrom Shared Memory API", hwndDlg, toolTipHwnd, controlHwnd);
-      controlHwnd = GetDlgItem(IDC_BG_SOURCE).GetHwnd();
-      AddToolTip("What sources should be used for Backglass?\nOnly internal background\nTry to open a directb2s file\ndirectb2s file dialog\nScreenreader (see screenreader.ini)\nFrom Shared Memory API", hwndDlg, toolTipHwnd, controlHwnd);
-      controlHwnd = GetDlgItem(IDC_NUDGE_STRENGTH).GetHwnd();
-      AddToolTip("Changes the visual effect/screen shaking when nudging the table.", hwndDlg, toolTipHwnd, controlHwnd);
-      controlHwnd = GetDlgItem(IDC_DYNAMIC_AO).GetHwnd();
-      AddToolTip("(Currently broken and disabled in VPVR)\r\n\r\nActivate this to enable dynamic Ambient Occlusion.\r\n\r\nThis slows down performance, but enables contact shadows for dynamic objects.", hwndDlg, toolTipHwnd, controlHwnd);
-      controlHwnd = GetDlgItem(IDC_ENABLE_AO).GetHwnd();
-      AddToolTip("(Currently broken and disabled in VPVR)\r\n\r\nActivate this to enable Ambient Occlusion.\r\nThis enables contact shadows between objects.", hwndDlg, toolTipHwnd, controlHwnd);
-      controlHwnd = GetDlgItem(IDC_FXAACB).GetHwnd();
-      AddToolTip("Enables post-processed Anti-Aliasing.\r\n\r\nThese settings can make the image quality a bit smoother at cost of performance and a slight blurring.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip("Forces the bloom filter to be always off. Only for very low-end graphics cards.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_BLOOM_OFF).GetHwnd());
+      AddToolTip("Disable Autodetect if Visual Pinball does not start up.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_TURN_VR_ON).GetHwnd());
+      AddToolTip("What sources should be used for DMD?\nOnly internal supplied by script/Text Label/Flasher\nScreenreader (see screenreader.ini)\nFrom Shared Memory API", hwndDlg, toolTipHwnd, GetDlgItem(IDC_DMD_SOURCE).GetHwnd());
+      AddToolTip("What sources should be used for Backglass?\nOnly internal background\nTry to open a directb2s file\ndirectb2s file dialog\nScreenreader (see screenreader.ini)\nFrom Shared Memory API", hwndDlg, toolTipHwnd, GetDlgItem(IDC_BG_SOURCE).GetHwnd());
+      AddToolTip("Changes the visual effect/screen shaking when nudging the table.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_NUDGE_STRENGTH).GetHwnd());
+      AddToolTip("Activate this to enable dynamic Ambient Occlusion.\r\n\r\nThis slows down performance, but enables contact shadows for dynamic objects.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_DYNAMIC_AO).GetHwnd());
+      AddToolTip("Activate this to enable Ambient Occlusion.\r\nThis enables contact shadows between objects.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_ENABLE_AO).GetHwnd());
+      AddToolTip("Enables post-processed Anti-Aliasing.\r\n\r\nThese settings can make the image quality a bit smoother at cost of performance and a slight blurring.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_FXAACB).GetHwnd());
       AddToolTip("Enables post-processed Sharpening of the image.\r\n'Bilateral CAS' is recommended,\nbut will harm performance on low-end graphics cards.\r\n'CAS' is less aggressive and faster, but also rather subtle.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_SHARPENCB).GetHwnd());
-      controlHwnd = GetDlgItem(IDC_VR_PREVIEW).GetHwnd();
-      AddToolTip("Select which eye(s) to be displayed on the computer screen.", hwndDlg, toolTipHwnd, controlHwnd);
-      controlHwnd = GetDlgItem(IDC_SSSLIDER).GetHwnd();
-      AddToolTip("Enables brute-force Up/Downsampling.\r\n\r\nThis delivers very good quality but has a significant impact on performance.\r\n\r\n2.0 means twice the resolution to be handled while rendering.", hwndDlg, toolTipHwnd, controlHwnd);
-      controlHwnd = GetDlgItem(IDC_MSAASLIDER).GetHwnd();
-      AddToolTip("Set the amount of MSAA samples.\r\n\r\nMSAA can help reduce geometry aliasing in VR at the cost of performance and GPU memory.\r\n\r\nThis can really help improve image quality when not using supersampling.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip("Select which eye(s) to be displayed on the computer screen.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_VR_PREVIEW).GetHwnd());
+      AddToolTip("Enables brute-force Up/Downsampling.\r\n\r\nThis delivers very good quality but has a significant impact on performance.\r\n\r\n2.0 means twice the resolution to be handled while rendering.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_SSSLIDER).GetHwnd());
+      AddToolTip("Set the amount of MSAA samples.\r\n\r\nMSAA can help reduce geometry aliasing in VR at the cost of performance and GPU memory.\r\n\r\nThis can really help improve image quality when not using supersampling.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_MSAASLIDER).GetHwnd());
+      AddToolTip("Enables post-processed reflections on all objects (beside the playfield).", hwndDlg, toolTipHwnd, GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd());
+      AddToolTip("Enables playfield reflections.\r\n\r\n'Dynamic' is recommended and will give the best result but may harm performance.\r\n\r\n'Static Only' has no performance cost except in VR.\r\n\r\nOther options are trade-off between quality and performance.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_GLOBAL_PF_REFLECTION).GetHwnd());
       //AMD Debug
-      controlHwnd = GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd();
-      AddToolTip("Pixel format for VR Rendering.", hwndDlg, toolTipHwnd, controlHwnd);
-      controlHwnd = GetDlgItem(IDC_COMBO_BLIT).GetHwnd();
-      AddToolTip("Blitting technique for VR Rendering.", hwndDlg, toolTipHwnd, controlHwnd);
+      AddToolTip("Pixel format for VR Rendering.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd());
+      AddToolTip("Blitting technique for VR Rendering.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_COMBO_BLIT).GetHwnd());
    }
 
    char tmp[256];
@@ -470,11 +455,31 @@ BOOL VROptionsDialog::OnInitDialog()
    const bool ssreflection = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "SSRefl"s, LoadValueBoolWithDefault(regKey[RegName::Player], "SSRefl"s, false));
    SendMessage(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), BM_SETCHECK, ssreflection ? BST_CHECKED : BST_UNCHECKED, 0);
 
-   const bool pfreflection = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "PFRefl"s, LoadValueBoolWithDefault(regKey[RegName::Player], "PFRefl"s, true));
-   SendMessage(GetDlgItem(IDC_GLOBAL_PFREFLECTION_CHECK).GetHwnd(), BM_SETCHECK, pfreflection ? BST_CHECKED : BST_UNCHECKED, 0);
+   HWND hwnd = GetDlgItem(IDC_GLOBAL_PF_REFLECTION).GetHwnd();
+   SendMessage(hwnd, WM_SETREDRAW, FALSE, 0); // to speed up adding the entries :/
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM) "Disabled");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM) "Balls Only");
+   SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM) "Dynamic");
+   int pfr = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "PFReflection"s, -1);
+   PlayfieldReflectionMode pfReflection;
+   if (pfr != -1)
+      pfReflection = (PlayfieldReflectionMode)pfr;
+   else
+   {
+      pfReflection = PFREFL_NONE;
+      if (LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "BallReflection"s, true))
+         pfReflection = PFREFL_BALLS;
+      if (LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "PFRefl"s, true))
+         pfReflection = PFREFL_DYNAMIC;
+   }
+   if (pfReflection == PFREFL_DYNAMIC)
+      SendMessage(hwnd, CB_SETCURSEL, 2, 0);
+   else
+      SendMessage(hwnd, CB_SETCURSEL, pfReflection, 0);
+   SendMessage(hwnd, WM_SETREDRAW, TRUE, 0);
 
    const int fxaa = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "FXAA"s, LoadValueIntWithDefault(regKey[RegName::Player], "FXAA"s, 0));
-   HWND hwnd = GetDlgItem(IDC_FXAACB).GetHwnd();
+   hwnd = GetDlgItem(IDC_FXAACB).GetHwnd();
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Disabled");
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Fast FXAA");
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Standard FXAA");
@@ -807,9 +812,6 @@ void VROptionsDialog::OnOK()
 {
    SaveValue(regKey[RegName::PlayerVR], "NudgeStrength"s, GetDlgItemText(IDC_NUDGE_STRENGTH).c_str());
 
-   const bool reflection = (SendMessage(GetDlgItem(IDC_GLOBAL_REFLECTION_CHECK).GetHwnd(), BM_GETCHECK, 0, 0) != 0);
-   SaveValueBool(regKey[RegName::PlayerVR], "BallReflection"s, reflection);
-
    LRESULT fxaa = SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_GETCURSEL, 0, 0);
    if (fxaa == LB_ERR)
       fxaa = 0;
@@ -840,8 +842,12 @@ void VROptionsDialog::OnOK()
    const bool ssreflection = SendMessage(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), BM_GETCHECK, 0, 0) != 0;
    SaveValueBool(regKey[RegName::PlayerVR], "SSRefl"s, ssreflection);
 
-   const bool pfreflection = SendMessage(GetDlgItem(IDC_GLOBAL_PFREFLECTION_CHECK).GetHwnd(), BM_GETCHECK, 0, 0) != 0;
-   SaveValueBool(regKey[RegName::PlayerVR], "PFRefl"s, pfreflection);
+   LRESULT pfReflectionMode = SendMessage(GetDlgItem(IDC_GLOBAL_PF_REFLECTION).GetHwnd(), CB_GETCURSEL, 0, 0);
+   if (pfReflectionMode == LB_ERR)
+      pfReflectionMode = PFREFL_NONE;
+   if (pfReflectionMode == 2)
+      pfReflectionMode = PFREFL_DYNAMIC;
+   SaveValueInt(regKey[RegName::PlayerVR], "PFReflection"s, (int)pfReflectionMode);
 
    //AMD Debugging
    const size_t textureModeVR = SendMessage(GetDlgItem(IDC_COMBO_TEXTURE).GetHwnd(), CB_GETCURSEL, 0, 0);
