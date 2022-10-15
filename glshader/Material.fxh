@@ -92,10 +92,10 @@ float3 DoPointLight(const float3 pos, const float3 N, const float3 V, const floa
    if (!is_metal)
        ambient += diffuse;
 
-#if !enable_VR
-   const float3 result = Out * lightEmission[i].xyz * fAtten + ambient * cAmbient_LightRange.xyz;
-#else
+#if enable_VR
    const float3 result = Out * lightEmission[i].xyz * fAtten * 0.00001 + ambient * cAmbient_LightRange.xyz;
+#else
+   const float3 result = Out * lightEmission[i].xyz * fAtten + ambient * cAmbient_LightRange.xyz;
 #endif
    if (fDisableLighting_top_below.x != 0.0)
        return lerp(result,diffuse,fDisableLighting_top_below.x);

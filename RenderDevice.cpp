@@ -3,7 +3,7 @@
 #include <DxErr.h>
 
 // Undefine this if you want to debug VR mode without a VR headset
-//#define VR_PREVIEW_TEST
+#define VR_PREVIEW_TEST
 
 //#include "Dwmapi.h" // use when we get rid of XP at some point, get rid of the manual dll loads in here then
 
@@ -1267,7 +1267,7 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
       m_pReflectionBufferTexture = new RenderTarget(this, m_width_aa, m_height_aa, render_format, false, 1, STEREO_OFF, "Fatal Error: unable to create reflection buffer!");
 
    // alloc bloom tex at 1/4 x 1/4 res (allows for simple HQ downscale of clipped input while saving memory)
-   m_pBloomBufferTexture = new RenderTarget(this, m_width / 4, m_height / 4, render_format, false, 1, STEREO_OFF, "Fatal Error: unable to create bloom buffer!");
+   m_pBloomBufferTexture = new RenderTarget(this, m_width / 4, m_height / 4, render_format, false, 1, m_stereo3D, "Fatal Error: unable to create bloom buffer!");
    m_pBloomTmpBufferTexture = m_pBloomBufferTexture->Duplicate();
 
 #ifdef ENABLE_SDL
@@ -1360,12 +1360,27 @@ bool RenderDevice::LoadShaders()
    StereoShader = nullptr;
    char glShaderPath[MAX_PATH];
    /*DWORD length =*/ GetModuleFileName(nullptr, glShaderPath, MAX_PATH);
-   if (m_stereo3D == STEREO_OFF) {
-      Shader::Defines = "#define eyes 1\n#define enable_VR 0";
-   } else  if (m_stereo3D == STEREO_VR) {
-      Shader::Defines = "#define eyes 2\n#define enable_VR 1";
-   } else {
-      Shader::Defines = "#define eyes 2\n#define enable_VR 0";
+   Shader::Defines = ""s;
+   if (m_stereo3D == STEREO_OFF)
+   {
+      Shader::Defines.append("#define eyes 1\n"s);
+      Shader::Defines.append("#define enable_VR 0\n"s);
+      Shader::Defines.append("#define stereo_vert 0\n"s);
+   }
+   else if (m_stereo3D == STEREO_VR)
+   {
+      Shader::Defines.append("#define eyes 2\n"s);
+      Shader::Defines.append("#define enable_VR 1\n"s);
+      Shader::Defines.append("#define stereo_vert 0\n"s);
+   }
+   else
+   {
+      Shader::Defines.append("#define eyes 2\n"s);
+      Shader::Defines.append("#define enable_VR 0\n"s);
+      if (m_stereo3D == STEREO_TB || m_stereo3D == STEREO_INT || m_stereo3D == STEREO_FLIPPED_INT)
+         Shader::Defines.append("#define stereo_vert 1\n"s);
+      else
+         Shader::Defines.append("#define stereo_vert 0\n"s);
    }
    Shader::shaderPath = string(glShaderPath);
    Shader::shaderPath = Shader::shaderPath.substr(0, Shader::shaderPath.find_last_of("\\/"));

@@ -123,7 +123,6 @@ in vec3 vNormal;
 in vec2 tc;
 
 out vec2 tex01_gs;
-noperspective out vec2 tex03_gs;
 out vec3 worldPos_gs;
 out vec3 normal_gs;
 
@@ -132,7 +131,6 @@ void main()
    gl_Position = vec4(vPosition, 1.0);
    tex01_gs = tc;
    vec4 bulbPos = (matWorldViewProj[0]*vec4(vPosition, 1.0));
-   tex03_gs = 0.5 * vec2(bulbPos.xy/bulbPos.w) + vec2(0.5, 0.5);
    worldPos_gs = (matWorldView*vec4(vPosition, 1.0)).xyz;
    normal_gs = normalize((matWorldViewInverseTranspose*vNormal).xyz);
 }
@@ -143,7 +141,6 @@ in vec3 vPosition;
 in vec3 vNormal;
 in vec2 tc;
 
-noperspective out vec2 tex03_gs;
 out vec3 worldPos_gs;
 out vec3 normal_gs;
 
@@ -151,7 +148,6 @@ void main()
 {
    gl_Position = vec4(vPosition, 1.0);
    vec4 bulbPos = (matWorldViewProj[0]*vec4(vPosition, 1.0));
-   tex03_gs = 0.5 * vec2(bulbPos.xy/bulbPos.w) + vec2(0.5, 0.5);
    worldPos_gs = (matWorldView*vec4(vPosition, 1.0)).xyz;
    normal_gs = normalize((matWorldViewInverseTranspose*vNormal).xyz);
 }
@@ -183,7 +179,6 @@ void main()
 in vec2 tex01_gs[];
 out vec2 tex01;
 
-noperspective in vec2 tex03_gs[];
 noperspective out vec2 tex03;
 
 in vec3 worldPos_gs[];
@@ -201,8 +196,16 @@ void main()
       gl_ClipDistance[0] = dot(matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position, clip_planes[i]); // For Render Dynamic Mirror when enabling clipping.
       //Custom
       tex01 = tex01_gs[i];
-      //tex03 = tex03_gs[i];
-	  tex03 = 0.5 * (gl_Position.xy / gl_Position.w) + vec2(0.5);
+	  vec2 screen_space = 0.5 * (gl_Position.xy / gl_Position.w) + vec2(0.5);
+#if (eyes == 1)
+	  tex03.xy = screen_space; // Sampling from a normal screen space texture
+#else
+#if stereo_vert
+	  tex03.xy = vec2(screen_space.x, 0.5 * (screen_space.y + gl_InvocationID)); // Sampling from a vertical stereo screen space texture
+#else
+	  tex03.xy = vec2(0.5 * (screen_space.x + gl_InvocationID), screen_space.y); // Sampling from a horizontal stereo screen space texture
+#endif
+#endif
       worldPos = worldPos_gs[i];
       normal = normal_gs[i];
       //Default
@@ -213,7 +216,6 @@ void main()
 
 ////gs_notex_main
 
-noperspective in vec2 tex03_gs[];
 noperspective out vec2 tex03;
 
 in vec3 worldPos_gs[];
@@ -230,8 +232,16 @@ void main()
       gl_Position = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position);
       gl_ClipDistance[0] = dot(matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position, clip_planes[i]); // For Render Dynamic Mirror when enabling clipping.
       //Custom
-      //tex03 = tex03_gs[i];
-	  tex03 = 0.5 * (gl_Position.xy / gl_Position.w) + vec2(0.5);
+	  vec2 screen_space = 0.5 * (gl_Position.xy / gl_Position.w) + vec2(0.5);
+#if (eyes == 1)
+	  tex03.xy = screen_space; // Sampling from a normal screen space texture
+#else
+#if stereo_vert
+	  tex03.xy = vec2(screen_space.x, 0.5 * (screen_space.y + gl_InvocationID)); // Sampling from a vertical stereo screen space texture
+#else
+	  tex03.xy = vec2(0.5 * (screen_space.x + gl_InvocationID), screen_space.y); // Sampling from a horizontal stereo screen space texture
+#endif
+#endif
       worldPos = worldPos_gs[i];
       normal = normal_gs[i];
       //Default
@@ -242,7 +252,6 @@ void main()
 
 ////gs_kicker_main
 
-noperspective in vec2 tex03_gs[];
 noperspective out vec2 tex03;
 
 in vec3 worldPos_gs[];
@@ -261,8 +270,16 @@ void main()
       gl_Position.xyw = (matWorldViewProj[gl_InvocationID]*gl_in[i].gl_Position).xyw;
       gl_Position.z = (matWorldViewProj[gl_InvocationID]*P2).z;
       //Custom
-      //tex03 = tex03_gs[i];
-	  tex03 = 0.5 * (gl_Position.xy / gl_Position.w) + vec2(0.5);
+	  vec2 screen_space = 0.5 * (gl_Position.xy / gl_Position.w) + vec2(0.5);
+#if (eyes == 1)
+	  tex03.xy = screen_space; // Sampling from a normal screen space texture
+#else
+#if stereo_vert
+	  tex03.xy = vec2(screen_space.x, 0.5 * (screen_space.y + gl_InvocationID)); // Sampling from a vertical stereo screen space texture
+#else
+	  tex03.xy = vec2(0.5 * (screen_space.x + gl_InvocationID), screen_space.y); // Sampling from a horizontal stereo screen space texture
+#endif
+#endif
       worldPos = worldPos_gs[i];
       normal = normal_gs[i];
       //Default
