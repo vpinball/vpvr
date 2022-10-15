@@ -3588,7 +3588,7 @@ void Player::DrawBulbLightBuffer()
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_tex_fb_filtered);
 
             // switch to 'bloom' temporary output buffer for horizontal phase of gaussian blur
-            m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->Activate();
+            m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->Activate(true);
 
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetColorSampler());
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution_05);
@@ -3602,7 +3602,7 @@ void Player::DrawBulbLightBuffer()
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_tex_fb_filtered);
 
             // switch to 'bloom' output buffer for vertical phase of gaussian blur
-            m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->Activate();
+            m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->Activate(true);
 
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->GetColorSampler());
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution_05);
@@ -3866,13 +3866,7 @@ void Player::SSRefl()
 void Player::Bloom()
 {
    if (m_ptable->m_bloom_strength <= 0.0f || m_bloomOff || GetInfoMode() == IF_LIGHT_BUFFER_ONLY)
-   {
-      // need to reset content from (optional) bulb light abuse of the buffer
-      /*m_pin3d.m_pd3dDevice->GetBloomBufferTexture()->Activate();
-      m_pin3d.m_pd3dDevice->Clear(clearType::TARGET, 0, 1.0f, 0L);*/
-
       return;
-   }
 
    double w = (double)m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetWidth();
    double h = (double)m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetHeight();
@@ -3886,7 +3880,7 @@ void Player::Bloom()
 
    {
       // switch to 'bloom' output buffer to collect clipped framebuffer values
-      m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->Activate();
+      m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->Activate(true);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler());
 
@@ -3902,7 +3896,7 @@ void Player::Bloom()
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_tex_fb_filtered);
 
       // switch to 'bloom' temporary output buffer for horizontal phase of gaussian blur
-      m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->Activate();
+      m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->Activate(true);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetColorSampler());
       const vec4 fb_inv_resolution_05((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetWidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetHeight()), m_ptable->m_bloom_strength, 1.0f);
@@ -3917,7 +3911,7 @@ void Player::Bloom()
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_tex_fb_filtered);
 
       // switch to 'bloom' output buffer for vertical phase of gaussian blur
-      m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->Activate();
+      m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->Activate(true);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->GetColorSampler());
       const vec4 fb_inv_resolution_05((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->GetWidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->GetHeight()), m_ptable->m_bloom_strength, 1.0f);
