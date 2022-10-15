@@ -1,12 +1,5 @@
 #pragma once
 
-#ifdef USE_DINPUT8
-#define DIRECTINPUT_VERSION 0x0800
-#else
-#define DIRECTINPUT_VERSION 0x0700
-#endif
-#include <dinput.h>
-
 #define ENABLE_XINPUT
 
 #ifdef ENABLE_XINPUT
