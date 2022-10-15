@@ -318,7 +318,8 @@ if ".%25VPIN_DIR%25" == "." set VPIN_DIR=C:\Games\Visual PinballX
 echo VPIN_DIR="%25VPIN_DIR%25"
 if not exist "%25VPIN_DIR%25" mkdir "%25VPIN_DIR%25"
 copy "$(TargetPath)" "%25VPIN_DIR%25"
-copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"</Command>
+copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"
+copy "$(MSBuildProjectDirectory)\glshader\*.*" "$(TargetDir)glshader"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableDpiAwareness>true</EnableDpiAwareness>
@@ -434,7 +435,8 @@ if ".%25VPIN_DIR%25" == "." set VPIN_DIR=C:\Games\Visual PinballX
 echo VPIN_DIR="%25VPIN_DIR%25"
 if not exist "%25VPIN_DIR%25" mkdir "%25VPIN_DIR%25"
 copy "$(TargetPath)" "%25VPIN_DIR%25"
-copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
+copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"
+copy "$(MSBuildProjectDirectory)\glshader\*.*" "$(TargetDir)glshader"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableDpiAwareness>true</EnableDpiAwareness>
@@ -576,7 +578,8 @@ if ".%25VPIN_DIR%25" == "." set VPIN_DIR=C:\Games\Visual PinballX
 echo VPIN_DIR="%25VPIN_DIR%25"
 if not exist "%25VPIN_DIR%25" mkdir "%25VPIN_DIR%25"
 copy "$(TargetPath)" "%25VPIN_DIR%25"
-copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"</Command>
+copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"
+copy "$(MSBuildProjectDirectory)\glshader\*.*" "$(TargetDir)glshader"</Command>
       <Message>Copies EXE and DLLs to production directory.</Message>
     </PostBuildEvent>
     <Manifest>
@@ -713,7 +716,8 @@ if ".%25VPIN_DIR%25" == "." set VPIN_DIR=C:\Games\Visual PinballX
 echo VPIN_DIR="%25VPIN_DIR%25"
 if not exist "%25VPIN_DIR%25" mkdir "%25VPIN_DIR%25"
 copy "$(TargetPath)" "%25VPIN_DIR%25"
-copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
+copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"
+copy "$(MSBuildProjectDirectory)\glshader\*.*" "$(TargetDir)glshader"</Command>
       <Message>Copies EXE and DLLs to production directory.</Message>
     </PostBuildEvent>
     <Manifest>
@@ -1026,10 +1030,14 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <None Include="res\gate.cur" />
     <None Include="res\flasher.cur" />
     <None Include="res\hittarget.rgs" />
+    <None Include="res\lightSeqTable.vpx" />
     <None Include="res\rubber.cur" />
     <None Include="res\kicker.cur" />
     <None Include="res\spinner.cur" />
     <None Include="res\dispreel.cur" />
+    <None Include="res\SplitH.cur" />
+    <None Include="res\SplitV.cur" />
+    <None Include="res\strippedTable.vpx" />
     <None Include="res\trigger.cur" />
     <None Include="res\timer.cur" />
     <None Include="res\target.cur" />
@@ -1070,20 +1078,58 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <None Include="shader\SSR.fxh" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="res\add.ico" />
     <Image Include="res\AOdither.bmp" />
+    <Image Include="res\assign.ico" />
+    <Image Include="res\backglass.ico" />
     <Image Include="res\ball.bmp" />
+    <Image Include="res\bumper.ico" />
     <Image Include="res\bumperbase.bmp" />
     <Image Include="res\bumperCap.bmp" />
     <Image Include="res\bumperring.bmp" />
     <Image Include="res\bumperskirt.bmp" />
+    <Image Include="res\camera.ico" />
     <Image Include="res\chevron.bmp" />
+    <Image Include="res\decal.ico" />
     <Image Include="res\envmap.bmp" />
+    <Image Include="res\expandcolapse.ico" />
+    <Image Include="res\flasher.ico" />
+    <Image Include="res\flipper.ico" />
+    <Image Include="res\gate.ico" />
+    <Image Include="res\kicker.ico" />
     <Image Include="res\kickerCup.bmp" />
     <Image Include="res\kickerGottlieb.bmp" />
     <Image Include="res\kickerHoleWood.bmp" />
     <Image Include="res\kickerT1.bmp" />
     <Image Include="res\kickerWilliams.bmp" />
+    <Image Include="res\layerIcons16.bmp" />
+    <Image Include="res\layerIcons32.bmp" />
+    <Image Include="res\layers.ico" />
+    <Image Include="res\light.ico" />
+    <Image Include="res\lightseq.ico" />
+    <Image Include="res\magnify.ico" />
+    <Image Include="res\options.ico" />
+    <Image Include="res\PlayWarning.bmp" />
+    <Image Include="res\plunger.ico" />
+    <Image Include="res\primitive.ico" />
+    <Image Include="res\ramp.ico" />
+    <Image Include="res\reel.ico" />
+    <Image Include="res\remove.ico" />
+    <Image Include="res\rubber.ico" />
     <Image Include="res\script.ico" />
+    <Image Include="res\SDbottom.bmp" />
+    <Image Include="res\SDcenter.bmp" />
+    <Image Include="res\SDleft.bmp" />
+    <Image Include="res\SDmiddle.bmp" />
+    <Image Include="res\SDright.bmp" />
+    <Image Include="res\SDtop.bmp" />
+    <Image Include="res\select.ico" />
+    <Image Include="res\spinner.ico" />
+    <Image Include="res\target.ico" />
+    <Image Include="res\textbox.ico" />
+    <Image Include="res\timer.ico" />
+    <Image Include="res\toolbar.ico" />
+    <Image Include="res\trigger.ico" />
     <Image Include="res\vpinball.ico" />
     <Image Include="res\logo.bmp" />
     <Image Include="res\step.ico" />
@@ -1091,6 +1137,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <Image Include="res\play.ico" />
     <Image Include="res\table.ico" />
     <Image Include="res\toolbar.bmp" />
+    <Image Include="res\wall.ico" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="audioplayer.h" />
@@ -1181,6 +1228,12 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <ClInclude Include="inc\rapidxml_iterators.hpp" />
     <ClInclude Include="inc\rapidxml_print.hpp" />
     <ClInclude Include="inc\rapidxml_utils.hpp" />
+    <ClInclude Include="inc\stb_image_write.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release_SDL|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="IndexBuffer.h" />
     <ClInclude Include="helpers.h" />
     <ClInclude Include="hid.h" />
