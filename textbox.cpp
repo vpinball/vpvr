@@ -266,7 +266,7 @@ void Textbox::RenderDynamic()
 
    const bool dmd = (m_d.m_isDMD || StrStrI(m_d.m_sztext.c_str(), "DMD") != nullptr); //!! second part is VP10.0 legacy
 
-   if (!m_d.m_visible || (dmd && !(g_pplayer->m_texdmd || captureExternalDMD())))
+   if (!m_d.m_visible || (dmd && !(g_pplayer->m_texdmd || captureExternalDMD())) || (m_backglass && m_ptable->m_reflectionEnabled))
       return;
 
    RenderDevice * const pd3dDevice = m_backglass ? g_pplayer->m_pin3d.m_pd3dSecondaryDevice : g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
