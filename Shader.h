@@ -32,8 +32,14 @@ enum ShaderTechniques
    SHADER_TECHNIQUE(basic_without_texture_isMetal),
    SHADER_TECHNIQUE(basic_with_texture_isMetal),
    SHADER_TECHNIQUE(basic_with_texture_normal_isMetal),
-   SHADER_TECHNIQUE(basic_without_texture_n_mirror),
-   SHADER_TECHNIQUE(basic_with_texture_n_mirror),
+   SHADER_TECHNIQUE(playfield_without_texture),
+   SHADER_TECHNIQUE(playfield_with_texture),
+   SHADER_TECHNIQUE(playfield_with_texture_normal),
+   SHADER_TECHNIQUE(playfield_without_texture_isMetal),
+   SHADER_TECHNIQUE(playfield_with_texture_isMetal),
+   SHADER_TECHNIQUE(playfield_with_texture_normal_isMetal),
+   SHADER_TECHNIQUE(playfield_refl_without_texture),
+   SHADER_TECHNIQUE(playfield_refl_with_texture),
    SHADER_TECHNIQUE(basic_depth_only_without_texture),
    SHADER_TECHNIQUE(basic_depth_only_with_texture),
    SHADER_TECHNIQUE(bg_decal_without_texture),
@@ -101,7 +107,6 @@ enum ShaderTechniques
 // Otherwise, the sampler states can be directly overriden through DX9Device->SetSamplerState (per tex unit), being carefull that the effect
 // framework will also apply the ones defined in the effect file during Technique->Begin call (so either don't define them, or reapply).
 #define SHADER_UNIFORM(name) SHADER_##name
-#define SHADER_TEXTURE(name) SHADER_##name
 #define SHADER_SAMPLER(name, legacy_name, texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter) SHADER_##name
 enum ShaderUniforms
 {
@@ -140,7 +145,6 @@ enum ShaderUniforms
    SHADER_UNIFORM(SSR_bumpHeight_fresnelRefl_scale_FS),
    SHADER_UNIFORM(AO_scale_timeblur),
    SHADER_UNIFORM(clip_planes),
-   SHADER_UNIFORM(cWidth_Height_MirrorAmount),
    // -- Integer and Bool --
    SHADER_UNIFORM(ignoreStereo),
    SHADER_UNIFORM(disableLighting),
@@ -153,16 +157,6 @@ enum ShaderUniforms
    SHADER_UNIFORM(objectSpaceNormalMap),
    SHADER_UNIFORM(do_dither),
    SHADER_UNIFORM(imageBackglassMode),
-   // FIXME -- Legacy Textures (to be removed) --
-   SHADER_TEXTURE(Texture0),
-   SHADER_TEXTURE(Texture1),
-   SHADER_TEXTURE(Texture2),
-   SHADER_TEXTURE(Texture3),
-   SHADER_TEXTURE(Texture4),
-   SHADER_TEXTURE(edgesTex2D),
-   SHADER_TEXTURE(blendTex2D),
-   SHADER_TEXTURE(areaTex2D),
-   SHADER_TEXTURE(searchTex2D),
    // -- Samplers (a texture reference with sampling configuration) --
    // DMD shader
    SHADER_SAMPLER(tex_dmd, texSampler0, Texture0, 0, SA_CLAMP, SA_CLAMP, SF_NONE), // DMD
@@ -189,6 +183,7 @@ enum ShaderUniforms
    SHADER_SAMPLER(tex_env, texSampler1, Texture1, 1, SA_REPEAT, SA_CLAMP, SF_TRILINEAR), // environment
    SHADER_SAMPLER(tex_diffuse_env, texSampler2, Texture2, 2, SA_REPEAT, SA_CLAMP, SF_BILINEAR), // diffuse environment contribution/radiance
    SHADER_SAMPLER(tex_base_transmission, texSamplerBL, Texture3, 3, SA_CLAMP, SA_CLAMP, SF_BILINEAR), // bulb light/transmission buffer texture
+   SHADER_SAMPLER(tex_playfield_reflection, texSamplerPFReflections, Texture3, 3, SA_CLAMP, SA_CLAMP, SF_NONE), // playfield reflection
    SHADER_SAMPLER(tex_base_normalmap, texSamplerN, Texture4, 4, SA_REPEAT, SA_REPEAT, SF_TRILINEAR), // normal map texture
    // Classic light shader
    SHADER_SAMPLER(tex_light_color, texSampler0, Texture0, 0, SA_REPEAT, SA_REPEAT, SF_TRILINEAR), // base texture
@@ -197,7 +192,6 @@ enum ShaderUniforms
    // Stereo shader (VPVR only, combine the 2 rendered eyes into a single one)
    SHADER_SAMPLER(tex_stereo_fb, texSampler0, Texture0, 0, SA_CLAMP, SA_CLAMP, SF_NONE), // Framebuffer (unfiltered)
    // SMAA shader
-   // FIXME SMAA shader also use the color and colorGamma samplers. This has to be looked at more deeply for a clean implementation
    SHADER_SAMPLER(colorTex, colorTex, colorTex, 0, SA_CLAMP, SA_CLAMP, SF_BILINEAR),
    SHADER_SAMPLER(colorGammaTex, colorGammaTex, colorGammaTex, 1, SA_CLAMP, SA_CLAMP, SF_BILINEAR),
    SHADER_SAMPLER(edgesTex, edgesTex, edgesTex2D, 2, SA_CLAMP, SA_CLAMP, SF_BILINEAR),
@@ -208,7 +202,6 @@ enum ShaderUniforms
    SHADER_UNIFORM_INVALID
 };
 #undef SHADER_UNIFORM
-#undef SHADER_TEXTURE
 #undef SHADER_SAMPLER
 
 // When changed, this list must also be copied unchanged to Shader.cpp (for its implementation)

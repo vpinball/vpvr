@@ -141,7 +141,11 @@ enum InfoMode
    IF_PROFILING,
    IF_PROFILING_SPLIT_RENDERING,
    IF_STATIC_ONLY,
-   IF_AO_ONLY
+   IF_DYNAMIC_ONLY,
+   IF_STATIC_REFL_ONLY,
+   IF_DYNAMIC_REFL_ONLY,
+   IF_AO_ONLY,
+   IF_LIGHT_BUFFER_ONLY,
 };
 
 enum ProfilingMode
@@ -310,9 +314,8 @@ public:
    virtual LRESULT WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 
 private:
-   void RenderStaticMirror(const bool onlyBalls);
-   void RenderDynamicMirror(const bool onlyBalls);
-   void RenderMirrorOverlay();
+   void RenderStaticMirror();
+   void RenderDynamicMirror();
    void InitBallShader();
    void InitKeys();
 
@@ -457,8 +460,8 @@ public:
    bool m_dynamicAO;
    bool m_disableAO;
 
+   PlayfieldReflectionMode m_pfReflectionMode;
    bool m_ss_refl;
-   bool m_pf_refl; // render playfield reflections for dynamic elements?
 
    bool m_useNvidiaApi;
    bool m_disableDWM;
@@ -496,7 +499,6 @@ public:
 
    bool m_showWindowedCaption;
 
-   bool m_reflectionForBalls;
    bool m_trailForBalls;
    bool m_disableLightingForBalls;
 
@@ -555,16 +557,13 @@ public:
    bool m_userDebugPaused;
    bool m_debugWindowActive;
    bool m_cabinetMode;
-   bool m_meshAsPlayfield;
+   Primitive *m_implicitPlayfieldMesh = nullptr;
    bool m_recordContacts;             // flag for DoHitTest()
    vector< CollisionEvent > m_contacts;
 
    int2 m_dmd;
    BaseTexture* m_texdmd;
    BaseTexture* m_texPUP = nullptr;
-
-   unsigned int m_current_renderstage; // currently only used for bulb lights
-   unsigned int m_dmdstate; // used to distinguish different flasher/DMD rendering mode states
 
    int m_overall_frames; // amount of rendered frames since start
 
@@ -674,8 +673,6 @@ private:
    void InitFPS();
    bool ShowFPSonly() const;
    bool ShowStats() const;
-   bool RenderStaticOnly() const;
-   bool RenderAOOnly() const;
    InfoMode GetInfoMode() const;
    ProfilingMode GetProfilingMode() const;
 
@@ -707,7 +704,9 @@ public:
 
    //bool m_low_quality_bloom;
 
-   bool m_isRenderingStatic;
+   bool m_isRenderingStatic; // Static prerendering or normal one
+   unsigned int m_current_renderstage; // for bulb lights: 0=normal, 1=light buffer
+   unsigned int m_dmdstate; // used to distinguish different flasher/DMD rendering mode states
 
    bool m_overwriteBallImages;
    Texture *m_ballImage;

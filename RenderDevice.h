@@ -191,7 +191,7 @@ public:
    RenderTarget* GetBackBufferTmpTexture2() const { return m_pOffscreenBackBufferTmpTexture2; } // sharpen & SMAA
    RenderTarget* GetPostProcessTexture(RenderTarget* renderedRT) const { return renderedRT == m_pOffscreenBackBufferTmpTexture ? m_pOffscreenBackBufferTmpTexture2 : m_pOffscreenBackBufferTmpTexture; }
    RenderTarget* GetOffscreenVR(int eye) const { return eye == 0 ? m_pOffscreenVRLeft : m_pOffscreenVRRight; }
-   RenderTarget* GetMirrorTmpBufferTexture() const { return m_pMirrorTmpBufferTexture; }
+   RenderTarget* GetMirrorRenderTarget(const bool static_pass) const { return static_pass ? m_pStaticMirrorRenderTarget : m_pDynamicMirrorRenderTarget; }
    RenderTarget* GetReflectionBufferTexture() const { return m_pReflectionBufferTexture; }
    RenderTarget* GetBloomBufferTexture() const { return m_pBloomBufferTexture; }
    RenderTarget* GetBloomTmpBufferTexture() const { return m_pBloomTmpBufferTexture; }
@@ -343,7 +343,8 @@ private:
    RenderTarget* m_pOffscreenVRRight;
    RenderTarget* m_pBloomBufferTexture;
    RenderTarget* m_pBloomTmpBufferTexture;
-   RenderTarget* m_pMirrorTmpBufferTexture;
+   RenderTarget* m_pStaticMirrorRenderTarget;
+   RenderTarget* m_pDynamicMirrorRenderTarget;
    RenderTarget* m_pReflectionBufferTexture;
 
    UINT m_adapter;      // index of the display adapter to use

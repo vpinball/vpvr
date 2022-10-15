@@ -450,11 +450,9 @@ void Primitive::GetHitShapes(vector<HitObject*> &pvho)
 {
    char name[sizeof(m_wzName)/sizeof(m_wzName[0])];
    WideCharToMultiByteNull(CP_ACP, 0, m_wzName, -1, name, sizeof(name), nullptr, nullptr);
-   if (strcmp(name, "playfield_mesh") == 0)
-   {
-      m_d.m_visible = false;
-      m_d.m_useAsPlayfield = true;
-   }
+   m_d.m_useAsPlayfield = IsPlayfield();
+   if (m_d.m_useAsPlayfield) // Do not render playfield in playfield reflection probe
+      m_d.m_reflectionEnabled = false;
 
    //
 
@@ -1211,122 +1209,149 @@ void Primitive::RenderObject()
       m_fullMatrix.SetIdentity();
 
    RenderDevice * const pd3dDevice = g_pplayer->m_pin3d.m_pd3dPrimaryDevice;
+   RenderDevice::RenderStateCache initial_state;
+   pd3dDevice->CopyRenderStates(true, initial_state);
 
-   if (!m_d.m_useAsPlayfield)
+   // Update playfield primitive settings from table settings
+   SamplerFilter pinf = SF_TRILINEAR;
+   if (m_d.m_useAsPlayfield)
    {
-      const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
+      m_d.m_szMaterial = g_pplayer->m_ptable->m_playfieldMaterial;
+      m_d.m_szImage = g_pplayer->m_ptable->m_image;
+      pinf = SF_ANISOTROPIC;
+   }
 
-      pd3dDevice->SetRenderStateDepthBias(0.f);
-      pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
-      pd3dDevice->SetRenderStateCulling(m_d.m_backfacesEnabled && mat->m_bOpacityActive ? RenderDevice::CULL_CW : RenderDevice::CULL_CCW);
+   const Material * const mat = m_ptable->GetMaterial(m_d.m_szMaterial);
 
-      if (m_d.m_disableLightingTop != 0.f || m_d.m_disableLightingBelow != 0.f)
-         pd3dDevice->basicShader->SetDisableLighting(vec4(m_d.m_disableLightingTop, m_d.m_disableLightingBelow, 0.f, 0.f));
+   pd3dDevice->SetRenderStateDepthBias(0.f);
+   pd3dDevice->SetRenderStateCulling(m_d.m_backfacesEnabled && mat->m_bOpacityActive ? RenderDevice::CULL_CW : RenderDevice::CULL_CCW);
 
-      Texture * const nMap = m_ptable->GetImage(m_d.m_szNormalMap);
+   if (m_d.m_disableLightingTop != 0.f || m_d.m_disableLightingBelow != 0.f)
+      pd3dDevice->basicShader->SetDisableLighting(vec4(m_d.m_disableLightingTop, m_d.m_disableLightingBelow, 0.f, 0.f));
 
-      if (g_pplayer->m_texPUP && m_d.m_isBackGlassImage)
+   Texture * pin = nullptr;
+   Texture * const nMap = m_ptable->GetImage(m_d.m_szNormalMap);
+
+   if (g_pplayer->m_texPUP && m_d.m_isBackGlassImage)
+   {
+      pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
+      // accommodate models with UV coords outside of [0,1]
+      pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, g_pplayer->m_texPUP, SF_TRILINEAR, SA_REPEAT, SA_REPEAT);
+   }
+   else
+   {
+      pin = m_ptable->GetImage(m_d.m_szImage);
+      if (pin && nMap)
       {
          pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
          // accommodate models with UV coords outside of [0,1]
-         pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, g_pplayer->m_texPUP, SF_UNDEFINED, SA_REPEAT, SA_REPEAT);
+         pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, pin, pinf, SA_REPEAT, SA_REPEAT);
+         pd3dDevice->basicShader->SetTexture(SHADER_tex_base_normalmap, nMap, SF_TRILINEAR, SA_REPEAT, SA_REPEAT, true);
+         pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
+         pd3dDevice->basicShader->SetBool(SHADER_objectSpaceNormalMap, m_d.m_objectSpaceNormalMap);
+         pd3dDevice->basicShader->SetMaterial(mat, pin->m_pdsBuffer->has_alpha());
+      }
+      else if (pin)
+      {
+         pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
+         // accommodate models with UV coords outside of [0,1]
+         pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, pin, pinf, SA_REPEAT, SA_REPEAT);
+         pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
+         pd3dDevice->basicShader->SetMaterial(mat, pin->m_pdsBuffer->has_alpha());
       }
       else
       {
-         Texture * const pin = m_ptable->GetImage(m_d.m_szImage);
-         if (pin && nMap)
-         {
-            pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
-            // accommodate models with UV coords outside of [0,1]
-            pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, pin, SF_TRILINEAR, SA_REPEAT, SA_REPEAT);
-            pd3dDevice->basicShader->SetTexture(SHADER_tex_base_normalmap, nMap, SF_TRILINEAR, SA_REPEAT, SA_REPEAT, true);
-            pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
-            pd3dDevice->basicShader->SetBool(SHADER_objectSpaceNormalMap, m_d.m_objectSpaceNormalMap);
-            pd3dDevice->basicShader->SetMaterial(mat, pin->m_pdsBuffer->has_alpha());
-         }
-         else if (pin)
-         {
-            pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_with_texture, mat->m_bIsMetal);
-            // accommodate models with UV coords outside of [0,1]
-            pd3dDevice->basicShader->SetTexture(SHADER_tex_base_color, pin, SF_TRILINEAR, SA_REPEAT, SA_REPEAT);
-            pd3dDevice->basicShader->SetAlphaTestValue(pin->m_alphaTestValue * (float)(1.0 / 255.0));
-            pd3dDevice->basicShader->SetMaterial(mat, pin->m_pdsBuffer->has_alpha());
-         }
+         pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_without_texture, mat->m_bIsMetal);
+         pd3dDevice->basicShader->SetMaterial(mat, false);
+      }
+   }
+
+   pd3dDevice->basicShader->SetBool(SHADER_doNormalMapping, nMap);
+
+   // set transform
+   g_pplayer->UpdateBasicShaderMatrix(m_fullMatrix);
+
+   // setup for additive blending
+   vec4 previousFlasherColorAlpha = pd3dDevice->basicShader->GetCurrentFlasherColorAlpha();
+   if (m_d.m_addBlend)
+   {
+      g_pplayer->m_pin3d.EnableAlphaBlend(true);
+      pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
+      const vec4 color = convertColor(m_d.m_color, m_d.m_alpha * (float)(1.0 / 100.0));
+      pd3dDevice->basicShader->SetFlasherColorAlpha(vec4(color.x * color.w, color.y * color.w, color.z * color.w, color.w));
+   }
+   else
+   {
+      pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
+      const vec4 color = convertColor(m_d.m_color, m_d.m_alpha * (float)(1.0 / 100.0));
+      pd3dDevice->basicShader->SetFlasherColorAlpha(color);
+   }
+
+   // Apply reflections and handle depth only pass of playfield primitives
+   if (m_d.m_useAsPlayfield)
+   {
+      RenderTarget *mirror = pd3dDevice->GetMirrorRenderTarget(g_pplayer->m_isRenderingStatic);
+      if (mirror) // We have reflections to render on the primitive
+      {
+         pd3dDevice->basicShader->SetFloat(SHADER_mirrorFactor, m_ptable->m_playfieldReflectionStrength);
+         pd3dDevice->basicShader->SetTexture(SHADER_tex_playfield_reflection, mirror->GetColorSampler());
+         bool is_reflection_only;
+         if (g_pplayer->m_isRenderingStatic)
+            is_reflection_only = false; // Static prepass => render playfield and reflections
+         else if (g_pplayer->m_dynamicMode)
+            is_reflection_only = false; // Normal pass without a static prepass => render playfield and reflections
+         else if (!m_d.m_staticRendering)
+            is_reflection_only = false; // The playfield is a dynamic primitive => it must be rendered with the reflections since it is not staticly prerendered
          else
+            is_reflection_only = true; // Normal pass with a static prepass => render only additive reflections (playfield is already rendered in the static prepass)
+         if (is_reflection_only) // Reflection only pass
          {
-            pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_basic_without_texture, mat->m_bIsMetal);
-            pd3dDevice->basicShader->SetMaterial(mat, false);
+            g_pplayer->m_pin3d.EnableAlphaBlend(true);
+            pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
+            pd3dDevice->basicShader->SetTechnique(pin ? SHADER_TECHNIQUE_playfield_refl_with_texture : SHADER_TECHNIQUE_playfield_refl_without_texture);
+         }
+         else // Normal rendering (playfield with reflections)
+         {
+            if (pin && nMap)
+               pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_playfield_with_texture_normal, mat->m_bIsMetal);
+            else if (pin)
+               pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_playfield_with_texture, mat->m_bIsMetal);
+            else
+               pd3dDevice->basicShader->SetTechniqueMetal(SHADER_TECHNIQUE_playfield_without_texture, mat->m_bIsMetal);
          }
       }
+   }
 
-      pd3dDevice->basicShader->SetBool(SHADER_doNormalMapping, nMap);
+   // draw the mesh
+   pd3dDevice->basicShader->Begin();
+   if (m_d.m_groupdRendering)
+      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, m_vertexBuffer, 0, m_numGroupVertices, m_indexBuffer, 0, m_numGroupIndices);
+   else
+      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, m_vertexBuffer, 0, (DWORD)m_mesh.NumVertices(), m_indexBuffer, 0, (DWORD)m_mesh.NumIndices());
+   pd3dDevice->basicShader->End();
 
-      // set transform
-      g_pplayer->UpdateBasicShaderMatrix(m_fullMatrix);
-
-      // setup for additive blending
-      vec4 previousFlasherColorAlpha = pd3dDevice->basicShader->GetCurrentFlasherColorAlpha();
-      if (m_d.m_addBlend)
-      {
-         g_pplayer->m_pin3d.EnableAlphaBlend(true);
-         pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
-         const vec4 color = convertColor(m_d.m_color, m_d.m_alpha * (float)(1.0 / 100.0));
-         pd3dDevice->basicShader->SetFlasherColorAlpha(vec4(color.x * color.w, color.y * color.w, color.z * color.w, color.w));
-      }
-      else
-      {
-         const vec4 color = convertColor(m_d.m_color, m_d.m_alpha * (float)(1.0 / 100.0));
-         pd3dDevice->basicShader->SetFlasherColorAlpha(color);
-      }
-
-      // draw the mesh
+   if (m_d.m_backfacesEnabled && mat->m_bOpacityActive)
+   {
+      pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
       pd3dDevice->basicShader->Begin();
       if (m_d.m_groupdRendering)
          pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, m_vertexBuffer, 0, m_numGroupVertices, m_indexBuffer, 0, m_numGroupIndices);
       else
          pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, m_vertexBuffer, 0, (DWORD)m_mesh.NumVertices(), m_indexBuffer, 0, (DWORD)m_mesh.NumIndices());
       pd3dDevice->basicShader->End();
-
-      if (m_d.m_backfacesEnabled && mat->m_bOpacityActive)
-      {
-         pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
-         pd3dDevice->basicShader->Begin();
-         if (m_d.m_groupdRendering)
-            pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, m_vertexBuffer, 0, m_numGroupVertices, m_indexBuffer, 0, m_numGroupIndices);
-         else
-            pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, m_vertexBuffer, 0, (DWORD)m_mesh.NumVertices(), m_indexBuffer, 0, (DWORD)m_mesh.NumIndices());
-         pd3dDevice->basicShader->End();
-      }
-      if (nMap) pd3dDevice->basicShader->SetBool(SHADER_doNormalMapping, false);//Only place where nMap is used
-
-      pd3dDevice->basicShader->SetFlasherColorAlpha(previousFlasherColorAlpha);
-
-      // reset transform
-      g_pplayer->UpdateBasicShaderMatrix();
-
-      //pd3dDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE); //!! not necessary anymore
-      if (m_d.m_disableLightingTop != 0.f || m_d.m_disableLightingBelow != 0.f)
-         pd3dDevice->basicShader->SetDisableLighting(vec4(0.f, 0.f, 0.f, 0.f));
    }
-   else // m_d.m_useAsPlayfield == true:
-   {
-      // shader is already fully configured in the playfield rendering case when we arrive here, so we only setup some special primitive params
+   if (nMap) pd3dDevice->basicShader->SetBool(SHADER_doNormalMapping, false);//Only place where nMap is used
 
-      if (m_d.m_disableLightingTop != 0.f || m_d.m_disableLightingBelow != 0.f)
-         pd3dDevice->basicShader->SetDisableLighting(vec4(m_d.m_disableLightingTop, m_d.m_disableLightingBelow, 0.f, 0.f));
+   pd3dDevice->basicShader->SetFlasherColorAlpha(previousFlasherColorAlpha);
 
-      //pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW); // don't mess with the render states when doing playfield rendering
-      // set transform
-      g_pplayer->UpdateBasicShaderMatrix(m_fullMatrix);
-      pd3dDevice->basicShader->Begin();
-      pd3dDevice->DrawIndexedPrimitiveVB(RenderDevice::TRIANGLELIST, MY_D3DFVF_NOTEX2_VERTEX, m_vertexBuffer, 0, (DWORD)m_mesh.NumVertices(), m_indexBuffer, 0, (DWORD)m_mesh.NumIndices());
-      pd3dDevice->basicShader->End();
-      // reset transform
-      g_pplayer->UpdateBasicShaderMatrix();
+   // reset transform
+   g_pplayer->UpdateBasicShaderMatrix();
 
-      if (m_d.m_disableLightingTop != 0.f || m_d.m_disableLightingBelow != 0.f)
-         pd3dDevice->basicShader->SetDisableLighting(vec4(0.f, 0.f, 0.f, 0.f));
-   }
+   if (m_d.m_useAsPlayfield)
+      pd3dDevice->basicShader->SetTexture(SHADER_tex_base_transmission, pd3dDevice->GetBloomBufferTexture()->GetColorSampler()); // Restore bulb light transmission on Texture3 (staticly shared with playfield reflection on DX9)
+   if (m_d.m_disableLightingTop != 0.f || m_d.m_disableLightingBelow != 0.f)
+      pd3dDevice->basicShader->SetDisableLighting(vec4(0.f, 0.f, 0.f, 0.f));
+   pd3dDevice->CopyRenderStates(false, initial_state);
 }
 
 // Always called each frame to render over everything else (along with alpha ramps)
@@ -1334,7 +1359,8 @@ void Primitive::RenderDynamic()
 {
    TRACE_FUNCTION();
 
-   if (m_d.m_staticRendering) return; //don't render static
+   if (m_d.m_staticRendering && !(m_d.m_useAsPlayfield && g_pplayer->m_pin3d.m_pd3dPrimaryDevice->GetMirrorRenderTarget(false) != nullptr))
+      return; //don't render static (except for playfield with dynamic reflections, to render the reflections)
    if (m_lockedByLS) 
    {
        //don't render in LS when state off

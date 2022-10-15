@@ -57,11 +57,9 @@ public:
    void EnableAlphaBlend(const bool additiveBlending, const bool set_dest_blend = true, const bool set_blend_op = true) const;
 
    void DrawBackground();
-   void RenderPlayfieldGraphics(const float mirror_factor, const bool depth_only);
 
    const Matrix3D& GetWorldTransform() const   { return m_proj.m_matWorld; }
    const Matrix3D& GetViewTransform() const    { return m_proj.m_matView; }
-   void InitPlayfieldGraphics();
    void InitLights();
    void UpdateMatrices();
 
@@ -105,10 +103,7 @@ public:
    ViewPort m_viewPort; // Viewport of the screen output (different from render size for VR, anaglyph, superscaling,...)
    float m_AAfactor;
 
-private:
-   VertexBuffer *m_tableVBuffer;
 #ifdef ENABLE_BAM
-public:
    void UpdateBAMHeadTracking();                 // #ravarcade: UpdateBAMHeadTracking will set proj/view matrix to add BAM view and head tracking
 #endif
 };
