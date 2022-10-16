@@ -2021,6 +2021,7 @@ void Player::RenderDynamicMirror()
    // Draw reflection of all objects dynamicly to allow correct reflection occlusion or when camera is dynamic like VR or BAM headtracking
    if (m_pfReflectionMode == PFREFL_DYNAMIC)
    {
+      m_isRenderingStatic = true;
       for (size_t i = 0; i < m_ptable->m_vedit.size(); i++)
          if (m_ptable->m_vedit[i]->GetItemType() != eItemDecal)
          {
@@ -2036,6 +2037,7 @@ void Player::RenderDynamicMirror()
             if (ph)
                ph->RenderStatic();
          }
+      m_isRenderingStatic = false;
    }
 
    if (!onlyBalls)
@@ -3984,7 +3986,7 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
          if (SMAA)
          {
             #ifdef ENABLE_SDL
-            m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_edgesTex, renderedRT->GetColorSampler());
+            m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_edgesTex2D, renderedRT->GetColorSampler());
             #else
             CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_edgesTex2D, renderedRT->GetColorSampler()->GetCoreTexture())); //!! opt.?
             #endif
@@ -4006,7 +4008,7 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
             outputRT->Activate(true);
 
             #ifdef ENABLE_SDL
-            m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_blendTex, renderedRT->GetColorSampler());
+            m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_blendTex2D, renderedRT->GetColorSampler());
             #else
             CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_edgesTex2D, nullptr)); //!! opt.??
             CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_blendTex2D, renderedRT->GetColorSampler()->GetCoreTexture())); //!! opt.?

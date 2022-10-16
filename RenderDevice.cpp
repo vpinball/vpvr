@@ -883,6 +883,7 @@ RenderDevice::RenderDevice(const HWND hwnd, const int width, const int height, c
 
 void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
 {
+   assert(g_pplayer != nullptr); // Player must be created to give access to the output window
    m_current_renderstate.state = m_renderstate.state = 0;
    m_current_renderstate.depth_bias = m_renderstate.depth_bias = 0.0f;
    m_current_renderstate.alpha_ref = m_renderstate.alpha_ref = 0;
@@ -1426,8 +1427,8 @@ bool RenderDevice::LoadShaders()
    if (m_FXAA == Quality_SMAA)
    {
 #ifdef ENABLE_SDL
-      FBShader->SetTexture(SHADER_areaTex, m_SMAAareaTexture);
-      FBShader->SetTexture(SHADER_searchTex, m_SMAAsearchTexture);
+      FBShader->SetTexture(SHADER_areaTex2D, m_SMAAareaTexture);
+      FBShader->SetTexture(SHADER_searchTex2D, m_SMAAsearchTexture);
 #else
       // FIXME Shader rely on texture to be named with a leading texture unit. SetTexture will fail otherwise...
       CHECKD3D(FBShader->Core()->SetTexture(SHADER_areaTex2D, m_SMAAareaTexture->GetCoreTexture()));
@@ -1516,8 +1517,8 @@ void RenderDevice::FreeShader()
       FBShader->SetTextureNull(SHADER_tex_color_lut);
       FBShader->SetTextureNull(SHADER_tex_ao_dither);
 
-      FBShader->SetTextureNull(SHADER_areaTex);
-      FBShader->SetTextureNull(SHADER_searchTex);
+      FBShader->SetTextureNull(SHADER_areaTex2D);
+      FBShader->SetTextureNull(SHADER_searchTex2D);
 
       delete FBShader;
       FBShader = nullptr;
