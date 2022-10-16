@@ -262,7 +262,7 @@ public:
    void recenterTable();
    void recenterRoom();
 
-   float m_slope, m_orientation, m_tablex, m_tabley, m_tablez, m_roomOrientation, m_roomx, m_roomy;
+   float m_slope, m_orientation, m_tablex, m_tabley, m_tablez;
 
    void updateTableMatrix();
    vr::TrackedDevicePose_t hmdPosition;

@@ -794,9 +794,6 @@ void RenderDevice::InitVR() {
    m_tablex = LoadValueFloatWithDefault(regKey[RegName::Player], "VRTableX"s, 0.0f);
    m_tabley = LoadValueFloatWithDefault(regKey[RegName::Player], "VRTableY"s, 0.0f);
    m_tablez = LoadValueFloatWithDefault(regKey[RegName::Player], "VRTableZ"s, 80.0f);
-   m_roomOrientation = LoadValueFloatWithDefault(regKey[RegName::Player], "VRRoomOrientation"s, 0.0f);
-   m_roomx = LoadValueFloatWithDefault(regKey[RegName::Player], "VRRoomX"s, 0.0f);
-   m_roomy = LoadValueFloatWithDefault(regKey[RegName::Player], "VRRoomY"s, 0.0f);
 
    updateTableMatrix();
 
@@ -1651,9 +1648,6 @@ RenderDevice::~RenderDevice()
       SaveValueFloat(regKey[RegName::Player], "VRTableX"s, m_tablex);
       SaveValueFloat(regKey[RegName::Player], "VRTableY"s, m_tabley);
       SaveValueFloat(regKey[RegName::Player], "VRTableZ"s, m_tablez);
-      SaveValueFloat(regKey[RegName::Player], "VRRoomOrientation"s, m_roomOrientation);
-      SaveValueFloat(regKey[RegName::Player], "VRRoomX"s, m_roomx);
-      SaveValueFloat(regKey[RegName::Player], "VRRoomY"s, m_roomy);
    }
 #endif
 
@@ -2340,14 +2334,17 @@ void RenderDevice::UpdateVRPosition()
 
    vr::VRCompositor()->WaitGetPoses(m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, nullptr, 0);
 
+   m_matView.SetIdentity();
    for (unsigned int device = 0; device < vr::k_unMaxTrackedDeviceCount; device++) {
       if ((m_rTrackedDevicePose[device].bPoseIsValid) && (m_pHMD->GetTrackedDeviceClass(device) == vr::TrackedDeviceClass_HMD)) {
          hmdPosition = m_rTrackedDevicePose[device];
+         // Player orientation (transposed)
          for (int i = 0;i < 3;i++)
-            for (int j = 0;j < 4;j++)
+            for (int j = 0;j < 3;j++)
                m_matView.m[j][i] = hmdPosition.mDeviceToAbsoluteTracking.m[i][j];
-         for (int j = 0;j < 4;j++)
-            m_matView.m[j][3] = (j == 3) ? 1.0f : 0.0f;
+         // Player position (apply scale to get position in VPX units)
+         for (int i = 0; i < 3; i++)
+            m_matView.m[3][i] = hmdPosition.mDeviceToAbsoluteTracking.m[i][3] / m_scale;
          break;
       }
    }
@@ -2375,12 +2372,12 @@ void RenderDevice::recenterTable()
    //hmdPosition;
    m_orientation = -RADTOANG(atan2(hmdPosition.mDeviceToAbsoluteTracking.m[0][2], hmdPosition.mDeviceToAbsoluteTracking.m[0][0]));
    if (m_orientation < 0.0f) m_orientation += 360.0f;
-   const float w = 100.f*0.5f*m_scale*(g_pplayer->m_ptable->m_right  - g_pplayer->m_ptable->m_left);
-   const float h = 100.f*     m_scale*(g_pplayer->m_ptable->m_bottom - g_pplayer->m_ptable->m_top) + 20.0f;
+   const float w = 0.5f*(g_pplayer->m_ptable->m_right  - g_pplayer->m_ptable->m_left);
+   const float h =      (g_pplayer->m_ptable->m_bottom - g_pplayer->m_ptable->m_top) + 20.0f;
    const float c = cos(ANGTORAD(m_orientation));
    const float s = sin(ANGTORAD(m_orientation));
-   m_tablex =  100.0f*hmdPosition.mDeviceToAbsoluteTracking.m[0][3] - c * w + s * h;
-   m_tabley = -100.0f*hmdPosition.mDeviceToAbsoluteTracking.m[2][3] + s * w + c * h;
+   m_tablex =  (hmdPosition.mDeviceToAbsoluteTracking.m[0][3] / m_scale) - c * w + s * h;
+   m_tabley = -(hmdPosition.mDeviceToAbsoluteTracking.m[2][3] / m_scale) + s * w + c * h;
    updateTableMatrix();
 }
 
@@ -2394,21 +2391,21 @@ void RenderDevice::recenterRoom()
 void RenderDevice::updateTableMatrix()
 {
    Matrix3D tmp;
-   m_tableWorld.SetIdentity();
    //Tilt playfield.
    m_tableWorld.RotateXMatrix(ANGTORAD(-m_slope));
-   tmp.SetIdentity();
    //Convert from VPX scale and coords to VR
-
-   tmp.m[0][0] = -m_scale;  tmp.m[0][1] = 0.0f;  tmp.m[0][2] = 0.0f;
-   tmp.m[1][0] = 0.0f;  tmp.m[1][1] = 0.0f;  tmp.m[1][2] = -m_scale;
-   tmp.m[2][0] = 0.0f;  tmp.m[2][1] = m_scale;  tmp.m[2][2] = 0.0f;
-   m_tableWorld = m_tableWorld * tmp;
    tmp.SetIdentity();
-   tmp.RotateYMatrix(ANGTORAD(180.f - m_orientation - m_roomOrientation));//Rotate table around VR height axis
+   tmp.m[0][0] = -1.0f;  tmp.m[0][1] = 0.0f;  tmp.m[0][2] =  0.0f;
+   tmp.m[1][0] =  0.0f;  tmp.m[1][1] = 0.0f;  tmp.m[1][2] = -1.0f;
+   tmp.m[2][0] =  0.0f;  tmp.m[2][1] = 1.0f;  tmp.m[2][2] =  0.0f;
    m_tableWorld = m_tableWorld * tmp;
+   //Rotate table around VR height axis
    tmp.SetIdentity();
-   tmp.SetTranslation((m_roomx+m_tablex) / 100.0f, m_tablez / 100.0f, -(m_roomy+m_tabley) / 100.0f);//Locate front left corner of the table in the room -x is to the right, -y is up and -z is back - all units in meters
+   tmp.RotateYMatrix(ANGTORAD(180.f - m_orientation));
+   m_tableWorld = m_tableWorld * tmp;
+   //Locate front left corner of the table in the room -x is to the right, -y is up and -z is back - all units in meters
+   tmp.SetIdentity();
+   tmp.SetTranslation(m_tablex, m_tablez / 100.0f, -m_tabley);
    m_tableWorld = m_tableWorld * tmp;
 }
 
