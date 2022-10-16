@@ -215,11 +215,11 @@ in vec2 tex0;
 
 void main()
 {
-   vec3 result = (texture(tex_fb_filtered, vec2(tex0-w_h_height.xy*0.5)).xyz
-               +  texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*2.5)).xyz
-               +  texture(tex_fb_filtered, vec2(tex0+vec2(w_h_height.x*2.5,-w_h_height.y*0.5))).xyz
-               +  texture(tex_fb_filtered, vec2(tex0+vec2(-w_h_height.x*0.5,w_h_height.y*2.5))).xyz)*0.25; //!! offset for useAA?
-   color = vec4(max(FBToneMap(result) - vec3(1., 1., 1.), vec3(0., 0., 0.)), 1.0);
+   vec3 result = (texture(tex_fb_filtered, vec2(tex0-w_h_height.xy*1.5)).xyz
+               +  texture(tex_fb_filtered, vec2(tex0+w_h_height.xy*1.5)).xyz
+               +  texture(tex_fb_filtered, vec2(tex0+vec2(w_h_height.x*1.5,-w_h_height.y*1.5))).xyz
+               +  texture(tex_fb_filtered, vec2(tex0+vec2(-w_h_height.x*1.5,w_h_height.y*1.5))).xyz)*0.25;
+   color = vec4(max(FBToneMap(result) - vec3(1.0), vec3(0.0)), 1.0);
 }
 
 ////ps_main_fb_AO

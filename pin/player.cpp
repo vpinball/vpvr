@@ -3869,29 +3869,19 @@ void Player::Bloom()
 {
    if (m_ptable->m_bloom_strength <= 0.0f || m_bloomOff || GetInfoMode() == IF_LIGHT_BUFFER_ONLY)
       return;
-
-   double w = (double)m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetWidth();
-   double h = (double)m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetHeight();
-   const float shiftedVerts[4 * 5] =
    {
-       1.0f,  1.0f, 0.0f, 1.0f + (float)(1.0 / w), 0.0f + (float)(1.0 / h),
-      -1.0f,  1.0f, 0.0f, 0.0f + (float)(1.0 / w), 0.0f + (float)(1.0 / h),
-       1.0f, -1.0f, 0.0f, 1.0f + (float)(1.0 / w), 1.0f + (float)(1.0 / h),
-      -1.0f, -1.0f, 0.0f, 0.0f + (float)(1.0 / w), 1.0f + (float)(1.0 / h)
-   };
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTextureNull(SHADER_tex_fb_filtered);
 
-   {
       // switch to 'bloom' output buffer to collect clipped framebuffer values
       m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->Activate(true);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetColorSampler());
-
-      const vec4 fb_inv_resolution((float)(1.0 / w), (float)(1.0 / h), 1.0f, 1.0f);
+      const vec4 fb_inv_resolution((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetWidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetHeight()), m_ptable->m_bloom_strength, 1.0f);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_fb_bloom);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
-      m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)shiftedVerts);
+      m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
       m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
    }
    {
@@ -3901,8 +3891,8 @@ void Player::Bloom()
       m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->Activate(true);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetColorSampler());
-      const vec4 fb_inv_resolution_05((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetWidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetHeight()), m_ptable->m_bloom_strength, 1.0f);
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution_05);
+      const vec4 fb_inv_resolution((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetWidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->GetHeight()), m_ptable->m_bloom_strength, 1.0f);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(/*m_low_quality_bloom ? SHADER_TECHNIQUE_fb_bloom_horiz9x9 :*/ SHADER_TECHNIQUE_fb_bloom_horiz39x39);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
@@ -3916,8 +3906,8 @@ void Player::Bloom()
       m_pin3d.m_pd3dPrimaryDevice->GetBloomBufferTexture()->Activate(true);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->GetColorSampler());
-      const vec4 fb_inv_resolution_05((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->GetWidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->GetHeight()), m_ptable->m_bloom_strength, 1.0f);
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution_05);
+      const vec4 fb_inv_resolution((float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->GetWidth()), (float)(1.0 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBloomTmpBufferTexture()->GetHeight()), m_ptable->m_bloom_strength, 1.0f);
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution);
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(/*m_low_quality_bloom ? SHADER_TECHNIQUE_fb_bloom_vert9x9 :*/ SHADER_TECHNIQUE_fb_bloom_vert39x39);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
