@@ -65,18 +65,18 @@ out vec4 worldPos_t0y_gs;
 void main()
 {
 	// apply spinning and move the ball to it's actual position
-	vec4 pos = vec4(vPosition, 1.0);
+	float4 pos = vec4(vPosition, 1.0);
 	pos.xyz = (orientation * pos).xyz;
 
 	// apply spinning to the normals too to get the sphere mapping effect
-	vec3 nspin = (orientation * vec4(vNormal,0.0)).xyz;
-	vec3 normal = normalize((matWorldViewInverseTranspose * vec4(nspin, 0.0)).xyz); // actually: mul(vec4(nspin,0.), matWorldViewInverseTranspose), but optimized to save one matrix
-
-	vec3 p = (matWorldView * pos).xyz;
+	float3 nspin = (orientation * vec4(vNormal,0.0)).xyz;
+	float3 normal = normalize((matWorldViewInverseTranspose * vec4(nspin, 0.0)).xyz); // actually: mul(vec4(nspin,0.), matWorldViewInverseTranspose), but optimized to save one matrix
+	
+	float3 p = (matWorldView * pos).xyz;
 
 	gl_Position = pos;
-	normal_t0x_gs = vec4(normal,tex0.x);
-	worldPos_t0y_gs = vec4(p,tex0.y);
+	normal_t0x_gs = float4(normal,tex0.x);
+	worldPos_t0y_gs = float4(p,tex0.y);
 }
 
 ////vsBallTrail
@@ -137,20 +137,20 @@ void main()
 
 ////FRAGMENT
 
-vec3 ballLightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 specular, float edge, bool is_metal)
+float3 ballLightLoop(const float3 pos, float3 N, float3 V, float3 diffuse, float3 glossy, const float3 specular, const float edge, const bool is_metal)
 {
    // normalize input vectors for BRDF evals
    N = normalize(N);
    V = normalize(V);
-
+   
    // normalize BRDF layer inputs //!! use diffuse = (1-glossy)*diffuse instead?
-   float diffuseMax = max(diffuse.x,max(diffuse.y,diffuse.z));
-   float glossyMax = max(glossy.x,max(glossy.y,glossy.z));
-   float specularMax = max(specular.x,max(specular.y,specular.z)); //!! not needed as 2nd layer only so far
-   float sum = diffuseMax + glossyMax; //+ specularMax
+   const float diffuseMax = max(diffuse.x,max(diffuse.y,diffuse.z));
+   const float glossyMax = max(glossy.x,max(glossy.y,glossy.z));
+   const float specularMax = max(specular.x,max(specular.y,specular.z)); //!! not needed as 2nd layer only so far
+   const float sum = diffuseMax + glossyMax; //+ specularMax
    if(sum > 1.0)
    {
-      float invsum = 1.0/sum;
+      const float invsum = 1.0/sum;
       diffuse  *= invsum;
       glossy   *= invsum;
       //specular *= invsum;
@@ -159,7 +159,7 @@ vec3 ballLightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 spe
    //if(dot(N,V) < 0.0) //!! flip normal in case of wrong orientation? (backside lighting)
    //   N = -N;
 
-   vec3 color = vec3(0.0, 0.0, 0.0);
+   float3 color = float3(0.0, 0.0, 0.0);
 
    if((!is_metal && (diffuseMax > 0.0)) || (glossyMax > 0.0))
    {
@@ -176,33 +176,33 @@ vec3 ballLightLoop(vec3 pos, vec3 N, vec3 V, vec3 diffuse, vec3 glossy, vec3 spe
    return color;
 }
 
-vec3 PFDoPointLight(vec3 pos, vec3 N, vec3 diffuse, int i) 
+float3 PFDoPointLight(const float3 pos, const float3 N, const float3 diffuse, const int i) 
 { 
-   vec3 lightDir = (matView * vec4(lightPos[i].xyz, 1.0)).xyz - pos; //!! do in vertex shader?! or completely before?!
-   vec3 L = normalize(lightDir);
-   float NdotL = dot(N, L);
+   const float3 lightDir = (matView * vec4(lightPos[i].xyz, 1.0)).xyz - pos; //!! do in vertex shader?! or completely before?!
+   const float3 L = normalize(lightDir);
+   const float NdotL = dot(N, L);
    // compute diffuse color (lambert)
-   vec3 Out = (NdotL > 0.0) ? diffuse * NdotL : vec3(0.0,0.0,0.0);
+   const float3 Out = (NdotL > 0.0) ? diffuse * NdotL : float3(0.0,0.0,0.0);
 
-   float sqrl_lightDir = dot(lightDir,lightDir); // tweaked falloff to have ranged lightsources
+   const float sqrl_lightDir = dot(lightDir,lightDir); // tweaked falloff to have ranged lightsources
    float fAtten = saturate(1.0 - sqrl_lightDir*sqrl_lightDir/(cAmbient_LightRange.w*cAmbient_LightRange.w*cAmbient_LightRange.w*cAmbient_LightRange.w)); //!! pre-mult/invert cAmbient_LightRange.w?
    fAtten = fAtten*fAtten/(sqrl_lightDir + 1.0);
 
    return Out * lightEmission[i].xyz * fAtten;
 }
 
-vec3 PFlightLoop(vec3 pos, vec3 N, vec3 diffuse)
+float3 PFlightLoop(const float3 pos, const float3 N, const float3 diffuse)
 {
-   float diffuseMax = max(diffuse.x,max(diffuse.y,diffuse.z));
+   const float diffuseMax = max(diffuse.x,max(diffuse.y,diffuse.z));
 
-   vec3 color = vec3(0.0,0.0,0.0);
+   float3 color = float3(0.0,0.0,0.0);
 
    if (diffuseMax > 0.0)
    {
       for (int i = 0; i < iLightPointNum; i++)
          color += PFDoPointLight(pos, N, diffuse, i);
 
-      color += DoEnvmapDiffuse(vec3(0.,0.,1.), diffuse); // directly wire world space playfield normal
+      color += DoEnvmapDiffuse(float3(0.,0.,1.), diffuse); // directly wire world space playfield normal
    }
 
    return color;
@@ -216,96 +216,93 @@ in vec4 worldPos_t0y;
 
 void main()
 {
-   const float3 v = normalize(/*camera=0,0,0,1*/-worldPos_t0y.xyz);
-   const float3 r = reflect(v, normalize(normal_t0x.xyz));
-   // calculate the intermediate value for the final texture coords. found here http://www.ozone3d.net/tutorials/glsl_texturing_p04.php
-   const float  m = (r.z + 1.0 > 0.) ? 0.3535533905932737622 * rsqrt(r.z + 1.0) : 0.; // 0.353...=0.5/sqrt(2)
-   const float edge = dot(v, r);
-   const float lod = (edge > 0.6) ? // edge falloff to reduce aliasing on edges (picks smaller mipmap -> more blur)
-      edge*(6.0*1.0/0.4)-(6.0*0.6/0.4) :
-      0.0;
+    const float3 v = normalize(/*camera=0,0,0,1*/-worldPos_t0y.xyz);
+    const float3 r = reflect(v, normalize(normal_t0x.xyz));
+    // calculate the intermediate value for the final texture coords. found here http://www.ozone3d.net/tutorials/glsl_texturing_p04.php
+    const float  m = (r.z + 1.0 > 0.) ? 0.3535533905932737622 * rsqrt(r.z + 1.0) : 0.; // 0.353...=0.5/sqrt(2)
+    const float edge = dot(v, r);
+    const float lod = (edge > 0.6) ? // edge falloff to reduce aliasing on edges (picks smaller mipmap -> more blur)
+		edge*(6.0*1.0/0.4)-(6.0*0.6/0.4) :
+		0.0;
 
-   const float2 uv0 = %PARAM0% ? float2(r.y*-m + 0.5, r.x*-m + 0.5) : float2(r.x*-m + 0.5, r.y*m + 0.5);
-   float3 ballImageColor = texture(tex_ball_color, uv0).rgb;
+    const float2 uv0 = %PARAM0% ? float2(r.y*-m + 0.5, r.x*-m + 0.5) : float2(r.x*-m + 0.5, r.y*m + 0.5);
+    float3 ballImageColor = texture(tex_ball_color, uv0).rgb;
 
-   const float4 decalColorT = texture(tex_ball_decal, vec2(normal_t0x.w, worldPos_t0y.w));
-   float3 decalColor = decalColorT.xyz;
+    const float4 decalColorT = texture(tex_ball_decal, vec2(normal_t0x.w, worldPos_t0y.w));
+    float3 decalColor = decalColorT.xyz;
 
-   if (!%PARAM1%) // decalMode
-   {
-      // decal texture is an alpha scratch texture and must be added to the ball texture
-      // the strength of the scratches totally rely on the alpha values.
-      decalColor *= decalColorT.a;
-      ballImageColor += decalColor;
-   }
-   else
-      ballImageColor = ScreenHDR(ballImageColor, decalColor);
+    if (!%PARAM1%) // decalMode
+    {
+       // decal texture is an alpha scratch texture and must be added to the ball texture
+       // the strength of the scratches totally rely on the alpha values.
+       decalColor *= decalColorT.a;
+       ballImageColor += decalColor;
+    }
+    else
+       ballImageColor = ScreenHDR(ballImageColor, decalColor);
 
-   if (disableLighting)
-   {
-      color = float4(ballImageColor,cBase_Alpha.a);
-      return;
-   }
+    if (disableLighting)
+    {
+       color = float4(ballImageColor,cBase_Alpha.a);
+       return;
+    }
 
-   if (!%PARAM1%) // decalMode
-      ballImageColor *= fenvEmissionScale_TexWidth.x;
-   else
-      ballImageColor *= 0.5*fenvEmissionScale_TexWidth.x; //!! 0.5=magic
+    if (!%PARAM1%) // decalMode
+       ballImageColor *= fenvEmissionScale_TexWidth.x;
+    else
+       ballImageColor *= 0.5*fenvEmissionScale_TexWidth.x; //!! 0.5=magic
 
-   const float3 playfield_normal = normalize((matWorldViewInverseTranspose * vec4(0.,0.,1.,0.)).xyz); //!! normalize necessary? // actually: mul(float4(0.,0.,1.,0.), matWorldViewInverseTranspose), but optimized to save one matrix
+    const float3 playfield_normal = normalize((matWorldViewInverseTranspose * vec4(0.,0.,1.,0.)).xyz); //!! normalize necessary? // actually: mul(float4(0.,0.,1.,0.), matWorldViewInverseTranspose), but optimized to save one matrix
+    const float NdotR = dot(playfield_normal,r);
 
-   const float NdotR = dot(playfield_normal,r);
+    float3 playfieldColor;
+    if(/*(reflection_ball_playfield > 0.0) &&*/ (NdotR > 0.0))
+    {
+       const float3 playfield_p0 = mul_w1(float3(/*playfield_pos=*/0.,0.,invTableRes_playfield_height_reflection.z), matWorldView);
+       const float t = dot(playfield_normal, worldPos_t0y.xyz - playfield_p0) / NdotR;
+       const float3 playfield_hit = worldPos_t0y.xyz - t*r;
 
-   float3 playfieldColor;
-   if(/*(reflection_ball_playfield > 0.0) &&*/ (NdotR > 0.0))
-   {
-      const float3 playfield_p0 = (matWorldView * vec4(/*playfield_pos=*/0.,0.,invTableRes_playfield_height_reflection.z, 1.0)).xyz;
-      const float t = dot(playfield_normal, worldPos_t0y.xyz - playfield_p0) / NdotR;
-      const float3 playfield_hit = worldPos_t0y.xyz - t*r;
+       const float2 uv = (inverse(matWorldView) * vec4(playfield_hit, 1.0)).xy * invTableRes_playfield_height_reflection.xy;
+       playfieldColor = (t < 0.) ? float3(0.,0.,0.) // happens for example when inside kicker
+                                 : texture(tex_ball_playfield, uv).xyz * invTableRes_playfield_height_reflection.w; //!! rather use screen space sample from previous frame??
 
-      const float2 uv = (inverse(matWorldView) * vec4(playfield_hit, 1.0)).xy * invTableRes_playfield_height_reflection.xy;
-      playfieldColor = (t < 0.) ? vec3(0., 0., 0.) // happens for example when inside kicker
-                                : texture(tex_ball_playfield, uv).xyz*invTableRes_playfield_height_reflection.w; //!! rather use screen space sample from previous frame??
+       //!! hack to get some lighting on reflection sample, but only diffuse, the rest is not setup correctly anyhow
+       playfieldColor = PFlightLoop(playfield_hit, playfield_normal, playfieldColor);
+       // previous VPVR only shading to be removed after tests
+       // vec3 lightLoop_normal = (matWorldView * vec4(0.,0.,1.,0.)).xyz;
+       //playfieldColor = PFlightLoop(playfield_hit, lightLoop_normal, playfieldColor);
 
-      //!! hack to get some lighting on reflection sample, but only diffuse, the rest is not setup correctly anyhow
-      playfieldColor = PFlightLoop(playfield_hit, playfield_normal, playfieldColor);
-      // previous VPVR only shading to be removed after tests
-      // vec3 lightLoop_normal = (matWorldView * vec4(0.,0.,1.,0.)).xyz;
-      //playfieldColor = PFlightLoop(playfield_hit, lightLoop_normal, playfieldColor);
+       //!! magic falloff & weight the rest in from the ballImage
+       const float weight = NdotR*NdotR;
+       playfieldColor = lerp(ballImageColor,playfieldColor,weight);
+    }
+    else
+       playfieldColor = ballImageColor;
 
-      //!! magic falloff & weight the rest in from the ballImage
-      float weight = NdotR*NdotR;
-      playfieldColor = mix(ballImageColor,playfieldColor,weight);
-   }
-   else
-      playfieldColor = ballImageColor;
+    float3 diffuse = cBase_Alpha.xyz*0.075;
 
-   vec3 diffuse = cBase_Alpha.xyz*0.075;
+    if(!%PARAM1%) // decalMode
+       diffuse *= decalColor; // scratches make the material more rough
 
-   if(!%PARAM1%) // decalMode
-      diffuse *= decalColor; // scratches make the material more rough
+    const float3 glossy = max(diffuse*2.0, float3(0.1,0.1,0.1)); //!! meh
+    float3 specular = playfieldColor*cBase_Alpha.xyz; //!! meh, too, as only added in ballLightLoop anyhow
 
-   vec3 glossy = max(diffuse*2.0, vec3(0.1,0.1,0.1)); //!! meh
-   vec3 specular = playfieldColor*cBase_Alpha.xyz; //!! meh, too, as only added in ballLightLoop anyhow
+    if(!%PARAM1%)
+       specular *= float3(1.,1.,1.)-decalColor; // see above
 
-   if(!%PARAM1%)
-      specular *= vec3(1.,1.,1.)-decalColor; // see above
-
-   color.xyz = ballLightLoop(worldPos_t0y.xyz, normal_t0x.xyz, -worldPos_t0y.xyz, diffuse, glossy, specular, 1.0, false);
-   color.a = clamp(cBase_Alpha.a, 0.0, 1.0);
+   color.xyz = ballLightLoop(worldPos_t0y.xyz, normal_t0x.xyz, /*camera=0,0,0,1*/-worldPos_t0y.xyz, diffuse, glossy, specular, 1.0, false);
+   color.a = cBase_Alpha.a;
 }
 
 #if 0
-vec4 psBallReflection( in voutReflection IN ) : COLOR
+float4 psBallReflection( const in voutReflection IN ) : COLOR
 {
-   vec2 envTex = /*cabMode*/false ? vec2(r.y*0.5 + 0.5, -r.x*0.5 + 0.5) : vec2(r.x*0.5 + 0.5, r.y*0.5 + 0.5);
-
-   vec3 ballImageColor = texture(tex_ball_color, envTex).rgb;
-
+   const float2 envTex = cabMode ? float2(r.y*0.5 + 0.5, -r.x*0.5 + 0.5) : float2(r.x*0.5 + 0.5, r.y*0.5 + 0.5);
+   float3 ballImageColor = texture(tex_ball_color, envTex).rgb;
    ballImageColor = (cBase_Alpha.xyz*(0.075*0.25) + ballImageColor)*fenvEmissionScale_TexWidth.x; //!! just add the ballcolor in, this is a whacky reflection anyhow
-   float alpha = clamp((tex0.y - position_radius.y) / position_radius.w, 0.0, 1.0);
+   float alpha = saturate((tex0.y - position_radius.y) / position_radius.w);
    alpha = (alpha*alpha)*(alpha*alpha)*reflection_ball_playfield;
-   color = vec4(ballImageColor,alpha);
+   color = float4(ballImageColor,alpha);
 }
 #endif
 
@@ -315,11 +312,11 @@ in vec3 tex0_alpha;
 
 void main()
 {
-   vec3 ballImageColor = texture(tex_ball_color, tex0_alpha.xy).rgb;
+   const float3 ballImageColor = texture(tex_ball_color, tex0_alpha.xy).rgb;
    if (disableLighting)
-      color = vec4(ballImageColor, tex0_alpha.z);
+      color = float4(ballImageColor, tex0_alpha.z);
    else
-      color = vec4((cBase_Alpha.xyz*(0.075*0.25) + ballImageColor)*fenvEmissionScale_TexWidth.x, tex0_alpha.z); //!! just add the ballcolor in, this is a whacky trail anyhow
+      color = float4((cBase_Alpha.xyz*(0.075*0.25) + ballImageColor)*fenvEmissionScale_TexWidth.x, tex0_alpha.z); //!! just add the ballcolor in, this is a whacky trail anyhow
 }
 
 //------------------------------------
