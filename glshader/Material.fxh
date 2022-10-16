@@ -21,6 +21,8 @@ uniform float2 fenvEmissionScale_TexWidth;
 
 uniform float2 fDisableLighting_top_below;
 
+uniform float fSceneScale = 1.0f;
+
 //
 // Material Params
 //
@@ -60,9 +62,14 @@ float3 DoPointLight(const float3 pos, const float3 N, const float3 V, const floa
    if (fDisableLighting_top_below.x == 1.0)
       return diffuse;
 
-   const float3 lightDir = (matView * vec4(lightPos[i].xyz, 1.0)).xyz - pos; //!! do in vertex shader?! or completely before?!
-   //const float3 lightDir = mul_w1(lightPos[i].xyz, matView) - pos; //!! do in vertex shader?! or completely before?!
-   const float3 L = normalize(0.0001 * lightDir); // lightDir causes overflow during normalize
+	//!! do in vertex shader?! or completely before?!
+#if enable_VR
+   const float3 lightDir = ((matView * vec4(lightPos[i].xyz, 1.0)).xyz - pos) / fSceneScale; // In VR we need to scale to the overall scene scaling
+#else
+   //const float3 lightDir = mul_w1(lightPos[i].xyz, matView) - pos;
+   const float3 lightDir = (matView * vec4(lightPos[i].xyz, 1.0)).xyz - pos;
+#endif
+   const float3 L = normalize(lightDir);
    const float NdotL = dot(N, L);
    float3 Out = float3(0.0,0.0,0.0);
 

@@ -119,6 +119,7 @@ Shader::ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT] {
    SHADER_UNIFORM(alphaTestValue),
    SHADER_UNIFORM(eye),
    SHADER_UNIFORM(fKickerScale),
+   SHADER_UNIFORM(fSceneScale),
    // -- Vectors and Float Arrays --
    SHADER_UNIFORM(Roughness_WrapL_Edge_Thickness),
    SHADER_UNIFORM(cBase_Alpha),

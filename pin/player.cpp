@@ -1105,7 +1105,6 @@ void Player::UpdateBasicShaderMatrix(const Matrix3D& objectTrafo)
    m_pin3d.m_pd3dPrimaryDevice->flasherShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matWorldViewProj[0].m[0][0], eyes * 16);
    m_pin3d.m_pd3dPrimaryDevice->lightShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matWorldViewProj[0].m[0][0], eyes * 16);
    m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matWorldViewProj[0].m[0][0], eyes * 16);
-
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matView.m[0][0], (eyes + 3) * 16);
 #ifdef SEPARATE_CLASSICLIGHTSHADER
    m_pin3d.m_pd3dPrimaryDevice->lightShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matWorldViewProj[0].m[0][0], (eyes + 3) * 16);
@@ -1162,6 +1161,15 @@ void Player::InitShader()
    //m_pin3d.m_pd3dPrimaryDevice->basicShader->SetVector("camera", &cam);
 #ifdef SEPARATE_CLASSICLIGHTSHADER
    //m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetVector("camera", &cam);
+#endif
+
+#ifdef ENABLE_SDL
+   // In VR we scale the scene to the controller scale, so the shader needs to scale light range accordingly
+#ifdef ENABLE_VR
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetFloat(SHADER_fSceneScale, m_pin3d.m_pd3dPrimaryDevice->m_scale);
+#else
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetFloat(SHADER_fSceneScale, 1.0f);
+#endif
 #endif
 
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetTexture(SHADER_tex_env, m_pin3d.m_envTexture ? m_pin3d.m_envTexture : &m_pin3d.m_builtinEnvTexture);
@@ -1233,9 +1241,15 @@ void Player::InitBallShader()
    m_ballShader = new Shader(m_pin3d.m_pd3dPrimaryDevice);
  #ifdef ENABLE_SDL
    m_ballShader->Load("ballShader.glfx", 0);
- #else
+   // In VR we scale the scene to the controller scale, so the shader needs to scale light range accordingly
+#ifdef ENABLE_VR
+   m_ballShader->SetFloat(SHADER_fSceneScale, m_pin3d.m_pd3dPrimaryDevice->m_scale);
+#else
+   m_ballShader->SetFloat(SHADER_fSceneScale, 1.0f);
+#endif
+#else
    m_ballShader->Load(g_ballShaderCode, sizeof(g_ballShaderCode));
- #endif
+#endif
 
    UpdateBallShaderMatrix();
 
