@@ -2410,13 +2410,6 @@ void RenderDevice::updateTableMatrix()
    tmp.SetIdentity();
    tmp.SetTranslation((m_roomx+m_tablex) / 100.0f, m_tablez / 100.0f, -(m_roomy+m_tabley) / 100.0f);//Locate front left corner of the table in the room -x is to the right, -y is up and -z is back - all units in meters
    m_tableWorld = m_tableWorld * tmp;
-
-   m_roomWorld.SetIdentity();
-
-   tmp.SetIdentity();
-   tmp.RotateYMatrix(ANGTORAD(180.f - m_roomOrientation));//Rotate room around VR height axis
-   tmp.SetIdentity();
-   tmp.SetTranslation((m_roomx) / 100.0f, 0.0f, -(m_roomy) / 100.0f); //!! unused?!
 }
 
 void RenderDevice::SetTransformVR()
