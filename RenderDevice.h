@@ -383,7 +383,6 @@ private:
    Matrix3D m_matProj[2];
    Matrix3D m_matView;
    Matrix3D m_tableWorld;
-   Matrix3D m_roomWorld;
    vr::TrackedDevicePose_t *m_rTrackedDevicePose;
    float m_scale;
 #endif
