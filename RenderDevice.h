@@ -260,7 +260,6 @@ public:
    void tableUp();
    void tableDown();
    void recenterTable();
-   void recenterRoom();
 
    float m_slope, m_orientation, m_tablex, m_tabley, m_tablez;
 
