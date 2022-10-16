@@ -14,7 +14,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (United States) resources
+// Anglais (États-Unis) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
@@ -2229,14 +2229,10 @@ BEGIN
     GROUPBOX        "Anti-Aliasing",IDC_STATIC,7,27,132,127
     GROUPBOX        "Reflections",IDC_STATIC,8,198,131,37
     GROUPBOX        "Button Assignments",IDC_STATIC,288,8,124,102
-    GROUPBOX        "",IDC_STATIC,294,22,54,39
-    PUSHBUTTON      "Room Rec",IDC_BTROOMRECENTER,296,23,50,14
-    CTEXT           "",IDC_ROOMREC_TEXT,296,37,50,8,SS_CENTERIMAGE
-    COMBOBOX        IDC_JOYROOMRECENTER,296,46,50,100,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
     GROUPBOX        "",IDC_STATIC,354,23,54,39
     PUSHBUTTON      "Table Rec",IDC_BTTABLERECENTER,356,23,50,14
     CTEXT           "",IDC_TABLEREC_TEXT,356,37,50,8,SS_CENTERIMAGE
-    COMBOBOX        IDC_JOYTABLERECENTER,357,48,50,100,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_JOYTABLERECENTER,356,48,50,100,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
     GROUPBOX        "",IDC_STATIC,293,67,54,39
     PUSHBUTTON      "Table up",IDC_BTTABLEUP,296,66,50,14
     CTEXT           "",IDC_TABLEUP_TEXT,296,80,50,8,SS_CENTERIMAGE
@@ -3938,7 +3934,7 @@ BEGIN
     IDS_STEP                "Step"
 END
 
-#endif    // English (United States) resources
+#endif    // Anglais (États-Unis) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

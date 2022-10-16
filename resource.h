@@ -440,7 +440,6 @@
 #define ID_RESUME                       294
 #define ID_DEBUGWINDOW                  295
 #define IDD_PHYSICS_OPTIONS             297
-#define IDC_ROOMREC_TEXT                298
 #define IDC_TABLEREC_TEXT               299
 #define IDC_TABLEUP_TEXT                300
 #define IDC_TABLEDOWN_TEXT              301
@@ -691,11 +690,9 @@
 #define IDC_JOYDEBUGGERCOMBO            423
 #define IDC_DYNAMIC_AO                  424
 #define IDC_DEBUGBALLSBUTTON2           424
-#define IDC_BTROOMRECENTER              884
 #define IDC_FORCE_ANISO                 425
 #define IDC_WIRE_DISTY                  425
 #define IDC_SCALE_BULB_MESH             425
-#define IDC_JOYROOMRECENTER             425
 #define IDC_MATERIAL_COMBO3             426
 #define IDC_BTTABLERECENTER             426
 #define IDC_GLOBAL_3DSTEREO             427

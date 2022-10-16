@@ -588,7 +588,7 @@ BOOL VROptionsDialog::OnInitDialog()
    SendMessage(GetDlgItem(IDC_COMBO_BLIT).GetHwnd(), CB_SETCURSEL, blitModeVR, 0);
 
    int key;
-   for (unsigned int i = eRoomRecenter; i <= eTableDown; ++i)
+   for (unsigned int i = eTableRecenter; i <= eTableDown; ++i)
       if (regkey_idc[i] != -1)
       {
          const HRESULT hr = LoadValue(regKey[RegName::Player], regkey_string[i], key);
@@ -599,16 +599,15 @@ BOOL VROptionsDialog::OnInitDialog()
          ::SetWindowLongPtr(hwndControl, GWLP_USERDATA, key);
       }
 
-   for (unsigned int i = 0; i <= 3; ++i)
+   for (unsigned int i = 0; i < 3; ++i)
    {
       HRESULT hr;
       int item, selected;
       switch (i)
       {
-      case 0: hr = LoadValue(regKey[RegName::Player], "JoyRoomRecenterKey"s, selected); item = IDC_JOYROOMRECENTER; break;
-      case 1: hr = LoadValue(regKey[RegName::Player], "JoyTableRecenterKey"s, selected); item = IDC_JOYTABLERECENTER; break;
-      case 2: hr = LoadValue(regKey[RegName::Player], "JoyTableUpKey"s, selected); item = IDC_JOYTABLEUP; break;
-      case 3: hr = LoadValue(regKey[RegName::Player], "JoyTableDownKey"s, selected); item = IDC_JOYTABLEDOWN; break;
+      case 0: hr = LoadValue(regKey[RegName::Player], "JoyTableRecenterKey"s, selected); item = IDC_JOYTABLERECENTER; break;
+      case 1: hr = LoadValue(regKey[RegName::Player], "JoyTableUpKey"s, selected); item = IDC_JOYTABLEUP; break;
+      case 2: hr = LoadValue(regKey[RegName::Player], "JoyTableDownKey"s, selected); item = IDC_JOYTABLEDOWN; break;
       }
       
       if (hr != S_OK)
@@ -659,12 +658,8 @@ BOOL VROptionsDialog::OnInitDialog()
    ::SetWindowLongPtr(GetHwnd(), GWLP_USERDATA, (size_t)pksw);
 
    // Set buttons to ignore keyboard shortcuts when using DirectInput
-   HWND hwndButton = GetDlgItem(IDC_BTROOMRECENTER).GetHwnd();
+   HWND hwndButton = GetDlgItem(IDC_BTTABLERECENTER).GetHwnd();
    g_ButtonProc2 = (WNDPROC)::GetWindowLongPtr(hwndButton, GWLP_WNDPROC);
-   ::SetWindowLongPtr(hwndButton, GWLP_WNDPROC, (size_t)MyKeyButtonProc2);
-   ::SetWindowLongPtr(hwndButton, GWLP_USERDATA, (size_t)pksw);
-
-   hwndButton = GetDlgItem(IDC_BTTABLERECENTER).GetHwnd();
    ::SetWindowLongPtr(hwndButton, GWLP_WNDPROC, (size_t)MyKeyButtonProc2);
    ::SetWindowLongPtr(hwndButton, GWLP_USERDATA, (size_t)pksw);
 
@@ -776,12 +771,6 @@ BOOL VROptionsDialog::OnCommand(WPARAM wParam, LPARAM lParam)
       {
          const size_t checked = SendDlgItemMessage(IDC_ENABLE_AO, BM_GETCHECK, 0, 0);
          GetDlgItem(IDC_DYNAMIC_AO).EnableWindow(checked ? 1 : 0);
-         break;
-      }
-      case IDC_BTROOMRECENTER:
-      {
-         if (HIWORD(wParam) == BN_CLICKED)
-            StartTimer(IDC_ROOMREC_TEXT);
          break;
       }
       case IDC_BTTABLERECENTER:
@@ -900,12 +889,11 @@ void VROptionsDialog::OnOK()
    selected = ::SendMessage(GetDlgItem(IDC_CAP_PUP).GetHwnd(), BM_GETCHECK, 0, 0);
    SaveValueBool(regKey[RegName::Player], "CapturePUP"s, selected != 0);
 
-   SetValue(IDC_JOYROOMRECENTER, regKey[RegName::Player], "JoyRoomRecenterKey");
    SetValue(IDC_JOYTABLERECENTER, regKey[RegName::Player], "JoyTableRecenterKey");
    SetValue(IDC_JOYTABLEUP, regKey[RegName::Player], "JoyTableUpKey");
    SetValue(IDC_JOYTABLEDOWN, regKey[RegName::Player], "JoyTableDownKey");
 
-    for (unsigned int i = eRoomRecenter; i <= eTableDown; ++i) if (regkey_idc[i] != -1)
+    for (unsigned int i = eTableRecenter; i <= eTableDown; ++i) if (regkey_idc[i] != -1)
     {
         const size_t key = ::GetWindowLongPtr(GetDlgItem(regkey_idc[i]).GetHwnd(), GWLP_USERDATA);
         SaveValueInt(regKey[RegName::Player], regkey_string[i], (int)key);

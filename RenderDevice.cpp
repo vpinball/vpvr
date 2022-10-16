@@ -2381,13 +2381,6 @@ void RenderDevice::recenterTable()
    updateTableMatrix();
 }
 
-//Change the position of the room, but keep the table at the same position in the room
-void RenderDevice::recenterRoom()
-{
-   recenterTable();
-   //TODO: new code when room is working
-}
-
 void RenderDevice::updateTableMatrix()
 {
    Matrix3D tmp;
