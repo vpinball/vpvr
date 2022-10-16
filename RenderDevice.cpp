@@ -2354,30 +2354,30 @@ void RenderDevice::UpdateVRPosition()
 
 void RenderDevice::tableUp()
 {
-   m_tablez += 1.0f;
-   if (m_tablez > 250.0f) m_tablez = 250.0f;
+   m_tablez += 20.0f;
+   if (m_tablez > 5000.0f) m_tablez = 5000.0f;
    updateTableMatrix();
 }
 
 void RenderDevice::tableDown()
 {
-   m_tablez -= 1.0f;
+   m_tablez -= 20.0f;
    if (m_tablez < 0.0f) m_tablez = 0.0f;
    updateTableMatrix();
 }
 
-//Do not change the position of the room
+// Reposition the player to be in front of the table
 void RenderDevice::recenterTable()
 {
-   //hmdPosition;
    m_orientation = -RADTOANG(atan2(hmdPosition.mDeviceToAbsoluteTracking.m[0][2], hmdPosition.mDeviceToAbsoluteTracking.m[0][0]));
    if (m_orientation < 0.0f) m_orientation += 360.0f;
-   const float w = 0.5f*(g_pplayer->m_ptable->m_right  - g_pplayer->m_ptable->m_left);
-   const float h =      (g_pplayer->m_ptable->m_bottom - g_pplayer->m_ptable->m_top) + 20.0f;
+   const float w = 0.5f*(g_pplayer->m_ptable->m_right  - g_pplayer->m_ptable->m_left); // Middle of the table width
+   const float h =      (g_pplayer->m_ptable->m_bottom - g_pplayer->m_ptable->m_top) + 0.2f / m_scale; // Bottom of the table + 20cm
    const float c = cos(ANGTORAD(m_orientation));
    const float s = sin(ANGTORAD(m_orientation));
-   m_tablex =  (hmdPosition.mDeviceToAbsoluteTracking.m[0][3] / m_scale) - c * w + s * h;
-   m_tabley = -(hmdPosition.mDeviceToAbsoluteTracking.m[2][3] / m_scale) + s * w + c * h;
+   m_tablex =  (hmdPosition.mDeviceToAbsoluteTracking.m[0][3] / m_scale) - c * w + s * h; // Offset by the controler position
+   m_tabley = -(hmdPosition.mDeviceToAbsoluteTracking.m[2][3] / m_scale) + s * w + c * h; // Offset by the controler position
+   m_tablez = 2000.0f;
    updateTableMatrix();
 }
 
@@ -2396,9 +2396,9 @@ void RenderDevice::updateTableMatrix()
    tmp.SetIdentity();
    tmp.RotateYMatrix(ANGTORAD(180.f - m_orientation));
    m_tableWorld = m_tableWorld * tmp;
-   //Locate front left corner of the table in the room -x is to the right, -y is up and -z is back - all units in meters
+   //Locate front left corner of the table in the room -x is to the right, -y is up and -z is back - all in VPX units
    tmp.SetIdentity();
-   tmp.SetTranslation(m_tablex, m_tablez / 100.0f, -m_tabley);
+   tmp.SetTranslation(m_tablex, m_tablez, -m_tabley);
    m_tableWorld = m_tableWorld * tmp;
 }
 
