@@ -264,7 +264,7 @@ copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"</Command>
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>.\;$(DXSDK_DIR)\Include;dialogs;shader;inc;pin;media;inc\win32xx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>ENABLE_SDL_INPUT;ENABLE_XINPUT;TWEAK_GL_SHADER;ENABLE_BAM;ENABLE_SDL;USE_DINPUT8;COR_ENABLE_PROFILING;WIN32;_DEBUG;_WINDOWS;MYDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENABLE_SDL_INPUT;ENABLE_BAM;ENABLE_SDL;USE_DINPUT8;COR_ENABLE_PROFILING;WIN32;_DEBUG;_WINDOWS;MYDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -390,7 +390,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>.\;$(DXSDK_DIR)\Include;dialogs;shader;inc;pin;media;inc\win32xx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>ENABLE_SDL_INPUT;ENABLE_XINPUT;TWEAK_GL_SHADER;ENABLE_BAM;ENABLE_SDL;USE_DINPUT8;COR_ENABLE_PROFILING;_DEBUG;_WINDOWS;MYDEBUG;DEBUGPHYSICS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENABLE_SDL_INPUT;ENABLE_BAM;ENABLE_SDL;USE_DINPUT8;COR_ENABLE_PROFILING;_DEBUG;_WINDOWS;MYDEBUG;DEBUGPHYSICS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -402,7 +402,6 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
-      <ShowIncludes>true</ShowIncludes>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <ResourceCompile>
@@ -527,7 +526,7 @@ copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <AdditionalIncludeDirectories>.\;$(DXSDK_DIR)\Include;dialogs;shader;inc;pin;media;inc\win32xx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>ENABLE_SDL_INPUT;ENABLE_XINPUT;TWEAK_GL_SHADER;ENABLE_BAM;ENABLE_SDL;USE_DINPUT8;WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENABLE_SDL_INPUT;ENABLE_BAM;ENABLE_SDL;USE_DINPUT8;WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -666,7 +665,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <AdditionalIncludeDirectories>.\;$(DXSDK_DIR)\Include;dialogs;shader;inc;pin;media;inc\win32xx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>ENABLE_SDL_INPUT;ENABLE_XINPUT;TWEAK_GL_SHADER;ENABLE_BAM;ENABLE_SDL;USE_DINPUT8;WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENABLE_SDL_INPUT;ENABLE_BAM;ENABLE_SDL;USE_DINPUT8;WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
