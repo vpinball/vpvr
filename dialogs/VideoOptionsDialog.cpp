@@ -5,10 +5,13 @@
 #define GET_WINDOW_MODES		WM_USER+100
 #define GET_FULLSCREENMODES		WM_USER+101
 
-constexpr float AAfactors[] = { 0.5f, 0.75f, 1.0f, 1.25f, (float)(4.0/3.0), 1.5f, 1.75f, 2.0f }; // factor is applied to width and to height, so 2.0f increases pixel count by 4. Additional values can be added.
+// factor is applied to width and to height, so 2.0f increases pixel count by 4. Additional values can be added.
+constexpr float AAfactors[] = { 0.5f, 0.75f, 1.0f, 1.25f, (float)(4.0/3.0), 1.5f, 1.75f, 2.0f };
+constexpr LPCSTR AAfactorNames[] = { "50%", "75%", "Disabled", "125%", "133%", "150%", "175%", "200%" };
 constexpr int AAfactorCount = 8;
 
 constexpr int MSAASamplesOpts[] = { 1, 4, 6, 8 };
+constexpr LPCSTR MSAASampleNames[] = { "Disabled", "4 Samples", "6 Samples", "8 Samples" };
 constexpr int MSAASampleCount = 4;
 
 static size_t getBestMatchingAAfactorIndex(float f)
@@ -82,9 +85,7 @@ void VideoOptionsDialog::ResetVideoPreferences(const unsigned int profile) // 0 
    }
 
    SendMessage(GetDlgItem(IDC_SSSLIDER).GetHwnd(), TBM_SETPOS, TRUE, getBestMatchingAAfactorIndex(1.0f));
-   SetDlgItemText(IDC_SSSLIDER_LABEL, "Supersampling Factor: 1.0");
    SendMessage(GetDlgItem(IDC_MSAASLIDER).GetHwnd(), TBM_SETPOS, TRUE, 1);
-   SetDlgItemText(IDC_MSAASLIDER_LABEL, "MSAA Samples: Disabled");
 
    SendMessage(GetDlgItem(IDC_DYNAMIC_DN).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_DYNAMIC_AO).GetHwnd(), BM_SETCHECK, profile == 2 ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -338,7 +339,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
    HWND hwnd = GetDlgItem(IDC_SSSLIDER).GetHwnd();
    SendMessage(hwnd, WM_SETREDRAW, FALSE, 0); // to speed up adding the entries :/
    for (size_t i = 0; i < AAfactorCount; ++i)
-      SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM) std::to_string(AAfactors[i]).c_str());
+      SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM) AAfactorNames[i]);
    const float AAfactor = LoadValueFloatWithDefault(regKey[RegName::Player], "AAFactor"s, LoadValueBoolWithDefault(regKey[RegName::Player], "USEAA", false) ? 1.5f : 1.0f);
    SendMessage(hwnd, CB_SETCURSEL, getBestMatchingAAfactorIndex(AAfactor), 0);
    SendMessage(hwnd, WM_SETREDRAW, TRUE, 0);
@@ -346,7 +347,7 @@ BOOL VideoOptionsDialog::OnInitDialog()
    hwnd = GetDlgItem(IDC_MSAASLIDER).GetHwnd();
    SendMessage(hwnd, WM_SETREDRAW, FALSE, 0); // to speed up adding the entries :/
    for (size_t i = 0; i < MSAASampleCount; ++i)
-      SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)std::to_string(MSAASamplesOpts[i]).c_str());
+      SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM) MSAASampleNames[i]);
    const int MSAASamples = LoadValueIntWithDefault(regKey[RegName::Player], "MSAASamples"s, 1);
    const int CurrMSAAPos = std::find(MSAASamplesOpts, MSAASamplesOpts + (sizeof(MSAASamplesOpts) / sizeof(MSAASamplesOpts[0])), MSAASamples) - MSAASamplesOpts;
    SendMessage(hwnd, CB_SETCURSEL, CurrMSAAPos, 0);
