@@ -605,13 +605,13 @@
 #define IDC_StretchMonitor              388
 #define IDI_RUBBER                      388
 #define DISPID_IMAGEMAPPING             389
-#define IDC_SSSLIDER                    389
 #define IDI_PLAY2                       389
 #define IDI_TRIGGER                     389
-#define IDC_MSAASLIDER                  390
+#define IDC_SUPER_SAMPLING_COMBO        389
 #define IDD_PROPTABLE_LIGHTSOURCES      390
 #define IDI_DECAL                       390
 #define IDC_PLUNGER_TYPE_COMBO          390
+#define IDC_MSAA_COMBO                  390
 #define IDD_SEARCH_SELECT_ELEMENT       391
 #define IDI_KICKER                      391
 #define IDD_DRAWING_ORDER               392
@@ -689,7 +689,6 @@
 #define IDC_TABLE_DIM_LIST              423
 #define IDC_JOYDEBUGGERCOMBO            423
 #define IDC_DYNAMIC_AO                  424
-#define IDC_DEBUGBALLSBUTTON2           424
 #define IDC_FORCE_ANISO                 425
 #define IDC_WIRE_DISTY                  425
 #define IDC_SCALE_BULB_MESH             425
@@ -762,10 +761,9 @@
 #define IDC_CORRECTION_Y                461
 #define IDC_MAT_ELASTICITY_FALLOFF      461
 #define IDC_ASPECT_RATIO_EDIT           461
-#define IDC_FXAACB                      462
+#define IDC_POST_PROCESS_COMBO          462
 #define IDC_ABOUT_VERSION               463
 #define IDC_GLOBAL_PF_REFLECTION        463
-#define IDC_FXAACB2                     463
 #define DISPID_PluFrames                464
 #define DISPID_Width                    465
 #define DISPID_ZAdjust                  466
@@ -853,7 +851,6 @@
 #define IDC_3D_STEREO_Y                 544
 #define IDC_ADAPTIVE_VSYNC              545
 #define IDC_STATIC_SOUNDDEVICE          546
-#define IDC_3D_STEREO2                  546
 #define IDC_DISPLAY_ID                  546
 #define IDD_PROPTABLE_PHYSICS2          547
 #define IDC_STATIC_SOUNDDEVICE2         547
@@ -905,9 +902,8 @@
 #define IDC_PLUNGERRETRACT              592
 #define IDC_DMD_SOURCE                  593
 #define IDC_IMPORT_NO_FORSYTH           593
-#define IDC_BG_SOURCE                   594
+#define IDC_SHARPEN_COMBO               594
 #define IDC_GET_INPLAYSTATE             595
-#define IDC_SHARPENCB                   596
 #define IDC_TURN_VR_ON                  597
 #define IDC_VR_PREVIEW_LABEL            600
 #define IDD_PROPRUBBER_PHYSICS          602
@@ -1006,7 +1002,6 @@
 #define IDC_IMPORT_ANIM_SEQUENCE        727
 #define IDC_DBG_LIGHT_ON_CHECK          727
 #define IDC_DEFAULT_GROUP_COLLECTION_CHECK 727
-#define IDC_PARALLAX_STEREO             727
 #define IDC_CVP_EDIT_AUTOCHARS          728
 #define IDC_DEFAULT_GROUP_COLLECTION_CHECK2 728
 #define IDC_ALWAYSVIEWSCRIPT            728
@@ -1123,7 +1118,6 @@
 #define IDC_GLOBAL_SSREFLECTION_CHECK   820
 #define IDC_GLOBAL_PFREFLECTION_CHECK   821
 #define IDC_BUMPER_SKIRT_ANIM           822
-#define IDC_GLOBAL_SSREFLECTION_CHECK2  822
 #define IDC_CUSTOM_PARAMS               823
 #define IDW_SPLITH                      823
 #define IDC_OBJECT_SPACE_NORMALMAP      824
@@ -1148,14 +1142,13 @@
 #define IDC_CAP_EXTDMD                  834
 #define IDC_VR_SCALE_LABEL              835
 #define IDC_LAYER_LISTCONTROL           836
-#define IDC_SSSLIDER_LABEL              836
+#define IDC_SUPER_SAMPLING_LABEL        836
 #define IDC_TREE1                       837
 #define IDC_LAYER_TREEVIEW              837
 #define IDC_NEAR_LABEL                  837
 #define IDC_LAYER_FILTER_STATIC         838
 #define IDC_FAR_LABEL                   838
 #define IDC_CAP_PUP                     839
-#define IDC_PostProcessAA_Label         839
 #define IDC_STATIC_ELEMENT_TYPE         839
 #define ID_APPLY                        840
 #define IDC_VR_MODE                     840
@@ -1163,8 +1156,8 @@
 #define IDC_DMD_MODE                    841
 #define IDC_BG_MODE                     842
 #define IDC_STATIC7                     842
-#define IDC_MSAASLIDER_LABEL            843
 #define IDC_STATIC6                     843
+#define IDC_MSAA_LABEL                  843
 #define IDC_STATIC11                    844
 #define IDC_CAP_PUP2                    844
 #define IDC_STATIC1                     845
@@ -1205,8 +1198,11 @@
 #define IDC_3D_STEREO_CONTRAST          879
 #define IDC_3D_STEREO_DESATURATION      880
 #define IDC_GLOBAL_DISABLE_LIGHTING_BALLS 881
-#define IDC_BACKGLASS_GROUP             882
-#define IDC_BACKGLASS_GROUP2            883
+#define IDC_POST_PROCESS_AA_LABEL       882
+#define IDC_SHARPEN_LABEL               883
+#define IDC_BG_SOURCE                   885
+#define IDC_BACKGLASS_GROUP             886
+#define IDC_BACKGLASS_GROUP2            887
 #define IDC_LAYBACK_EDIT                1040
 #define IDC_3D_STEREO_SEPARATION_EDIT   1041
 #define IDC_3D_STEREO_ZPD_EDIT          1042
@@ -1400,7 +1396,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        669
 #define _APS_NEXT_COMMAND_VALUE         4027
-#define _APS_NEXT_CONTROL_VALUE         885
+#define _APS_NEXT_CONTROL_VALUE         888
 #define _APS_NEXT_SYMED_VALUE           188
 #endif
 #endif

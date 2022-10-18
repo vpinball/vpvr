@@ -14,7 +14,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Anglais (États-Unis) resources
+// English (United States) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
@@ -316,10 +316,12 @@ BEGIN
     LTEXT           "Translator's web site address",IDC_TRANSWEBSITE,0,328,32,8,NOT WS_VISIBLE | WS_DISABLED
     LTEXT           "VP10 Active Development",IDC_STATIC,65,183,102,9
     LTEXT           "Fuzzel",IDC_STATIC,13,194,21,8
-    LTEXT           "Toxie",IDC_STATIC,48,194,37,9
-    LTEXT           "DJRobX",IDC_STATIC,90,194,32,8
+    LTEXT           "Toxie",IDC_STATIC,41,194,22,9
+    LTEXT           "DJRobX",IDC_STATIC,67,194,32,8
     LTEXT           "Caligula",IDC_STATIC,48,152,32,8
     LTEXT           "Rawnei",IDC_STATIC,48,162,32,8
+    LTEXT           "Vincent Bousquet",IDC_STATIC,150,194,70,8
+    LTEXT           "Jason Millard",IDC_STATIC,100,194,48,9
 END
 
 IDD_VIDEO_OPTIONS DIALOGEX 0, 0, 355, 419
@@ -331,14 +333,14 @@ BEGIN
     LISTBOX         IDC_SIZELIST,14,29,129,78,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     CONTROL         "Use always FS backdrop settings",IDC_BG_SET,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,111,131,10
     GROUPBOX        "Anti-Aliasing",IDC_STATIC,12,133,132,86
-    LTEXT           "MSAA Samples",IDC_MSAASLIDER_LABEL,15,143,60,10
-    LTEXT           "Supersampling",IDC_SSSLIDER_LABEL,15,157,60,10
-    LTEXT           "Post-processed AA",IDC_STATIC,15,171,60,10
-    LTEXT           "Sharpen",IDC_STATIC,15,185,60,10
-    COMBOBOX        IDC_MSAASLIDER,76,141,65,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_SSSLIDER,76,155,65,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_FXAACB,76,169,65,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_SHARPENCB,76,183,65,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "MSAA Samples",IDC_MSAA_LABEL,15,143,60,10
+    LTEXT           "Supersampling",IDC_SUPER_SAMPLING_LABEL,15,157,60,10
+    LTEXT           "Post-processed AA",IDC_POST_PROCESS_AA_LABEL,15,171,60,10
+    LTEXT           "Sharpen",IDC_SHARPEN_LABEL,15,185,60,10
+    COMBOBOX        IDC_MSAA_COMBO,76,141,65,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_SUPER_SAMPLING_COMBO,76,155,65,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_POST_PROCESS_COMBO,76,169,65,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_SHARPEN_COMBO,76,183,65,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     CONTROL         "Enable ScaleFX for internal DMD",IDC_SCALE_FX_DMD,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,198,121,10
     GROUPBOX        "Reflections",IDC_STATIC,12,219,132,38
@@ -2176,14 +2178,14 @@ FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     COMBOBOX        IDC_TURN_VR_ON,50,7,88,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "VR Mode",IDC_VR_MODE,10,9,38,10
-    CONTROL         "",IDC_MSAASLIDER,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,11,46,122,20
-    LTEXT           "MSAA Samples (4x Rec.):",IDC_MSAASLIDER_LABEL,13,38,117,8
-    CONTROL         "",IDC_SSSLIDER,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,11,76,122,20
-    LTEXT           "Supersampling Factor:",IDC_SSSLIDER_LABEL,13,67,117,8
-    COMBOBOX        IDC_FXAACB,75,99,60,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Post-processed AA",IDC_PostProcessAA_Label,12,101,61,8
-    COMBOBOX        IDC_SHARPENCB,75,115,60,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Sharpen",IDC_STATIC,12,117,61,8
+    CONTROL         "",IDC_MSAA_COMBO,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,11,46,122,20
+    LTEXT           "MSAA Samples (4x Rec.):",IDC_MSAA_LABEL,13,38,117,8
+    CONTROL         "",IDC_SUPER_SAMPLING_COMBO,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,11,76,122,20
+    LTEXT           "Supersampling Factor:",IDC_SUPER_SAMPLING_LABEL,13,67,117,8
+    COMBOBOX        IDC_POST_PROCESS_COMBO,75,99,60,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Post-processed AA",IDC_POST_PROCESS_AA_LABEL,12,101,61,8
+    COMBOBOX        IDC_SHARPEN_COMBO,75,115,60,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Sharpen",IDC_SHARPEN_LABEL,12,117,61,8
     CONTROL         "Enable ScaleFX for internal DMD",IDC_SCALE_FX_DMD,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,131,121,10
     LTEXT           "(post-processed Anti-Aliasing)",IDC_STATIC,24,141,101,8
@@ -2476,8 +2478,8 @@ BEGIN
 
     IDD_VIDEO_OPTIONS, DIALOG
     BEGIN
-        RIGHTMARGIN, 347
-        BOTTOMMARGIN, 414
+        RIGHTMARGIN, 353
+        BOTTOMMARGIN, 410
     END
 
     IDD_FONTDIALOG, DIALOG
@@ -2832,8 +2834,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 10,7,2,0
- PRODUCTVERSION 10,7,2,0
+ FILEVERSION 10,8,0,0
+ PRODUCTVERSION 10,8,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -2848,13 +2850,13 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "FileDescription", "Visual Pinball VR 10.7.2"
-            VALUE "FileVersion", "10, 7, 2, 0"
+            VALUE "FileDescription", "Visual Pinball VR 10.8.0"
+            VALUE "FileVersion", "10, 8, 0, 0"
             VALUE "InternalName", "Visual Pinball"
             VALUE "LegalCopyright", "Copyright 2000-2022"
             VALUE "OriginalFilename", "VPinballX.exe"
             VALUE "ProductName", "Visual Pinball VR"
-            VALUE "ProductVersion", "10, 7, 2, 0"
+            VALUE "ProductVersion", "10, 8, 0, 0"
         END
     END
     BLOCK "VarFileInfo"
@@ -3934,7 +3936,7 @@ BEGIN
     IDS_STEP                "Step"
 END
 
-#endif    // Anglais (États-Unis) resources
+#endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
