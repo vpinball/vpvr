@@ -4800,10 +4800,14 @@ void Player::PrepareVideoBuffersNormal()
    double w = (double)renderedRT->GetWidth(), h = (double)renderedRT->GetHeight();
    const float shiftedVerts[4 * 5] =
    {
-       1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / w), 0.0f + (float)(1.0 / h),
+       1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 1.0f, 0.0f,
+      -1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 0.0f, 0.0f,
+       1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 1.0f, 1.0f,
+      -1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 0.0f, 1.0f
+       /*1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / w), 0.0f + (float)(1.0 / h),
       -1.0f + m_ScreenOffset.x,  1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / w), 0.0f + (float)(1.0 / h),
        1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 1.0f + (float)(1.0 / w), 1.0f + (float)(1.0 / h),
-      -1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / w), 1.0f + (float)(1.0 / h)
+      -1.0f + m_ScreenOffset.x, -1.0f + m_ScreenOffset.y, 0.0f, 0.0f + (float)(1.0 / w), 1.0f + (float)(1.0 / h)*/
    };
 
    m_pin3d.m_pd3dPrimaryDevice->BeginScene();
