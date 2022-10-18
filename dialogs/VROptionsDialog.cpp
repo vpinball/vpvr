@@ -318,17 +318,17 @@ void VROptionsDialog::ResetVideoPreferences()
    sprintf_s(tmp, sizeof(tmp), "%f", nudgeStrength);
    SetDlgItemText(IDC_NUDGE_STRENGTH, tmp);
 
-   SendMessage(GetDlgItem(IDC_SSSLIDER).GetHwnd(), TBM_SETPOS, TRUE, getBestMatchingAAfactorIndex(1.0f));
-   SetDlgItemText(IDC_SSSLIDER_LABEL, "Supersampling Factor: 1.0");
-   SendMessage(GetDlgItem(IDC_MSAASLIDER).GetHwnd(), TBM_SETPOS, TRUE, 1);
-   SetDlgItemText(IDC_MSAASLIDER_LABEL, "MSAA Samples: Disabled");
+   SendMessage(GetDlgItem(IDC_SUPER_SAMPLING_COMBO).GetHwnd(), TBM_SETPOS, TRUE, getBestMatchingAAfactorIndex(1.0f));
+   SetDlgItemText(IDC_SUPER_SAMPLING_LABEL, "Supersampling Factor: 1.0");
+   SendMessage(GetDlgItem(IDC_MSAA_COMBO).GetHwnd(), TBM_SETPOS, TRUE, 1);
+   SetDlgItemText(IDC_MSAA_LABEL, "MSAA Samples: Disabled");
 
    SendMessage(GetDlgItem(IDC_DYNAMIC_AO).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_ENABLE_AO).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
    SendMessage(GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd(), BM_SETCHECK, BST_UNCHECKED, 0);
 
-   SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_SETCURSEL, 0, 0);
-   SendMessage(GetDlgItem(IDC_SHARPENCB).GetHwnd(), CB_SETCURSEL, 0, 0);
+   SendMessage(GetDlgItem(IDC_POST_PROCESS_COMBO).GetHwnd(), CB_SETCURSEL, 0, 0);
+   SendMessage(GetDlgItem(IDC_SHARPEN_COMBO).GetHwnd(), CB_SETCURSEL, 0, 0);
    SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_SETCHECK, false ? BST_CHECKED : BST_UNCHECKED, 0);
 
    constexpr float vrSlope = 6.5f;
@@ -395,11 +395,11 @@ BOOL VROptionsDialog::OnInitDialog()
       AddToolTip("Changes the visual effect/screen shaking when nudging the table.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_NUDGE_STRENGTH).GetHwnd());
       AddToolTip("Activate this to enable dynamic Ambient Occlusion.\r\n\r\nThis slows down performance, but enables contact shadows for dynamic objects.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_DYNAMIC_AO).GetHwnd());
       AddToolTip("Activate this to enable Ambient Occlusion.\r\nThis enables contact shadows between objects.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_ENABLE_AO).GetHwnd());
-      AddToolTip("Enables post-processed Anti-Aliasing.\r\n\r\nThese settings can make the image quality a bit smoother at cost of performance and a slight blurring.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_FXAACB).GetHwnd());
-      AddToolTip("Enables post-processed Sharpening of the image.\r\n'Bilateral CAS' is recommended,\nbut will harm performance on low-end graphics cards.\r\n'CAS' is less aggressive and faster, but also rather subtle.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_SHARPENCB).GetHwnd());
+      AddToolTip("Enables post-processed Anti-Aliasing.\r\n\r\nThese settings can make the image quality a bit smoother at cost of performance and a slight blurring.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_POST_PROCESS_COMBO).GetHwnd());
+      AddToolTip("Enables post-processed Sharpening of the image.\r\n'Bilateral CAS' is recommended,\nbut will harm performance on low-end graphics cards.\r\n'CAS' is less aggressive and faster, but also rather subtle.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_SHARPEN_COMBO).GetHwnd());
       AddToolTip("Select which eye(s) to be displayed on the computer screen.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_VR_PREVIEW).GetHwnd());
-      AddToolTip("Enables brute-force Up/Downsampling.\r\n\r\nThis delivers very good quality but has a significant impact on performance.\r\n\r\n2.0 means twice the resolution to be handled while rendering.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_SSSLIDER).GetHwnd());
-      AddToolTip("Set the amount of MSAA samples.\r\n\r\nMSAA can help reduce geometry aliasing in VR at the cost of performance and GPU memory.\r\n\r\nThis can really help improve image quality when not using supersampling.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_MSAASLIDER).GetHwnd());
+      AddToolTip("Enables brute-force Up/Downsampling.\r\n\r\nThis delivers very good quality but has a significant impact on performance.\r\n\r\n2.0 means twice the resolution to be handled while rendering.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_SUPER_SAMPLING_COMBO).GetHwnd());
+      AddToolTip("Set the amount of MSAA samples.\r\n\r\nMSAA can help reduce geometry aliasing in VR at the cost of performance and GPU memory.\r\n\r\nThis can really help improve image quality when not using supersampling.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_MSAA_COMBO).GetHwnd());
       AddToolTip("Enables post-processed reflections on all objects (beside the playfield).", hwndDlg, toolTipHwnd, GetDlgItem(IDC_GLOBAL_SSREFLECTION_CHECK).GetHwnd());
       AddToolTip("Enables playfield reflections.\r\n\r\n'Dynamic' is recommended and will give the best result but may harm performance.\r\n\r\n'Static Only' has no performance cost except in VR.\r\n\r\nOther options are trade-off between quality and performance.", hwndDlg, toolTipHwnd, GetDlgItem(IDC_GLOBAL_PF_REFLECTION).GetHwnd());
       //AMD Debug
@@ -414,7 +414,7 @@ BOOL VROptionsDialog::OnInitDialog()
    SetDlgItemText(IDC_NUDGE_STRENGTH, tmp);
 
    const float AAfactor = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "AAFactor", LoadValueBoolWithDefault(regKey[RegName::Player], "USEAA", false) ? 1.5f : 1.0f);
-   const HWND hwndSSSlider = GetDlgItem(IDC_SSSLIDER).GetHwnd();
+   const HWND hwndSSSlider = GetDlgItem(IDC_SUPER_SAMPLING_COMBO).GetHwnd();
    SendMessage(hwndSSSlider, TBM_SETRANGE, fTrue, MAKELONG(0, AAfactorCount - 1));
    SendMessage(hwndSSSlider, TBM_SETTICFREQ, 1, 0);
    SendMessage(hwndSSSlider, TBM_SETLINESIZE, 0, 1);
@@ -423,11 +423,11 @@ BOOL VROptionsDialog::OnInitDialog()
    SendMessage(hwndSSSlider, TBM_SETPOS, TRUE, getBestMatchingAAfactorIndex(AAfactor));
    char SSText[32];
    sprintf_s(SSText, sizeof(SSText), "Supersampling Factor: %.2f", AAfactor);
-   SetDlgItemText(IDC_SSSLIDER_LABEL, SSText);
+   SetDlgItemText(IDC_SUPER_SAMPLING_LABEL, SSText);
 
    const int MSAASamples = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "MSAASamples"s, 1);
    const auto CurrMSAAPos = std::find(MSAASamplesOpts, MSAASamplesOpts + (sizeof(MSAASamplesOpts) / sizeof(MSAASamplesOpts[0])), MSAASamples);
-   const HWND hwndMSAASlider = GetDlgItem(IDC_MSAASLIDER).GetHwnd();
+   const HWND hwndMSAASlider = GetDlgItem(IDC_MSAA_COMBO).GetHwnd();
    SendMessage(hwndMSAASlider, TBM_SETRANGE, fTrue, MAKELONG(0, MSAASampleCount - 1));
    SendMessage(hwndMSAASlider, TBM_SETTICFREQ, 1, 0);
    SendMessage(hwndMSAASlider, TBM_SETLINESIZE, 0, 1);
@@ -443,7 +443,7 @@ BOOL VROptionsDialog::OnInitDialog()
    {
       sprintf_s(MSAAText, sizeof(MSAAText), "MSAA Samples: %d", MSAASamples);
    }
-   SetDlgItemText(IDC_MSAASLIDER_LABEL, MSAAText);
+   SetDlgItemText(IDC_MSAA_LABEL, MSAAText);
 
    bool useAO = LoadValueBoolWithDefault(regKey[RegName::PlayerVR], "DynamicAO"s, LoadValueBoolWithDefault(regKey[RegName::Player], "DynamicAO", false));
    SendMessage(GetDlgItem(IDC_DYNAMIC_AO).GetHwnd(), BM_SETCHECK, useAO ? BST_CHECKED : BST_UNCHECKED, 0);
@@ -479,7 +479,7 @@ BOOL VROptionsDialog::OnInitDialog()
    SendMessage(hwnd, WM_SETREDRAW, TRUE, 0);
 
    const int fxaa = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "FXAA"s, LoadValueIntWithDefault(regKey[RegName::Player], "FXAA"s, 0));
-   hwnd = GetDlgItem(IDC_FXAACB).GetHwnd();
+   hwnd = GetDlgItem(IDC_POST_PROCESS_COMBO).GetHwnd();
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Disabled");
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Fast FXAA");
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM)"Standard FXAA");
@@ -490,7 +490,7 @@ BOOL VROptionsDialog::OnInitDialog()
    SendMessage(hwnd, CB_SETCURSEL, fxaa, 0);
 
    const int sharpen = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "Sharpen"s, 0);
-   hwnd = GetDlgItem(IDC_SHARPENCB).GetHwnd();
+   hwnd = GetDlgItem(IDC_SHARPEN_COMBO).GetHwnd();
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM) "Disabled");
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM) "CAS");
    SendMessage(hwnd, CB_ADDSTRING, 0, (LPARAM) "Bilateral CAS");
@@ -710,15 +710,15 @@ INT_PTR VROptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
    }
    case WM_HSCROLL:
       {
-         if ((HWND)lParam == GetDlgItem(IDC_SSSLIDER).GetHwnd()) {
-            const size_t posAAfactor = SendMessage(GetDlgItem(IDC_SSSLIDER).GetHwnd(), TBM_GETPOS, 0, 0);//Reading the value from wParam does not work reliable
+         if ((HWND)lParam == GetDlgItem(IDC_SUPER_SAMPLING_COMBO).GetHwnd()) {
+            const size_t posAAfactor = SendMessage(GetDlgItem(IDC_SUPER_SAMPLING_COMBO).GetHwnd(), TBM_GETPOS, 0, 0);//Reading the value from wParam does not work reliable
             const float AAfactor = ((posAAfactor) < AAfactorCount) ? AAfactors[posAAfactor] : 1.0f;
             char newText[32];
             sprintf_s(newText, sizeof(newText), "Supersampling Factor: %.2f", AAfactor);
-            SetDlgItemText(IDC_SSSLIDER_LABEL, newText);
+            SetDlgItemText(IDC_SUPER_SAMPLING_LABEL, newText);
          }
-         else if ((HWND)lParam == GetDlgItem(IDC_MSAASLIDER).GetHwnd()) {
-            const size_t posMSAA = SendMessage(GetDlgItem(IDC_MSAASLIDER).GetHwnd(), TBM_GETPOS, 0, 0);//Reading the value from wParam does not work reliable
+         else if ((HWND)lParam == GetDlgItem(IDC_MSAA_COMBO).GetHwnd()) {
+            const size_t posMSAA = SendMessage(GetDlgItem(IDC_MSAA_COMBO).GetHwnd(), TBM_GETPOS, 0, 0);//Reading the value from wParam does not work reliable
             const int MSAASampleAmount = MSAASamplesOpts[posMSAA];
             char newText[52];
             if (MSAASampleAmount == 1)
@@ -729,7 +729,7 @@ INT_PTR VROptionsDialog::DialogProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
             {
                sprintf_s(newText, sizeof(newText), "MSAA Samples: %d", MSAASampleAmount);
             }
-            SetDlgItemText(IDC_MSAASLIDER_LABEL, newText);
+            SetDlgItemText(IDC_MSAA_LABEL, newText);
          }
          break;
       }
@@ -801,12 +801,12 @@ void VROptionsDialog::OnOK()
 {
    SaveValue(regKey[RegName::PlayerVR], "NudgeStrength"s, GetDlgItemText(IDC_NUDGE_STRENGTH).c_str());
 
-   LRESULT fxaa = SendMessage(GetDlgItem(IDC_FXAACB).GetHwnd(), CB_GETCURSEL, 0, 0);
+   LRESULT fxaa = SendMessage(GetDlgItem(IDC_POST_PROCESS_COMBO).GetHwnd(), CB_GETCURSEL, 0, 0);
    if (fxaa == LB_ERR)
       fxaa = 0;
    SaveValueInt(regKey[RegName::PlayerVR], "FXAA"s, (int)fxaa);
 
-   LRESULT sharpen = SendMessage(GetDlgItem(IDC_SHARPENCB).GetHwnd(), CB_GETCURSEL, 0, 0);
+   LRESULT sharpen = SendMessage(GetDlgItem(IDC_SHARPEN_COMBO).GetHwnd(), CB_GETCURSEL, 0, 0);
    if (sharpen == LB_ERR)
       sharpen = 0;
    SaveValueInt(regKey[RegName::PlayerVR], "Sharpen"s, (int)sharpen);
@@ -814,11 +814,11 @@ void VROptionsDialog::OnOK()
    const bool scaleFX_DMD = SendMessage(GetDlgItem(IDC_SCALE_FX_DMD).GetHwnd(), BM_GETCHECK, 0, 0) != 0;
    SaveValueBool(regKey[RegName::PlayerVR], "ScaleFXDMD"s, scaleFX_DMD);
 
-   const size_t AAfactorIndex = SendMessage(GetDlgItem(IDC_SSSLIDER).GetHwnd(), TBM_GETPOS, 0, 0);
+   const size_t AAfactorIndex = SendMessage(GetDlgItem(IDC_SUPER_SAMPLING_COMBO).GetHwnd(), TBM_GETPOS, 0, 0);
    const float AAfactor = (AAfactorIndex < AAfactorCount) ? AAfactors[AAfactorIndex] : 1.0f;
    SaveValueFloat(regKey[RegName::PlayerVR], "AAFactor"s, AAfactor);
 
-   const size_t MSAASamplesIndex = SendMessage(GetDlgItem(IDC_MSAASLIDER).GetHwnd(), TBM_GETPOS, 0, 0);
+   const size_t MSAASamplesIndex = SendMessage(GetDlgItem(IDC_MSAA_COMBO).GetHwnd(), TBM_GETPOS, 0, 0);
    const int MSAASamples = (MSAASamplesIndex < MSAASampleCount) ? MSAASamplesOpts[MSAASamplesIndex] : 1;
    SaveValueInt(regKey[RegName::PlayerVR], "MSAASamples"s, MSAASamples);
 
