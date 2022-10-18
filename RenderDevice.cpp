@@ -607,8 +607,6 @@ int getPrimaryDisplay()
 
 ////////////////////////////////////////////////////////////////////
 
-VertexBuffer* RenderDevice::m_quadVertexBuffer = nullptr;
-VertexBuffer* RenderDevice::m_quadDynVertexBuffer = nullptr;
 unsigned int RenderDevice::m_stats_drawn_triangles = 0;
 
 #ifndef ENABLE_SDL
@@ -825,6 +823,8 @@ RenderDevice::RenderDevice(const HWND hwnd, const int width, const int height, c
     NVAPIinit = false;
 
     m_current_renderstate.state = m_renderstate.state = 0;
+    m_quadVertexBuffer = nullptr;
+    m_quadDynVertexBuffer = nullptr;
 
     m_stats_drawn_triangles = 0;
 
@@ -867,6 +867,9 @@ RenderDevice::RenderDevice(const HWND hwnd, const int width, const int height, c
     m_curTextureUpdates = m_frameTextureUpdates = 0;
 
     m_curLockCalls = m_frameLockCalls = 0; //!! meh
+
+    m_SMAAareaTexture = nullptr;
+    m_SMAAsearchTexture = nullptr;
 
     m_pOffscreenMSAABackBufferTexture = nullptr;
     m_pOffscreenBackBufferTexture = nullptr;
@@ -1322,13 +1325,28 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    //CreateVertexDeclaration( VertexNormalTexelTexelElement, &m_pVertexNormalTexelTexelDeclaration );
    CreateVertexDeclaration(VertexTrafoTexelElement, &m_pVertexTrafoTexelDeclaration);
 
-   if(m_FXAA == Quality_SMAA)
-       UploadAndSetSMAATextures();
-   else
+   // Vertex buffers
+   m_quadVertexBuffer = new VertexBuffer(this, 4, 0, MY_D3DFVF_TEX); //!! have 2 for both devices?
+   Vertex3D_TexelOnly* bufvb;
+   RenderDevice::m_quadVertexBuffer->lock(0, 0, (void**)&bufvb, VertexBuffer::WRITEONLY);
+   static constexpr float verts[4 * 5] =
    {
-      m_SMAAareaTexture = nullptr;
-      m_SMAAsearchTexture = nullptr;
-   }
+       1.0f,  1.0f, 0.0f, 1.0f, 0.0f,
+      -1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
+       1.0f, -1.0f, 0.0f, 1.0f, 1.0f,
+      -1.0f, -1.0f, 0.0f, 0.0f, 1.0f
+   };
+   memcpy(bufvb, verts, 4 * sizeof(Vertex3D_TexelOnly));
+   RenderDevice::m_quadVertexBuffer->unlock();
+
+#ifdef ENABLE_SDL
+   m_quadDynVertexBuffer = new VertexBuffer(this, 4, USAGE_DYNAMIC, MY_D3DFVF_TEX);
+#endif
+
+   //
+
+   if (m_FXAA == Quality_SMAA)
+       UploadAndSetSMAATextures();
 
    // Setup a defined initial render state
    SetRenderState(ALPHABLENDENABLE, RS_FALSE);

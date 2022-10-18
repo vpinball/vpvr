@@ -1174,9 +1174,9 @@ void Ramp::PrepareHabitrail()
    SAFE_BUFFER_RELEASE(m_dynamicVertexBuffer);
    SAFE_BUFFER_RELEASE(m_dynamicVertexBuffer2);
 
-   VertexBuffer::CreateVertexBuffer(m_numVertices, 0, MY_D3DFVF_NOTEX2_VERTEX, &m_dynamicVertexBuffer, PRIMARY_DEVICE); //!! use USAGE_DYNAMIC if it would actually be "really" dynamic
+   m_dynamicVertexBuffer = new VertexBuffer(g_pplayer->m_pin3d.m_pd3dPrimaryDevice, m_numVertices, 0, MY_D3DFVF_NOTEX2_VERTEX); //!! use USAGE_DYNAMIC if it would actually be "really" dynamic
    if (m_d.m_type != RampType1Wire)
-      VertexBuffer::CreateVertexBuffer(m_numVertices, 0, MY_D3DFVF_NOTEX2_VERTEX, &m_dynamicVertexBuffer2, PRIMARY_DEVICE); //!! use USAGE_DYNAMIC if it would actually be "really" dynamic
+      m_dynamicVertexBuffer2 = new VertexBuffer(g_pplayer->m_pin3d.m_pd3dPrimaryDevice, m_numVertices, 0, MY_D3DFVF_NOTEX2_VERTEX); //!! use USAGE_DYNAMIC if it would actually be "really" dynamic
 
    // Draw the floor of the ramp.
    Vertex3D_NoTex2 *buf;
@@ -1938,6 +1938,7 @@ STDMETHODIMP Ramp::put_OverwritePhysics(VARIANT_BOOL newVal)
     return S_OK;
 }
 
+
 void Ramp::ExportMesh(ObjLoader& loader)
 {
    if (m_d.m_visible)
@@ -2416,7 +2417,7 @@ void Ramp::GenerateVertexBuffer()
    GenerateRampMesh(&tmpBuffer);
 
    SAFE_BUFFER_RELEASE(m_dynamicVertexBuffer);
-   VertexBuffer::CreateVertexBuffer(m_numVertices * 3, 0, MY_D3DFVF_NOTEX2_VERTEX, &m_dynamicVertexBuffer, PRIMARY_DEVICE); //!! use USAGE_DYNAMIC if it would actually be "really" dynamic
+   m_dynamicVertexBuffer = new VertexBuffer(g_pplayer->m_pin3d.m_pd3dPrimaryDevice, m_numVertices * 3, 0, MY_D3DFVF_NOTEX2_VERTEX); //!! use USAGE_DYNAMIC if it would actually be "really" dynamic
 
    Vertex3D_NoTex2 *buf;
    m_dynamicVertexBuffer->lock(0, 0, (void**)&buf, VertexBuffer::WRITEONLY);
