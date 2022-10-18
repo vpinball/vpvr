@@ -341,15 +341,14 @@ BEGIN
     COMBOBOX        IDC_SHARPENCB,76,183,65,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     CONTROL         "Enable ScaleFX for internal DMD",IDC_SCALE_FX_DMD,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,198,121,10
-    CONTROL         "Stretch Ball with Table",IDC_StretchNo,"Button",BS_AUTORADIOBUTTON | WS_GROUP,254,21,83,10
-    CONTROL         "Don't stretch the Ball",IDC_StretchYes,"Button",BS_AUTORADIOBUTTON,254,32,81,10
-    CONTROL         "Cabinet anti-stretch the ball",IDC_StretchMonitor,
-                    "Button",BS_AUTORADIOBUTTON,254,43,91,10
-    GROUPBOX        "Aspect Ratio Offset",IDC_STATIC,256,58,85,42
-    LTEXT           "X",IDC_STATIC,263,71,8,8
-    EDITTEXT        IDC_CORRECTION_X,273,69,40,12,ES_AUTOHSCROLL
-    LTEXT           "Y",IDC_STATIC,263,85,8,8
-    EDITTEXT        IDC_CORRECTION_Y,273,83,40,12,ES_AUTOHSCROLL
+    GROUPBOX        "Reflections",IDC_STATIC,12,219,132,38
+    LTEXT           "Playfield",IDC_STATIC,16,231,33,10
+    COMBOBOX        IDC_GLOBAL_PF_REFLECTION,49,229,92,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Screen Space Reflections",IDC_GLOBAL_SSREFLECTION_CHECK,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,243,97,10
+    GROUPBOX        "Ambient Occlusion",IDC_STATIC,12,261,132,38
+    CONTROL         "Enable",IDC_ENABLE_AO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,272,72,10
+    CONTROL         "Update in-game (quality)",IDC_DYNAMIC_AO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,283,87,10
     COMBOBOX        IDC_3D_STEREO,15,315,118,60,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     CONTROL         "Use Y-Axis (Cabinet/Rotated Screen)",IDC_3D_STEREO_Y,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,15,330,125,10
@@ -374,12 +373,16 @@ BEGIN
     LTEXT           "Ball Decal",IDC_STATIC,159,66,33,8
     CONTROL         "Disable Lighting",IDC_GLOBAL_DISABLE_LIGHTING_BALLS,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,159,90,86,10
-    GROUPBOX        "Ambient Occlusion",IDC_STATIC,12,261,132,38
-    CONTROL         "Enable",IDC_ENABLE_AO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,272,72,10
-    CONTROL         "Update in-game (quality)",IDC_DYNAMIC_AO,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,17,283,87,10
-    CONTROL         "Screen Space Reflections",IDC_GLOBAL_SSREFLECTION_CHECK,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,16,243,97,10
-    LTEXT           "Playfield",IDC_STATIC,16,231,33,10
+    CONTROL         "Stretch Ball with Table",IDC_StretchNo,"Button",BS_AUTORADIOBUTTON | WS_GROUP,254,21,83,10
+    CONTROL         "Don't stretch the Ball",IDC_StretchYes,"Button",BS_AUTORADIOBUTTON,254,32,81,10
+    CONTROL         "Cabinet anti-stretch the ball",IDC_StretchMonitor,
+                    "Button",BS_AUTORADIOBUTTON,254,43,91,10
+    GROUPBOX        "Aspect Ratio Offset",IDC_STATIC,256,58,85,42
+    LTEXT           "X",IDC_STATIC,263,71,8,8
+    EDITTEXT        IDC_CORRECTION_X,273,69,40,12,ES_AUTOHSCROLL
+    LTEXT           "Y",IDC_STATIC,263,85,8,8
+    EDITTEXT        IDC_CORRECTION_Y,273,83,40,12,ES_AUTOHSCROLL
+    CONTROL         "BAM Headtracking",IDC_HEADTRACKING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,154,109,73,10
     LTEXT           "Visual Nudge Strength",IDC_STATIC,231,110,71,12
     EDITTEXT        IDC_NUDGE_STRENGTH,304,109,36,12,ES_RIGHT | ES_AUTOHSCROLL
     CONTROL         "Enable",IDC_DYNAMIC_DN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,162,134,36,10
@@ -426,9 +429,6 @@ BEGIN
     LTEXT           "(Cabinet/Rotated Screen usage)",IDC_STATIC,24,121,121,8
     GROUPBOX        "Fullscreen",IDC_STATIC,158,251,183,43
     LTEXT           "(post-processed Anti-Aliasing)",IDC_STATIC,29,208,101,8
-    GROUPBOX        "Reflections",IDC_STATIC,12,219,132,38
-    COMBOBOX        IDC_GLOBAL_PF_REFLECTION,49,229,92,100,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "BAM Headtracking",IDC_HEADTRACKING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,154,109,73,10
 END
 
 IDD_FONTDIALOG DIALOG 0, 0, 316, 167
