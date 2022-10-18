@@ -2170,9 +2170,6 @@ void Player::InitStatic()
       if (accumulationSurface)
       {
          RenderStaticMirror();
-         //FIXME debug 
-         //m_pin3d.m_pd3dPrimaryDevice->GetMirrorRenderTarget(true)->Activate();
-         //m_pin3d.m_pddsStatic->Activate();
 
          // now render everything else
          for (size_t i = 0; i < m_ptable->m_vedit.size(); i++)
@@ -2211,7 +2208,7 @@ void Player::InitStatic()
          m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_CCW);
 
          // Rendering is done to m_pin3d.m_pddsStatic then accumulated to accumulationSurface
-         // We use the framebuffer mirror shader wich copy a weighted version of the bound texture
+         // We use the framebuffer mirror shader which copies a weighted version of the bound texture
          accumulationSurface->Activate(true);
          RenderDevice::RenderStateCache initial_state;
          m_pin3d.m_pd3dPrimaryDevice->CopyRenderStates(true, initial_state);
