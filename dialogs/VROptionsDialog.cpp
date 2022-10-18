@@ -883,11 +883,11 @@ void VROptionsDialog::OnOK()
    const size_t bgSource = SendMessage(GetDlgItem(IDC_BG_SOURCE).GetHwnd(), CB_GETCURSEL, 0, 0);
    SaveValueInt(regKey[RegName::PlayerVR], "BGsource"s, (int)bgSource);
 
-   bool selected = ::SendMessage(GetDlgItem(IDC_CAP_EXTDMD).GetHwnd(), BM_GETCHECK, 0, 0);
-   SaveValueBool(regKey[RegName::Player], "CaptureExternalDMD"s, selected != 0);
+   bool selected = ::SendMessage(GetDlgItem(IDC_CAP_EXTDMD).GetHwnd(), BM_GETCHECK, 0, 0) != 0;
+   SaveValueBool(regKey[RegName::Player], "CaptureExternalDMD"s, selected);
 
-   selected = ::SendMessage(GetDlgItem(IDC_CAP_PUP).GetHwnd(), BM_GETCHECK, 0, 0);
-   SaveValueBool(regKey[RegName::Player], "CapturePUP"s, selected != 0);
+   selected = ::SendMessage(GetDlgItem(IDC_CAP_PUP).GetHwnd(), BM_GETCHECK, 0, 0) != 0;
+   SaveValueBool(regKey[RegName::Player], "CapturePUP"s, selected);
 
    SetValue(IDC_JOYTABLERECENTER, regKey[RegName::Player], "JoyTableRecenterKey");
    SetValue(IDC_JOYTABLEUP, regKey[RegName::Player], "JoyTableUpKey");
