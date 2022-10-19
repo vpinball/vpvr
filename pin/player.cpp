@@ -3438,11 +3438,6 @@ void Player::UpdatePhysics()
 
 void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwidth, const float DMDheight, const COLORREF DMDcolor, const float intensity)
 {
-   bool isExtCapture = false;
-#ifdef ENABLE_SDL
-   // If DMD capture is enabled check if external DMD exists and update m_texdmd with captured data (for capturing UltraDMD+P-ROC DMD)
-   isExtCapture = captureExternalDMD(); 
-#endif
    if (m_texdmd)
    {
       float x = DMDposx;
@@ -3452,13 +3447,9 @@ void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwi
       RenderDevice::RenderStateCache initial_state;
       m_pin3d.m_pd3dPrimaryDevice->CopyRenderStates(true, initial_state);
 
-      //const float width = m_pin3d.m_useAA ? 2.0f*(float)m_width : (float)m_width; //!! AA ?? -> should just work
-      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD); //!! DMD_UPSCALE ?? -> should just work
-
 #ifdef ENABLE_SDL
-      // If we're capturing Freezy DMD switch to ext technique to avoid incorrect colorization
-      if (isExtCapture)
-         m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD_ext);
+      // If DMD capture is enabled check if external DMD exists and update m_texdmd with captured data (for capturing UltraDMD+P-ROC DMD)
+      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTechnique(m_capExtDMD ? SHADER_TECHNIQUE_basic_DMD_ext : SHADER_TECHNIQUE_basic_DMD); //!! DMD_UPSCALE ?? -> should just work
 
       if (m_pin3d.m_backGlass)
       {
@@ -3467,6 +3458,9 @@ void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwi
          m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
          m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_NONE); // is this really necessary ?
       }
+#else
+      //const float width = m_pin3d.m_useAA ? 2.0f*(float)m_width : (float)m_width; //!! AA ?? -> should just work
+      m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD); //!! DMD_UPSCALE ?? -> should just work
 #endif
 
       float DMDVerts[4 * 5] =
@@ -5365,6 +5359,20 @@ void Player::Render()
    c_traversed = 0;
    c_tested = 0;
    c_deepTested = 0;
+#endif
+
+#ifdef ENABLE_SDL
+   // Trigger captures
+   if (m_capExtDMD  && !captureExternalDMD())
+   {
+      if (m_texdmd != nullptr)
+      {
+         m_pin3d.m_pd3dPrimaryDevice->m_texMan.UnloadTexture(m_texdmd);
+         delete m_texdmd;
+         m_texdmd = nullptr;
+      }
+   }
+
 #endif
 
    m_LastKnownGoodCounter++;
