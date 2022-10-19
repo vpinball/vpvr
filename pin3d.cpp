@@ -652,12 +652,6 @@ void Pin3D::InitLights()
    g_pplayer->m_ptable->m_Light[1].pos.y = g_pplayer->m_ptable->m_bottom*(float)(2.0 / 3.0);
    g_pplayer->m_ptable->m_Light[0].pos.z = g_pplayer->m_ptable->m_lightHeight;
    g_pplayer->m_ptable->m_Light[1].pos.z = g_pplayer->m_ptable->m_lightHeight;
-   if (m_stereo3D == STEREO_VR)
-   {
-      // Move the 2 lights upper in VR to limit interaction with the VR room
-      g_pplayer->m_ptable->m_Light[0].pos.z += 5000.0f;
-      g_pplayer->m_ptable->m_Light[1].pos.z += 5000.0f;
-   }
 
    vec4 emission = convertColor(g_pplayer->m_ptable->m_Light[0].emission);
    emission.x *= g_pplayer->m_ptable->m_lightEmissionScale*g_pplayer->m_globalEmissionScale;
