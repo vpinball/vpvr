@@ -218,7 +218,7 @@ BackGlass::~BackGlass()
 
 void BackGlass::Render()
 {
-   if (g_pplayer->m_capPUP && capturePUP())
+   if (g_pplayer->m_texPUP)
    {
       m_backgroundTexture = m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texPUP, SF_TRILINEAR, SA_CLAMP, SA_CLAMP, false);
       m_backglass_width = g_pplayer->m_texPUP->width();
