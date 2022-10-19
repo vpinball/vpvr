@@ -2131,15 +2131,17 @@ void Player::InitStatic()
    // if rendering static/with heavy oversampling, disable the aniso/trilinear filter to get a sharper/more precise result overall!
    if (!m_dynamicMode)
    {
-      // The code will fail if the static render target is MSAA (the copy operation we are performing are not allowed)
+      // The code will fail if the static render target is MSAA (the copy operation we are performing is not allowed)
       assert(!m_pin3d.m_pddsStatic->IsMSAA());
       accumulationSurface = m_pin3d.m_pddsStatic->Duplicate();
       // set up the texture filter again, so that this is triggered correctly
       m_pin3d.m_pd3dPrimaryDevice->ForceAnisotropicFiltering(false);
    }
 
+   g_pvp->ProfileLog("Static PreRender Start"s);
+
    //#define STATIC_PRERENDER_ITERATIONS_KOROBOV 7.0 // for the (commented out) lattice-based QMC oversampling, 'magic factor', depending on the the number of iterations!
-   // loop for X times and accumulate/average these renderings on CPU side
+   // loop for X times and accumulate/average these renderings
    // NOTE: iter == 0 MUST ALWAYS PRODUCE an offset of 0,0!
    for (int iter = m_dynamicMode ? 0 : (STATIC_PRERENDER_ITERATIONS - 1); iter >= 0; --iter) // just do one iteration if in dynamic camera/light/material tweaking mode
    {
@@ -2148,16 +2150,15 @@ void Player::InitStatic()
       float u1 = xyLDBNbnot[iter*2  ];  //      (float)iter*(float)(1.0                                /STATIC_PRERENDER_ITERATIONS);
       float u2 = xyLDBNbnot[iter*2+1];  //fmodf((float)iter*(float)(STATIC_PRERENDER_ITERATIONS_KOROBOV/STATIC_PRERENDER_ITERATIONS), 1.f);
       // the following line implements filter importance sampling for a small gauss (i.e. less jaggies as it also samples neighboring pixels) -> but also potentially more artifacts in compositing!
-      gaussianDistribution(u1, u2, 0.5f, 0.5f); //!! first 0.5 could be increased for more blur, but is pretty much what is recommended
+      gaussianDistribution(u1, u2, 0.5f, 0.0f); //!! first 0.5 could be increased for more blur, but is pretty much what is recommended
       // sanity check to be sure to limit filter area to 3x3 in practice, as the gauss transformation is unbound (which is correct, but for our use-case/limited amount of samples very bad)
-      assert(u1 > -1.f && u1 < 2.f);
-      assert(u2 > -1.f && u2 < 2.f);
+      assert(u1 > -1.5f && u1 < 1.5f);
+      assert(u2 > -1.5f && u2 < 1.5f);
       // Last iteration MUST set a sample offset of 0,0 so that final depth buffer features 'correctly' centered pixel sample
-      if (iter == 0)
-         assert(u1 == 0.5f && u2 == 0.5f);
+      assert(iter != 0 || (u1 == 0.f && u2 == 0.f));
 
       // Setup Camera,etc matrices for each iteration.
-      m_pin3d.InitLayout(m_ptable->m_BG_enable_FSS, m_ptable->GetMaxSeparation(), u1 - 0.5f, u2 - 0.5f);
+      m_pin3d.InitLayout(m_ptable->m_BG_enable_FSS, m_ptable->GetMaxSeparation(), u1, u2);
 
       // Now begin rendering of static buffer
       m_pin3d.m_pd3dPrimaryDevice->BeginScene();
@@ -2222,7 +2223,11 @@ void Player::InitStatic()
          if (iter == STATIC_PRERENDER_ITERATIONS - 1)
             m_pin3d.m_pd3dPrimaryDevice->Clear(clearType::TARGET, 0, 1.0f, 0L);
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_fb_mirror);
-         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetFloat(SHADER_mirrorFactor, (float)(1.0 / STATIC_PRERENDER_ITERATIONS));
+         const vec4 fb_inv_resolution((float)(0.5 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetWidth()),
+            (float)(0.5 / (double)m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetHeight()), 1.0f, 1.0f);
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &fb_inv_resolution);
+         const vec4 whm = vec4((float)m_pin3d.m_pddsStatic->GetWidth(), (float)m_pin3d.m_pddsStatic->GetHeight(), (float)STATIC_PRERENDER_ITERATIONS, 0.0f);
+         m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_cWidth_Height_MirrorAmount, &whm);
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_mirror, m_pin3d.m_pddsStatic->GetColorSampler());
          m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
          m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
@@ -2249,6 +2254,8 @@ void Player::InitStatic()
    }
 
    m_isRenderingStatic = false;
+
+   g_pvp->ProfileLog("AO PreRender Start"s);
 
    // Now finalize static buffer with non-dynamic AO
    // Dynamic AO disabled? -> Pre-Render Static AO
@@ -2326,6 +2333,8 @@ void Player::InitStatic()
 
       m_pin3d.m_pd3dPrimaryDevice->EndScene();
    }
+
+   g_pvp->ProfileLog("AO/Static PreRender End"s);
 }
 
 Ball *Player::CreateBall(const float x, const float y, const float z, const float vx, const float vy, const float vz, const float radius, const float mass)

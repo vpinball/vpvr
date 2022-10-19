@@ -148,6 +148,7 @@ Shader::ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT] {
    SHADER_UNIFORM(mirrorFactor),
    SHADER_UNIFORM(SSR_bumpHeight_fresnelRefl_scale_FS),
    SHADER_UNIFORM(AO_scale_timeblur),
+   SHADER_UNIFORM(cWidth_Height_MirrorAmount),
    SHADER_UNIFORM(clip_planes),
    // -- Integer and Bool --
    SHADER_UNIFORM(ignoreStereo),

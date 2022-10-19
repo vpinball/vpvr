@@ -11,7 +11,7 @@ uniform vec4 ms_zpd_ya_td; // Not currently used in VPVR only in VPX
 uniform vec4 w_h_height; // in bloom w_h_height.z keeps strength
 
 uniform vec2 AO_scale_timeblur;
-uniform float mirrorFactor;
+uniform float4 cWidth_Height_MirrorAmount;
 
 uniform bool color_grade;
 uniform bool do_dither;
@@ -494,7 +494,7 @@ in vec2 tex0;
 
 void main()
 {
-   color = texture(tex_mirror, tex0) * mirrorFactor;
+   color = float4(texture(tex_mirror, tex0 + 0.5/cWidth_Height_MirrorAmount.xy).rgb * (1./cWidth_Height_MirrorAmount.z), 1.0);
 }
 
 
