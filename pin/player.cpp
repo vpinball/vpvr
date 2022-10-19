@@ -3438,24 +3438,26 @@ void Player::UpdatePhysics()
 
 void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwidth, const float DMDheight, const COLORREF DMDcolor, const float intensity)
 {
+   bool isExtCapture = false;
 #ifdef ENABLE_SDL
-   if (m_texdmd || captureExternalDMD()) // If DMD capture is enabled check if external DMD exists (for capturing UltraDMD+P-ROC DMD)
-#else
-   if (m_texdmd)
+   // If DMD capture is enabled check if external DMD exists and update m_texdmd with captured data (for capturing UltraDMD+P-ROC DMD)
+   isExtCapture = captureExternalDMD(); 
 #endif
+   if (m_texdmd)
    {
-      bool zDisabled = false;
       float x = DMDposx;
       float y = DMDposy;
       float w = DMDwidth;
       float h = DMDheight;
+      RenderDevice::RenderStateCache initial_state;
+      m_pin3d.m_pd3dPrimaryDevice->CopyRenderStates(true, initial_state);
 
       //const float width = m_pin3d.m_useAA ? 2.0f*(float)m_width : (float)m_width; //!! AA ?? -> should just work
       m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD); //!! DMD_UPSCALE ?? -> should just work
 
 #ifdef ENABLE_SDL
       // If we're capturing Freezy DMD switch to ext technique to avoid incorrect colorization
-      if (captureExternalDMD())
+      if (isExtCapture)
          m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetTechnique(SHADER_TECHNIQUE_basic_DMD_ext);
 
       if (m_pin3d.m_backGlass)
@@ -3463,8 +3465,7 @@ void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwi
          m_pin3d.m_backGlass->GetDMDPos(x, y, w, h);
          m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_FALSE);
          m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_FALSE);
-         m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_NONE); // FIXME is this really necessary ? it is not balanced by a cull state retsore
-         zDisabled = true;
+         m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_NONE); // is this really necessary ?
       }
 #endif
 
@@ -3497,11 +3498,7 @@ void Player::DMDdraw(const float DMDposx, const float DMDposy, const float DMDwi
       m_pin3d.m_pd3dPrimaryDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)DMDVerts);
       m_pin3d.m_pd3dPrimaryDevice->DMDShader->End();
 
-      if (zDisabled)
-      {
-         m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
-         m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_TRUE);
-      }
+      m_pin3d.m_pd3dPrimaryDevice->CopyRenderStates(false, initial_state);
    }
 }
 
