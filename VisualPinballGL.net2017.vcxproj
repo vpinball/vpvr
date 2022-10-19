@@ -282,7 +282,7 @@ copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"</Command>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;ENABLE_SDL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
       <AdditionalIncludeDirectories>inc\win32xx\include</AdditionalIncludeDirectories>
     </ResourceCompile>
@@ -316,7 +316,8 @@ if ".%25VPIN_DIR%25" == "." set VPIN_DIR=C:\Games\Visual PinballX
 echo VPIN_DIR="%25VPIN_DIR%25"
 if not exist "%25VPIN_DIR%25" mkdir "%25VPIN_DIR%25"
 copy "$(TargetPath)" "%25VPIN_DIR%25"
-copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"</Command>
+copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"
+copy "$(MSBuildProjectDirectory)\glshader\*.*" "$(TargetDir)glshader"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableDpiAwareness>true</EnableDpiAwareness>
@@ -401,7 +402,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <ShowIncludes>true</ShowIncludes>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;ENABLE_SDL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
@@ -430,7 +431,8 @@ if ".%25VPIN_DIR%25" == "." set VPIN_DIR=C:\Games\Visual PinballX
 echo VPIN_DIR="%25VPIN_DIR%25"
 if not exist "%25VPIN_DIR%25" mkdir "%25VPIN_DIR%25"
 copy "$(TargetPath)" "%25VPIN_DIR%25"
-copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
+copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"
+copy "$(MSBuildProjectDirectory)\glshader\*.*" "$(TargetDir)glshader"</Command>
     </PostBuildEvent>
     <Manifest>
       <EnableDpiAwareness>true</EnableDpiAwareness>
@@ -542,7 +544,7 @@ copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"</Command>
       <ControlFlowGuard>false</ControlFlowGuard>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;ENABLE_SDL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
       <AdditionalIncludeDirectories>inc\win32xx\include</AdditionalIncludeDirectories>
     </ResourceCompile>
@@ -570,7 +572,8 @@ if ".%25VPIN_DIR%25" == "." set VPIN_DIR=C:\Games\Visual PinballX
 echo VPIN_DIR="%25VPIN_DIR%25"
 if not exist "%25VPIN_DIR%25" mkdir "%25VPIN_DIR%25"
 copy "$(TargetPath)" "%25VPIN_DIR%25"
-copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"</Command>
+copy "$(MSBuildProjectDirectory)\dll\*.dll" "%25VPIN_DIR%25"
+copy "$(MSBuildProjectDirectory)\glshader\*.*" "$(TargetDir)glshader"</Command>
       <Message>Copies EXE and DLLs to production directory.</Message>
     </PostBuildEvent>
     <Manifest>
@@ -679,7 +682,7 @@ copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
       <ControlFlowGuard>false</ControlFlowGuard>
     </ClCompile>
     <ResourceCompile>
-      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;ENABLE_SDL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <Culture>0x0409</Culture>
     </ResourceCompile>
     <Link>
@@ -705,7 +708,8 @@ if ".%25VPIN_DIR%25" == "." set VPIN_DIR=C:\Games\Visual PinballX
 echo VPIN_DIR="%25VPIN_DIR%25"
 if not exist "%25VPIN_DIR%25" mkdir "%25VPIN_DIR%25"
 copy "$(TargetPath)" "%25VPIN_DIR%25"
-copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"</Command>
+copy "$(MSBuildProjectDirectory)\dll\x64\*.dll" "%25VPIN_DIR%25"
+copy "$(MSBuildProjectDirectory)\glshader\*.*" "$(TargetDir)glshader"</Command>
       <Message>Copies EXE and DLLs to production directory.</Message>
     </PostBuildEvent>
     <Manifest>
