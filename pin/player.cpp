@@ -5363,16 +5363,10 @@ void Player::Render()
 
 #ifdef ENABLE_SDL
    // Trigger captures
-   if (m_capExtDMD  && !captureExternalDMD())
-   {
-      if (m_texdmd != nullptr)
-      {
-         m_pin3d.m_pd3dPrimaryDevice->m_texMan.UnloadTexture(m_texdmd);
-         delete m_texdmd;
-         m_texdmd = nullptr;
-      }
-   }
-
+   if (m_capExtDMD)
+      captureExternalDMD();
+   if (m_capPUP)
+      capturePUP();
 #endif
 
    m_LastKnownGoodCounter++;
