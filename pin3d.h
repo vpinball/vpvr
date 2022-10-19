@@ -53,7 +53,6 @@ public:
 
    void Flip(const bool vsync);
 
-   void EnableAlphaTestReference(const DWORD alphaRefValue) const;
    void EnableAlphaBlend(const bool additiveBlending, const bool set_dest_blend = true, const bool set_blend_op = true) const;
 
    void DrawBackground();

@@ -586,6 +586,7 @@ void Pin3D::InitRenderState(RenderDevice * const pd3dDevice)
 #ifndef ENABLE_SDL
    CHECKD3D(pd3dDevice->GetCoreDevice()->SetRenderState(D3DRS_LIGHTING, FALSE));
    CHECKD3D(pd3dDevice->GetCoreDevice()->SetRenderState(D3DRS_CLIPPING, FALSE));
+   CHECKD3D(pd3dDevice->GetCoreDevice()->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE));
    pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
    pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
    pd3dDevice->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0);
@@ -984,11 +985,6 @@ void Pin3D::InitLayout(const bool FSS_mode, const float max_separation, const fl
    m_viewVec.Normalize();*/
 
    InitLights();
-}
-
-void Pin3D::EnableAlphaTestReference(const DWORD alphaRefValue) const
-{
-   m_pd3dPrimaryDevice->SetRenderStateAlphaTestFunction(alphaRefValue, RenderDevice::Z_GREATEREQUAL, true);
 }
 
 void Pin3D::EnableAlphaBlend(const bool additiveBlending, const bool set_dest_blend, const bool set_blend_op) const
