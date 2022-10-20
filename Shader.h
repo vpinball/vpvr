@@ -101,64 +101,88 @@ enum ShaderTechniques
 };
 #undef SHADER_TECHNIQUE
 
+enum ShaderUniformType
+{
+   SUT_Bool,
+   SUT_Int,
+   SUT_Float,
+   SUT_Float2,
+   SUT_Float3,
+   SUT_Float4,
+   SUT_Float4v,
+   SUT_Float3x4,
+   SUT_Float4x3,
+   SUT_Float4x4,
+   SUT_DataBlock,
+   SUT_Sampler,
+   SUT_INVALID
+};
+
 // Declaration of all uniforms and samplers used in the shaders
 // When changed, this list must also be copied unchanged to Shader.cpp (for its implementation)
 // Samplers defines how to sample a texture. For DX9, they are defined in the effect files, only the texture reference is set through the API.
 // Otherwise, the sampler states can be directly overriden through DX9Device->SetSamplerState (per tex unit), being carefull that the effect
 // framework will also apply the ones defined in the effect file during Technique->Begin call (so either don't define them, or reapply).
-#define SHADER_UNIFORM(name) SHADER_##name
+#define SHADER_UNIFORM(type, name) SHADER_##name
 #define SHADER_SAMPLER(name, legacy_name, texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter) SHADER_##name
 enum ShaderUniforms
 {
+   // -- Matrices --
+   SHADER_UNIFORM(SUT_DataBlock, matrixBlock), // OpenGL only, matrices as a float block
+   SHADER_UNIFORM(SUT_Float4x4, matWorldViewProj), // DX9 only
+   SHADER_UNIFORM(SUT_Float4x4, matWorldView), // DX9 only
+   SHADER_UNIFORM(SUT_Float4x3, matWorldViewInverse), // DX9 only
+   SHADER_UNIFORM(SUT_Float3x4, matWorldViewInverseTranspose), // DX9 only
+   SHADER_UNIFORM(SUT_Float4x3, matView), // DX9 only
+   SHADER_UNIFORM(SUT_Float4x3, orientation),
    // -- Floats --
-   SHADER_UNIFORM(RenderBall),
-   SHADER_UNIFORM(blend_modulate_vs_add),
-   SHADER_UNIFORM(alphaTestValue),
-   SHADER_UNIFORM(eye),
-   SHADER_UNIFORM(fKickerScale),
-   SHADER_UNIFORM(fSceneScale),
+   SHADER_UNIFORM(SUT_Float, RenderBall),
+   SHADER_UNIFORM(SUT_Float, blend_modulate_vs_add),
+   SHADER_UNIFORM(SUT_Float, alphaTestValue),
+   SHADER_UNIFORM(SUT_Float, eye),
+   SHADER_UNIFORM(SUT_Float, fKickerScale),
+   SHADER_UNIFORM(SUT_Float, fSceneScale),
+   SHADER_UNIFORM(SUT_Float, mirrorFactor),
    // -- Vectors and Float Arrays --
-   SHADER_UNIFORM(Roughness_WrapL_Edge_Thickness),
-   SHADER_UNIFORM(cBase_Alpha),
-   SHADER_UNIFORM(lightCenter_maxRange),
-   SHADER_UNIFORM(lightColor2_falloff_power),
-   SHADER_UNIFORM(lightColor_intensity),
-   SHADER_UNIFORM(matrixBlock),
-   SHADER_UNIFORM(fenvEmissionScale_TexWidth),
-   SHADER_UNIFORM(invTableRes_playfield_height_reflection),
-   SHADER_UNIFORM(lightEmission),
-   SHADER_UNIFORM(lightPos),
-   SHADER_UNIFORM(orientation),
-   SHADER_UNIFORM(cAmbient_LightRange),
-   SHADER_UNIFORM(cClearcoat_EdgeAlpha),
-   SHADER_UNIFORM(cGlossy_ImageLerp),
-   SHADER_UNIFORM(fDisableLighting_top_below),
-   SHADER_UNIFORM(backBoxSize),
-   SHADER_UNIFORM(vColor_Intensity),
-   SHADER_UNIFORM(w_h_height),
-   SHADER_UNIFORM(alphaTestValueAB_filterMode_addBlend),
-   SHADER_UNIFORM(amount_blend_modulate_vs_add_flasherMode),
-   SHADER_UNIFORM(staticColor_Alpha),
-   SHADER_UNIFORM(ms_zpd_ya_td),
-   SHADER_UNIFORM(Anaglyph_DeSaturation_Contrast),
-   SHADER_UNIFORM(vRes_Alpha_time),
-   SHADER_UNIFORM(mirrorFactor),
-   SHADER_UNIFORM(SSR_bumpHeight_fresnelRefl_scale_FS),
-   SHADER_UNIFORM(AO_scale_timeblur),
-   SHADER_UNIFORM(cWidth_Height_MirrorAmount),
-   SHADER_UNIFORM(clip_planes),
+   SHADER_UNIFORM(SUT_Float4, Roughness_WrapL_Edge_Thickness),
+   SHADER_UNIFORM(SUT_Float4, cBase_Alpha),
+   SHADER_UNIFORM(SUT_Float4, lightCenter_maxRange),
+   SHADER_UNIFORM(SUT_Float4, lightColor2_falloff_power),
+   SHADER_UNIFORM(SUT_Float4, lightColor_intensity),
+   SHADER_UNIFORM(SUT_Float2, fenvEmissionScale_TexWidth),
+   SHADER_UNIFORM(SUT_Float4, invTableRes_playfield_height_reflection),
+   SHADER_UNIFORM(SUT_Float4, cAmbient_LightRange),
+   SHADER_UNIFORM(SUT_Float4, cClearcoat_EdgeAlpha),
+   SHADER_UNIFORM(SUT_Float4, cGlossy_ImageLerp),
+   SHADER_UNIFORM(SUT_Float2, fDisableLighting_top_below),
+   SHADER_UNIFORM(SUT_Float4, backBoxSize),
+   SHADER_UNIFORM(SUT_Float4, vColor_Intensity),
+   SHADER_UNIFORM(SUT_Float4, w_h_height),
+   SHADER_UNIFORM(SUT_Float4, alphaTestValueAB_filterMode_addBlend),
+   SHADER_UNIFORM(SUT_Float3, amount_blend_modulate_vs_add_flasherMode),
+   SHADER_UNIFORM(SUT_Float4, staticColor_Alpha),
+   SHADER_UNIFORM(SUT_Float4, ms_zpd_ya_td),
+   SHADER_UNIFORM(SUT_Float2, Anaglyph_DeSaturation_Contrast),
+   SHADER_UNIFORM(SUT_Float4, vRes_Alpha_time),
+   SHADER_UNIFORM(SUT_Float4, SSR_bumpHeight_fresnelRefl_scale_FS),
+   SHADER_UNIFORM(SUT_Float2, AO_scale_timeblur),
+   SHADER_UNIFORM(SUT_Float4, cWidth_Height_MirrorAmount),
+   SHADER_UNIFORM(SUT_Float4v, clip_planes), // OpenGL only
+   SHADER_UNIFORM(SUT_Float4v, lightEmission),
+   SHADER_UNIFORM(SUT_Float4v, lightPos),
+   SHADER_UNIFORM(SUT_Float4v, packedLights), // DX9 only
    // -- Integer and Bool --
-   SHADER_UNIFORM(ignoreStereo),
-   SHADER_UNIFORM(disableLighting),
-   SHADER_UNIFORM(lightSources),
-   SHADER_UNIFORM(doNormalMapping),
-   SHADER_UNIFORM(is_metal),
-   SHADER_UNIFORM(color_grade),
-   SHADER_UNIFORM(do_bloom),
-   SHADER_UNIFORM(lightingOff),
-   SHADER_UNIFORM(objectSpaceNormalMap),
-   SHADER_UNIFORM(do_dither),
-   SHADER_UNIFORM(imageBackglassMode),
+   SHADER_UNIFORM(SUT_Bool, ignoreStereo),
+   SHADER_UNIFORM(SUT_Bool, disableLighting),
+   SHADER_UNIFORM(SUT_Int, lightSources),
+   SHADER_UNIFORM(SUT_Bool, doNormalMapping),
+   SHADER_UNIFORM(SUT_Bool, is_metal),
+   SHADER_UNIFORM(SUT_Bool, color_grade),
+   SHADER_UNIFORM(SUT_Bool, do_bloom),
+   SHADER_UNIFORM(SUT_Bool, objectSpaceNormalMap),
+   SHADER_UNIFORM(SUT_Bool, do_dither),
+   SHADER_UNIFORM(SUT_Bool, lightingOff), // DX9 only
+   SHADER_UNIFORM(SUT_Float2, imageBackglassMode), // OpenGL only
    // -- Samplers (a texture reference with sampling configuration) --
    // DMD shader
    SHADER_SAMPLER(tex_dmd, texSampler0, Texture0, 0, SA_CLAMP, SA_CLAMP, SF_NONE), // DMD
@@ -232,7 +256,6 @@ public:
    bool Load(const BYTE* shaderCodeName, UINT codeSize);
    ID3DXEffect *Core() const { return m_shader; }
 #endif
-   void Unload();
 
    void Begin();
    void End();
@@ -241,6 +264,7 @@ public:
    void SetTexture(const ShaderUniforms texelName, Texture* texel, const SamplerFilter filter = SF_UNDEFINED, const SamplerAddressMode clampU = SA_UNDEFINED, const SamplerAddressMode clampV = SA_UNDEFINED, const bool force_linear_rgb = false);
    void SetTexture(const ShaderUniforms texelName, Sampler* texel);
    void SetTextureNull(const ShaderUniforms texelName);
+
    void SetMaterial(const Material * const mat, const bool has_alpha = true);
 
    void SetDisableLighting(const float value); // only set top
@@ -260,14 +284,15 @@ public:
    void SetTechniqueMetal(const ShaderTechniques technique, const bool isMetal);
    ShaderTechniques GetCurrentTechnique() { return m_technique; }
 
+   void SetMatrix(const ShaderUniforms hParameter, const D3DXMATRIX* pMatrix);
    void SetMatrix(const ShaderUniforms hParameter, const Matrix3D* pMatrix);
-   void SetUniformBlock(const ShaderUniforms hParameter, const float* pMatrix, const size_t size);
    void SetVector(const ShaderUniforms hParameter, const vec4* pVector);
    void SetVector(const ShaderUniforms hParameter, const float x, const float y, const float z, const float w);
    void SetFloat(const ShaderUniforms hParameter, const float f);
    void SetInt(const ShaderUniforms hParameter, const int i);
    void SetBool(const ShaderUniforms hParameter, const bool b);
-   void SetFloatArray(const ShaderUniforms hParameter, const float* pData, const unsigned int count);
+   void SetFloat4v(const ShaderUniforms hParameter, const vec4* pData, const unsigned int count);
+   void SetUniformBlock(const ShaderUniforms hParameter, const float* pMatrix, const size_t size);
 
    static void SetDefaultSamplerFilter(const ShaderUniforms sampler, const SamplerFilter sf);
 
@@ -276,23 +301,20 @@ public:
 
    static Shader* GetCurrentShader();
 
-#ifdef ENABLE_SDL
    // state of what is actually bound per technique, and what is expected for the next begin/end
    struct UniformCache
    {
-      size_t count; // number of elements for uniform blocks and float vectors
-      size_t capacity; // size of the datablock
-      float* data; // uniform blocks & large float vectors data block
+      size_t count = -1; // number of elements for uniform blocks and float vectors
       union UniformValue
       {
          int i; // integer and boolean
          float f; // float value
          float fv[16]; // float vectors and matrices
          Sampler* sampler; // texture samplers
+         void* data = nullptr; // uniform blocks or float vector block
       } val;
    };
    uint32_t CopyUniformCache(const bool copyTo, const ShaderTechniques technique, UniformCache (&m_uniformCache)[SHADER_UNIFORM_COUNT]);
-#endif
 
 private:
    RenderDevice *m_renderDevice;
@@ -308,7 +330,6 @@ private:
    static constexpr DWORD TEXTURESET_STATE_CACHE_SIZE = 5; // current convention: SetTexture gets "TextureX", where X 0..4
    BaseTexture *currentTexture[TEXTURESET_STATE_CACHE_SIZE];
    float currentAlphaTestValue;
-   char  currentTechnique[64];
 
    vec4 currentFlasherColor; // all flasher only-data
    vec4 currentFlasherData;
@@ -322,7 +343,7 @@ private:
 
    struct ShaderUniform
    {
-      bool is_sampler;
+      ShaderUniformType type;
       string name;
       string legacy_name;
       string texture_ref;
@@ -338,6 +359,24 @@ private:
    ShaderAttributes getAttributeByName(const string& name);
    ShaderTechniques getTechniqueByName(const string& name);
 
+   void ApplyUniform(const ShaderUniforms uniformName);
+
+   std::vector<ShaderUniforms> m_uniforms[SHADER_TECHNIQUE_COUNT];
+   bool m_isCacheValid[SHADER_TECHNIQUE_COUNT];
+   UniformCache m_uniformCache[SHADER_TECHNIQUE_COUNT + 1][SHADER_UNIFORM_COUNT];
+
+   struct UniformDesc
+   {
+      ShaderUniform uniform;
+      int count;
+#ifdef ENABLE_SDL
+      GLint location;
+      GLuint blockBuffer;
+#else
+      D3DXHANDLE handle;
+#endif
+   };
+
 #ifdef ENABLE_SDL
    string m_shaderCodeName;
 
@@ -347,20 +386,13 @@ private:
       int location;
       int size;
    };
-   struct uniformLoc
-   {
-      GLenum type;
-      GLint location;
-      int size;
-      GLuint blockBuffer;
-   };
    struct ShaderTechnique
    {
       int index;
       string& name;
       GLuint program;
       attributeLoc attributeLocation[SHADER_ATTRIBUTE_COUNT];
-      uniformLoc uniformLocation[SHADER_UNIFORM_COUNT];
+      UniformDesc uniform_desc[SHADER_UNIFORM_COUNT];
    };
 
    std::ofstream* logFile;
@@ -371,11 +403,6 @@ private:
    string analyzeFunction(const char* shaderCodeName, const string& technique, const string& functionName, const robin_hood::unordered_map<string, string>& values);
    ShaderTechnique* compileGLShader(const ShaderTechniques technique, const string& fileNameRoot, string& shaderCodeName, const string& vertex, const string& geometry, const string& fragment);
 
-   void ApplyUniform(const ShaderUniforms uniformName);
-
-   std::vector<ShaderUniforms> m_uniforms[SHADER_TECHNIQUE_COUNT];
-   bool m_isCacheValid[SHADER_TECHNIQUE_COUNT];
-   UniformCache m_uniformCache[SHADER_TECHNIQUE_COUNT + 1][SHADER_UNIFORM_COUNT];
    ShaderTechnique* m_techniques[SHADER_TECHNIQUE_COUNT];
    static Matrix3D mWorld, mView, mProj[2];
 
@@ -387,5 +414,7 @@ public:
 
 #else
    ID3DXEffect * m_shader;
+   UniformDesc m_uniform_desc[SHADER_UNIFORM_COUNT];
+   ShaderTechniques m_bound_technique = ShaderTechniques::SHADER_TECHNIQUE_INVALID;
 #endif
 };
