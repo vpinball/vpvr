@@ -1102,12 +1102,12 @@ void Player::UpdateBasicShaderMatrix(const Matrix3D& objectTrafo)
    matrices.matWorldViewInverseTranspose.Transpose();
 
 #ifdef ENABLE_SDL
-   m_pin3d.m_pd3dPrimaryDevice->flasherShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matWorldViewProj[0].m[0][0], eyes * 16);
-   m_pin3d.m_pd3dPrimaryDevice->lightShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matWorldViewProj[0].m[0][0], eyes * 16);
-   m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matWorldViewProj[0].m[0][0], eyes * 16);
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matView.m[0][0], (eyes + 3) * 16);
+   m_pin3d.m_pd3dPrimaryDevice->flasherShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matWorldViewProj[0].m[0][0], eyes * 16 * sizeof(float));
+   m_pin3d.m_pd3dPrimaryDevice->lightShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matWorldViewProj[0].m[0][0], eyes * 16 * sizeof(float));
+   m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matWorldViewProj[0].m[0][0], eyes * 16 * sizeof(float));
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matView.m[0][0], (eyes + 3) * 16 * sizeof(float));
 #ifdef SEPARATE_CLASSICLIGHTSHADER
-   m_pin3d.m_pd3dPrimaryDevice->lightShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matWorldViewProj[0].m[0][0], (eyes + 3) * 16);
+   m_pin3d.m_pd3dPrimaryDevice->lightShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matWorldViewProj[0].m[0][0], (eyes + 3) * 16 * sizeof(float));
 #endif
 
 #else
@@ -1219,7 +1219,7 @@ void Player::UpdateBallShaderMatrix()
    matrices.matWorldViewInverseTranspose.Transpose();
 
 #ifdef ENABLE_SDL
-   m_ballShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matView.m[0][0], (eyes + 3) * 16);
+   m_ballShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matView.m[0][0], (eyes + 3) * 16 * sizeof(float));
 #else
    m_ballShader->SetMatrix("matWorldViewProj", &matWorldViewProj);
    m_ballShader->SetMatrix("matWorldView", &matWorldView);
@@ -3839,7 +3839,7 @@ void Player::SetClipPlanePlayfield(const bool clip_orientation)
       clip_planes[eye][2] = mT._13 * x + mT._23 * y + mT._33 * z + mT._43 * w;
       clip_planes[eye][3] = mT._14 * x + mT._24 * y + mT._34 * z + mT._44 * w;
    }
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetFloatArray(SHADER_clip_planes, (float *)clip_planes, 4 * eyes);
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetFloat4v(SHADER_clip_planes, (vec4 *)clip_planes, eyes);
 #else
    Matrix3D mT = m_pin3d.m_proj.m_matrixTotal; // = world * view * proj
    mT.Invert();
@@ -5898,8 +5898,8 @@ void Player::DrawBalls()
             lightEmission[light_i + MAX_LIGHT_SOURCES][2] = 0.0f;
          }
 
-      m_ballShader->SetFloatArray(SHADER_lightPos, (float *)lightPos, 4 * (MAX_LIGHT_SOURCES + MAX_BALL_LIGHT_SOURCES));
-      m_ballShader->SetFloatArray(SHADER_lightEmission, (float *)lightEmission, 4 * (MAX_LIGHT_SOURCES + MAX_BALL_LIGHT_SOURCES));
+      m_ballShader->SetFloat4v(SHADER_lightPos, (vec4*) lightPos, MAX_LIGHT_SOURCES + MAX_BALL_LIGHT_SOURCES);
+      m_ballShader->SetFloat4v(SHADER_lightEmission, (vec4*) lightEmission, MAX_LIGHT_SOURCES + MAX_BALL_LIGHT_SOURCES);
 
       // now for a weird hack: make material more rough, depending on how near the nearest lightsource is, to 'emulate' the area of the bulbs (as VP only features point lights so far)
       float Roughness = 0.8f;

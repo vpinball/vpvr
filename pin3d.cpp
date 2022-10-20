@@ -668,8 +668,8 @@ void Pin3D::InitLights()
        memcpy(&lightEmission[i], &emission, sizeof(float) * 3);
    }
 
-   m_pd3dPrimaryDevice->basicShader->SetFloatArray(SHADER_lightPos, (float *)lightPos, 4 * MAX_LIGHT_SOURCES);
-   m_pd3dPrimaryDevice->basicShader->SetFloatArray(SHADER_lightEmission, (float *)lightEmission, 4 * MAX_LIGHT_SOURCES);
+   m_pd3dPrimaryDevice->basicShader->SetFloat4v(SHADER_lightPos, (vec4*) lightPos, MAX_LIGHT_SOURCES);
+   m_pd3dPrimaryDevice->basicShader->SetFloat4v(SHADER_lightEmission, (vec4*) lightEmission, MAX_LIGHT_SOURCES);
 
    vec4 amb_lr = convertColor(g_pplayer->m_ptable->m_lightAmbient, g_pplayer->m_ptable->m_lightRange);
    amb_lr.x *= g_pplayer->m_globalEmissionScale;
@@ -1204,6 +1204,9 @@ void PinProjection::ComputeNearFarPlane(const vector<Vertex3Ds>& verts)
    // Avoid div-0 problem (div by far - near)
    if (m_rzfar <= m_rznear)
       m_rzfar = m_rznear + 1.0f;
+
+   // FIXME for the time being, the result is not that good since neither primitives vertices are taken in account, nor reflected geometry, so just add a margin
+   m_rzfar += 1000.0f;
 }
 
 void PinProjection::CacheTransform()

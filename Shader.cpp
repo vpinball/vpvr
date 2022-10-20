@@ -10,6 +10,8 @@
 #include <string>
 #include <inc/robin_hood.h>
 #include <regex>
+
+static ShaderTechniques m_bound_technique = ShaderTechniques::SHADER_TECHNIQUE_INVALID;
 #endif
 
 #if DEBUG_LEVEL_LOG == 0
@@ -110,58 +112,65 @@ ShaderTechniques Shader::getTechniqueByName(const string& name)
    return SHADER_TECHNIQUE_INVALID;
 }
 
-#define SHADER_UNIFORM(name) { false, #name, #name, ""s, -1, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED }
-#define SHADER_SAMPLER(name, legacy_name, texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter) { true, #name, #legacy_name, #texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter }
+#define SHADER_UNIFORM(type, name) { type, #name, #name, ""s, -1, SA_UNDEFINED, SA_UNDEFINED, SF_UNDEFINED }
+#define SHADER_SAMPLER(name, legacy_name, texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter) { SUT_Sampler, #name, #legacy_name, #texture_ref, default_tex_unit, default_clampu, default_clampv, default_filter }
 Shader::ShaderUniform Shader::shaderUniformNames[SHADER_UNIFORM_COUNT] {
+   // -- Matrices --
+   SHADER_UNIFORM(SUT_DataBlock, matrixBlock), // OpenGL only, matrices as a float block
+   SHADER_UNIFORM(SUT_Float4x4, matWorldViewProj), // DX9 only
+   SHADER_UNIFORM(SUT_Float4x4, matWorldView), // DX9 only
+   SHADER_UNIFORM(SUT_Float4x3, matWorldViewInverse), // DX9 only
+   SHADER_UNIFORM(SUT_Float3x4, matWorldViewInverseTranspose), // DX9 only
+   SHADER_UNIFORM(SUT_Float4x3, matView), // DX9 only
+   SHADER_UNIFORM(SUT_Float4x3, orientation),
    // -- Floats --
-   SHADER_UNIFORM(RenderBall),
-   SHADER_UNIFORM(blend_modulate_vs_add),
-   SHADER_UNIFORM(alphaTestValue),
-   SHADER_UNIFORM(eye),
-   SHADER_UNIFORM(fKickerScale),
-   SHADER_UNIFORM(fSceneScale),
+   SHADER_UNIFORM(SUT_Float, RenderBall),
+   SHADER_UNIFORM(SUT_Float, blend_modulate_vs_add),
+   SHADER_UNIFORM(SUT_Float, alphaTestValue),
+   SHADER_UNIFORM(SUT_Float, eye),
+   SHADER_UNIFORM(SUT_Float, fKickerScale),
+   SHADER_UNIFORM(SUT_Float, fSceneScale),
+   SHADER_UNIFORM(SUT_Float, mirrorFactor),
    // -- Vectors and Float Arrays --
-   SHADER_UNIFORM(Roughness_WrapL_Edge_Thickness),
-   SHADER_UNIFORM(cBase_Alpha),
-   SHADER_UNIFORM(lightCenter_maxRange),
-   SHADER_UNIFORM(lightColor2_falloff_power),
-   SHADER_UNIFORM(lightColor_intensity),
-   SHADER_UNIFORM(matrixBlock),
-   SHADER_UNIFORM(fenvEmissionScale_TexWidth),
-   SHADER_UNIFORM(invTableRes_playfield_height_reflection),
-   SHADER_UNIFORM(lightEmission),
-   SHADER_UNIFORM(lightPos),
-   SHADER_UNIFORM(orientation),
-   SHADER_UNIFORM(cAmbient_LightRange),
-   SHADER_UNIFORM(cClearcoat_EdgeAlpha),
-   SHADER_UNIFORM(cGlossy_ImageLerp),
-   SHADER_UNIFORM(fDisableLighting_top_below),
-   SHADER_UNIFORM(backBoxSize),
-   SHADER_UNIFORM(vColor_Intensity),
-   SHADER_UNIFORM(w_h_height),
-   SHADER_UNIFORM(alphaTestValueAB_filterMode_addBlend),
-   SHADER_UNIFORM(amount_blend_modulate_vs_add_flasherMode),
-   SHADER_UNIFORM(staticColor_Alpha),
-   SHADER_UNIFORM(ms_zpd_ya_td),
-   SHADER_UNIFORM(Anaglyph_DeSaturation_Contrast),
-   SHADER_UNIFORM(vRes_Alpha_time),
-   SHADER_UNIFORM(mirrorFactor),
-   SHADER_UNIFORM(SSR_bumpHeight_fresnelRefl_scale_FS),
-   SHADER_UNIFORM(AO_scale_timeblur),
-   SHADER_UNIFORM(cWidth_Height_MirrorAmount),
-   SHADER_UNIFORM(clip_planes),
+   SHADER_UNIFORM(SUT_Float4, Roughness_WrapL_Edge_Thickness),
+   SHADER_UNIFORM(SUT_Float4, cBase_Alpha),
+   SHADER_UNIFORM(SUT_Float4, lightCenter_maxRange),
+   SHADER_UNIFORM(SUT_Float4, lightColor2_falloff_power),
+   SHADER_UNIFORM(SUT_Float4, lightColor_intensity),
+   SHADER_UNIFORM(SUT_Float2, fenvEmissionScale_TexWidth),
+   SHADER_UNIFORM(SUT_Float4, invTableRes_playfield_height_reflection),
+   SHADER_UNIFORM(SUT_Float4, cAmbient_LightRange),
+   SHADER_UNIFORM(SUT_Float4, cClearcoat_EdgeAlpha),
+   SHADER_UNIFORM(SUT_Float4, cGlossy_ImageLerp),
+   SHADER_UNIFORM(SUT_Float2, fDisableLighting_top_below),
+   SHADER_UNIFORM(SUT_Float4, backBoxSize),
+   SHADER_UNIFORM(SUT_Float4, vColor_Intensity),
+   SHADER_UNIFORM(SUT_Float4, w_h_height),
+   SHADER_UNIFORM(SUT_Float4, alphaTestValueAB_filterMode_addBlend),
+   SHADER_UNIFORM(SUT_Float3, amount_blend_modulate_vs_add_flasherMode),
+   SHADER_UNIFORM(SUT_Float4, staticColor_Alpha),
+   SHADER_UNIFORM(SUT_Float4, ms_zpd_ya_td),
+   SHADER_UNIFORM(SUT_Float2, Anaglyph_DeSaturation_Contrast),
+   SHADER_UNIFORM(SUT_Float4, vRes_Alpha_time),
+   SHADER_UNIFORM(SUT_Float4, SSR_bumpHeight_fresnelRefl_scale_FS),
+   SHADER_UNIFORM(SUT_Float2, AO_scale_timeblur),
+   SHADER_UNIFORM(SUT_Float4, cWidth_Height_MirrorAmount),
+   SHADER_UNIFORM(SUT_Float4v, clip_planes), // OpenGL only
+   SHADER_UNIFORM(SUT_Float4v, lightEmission),
+   SHADER_UNIFORM(SUT_Float4v, lightPos),
+   SHADER_UNIFORM(SUT_Float4v, packedLights), // DX9 only
    // -- Integer and Bool --
-   SHADER_UNIFORM(ignoreStereo),
-   SHADER_UNIFORM(disableLighting),
-   SHADER_UNIFORM(lightSources),
-   SHADER_UNIFORM(doNormalMapping),
-   SHADER_UNIFORM(is_metal),
-   SHADER_UNIFORM(color_grade),
-   SHADER_UNIFORM(do_bloom),
-   SHADER_UNIFORM(lightingOff),
-   SHADER_UNIFORM(objectSpaceNormalMap),
-   SHADER_UNIFORM(do_dither),
-   SHADER_UNIFORM(imageBackglassMode),
+   SHADER_UNIFORM(SUT_Bool, ignoreStereo),
+   SHADER_UNIFORM(SUT_Bool, disableLighting),
+   SHADER_UNIFORM(SUT_Int, lightSources),
+   SHADER_UNIFORM(SUT_Bool, doNormalMapping),
+   SHADER_UNIFORM(SUT_Bool, is_metal),
+   SHADER_UNIFORM(SUT_Bool, color_grade),
+   SHADER_UNIFORM(SUT_Bool, do_bloom),
+   SHADER_UNIFORM(SUT_Bool, objectSpaceNormalMap),
+   SHADER_UNIFORM(SUT_Bool, do_dither),
+   SHADER_UNIFORM(SUT_Bool, lightingOff), // DX9 only
+   SHADER_UNIFORM(SUT_Float2, imageBackglassMode), // OpenGL only
    // -- Samplers (a texture reference with sampling configuration) --
    // DMD shader
    SHADER_SAMPLER(tex_dmd, texSampler0, Texture0, 0, SA_CLAMP, SA_CLAMP, SF_NONE), // DMD
@@ -251,11 +260,11 @@ Shader::Shader(RenderDevice* renderDevice)
 {
    m_renderDevice = renderDevice;
    m_technique = SHADER_TECHNIQUE_INVALID;
+   memset(m_uniformCache, 0, sizeof(UniformCache) * SHADER_UNIFORM_COUNT * (SHADER_TECHNIQUE_COUNT + 1));
+   memset(m_isCacheValid, 0, sizeof(bool) * SHADER_TECHNIQUE_COUNT);
 #ifdef ENABLE_SDL
    logFile = nullptr;
-   memset(m_uniformCache, 0, sizeof(UniformCache) * SHADER_UNIFORM_COUNT * (SHADER_TECHNIQUE_COUNT + 1));
    memset(m_techniques, 0, sizeof(ShaderTechnique*) * SHADER_TECHNIQUE_COUNT);
-   memset(m_isCacheValid, 0, sizeof(bool) * SHADER_TECHNIQUE_COUNT);
 #else
    m_shader = nullptr;
 #endif
@@ -271,12 +280,29 @@ Shader::Shader(RenderDevice* renderDevice)
    currentLightData = vec4(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
    currentLightImageMode = ~0u;
    currentLightBackglassMode = ~0u;
-   currentTechnique[0] = 0;
 }
 
 Shader::~Shader()
 {
-   this->Unload();
+   for (int j = 0; j <= SHADER_TECHNIQUE_COUNT; ++j)
+   {
+      for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i)
+      {
+         if (m_uniformCache[j][i].count > 0 && m_uniformCache[j][i].val.data)
+            free(m_uniformCache[j][i].val.data);
+      }
+#ifdef ENABLE_SDL
+      if (j < SHADER_TECHNIQUE_COUNT && m_techniques[j] != nullptr)
+      {
+         glDeleteProgram(m_techniques[j]->program);
+         delete m_techniques[j];
+         m_techniques[j] = nullptr;
+      }
+#endif
+   }
+#ifndef ENABLE_SDL
+   SAFE_RELEASE(m_shader);
+#endif
 }
 
 void Shader::Begin()
@@ -284,13 +310,14 @@ void Shader::Begin()
    assert(current_shader == nullptr);
    current_shader = this;
    assert(m_technique != SHADER_TECHNIQUE_INVALID);
-   static ShaderTechniques bound_technique = ShaderTechniques::SHADER_TECHNIQUE_INVALID;
-   if (bound_technique != m_technique)
+   if (m_bound_technique != m_technique)
    {
       m_renderDevice->m_curTechniqueChanges++;
-      bound_technique = m_technique;
+      m_bound_technique = m_technique;
 #ifdef ENABLE_SDL
       glUseProgram(m_techniques[m_technique]->program);
+#else
+      CHECKD3D(m_shader->SetTechnique((D3DXHANDLE)shaderTechniqueNames[m_technique].c_str()));
 #endif
    }
    for (auto uniformName : m_uniforms[m_technique])
@@ -485,7 +512,421 @@ void Shader::SetLightImageBackglassMode(const bool imageMode, const bool backgla
    {
       currentLightImageMode = (unsigned int)imageMode;
       currentLightBackglassMode = (unsigned int)backglassMode;
+#ifdef ENABLE_SDL
+      SetVector(SHADER_imageBackglassMode, imageMode ? 1.0f : 0.0f, backglassMode ? 1.0f : 0.0f, 0.0f, 0.0f);
+#else
       SetBool(SHADER_lightingOff, imageMode || backglassMode); // at the moment can be combined into a single bool due to what the shader actually does in the end
+#endif
+   }
+}
+
+void Shader::SetTechnique(ShaderTechniques technique)
+{
+   assert(current_shader != this); // Changing the technique of a used shader is not allowed (between Begin/End)
+   assert(0 <= technique && technique < SHADER_TECHNIQUE_COUNT);
+#ifdef ENABLE_SDL
+   if (m_techniques[technique] == nullptr)
+   {
+      m_technique = SHADER_TECHNIQUE_INVALID;
+      ShowError("Fatal Error: Could not find shader technique " + shaderTechniqueNames[technique]);
+      exit(-1);
+   }
+#endif
+   m_technique = technique;
+}
+
+void Shader::SetTechniqueMetal(ShaderTechniques technique, const bool isMetal)
+{
+#ifdef ENABLE_SDL
+   SetTechnique(technique);
+   SetBool(SHADER_is_metal, isMetal);
+#else
+   if (isMetal)
+   {
+      switch (technique)
+      {
+      case SHADER_TECHNIQUE_basic_with_texture: SetTechnique(SHADER_TECHNIQUE_basic_with_texture_isMetal); break;
+      case SHADER_TECHNIQUE_basic_with_texture_normal: SetTechnique(SHADER_TECHNIQUE_basic_with_texture_normal_isMetal); break;
+      case SHADER_TECHNIQUE_basic_without_texture: SetTechnique(SHADER_TECHNIQUE_basic_without_texture_isMetal); break;
+      case SHADER_TECHNIQUE_playfield_with_texture: SetTechnique(SHADER_TECHNIQUE_playfield_with_texture_isMetal); break;
+      case SHADER_TECHNIQUE_playfield_with_texture_normal: SetTechnique(SHADER_TECHNIQUE_playfield_with_texture_normal_isMetal); break;
+      case SHADER_TECHNIQUE_playfield_without_texture: SetTechnique(SHADER_TECHNIQUE_playfield_without_texture_isMetal); break;
+      case SHADER_TECHNIQUE_kickerBoolean: SetTechnique(SHADER_TECHNIQUE_kickerBoolean_isMetal); break;
+      case SHADER_TECHNIQUE_light_with_texture: SetTechnique(SHADER_TECHNIQUE_light_with_texture_isMetal); break;
+      case SHADER_TECHNIQUE_light_without_texture: SetTechnique(SHADER_TECHNIQUE_light_without_texture_isMetal); break;
+      default: assert(false); // Invalid technique: no metal shading variant
+      }
+   }
+   else
+   {
+      SetTechnique(technique);
+   }
+#endif
+}
+
+uint32_t Shader::CopyUniformCache(const bool copyTo, const ShaderTechniques technique, UniformCache (&uniformCache)[SHADER_UNIFORM_COUNT])
+{
+   UniformCache* src_cache = copyTo ? m_uniformCache[SHADER_TECHNIQUE_COUNT] : uniformCache;
+   UniformCache* dst_cache = copyTo ? uniformCache : m_uniformCache[SHADER_TECHNIQUE_COUNT];
+   unsigned long sampler_hash = 0L;
+   for (auto uniformName : m_uniforms[technique])
+   {
+#ifdef ENABLE_SDL
+      // For OpenGL uniform binding state is per technique (i.e. program)
+      UniformDesc desc = m_techniques[technique]->uniform_desc[uniformName];
+#else
+      // For DX9 Effect framework uniform binding state is per shader, so we only use the first array
+      UniformDesc desc = m_uniform_desc[uniformName];
+#endif
+      UniformCache* src = &(src_cache[uniformName]);
+      UniformCache* dst = &(dst_cache[uniformName]);
+      if (src->count > 0)
+      {
+         if (dst->count != src->count)
+         {
+            if (dst->count > 0)
+               free(dst->val.data);
+            dst->count = src->count;
+            dst->val.data = malloc(dst->count);
+         }
+         memcpy(dst->val.data, src->val.data, src->count);
+      }
+      else
+      {
+         memcpy(&(dst->val), &(src->val), sizeof(UniformCache::UniformValue));
+      }
+      if (shaderUniformNames[uniformName].type == ShaderUniformType::SUT_Sampler)
+         sampler_hash += (unsigned long) src->val.sampler;
+   }
+   return sampler_hash;
+}
+
+void Shader::SetMatrix(const ShaderUniforms hParameter, const Matrix3D* pMatrix)
+{
+   assert(0 <= hParameter && hParameter < SHADER_UNIFORM_COUNT);
+   UniformCache* elem = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter];
+   assert(elem->count == 0);
+   memcpy(elem->val.fv, pMatrix->m, 16 * sizeof(float));
+   ApplyUniform(hParameter);
+}
+
+void Shader::SetMatrix(const ShaderUniforms hParameter, const D3DXMATRIX* pMatrix)
+{
+   assert(0 <= hParameter && hParameter < SHADER_UNIFORM_COUNT);
+   UniformCache* elem = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter];
+   assert(elem->count == 0);
+   memcpy(elem->val.fv, pMatrix->m, 16 * sizeof(float));
+   ApplyUniform(hParameter);
+}
+
+void Shader::SetVector(const ShaderUniforms hParameter, const vec4* pVector)
+{
+   assert(0 <= hParameter && hParameter < SHADER_UNIFORM_COUNT);
+   UniformCache* elem = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter];
+   assert(elem->count == 0);
+   memcpy(elem->val.fv, pVector, 4 * sizeof(float));
+   ApplyUniform(hParameter);
+}
+
+void Shader::SetVector(const ShaderUniforms hParameter, const float x, const float y, const float z, const float w)
+{
+   assert(0 <= hParameter && hParameter < SHADER_UNIFORM_COUNT);
+   UniformCache* elem = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter];
+   assert(elem->count == 0);
+   elem->val.fv[0] = x;
+   elem->val.fv[1] = y;
+   elem->val.fv[2] = z;
+   elem->val.fv[3] = w;
+   ApplyUniform(hParameter);
+}
+
+void Shader::SetFloat(const ShaderUniforms hParameter, const float f)
+{
+   assert(0 <= hParameter && hParameter < SHADER_UNIFORM_COUNT);
+   UniformCache* elem = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter];
+   assert(elem->count == 0);
+   elem->val.f = f;
+   ApplyUniform(hParameter);
+}
+
+void Shader::SetInt(const ShaderUniforms hParameter, const int i)
+{
+   assert(0 <= hParameter && hParameter < SHADER_UNIFORM_COUNT);
+   UniformCache* elem = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter];
+   assert(elem->count == 0);
+   elem->val.i = i;
+   ApplyUniform(hParameter);
+}
+
+void Shader::SetBool(const ShaderUniforms hParameter, const bool b)
+{
+   assert(0 <= hParameter && hParameter < SHADER_UNIFORM_COUNT);
+   UniformCache* elem = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter];
+   assert(elem->count == 0);
+   elem->val.i = b ? 1 : 0;
+   ApplyUniform(hParameter);
+}
+
+void Shader::SetFloat4v(const ShaderUniforms hParameter, const vec4* pData, const unsigned int count)
+{
+   assert(0 <= hParameter && hParameter < SHADER_UNIFORM_COUNT);
+   UniformCache* elem = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter];
+   if (elem->count == 0)
+   {
+      elem->count = count * 4 * sizeof(float);
+      elem->val.data = malloc(elem->count);
+   }
+   memcpy(elem->val.data, pData, elem->count);
+   ApplyUniform(hParameter);
+}
+
+void Shader::ApplyUniform(const ShaderUniforms uniformName)
+{
+   if (current_shader != this)
+      return;
+   bool isCacheInvalid = !m_isCacheValid[m_technique];
+   UniformCache* src = &(m_uniformCache[SHADER_TECHNIQUE_COUNT][uniformName]);
+#ifdef ENABLE_SDL
+   // For OpenGL uniform binding state is per technique (i.e. program)
+   auto desc = m_techniques[m_technique]->uniform_desc[uniformName];
+   UniformCache* dst = &(m_uniformCache[m_technique][uniformName]);
+   if (desc.location < 0)
+      return;
+#else
+   // For DX9 Effect framework uniform binding state is per shader, so we only use the first array
+   auto desc = m_uniform_desc[uniformName];
+   UniformCache* dst = &(m_uniformCache[0][uniformName]);
+#endif
+   switch (desc.uniform.type)
+   {
+   case SUT_DataBlock: // Uniform blocks
+      #ifdef ENABLE_SDL
+      assert(src->count == 0 || src->count == desc.count);
+      if ((src->count != 0) && (isCacheInvalid || dst->count == 0 || memcmp(src->val.data, dst->val.data, src->count) != 0))
+      {
+         if (dst->count == 0)
+         {
+            dst->count = src->count;
+            dst->val.data = malloc(src->count);
+         }
+         memcpy(dst->val.data, src->val.data, src->count);
+         glBindBuffer(GL_UNIFORM_BUFFER, desc.blockBuffer);
+         glBufferData(GL_UNIFORM_BUFFER, src->count, src->val.data, GL_STREAM_DRAW);
+         m_renderDevice->m_curParameterChanges++;
+      }
+      glUniformBlockBinding(m_techniques[m_technique]->program, desc.location, 0);
+      glBindBufferRange(GL_UNIFORM_BUFFER, 0, desc.blockBuffer, 0, src->count);
+      #else
+      assert(false); // Unsupported on DX9
+      #endif
+      break;
+   case SUT_Bool:
+      assert(src->count == 0);
+      if (isCacheInvalid || dst->val.i != src->val.i)
+      {
+         dst->val.i = src->val.i;
+         #ifdef ENABLE_SDL
+         glUniform1i(desc.location, src->val.i);
+         #else
+         CHECKD3D(m_shader->SetBool(desc.handle, src->val.i));
+         #endif
+         m_renderDevice->m_curParameterChanges++;
+      }
+      break;
+   case SUT_Int:
+      assert(src->count == 0);
+      if (isCacheInvalid || dst->val.i != src->val.i)
+      {
+         dst->val.i = src->val.i;
+         #ifdef ENABLE_SDL
+         glUniform1i(desc.location, src->val.i);
+         #else
+         CHECKD3D(m_shader->SetInt(desc.handle, src->val.i));
+         #endif
+         m_renderDevice->m_curParameterChanges++;
+      }
+      break;
+   case SUT_Float:
+      assert(src->count == 0);
+      if (isCacheInvalid || dst->val.f != src->val.f)
+      {
+         dst->val.f = src->val.f;
+         #ifdef ENABLE_SDL
+         glUniform1f(desc.location, src->val.f);
+         #else
+         CHECKD3D(m_shader->SetFloat(desc.handle, src->val.f));
+         #endif
+         m_renderDevice->m_curParameterChanges++;
+      }
+      break;
+   case SUT_Float2:
+      assert(src->count == 0);
+      if (isCacheInvalid || memcmp(src->val.fv, dst->val.fv, 2 * sizeof(float)) != 0)
+      {
+         memcpy(dst->val.fv, src->val.fv, 2 * sizeof(float));
+         #ifdef ENABLE_SDL
+         glUniform2fv(desc.location, 1, src->val.fv);
+         #else
+         CHECKD3D(m_shader->SetVector(desc.handle, (D3DXVECTOR4*)src->val.fv));
+         #endif
+         m_renderDevice->m_curParameterChanges++;
+      }
+      break;
+   case SUT_Float3:
+      assert(src->count == 0);
+      if (isCacheInvalid || memcmp(src->val.fv, dst->val.fv, 3 * sizeof(float)) != 0)
+      {
+         memcpy(dst->val.fv, src->val.fv, 3 * sizeof(float));
+         #ifdef ENABLE_SDL
+         glUniform3fv(desc.location, 1, src->val.fv);
+         #else
+         CHECKD3D(m_shader->SetVector(desc.handle, (D3DXVECTOR4*)src->val.fv));
+         #endif
+         m_renderDevice->m_curParameterChanges++;
+      }
+      break;
+   case SUT_Float4:
+      assert(src->count == 0);
+      if (isCacheInvalid || memcmp(src->val.fv, dst->val.fv, 4 * sizeof(float)) != 0)
+      {
+         memcpy(dst->val.fv, src->val.fv, 4 * sizeof(float));
+         #ifdef ENABLE_SDL
+         glUniform4fv(desc.location, 1, src->val.fv);
+         #else
+         CHECKD3D(m_shader->SetVector(desc.handle, (D3DXVECTOR4*)src->val.fv));
+         #endif
+         m_renderDevice->m_curParameterChanges++;
+      }
+      break;
+   case SUT_Float4v:
+      assert(src->count == 0 || src->count == desc.count * 4 * sizeof(float));
+      if ((src->count != 0) && (isCacheInvalid || dst->count == 0 || memcmp(src->val.data, dst->val.data, src->count) != 0))
+      {
+         if (dst->count == 0)
+         {
+            dst->count = src->count;
+            dst->val.data = malloc(src->count);
+         }
+         memcpy(dst->val.data, src->val.data, src->count);
+         #ifdef ENABLE_SDL
+         glUniform4fv(desc.location, desc.count, (float*) src->val.data);
+         #else
+         CHECKD3D(m_shader->SetFloatArray(desc.handle, (float*) src->val.data, desc.count));
+         #endif
+         m_renderDevice->m_curParameterChanges++;
+      }
+      break;
+   case SUT_Float3x4:
+   case SUT_Float4x3:
+   case SUT_Float4x4:
+      assert(src->count == 0);
+      if (isCacheInvalid || memcmp(src->val.fv, dst->val.fv, 4 * 4 * sizeof(float)) != 0)
+      {
+         memcpy(dst->val.fv, src->val.fv, 4 * 4 * sizeof(float));
+         #ifdef ENABLE_SDL
+         glUniformMatrix4fv(desc.location, 1, GL_FALSE, src->val.fv);
+         #else
+         /*CHECKD3D(*/ m_shader->SetMatrix(desc.handle, (D3DXMATRIX*) src->val.fv) /*)*/; // leads to invalid calls when setting some of the matrices (as hlsl compiler optimizes some down to less than 4x4)
+         #endif
+         m_renderDevice->m_curParameterChanges++;
+      }
+      break;
+#ifdef ENABLE_SDL
+   case SUT_Sampler:
+      {
+         // DX9 implementation uses preaffected texture units, not samplers, so these can not be used for OpenGL. This would cause some collisions.
+         Sampler* texel = m_uniformCache[SHADER_TECHNIQUE_COUNT][uniformName].val.sampler;
+         SamplerBinding* tex_unit = nullptr;
+         if (texel == nullptr)
+         { // For null texture, use OpenGL texture 0 which is a predefined texture that always returns (0, 0, 0, 1)
+            for (auto binding : m_renderDevice->m_samplerBindings)
+            {
+               if (binding->sampler == nullptr)
+               {
+                  tex_unit = binding;
+                  break;
+               }
+            }
+            if (tex_unit == nullptr)
+            {
+               tex_unit = m_renderDevice->m_samplerBindings.back();
+               if (tex_unit->sampler != nullptr)
+                  tex_unit->sampler->m_bindings.erase(tex_unit);
+               tex_unit->sampler = nullptr;
+               glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
+               glBindTexture(GL_TEXTURE_2D, 0);
+               m_renderDevice->m_curTextureChanges++;
+            }
+         }
+         else
+         {
+            SamplerFilter filter = shaderUniformNames[uniformName].default_filter;
+            SamplerAddressMode clampu = shaderUniformNames[uniformName].default_clampu;
+            SamplerAddressMode clampv = shaderUniformNames[uniformName].default_clampv;
+            if (filter == SF_UNDEFINED) {
+               filter = texel->GetFilter();
+               if (filter == SF_UNDEFINED)
+                  filter = SF_NONE;
+            }
+            if (clampu == SA_UNDEFINED)
+            {
+               clampu = texel->GetClampU();
+               if (clampu == SA_UNDEFINED)
+                  clampu = SA_CLAMP;
+            }
+            if (clampv == SA_UNDEFINED)
+            {
+               clampv = texel->GetClampV();
+               if (clampv == SA_UNDEFINED)
+                  clampv = SA_CLAMP;
+            }
+            for (auto binding : texel->m_bindings)
+            {
+               if (binding->filter == filter && binding->clamp_u == clampu && binding->clamp_v == clampv)
+               {
+                  tex_unit = binding;
+                  break;
+               }
+            }
+            if (tex_unit == nullptr)
+            {
+               tex_unit = m_renderDevice->m_samplerBindings.back();
+               if (tex_unit->sampler != nullptr)
+                  tex_unit->sampler->m_bindings.erase(tex_unit);
+               tex_unit->sampler = texel;
+               tex_unit->filter = filter;
+               tex_unit->clamp_u = clampu;
+               tex_unit->clamp_v = clampv;
+               texel->m_bindings.insert(tex_unit);
+               glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
+               glBindTexture(GL_TEXTURE_2D, texel->GetCoreTexture());
+               m_renderDevice->m_curTextureChanges++;
+               GLuint sampler_state = m_renderDevice->GetSamplerState(filter, clampu, clampv);
+               glBindSampler(tex_unit->unit, sampler_state);
+               m_renderDevice->m_curStateChanges++;
+            }
+         }
+         // Bind the sampler
+         glUniform1i(desc.location, tex_unit->unit);
+         m_renderDevice->m_curParameterChanges++;
+         // Mark this texture unit as the last used one, and age all the others
+         for (int i = tex_unit->use_rank - 1; i >= 0; i--)
+         {
+            m_renderDevice->m_samplerBindings[i]->use_rank++;
+            m_renderDevice->m_samplerBindings[i + 1] = m_renderDevice->m_samplerBindings[i];
+         }
+         tex_unit->use_rank = 0;
+         m_renderDevice->m_samplerBindings[0] = tex_unit;
+         break;
+      }
+   default:
+      {
+         char msg[256];
+         sprintf_s(msg, sizeof(msg), "Unknown uniform type 0x%0002X for %s in %s", desc.uniform.type, shaderUniformNames[uniformName].name.c_str(), m_techniques[m_technique]->name.c_str());
+         ShowError(msg);
+         break;
+      }
+#endif
    }
 }
 
@@ -737,7 +1178,7 @@ Shader::ShaderTechnique* Shader::compileGLShader(const ShaderTechniques techniqu
       for (int i = 0; i < SHADER_ATTRIBUTE_COUNT; ++i)
          shader->attributeLocation[i] = { 0, -1, 0 };
       for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i)
-         shader->uniformLocation[i] = { 0, -1, 0, 0 };
+         shader->uniform_desc[i].location = -1;
 
       int count = 0;
       glGetProgramiv(shaderprogram, GL_ACTIVE_UNIFORMS, &count);
@@ -749,7 +1190,6 @@ Shader::ShaderTechnique* Shader::compileGLShader(const ShaderTechniques techniqu
          glGetActiveUniform(shader->program, (GLuint)i, 256, &length, &size, &type, uniformName);
          GLint location = glGetUniformLocation(shader->program, uniformName);
          if (location >= 0 && size > 0) {
-            uniformLoc newLoc = { type, location, size, (GLuint) 0 };
             // hack for packedLights, but works for all arrays
             for (int i2 = 0; i2 < length; i2++)
             {
@@ -762,13 +1202,28 @@ Shader::ShaderTechnique* Shader::compileGLShader(const ShaderTechniques techniqu
             if (uniformIndex < SHADER_UNIFORM_COUNT)
             {
                m_uniforms[technique].push_back(uniformIndex);
-               shader->uniformLocation[uniformIndex] = newLoc;
+               auto uniform = shaderUniformNames[uniformIndex];
+               assert(uniform.type != SUT_Bool || type == GL_BOOL);
+               assert(uniform.type != SUT_Int); // Unused so unimplemented
+               assert(uniform.type != SUT_Float || type == GL_FLOAT);
+               assert(uniform.type != SUT_Float2 || type == GL_FLOAT_VEC2);
+               assert(uniform.type != SUT_Float3 || type == GL_FLOAT_VEC3);
+               assert(uniform.type != SUT_Float4 || type == GL_FLOAT_VEC4);
+               assert(uniform.type != SUT_Float4v || type == GL_FLOAT_VEC4);
+               assert(uniform.type != SUT_Float3x4); // Unused so unimplemented
+               assert(uniform.type != SUT_Float4x3 || type == GL_FLOAT_MAT4); // FIXME this should be GL_FLOAT_MAT4x3 or GL_FLOAT_MAT3x4 => fix orientation uniform in gl shader
+               assert(uniform.type != SUT_Float4x4); // Unused so unimplemented
+               assert(uniform.type != SUT_DataBlock); // Unused so unimplemented
+               assert(uniform.type != SUT_Sampler || type == GL_SAMPLER_2D);
+               shader->uniform_desc[uniformIndex].uniform = uniform;
+               shader->uniform_desc[uniformIndex].count = size;
+               shader->uniform_desc[uniformIndex].location = location;
                if (shaderUniformNames[uniformIndex].default_tex_unit != -1)
-               { 
+               {
                   // FIXME this is wrong. After checking the specs, OpenGL sample a texture unit bound to texture #0 as (0, 0, 0, 1)
                   // Unlike DirectX, OpenGL won't return 0 if the texture is not bound to a black texture
                   // This will cause error for static pre-render which, done before bulb light transmission is evaluated and bound
-                  SetTextureNull(uniformIndex); 
+                  SetTextureNull(uniformIndex);
                }
             }
          }
@@ -782,8 +1237,6 @@ Shader::ShaderTechnique* Shader::compileGLShader(const ShaderTechniques techniqu
          glGetActiveUniformBlockiv(shader->program, (GLuint)i, GL_UNIFORM_BLOCK_DATA_SIZE, &size);
          GLint location = glGetUniformBlockIndex(shader->program, uniformName);
          if (location >= 0 && size>0) {
-            uniformLoc newLoc = { ~0u, location, size, (GLuint) 0 };
-            glGenBuffers(1, &newLoc.blockBuffer);
             //hack for packedLights, but works for all arrays - I don't need it for uniform blocks now and I'm not sure if it makes any sense, but maybe someone else in the future?
             for (int i2 = 0;i2 < length;i2++) {
                if (uniformName[i2] == '[') {
@@ -794,8 +1247,13 @@ Shader::ShaderTechnique* Shader::compileGLShader(const ShaderTechniques techniqu
             auto uniformIndex = getUniformByName(uniformName);
             if (uniformIndex < SHADER_UNIFORM_COUNT)
             {
+               auto uniform = shaderUniformNames[uniformIndex];
+               assert(uniform.type == ShaderUniformType::SUT_DataBlock);
+               shader->uniform_desc[uniformIndex].uniform = uniform;
+               shader->uniform_desc[uniformIndex].count = size;
+               shader->uniform_desc[uniformIndex].location = location;
+               glGenBuffers(1, &shader->uniform_desc[uniformIndex].blockBuffer);
                m_uniforms[technique].push_back(uniformIndex);
-               shader->uniformLocation[uniformIndex] = newLoc;
             }
          }
       }
@@ -985,24 +1443,6 @@ bool Shader::Load(const char* shaderCodeName, UINT codeSize)
    return true;
 }
 
-void Shader::Unload()
-{
-   for (int j = 0; j <= SHADER_TECHNIQUE_COUNT; ++j)
-   {
-      for (int i = 0; i < SHADER_UNIFORM_COUNT; ++i)
-      {
-         if (m_uniformCache[j][i].capacity > 0 && m_uniformCache[j][i].data)
-            free(m_uniformCache[j][i].data);
-      }
-      if (j < SHADER_TECHNIQUE_COUNT && m_techniques[j] != nullptr)
-      {
-         glDeleteProgram(m_techniques[j]->program);
-         delete m_techniques[j];
-         m_techniques[j] = nullptr;
-      }
-   }
-}
-
 void Shader::setAttributeFormat(DWORD fvf)
 {
    if (m_technique == SHADER_TECHNIQUE_INVALID)
@@ -1035,56 +1475,6 @@ void Shader::setAttributeFormat(DWORD fvf)
    }
 }
 
-void Shader::SetTechnique(ShaderTechniques _technique)
-{
-   assert(current_shader != this); // Changing the technique of a used shader is not allowed (between Begin/End)
-   assert(_technique < SHADER_TECHNIQUE_COUNT);
-   if (m_techniques[_technique] == nullptr)
-   {
-      m_technique = SHADER_TECHNIQUE_INVALID;
-      ShowError("Fatal Error: Could not find shader technique " + shaderTechniqueNames[_technique]);
-      exit(-1);
-   }
-   m_technique = _technique;
-}
-
-void Shader::SetTechniqueMetal(ShaderTechniques _technique, const bool isMetal)
-{
-   SetTechnique(_technique);
-   SetBool(SHADER_is_metal, isMetal);
-}
-
-uint32_t Shader::CopyUniformCache(const bool copyTo, const ShaderTechniques technique, UniformCache (&uniformCache)[SHADER_UNIFORM_COUNT])
-{
-   UniformCache* src_cache = copyTo ? m_uniformCache[SHADER_TECHNIQUE_COUNT] : uniformCache;
-   UniformCache* dst_cache = copyTo ? uniformCache : m_uniformCache[SHADER_TECHNIQUE_COUNT];
-   unsigned long sampler_hash = 0L;
-   for (auto uniformName : m_uniforms[technique])
-   { 
-      UniformCache* src = &(src_cache[uniformName]);
-      UniformCache* dst = &(dst_cache[uniformName]);
-      if (src->count == 0)
-      {
-         memcpy(&(dst->val), &(src->val), sizeof(UniformCache::UniformValue));
-      }
-      else
-      {
-         if (dst->capacity < src->count)
-         {
-            if (dst->capacity > 0)
-               free(dst->data);
-            dst->capacity = src->capacity;
-            dst->data = (float*)malloc(dst->capacity * sizeof(float));
-         }
-         dst->count = src->count;
-         memcpy(dst->data, src->data, src->count * sizeof(float));
-      }
-      if (shaderUniformNames[uniformName].is_sampler)
-         sampler_hash += (unsigned long) src->val.sampler;
-   }
-   return sampler_hash;
-}
-
 void Shader::SetTextureNull(const ShaderUniforms texelName) {
    SetTexture(texelName, (Sampler*) nullptr);
 }
@@ -1112,76 +1502,12 @@ void Shader::SetUniformBlock(const ShaderUniforms hParameter, const float* pMatr
 {
    if (hParameter >= SHADER_UNIFORM_COUNT) return;
    UniformCache* elem = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter];
-   if (elem->capacity < size)
+   if (elem->count == 0)
    {
-      if (elem->capacity > 0)
-         free(elem->data);
-      elem->data = (float*)malloc(size * sizeof(float));
-      elem->capacity = size;
+      elem->count = size;
+      elem->val.data = malloc(size);
    }
-   elem->count = size;
-   memcpy(elem->data, pMatrix, size * sizeof(float));
-   ApplyUniform(hParameter);
-}
-
-void Shader::SetMatrix(const ShaderUniforms hParameter, const Matrix3D* pMatrix)
-{
-   if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   memcpy(m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.fv, pMatrix->m16, 16 * sizeof(float));
-   ApplyUniform(hParameter);
-}
-
-void Shader::SetVector(const ShaderUniforms hParameter, const vec4* pVector)
-{
-   if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   memcpy(m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.fv, pVector, 4 * sizeof(float));
-   ApplyUniform(hParameter);
-}
-
-void Shader::SetVector(const ShaderUniforms hParameter, const float x, const float y, const float z, const float w)
-{
-   if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.fv[0] = x;
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.fv[1] = y;
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.fv[2] = z;
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.fv[3] = w;
-   ApplyUniform(hParameter);
-}
-
-void Shader::SetFloat(const ShaderUniforms hParameter, const float f)
-{
-   if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.f = f;
-   ApplyUniform(hParameter);
-}
-
-void Shader::SetInt(const ShaderUniforms hParameter, const int i)
-{
-   if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.i = i;
-   ApplyUniform(hParameter);
-}
-
-void Shader::SetBool(const ShaderUniforms hParameter, const bool b)
-{
-   if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter].val.i = b ? 1 : 0;
-   ApplyUniform(hParameter);
-}
-
-void Shader::SetFloatArray(const ShaderUniforms hParameter, const float* pData, const unsigned int count)
-{
-   if (hParameter >= SHADER_UNIFORM_COUNT) return;
-   UniformCache* elem = &m_uniformCache[SHADER_TECHNIQUE_COUNT][hParameter];
-   if (elem->capacity < count)
-   {
-      if (elem->capacity > 0)
-         free(elem->data);
-      elem->data = (float*)malloc(count * sizeof(float));
-      elem->capacity = count;
-   }
-   elem->count = count;
-   memcpy(elem->data, pData, count * sizeof(float));
+   memcpy(elem->val.data, pMatrix, size);
    ApplyUniform(hParameter);
 }
 
@@ -1217,217 +1543,13 @@ void Shader::SetTransform(const TransformStateType p1, const Matrix3D * p2, cons
    }
 }
 
-void Shader::ApplyUniform(const ShaderUniforms uniformName)
-{
-   if (current_shader != this)
-      return;
-   const uniformLoc currentUniform = m_techniques[m_technique]->uniformLocation[uniformName];
-   if (currentUniform.location < 0 || currentUniform.type == 0 || currentUniform.size == 0)
-      return;
-   bool isCacheInvalid = !m_isCacheValid[m_technique];
-   UniformCache* src = &(m_uniformCache[SHADER_TECHNIQUE_COUNT][uniformName]);
-   UniformCache* dst = &(m_uniformCache[m_technique][uniformName]);
-   switch (currentUniform.type)
-   {
-   case ~0u: // Uniform blocks
-      if (isCacheInvalid || memcmp(src->data, dst->data, currentUniform.size) != 0)
-      {
-         // (currentUniform.size is in byte, src->fp.count is in number of floats)
-         assert(src->count * sizeof(float) == currentUniform.size);
-         if (dst->capacity < src->count)
-         {
-            if (dst->capacity > 0)
-               free(dst->data);
-            dst->capacity = src->count;
-            dst->data = (float*)malloc(dst->capacity * sizeof(float));
-         }
-         dst->count = src->count;
-         memcpy(dst->data, src->data, currentUniform.size);
-         glBindBuffer(GL_UNIFORM_BUFFER, currentUniform.blockBuffer);
-         glBufferData(GL_UNIFORM_BUFFER, currentUniform.size, src->data, GL_STREAM_DRAW);
-         m_renderDevice->m_curParameterChanges++;
-      }
-      glUniformBlockBinding(m_techniques[m_technique]->program, currentUniform.location, 0);
-      glBindBufferRange(GL_UNIFORM_BUFFER, 0, currentUniform.blockBuffer, 0, currentUniform.size);
-      break;
-   case GL_FLOAT:
-      if (isCacheInvalid || dst->val.f != src->val.f)
-      {
-         assert(currentUniform.size == 1);
-         dst->val.f = src->val.f;
-         glUniform1f(currentUniform.location, src->val.f);
-         m_renderDevice->m_curParameterChanges++;
-      }
-      break;
-   case GL_BOOL:
-   case GL_INT:
-      if (isCacheInvalid || dst->val.i != src->val.i)
-      {
-         assert(currentUniform.size == 1);
-         dst->val.i = src->val.i;
-         glUniform1i(currentUniform.location, src->val.i);
-         m_renderDevice->m_curParameterChanges++;
-      }
-      break;
-   case GL_FLOAT_VEC2:
-      if (isCacheInvalid || memcmp(src->val.fv, dst->val.fv, 2 * sizeof(float)) != 0)
-      {
-         assert(currentUniform.size == 1);
-         memcpy(dst->val.fv, src->val.fv, 2 * sizeof(float));
-         glUniform2fv(currentUniform.location, 1, src->val.fv);
-         m_renderDevice->m_curParameterChanges++;
-      }
-      break;
-   case GL_FLOAT_VEC3:
-      if (isCacheInvalid || memcmp(src->val.fv, dst->val.fv, 3 * sizeof(float)) != 0)
-      {
-         assert(currentUniform.size == 1);
-         memcpy(dst->val.fv, src->val.fv, 3 * sizeof(float));
-         glUniform3fv(currentUniform.location, 1, src->val.fv);
-         m_renderDevice->m_curParameterChanges++;
-      }
-      break;
-   case GL_FLOAT_VEC4:
-      if (currentUniform.size == 1)
-      {
-         if (isCacheInvalid || memcmp(src->val.fv, dst->val.fv, 4 * sizeof(float)) != 0)
-         {
-            memcpy(dst->val.fv, src->val.fv, 4 * sizeof(float));
-            glUniform4fv(currentUniform.location, 1, src->val.fv);
-            m_renderDevice->m_curParameterChanges++;
-         }
-      }
-      else
-      {
-         if (isCacheInvalid || memcmp(src->data, dst->data, currentUniform.size * 4 * sizeof(float)) != 0)
-         {
-            assert(src->count == currentUniform.size * 4);
-            if (dst->capacity < src->count)
-            {
-               if (dst->capacity > 0)
-                  free(dst->data);
-               dst->capacity = src->count;
-               dst->data = (float*)malloc(dst->capacity * sizeof(float));
-            }
-            dst->count = src->count;
-            memcpy(dst->data, src->data, currentUniform.size * 4 * sizeof(float));
-            glUniform4fv(currentUniform.location, currentUniform.size, src->data);
-            m_renderDevice->m_curParameterChanges++;
-         }
-      }
-      break;
-   case GL_FLOAT_MAT4:
-      if (isCacheInvalid || memcmp(src->val.fv, dst->val.fv, 4 * 4 * sizeof(float)) != 0)
-      {
-         assert(currentUniform.size == 1);
-         memcpy(dst->val.fv, src->val.fv, 4 * 4 * sizeof(float));
-         glUniformMatrix4fv(currentUniform.location, 1, GL_FALSE, src->val.fv);
-         m_renderDevice->m_curParameterChanges++;
-      }
-      break;
-   case GL_SAMPLER_2D:
-   case GL_SAMPLER_2D_MULTISAMPLE:
-      {
-         // DX9 implementation uses preaffected texture units, not samplers, so these can not be used for OpenGL. This would cause some collisions.
-         assert(currentUniform.size == 1);
-         Sampler* texel = m_uniformCache[SHADER_TECHNIQUE_COUNT][uniformName].val.sampler;
-         SamplerBinding* tex_unit = nullptr;
-         if (texel == nullptr)
-         { // For null texture, use OpenGL texture 0 which is a predefined texture that always returns (0, 0, 0, 1)
-            for (auto binding : m_renderDevice->m_samplerBindings)
-            {
-               if (binding->sampler == nullptr)
-               {
-                  tex_unit = binding;
-                  break;
-               }
-            }
-            if (tex_unit == nullptr)
-            {
-               tex_unit = m_renderDevice->m_samplerBindings.back();
-               if (tex_unit->sampler != nullptr)
-                  tex_unit->sampler->m_bindings.erase(tex_unit);
-               tex_unit->sampler = nullptr;
-               glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
-               glBindTexture(GL_TEXTURE_2D, 0);
-               m_renderDevice->m_curTextureChanges++;
-            }
-         }
-         else
-         {
-            SamplerFilter filter = shaderUniformNames[uniformName].default_filter;
-            SamplerAddressMode clampu = shaderUniformNames[uniformName].default_clampu;
-            SamplerAddressMode clampv = shaderUniformNames[uniformName].default_clampv;
-            if (filter == SF_UNDEFINED) {
-               filter = texel->GetFilter();
-               if (filter == SF_UNDEFINED)
-                  filter = SF_NONE;
-            }
-            if (clampu == SA_UNDEFINED)
-            {
-               clampu = texel->GetClampU();
-               if (clampu == SA_UNDEFINED)
-                  clampu = SA_CLAMP;
-            }
-            if (clampv == SA_UNDEFINED)
-            {
-               clampv = texel->GetClampV();
-               if (clampv == SA_UNDEFINED)
-                  clampv = SA_CLAMP;
-            }
-            for (auto binding : texel->m_bindings)
-            {
-               if (binding->filter == filter && binding->clamp_u == clampu && binding->clamp_v == clampv)
-               {
-                  tex_unit = binding;
-                  break;
-               }
-            }
-            if (tex_unit == nullptr)
-            {
-               tex_unit = m_renderDevice->m_samplerBindings.back();
-               if (tex_unit->sampler != nullptr)
-                  tex_unit->sampler->m_bindings.erase(tex_unit);
-               tex_unit->sampler = texel;
-               tex_unit->filter = filter;
-               tex_unit->clamp_u = clampu;
-               tex_unit->clamp_v = clampv;
-               texel->m_bindings.insert(tex_unit);
-               glActiveTexture(GL_TEXTURE0 + tex_unit->unit);
-               glBindTexture(GL_TEXTURE_2D, texel->GetCoreTexture());
-               m_renderDevice->m_curTextureChanges++;
-               GLuint sampler_state = m_renderDevice->GetSamplerState(filter, clampu, clampv);
-               glBindSampler(tex_unit->unit, sampler_state);
-               m_renderDevice->m_curStateChanges++;
-            }
-         }
-         // Bind the sampler
-         glUniform1i(currentUniform.location, tex_unit->unit);
-         m_renderDevice->m_curParameterChanges++;
-         // Mark this texture unit as the last used one, and age all the others
-         for (int i = tex_unit->use_rank - 1; i >= 0; i--)
-         {
-            m_renderDevice->m_samplerBindings[i]->use_rank++;
-            m_renderDevice->m_samplerBindings[i + 1] = m_renderDevice->m_samplerBindings[i];
-         }
-         tex_unit->use_rank = 0;
-         m_renderDevice->m_samplerBindings[0] = tex_unit;
-         break;
-      }
-   default:
-      {
-         char msg[256];
-         sprintf_s(msg, sizeof(msg), "Unknown uniform type 0x%0002X for %s in %s", currentUniform.type, shaderUniformNames[uniformName].name.c_str(), m_techniques[m_technique]->name.c_str());
-         ShowError(msg);
-         break;
-      }
-   }
-}
-
 #else
+
 ///////////////////////////////////////////////////////////////////////////////
 // DirectX 9 specific implementation
-   
+
+
+
 // loads an HLSL effect file
 // if fromFile is true the shaderName should point to the full filename (with path) to the .fx file
 // if fromFile is false the shaderName should be the resource name not the IDC_XX_YY value. Search vpinball_eng.rc for ".fx" to see an example
@@ -1477,55 +1599,80 @@ bool Shader::Load(const BYTE* shaderCodeName, UINT codeSize)
 
       return false;
    }
+
+   // Collect the list of uniforms and there informations (handle, type,...)
+   D3DXEFFECT_DESC effect_desc;
+   m_shader->GetDesc(&effect_desc);
+   for (UINT i = 0; i < effect_desc.Parameters; i++)
+   {
+      D3DXPARAMETER_DESC param_desc;
+      D3DXHANDLE parameter = m_shader->GetParameter(NULL, i);
+      m_shader->GetParameterDesc(parameter, &param_desc);
+      ShaderUniformType type = ShaderUniformType::SUT_INVALID;
+      int count = 1;
+      if (param_desc.Class == D3DXPC_SCALAR)
+      {
+         if (param_desc.Type == D3DXPT_BOOL)
+            type = ShaderUniformType::SUT_Bool;
+         else if (param_desc.Type == D3DXPT_INT)
+            type = ShaderUniformType::SUT_Int;
+         else if (param_desc.Type == D3DXPT_FLOAT)
+            type = ShaderUniformType::SUT_Float;
+      }
+      else if (param_desc.Class == D3DXPC_VECTOR && param_desc.Type == D3DXPT_FLOAT)
+      {
+         if (param_desc.Elements > 0 && param_desc.Columns == 4)
+         {
+            type = ShaderUniformType::SUT_Float4v;
+            count = param_desc.Elements;
+         }
+         else if (param_desc.Elements == 0 && param_desc.Columns == 4)
+            type = ShaderUniformType::SUT_Float4;
+         else if (param_desc.Elements == 0 && param_desc.Columns == 3)
+            type = ShaderUniformType::SUT_Float3;
+         else if (param_desc.Elements == 0 && param_desc.Columns == 2)
+            type = ShaderUniformType::SUT_Float2;
+      }
+      else if (param_desc.Class == D3DXPC_MATRIX_ROWS && param_desc.Type == D3DXPT_FLOAT)
+      {
+         if (param_desc.Rows == 4 && param_desc.Columns == 4)
+            type = ShaderUniformType::SUT_Float4x4;
+         else if (param_desc.Rows == 3 && param_desc.Columns == 4)
+            type = ShaderUniformType::SUT_Float3x4;
+         else if (param_desc.Rows == 4 && param_desc.Columns == 3)
+            type = ShaderUniformType::SUT_Float4x3;
+      }
+      if (type == ShaderUniformType::SUT_INVALID)
+      {
+         OutputDebugString("Unsupported uniform type for: "s.append(param_desc.Name).append("\n"s).c_str());
+         continue;
+      }
+      ShaderUniforms uniformIndex = getUniformByName(param_desc.Name);
+      if (uniformIndex == SHADER_UNIFORM_INVALID)
+      {
+         OutputDebugString("Missing uniform: "s.append(param_desc.Name).append("\n"s).c_str());
+         continue;
+      }
+      else
+      {
+         auto uniform = shaderUniformNames[uniformIndex];
+         assert(uniform.type == type);
+         m_uniform_desc[uniformIndex].uniform = uniform;
+         m_uniform_desc[uniformIndex].handle = parameter;
+         m_uniform_desc[uniformIndex].count = count;
+         // TODO we do not filter on technique for DX9. Not a big problem, but not that clean either
+         for (int j = 0; j < SHADER_TECHNIQUE_COUNT; j++)
+            m_uniforms[j].push_back(uniformIndex);
+      }
+   }
    return true;
 }
 
-void Shader::Unload()
+void Shader::SetTextureNull(const ShaderUniforms samplerUniform)
 {
-   SAFE_RELEASE(m_shader);
-}
-
-void Shader::SetTexture(const ShaderUniforms texelName, Texture *texel, const bool clampU, const bool clampV, const bool force_linear_rgb)
-{
+   auto texelName = shaderUniformNames[samplerUniform].texture_ref.c_str();
    const unsigned int idx = texelName[strlen(texelName) - 1] - '0'; // current convention: SetTexture gets "TextureX", where X 0..4
-   const bool cache = idx < TEXTURESET_STATE_CACHE_SIZE;
-
-   if (!texel || !texel->m_pdsBuffer) {
-      if (cache) {
-         currentTexture[idx] = nullptr; // invalidate cache
-      }
-      CHECKD3D(m_shader->SetTexture(texelName, nullptr));
-
-      m_renderDevice->m_curTextureChanges++;
-
-      return;
-   }
-
-   if (!cache || (texel->m_pdsBuffer != currentTexture[idx]))
-   {
-      if (cache)
-         currentTexture[idx] = texel->m_pdsBuffer;
-      CHECKD3D(m_shader->SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel->m_pdsBuffer, clampU, clampV, force_linear_rgb)));
-
-      m_renderDevice->m_curTextureChanges++;
-   }
-}
-
-void Shader::SetTexture(const ShaderUniforms texelName, D3DTexture *texel)
-{
-   const unsigned int idx = texelName[strlen(texelName) - 1] - '0'; // current convention: SetTexture gets "TextureX", where X 0..4
-   if (idx < TEXTURESET_STATE_CACHE_SIZE)
-      currentTexture[idx] = nullptr; // direct set of device tex invalidates the cache
-
-   CHECKD3D(m_shader->SetTexture(texelName, texel));
-
-   m_renderDevice->m_curTextureChanges++;
-}
-
-void Shader::SetTextureNull(const ShaderUniforms texelName)
-{
-   const unsigned int idx = texelName[strlen(texelName) - 1] - '0'; // current convention: SetTexture gets "TextureX", where X 0..4
-   const bool cache = idx < TEXTURESET_STATE_CACHE_SIZE;
+   const bool cache = (idx < TEXTURESET_STATE_CACHE_SIZE);
 
    if (cache)
       currentTexture[idx] = nullptr; // direct set of device tex invalidates the cache
@@ -1535,67 +1682,51 @@ void Shader::SetTextureNull(const ShaderUniforms texelName)
    m_renderDevice->m_curTextureChanges++;
 }
 
-void Shader::SetTechnique(const ShaderTechniques _technique)
+void Shader::SetTexture(const ShaderUniforms samplerUniform, Texture* texel, const SamplerFilter filter, const SamplerAddressMode clampU, const SamplerAddressMode clampV, const bool force_linear_rgb)
 {
-   if (strcmp(currentTechnique, _technique) /*|| (m_renderDevice->m_curShader != this)*/)
+   auto texelName = shaderUniformNames[samplerUniform].texture_ref.c_str();
+   const unsigned int idx = texelName[strlen(texelName) - 1] - '0'; // current convention: SetTexture gets "TextureX", where X 0..4
+   assert(idx < TEXTURESET_STATE_CACHE_SIZE);
+
+   if (!texel || !texel->m_pdsBuffer)
    {
-      strncpy_s(currentTechnique, _technique, sizeof(currentTechnique) - 1);
-      //m_renderDevice->m_curShader = this;
-      CHECKD3D(m_shader->SetTechnique(_technique));
-      m_renderDevice->m_curTechniqueChanges++;
+      currentTexture[idx] = nullptr; // invalidate the cache
+
+      CHECKD3D(m_shader->SetTexture(texelName, nullptr));
+
+      m_renderDevice->m_curTextureChanges++;
+
+      return;
+   }
+
+   if (texel->m_pdsBuffer != currentTexture[idx])
+   {
+      currentTexture[idx] = texel->m_pdsBuffer;
+      CHECKD3D(m_shader->SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel->m_pdsBuffer, filter, clampU, clampV, force_linear_rgb)->GetCoreTexture()));
+
+      m_renderDevice->m_curTextureChanges++;
    }
 }
 
-void Shader::SetMatrix(const ShaderUniforms hParameter, const Matrix3D* pMatrix)
+void Shader::SetTexture(const ShaderUniforms texelName, BaseTexture* texel, const SamplerFilter filter, const SamplerAddressMode clampU, const SamplerAddressMode clampV, const bool force_linear_rgb)
 {
-   /*CHECKD3D(*/m_shader->SetMatrix(hParameter, (const D3DXMATRIX*)pMatrix)/*)*/; // leads to invalid calls when setting some of the matrices (as hlsl compiler optimizes some down to less than 4x4)
-   m_renderDevice->m_curParameterChanges++;
+   if (!texel)
+      SetTextureNull(texelName);
+   else
+      SetTexture(texelName, m_renderDevice->m_texMan.LoadTexture(texel, filter, clampU, clampV, force_linear_rgb));
 }
 
-void Shader::SetVector(const ShaderUniforms hParameter, const vec4* pVector)
+void Shader::SetTexture(const ShaderUniforms samplerUniform, Sampler* texel)
 {
-   CHECKD3D(m_shader->SetVector(hParameter, pVector));
-   m_renderDevice->m_curParameterChanges++;
-}
+   auto texelName = shaderUniformNames[samplerUniform].texture_ref.c_str();
+   const unsigned int idx = texelName[strlen(texelName) - 1] - '0'; // current convention: SetTexture gets "TextureX", where X 0..4
+   assert(idx < TEXTURESET_STATE_CACHE_SIZE);
 
-void Shader::SetVector(const ShaderUniforms hParameter, const float x, const float y, const float z, const float w)
-{
-   vec4 pVector = vec4(x, y, z, w);
-   CHECKD3D(m_shader->SetVector(hParameter, &pVector));
-}
+   currentTexture[idx] = nullptr; // direct set of device tex invalidates the cache
 
-void Shader::SetFloat(const ShaderUniforms hParameter, const float f)
-{
-   CHECKD3D(m_shader->SetFloat(hParameter, f));
-   m_renderDevice->m_curParameterChanges++;
-}
+   CHECKD3D(m_shader->SetTexture(texelName, texel->GetCoreTexture()));
 
-void Shader::SetInt(const ShaderUniforms hParameter, const int i)
-{
-   CHECKD3D(m_shader->SetInt(hParameter, i));
-   m_renderDevice->m_curParameterChanges++;
-}
-
-void Shader::SetBool(const ShaderUniforms hParameter, const bool b)
-{
-   CHECKD3D(m_shader->SetBool(hParameter, b));
-   m_renderDevice->m_curParameterChanges++;
-}
-
-void Shader::SetFloatArray(const ShaderUniforms hParameter, const float* pData, const unsigned int count)
-{
-   CHECKD3D(m_shader->SetValue(hParameter, pData, count*sizeof(float)));
-   m_renderDevice->m_curParameterChanges++;
-}
-
-void Shader::GetTransform(const TransformStateType p1, Matrix3D* p2, const int count)
-{
-   CHECKD3D(m_renderDevice->GetCoreDevice()->GetTransform((D3DTRANSFORMSTATETYPE)p1, p2));
-}
-
-void Shader::SetTransform(const TransformStateType p1, const Matrix3D * p2, const int count)
-{
-   CHECKD3D(m_renderDevice->GetCoreDevice()->SetTransform((D3DTRANSFORMSTATETYPE)p1, p2));
+   m_renderDevice->m_curTextureChanges++;
 }
 
 #endif
