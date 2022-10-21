@@ -1240,7 +1240,7 @@ void Player::InitBallShader()
 {
    m_ballShader = new Shader(m_pin3d.m_pd3dPrimaryDevice);
  #ifdef ENABLE_SDL
-   m_ballShader->Load("ballShader.glfx", 0);
+   m_ballShader->Load("BallShader.glfx", nullptr, 0);
    // In VR we scale the scene to the controller scale, so the shader needs to scale light range accordingly
 #ifdef ENABLE_VR
    m_ballShader->SetFloat(SHADER_fSceneScale, m_pin3d.m_pd3dPrimaryDevice->m_scale);
@@ -1248,7 +1248,7 @@ void Player::InitBallShader()
    m_ballShader->SetFloat(SHADER_fSceneScale, 1.0f);
 #endif
 #else
-   m_ballShader->Load(g_ballShaderCode, sizeof(g_ballShaderCode));
+   m_ballShader->Load("BallShader.hlsl", g_ballShaderCode, sizeof(g_ballShaderCode));
 #endif
 
    UpdateBallShaderMatrix();

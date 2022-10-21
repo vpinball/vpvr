@@ -1398,29 +1398,29 @@ bool RenderDevice::LoadShaders()
    Shader::shaderPath = string(glShaderPath);
    Shader::shaderPath = Shader::shaderPath.substr(0, Shader::shaderPath.find_last_of("\\/"));
    Shader::shaderPath.append("\\glshader\\");
-   shaderCompilationOkay = basicShader->Load("BasicShader.glfx", 0) && shaderCompilationOkay;
-   shaderCompilationOkay = DMDShader->Load(m_stereo3D == STEREO_VR ? "DMDShaderVR.glfx" : "DMDShader.glfx", 0) && shaderCompilationOkay;
-   shaderCompilationOkay = FBShader->Load("FBShader.glfx", 0) && shaderCompilationOkay;
-   shaderCompilationOkay = FBShader->Load("SMAA.glfx", 0) && shaderCompilationOkay;
-   shaderCompilationOkay = flasherShader->Load("flasherShader.glfx", 0) && shaderCompilationOkay;
-   shaderCompilationOkay = lightShader->Load("lightShader.glfx", 0) && shaderCompilationOkay;
+   shaderCompilationOkay = basicShader->Load("BasicShader.glfx"s, nullptr, 0) && shaderCompilationOkay;
+   shaderCompilationOkay = DMDShader->Load(m_stereo3D == STEREO_VR ? "DMDShaderVR.glfx"s : "DMDShader.glfx"s, nullptr, 0) && shaderCompilationOkay;
+   shaderCompilationOkay = FBShader->Load("FBShader.glfx"s, nullptr, 0) && shaderCompilationOkay;
+   shaderCompilationOkay = FBShader->Load("SMAA.glfx"s, nullptr, 0) && shaderCompilationOkay;
+   shaderCompilationOkay = flasherShader->Load("flasherShader.glfx"s, nullptr, 0) && shaderCompilationOkay;
+   shaderCompilationOkay = lightShader->Load("lightShader.glfx"s, nullptr, 0) && shaderCompilationOkay;
    if (m_stereo3D != STEREO_OFF) {
       StereoShader = new Shader(this);
-      shaderCompilationOkay = StereoShader->Load("StereoShader.glfx", 0) && shaderCompilationOkay;
+      shaderCompilationOkay = StereoShader->Load("StereoShader.glfx"s, nullptr, 0) && shaderCompilationOkay;
    }
 #ifdef SEPARATE_CLASSICLIGHTSHADER
    classicLightShader = new Shader(this);
-   shaderCompilationOkay = classicLightShader->Load("classicLightShader.glfx", 0) && shaderCompilationOkay;
+   shaderCompilationOkay = classicLightShader->Load("classicLightShader.glfx"s, nullptr, 0) && shaderCompilationOkay;
 #endif
 #else // ENABLE_SDL
-   shaderCompilationOkay = basicShader->Load(g_basicShaderCode, sizeof(g_basicShaderCode)) && shaderCompilationOkay;
-   shaderCompilationOkay = DMDShader->Load(g_dmdShaderCode, sizeof(g_dmdShaderCode)) && shaderCompilationOkay;
-   shaderCompilationOkay = FBShader->Load(g_FBShaderCode, sizeof(g_FBShaderCode)) && shaderCompilationOkay;
-   shaderCompilationOkay = flasherShader->Load(g_flasherShaderCode, sizeof(g_flasherShaderCode)) && shaderCompilationOkay;
-   shaderCompilationOkay = lightShader->Load(g_lightShaderCode, sizeof(g_lightShaderCode)) && shaderCompilationOkay;
+   shaderCompilationOkay = basicShader->Load("BasicShader.hlsl"s, g_basicShaderCode, sizeof(g_basicShaderCode)) && shaderCompilationOkay;
+   shaderCompilationOkay = DMDShader->Load("DMDShader.hlsl"s, g_dmdShaderCode, sizeof(g_dmdShaderCode)) && shaderCompilationOkay;
+   shaderCompilationOkay = FBShader->Load("FBShader.hlsl"s, g_FBShaderCode, sizeof(g_FBShaderCode)) && shaderCompilationOkay;
+   shaderCompilationOkay = flasherShader->Load("FlasherShader.hlsl"s, g_flasherShaderCode, sizeof(g_flasherShaderCode)) && shaderCompilationOkay;
+   shaderCompilationOkay = lightShader->Load("LightShader.hlsl"s, g_lightShaderCode, sizeof(g_lightShaderCode)) && shaderCompilationOkay;
 #ifdef SEPARATE_CLASSICLIGHTSHADER
    classicLightShader = new Shader(this);
-   shaderCompilationOkay = classicLightShader->Load(g_classicLightShaderCode, sizeof(g_classicLightShaderCode)) && shaderCompilationOkay;
+   shaderCompilationOkay = classicLightShader->Load("ClassicLightShader.hlsl"s, sg_classicLightShaderCode, sizeof(g_classicLightShaderCode)) && shaderCompilationOkay;
 #endif
 #endif
 

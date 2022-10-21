@@ -243,19 +243,13 @@ enum ShaderAttributes
 };
 #undef SHADER_ATTRIBUTE
 
-
 class Shader final
 {
 public:
    Shader(RenderDevice *renderDevice);
    ~Shader();
 
-#ifdef ENABLE_SDL
-   bool Load(const char* shaderCodeName, UINT codeSize);
-#else
-   bool Load(const BYTE* shaderCodeName, UINT codeSize);
-   ID3DXEffect *Core() const { return m_shader; }
-#endif
+   bool Load(const std::string name, const BYTE* code, UINT codeSize);
 
    void Begin();
    void End();
@@ -296,9 +290,6 @@ public:
 
    static void SetDefaultSamplerFilter(const ShaderUniforms sampler, const SamplerFilter sf);
 
-   static void SetTransform(const TransformStateType p1, const Matrix3D* p2, const int count);
-   static void GetTransform(const TransformStateType p1, Matrix3D* p2, const int count);
-
    static Shader* GetCurrentShader();
 
    // state of what is actually bound per technique, and what is expected for the next begin/end
@@ -320,6 +311,7 @@ private:
    RenderDevice *m_renderDevice;
    static Shader* current_shader;
    ShaderTechniques m_technique;
+   string m_shaderCodeName;
 
    // caches:
 
@@ -377,8 +369,11 @@ private:
 #endif
    };
 
+#if DEBUG_LEVEL_LOG > 0
+   void LOG(const int level, const string& fileNameRoot, const string& message);
+#endif
+
 #ifdef ENABLE_SDL
-   string m_shaderCodeName;
 
    struct attributeLoc
    {
@@ -396,11 +391,8 @@ private:
    };
 
    std::ofstream* logFile;
-#if DEBUG_LEVEL_LOG > 0
-   void LOG(const int level, const string& fileNameRoot, const string& message);
-#endif
    bool parseFile(const string& fileNameRoot, const string& fileName, int level, robin_hood::unordered_map<string, string>& values, const string& parentMode);
-   string analyzeFunction(const char* shaderCodeName, const string& technique, const string& functionName, const robin_hood::unordered_map<string, string>& values);
+   string analyzeFunction(const string& shaderCodeName, const string& technique, const string& functionName, const robin_hood::unordered_map<string, string>& values);
    ShaderTechnique* compileGLShader(const ShaderTechniques technique, const string& fileNameRoot, string& shaderCodeName, const string& vertex, const string& geometry, const string& fragment);
 
    ShaderTechnique* m_techniques[SHADER_TECHNIQUE_COUNT];
@@ -409,6 +401,9 @@ private:
 public:
    void setAttributeFormat(const DWORD fvf);
 
+   static void SetTransform(const TransformStateType p1, const Matrix3D* p2, const int count);
+   static void GetTransform(const TransformStateType p1, Matrix3D* p2, const int count);
+
    static string shaderPath;
    static string Defines;
 
@@ -416,5 +411,8 @@ public:
    ID3DXEffect * m_shader;
    UniformDesc m_uniform_desc[SHADER_UNIFORM_COUNT];
    ShaderTechniques m_bound_technique = ShaderTechniques::SHADER_TECHNIQUE_INVALID;
+
+public:
+   ID3DXEffect* Core() const { return m_shader; }
 #endif
 };
