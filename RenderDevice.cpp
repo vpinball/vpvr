@@ -2073,7 +2073,6 @@ void RenderDevice::ApplyRenderStates()
          renderstate_mask &= RENDER_STATE_CLEAR_MASK_CLIPPLANEENABLE;
          val = m_renderstate.state & RENDER_STATE_MASK_CLIPPLANEENABLE;
 #ifdef ENABLE_SDL
-         // Basicshader already prepared with proper clipplane so just need to enable/disable it
          if (val) glEnable(GL_CLIP_DISTANCE0); else glDisable(GL_CLIP_DISTANCE0);
 #else
          CHECKD3D(m_pD3DDevice->SetRenderState(D3DRS_CLIPPLANEENABLE, val ? PLANE0 : 0));
