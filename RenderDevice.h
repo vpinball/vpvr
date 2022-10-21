@@ -227,12 +227,6 @@ private:
    RenderStateCache m_current_renderstate, m_renderstate;
 
 public:
-#ifdef ENABLE_SDL
-   HRESULT Create3DFont(INT Height, UINT Width, UINT Weight, UINT MipLevels, BOOL Italic, DWORD CharSet, DWORD OutputPrecision, DWORD Quality, DWORD PitchAndFamily, LPCTSTR pFacename, TTF_Font *ppFont);
-#else
-   HRESULT Create3DFont(INT Height, UINT Width, UINT Weight, UINT MipLevels, BOOL Italic, DWORD CharSet, DWORD OutputPrecision, DWORD Quality, DWORD PitchAndFamily, LPCTSTR pFacename, FontHandle *ppFont);
-#endif
-
    void DrawTexturedQuad(const Vertex3D_TexelOnly* vertices);
    void DrawFullscreenTexturedQuad();
    

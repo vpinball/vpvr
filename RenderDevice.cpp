@@ -2415,6 +2415,9 @@ void RenderDevice::GetTransform(const TransformStateType p1, Matrix3D* p2, const
 
 void RenderDevice::ForceAnisotropicFiltering(const bool enable)
 {
+#ifndef ENABLE_SDL
+   m_force_aniso = enable;
+#endif
    SamplerFilter sf = enable ? SF_ANISOTROPIC : SF_TRILINEAR;
    Shader::SetDefaultSamplerFilter(SHADER_tex_sprite, sf);
    Shader::SetDefaultSamplerFilter(SHADER_tex_flasher_A, sf);
@@ -2478,17 +2481,3 @@ void RenderDevice::GetViewport(ViewPort* p1)
    CHECKD3D(m_pD3DDevice->GetViewport((D3DVIEWPORT9*)p1));
 #endif
 }
-
-#ifdef ENABLE_SDL
-HRESULT RenderDevice::Create3DFont(INT Height, UINT Width, UINT Weight, UINT MipLevels, BOOL Italic, DWORD CharSet, DWORD OutputPrecision, DWORD Quality, DWORD PitchAndFamily, LPCTSTR pFacename, TTF_Font *ppFont)
-{
-   //ppFont = TTF_OpenFont(pFacename, 24);
-   //TODO see https://stackoverflow.com/questions/30016083/sdl2-opengl-sdl2-ttf-displaying-text
-   return 0;
-}
-#else
-HRESULT RenderDevice::Create3DFont(INT Height, UINT Width, UINT Weight, UINT MipLevels, BOOL Italic, DWORD CharSet, DWORD OutputPrecision, DWORD Quality, DWORD PitchAndFamily, LPCTSTR pFacename, FontHandle *ppFont)
-{
-   return D3DXCreateFont(m_pD3DDevice, Height, Width, Weight, MipLevels, Italic, CharSet, OutputPrecision, Quality, PitchAndFamily, pFacename, ppFont);
-}
-#endif
