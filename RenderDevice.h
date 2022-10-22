@@ -272,20 +272,9 @@ public:
    void SetVertexDeclaration(VertexDeclaration * declaration);
 
 #ifdef ENABLE_SDL
-   void* GetCoreDevice() const
-   {
-      return nullptr;
-   }
-
-   int getGLVersion() const
-   {
-      return m_GLversion;
-   }
+   int getGLVersion() const { return m_GLversion; }
 #else
-   IDirect3DDevice9* GetCoreDevice() const
-   {
-      return m_pD3DDevice;
-   }
+   IDirect3DDevice9* GetCoreDevice() const { return m_pD3DDevice; }
 #endif
 
    HWND getHwnd() const { return m_windowHwnd; }
@@ -314,11 +303,9 @@ private:
 #ifndef ENABLE_SDL
 #ifdef USE_D3D9EX
    IDirect3D9Ex* m_pD3DEx;
-
    IDirect3DDevice9Ex* m_pD3DDeviceEx;
 #endif
    IDirect3D9* m_pD3D;
-
    IDirect3DDevice9* m_pD3DDevice;
 #endif
 
@@ -340,13 +327,17 @@ private:
 
    VertexDeclaration *currentDeclaration; // for caching
 
+public:
+   void SetSamplerState(int unit, SamplerFilter filter, SamplerAddressMode clamp_u, SamplerAddressMode clamp_v);
+
+private:
 #ifdef ENABLE_SDL
    static GLuint m_samplerStateCache[3 * 3 * 5];
-#endif
-
-public:
-#ifdef ENABLE_SDL
-   GLuint GetSamplerState(SamplerFilter filter, SamplerAddressMode clamp_u, SamplerAddressMode clamp_v);
+#else
+   static constexpr DWORD TEXTURESET_STATE_CACHE_SIZE = 32;
+   SamplerFilter m_bound_filter[TEXTURESET_STATE_CACHE_SIZE];
+   SamplerAddressMode m_bound_clampu[TEXTURESET_STATE_CACHE_SIZE];
+   SamplerAddressMode m_bound_clampv[TEXTURESET_STATE_CACHE_SIZE];
 #endif
 
 #ifdef ENABLE_SDL
@@ -401,7 +392,9 @@ public:
    Shader *FBShader;
    Shader *flasherShader;
    Shader *lightShader;
+#ifdef ENABLE_SDL
    Shader *StereoShader;
+#endif
 #ifdef SEPARATE_CLASSICLIGHTSHADER
    Shader *classicLightShader;
 #else
@@ -412,7 +405,9 @@ public:
 
    TextureManager m_texMan;
 
+#ifdef ENABLE_SDL
    std::vector<SamplerBinding*> m_samplerBindings;
+#endif
 
    static unsigned int m_stats_drawn_triangles;
 

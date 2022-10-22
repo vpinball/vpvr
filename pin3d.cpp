@@ -532,7 +532,6 @@ HRESULT Pin3D::InitPin3D(const bool fullScreen, const int width, const int heigh
       m_backGlass = nullptr;
 
 #ifndef ENABLE_SDL
-   VertexBuffer::setD3DDevice(m_pd3dPrimaryDevice->GetCoreDevice(), m_pd3dSecondaryDevice->GetCoreDevice());
    IndexBuffer::setD3DDevice(m_pd3dPrimaryDevice->GetCoreDevice(), m_pd3dSecondaryDevice->GetCoreDevice());
 #endif
    VertexBuffer::bindNull();
@@ -583,16 +582,16 @@ void Pin3D::InitRenderState(RenderDevice * const pd3dDevice)
 
    pd3dDevice->SetRenderStateClipPlane0(false);
 
+   // initialize first texture stage
 #ifndef ENABLE_SDL
    CHECKD3D(pd3dDevice->GetCoreDevice()->SetRenderState(D3DRS_LIGHTING, FALSE));
    CHECKD3D(pd3dDevice->GetCoreDevice()->SetRenderState(D3DRS_CLIPPING, FALSE));
-   CHECKD3D(pd3dDevice->GetCoreDevice()->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE));
-   pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1);
-   pd3dDevice->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-   pd3dDevice->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0);
-   pd3dDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
-   pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-   pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR); // default tfactor: 1,1,1,1
+   CHECKD3D(pd3dDevice->GetCoreDevice()->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1));
+   CHECKD3D(pd3dDevice->GetCoreDevice()->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE));
+   CHECKD3D(pd3dDevice->GetCoreDevice()->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0));
+   CHECKD3D(pd3dDevice->GetCoreDevice()->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE));
+   CHECKD3D(pd3dDevice->GetCoreDevice()->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE));
+   CHECKD3D(pd3dDevice->GetCoreDevice()->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TFACTOR)); // default tfactor: 1,1,1,1
 #endif
 }
 

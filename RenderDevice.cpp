@@ -11,22 +11,19 @@
 #include "nvapi.h"
 #endif
 
-#include "typedefs3D.h"
-#ifdef ENABLE_SDL
-#include "sdl2/SDL_syswm.h"
-#endif
 #include "RenderDevice.h"
-#include "TextureManager.h"
 #include "Shader.h"
-#ifndef ENABLE_SDL
+#ifdef ENABLE_SDL
+#include "typedefs3D.h"
+#include "TextureManager.h"
+#include "sdl2/SDL_syswm.h"
+#else
 #include "Material.h"
 #include "BasicShader.h"
-#include "BallShader.h"
 #include "DMDShader.h"
 #include "FBShader.h"
 #include "FlasherShader.h"
 #include "LightShader.h"
-#include "StereoShader.h"
 #ifdef SEPARATE_CLASSICLIGHTSHADER
 #include "ClassicLightShader.h"
 #endif
@@ -1861,12 +1858,10 @@ void RenderDevice::UploadAndSetSMAATextures()
 #endif
 }
 
-#ifdef ENABLE_SDL
-GLuint RenderDevice::GetSamplerState(SamplerFilter filter, SamplerAddressMode clamp_u, SamplerAddressMode clamp_v)
+void RenderDevice::SetSamplerState(int unit, SamplerFilter filter, SamplerAddressMode clamp_u, SamplerAddressMode clamp_v)
 {
-   int samplerStateId = min((int)clamp_u, 2) * 5 * 3
-                      + min((int)clamp_v, 2) * 5
-                      + min((int)filter, 4);
+#ifdef ENABLE_SDL
+   int samplerStateId = min((int)clamp_u, 2) * 5 * 3 + min((int)clamp_v, 2) * 5 + min((int)filter, 4);
    GLuint sampler_state = m_samplerStateCache[samplerStateId];
    if (sampler_state == 0)
    {
@@ -1878,8 +1873,7 @@ GLuint RenderDevice::GetSamplerState(SamplerFilter filter, SamplerAddressMode cl
       glSamplerParameteri(sampler_state, GL_TEXTURE_WRAP_T, glAddress[clamp_v]);
       switch (filter)
       {
-      default:
-         assert(!"unknown filter");
+      default: assert(!"unknown filter");
       case SF_NONE: // No mipmapping
          glSamplerParameteri(sampler_state, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
          glSamplerParameteri(sampler_state, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -1907,9 +1901,71 @@ GLuint RenderDevice::GetSamplerState(SamplerFilter filter, SamplerAddressMode cl
          break;
       }
    }
-   return sampler_state;
-}
+   glBindSampler(unit, sampler_state);
+   m_curStateChanges++;
+#else
+   if (filter != m_bound_filter[unit])
+   {
+      switch (filter)
+      {
+      default:
+      case SF_NONE:
+         // Don't filter textures, no mipmapping.
+         CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_MAGFILTER, D3DTEXF_POINT));
+         CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_MINFILTER, D3DTEXF_POINT));
+         CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_MIPFILTER, D3DTEXF_NONE));
+         m_curStateChanges+=3;
+         break;
+
+      case SF_BILINEAR:
+         // Interpolate in 2x2 texels, no mipmapping.
+         CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR));
+         CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_MINFILTER, D3DTEXF_LINEAR));
+         CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_MIPFILTER, D3DTEXF_NONE));
+         m_curStateChanges += 3;
+         break;
+
+      case SF_TRILINEAR:
+         // Filter textures on 2 mip levels (interpolate in 2x2 texels). And filter between the 2 mip levels.
+         CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_MAGFILTER, D3DTEXF_LINEAR));
+         CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_MINFILTER, D3DTEXF_LINEAR));
+         CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR));
+         m_curStateChanges += 3;
+         break;
+
+      case SF_ANISOTROPIC:
+         // Full HQ anisotropic Filter. Should lead to driver doing whatever it thinks is best.
+         CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_MAGFILTER, m_mag_aniso ? D3DTEXF_ANISOTROPIC : D3DTEXF_LINEAR));
+         CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_MINFILTER, D3DTEXF_ANISOTROPIC));
+         CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_MIPFILTER, D3DTEXF_LINEAR));
+         CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_MAXANISOTROPY, min(m_maxaniso, (DWORD)16)));
+         m_curStateChanges += 4;
+         break;
+      }
+      m_bound_filter[unit] = filter;
+   }
+   if (clamp_u != m_bound_clampu[unit])
+   {
+      switch (clamp_u)
+      {
+         case SA_REPEAT: CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_ADDRESSU, D3DTADDRESS_WRAP)); m_curStateChanges++; break;
+         case SA_CLAMP: CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP)); m_curStateChanges++; break;
+         case SA_MIRROR: CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_ADDRESSU, D3DTADDRESS_MIRROR)); m_curStateChanges++; break;
+      }
+      m_bound_clampu[unit] = clamp_u;
+   }
+   if (clamp_v != m_bound_clampv[unit])
+   {
+      switch (clamp_v)
+      {
+         case SA_REPEAT: CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_ADDRESSV, D3DTADDRESS_WRAP)); m_curStateChanges++; break;
+         case SA_CLAMP: CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP)); m_curStateChanges++; break;
+         case SA_MIRROR: CHECKD3D(m_pD3DDevice->SetSamplerState(unit, D3DSAMP_ADDRESSV, D3DTADDRESS_MIRROR)); m_curStateChanges++; break;
+      }
+      m_bound_clampv[unit] = clamp_u;
+   }
 #endif
+}
 
 #define RENDER_STATE(name, bitpos, bitsize)                                                                                                                                                  \
    const uint32_t RENDER_STATE_SHIFT_##name = bitpos;                                                                                                                                        \
@@ -2415,9 +2471,6 @@ void RenderDevice::GetTransform(const TransformStateType p1, Matrix3D* p2, const
 
 void RenderDevice::ForceAnisotropicFiltering(const bool enable)
 {
-#ifndef ENABLE_SDL
-   m_force_aniso = enable;
-#endif
    SamplerFilter sf = enable ? SF_ANISOTROPIC : SF_TRILINEAR;
    Shader::SetDefaultSamplerFilter(SHADER_tex_sprite, sf);
    Shader::SetDefaultSamplerFilter(SHADER_tex_flasher_A, sf);
@@ -2437,22 +2490,22 @@ void RenderDevice::Clear(const DWORD flags, const D3DCOLOR color, const D3DVALUE
    static D3DCOLOR clear_color = 0;
    if (clear_s != stencil)
    {
-      clear_s = stencil; 
+      clear_s = stencil;
       glClearStencil(stencil);
    }
    if (clear_z != z)
-   { 
-      clear_z = z;  
-      glClearDepthf(z); 
+   {
+      clear_z = z;
+      glClearDepthf(z);
    }
    if (clear_color != color)
-   { 
+   {
       clear_color = color;
       const float r = (float)(color & 0xff) / 255.0f;
       const float g = (float)((color & 0xff00) >> 8) / 255.0f;
       const float b = (float)((color & 0xff0000) >> 16) / 255.0f;
       const float a = (float)((color & 0xff000000) >> 24) / 255.0f;
-      glClearColor(r, g, b, a); 
+      glClearColor(r, g, b, a);
    }
    glClear(flags);
 #else

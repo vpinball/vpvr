@@ -3730,9 +3730,8 @@ void Player::RenderDynamics()
    {
 #ifndef ENABLE_SDL
       m_limiter.Execute(m_pin3d.m_pd3dPrimaryDevice); //!! move below other draw calls??
-#endif
-
       m_pin3d.m_gpu_profiler.BeginFrame(m_pin3d.m_pd3dPrimaryDevice->GetCoreDevice());
+#endif
 
       m_dmdstate = 0;
 
@@ -5398,8 +5397,10 @@ void Player::Render()
    for (size_t l = 0; l < m_vanimate.size(); ++l)
       m_vanimate[l]->Animate();
 
+#ifndef ENABLE_SDL
    if (GetProfilingMode() == PF_ENABLED)
       m_pin3d.m_gpu_profiler.BeginFrame(m_pin3d.m_pd3dPrimaryDevice->GetCoreDevice());
+#endif
 
    // Update camera point of view
 #ifdef ENABLE_VR
