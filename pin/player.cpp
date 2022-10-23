@@ -192,7 +192,7 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
    m_current_renderstage = 0;
    m_dmdstate = 0;
 
-#ifdef ENABLE_SDL
+#ifdef ENABLE_VR
    const int vrDetectionMode = LoadValueIntWithDefault(regKey[RegName::PlayerVR], "AskToTurnOn"s, 0);
    bool useVR = vrDetectionMode == 2 /* VR Disabled */  ? false : RenderDevice::isVRinstalled();
    if (useVR && (vrDetectionMode == 1 /* VR Autodetect => ask to turn on and adapt accordingly */) && !RenderDevice::isVRturnedOn())
@@ -202,6 +202,7 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
 #else
    bool useVR = false;
 #endif
+
    m_trailForBalls = LoadValueBoolWithDefault(regKey[RegName::Player], "BallTrail"s, true);
    m_disableLightingForBalls = LoadValueBoolWithDefault(regKey[RegName::Player], "DisableLightingForBalls"s, false);
    m_stereo3D = (StereoMode)LoadValueIntWithDefault(regKey[RegName::Player], "Stereo3D"s, STEREO_OFF);
@@ -214,7 +215,7 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
    m_ditherOff = LoadValueBoolWithDefault(regKey[RegName::Player], "Render10Bit"s, false); // if rendering at 10bit output resolution, disable dithering
    m_BWrendering = LoadValueIntWithDefault(regKey[RegName::Player], "BWRendering"s, 0);
    m_detectScriptHang = LoadValueBoolWithDefault(regKey[RegName::Player], "DetectHang"s, false);
-   int pfr = LoadValueIntWithDefault(regKey[useVR ? RegName::PlayerVR : RegName::Player], "PFReflection"s, -1);
+   const int pfr = LoadValueIntWithDefault(regKey[useVR ? RegName::PlayerVR : RegName::Player], "PFReflection"s, -1);
    if (pfr != -1)
       m_pfReflectionMode = (PlayfieldReflectionMode)pfr;
    else
@@ -237,9 +238,10 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
    if (m_ptable->m_useReflectionForBalls == 1 && m_pfReflectionMode == PFREFL_STATIC)
       m_pfReflectionMode = PFREFL_STATIC_N_BALLS;
    // For dynamic mode, static reflections are not available so adapt the mode
-   if (m_dynamicMode &&m_pfReflectionMode >= PFREFL_STATIC)
+   if (m_dynamicMode && m_pfReflectionMode >= PFREFL_STATIC)
       m_pfReflectionMode = PFREFL_DYNAMIC;
 
+#ifdef ENABLE_VR
    m_vrPreview = (VRPreviewMode)LoadValueIntWithDefault(regKey[RegName::PlayerVR], "VRPreview"s, VRPREVIEW_LEFT);
    if (useVR)
    {
@@ -259,13 +261,19 @@ Player::Player(const bool cameraMode, PinTable * const ptable) : m_cameraMode(ca
       m_VSync = 0; //Disable VSync for VR
    }
    else
+#endif
    {
       m_stereo3D = (StereoMode)LoadValueIntWithDefault(regKey[RegName::Player], "Stereo3D"s, STEREO_OFF);
       m_maxPrerenderedFrames = LoadValueIntWithDefault(regKey[RegName::Player], "MaxPrerenderedFrames"s, 0);
       m_NudgeShake = LoadValueFloatWithDefault(regKey[RegName::Player], "NudgeStrength"s, 2e-2f);
       m_sharpen = LoadValueIntWithDefault(regKey[RegName::Player], "Sharpen"s, 0);
       m_FXAA = LoadValueIntWithDefault(regKey[RegName::Player], "FXAA"s, Disabled);
+#ifdef ENABLE_SDL
       m_MSAASamples = LoadValueIntWithDefault(regKey[RegName::Player], "MSAASamples"s, 1);
+#else
+      // Sadly DX9 does not support resolving an MSAA depth buffer, making MSAA implementation complex for it. So just disable for now
+      m_MSAASamples = 1;
+#endif
       m_AAfactor = LoadValueFloatWithDefault(regKey[RegName::Player], "AAFactor"s, LoadValueBoolWithDefault(regKey[RegName::Player], "USEAAs", false) ? 2.0f : 1.0f);
       m_dynamicAO = LoadValueBoolWithDefault(regKey[RegName::Player], "DynamicAO"s, false);
       m_disableAO = LoadValueBoolWithDefault(regKey[RegName::Player], "DisableAO"s, false);
@@ -1112,24 +1120,24 @@ void Player::UpdateBasicShaderMatrix(const Matrix3D& objectTrafo)
 
 #else
 
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix("matWorldViewProj", &matWorldViewProj);
-   m_pin3d.m_pd3dPrimaryDevice->flasherShader->SetMatrix("matWorldViewProj", &matWorldViewProj);
-   m_pin3d.m_pd3dPrimaryDevice->lightShader->SetMatrix("matWorldViewProj", &matWorldViewProj);
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix(SHADER_matWorldViewProj, &matWorldViewProj);
+   m_pin3d.m_pd3dPrimaryDevice->flasherShader->SetMatrix(SHADER_matWorldViewProj, &matWorldViewProj);
+   m_pin3d.m_pd3dPrimaryDevice->lightShader->SetMatrix(SHADER_matWorldViewProj, &matWorldViewProj);
 #ifdef SEPARATE_CLASSICLIGHTSHADER
-   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix("matWorldViewProj", &matWorldViewProj);
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix(SHADER_matWorldViewProj, &matWorldViewProj);
 #endif
 
-   m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetMatrix("matWorldViewProj", &matWorldViewProj);
+   m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetMatrix(SHADER_matWorldViewProj, &matWorldViewProj);
 
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix("matWorldView", &matWorldView);
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix("matWorldViewInverseTranspose", &matWorldViewInvTrans);
-   //m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix("matWorld", &matWorld);
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix("matView", &matView);
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix(SHADER_matWorldView, &matWorldView);
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix(SHADER_matWorldViewInverseTranspose, &matWorldViewInvTrans);
+   //m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix(SHADER_matWorld, &matWorld);
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix(SHADER_matView, &matView);
 #ifdef SEPARATE_CLASSICLIGHTSHADER
-   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix("matWorldView", &matWorldView);
-   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix("matWorldViewInverseTranspose", &matWorldViewInvTrans);
-   //m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix("matWorld", &matWorld);
-   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix("matView", &matView);
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix(SHADER_matWorldView, &matWorldView);
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix(SHADER_matWorldViewInverseTranspose, &matWorldViewInvTrans);
+   //m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix(SHADER_matWorld, &matWorld);
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix(SHADER_matView, &matView);
 #endif
 
    //memcpy(temp.m, matView.m, 4 * 4 * sizeof(float));
@@ -1221,11 +1229,11 @@ void Player::UpdateBallShaderMatrix()
 #ifdef ENABLE_SDL
    m_ballShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matView.m[0][0], (eyes + 3) * 16 * sizeof(float));
 #else
-   m_ballShader->SetMatrix("matWorldViewProj", &matWorldViewProj);
-   m_ballShader->SetMatrix("matWorldView", &matWorldView);
-   m_ballShader->SetMatrix("matWorldViewInverse", &matWorldViewInv);
-   //m_ballShader->SetMatrix("matWorldViewInverseTranspose", &matWorldViewInvTrans);
-   m_ballShader->SetMatrix("matView", &matView);
+   m_ballShader->SetMatrix(SHADER_matWorldViewProj, &matWorldViewProj);
+   m_ballShader->SetMatrix(SHADER_matWorldView, &matWorldView);
+   m_ballShader->SetMatrix(SHADER_matWorldViewInverse, &matWorldViewInv);
+   //m_ballShader->SetMatrix(SHADER_matWorldViewInverseTranspose, &matWorldViewInvTrans);
+   m_ballShader->SetMatrix(SHADER_matView, &matView);
 
    //memcpy(temp.m, matView.m, 4 * 4 * sizeof(float));
    //temp.Transpose();
@@ -1248,7 +1256,7 @@ void Player::InitBallShader()
    m_ballShader->SetFloat(SHADER_fSceneScale, 1.0f);
 #endif
 #else
-   m_ballShader->Load("BallShader.hlsl", g_ballShaderCode, sizeof(g_ballShaderCode));
+   m_ballShader->Load("BallShader.hlsl"s, g_ballShaderCode, sizeof(g_ballShaderCode));
 #endif
 
    UpdateBallShaderMatrix();
@@ -1432,7 +1440,7 @@ HRESULT Player::Init()
 
    const int vsync = (m_ptable->m_TableAdaptiveVSync == -1) ? m_VSync : m_ptable->m_TableAdaptiveVSync;
 
-   const float AAfactor = ((m_ptable->m_useAA == -1) || (m_ptable->m_useAA == 1)) ? m_AAfactor : 1.0f;
+   const float aaFactor = m_ptable->m_useAA == -1 ? m_AAfactor : m_ptable->m_useAA == 1 ? 2.0f : 1.0f;
    const unsigned int FXAA = (m_ptable->m_useFXAA == -1) ? m_FXAA : m_ptable->m_useFXAA;
    const bool ss_refl = (m_ss_refl && (m_ptable->m_useSSR == -1)) || (m_ptable->m_useSSR == 1);
 
@@ -1440,7 +1448,7 @@ HRESULT Player::Init()
 
    // colordepth & refreshrate are only defined if fullscreen is true.
    // width and height may be modified during initialization (for example for VR, they are adapted to the headset resolution)
-   const HRESULT hr = m_pin3d.InitPin3D(m_fullScreen, m_wnd_width, m_wnd_height, colordepth, m_refreshrate, vsync, AAfactor, m_stereo3D, FXAA, !!m_sharpen, !m_disableAO, ss_refl);
+   const HRESULT hr = m_pin3d.InitPin3D(m_fullScreen, m_wnd_width, m_wnd_height, colordepth, m_refreshrate, vsync, aaFactor, m_stereo3D, FXAA, !!m_sharpen, !m_disableAO, ss_refl);
 
 #ifdef ENABLE_SDL
    if (m_stereo3D == STEREO_VR)
@@ -2244,7 +2252,8 @@ void Player::InitStatic()
    if (accumulationSurface)
    {
       // if rendering static/with heavy oversampling, re-enable the aniso/trilinear filter now for the normal rendering
-      m_pin3d.m_pd3dPrimaryDevice->ForceAnisotropicFiltering(false);
+      const bool forceAniso = LoadValueBoolWithDefault(regKey[RegName::Player], "ForceAnisotropicFiltering"s, true);
+      m_pin3d.m_pd3dPrimaryDevice->ForceAnisotropicFiltering(forceAniso);
 
       // copy back weighted antialiased color result to the static render target, keeping depth untouched
       accumulationSurface->CopyTo(m_pin3d.m_pddsStatic, true, false);
@@ -3539,7 +3548,7 @@ void Player::Spritedraw(const float posx, const float posy, const float width, c
 
    for (unsigned int i = 0; i < 4; ++i)
    {
-      Verts[i * 5] = (Verts[i * 5] * width + posx)*2.0f - 1.0f;
+      Verts[i * 5    ] =        (Verts[i * 5    ] * width  + posx)*2.0f - 1.0f;
       Verts[i * 5 + 1] = 1.0f - (Verts[i * 5 + 1] * height + posy)*2.0f;
    }
 
@@ -3712,8 +3721,8 @@ void Player::RenderDynamics()
       m_dmdstate = 0;
       // Draw transparent objects. No DMD's
       for (size_t i = 0; i < m_vHitTrans.size(); ++i)
-         if (!m_vHitTrans[i]->IsDMD())
-            m_vHitTrans[i]->RenderDynamic();
+        if(!m_vHitTrans[i]->IsDMD())
+          m_vHitTrans[i]->RenderDynamic();
 
       m_dmdstate = 1;
       // Draw only transparent DMD's
@@ -3931,7 +3940,7 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
    // Stereo and AA are performed on LDR render buffer after tonemapping (RGB8 or RGB10, but nof RGBF).
    // We ping pong between BackBufferTmpTexture and BackBufferTmpTexture2 for the different postprocess
    // SMAA is a special case since it needs 3 passes, so it uses GetBackBufferTexture also (which is somewhat overkill since it is RGB16F)
-   assert(renderedRT == m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()  || renderedRT == m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture());
+   assert(renderedRT == m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer() || renderedRT == m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture());
 
 #ifdef ENABLE_SDL
    if (SMAA || DLAA || NFAA || FXAA1 || FXAA2 || FXAA3)
@@ -4266,7 +4275,7 @@ void Player::UpdateHUD_IMGUI()
 
    InfoMode infoMode = GetInfoMode();
    if (infoMode == IF_NONE || m_closeDown)
-         return;
+      return;
 
 #ifdef ENABLE_SDL
    ImGui_ImplOpenGL3_NewFrame();

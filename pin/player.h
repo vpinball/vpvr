@@ -338,8 +338,6 @@ private:
    void PhysicsSimulateCycle(float dtime);
 
 public:
-   HRESULT PreInit();
-
    void LockForegroundWindow(const bool enable);
    void Render();
    void RenderDynamics();
@@ -540,7 +538,6 @@ public:
    float m_curMechPlungerPos;
 
    int m_wnd_width, m_wnd_height; // Window height (requested size before creation, effective size after) which is not directly linked to the render size
-   int m_display;
 
    int m_screenwidth, m_screenheight, m_refreshrate;
    bool m_fullScreen;
