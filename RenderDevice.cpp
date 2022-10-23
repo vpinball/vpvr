@@ -622,183 +622,6 @@ typedef HRESULT(STDAPICALLTYPE *pDEC)(UINT uCompositionAction);
 static pDEC mDwmEnableComposition = nullptr;
 #endif
 
-bool RenderDevice::isVRinstalled()
-{
-#ifdef ENABLE_VR
-#ifdef VR_PREVIEW_TEST
-   return true;
-#else
-   return vr::VR_IsRuntimeInstalled();
-#endif
-#else
-   return false;
-#endif
-}
-
-#ifdef ENABLE_VR
-vr::IVRSystem* RenderDevice::m_pHMD = nullptr;
-#endif
-
-bool RenderDevice::isVRturnedOn()
-{
-#ifdef ENABLE_VR
-#ifdef VR_PREVIEW_TEST
-   return true;
-#else
-   if (vr::VR_IsHmdPresent())
-   {
-      vr::EVRInitError VRError = vr::VRInitError_None;
-      if (!m_pHMD)
-         m_pHMD = vr::VR_Init(&VRError, vr::VRApplication_Background);
-      if (VRError == vr::VRInitError_None && vr::VRCompositor()) {
-         for (uint32_t device = 0; device < vr::k_unMaxTrackedDeviceCount; device++) {
-            if ((m_pHMD->GetTrackedDeviceClass(device) == vr::TrackedDeviceClass_HMD)) {
-               vr::VR_Shutdown();
-               m_pHMD = nullptr;
-               return true;
-            }
-         }
-      } else
-         m_pHMD = nullptr;
-   }
-#endif
-#endif
-   return false;
-}
-
-void RenderDevice::turnVROff()
-{
-#ifdef ENABLE_VR
-   if (m_pHMD)
-   {
-      vr::VR_Shutdown();
-      m_pHMD = nullptr;
-   }
-#endif
-}
-
-void RenderDevice::InitVR() {
-#ifdef ENABLE_VR
-#ifdef VR_PREVIEW_TEST
-   m_pHMD = nullptr;
-#else
-   vr::EVRInitError VRError = vr::VRInitError_None;
-   if (!m_pHMD) {
-      m_pHMD = vr::VR_Init(&VRError, vr::VRApplication_Scene);
-      if (VRError != vr::VRInitError_None) {
-         m_pHMD = nullptr;
-         char buf[1024];
-         sprintf_s(buf, sizeof(buf), "Unable to init VR runtime: %s", vr::VR_GetVRInitErrorAsEnglishDescription(VRError));
-         ShowError(buf);
-      } 
-      else if (!vr::VRCompositor())
-      /*if (VRError != vr::VRInitError_None)*/ {
-         m_pHMD = nullptr;
-         char buf[1024];
-         sprintf_s(buf, sizeof(buf), "Unable to init VR compositor");// :% s", vr::VR_GetVRInitErrorAsEnglishDescription(VRError));
-         ShowError(buf);
-      }
-   }
-#endif
-
-   const float nearPlane = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "nearPlane"s, 5.0f) / 100.0f;
-   const float farPlane = 5000.0f; //LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "farPlane"s, 5000.0f) / 100.0f;
-
-   vr::HmdMatrix34_t left_eye_pos, right_eye_pos;
-   vr::HmdMatrix44_t left_eye_proj, right_eye_proj;
-   if (m_pHMD == nullptr)
-   {
-      // Default debug output
-      uint32_t eye_width = 1080, eye_height = 1200; // Oculus Rift resolution
-      m_width = eye_width * 2;
-      m_height = eye_height;
-      Matrix3D left, right;
-      left.SetIdentity(); // TODO find sensible value and use them instead of the desktop projection
-      right.SetIdentity();
-      for (int i = 0; i < 3; i++)
-         for (int j = 0; j < 4; j++)
-         {
-            left_eye_pos.m[i][j] = left.m[j][i];
-            right_eye_pos.m[i][j] = right.m[j][i];
-         }
-      for (int i = 0; i < 4; i++)
-         for (int j = 0; j < 4; j++)
-         {
-            left_eye_proj.m[i][j] = left.m[j][i];
-            right_eye_proj.m[i][j] = right.m[j][i];
-         }
-   }
-   else
-   {
-      uint32_t eye_width, eye_height;
-      m_pHMD->GetRecommendedRenderTargetSize(&eye_width, &eye_height);
-      m_width = eye_width * 2;
-      m_height = eye_height;
-      left_eye_pos = m_pHMD->GetEyeToHeadTransform(vr::Eye_Left);
-      right_eye_pos = m_pHMD->GetEyeToHeadTransform(vr::Eye_Right);
-      left_eye_proj = m_pHMD->GetProjectionMatrix(vr::Eye_Left, nearPlane, farPlane); //5cm to 50m should be a reasonable range
-      right_eye_proj = m_pHMD->GetProjectionMatrix(vr::Eye_Right, nearPlane, farPlane); //5cm to 500m should be a reasonable range
-   }
-
-   //Calculate left EyeProjection Matrix relative to HMD position
-   Matrix3D matEye2Head;
-   for (int i = 0;i < 3;i++)
-      for (int j = 0;j < 4;j++)
-         matEye2Head.m[j][i] = left_eye_pos.m[i][j];
-   for (int j = 0;j < 4;j++)
-      matEye2Head.m[j][3] = (j == 3) ? 1.0f : 0.0f;
-
-   matEye2Head.Invert();
-
-   left_eye_proj.m[2][2] = -1.0f;
-   left_eye_proj.m[2][3] = -nearPlane;
-   Matrix3D matProjection;
-   for (int i = 0;i < 4;i++)
-      for (int j = 0;j < 4;j++)
-         matProjection.m[j][i] = left_eye_proj.m[i][j];
-
-   m_matProj[0] = matEye2Head * matProjection;
-
-   //Calculate right EyeProjection Matrix relative to HMD position
-   for (int i = 0;i < 3;i++)
-      for (int j = 0;j < 4;j++)
-         matEye2Head.m[j][i] = right_eye_pos.m[i][j];
-   for (int j = 0;j < 4;j++)
-      matEye2Head.m[j][3] = (j == 3) ? 1.0f : 0.0f;
-
-   matEye2Head.Invert();
-
-   right_eye_proj.m[2][2] = -1.0f;
-   right_eye_proj.m[2][3] = -nearPlane;
-   for (int i = 0;i < 4;i++)
-      for (int j = 0;j < 4;j++)
-         matProjection.m[j][i] = right_eye_proj.m[i][j];
-
-   m_matProj[1] = matEye2Head * matProjection;
-
-   if (vr::k_unMaxTrackedDeviceCount > 0) {
-      m_rTrackedDevicePose = new vr::TrackedDevicePose_t[vr::k_unMaxTrackedDeviceCount];
-   }
-   else {
-      std::runtime_error noDevicesFound("No Tracking devices found");
-      throw(noDevicesFound);
-   }
-
-   m_slope = LoadValueFloatWithDefault(regKey[RegName::Player], "VRSlope"s, 6.5f);
-   m_orientation = LoadValueFloatWithDefault(regKey[RegName::Player], "VROrientation"s, 0.0f);
-   m_tablex = LoadValueFloatWithDefault(regKey[RegName::Player], "VRTableX"s, 0.0f);
-   m_tabley = LoadValueFloatWithDefault(regKey[RegName::Player], "VRTableY"s, 0.0f);
-   m_tablez = LoadValueFloatWithDefault(regKey[RegName::Player], "VRTableZ"s, 80.0f);
-
-   updateTableMatrix();
-
-#else
-
-   std::runtime_error unknownStereoMode("This version of Visual Pinball was compiled without VR support");
-   throw(unknownStereoMode);
-#endif
-}
-
 RenderDevice::RenderDevice(const HWND hwnd, const int width, const int height, const bool fullscreen, const int colordepth, int VSync, const float AAfactor, const StereoMode stereo3D, const unsigned int FXAA, const bool sharpen, const bool ss_refl, const bool useNvidiaApi, const bool disable_dwm, const int BWrendering)
     : m_windowHwnd(hwnd), m_width(width), m_height(height), m_fullscreen(fullscreen), 
       m_colorDepth(colordepth), m_vsync(VSync), m_AAfactor(AAfactor), m_stereo3D(stereo3D),
@@ -819,8 +642,6 @@ RenderDevice::RenderDevice(const HWND hwnd, const int width, const int height, c
     m_quadDynVertexBuffer = nullptr;
 
     m_stats_drawn_triangles = 0;
-
-    m_adapter = D3DADAPTER_DEFAULT; // for now, always use the default adapter
 
     mDwmIsCompositionEnabled = (pDICE)GetProcAddress(GetModuleHandle(TEXT("dwmapi.dll")), "DwmIsCompositionEnabled"); //!! remove as soon as win xp support dropped and use static link
     mDwmEnableComposition = (pDEC)GetProcAddress(GetModuleHandle(TEXT("dwmapi.dll")), "DwmEnableComposition"); //!! remove as soon as win xp support dropped and use static link
@@ -862,6 +683,8 @@ RenderDevice::RenderDevice(const HWND hwnd, const int width, const int height, c
 
     m_SMAAareaTexture = nullptr;
     m_SMAAsearchTexture = nullptr;
+
+   StereoShader = nullptr;
 
     m_pOffscreenMSAABackBufferTexture = nullptr;
     m_pOffscreenBackBufferTexture = nullptr;
@@ -1365,7 +1188,6 @@ bool RenderDevice::LoadShaders()
 
    bool shaderCompilationOkay = true;
 #ifdef ENABLE_SDL
-   StereoShader = nullptr;
    char glShaderPath[MAX_PATH];
    /*DWORD length =*/ GetModuleFileName(nullptr, glShaderPath, MAX_PATH);
    Shader::Defines = ""s;
@@ -2380,89 +2202,6 @@ void RenderDevice::DrawIndexedPrimitiveVB(const PrimitiveTypes type, const DWORD
    m_curDrawCalls++;
 }
 
-#ifdef ENABLE_VR
-void RenderDevice::UpdateVRPosition()
-{
-   if (!m_pHMD)
-      return;
-
-   vr::VRCompositor()->WaitGetPoses(m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, nullptr, 0);
-
-   m_matView.SetIdentity();
-   for (unsigned int device = 0; device < vr::k_unMaxTrackedDeviceCount; device++)
-   {
-      if ((m_rTrackedDevicePose[device].bPoseIsValid) && (m_pHMD->GetTrackedDeviceClass(device) == vr::TrackedDeviceClass_HMD))
-      {
-         hmdPosition = m_rTrackedDevicePose[device];
-         for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 4; j++)
-               m_matView.m[j][i] = hmdPosition.mDeviceToAbsoluteTracking.m[i][j];
-         break;
-      }
-   }
-   m_matView.Invert();
-   m_matView = m_tableWorld * m_matView;
-}
-
-void RenderDevice::tableUp()
-{
-   m_tablez += 1.0f;
-   if (m_tablez > 250.0f)
-      m_tablez = 250.0f;
-   updateTableMatrix();
-}
-
-void RenderDevice::tableDown()
-{
-   m_tablez -= 1.0f;
-   if (m_tablez < 0.0f)
-      m_tablez = 0.0f;
-   updateTableMatrix();
-}
-
-void RenderDevice::recenterTable()
-{
-   m_orientation = -RADTOANG(atan2(hmdPosition.mDeviceToAbsoluteTracking.m[0][2], hmdPosition.mDeviceToAbsoluteTracking.m[0][0]));
-   if (m_orientation < 0.0f)
-      m_orientation += 360.0f;
-   const float w = 100.f * 0.5f * m_scale * (g_pplayer->m_ptable->m_right - g_pplayer->m_ptable->m_left);
-   const float h = 100.f * m_scale * (g_pplayer->m_ptable->m_bottom - g_pplayer->m_ptable->m_top) + 20.0f;
-   const float c = cos(ANGTORAD(m_orientation));
-   const float s = sin(ANGTORAD(m_orientation));
-   m_tablex = 100.0f * hmdPosition.mDeviceToAbsoluteTracking.m[0][3] - c * w + s * h;
-   m_tabley = -100.0f * hmdPosition.mDeviceToAbsoluteTracking.m[2][3] + s * w + c * h;
-   updateTableMatrix();
-}
-
-void RenderDevice::updateTableMatrix()
-{
-   Matrix3D tmp;
-   //Tilt playfield.
-   m_tableWorld.SetIdentity();
-   m_tableWorld.RotateXMatrix(ANGTORAD(-m_slope));
-   //Convert from VPX scale and coords to VR
-   tmp.SetIdentity();
-   tmp.m[0][0] = -m_scale;  tmp.m[0][1] =    0.0f;  tmp.m[0][2] =     0.0f;
-   tmp.m[1][0] =     0.0f;  tmp.m[1][1] =    0.0f;  tmp.m[1][2] = -m_scale;
-   tmp.m[2][0] =     0.0f;  tmp.m[2][1] = m_scale;  tmp.m[2][2] =     0.0f;
-   m_tableWorld = m_tableWorld * tmp;
-   //Rotate table around VR height axis
-   tmp.SetIdentity();
-   tmp.RotateYMatrix(ANGTORAD(180.f - m_orientation));
-   m_tableWorld = m_tableWorld * tmp;
-   //Locate front left corner of the table in the room -x is to the right, -y is up and -z is back - all units in meters
-   tmp.SetIdentity();
-   tmp.SetTranslation(m_tablex / 100.0f, m_tablez / 100.0f, -m_tabley / 100.0f);
-   m_tableWorld = m_tableWorld * tmp;
-}
-
-void RenderDevice::SetTransformVR()
-{
-   SetTransform(TRANSFORMSTATE_PROJECTION, m_matProj, m_stereo3D != STEREO_OFF ? 2:1);
-   SetTransform(TRANSFORMSTATE_VIEW, &m_matView, 1);
-}
-#endif
-
 void RenderDevice::SetTransform(const TransformStateType p1, const Matrix3D * p2, const int count)
 {
 #ifdef ENABLE_SDL
@@ -2562,3 +2301,249 @@ void RenderDevice::GetViewport(ViewPort* p1)
    CHECKD3D(m_pD3DDevice->GetViewport((D3DVIEWPORT9*)p1));
 #endif
 }
+
+//////////////////////////////////////////////////////////////////
+// VR device implementation
+
+#ifdef ENABLE_VR
+bool RenderDevice::isVRinstalled()
+{
+#ifdef VR_PREVIEW_TEST
+   return true;
+#else
+   return vr::VR_IsRuntimeInstalled();
+#endif
+}
+
+vr::IVRSystem* RenderDevice::m_pHMD = nullptr;
+
+bool RenderDevice::isVRturnedOn()
+{
+#ifdef VR_PREVIEW_TEST
+   return true;
+#else
+   if (vr::VR_IsHmdPresent())
+   {
+      vr::EVRInitError VRError = vr::VRInitError_None;
+      if (!m_pHMD)
+         m_pHMD = vr::VR_Init(&VRError, vr::VRApplication_Background);
+      if (VRError == vr::VRInitError_None && vr::VRCompositor()) {
+         for (uint32_t device = 0; device < vr::k_unMaxTrackedDeviceCount; device++) {
+            if ((m_pHMD->GetTrackedDeviceClass(device) == vr::TrackedDeviceClass_HMD)) {
+               vr::VR_Shutdown();
+               m_pHMD = nullptr;
+               return true;
+            }
+         }
+      } else
+         m_pHMD = nullptr;
+   }
+#endif
+   return false;
+}
+
+void RenderDevice::turnVROff()
+{
+   if (m_pHMD)
+   {
+      vr::VR_Shutdown();
+      m_pHMD = nullptr;
+   }
+}
+
+void RenderDevice::InitVR() {
+#ifdef VR_PREVIEW_TEST
+   m_pHMD = nullptr;
+#else
+   vr::EVRInitError VRError = vr::VRInitError_None;
+   if (!m_pHMD) {
+      m_pHMD = vr::VR_Init(&VRError, vr::VRApplication_Scene);
+      if (VRError != vr::VRInitError_None) {
+         m_pHMD = nullptr;
+         char buf[1024];
+         sprintf_s(buf, sizeof(buf), "Unable to init VR runtime: %s", vr::VR_GetVRInitErrorAsEnglishDescription(VRError));
+         ShowError(buf);
+      }
+      else if (!vr::VRCompositor())
+      /*if (VRError != vr::VRInitError_None)*/ {
+         m_pHMD = nullptr;
+         char buf[1024];
+         sprintf_s(buf, sizeof(buf), "Unable to init VR compositor");// :% s", vr::VR_GetVRInitErrorAsEnglishDescription(VRError));
+         ShowError(buf);
+      }
+   }
+#endif
+
+   const float nearPlane = LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "nearPlane"s, 5.0f) / 100.0f;
+   const float farPlane = 5000.0f; //LoadValueFloatWithDefault(regKey[RegName::PlayerVR], "farPlane"s, 5000.0f) / 100.0f;
+
+   vr::HmdMatrix34_t left_eye_pos, right_eye_pos;
+   vr::HmdMatrix44_t left_eye_proj, right_eye_proj;
+   if (m_pHMD == nullptr)
+   {
+      // Default debug output
+      uint32_t eye_width = 1080, eye_height = 1200; // Oculus Rift resolution
+      m_width = eye_width * 2;
+      m_height = eye_height;
+      Matrix3D left, right;
+      left.SetIdentity(); // TODO find sensible value and use them instead of the desktop projection
+      right.SetIdentity();
+      for (int i = 0; i < 3; i++)
+         for (int j = 0; j < 4; j++)
+         {
+            left_eye_pos.m[i][j] = left.m[j][i];
+            right_eye_pos.m[i][j] = right.m[j][i];
+         }
+      for (int i = 0; i < 4; i++)
+         for (int j = 0; j < 4; j++)
+         {
+            left_eye_proj.m[i][j] = left.m[j][i];
+            right_eye_proj.m[i][j] = right.m[j][i];
+         }
+   }
+   else
+   {
+      uint32_t eye_width, eye_height;
+      m_pHMD->GetRecommendedRenderTargetSize(&eye_width, &eye_height);
+      m_width = eye_width * 2;
+      m_height = eye_height;
+      left_eye_pos = m_pHMD->GetEyeToHeadTransform(vr::Eye_Left);
+      right_eye_pos = m_pHMD->GetEyeToHeadTransform(vr::Eye_Right);
+      left_eye_proj = m_pHMD->GetProjectionMatrix(vr::Eye_Left, nearPlane, farPlane); //5cm to 50m should be a reasonable range
+      right_eye_proj = m_pHMD->GetProjectionMatrix(vr::Eye_Right, nearPlane, farPlane); //5cm to 500m should be a reasonable range
+   }
+
+   //Calculate left EyeProjection Matrix relative to HMD position
+   Matrix3D matEye2Head;
+   for (int i = 0;i < 3;i++)
+      for (int j = 0;j < 4;j++)
+         matEye2Head.m[j][i] = left_eye_pos.m[i][j];
+   for (int j = 0;j < 4;j++)
+      matEye2Head.m[j][3] = (j == 3) ? 1.0f : 0.0f;
+
+   matEye2Head.Invert();
+
+   left_eye_proj.m[2][2] = -1.0f;
+   left_eye_proj.m[2][3] = -nearPlane;
+   Matrix3D matProjection;
+   for (int i = 0;i < 4;i++)
+      for (int j = 0;j < 4;j++)
+         matProjection.m[j][i] = left_eye_proj.m[i][j];
+
+   m_matProj[0] = matEye2Head * matProjection;
+
+   //Calculate right EyeProjection Matrix relative to HMD position
+   for (int i = 0;i < 3;i++)
+      for (int j = 0;j < 4;j++)
+         matEye2Head.m[j][i] = right_eye_pos.m[i][j];
+   for (int j = 0;j < 4;j++)
+      matEye2Head.m[j][3] = (j == 3) ? 1.0f : 0.0f;
+
+   matEye2Head.Invert();
+
+   right_eye_proj.m[2][2] = -1.0f;
+   right_eye_proj.m[2][3] = -nearPlane;
+   for (int i = 0;i < 4;i++)
+      for (int j = 0;j < 4;j++)
+         matProjection.m[j][i] = right_eye_proj.m[i][j];
+
+   m_matProj[1] = matEye2Head * matProjection;
+
+   if (vr::k_unMaxTrackedDeviceCount > 0) {
+      m_rTrackedDevicePose = new vr::TrackedDevicePose_t[vr::k_unMaxTrackedDeviceCount];
+   }
+   else {
+      std::runtime_error noDevicesFound("No Tracking devices found");
+      throw(noDevicesFound);
+   }
+
+   m_slope = LoadValueFloatWithDefault(regKey[RegName::Player], "VRSlope"s, 6.5f);
+   m_orientation = LoadValueFloatWithDefault(regKey[RegName::Player], "VROrientation"s, 0.0f);
+   m_tablex = LoadValueFloatWithDefault(regKey[RegName::Player], "VRTableX"s, 0.0f);
+   m_tabley = LoadValueFloatWithDefault(regKey[RegName::Player], "VRTableY"s, 0.0f);
+   m_tablez = LoadValueFloatWithDefault(regKey[RegName::Player], "VRTableZ"s, 80.0f);
+
+   updateTableMatrix();
+}
+
+void RenderDevice::UpdateVRPosition()
+{
+   if (!m_pHMD)
+      return;
+
+   vr::VRCompositor()->WaitGetPoses(m_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, nullptr, 0);
+
+   m_matView.SetIdentity();
+   for (unsigned int device = 0; device < vr::k_unMaxTrackedDeviceCount; device++)
+   {
+      if ((m_rTrackedDevicePose[device].bPoseIsValid) && (m_pHMD->GetTrackedDeviceClass(device) == vr::TrackedDeviceClass_HMD))
+      {
+         hmdPosition = m_rTrackedDevicePose[device];
+         for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 4; j++)
+               m_matView.m[j][i] = hmdPosition.mDeviceToAbsoluteTracking.m[i][j];
+         break;
+      }
+   }
+   m_matView.Invert();
+   m_matView = m_tableWorld * m_matView;
+}
+
+void RenderDevice::tableUp()
+{
+   m_tablez += 1.0f;
+   if (m_tablez > 250.0f)
+      m_tablez = 250.0f;
+   updateTableMatrix();
+}
+
+void RenderDevice::tableDown()
+{
+   m_tablez -= 1.0f;
+   if (m_tablez < 0.0f)
+      m_tablez = 0.0f;
+   updateTableMatrix();
+}
+
+void RenderDevice::recenterTable()
+{
+   m_orientation = -RADTOANG(atan2(hmdPosition.mDeviceToAbsoluteTracking.m[0][2], hmdPosition.mDeviceToAbsoluteTracking.m[0][0]));
+   if (m_orientation < 0.0f)
+      m_orientation += 360.0f;
+   const float w = 100.f * 0.5f * m_scale * (g_pplayer->m_ptable->m_right - g_pplayer->m_ptable->m_left);
+   const float h = 100.f * m_scale * (g_pplayer->m_ptable->m_bottom - g_pplayer->m_ptable->m_top) + 20.0f;
+   const float c = cos(ANGTORAD(m_orientation));
+   const float s = sin(ANGTORAD(m_orientation));
+   m_tablex = 100.0f * hmdPosition.mDeviceToAbsoluteTracking.m[0][3] - c * w + s * h;
+   m_tabley = -100.0f * hmdPosition.mDeviceToAbsoluteTracking.m[2][3] + s * w + c * h;
+   updateTableMatrix();
+}
+
+void RenderDevice::updateTableMatrix()
+{
+   Matrix3D tmp;
+   //Tilt playfield.
+   m_tableWorld.SetIdentity();
+   m_tableWorld.RotateXMatrix(ANGTORAD(-m_slope));
+   //Convert from VPX scale and coords to VR
+   tmp.SetIdentity();
+   tmp.m[0][0] = -m_scale;  tmp.m[0][1] =    0.0f;  tmp.m[0][2] =     0.0f;
+   tmp.m[1][0] =     0.0f;  tmp.m[1][1] =    0.0f;  tmp.m[1][2] = -m_scale;
+   tmp.m[2][0] =     0.0f;  tmp.m[2][1] = m_scale;  tmp.m[2][2] =     0.0f;
+   m_tableWorld = m_tableWorld * tmp;
+   //Rotate table around VR height axis
+   tmp.SetIdentity();
+   tmp.RotateYMatrix(ANGTORAD(180.f - m_orientation));
+   m_tableWorld = m_tableWorld * tmp;
+   //Locate front left corner of the table in the room -x is to the right, -y is up and -z is back - all units in meters
+   tmp.SetIdentity();
+   tmp.SetTranslation(m_tablex / 100.0f, m_tablez / 100.0f, -m_tabley / 100.0f);
+   m_tableWorld = m_tableWorld * tmp;
+}
+
+void RenderDevice::SetTransformVR()
+{
+   SetTransform(TRANSFORMSTATE_PROJECTION, m_matProj, m_stereo3D != STEREO_OFF ? 2:1);
+   SetTransform(TRANSFORMSTATE_VIEW, &m_matView, 1);
+}
+#endif
