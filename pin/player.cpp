@@ -4291,7 +4291,7 @@ void Player::UpdateHUD_IMGUI()
    case IF_LIGHT_BUFFER_ONLY: ImGui::Begin("Indirect lights"); break;
    }
 
-   const float fpsAvg = (m_fpsCount == 0) ? 0.0f : m_fpsAvg / m_fpsCount;
+   const float fpsAvg = (m_fpsCount == 0) ? 0.0f : m_fpsAvg / (float)m_fpsCount;
    if (infoMode != IF_PROFILING && infoMode != IF_PROFILING_SPLIT_RENDERING)
    {
       ImGui::Text("FPS: %.1f (%.1f avg)", m_fps + 0.01f, fpsAvg + 0.01f);
@@ -4504,7 +4504,17 @@ void Player::UpdateHUD()
     SetDebugOutputPosition(x, y);
 
 	// draw all kinds of stats, incl. FPS counter
-	if (ShowStats() && !m_cameraMode && !m_closeDown)
+   const InfoMode mode = GetInfoMode();
+   switch (mode)
+   {
+   case IF_STATIC_ONLY: DebugPrint(0, 10, "Staticly pre-rendered parts"); break;
+   case IF_DYNAMIC_ONLY: DebugPrint(0, 10, "Dynamicly rendered parts"); break;
+   case IF_STATIC_REFL_ONLY: DebugPrint(0, 10, "Static reflections"); break;
+   case IF_DYNAMIC_REFL_ONLY: DebugPrint(0, 10, "Dynamic reflections"); break;
+   case IF_AO_ONLY: DebugPrint(0, 10, "Ambient occlusion"); break;
+   case IF_LIGHT_BUFFER_ONLY: DebugPrint(0, 10, "Transmitted light buffer"); break;
+   }
+   if (ShowStats() && !m_cameraMode && !m_closeDown)
 	{
 		char szFoo[256];
 

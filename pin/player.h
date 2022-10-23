@@ -4,7 +4,6 @@
 #include "quadtree.h"
 #include "Debugger.h"
 #include "typedefs3D.h"
-#include "sdl2/SDL_TTF.h"
 #include "pininput.h"
 
 #define DEFAULT_PLAYER_WIDTH 1024
