@@ -708,9 +708,6 @@ void RenderDevice::InitVR() {
    vr::HmdMatrix44_t left_eye_proj, right_eye_proj;
    if (m_pHMD == nullptr)
    {
-      // No scene scaling
-      m_scale = 1.0;
-
       // Default debug output
       uint32_t eye_width = 1080, eye_height = 1200; // Oculus Rift resolution
       m_width = eye_width * 2;
@@ -813,8 +810,6 @@ RenderDevice::RenderDevice(const HWND hwnd, const int width, const int height, c
    m_rTrackedDevicePose = nullptr;
 #endif
 #else
-   for (int i = 0; i < RENDERSTATE_COUNT; ++i)
-      renderStateCache[i] = 0;
     m_useNvidiaApi = useNvidiaApi;
     m_INTZ_support = false;
     NVAPIinit = false;
@@ -1058,6 +1053,9 @@ void RenderDevice::CreateDevice(int &refreshrate, UINT adapterIndex)
    // check which parameters can be used for anisotropic filter
    m_mag_aniso = (caps.TextureFilterCaps & D3DPTFILTERCAPS_MAGFANISOTROPIC) != 0;
    m_maxaniso = caps.MaxAnisotropy;
+   memset(m_bound_filter, 0xCC, TEXTURESET_STATE_CACHE_SIZE * sizeof(SamplerFilter));
+   memset(m_bound_clampu, 0xCC, TEXTURESET_STATE_CACHE_SIZE * sizeof(SamplerAddressMode));
+   memset(m_bound_clampv, 0xCC, TEXTURESET_STATE_CACHE_SIZE * sizeof(SamplerAddressMode));
 
    if (((caps.TextureCaps & D3DPTEXTURECAPS_NONPOW2CONDITIONAL) != 0) || ((caps.TextureCaps & D3DPTEXTURECAPS_POW2) != 0))
       ShowError("D3D device does only support power of 2 textures");
@@ -1435,8 +1433,8 @@ bool RenderDevice::LoadShaders()
       FBShader->SetTexture(SHADER_searchTex2D, m_SMAAsearchTexture);
 #else
       // FIXME Shader rely on texture to be named with a leading texture unit. SetTexture will fail otherwise...
-      CHECKD3D(FBShader->Core()->SetTexture(SHADER_areaTex2D, m_SMAAareaTexture->GetCoreTexture()));
-      CHECKD3D(FBShader->Core()->SetTexture(SHADER_searchTex2D, m_SMAAsearchTexture->GetCoreTexture()));
+      CHECKD3D(FBShader->Core()->SetTexture("areaTex2D", m_SMAAareaTexture->GetCoreTexture()));
+      CHECKD3D(FBShader->Core()->SetTexture("searchTex2D", m_SMAAsearchTexture->GetCoreTexture()));
 #endif
    }
 
@@ -1522,8 +1520,14 @@ void RenderDevice::FreeShader()
       FBShader->SetTextureNull(SHADER_tex_color_lut);
       FBShader->SetTextureNull(SHADER_tex_ao_dither);
 
+      // FIXME Shader rely on texture to be named with a leading texture unit. SetTextureNull will fail otherwise...
+#ifdef ENABLE_SDL
       FBShader->SetTextureNull(SHADER_areaTex2D);
       FBShader->SetTextureNull(SHADER_searchTex2D);
+#else
+      CHECKD3D(FBShader->Core()->SetTexture("areaTex2D", nullptr));
+      CHECKD3D(FBShader->Core()->SetTexture("searchTex2D", nullptr));
+#endif
 
       delete FBShader;
       FBShader = nullptr;
@@ -2454,19 +2458,43 @@ void RenderDevice::updateTableMatrix()
 
 void RenderDevice::SetTransformVR()
 {
-   Shader::SetTransform(TRANSFORMSTATE_PROJECTION, m_matProj, m_stereo3D != STEREO_OFF ? 2:1);
-   Shader::SetTransform(TRANSFORMSTATE_VIEW, &m_matView, 1);
+   SetTransform(TRANSFORMSTATE_PROJECTION, m_matProj, m_stereo3D != STEREO_OFF ? 2:1);
+   SetTransform(TRANSFORMSTATE_VIEW, &m_matView, 1);
 }
 #endif
 
 void RenderDevice::SetTransform(const TransformStateType p1, const Matrix3D * p2, const int count)
 {
-   Shader::SetTransform(p1, p2, count);
+#ifdef ENABLE_SDL
+   switch (p1)
+   {
+   case TRANSFORMSTATE_WORLD: m_MatWorld = *p2; break;
+   case TRANSFORMSTATE_VIEW: m_MatView = *p2; break;
+   case TRANSFORMSTATE_PROJECTION:
+      for (int i = 0; i < count; ++i)
+         m_MatProj[i] = p2[i];
+      break;
+   }
+#else
+   CHECKD3D(m_pD3DDevice->SetTransform((D3DTRANSFORMSTATETYPE)p1, (D3DMATRIX*)p2));
+#endif
 }
 
 void RenderDevice::GetTransform(const TransformStateType p1, Matrix3D* p2, const int count)
 {
-   Shader::GetTransform(p1, p2, count);
+#ifdef ENABLE_SDL
+   switch (p1)
+   {
+   case TRANSFORMSTATE_WORLD: *p2 = m_MatWorld; break;
+   case TRANSFORMSTATE_VIEW: *p2 = m_MatView; break;
+   case TRANSFORMSTATE_PROJECTION:
+      for (int i = 0; i < count; ++i)
+         p2[i] = m_MatProj[i];
+      break;
+   }
+#else
+   CHECKD3D(m_pD3DDevice->GetTransform((D3DTRANSFORMSTATETYPE)p1, (D3DMATRIX*)p2));
+#endif
 }
 
 void RenderDevice::ForceAnisotropicFiltering(const bool enable)

@@ -663,10 +663,9 @@ void Pin3D::InitLights()
 
    for (unsigned int i = 0; i < MAX_LIGHT_SOURCES; i++)
    {
-       memcpy(&lightPos[i], &g_pplayer->m_ptable->m_Light[i].pos, sizeof(float) * 3);
-       memcpy(&lightEmission[i], &emission, sizeof(float) * 3);
+      memcpy(&lightPos[i], &g_pplayer->m_ptable->m_Light[i].pos, sizeof(float) * 3);
+      memcpy(&lightEmission[i], &emission, sizeof(float) * 3);
    }
-
    m_pd3dPrimaryDevice->basicShader->SetFloat4v(SHADER_lightPos, (vec4*) lightPos, MAX_LIGHT_SOURCES);
    m_pd3dPrimaryDevice->basicShader->SetFloat4v(SHADER_lightEmission, (vec4*) lightEmission, MAX_LIGHT_SOURCES);
 
@@ -711,17 +710,15 @@ void Pin3D::UpdateMatrices()
 #ifdef ENABLE_VR
    if (m_stereo3D == STEREO_VR && m_pd3dPrimaryDevice->IsVRReady())
    {
+      // FIXME RenderDevice should update directly the pinprojection instead of duplicating and copying
       m_pd3dPrimaryDevice->SetTransformVR();
-      Shader::GetTransform(TRANSFORMSTATE_PROJECTION, m_proj.m_matProj, 2);
-      Shader::GetTransform(TRANSFORMSTATE_VIEW, &m_proj.m_matView, 1);
+      m_pd3dPrimaryDevice->GetTransform(TRANSFORMSTATE_PROJECTION, m_proj.m_matProj, 2);
+      m_pd3dPrimaryDevice->GetTransform(TRANSFORMSTATE_VIEW, &m_proj.m_matView, 1);
    } else
 #endif
-   {
-      Shader::SetTransform(TRANSFORMSTATE_PROJECTION, m_proj.m_matProj, m_stereo3D != STEREO_OFF  ? 2 : 1);
-      Shader::SetTransform(TRANSFORMSTATE_VIEW, &m_proj.m_matView, 1);
-   }
-   Shader::SetTransform(TRANSFORMSTATE_WORLD, &m_proj.m_matWorld, 1);
-
+   m_pd3dPrimaryDevice->SetTransform(TRANSFORMSTATE_PROJECTION, m_proj.m_matProj, m_stereo3D != STEREO_OFF  ? 2 : 1);
+   m_pd3dPrimaryDevice->SetTransform(TRANSFORMSTATE_VIEW, &m_proj.m_matView);
+   m_pd3dPrimaryDevice->SetTransform(TRANSFORMSTATE_WORLD, &m_proj.m_matWorld);
    m_proj.CacheTransform();
 }
 
@@ -919,6 +916,10 @@ void Pin3D::InitLayout(const bool FSS_mode, const float max_separation, const fl
    m_proj.m_matView.RotateXMatrix((float)M_PI);  // convert Z=out to Z=in (D3D coordinate system)
    m_proj.ScaleView(g_pplayer->m_ptable->m_BG_scalex[g_pplayer->m_ptable->m_BG_current_set], g_pplayer->m_ptable->m_BG_scaley[g_pplayer->m_ptable->m_BG_current_set], 1.0f);
 
+   // Full scene scaling is only used in VR (and VR preview for debugging) to adapt to HMD scale
+   if (m_stereo3D == STEREO_VR)
+      m_proj.ScaleView(m_pd3dPrimaryDevice->m_scale, m_pd3dPrimaryDevice->m_scale, m_pd3dPrimaryDevice->m_scale);
+
    //!! FSS: added 500.0f to next line on camera y 
    //!! FSS: m_proj.m_vertexcamera.y += camy;
    //!! FSS: g_pplayer->m_ptable->m_BG_xlatey[g_pplayer->m_ptable->m_BG_current_set] += camy;
@@ -942,8 +943,8 @@ void Pin3D::InitLayout(const bool FSS_mode, const float max_separation, const fl
    if (m_stereo3D != STEREO_OFF)
       m_proj.m_rzfar += 5000.f;
    Matrix3D proj = Matrix3D::MatrixPerspectiveFovLH(ANGTORAD(FOV), aspect, m_proj.m_rznear, m_proj.m_rzfar);
+   memcpy(m_proj.m_matProj[0].m, proj.m, sizeof(float) * 4 * 4);
 
-//   memcpy(m_proj.m_matProj.m, proj.m, sizeof(float) * 4 * 4);
    float top = m_proj.m_rznear * tanf(ANGTORAD(FOV) / 2.0f);
    float bottom = -top;
    float right = top * aspect;
@@ -964,6 +965,7 @@ void Pin3D::InitLayout(const bool FSS_mode, const float max_separation, const fl
       proj = Matrix3D::MatrixPerspectiveOffCenterLH(left, right, bottom, top, m_proj.m_rznear, m_proj.m_rzfar);
       memcpy(m_proj.m_matProj[0].m, proj.m, sizeof(float) * 4 * 4);
    }
+   // in-pixel offset for manual oversampling
    if (xpixoff != 0.f || ypixoff != 0.f)
    {
       Matrix3D projTrans;
@@ -1211,7 +1213,7 @@ void PinProjection::ComputeNearFarPlane(const vector<Vertex3Ds>& verts)
 void PinProjection::CacheTransform()
 {
    Matrix3D matT;
-   m_matProj[0].Multiply(m_matView, matT);        // matT = matView * matProjLeft
+   m_matProj[0].Multiply(m_matView, matT);        // matT = matView * matProj
    matT.Multiply(m_matWorld, m_matrixTotal[0]);   // total = matWorld * matView * matProj
    if (m_stereo3D != STEREO_OFF ) {
       m_matProj[1].Multiply(m_matView, matT);
