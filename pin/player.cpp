@@ -5599,24 +5599,18 @@ void Player::Render()
          m_closeDownDelay = false;
 
          // add or remove caption, border and buttons (only if in windowed mode)?
-         if (!m_fullScreen && m_wnd_height < m_screenheight)
+         const int captionheight = GetSystemMetrics(SM_CYCAPTION);
+         if (!m_fullScreen && (m_showWindowedCaption || (!m_showWindowedCaption && ((m_screenheight - m_wnd_height) >= (captionheight * 2))))) // We have enough room for a frame? //!! *2 ??
          {
             int x, y;
 #ifdef ENABLE_SDL
             SDL_SetWindowBordered(m_sdl_playfieldHwnd, !m_showWindowedCaption ? SDL_TRUE : SDL_FALSE);
             SDL_GetWindowPosition(m_sdl_playfieldHwnd, &x, &y);
 #else
-            const int captionheight = GetSystemMetrics(SM_CYCAPTION);
-            const int borderwidth = (GetSystemMetrics(SM_CYFIXEDFRAME) * 2) + 2;
-
             RECT rect;
             ::GetWindowRect(GetHwnd(), &rect);
             x = rect.left;
             y = rect.top;
-            // Make room for title
-            if (!m_showWindowedCaption && y <= captionheight) y += captionheight + borderwidth;
-            x = m_showWindowedCaption ? (x + borderwidth) : (x - borderwidth);
-            y = m_showWindowedCaption ? (y + captionheight + borderwidth) : (y - captionheight - borderwidth);
 
             // Add/Remove a pretty window border and standard control boxes.
             const int windowflags = m_showWindowedCaption ? WS_POPUP : (WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_CLIPCHILDREN);
@@ -5633,7 +5627,7 @@ void Player::Render()
             if (m_showWindowedCaption)
             {
                HRESULT hr = SaveValueInt((m_stereo3D == STEREO_VR) ? regKey[RegName::PlayerVR] : regKey[RegName::Player], "WindowPosX"s, x);
-                       hr = SaveValueInt((m_stereo3D == STEREO_VR) ? regKey[RegName::PlayerVR] : regKey[RegName::Player], "WindowPosY"s, y);
+                       hr = SaveValueInt((m_stereo3D == STEREO_VR) ? regKey[RegName::PlayerVR] : regKey[RegName::Player], "WindowPosY"s, y + captionheight);
             }
 
             m_showWindowedCaption = !m_showWindowedCaption;
