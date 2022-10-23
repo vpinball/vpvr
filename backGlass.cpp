@@ -218,6 +218,8 @@ BackGlass::~BackGlass()
 
 void BackGlass::Render()
 {
+   RenderDevice::RenderStateCache initial_state;
+   m_pd3dDevice->CopyRenderStates(true, initial_state);
    if (g_pplayer->m_texPUP)
    {
       m_backgroundTexture = m_pd3dDevice->m_texMan.LoadTexture(g_pplayer->m_texPUP, SF_TRILINEAR, SA_CLAMP, SA_CLAMP, false);
@@ -279,9 +281,7 @@ void BackGlass::Render()
    m_pd3dDevice->DrawTexturedQuad((Vertex3D_TexelOnly*)Verts);
    m_pd3dDevice->DMDShader->End();
 
-   //m_pd3dDevice->SetRenderStateCulling(RenderDevice::CULL_CCW); // not necessary anymore
-   m_pd3dDevice->SetRenderState(RenderDevice::ZENABLE, RenderDevice::RS_TRUE);
-   m_pd3dDevice->SetRenderState(RenderDevice::ZWRITEENABLE, RenderDevice::RS_TRUE);
+   m_pd3dDevice->CopyRenderStates(false, initial_state);
 }
 
 void BackGlass::GetDMDPos(float& DMDposx, float& DMDposy, float& DMDwidth, float& DMDheight)

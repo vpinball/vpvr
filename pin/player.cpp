@@ -1083,9 +1083,9 @@ void Player::UpdateBasicShaderMatrix(const Matrix3D& objectTrafo)
       Matrix3D matWorldViewInverseTranspose;
       Matrix3D matWorldViewProj[2];
    } matrices;
-   Shader::GetTransform(TRANSFORMSTATE_WORLD, &matWorld, 1);
-   Shader::GetTransform(TRANSFORMSTATE_VIEW, &matrices.matView, 1);
-   Shader::GetTransform(TRANSFORMSTATE_PROJECTION, matProj, eyes);
+   m_pin3d.m_pd3dPrimaryDevice->GetTransform(TRANSFORMSTATE_WORLD, &matWorld, 1);
+   m_pin3d.m_pd3dPrimaryDevice->GetTransform(TRANSFORMSTATE_VIEW, &matrices.matView, 1);
+   m_pin3d.m_pd3dPrimaryDevice->GetTransform(TRANSFORMSTATE_PROJECTION, matProj, eyes);
 
    matrices.matWorldView = objectTrafo * matWorld * matrices.matView;
    for (int eye = 0;eye<eyes;++eye) matrices.matWorldViewProj[eye] = matrices.matWorldView * matProj[eye];
@@ -1198,9 +1198,9 @@ void Player::UpdateBallShaderMatrix()
       Matrix3D matWorldViewInverseTranspose;
       Matrix3D matWorldViewProj[2];
    } matrices;
-   Shader::GetTransform(TRANSFORMSTATE_WORLD, &matWorld, 1);
-   Shader::GetTransform(TRANSFORMSTATE_VIEW, &matrices.matView, 1);
-   Shader::GetTransform(TRANSFORMSTATE_PROJECTION, matProj, eyes);
+   m_pin3d.m_pd3dPrimaryDevice->GetTransform(TRANSFORMSTATE_WORLD, &matWorld, 1);
+   m_pin3d.m_pd3dPrimaryDevice->GetTransform(TRANSFORMSTATE_VIEW, &matrices.matView, 1);
+   m_pin3d.m_pd3dPrimaryDevice->GetTransform(TRANSFORMSTATE_PROJECTION, matProj, eyes);
 
    matrices.matWorldView = matWorld * matrices.matView;
 
@@ -1920,11 +1920,10 @@ void Player::RenderStaticMirror()
    SetClipPlanePlayfield(true); // Set the clip plane to only allow object above the playfield (do not reflect what is under or the playfield itself)
    m_pin3d.m_pd3dPrimaryDevice->SetRenderStateClipPlane0(true);
 
-   Matrix3D viewMat;
-   Shader::GetTransform(TRANSFORMSTATE_VIEW, &viewMat, 1);
+   Matrix3D viewMat, initialViewMat;
+   m_pin3d.m_pd3dPrimaryDevice->GetTransform(TRANSFORMSTATE_VIEW, &viewMat, 1);
+   memcpy(initialViewMat.m, viewMat.m, 4 * 4 * sizeof(float));
    // flip camera
-   Matrix3D viewMatCache;
-   memcpy(viewMatCache.m, viewMat.m, 4 * 4 * sizeof(float));
    // Reflect against reflection plane given by its normal (formula from https://en.wikipedia.org/wiki/Transformation_matrix#Reflection_2)
    Matrix3D reflect;
    reflect.SetIdentity();
@@ -1943,7 +1942,7 @@ void Player::RenderStaticMirror()
    // Translate the camera on the other side of the playfield plane
    reflect.SetTranslation(0.0f, 0.0f, -m_ptable->m_tableheight * 2.0f);
    viewMat = reflect * viewMat;
-   Shader::SetTransform(TRANSFORMSTATE_VIEW, &viewMat, 1);
+   m_pin3d.m_pd3dPrimaryDevice->SetTransform(TRANSFORMSTATE_VIEW, &viewMat);
 
    m_ptable->m_reflectionEnabled = true;
    m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_NONE); // re-init/thrash cache entry due to the hacky nature of the table mirroring
@@ -1966,8 +1965,7 @@ void Player::RenderStaticMirror()
    // Restore initial render states and camera
    m_ptable->m_reflectionEnabled = false;
    m_pin3d.m_pd3dPrimaryDevice->CopyRenderStates(false, initial_state);
-   memcpy(viewMat.m, viewMatCache.m, 4 * 4 * sizeof(float));
-   Shader::SetTransform(TRANSFORMSTATE_VIEW, &viewMat, 1);
+   m_pin3d.m_pd3dPrimaryDevice->SetTransform(TRANSFORMSTATE_VIEW, &initialViewMat);
    UpdateBasicShaderMatrix();
    m_pin3d.m_pddsStatic->Activate();
 }
@@ -1998,11 +1996,10 @@ void Player::RenderDynamicMirror()
    SetClipPlanePlayfield(true); // Set the clip plane to only allow object above the playfield (do not reflect what is under or the playfield itself)
    m_pin3d.m_pd3dPrimaryDevice->SetRenderStateClipPlane0(true);
 
-   Matrix3D viewMat;
-   Shader::GetTransform(TRANSFORMSTATE_VIEW, &viewMat, 1);
+   Matrix3D viewMat, initialViewMat;
+   m_pin3d.m_pd3dPrimaryDevice->GetTransform(TRANSFORMSTATE_VIEW, &viewMat, 1);
+   memcpy(initialViewMat.m, viewMat.m, 4 * 4 * sizeof(float));
    // flip camera
-   Matrix3D viewMatCache;
-   memcpy(viewMatCache.m, viewMat.m, 4 * 4 * sizeof(float));
    // Reflect against reflection plane given by its normal (formula from https://en.wikipedia.org/wiki/Transformation_matrix#Reflection_2)
    Matrix3D reflect;
    reflect.SetIdentity();
@@ -2019,9 +2016,9 @@ void Player::RenderDynamicMirror()
    reflect._33 = -1.0f;
    viewMat = reflect * viewMat;
    // Translate the camera on the other side of the playfield plane
-   reflect.SetTranslation(0.0f, 0.0f, - m_ptable->m_tableheight * 2.0f);
+   reflect.SetTranslation(0.0f, 0.0f, -m_ptable->m_tableheight * 2.0f);
    viewMat = reflect * viewMat;
-   Shader::SetTransform(TRANSFORMSTATE_VIEW, &viewMat, 1);
+   m_pin3d.m_pd3dPrimaryDevice->SetTransform(TRANSFORMSTATE_VIEW, &viewMat);
 
    m_ptable->m_reflectionEnabled = true; // set to let matrices and postrenderstatics know that we need to handle reflections now
    m_pin3d.m_pd3dPrimaryDevice->SetRenderStateCulling(RenderDevice::CULL_NONE); // re-init/thrash cache entry due to the hacky nature of the table mirroring
@@ -2079,6 +2076,8 @@ void Player::RenderDynamicMirror()
    if (!onlyBalls)
    {
       stable_sort(m_vHitTrans.begin(), m_vHitTrans.end(), CompareHitableDepthInverse);
+
+      // Draw transparent objects.
       for (size_t i = 0; i < m_vHitTrans.size(); ++i)
          m_vHitTrans[i]->RenderDynamic();
 
@@ -2101,8 +2100,7 @@ void Player::RenderDynamicMirror()
    // Restore initial render states and camera
    m_ptable->m_reflectionEnabled = false;
    m_pin3d.m_pd3dPrimaryDevice->CopyRenderStates(false, initial_state);
-   memcpy(viewMat.m, viewMatCache.m, 4 * 4 * sizeof(float));
-   Shader::SetTransform(TRANSFORMSTATE_VIEW, &viewMat, 1);
+   m_pin3d.m_pd3dPrimaryDevice->SetTransform(TRANSFORMSTATE_VIEW, &initialViewMat);
    if (!onlyBalls)
       UpdateBasicShaderMatrix();
    UpdateBallShaderMatrix();
@@ -3840,7 +3838,7 @@ void Player::SetClipPlanePlayfield(const bool clip_orientation)
    }
    m_pin3d.m_pd3dPrimaryDevice->basicShader->SetFloat4v(SHADER_clip_planes, (vec4 *)clip_planes, eyes);
 #else
-   Matrix3D mT = m_pin3d.m_proj.m_matrixTotal; // = world * view * proj
+   Matrix3D mT = m_pin3d.m_proj.m_matrixTotal[0]; // = world * view * proj
    mT.Invert();
    mT.Transpose();
    const D3DXMATRIX m(mT);
@@ -6082,16 +6080,16 @@ void Player::DrawBalls()
             for (int k = 0; k < 3; ++k)
                matRot.m[j][k] = pball->m_orientation.m_d[k][j];
          matNew.Multiply(matRot, matNew);
-         Shader::SetTransform(TRANSFORMSTATE_WORLD, &matNew, 1);
+         m_pin3d.m_pd3dPrimaryDevice->SetTransform(TRANSFORMSTATE_WORLD, &matNew);
          m_pin3d.m_pd3dPrimaryDevice->SetRenderState(RenderDevice::ALPHABLENDENABLE, RenderDevice::RS_FALSE);
 
          // draw points
          constexpr float ptsize = 5.0f;
-         m_pin3d.m_pd3dPrimaryDevice->SetRenderState((RenderDevice::RenderStates)D3DRS_POINTSIZE, *((DWORD*)&ptsize));
+         m_pin3d.m_pd3dPrimaryDevice->GetCoreDevice()->SetRenderState(D3DRS_POINTSIZE, float_as_uint(ptsize));
          m_pin3d.m_pd3dPrimaryDevice->DrawPrimitiveVB(RenderDevice::POINTLIST, MY_D3DFVF_TEX, m_ballDebugPoints, 0, 12, true);
 
          // reset transform
-         Shader::SetTransform(TRANSFORMSTATE_WORLD, &matOrig, 1);
+         m_pin3d.m_pd3dPrimaryDevice->SetTransform(TRANSFORMSTATE_WORLD, &matOrig);
       }
 #endif
 
