@@ -3935,6 +3935,13 @@ void Player::Bloom()
 
 void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool SMAA, const bool DLAA, const bool NFAA, const bool FXAA1, const bool FXAA2, const bool FXAA3, const unsigned int sharpen, const bool depth_available) //!! SMAA, luma sharpen, dither?
 {
+#ifdef ENABLE_SDL
+   const bool pp_stereo = stereo && m_stereo3D != STEREO_TB && m_stereo3D != STEREO_SBS;
+#else
+   // Stereo is not supported together with post processed AA on DX9 except for top/bottom or side by side
+   assert(!stereo || m_stereo3D == STEREO_TB || m_stereo3D == STEREO_SBS || (!SMAA && !DLAA && !NFAA && !FXAA1 && !FXAA2 && !FXAA3));
+   const bool pp_stereo = stereo;
+#endif
    RenderTarget *outputRT = nullptr;
 
    // Stereo and AA are performed on LDR render buffer after tonemapping (RGB8 or RGB10, but nof RGBF).
@@ -3942,24 +3949,24 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
    // SMAA is a special case since it needs 3 passes, so it uses GetBackBufferTexture also (which is somewhat overkill since it is RGB16F)
    assert(renderedRT == m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer() || renderedRT == m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture());
 
-#ifdef ENABLE_SDL
+   // First Step: Perform post processed anti aliasing
+
    if (SMAA || DLAA || NFAA || FXAA1 || FXAA2 || FXAA3)
-#else
-   // Since DirectX performs stereo as a postprocess parallax step, it implicitly disables FXAA/SMAA/etc
-   if (!stereo && (SMAA || DLAA || NFAA || FXAA1 || FXAA2 || FXAA3))
-#endif
    {
       assert(renderedRT == m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture());
-      outputRT = SMAA ? m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture() : // SMAA use 3 passes, so we reuse the back buffer for the first
-                 (DLAA || sharpen || (stereo && m_stereo3D != STEREO_TB && m_stereo3D != STEREO_SBS)) ? m_pin3d.m_pd3dPrimaryDevice->GetPostProcessTexture(renderedRT)
-                                                                                                      : m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
+      outputRT = SMAA                   ? m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture() : // SMAA use 3 passes, so we reuse the back buffer for the first
+         (DLAA || sharpen || pp_stereo) ? m_pin3d.m_pd3dPrimaryDevice->GetPostProcessTexture(renderedRT)
+                                        : m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
       outputRT->Activate(true);
 
+#ifdef ENABLE_SDL
+      // For DX9, these are defined to fb_unfiltered
       if (SMAA)
       {
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_colorTex, renderedRT->GetColorSampler());
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_colorGammaTex, renderedRT->GetColorSampler());
       }
+#endif
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, renderedRT->GetColorSampler());
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, renderedRT->GetColorSampler());
@@ -3985,9 +3992,9 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
 
       if (SMAA || DLAA) // actual SMAA/DLAA filtering pass, above only edge detection
       {
-         outputRT = SMAA ? m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2() : // SMAA use 3 passes, so we have a special processing instead of RT ping pong
-                    (sharpen || (stereo && m_stereo3D != STEREO_TB && m_stereo3D != STEREO_SBS)) ? m_pin3d.m_pd3dPrimaryDevice->GetPostProcessTexture(renderedRT)
-                                                                                                 : m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
+         outputRT = SMAA                 ? m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture2() : // SMAA use 3 passes, so we have a special processing instead of RT ping pong
+                    sharpen || pp_stereo ? m_pin3d.m_pd3dPrimaryDevice->GetPostProcessTexture(renderedRT)
+                                         : m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
          outputRT->Activate(true);
 
          if (SMAA)
@@ -3995,7 +4002,7 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
             #ifdef ENABLE_SDL
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_edgesTex2D, renderedRT->GetColorSampler());
             #else
-            CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_edgesTex2D, renderedRT->GetColorSampler()->GetCoreTexture())); //!! opt.?
+            CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture("edgesTex2D", renderedRT->GetColorSampler()->GetCoreTexture())); //!! opt.?
             #endif
          }
          else
@@ -4010,15 +4017,15 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
 
          if (SMAA)
          {
-            outputRT = (sharpen || (stereo && m_stereo3D != STEREO_TB && m_stereo3D != STEREO_SBS)) ? m_pin3d.m_pd3dPrimaryDevice->GetPostProcessTexture(renderedRT)
-                                                                                                    : m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
+            outputRT = sharpen || pp_stereo ? m_pin3d.m_pd3dPrimaryDevice->GetPostProcessTexture(renderedRT)
+                                            : m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
             outputRT->Activate(true);
 
             #ifdef ENABLE_SDL
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_blendTex2D, renderedRT->GetColorSampler());
             #else
-            CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_edgesTex2D, nullptr)); //!! opt.??
-            CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_blendTex2D, renderedRT->GetColorSampler()->GetCoreTexture())); //!! opt.?
+            CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture("edgesTex2D", nullptr)); //!! opt.??
+            CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture("blendTex2D", renderedRT->GetColorSampler()->GetCoreTexture())); //!! opt.?
             #endif
 
             m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(SHADER_TECHNIQUE_SMAA_NeighborhoodBlending);
@@ -4029,24 +4036,19 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
             renderedRT = outputRT;
 
             #ifndef ENABLE_SDL
-            CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture(SHADER_blendTex2D, nullptr)); //!! opt.?
+            CHECKD3D(m_pin3d.m_pd3dPrimaryDevice->FBShader->Core()->SetTexture("blendTex2D", nullptr)); //!! opt.?
             #endif
          }
       }
    }
 
-   //
+   // Second step: performs sharpening
 
-#ifdef ENABLE_SDL
    if (sharpen)
-#else
-   // Since DirectX performs stereo as a postprocess parallax step, don't sharpen in interlaced stereo or anaglyph!
-   if (sharpen && (!stereo || (m_stereo3D == STEREO_TB || m_stereo3D == STEREO_SBS)))
-#endif
    {
       assert(renderedRT != m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
-      outputRT = (stereo && m_stereo3D != STEREO_TB && m_stereo3D != STEREO_SBS) ? m_pin3d.m_pd3dPrimaryDevice->GetPostProcessTexture(renderedRT)
-                                                                                 : m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
+      outputRT = pp_stereo ? m_pin3d.m_pd3dPrimaryDevice->GetPostProcessTexture(renderedRT)
+                           : m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
       outputRT->Activate(true);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, renderedRT->GetColorSampler());
@@ -4065,7 +4067,8 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
       renderedRT = outputRT;
    }
 
-   // Apply stereo post processing.
+   // Third step: apply stereo
+
    if (stereo)
    {
 #ifdef ENABLE_SDL
@@ -4233,36 +4236,34 @@ void Player::StereoFXAA(RenderTarget* renderedRT, const bool stereo, const bool 
       }
 #else
       // DirectX doesn't support 'real' stereo, instead of performing 2 renders from each eyes, it fakes stereo using a postprocess parallax filter
-      if (sharpen && (m_stereo3D == STEREO_TB || m_stereo3D == STEREO_SBS)) // don't sharpen in interlaced stereo or anaglyph!
-         m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->Activate(true);
-      else
-         m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer()->Activate();
+      assert(renderedRT != m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer());
+      outputRT = m_pin3d.m_pd3dPrimaryDevice->GetOutputBackBuffer();
+      outputRT->Activate(true);
 
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture0, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTmpTexture()->GetColorSampler());
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_Texture3, m_pin3d.m_pddsBackBuffer->GetDepthSampler());
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_filtered, renderedRT->GetColorSampler());
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_fb_unfiltered, renderedRT->GetColorSampler());
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTexture(SHADER_tex_depth, m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture()->GetDepthSampler());
 
       const bool is_anaglyph = m_stereo3D >= STEREO_ANAGLYPH_RC && m_stereo3D <= STEREO_ANAGLYPH_AB;
       const vec4 ms_zpd_ya_td(m_ptable->GetMaxSeparation(), m_ptable->GetZPD(), m_stereo3DY ? 1.0f : 0.0f,
-         is_anaglyph ? (float)m_stereo3D
-                     : ((m_stereo3D == STEREO_SBS)     ? 2.0f
-                           : (m_stereo3D == STEREO_TB) ? 1.0f
-                                                       : ((m_stereo3D == STEREO_INT) ? 0.0f : 0.5f)));
+          is_anaglyph ? (float)m_stereo3D : ((m_stereo3D == STEREO_SBS) ? 2.0f : (m_stereo3D == STEREO_TB) ? 1.0f : ((m_stereo3D == STEREO_INT) ? 0.0f : 0.5f)));
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_ms_zpd_ya_td, &ms_zpd_ya_td);
 
-      const vec4 w_h_height((float)(1.0 / (double)m_width), (float)(1.0 / (double)m_height), (float)m_height, m_ptable->Get3DOffset());
+      const vec4 w_h_height((float)(1.0 / (double)renderedRT->GetWidth()), (float)(1.0 / (double)renderedRT->GetHeight()), (float)renderedRT->GetHeight(), m_ptable->Get3DOffset());
       m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_w_h_height, &w_h_height);
 
       if (is_anaglyph)
       {
-         const vec4 a_ds_c(m_global3DDesaturation, m_global3DContrast, 0.f, 0.f);
+         const vec4 a_ds_c(m_global3DDesaturation, m_global3DContrast, 0.f,0.f);
          m_pin3d.m_pd3dPrimaryDevice->FBShader->SetVector(SHADER_Anaglyph_DeSaturation_Contrast, &a_ds_c);
       }
 
-      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(is_anaglyph ? "stereo_anaglyph" : "stereo");
+      m_pin3d.m_pd3dPrimaryDevice->FBShader->SetTechnique(is_anaglyph ? SHADER_TECHNIQUE_stereo_anaglyph : SHADER_TECHNIQUE_stereo);
 
       m_pin3d.m_pd3dPrimaryDevice->FBShader->Begin();
       m_pin3d.m_pd3dPrimaryDevice->DrawFullscreenTexturedQuad();
       m_pin3d.m_pd3dPrimaryDevice->FBShader->End();
+      renderedRT = outputRT;
 #endif
    }
 }
@@ -4781,14 +4782,20 @@ void Player::PrepareVideoBuffersNormal()
 {
    const bool useAA = ((m_AAfactor != 1.0f) && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
    const bool stereo= m_stereo3D == STEREO_VR || ((m_stereo3D != STEREO_OFF) && m_stereo3Denabled && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable());
-   const bool SMAA  = (((m_FXAA == Quality_SMAA)  && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
-   const bool DLAA  = (((m_FXAA == Standard_DLAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_DLAA));
-   const bool NFAA  = (((m_FXAA == Fast_NFAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_NFAA));
-   const bool FXAA1 = (((m_FXAA == Fast_FXAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_FXAA));
-   const bool FXAA2 = (((m_FXAA == Standard_FXAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_FXAA));
-   const bool FXAA3 = (((m_FXAA == Quality_FXAA)  && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_FXAA));
+#ifdef ENABLE_SDL
+   const bool PostProcAA = true;
+#else
+   // Since stereo is applied as a postprocess step in DX9, it disables AA and sharpening except for top/bottom & side by side modes
+   const bool PostProcAA = !stereo || (m_stereo3D == STEREO_TB) || (m_stereo3D == STEREO_SBS);
+#endif
+   const bool SMAA  = PostProcAA && (((m_FXAA == Quality_SMAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
+   const bool DLAA  = PostProcAA && (((m_FXAA == Standard_DLAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_DLAA));
+   const bool NFAA  = PostProcAA && (((m_FXAA == Fast_NFAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_NFAA));
+   const bool FXAA1 = PostProcAA && (((m_FXAA == Fast_FXAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_FXAA));
+   const bool FXAA2 = PostProcAA && (((m_FXAA == Standard_FXAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_FXAA));
+   const bool FXAA3 = PostProcAA && (((m_FXAA == Quality_FXAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_FXAA));
    const bool ss_refl = (((m_ss_refl && (m_ptable->m_useSSR == -1)) || (m_ptable->m_useSSR == 1)) && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && m_ptable->m_SSRScale > 0.f);
-   const unsigned int sharpen = m_sharpen;
+   const unsigned int sharpen = PostProcAA ? m_sharpen : 0;
 
    RenderTarget *renderedRT = m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture();
    RenderTarget *ouputRT = nullptr;
@@ -4928,14 +4935,20 @@ void Player::PrepareVideoBuffersAO()
 {
    const bool useAA = ((m_AAfactor != 1.0f) && (m_ptable->m_useAA == -1)) || (m_ptable->m_useAA == 1);
    const bool stereo= m_stereo3D == STEREO_VR || ((m_stereo3D != STEREO_OFF) && m_stereo3Denabled && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable());
-   const bool SMAA  = (((m_FXAA == Quality_SMAA)  && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
-   const bool DLAA  = (((m_FXAA == Standard_DLAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_DLAA));
-   const bool NFAA  = (((m_FXAA == Fast_NFAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_NFAA));
-   const bool FXAA1 = (((m_FXAA == Fast_FXAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_FXAA));
-   const bool FXAA2 = (((m_FXAA == Standard_FXAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_FXAA));
-   const bool FXAA3 = (((m_FXAA == Quality_FXAA)  && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_FXAA));
+#ifdef ENABLE_SDL
+   const bool PostProcAA = true;
+#else
+   // Since stereo is applied as a postprocess step in DX9, it disables AA and sharpening except for top/bottom & side by side modes
+   const bool PostProcAA = !stereo || stereo == STEREO_TB || stereo == STEREO_SBS;
+#endif
+   const bool SMAA  = PostProcAA && (((m_FXAA == Quality_SMAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_SMAA));
+   const bool DLAA  = PostProcAA && (((m_FXAA == Standard_DLAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_DLAA));
+   const bool NFAA  = PostProcAA && (((m_FXAA == Fast_NFAA)     && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_NFAA));
+   const bool FXAA1 = PostProcAA && (((m_FXAA == Fast_FXAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Fast_FXAA));
+   const bool FXAA2 = PostProcAA && (((m_FXAA == Standard_FXAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Standard_FXAA));
+   const bool FXAA3 = PostProcAA && (((m_FXAA == Quality_FXAA) && (m_ptable->m_useFXAA == -1)) || (m_ptable->m_useFXAA == Quality_FXAA));
    const bool ss_refl = (((m_ss_refl && (m_ptable->m_useSSR == -1)) || (m_ptable->m_useSSR == 1)) && m_pin3d.m_pd3dPrimaryDevice->DepthBufferReadBackAvailable() && m_ptable->m_SSRScale > 0.f);
-   const unsigned int sharpen = m_sharpen;
+   const unsigned int sharpen = PostProcAA ? m_sharpen : 0;
 
    RenderTarget *renderedRT = m_pin3d.m_pd3dPrimaryDevice->GetBackBufferTexture();
    RenderTarget *ouputRT = nullptr;
