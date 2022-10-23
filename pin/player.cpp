@@ -1091,8 +1091,8 @@ void Player::UpdateBasicShaderMatrix(const Matrix3D& objectTrafo)
       Matrix3D matWorldViewInverseTranspose;
       Matrix3D matWorldViewProj[2];
    } matrices;
-   m_pin3d.m_pd3dPrimaryDevice->GetTransform(TRANSFORMSTATE_WORLD, &matWorld, 1);
-   m_pin3d.m_pd3dPrimaryDevice->GetTransform(TRANSFORMSTATE_VIEW, &matrices.matView, 1);
+   m_pin3d.m_pd3dPrimaryDevice->GetTransform(TRANSFORMSTATE_WORLD, &matWorld);
+   m_pin3d.m_pd3dPrimaryDevice->GetTransform(TRANSFORMSTATE_VIEW, &matrices.matView);
    m_pin3d.m_pd3dPrimaryDevice->GetTransform(TRANSFORMSTATE_PROJECTION, matProj, eyes);
 
    matrices.matWorldView = objectTrafo * matWorld * matrices.matView;
@@ -1118,26 +1118,23 @@ void Player::UpdateBasicShaderMatrix(const Matrix3D& objectTrafo)
    m_pin3d.m_pd3dPrimaryDevice->lightShader->SetUniformBlock(SHADER_matrixBlock, &matrices.matWorldViewProj[0].m[0][0], (eyes + 3) * 16 * sizeof(float));
 #endif
 
-#else
-
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix(SHADER_matWorldViewProj, &matWorldViewProj);
-   m_pin3d.m_pd3dPrimaryDevice->flasherShader->SetMatrix(SHADER_matWorldViewProj, &matWorldViewProj);
-   m_pin3d.m_pd3dPrimaryDevice->lightShader->SetMatrix(SHADER_matWorldViewProj, &matWorldViewProj);
+#else // For DX9
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix(SHADER_matWorldViewProj, &matrices.matWorldViewProj[0]);
+   m_pin3d.m_pd3dPrimaryDevice->flasherShader->SetMatrix(SHADER_matWorldViewProj, &matrices.matWorldViewProj[0]);
+   m_pin3d.m_pd3dPrimaryDevice->lightShader->SetMatrix(SHADER_matWorldViewProj, &matrices.matWorldViewProj[0]);
 #ifdef SEPARATE_CLASSICLIGHTSHADER
-   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix(SHADER_matWorldViewProj, &matWorldViewProj);
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix(SHADER_matWorldViewProj, &matrices.matWorldViewProj[0]);
 #endif
-
-   m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetMatrix(SHADER_matWorldViewProj, &matWorldViewProj);
-
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix(SHADER_matWorldView, &matWorldView);
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix(SHADER_matWorldViewInverseTranspose, &matWorldViewInvTrans);
-   //m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix(SHADER_matWorld, &matWorld);
-   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix(SHADER_matView, &matView);
+   m_pin3d.m_pd3dPrimaryDevice->DMDShader->SetMatrix(SHADER_matWorldViewProj, &matrices.matWorldViewProj[0]);
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix(SHADER_matWorldView, &matrices.matWorldView);
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix(SHADER_matWorldViewInverseTranspose, &matrices.matWorldViewInverseTranspose);
+   //m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix(SHADER_matWorld, &matrices.matWorld);
+   m_pin3d.m_pd3dPrimaryDevice->basicShader->SetMatrix(SHADER_matView, &matrices.matView);
 #ifdef SEPARATE_CLASSICLIGHTSHADER
-   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix(SHADER_matWorldView, &matWorldView);
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix(SHADER_matWorldView, &matrices.matWorldView);
    m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix(SHADER_matWorldViewInverseTranspose, &matWorldViewInvTrans);
-   //m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix(SHADER_matWorld, &matWorld);
-   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix(SHADER_matView, &matView);
+   //m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix(SHADER_matWorld, &matrices.matWorld);
+   m_pin3d.m_pd3dPrimaryDevice->classicLightShader->SetMatrix(SHADER_matView, &matrices.matView);
 #endif
 
    //memcpy(temp.m, matView.m, 4 * 4 * sizeof(float));
@@ -6484,8 +6481,6 @@ void Player::StopPlayer()
    m_ptable->EnableWindow();
 
    LockForegroundWindow(false);
-
-   g_pvp->SetForegroundWindow();
 }
 
 INT_PTR CALLBACK PauseProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
